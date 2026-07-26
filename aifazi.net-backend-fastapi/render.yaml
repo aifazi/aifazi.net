@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: aifazi-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter          # upgrade to "standard" for always-on + WebSocket reliability
+    region: oregon         # options: frankfurt, singapore, ohio
+    healthCheckPath: /api/health
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: FRONTEND_URL
+        value: https://aifazi.net
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: ENV
+        value: production

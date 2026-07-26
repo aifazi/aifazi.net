@@ -1,0 +1,457 @@
+"""
+main.py — FastAPI application entry point
+FIX #10: Passes running event loop to scheduler so run_coroutine_threadsafe() works.
+"""
+import asyncio
+import os
+import time
+import hmac
+import logging
+from collections import defaultdict
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+import sentry_sdk
+from dotenv import load_dotenv
+
+load_dotenv()
+
+dsn = os.getenv("SENTRY_DSN", "")
+if dsn.startswith("https://"):
+    sentry_sdk.init(dsn=dsn, traces_sample_rate=0.1,
+                    environment=os.getenv("ENV", "production"))
+
+from utils.scheduler import scheduler, set_event_loop
+
+log = logging.getLogger("main")
+
+_IS_SERVERLESS = os.getenv("VERCEL", "") != ""
+_IS_PRODUCTION  = os.getenv("ENV", "production") == "production"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if not _IS_SERVERLESS:
+        set_event_loop(asyncio.get_running_loop())
+        scheduler.start()
+    # Run audit table migration in the background so it never blocks startup
+    # or delays the health check response on Render's starter plan.
+    async def _bg_migrate():
+        try:
+            from utils.audit import migrate as _audit_migrate
+            import logging as _logging
+            result = _audit_migrate()
+            _logging.getLogger("main").info("audit migrate: %s", result.get("message", result))
+        except Exception as _exc:
+            import logging as _logging
+            _logging.getLogger("main").warning("audit auto-migrate failed: %s", _exc)
+    asyncio.create_task(_bg_migrate())
+    yield
+    if not _IS_SERVERLESS:
+        scheduler.shutdown()
+
+app = FastAPI(title="aifazi.net API", version="2.0.0", lifespan=lifespan,
+              docs_url=None, redoc_url=None, openapi_url=None)
+
+import re
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net")
+
+_CORS_ALLOW_HEADERS = "Authorization, Content-Type, X-Internal-Token, X-CSRF-Token, Accept, Origin"
+
+# ── Block direct browser visits to api.aifazi.net ──────────────────────────────
+# If someone navigates to api.aifazi.net in a browser (Accept: text/html, no
+# Origin header), they are redirected to the homepage.
+# Real API calls always set an Origin header or do not prefer text/html.
+API_HOSTNAME = os.getenv("API_HOSTNAME", "api.aifazi.net")
+
+# ── Internal API secret ────────────────────────────────────────────────────────
+# All non-public requests must include this header (injected by Next.js middleware).
+# Set INTERNAL_API_SECRET in your .env — use any long random string.
+INTERNAL_API_SECRET = os.getenv("INTERNAL_API_SECRET", "")
+if not INTERNAL_API_SECRET:
+    log.warning(
+        "INTERNAL_API_SECRET is not set. Protected API endpoints will return 503 "
+        "until the secret is configured."
+    )
+
+# Paths that are freely accessible without the internal token
+_OPEN_EXACT: set[str] = {
+    "/api/health",
+    "/api/stats/visitors/live",
+    "/api/auth/login",
+    "/api/auth/register",
+    "/api/auth/2fa/verify",
+    "/api/auth/refresh",
+    "/api/auth/forgot-password",
+    "/api/auth/reset-password",
+    "/api/auth/forgot",
+    "/api/auth/find-username",
+    "/api/auth/reset",
+    "/api/auth/resend-verification",
+    "/api/auth/verify-email",
+    "/api/auth/check-username",
+    "/api/auth/check-email",
+    "/api/auth/logout",
+    "/api/auth/discord/login",
+    "/api/auth/discord/callback",
+    "/api/auth/discord/connect-url",
+    "/api/auth/discord/whitelist-status",
+    "/api/auth/steam/login",
+    "/api/auth/steam/callback",
+    "/api/auth/steam/connect-url",
+    "/api/forum/auth/login",
+    "/api/forum/auth/register",
+    "/api/forum/auth/forgot",
+    "/api/forum/auth/reset",
+    "/api/forum/auth/forgot-password",
+    "/api/forum/auth/discord/login",
+    "/api/forum/auth/discord/callback",
+    "/api/forum/auth/discord/connect-url",
+    "/api/forum/auth/discord/disconnect",
+    "/api/forum/auth/steam/login",
+    "/api/forum/auth/steam/callback",
+    "/api/forum/auth/steam/connect-url",
+    "/sitemap.xml",
+    "/robots.txt",
+    "/api/fivem/status",
+    "/api/fivem/whitelist/apply",
+    "/api/txadmin/whitelist-approved",
+    "/api/txadmin/whitelist-denied",
+    "/api/txadmin/whitelist-request",
+    "/api/txadmin/playerConnecting",
+    "/api/txadmin/health",
+    "/api/webhook/fivem/whitelist-approved",  # FiveM server → Supabase whitelist_applications
+    # -- FiveM Lua bridge endpoints (auth via X-FiveM-Token, not X-Internal-Token) --
+    "/api/fivem/players",                    # player list POST from Lua resource
+    "/api/fivem/whitelist/pending-sync",     # Lua polls for approved entries to push to txAdmin
+    "/api/fivem/whitelist/mark-synced",      # Lua marks entries synced after txAdmin push
+    "/api/fivem/application-actions/pending",  # Lua polls approved website/game actions
+    "/api/fivem/application-actions/mark-synced", # Lua reports action sync result
+    "/api/fivem/txadmin-event",              # Lua forwards txAdmin whitelist events
+    "/api/fivem/whitelist/update-identifiers",  # Lua patches license hex on connect
+    "/api/fivem/txadmin/approvals",              # PS1 sync script polls for pending approvals
+    "/api/fivem/txadmin/mark-synced",            # PS1 sync script marks entries done
+    # -- Player data sync (auth via X-FiveM-Token) --
+    "/api/fivem/players/join",              # Lua fires on playerJoining
+    "/api/fivem/players/leave",             # Lua fires on playerDropped
+    "/api/fivem/players/heartbeat-sync",    # Lua sends with every 30s heartbeat
+    "/api/fivem/connect/session-check",     # Lua requires recent website connect session
+    "/api/fivem/connect/verify",            # Legacy Lua token verifier
+    # -- Discord OAuth public endpoints --
+    "/api/discord/login",       # redirect to Discord consent screen
+    "/api/discord/callback",    # OAuth callback — issues JWT
+    "/api/discord/logout",      # clear session
+    # Steam auth (still at legacy /api/forum/auth/steam) — POST/DELETE need internal token
+    "/api/forum/auth/steam/connect",
+    "/api/forum/auth/steam/disconnect",
+}
+# GET requests on these prefixes are open (public read)
+_OPEN_GET_PREFIXES: tuple[str, ...] = (
+    "/api/blog",
+    "/api/portfolio",
+    "/api/search",
+    "/api/content",
+    "/api/seo-proxy",
+    "/api/admin/banners",
+    "/api/admin/site-settings",
+    "/api/pdf-editor/page",
+    "/api/pdf-editor/thumb",
+    "/api/pdf-editor/info",
+    # FiveM whitelist check — called by Lua on playerConnecting with identifier in path
+    "/api/fivem/whitelist/check",
+    "/api/fivem/whitelist/update-identifiers",
+    "/api/discord/me",
+    "/api/discord/whitelist-status",
+    "/api/discord/my-application",
+    # Auth endpoints — JWT handles auth, middleware must not block GET
+    "/api/auth/me",
+    "/api/auth/sessions",
+    "/api/auth/verify",
+    "/api/auth/verify-status",
+    "/api/auth/discord/",
+    "/api/auth/steam/",
+    "/api/forum/auth/",
+    # Steam auth still registered at legacy path
+    "/api/forum/auth/steam/",
+    # Player records — staff-only GET endpoints, JWT auth handles access control
+    "/api/fivem/players/records",
+    "/api/fivem/players/sessions",
+)
+
+# ── CORS allowed origins ───────────────────────────────────────────────────────
+_STATIC_ORIGINS = {
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://aifazi.net",
+    "https://www.aifazi.net",
+    "https://admin.aifazi.net",
+    FRONTEND_URL,
+}
+
+_DYNAMIC_PATTERNS: list[re.Pattern] = []
+
+if not _IS_PRODUCTION:
+    # Development only — allow Vercel/Railway preview deploys
+    _DYNAMIC_PATTERNS = [
+        re.compile(r"^https://[a-z0-9\-]+\.vercel\.app$"),
+        re.compile(r"^https://[a-z0-9\-]+\.aifazi\.net$"),
+        re.compile(r"^https://[a-z0-9\-]+\.railway\.app$"),
+    ]
+else:
+    _DYNAMIC_PATTERNS = []
+
+def _is_allowed_origin(origin: str) -> bool:
+    if origin in _STATIC_ORIGINS:
+        return True
+    return any(p.match(origin) for p in _DYNAMIC_PATTERNS)
+
+# ── Rate limit store (in-memory sliding window, per IP) ───────────────────────
+# Uses a TTL-bounded dict to prevent unbounded memory growth under attack.
+# Buckets older than _RL_CLEANUP_INTERVAL seconds are pruned in the background.
+_rl_store: dict[str, list[float]] = defaultdict(list)
+_rl_last_cleanup: float = 0.0
+_RL_CLEANUP_INTERVAL = 300  # prune dead buckets every 5 minutes
+
+def _prune_rl_store(now: float) -> None:
+    """Remove expired buckets to prevent memory growth under high unique-IP traffic."""
+    global _rl_last_cleanup
+    if now - _rl_last_cleanup < _RL_CLEANUP_INTERVAL:
+        return
+    _rl_last_cleanup = now
+    max_window = max(w for _, _, w in _RL_RULES) if _RL_RULES else _RL_DEFAULT[1]
+    dead = [k for k, ts in _rl_store.items() if not ts or now - ts[-1] > max_window]
+    for k in dead:
+        del _rl_store[k]
+
+# (max_calls, window_seconds) per path suffix
+_RL_RULES: list[tuple[str, int, int]] = [
+    ("/auth/login",           5,   60),
+    ("/auth/register",       10,   60),
+    ("/auth/2fa/verify",      3,   60),
+    ("/auth/refresh",         20,   60),
+    ("/auth/forgot-password", 3, 300),
+    ("/auth/reset-password",  3, 300),
+    ("/auth/forgot",          3, 300),
+    ("/auth/reset",           3, 300),
+    ("/auth/find-username",   3, 300),
+    ("/auth/resend-verification", 3, 300),
+    ("/auth/check-username", 20,  60),
+    ("/auth/check-email",    20,  60),
+    ("/auth/logout",         10,  60),
+    ("/auth/discord",         5,   60),
+    ("/auth/steam",           5,   60),
+    ("/auth/change-password", 3, 300),
+    ("/admin/db/sql",         5,   60),
+    ("/admin/backup",        10,  300),
+    ("/upload/multiple",      3,   60),
+    ("/pdf-editor/open",      5,   60),
+    ("/file-tools/",           5,   60),
+    ("/seo-proxy",            10,   60),
+    ("/helpdesk/tickets",     10,   60),
+]
+_RL_DEFAULT = (100, 60)   # 100 requests / 60 s general
+
+def _get_limit(path: str) -> tuple[int, int]:
+    for suffix, calls, period in _RL_RULES:
+        if path.endswith(suffix):
+            return calls, period
+    return _RL_DEFAULT
+
+
+class SecurityMiddleware(BaseHTTPMiddleware):
+    """
+    Single middleware that handles:
+      0. Browser redirect — api.aifazi.net visited in a browser → 301 to homepage
+      1. CORS
+      2. Rate limiting (per IP, sliding window)
+      3. Internal token gate (blocks direct API access bypassing Next.js)
+      4. Security headers
+    """
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get("origin", "")
+        allowed_origin = _is_allowed_origin(origin)
+        path   = request.url.path
+        method = request.method
+
+        # ── 0. Redirect browser visits to api.aifazi.net ──────────────────────
+        # A browser navigating directly to api.aifazi.net sends Accept: text/html
+        # and no Origin header. Redirect those bare-domain visitors to the main site.
+        # Programmatic fetch/XHR calls always include an Origin header or a
+        # specific Accept type (application/json), so they are never affected.
+        # IMPORTANT: only redirect bare-domain visits (path is / or empty).
+        # Real API paths like /api/admin/site-settings must NOT be blocked here —
+        # the frontend proxy and open-endpoint list handle access control for those.
+        host   = request.headers.get("host", "").split(":")[0]
+        accept = request.headers.get("accept", "")
+        is_browser = "text/html" in accept and not origin
+        is_bare    = path in ("/", "")
+        if host == API_HOSTNAME and is_browser and is_bare:
+            return RedirectResponse(url=FRONTEND_URL, status_code=301)
+
+        # ── 1. CORS preflight ──────────────────────────────────────────────────
+        if method == "OPTIONS":
+            resp = Response(status_code=204)
+            if allowed_origin:
+                resp.headers["Access-Control-Allow-Origin"]      = origin
+                resp.headers["Access-Control-Allow-Credentials"] = "true"
+                resp.headers["Access-Control-Allow-Methods"]     = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+                resp.headers["Access-Control-Allow-Headers"]     = _CORS_ALLOW_HEADERS
+                resp.headers["Access-Control-Max-Age"]           = "86400"
+            return resp
+
+        # ── 2. Rate limiting ───────────────────────────────────────────────────
+        forwarded = request.headers.get("X-Forwarded-For", "")
+        ip = forwarded.split(",")[0].strip() if forwarded else (
+            request.client.host if request.client else "unknown"
+        )
+        now  = time.monotonic()
+        _prune_rl_store(now)   # periodic cleanup — prevents memory growth
+        max_calls, window = _get_limit(path)
+        bucket = f"{ip}:{path}"
+        ts = _rl_store.get(bucket, [])
+        ts = [t for t in ts if now - t < window]
+        if len(ts) >= max_calls:
+            _rl_store[bucket] = ts
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Too many requests. Please slow down."},
+                headers={"Retry-After": str(window)},
+            )
+        ts.append(now)
+        _rl_store[bucket] = ts
+
+        # ── 3. Internal token gate ─────────────────────────────────────────────
+        is_open = (
+            path in _OPEN_EXACT or
+            (method == "GET" and any(path.startswith(p) for p in _OPEN_GET_PREFIXES))
+        )
+        if not is_open:
+            if not INTERNAL_API_SECRET:
+                return JSONResponse(
+                    status_code=503,
+                    content={"error": "Internal API gate is not configured."},
+                )
+            submitted = request.headers.get("X-Internal-Token", "")
+            if not hmac.compare_digest(submitted, INTERNAL_API_SECRET):
+                return JSONResponse(
+                    status_code=403,
+                    content={"error": "Direct API access is not permitted."},
+                )
+
+        # ── 4. Call next + attach headers ─────────────────────────────────────
+        response = await call_next(request)
+
+        if allowed_origin:
+            response.headers["Access-Control-Allow-Origin"]      = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"]     = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+            response.headers["Access-Control-Allow-Headers"]     = _CORS_ALLOW_HEADERS
+
+        response.headers["X-Content-Type-Options"]  = "nosniff"
+        response.headers["X-Frame-Options"]         = "DENY"
+        response.headers["X-XSS-Protection"]        = "1; mode=block"
+        response.headers["Referrer-Policy"]         = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"]      = "camera=(self), microphone=(self), geolocation=()"
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://*.vercel.app; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "img-src 'self' data: https:; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "connect-src 'self' https: wss://*.supabase.co https://*.supabase.co wss://*.livekit.cloud https://*.livekit.cloud; "
+            "frame-ancestors 'none';"
+        )
+        response.headers["Content-Security-Policy"] = csp
+        return response
+
+app.add_middleware(SecurityMiddleware)
+
+from routers import (
+    auth, blog, upload, contact, content,
+    forum, notifications,
+    chat, chat_ai, chat_livekit,
+    helpdesk, newsletter, banners,
+    site_settings, email_settings, cdn_settings,
+    search, stats, audit, backup, admin_actions,
+    portfolio, seo_proxy, sitemap, cron, network, content_aggregator,
+    pdf_editor, file_tools,
+    mail_queue, mail_templates,
+    fivem,
+    forms,
+    txadmin_webhook,
+    webhooks,
+    discord_auth,
+    steam_auth,
+    forum_auth,
+    db_console,
+)
+
+app.include_router(auth.router,           prefix="/api/auth")
+app.include_router(blog.router,           prefix="/api/blog")
+app.include_router(upload.router,         prefix="/api/upload")
+app.include_router(contact.router,        prefix="/api/contact")
+app.include_router(content.router,        prefix="/api/content")
+app.include_router(notifications.router,  prefix="/api/forum/notifications")
+app.include_router(forum_auth.router,     prefix="/api/forum/auth")
+app.include_router(forum.router,          prefix="/api/forum")
+
+app.include_router(chat_ai.router,        prefix="/api/chat/ai")
+app.include_router(chat_livekit.router,  prefix="/api/chat")
+app.include_router(chat.router,           prefix="/api/chat")
+app.include_router(audit.router,          prefix="/api/admin/audit")
+app.include_router(stats.router,          prefix="/api/admin/stats")
+app.include_router(stats.router,          prefix="/api/stats")
+app.include_router(admin_actions.router,  prefix="/api/admin")
+app.include_router(backup.router,         prefix="/api/admin/backup")
+app.include_router(email_settings.router, prefix="/api/admin/email")
+app.include_router(mail_queue.router,     prefix="/api/admin/mail/queue")
+app.include_router(mail_templates.router, prefix="/api/admin/mail/templates")
+app.include_router(banners.router,        prefix="/api/admin/banners")
+app.include_router(site_settings.router,  prefix="/api/admin/site-settings")
+app.include_router(cdn_settings.router,   prefix="/api/admin/cdn")
+app.include_router(search.router,         prefix="/api/search")
+app.include_router(newsletter.router,     prefix="/api/newsletter")
+app.include_router(portfolio.router,      prefix="/api/portfolio")
+app.include_router(helpdesk.router,       prefix="/api/helpdesk")
+app.include_router(seo_proxy.router,      prefix="/api/seo-proxy")
+app.include_router(sitemap.router,        prefix="")
+app.include_router(cron.router,           prefix="")
+app.include_router(network.router,        prefix="/api/network")
+app.include_router(content_aggregator.router, prefix="/api/content")
+app.include_router(pdf_editor.router,     prefix="/api/pdf-editor")
+app.include_router(file_tools.router,     prefix="/api/file-tools")
+app.include_router(fivem.router,          prefix="/api/fivem")
+app.include_router(forms.router,          prefix="/api/forms")
+app.include_router(txadmin_webhook.router, prefix="/api/txadmin")
+app.include_router(webhooks.router,         prefix="/api/webhook")
+app.include_router(discord_auth.router,   prefix="/api/discord")
+app.include_router(steam_auth.router,     prefix="/api/forum/auth/steam")
+app.include_router(db_console.router,    prefix="/api/admin/db")
+
+@app.get("/api/health")
+async def health():
+    db_ok = False
+    try:
+        from database import supabase as _sb
+        _sb.table("site_config").select("key").limit(1).execute()
+        db_ok = True
+    except Exception:
+        pass
+    status = "OK" if db_ok else "degraded"
+    code = 200 if db_ok else 503
+    return JSONResponse(status_code=code, content={"status": status, "database": "connected" if db_ok else "unreachable"})
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    if dsn:
+        sentry_sdk.capture_exception(exc)
+    # Never leak internal details to clients in production
+    msg = str(exc) if not _IS_PRODUCTION else "An unexpected error occurred."
+    return JSONResponse(status_code=500, content={"error": msg})
+
+# Socket.IO removed — chat is now handled by Supabase Realtime.
+# Entry point: uvicorn main:app --host 0.0.0.0 --port 8000

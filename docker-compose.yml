@@ -1,0 +1,66 @@
+services:
+  backend:
+    build:
+      context: ./aifazi.net-backend-fastapi
+    image: aifazi-backend:local
+    restart: unless-stopped
+    environment:
+      ENV: ${ENV:-development}
+      ENVIRONMENT: ${ENVIRONMENT:-${ENV:-development}}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      API_HOSTNAME: ${API_HOSTNAME:-localhost:8000}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:-change-me-use-a-long-random-secret}
+      PASETO_SECRET: ${PASETO_SECRET:-change-me-use-a-long-random-secret}
+      JWT_SECRET: ${JWT_SECRET:-change-me-use-a-long-random-secret}
+      ADMIN_GATE_SECRET: ${ADMIN_GATE_SECRET:-change-me-use-a-long-random-secret}
+      CRON_SECRET: ${CRON_SECRET:-change-me-use-a-long-random-secret}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      FIVEM_SERVER_SECRET: ${FIVEM_SERVER_SECRET:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1', 8000), 5); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./aifazi.net-frontend-next
+    image: aifazi-frontend:local
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      ENV: ${ENV:-development}
+      ENVIRONMENT: ${ENVIRONMENT:-${ENV:-development}}
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      INTERNAL_API_URL: http://backend:8000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:-change-me-use-a-long-random-secret}
+      PASETO_SECRET: ${PASETO_SECRET:-change-me-use-a-long-random-secret}
+      JWT_SECRET: ${JWT_SECRET:-change-me-use-a-long-random-secret}
+      ADMIN_GATE_SECRET: ${ADMIN_GATE_SECRET:-change-me-use-a-long-random-secret}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+      NEXT_PUBLIC_COMETCHAT_APP_ID: ${NEXT_PUBLIC_COMETCHAT_APP_ID:-}
+      NEXT_PUBLIC_COMETCHAT_AUTH_KEY: ${NEXT_PUBLIC_COMETCHAT_AUTH_KEY:-}
+      NEXT_PUBLIC_COMETCHAT_REGION: ${NEXT_PUBLIC_COMETCHAT_REGION:-us}
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME:-}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

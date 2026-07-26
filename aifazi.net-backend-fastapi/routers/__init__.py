@@ -1,0 +1,20 @@
+"""routers/__init__.py"""
+from . import (
+    auth, blog, upload, contact, content,
+    forum, notifications,
+    chat, chat_ai, chat_livekit,
+    helpdesk, newsletter, banners,
+    site_settings, email_settings, cdn_settings,
+    search, stats, audit, backup,
+    portfolio, seo_proxy, sitemap,
+    admin_actions, network, content_aggregator,
+    pdf_editor, file_tools, cron,
+    mail_queue, mail_templates,
+    db_console,
+    forms,
+    discord_auth,
+    steam_auth,
+    fivem,
+    txadmin_webhook,
+    webhooks,
+)
