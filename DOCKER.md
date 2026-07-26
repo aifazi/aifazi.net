@@ -1,38 +1,20 @@
-# Docker
+# Docker — Monorepo Deployment
 
-This wrapper folder runs both projects together:
+This repo contains both projects:
 
-- `frontend`: Next.js on <http://localhost:3000>
-- `backend`: FastAPI on <http://localhost:8000>
+- **aifazi.net-backend-fastapi/** — FastAPI backend on <http://localhost:8000>
+- **aifazi.net-frontend-next/** — Next.js frontend on <http://localhost:3000>
 
 ## Setup
 
-Docker Compose reads the local `.env` file in this wrapper folder. This file is
-for your local computer only and must not be committed.
+Docker Compose reads the root `.env` file. Copy the example and fill in secrets:
 
 ```bash
 cp .env.docker.example .env
+# Edit .env — set real keys for SUPABASE_SERVICE_ROLE_KEY, PASETO_SECRET, etc.
 ```
 
-The local `.env` is currently pointed at the Supabase dev project:
-
-```text
-https://xdzhvwmttshrauemakea.supabase.co
-```
-
-Edit `.env` and set the real `SUPABASE_SERVICE_ROLE_KEY` from Supabase
-Dashboard -> Project Settings -> API. The most important rule is that
-`INTERNAL_API_SECRET` must be the same for the frontend and backend.
-
-For local admin login, Docker uses:
-
-```text
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=Admin@Local2026!
-```
-
-Change that password in `.env` whenever you want; restart the backend after
-changing it.
+The most important rule: `INTERNAL_API_SECRET` and `PASETO_SECRET` must match between frontend and backend.
 
 ## Run
 
@@ -40,14 +22,34 @@ changing it.
 docker compose up --build
 ```
 
-Open <http://localhost:3000>. Browser API calls use relative `/api/*` URLs, so they go through Next.js middleware first. The frontend container then proxies those requests to `http://backend:8000` inside the Docker network.
+Open <http://localhost:3000>. Browser API calls go through Next.js middleware → FastAPI backend.
 
-The backend is also exposed at <http://localhost:8000> for local checks, including:
+Backend health check:
 
 ```bash
 curl http://localhost:8000/api/health
 ```
 
-`/api/health` returns `503 degraded` until the real backend
-`SUPABASE_SERVICE_ROLE_KEY` is set, so Docker uses a port-level liveness check
-to allow the frontend and backend to start together during local setup.
+## Vercel (Frontend)
+
+1. Go to https://vercel.com/new → Import `aifazi/aifazi.net`
+2. **Root Directory**: set to `aifazi.net-frontend-next`
+3. Framework: Next.js (auto-detected)
+4. Add environment variables from `.env`
+
+## Render (Backend)
+
+1. Go to https://render.com/new → Blueprint
+2. Connect `aifazi/aifazi.net`
+3. Render will detect `render.yaml` at the repo root
+4. Set environment variables in Render dashboard
+
+## Single VPS (Alternative)
+
+```bash
+git clone https://github.com/aifazi/aifazi.net.git
+cd aifazi.net
+cp .env.docker.example .env
+# Edit .env with real secrets
+docker compose up -d --build
+```
