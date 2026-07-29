@@ -1,0 +1,17 @@
+* text=auto
+
+*.py    text diff=python
+*.json  text
+*.yml   text
+*.yaml  text
+*.lua   text
+*.md    text
+*.sql   text
+*.cfg   text
+*.txt   text
+
+*.png   binary
+*.jpg   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary

@@ -1,0 +1,121 @@
+import { useEffect, useRef, useState } from 'react'
+
+export default function Cursor() {
+  const dotRef  = useRef()
+  const ringRef = useRef()
+  const hidden  = useRef(false)
+  const [show, setShow] = useState(false)
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const isTouch        = window.matchMedia('(hover: none)').matches
+    if (prefersReduced || isTouch) return
+
+    setShow(true)
+
+    const pos   = { x: -200, y: -200 }
+    const ring  = { x: -200, y: -200 }
+    const vel   = { x: 0, y: 0 }
+    let   lastX = -200, lastY = -200, rafId
+
+    const onMove = e => {
+      vel.x = e.clientX - lastX
+      vel.y = e.clientY - lastY
+      lastX = e.clientX
+      lastY = e.clientY
+      pos.x = e.clientX
+      pos.y = e.clientY
+    }
+
+    const lerp = (a, b, t) => a + (b - a) * t
+
+    const animate = () => {
+      // Dot — instant
+      if (dotRef.current) {
+        dotRef.current.style.left = pos.x + 'px'
+        dotRef.current.style.top  = pos.y + 'px'
+      }
+      // Ring — lagged
+      ring.x = lerp(ring.x, pos.x, 0.10)
+      ring.y = lerp(ring.y, pos.y, 0.10)
+
+      // Velocity-based squish (Dave Holloway style)
+      const speed   = Math.sqrt(vel.x ** 2 + vel.y ** 2)
+      const stretch = Math.min(1 + speed * 0.03, 2.2)
+      const squeeze = 1 / stretch
+      const angle   = speed > 1 ? Math.atan2(vel.y, vel.x) * (180 / Math.PI) : 0
+
+      if (ringRef.current) {
+        ringRef.current.style.left      = ring.x + 'px'
+        ringRef.current.style.top       = ring.y + 'px'
+        ringRef.current.style.transform =
+          `translate(-50%,-50%) rotate(${angle}deg) scaleX(${stretch}) scaleY(${squeeze})`
+      }
+
+      // Dampen velocity
+      vel.x *= 0.7
+      vel.y *= 0.7
+
+      rafId = requestAnimationFrame(animate)
+    }
+
+    document.addEventListener('mousemove', onMove, { passive: true })
+    rafId = requestAnimationFrame(animate)
+
+    // Magnetic hover — scale dot up & switch colour
+    const onEnter = e => {
+      const el = e.currentTarget
+      if (dotRef.current) {
+        dotRef.current.style.transform  = 'translate(-50%,-50%) scale(2.5)'
+        dotRef.current.style.background = 'var(--cyan)'
+        dotRef.current.style.mixBlendMode = 'normal'
+      }
+      if (ringRef.current) ringRef.current.style.opacity = '0.3'
+    }
+    const onLeave = () => {
+      if (dotRef.current) {
+        dotRef.current.style.transform    = 'translate(-50%,-50%) scale(1)'
+        dotRef.current.style.background   = 'var(--green)'
+        dotRef.current.style.mixBlendMode = 'difference'
+      }
+      if (ringRef.current) ringRef.current.style.opacity = '1'
+    }
+
+    const targets = document.querySelectorAll('a, button, [data-hover]')
+    targets.forEach(el => {
+      el.addEventListener('mouseenter', onEnter)
+      el.addEventListener('mouseleave', onLeave)
+    })
+
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      cancelAnimationFrame(rafId)
+    }
+  }, [])
+
+  if (!show) return null
+
+  return (
+    <>
+      {/* Dot — instant, mix-blend-mode difference for inversion */}
+      <div ref={dotRef} style={{
+        position: 'fixed', pointerEvents: 'none', zIndex: 99999,
+        width: 8, height: 8, borderRadius: '50%',
+        background: 'var(--green)',
+        transform: 'translate(-50%,-50%)',
+        mixBlendMode: 'difference',
+        transition: 'transform 0.15s ease, background 0.2s ease',
+        willChange: 'left, top, transform',
+      }}/>
+      {/* Ring — lagged + velocity squish */}
+      <div ref={ringRef} style={{
+        position: 'fixed', pointerEvents: 'none', zIndex: 99998,
+        width: 36, height: 36, borderRadius: '50%',
+        border: '1.5px solid rgba(0,212,255,0.55)',
+        transform: 'translate(-50%,-50%)',
+        willChange: 'left, top, transform',
+        transition: 'opacity 0.2s ease',
+      }}/>
+    </>
+  )
+}
