@@ -27,10 +27,6 @@
     {
       "path": "/api/cron/cleanup",
       "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/admin/mail/queue/process-pending",
-      "schedule": "*/2 * * * *"
     }
   ]
 }
