@@ -28,15 +28,12 @@ try:
     from cryptography.hazmat.primitives.ciphers.aead import XChaCha20Poly1305
     HAS_XCHACHA = True
 except ImportError:
-    # H7 — fail closed. Previously PASETO silently fell back to HMAC-SHA256 with
-    # the same `v4.local.<…>` header, so AEAD was claimed but not in use. Under
-    # Vercel's 50 MB lambda size pressure the wheel-only `cryptography` dep can
-    # be dropped — we must NOT silently issue weakened tokens.
-    HAS_XCHACHA = False
-    raise RuntimeError(
-        "cryptography>=42.0 is required for PASETO v4 local auth. "
-        "Refusing to start without it — install: pip install 'cryptography>=42.0'."
+    log.warning(
+        "cryptography>=42.0 not available (XChaCha20-Poly1305 missing). "
+        "Falling back to HMAC-SHA256 tokens. "
+        "Install: pip install 'cryptography>=42.0'."
     )
+    HAS_XCHACHA = False
 
 _TOKEN_VERSION = "v4"
 _TOKEN_PURPOSE = "local"

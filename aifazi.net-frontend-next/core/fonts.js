@@ -50,6 +50,7 @@ const _loaded = new Set()
 
 // Load Google Fonts for a theme (idempotent — safe to call multiple times)
 export function loadFontForTheme(themeId) {
+  if (typeof document === 'undefined') return
   const query = REGISTRY[themeId]
   if (!query || _loaded.has(themeId)) return
   _loaded.add(themeId)

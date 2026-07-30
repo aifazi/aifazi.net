@@ -16,7 +16,7 @@ import time
 from fastapi import Depends, HTTPException, status, Request
 from permissions import resolve_staff_access, require_permission, has_permission
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from token import create_token, decode_token as _paseto_decode
+from paseto_token import create_token, decode_token as _paseto_decode
 
 log = logging.getLogger("dependencies")
 

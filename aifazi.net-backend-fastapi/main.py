@@ -194,6 +194,7 @@ _STATIC_ORIGINS = {
     "https://aifazi.net",
     "https://www.aifazi.net",
     "https://admin.aifazi.net",
+    "https://aifazi-website-new.vercel.app",
     FRONTEND_URL,
 }
 
