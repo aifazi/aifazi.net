@@ -76,6 +76,7 @@ class _JWTCompat:
             PASETO v4 local token string.
         """
         secret = self._resolve_key(key)
+        raw_key = key.encode("utf-8") if isinstance(key, str) else key
         data = {
             k: v for k, v in payload.items()
             if k not in ("iat", "exp", "purpose")
@@ -98,9 +99,10 @@ class _JWTCompat:
             return f"{_HEADER_B64}.{self._b64url_encode(encrypted)}"
 
         # HMAC-SHA256 fallback
+        # Use raw key (not derived) to match paseto_token.decode_token() HMAC verification
         payload_b64 = self._b64url_encode(payload_bytes)
         msg = f"{_HEADER_B64}.{payload_b64}"
-        sig = hmac_mod.new(secret, msg.encode(), hashlib.sha256).digest()
+        sig = hmac_mod.new(raw_key, msg.encode(), hashlib.sha256).digest()
         return f"{msg}.{self._b64url_encode(sig)}"
 
     def decode(
@@ -135,12 +137,13 @@ class _JWTCompat:
             ExpiredSignatureError: If token has expired.
         """
         secret = self._resolve_key(key)
+        raw_key = key.encode("utf-8") if isinstance(key, str) else key
         parts = token.split(".")
 
         if len(parts) == 2:
             return self._decode_xcha(parts, secret, leeway)
         elif len(parts) == 3:
-            return self._decode_hmac(parts, secret, leeway)
+            return self._decode_hmac(parts, raw_key, leeway)
         else:
             raise JWTError("Invalid token format")
 
