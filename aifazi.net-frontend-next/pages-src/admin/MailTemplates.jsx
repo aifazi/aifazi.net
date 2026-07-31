@@ -53,147 +53,151 @@ const PURPOSES = [
 
 const GROUPS = [...new Set(PURPOSES.map(p => p.group))]
 
+const THEME_VARS = ['{{theme_bg}}','{{theme_bg2}}','{{theme_bg3}}','{{theme_primary}}','{{theme_secondary}}','{{theme_orange}}','{{theme_text}}','{{theme_muted}}','{{theme_border}}']
+PURPOSES.forEach(p => { p.vars = [...p.vars, ...THEME_VARS] })
+
 /* ── Default template HTML per purpose ─────────────────────────────────────── */
+// Theme-aware: uses {{theme_bg}}, {{theme_primary}} ... placeholders that the
+// backend injects from site_config.globalTheme, so previews match sent emails.
+const _themeShell = (title, body, btnLabel, btnUrl, icon='', footnote='') => `
+<div style="background:{{theme_bg}};padding:32px 16px;font-family:Inter,'Segoe UI',sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:{{theme_bg2}};border:1px solid {{theme_border}};border-radius:14px;overflow:hidden;">
+    <div style="height:6px;background:linear-gradient(90deg,{{theme_primary}},{{theme_secondary}});"></div>
+    <div style="padding:36px 38px;">
+      <div style="text-align:center;margin-bottom:24px;">
+        <span style="font-family:Outfit,Inter,sans-serif;font-size:13px;font-weight:800;letter-spacing:4px;color:{{theme_primary}};">{{site_name}}</span>
+      </div>
+      <h1 style="color:{{theme_text}};font-family:Outfit,Inter,sans-serif;font-size:24px;font-weight:700;margin:0 0 18px;text-align:center;">${icon} ${title}</h1>
+      ${body}
+      ${btnLabel && btnUrl ? `<div style="text-align:center;margin:28px 0 8px;">
+        <a href="${btnUrl}" style="display:inline-block;background:{{theme_primary}};color:#062a1a;font-family:Inter,'Segoe UI',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;text-decoration:none;padding:14px 34px;border-radius:8px;">${btnLabel}</a></div>
+        <p style="color:{{theme_muted}};font-size:11px;text-align:center;margin:12px 0 0;">If the button doesn't work, open the link directly from your browser.</p>` : ''}
+    </div>
+    <div style="padding:16px 38px;background:{{theme_bg3}};border-top:1px solid {{theme_border}};text-align:center;">
+      <span style="color:{{theme_muted}};font-size:11px;line-height:1.7;">${footnote || 'You are receiving this email because you have an account at {{site_name}}.'}</span>
+    </div>
+  </div>
+</div>`
+
 const DEFAULT_TEMPLATES = {
   account_activation: {
-    subject: '[{{site_name}}] Please activate your account',
-    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#0f0f18;color:#e4e4f0;border-radius:8px">
-  <h2 style="color:#22d3ee;margin:0 0 16px">Activate your account</h2>
-  <p>Hi <strong>{{username}}</strong>,</p>
-  <p>Thanks for joining <strong>{{site_name}}</strong>! Click below to activate your account. This link expires in <strong>{{expires_in}}</strong>.</p>
-  <a href="{{activation_link}}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:#22d3ee;color:#000;text-decoration:none;font-weight:700;border-radius:6px">ACTIVATE ACCOUNT</a>
-  <p style="color:#7070a0;font-size:12px">If you didn't create this account, you can ignore this email.</p>
-  <hr style="border:1px solid #1c1c30;margin:24px 0"/>
-  <p style="color:#7070a0;font-size:11px">{{site_name}}</p>
-</div>`,
+    subject: '[{{site_name}}] Verify your email',
+    html: _themeShell('Verify your email',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, welcome to <strong>{{site_name}}</strong>. Please confirm your email address to activate your account.</p>`,
+      'VERIFY EMAIL', '{{activation_link}}',
+      '✅', `This link expires in {{expires_in}}. If you didn't create this account, you can safely ignore this email.`),
   },
   password_reset: {
     subject: '[{{site_name}}] Reset your password',
-    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#0f0f18;color:#e4e4f0;border-radius:8px">
-  <h2 style="color:#f87171;margin:0 0 16px">Password Reset</h2>
-  <p>Hi <strong>{{username}}</strong>,</p>
-  <p>We received a request to reset your password. Click below — this link expires in <strong>{{expires_in}}</strong>.</p>
-  <a href="{{reset_link}}" style="display:inline-block;margin:24px 0;padding:14px 28px;background:#f87171;color:#000;text-decoration:none;font-weight:700;border-radius:6px">RESET PASSWORD</a>
-  <p style="color:#7070a0;font-size:12px">If you didn't request this, your account is safe — just ignore this email.</p>
-  <hr style="border:1px solid #1c1c30;margin:24px 0"/>
-  <p style="color:#7070a0;font-size:11px">{{site_name}}</p>
-</div>`,
+    html: _themeShell('Reset your password',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, we received a request to reset your password for <strong>{{site_name}}</strong>. Click below to choose a new one.</p>`,
+      'RESET PASSWORD', '{{reset_link}}',
+      '🔑', `This link expires in {{expires_in}}. If you didn't request this, you can safely ignore this email.`),
   },
   ticket_confirmation: {
-    subject: '[{{site_name}}] Ticket #{{ticket_id}} received — {{subject}}',
-    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#f8fafc;color:#0f172a;border-radius:8px;border:1px solid #e2e8f0">
-  <div style="font-size:10px;letter-spacing:4px;color:#16a34a;font-weight:700;margin-bottom:20px">AIFAZI.NET SUPPORT</div>
-  <h2 style="margin:0 0 8px;font-size:22px">We've received your ticket</h2>
-  <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 24px">
-    Hi <strong>{{name}}</strong>, your support request has been logged and our team will get back to you as soon as possible.
-  </p>
-  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:20px 24px;margin-bottom:24px">
-    <div style="font-size:10px;letter-spacing:2px;color:#64748b;font-family:monospace;margin-bottom:12px">TICKET DETAILS</div>
-    <table style="width:100%;font-size:13px;border-collapse:collapse">
-      <tr><td style="padding:5px 0;color:#64748b;width:100px;font-family:monospace;font-size:10px">TICKET ID</td><td style="padding:5px 0;font-weight:700;font-family:monospace">#{{ticket_id}}</td></tr>
-      <tr><td style="padding:5px 0;color:#64748b;font-family:monospace;font-size:10px">SUBJECT</td><td style="padding:5px 0;font-weight:600">{{subject}}</td></tr>
-      <tr><td style="padding:5px 0;color:#64748b;font-family:monospace;font-size:10px">CATEGORY</td><td style="padding:5px 0;text-transform:capitalize">{{category}}</td></tr>
-      <tr><td style="padding:5px 0;color:#64748b;font-family:monospace;font-size:10px">PRIORITY</td><td style="padding:5px 0;font-family:monospace;font-size:11px;color:#f59e0b">{{priority}}</td></tr>
-    </table>
-  </div>
-  <a href="{{track_url}}" style="display:inline-block;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:3px;padding:14px 28px;text-decoration:none;border-radius:4px;font-family:monospace">TRACK YOUR TICKET →</a>
-  <p style="color:#94a3b8;font-size:12px;margin:24px 0 0;line-height:1.7">
-    You'll receive another email when a staff member responds.<br/>
-    Questions? Reply to this email or visit <a href="{{track_url}}" style="color:#3b82f6">{{site_name}}/helpdesk</a>
-  </p>
-</div>`,
+    subject: '[{{site_name}}] Ticket #{{ticket_id}} received',
+    html: _themeShell('Ticket received',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{name}}</strong>, your support request has been logged and our team will get back to you shortly.</p>
+       <div style="background:{{theme_bg3}};border:1px solid {{theme_border}};border-radius:8px;padding:16px 18px;margin:0 0 16px;font-size:13px;">
+         <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">TICKET DETAILS</div>
+         <div style="color:{{theme_text}};margin:2px 0;"><strong>#</strong>{{ticket_id}} — {{subject}}</div>
+         <div style="color:{{theme_text}};margin:2px 0;">Category: {{category}} · Priority: {{priority}}</div>
+         <div style="color:{{theme_muted}};margin:6px 0 0;">{{description}}</div>
+       </div>`,
+      'TRACK YOUR TICKET', '{{track_url}}', '🎫'),
   },
   application_submitted: {
     subject: '[{{site_name}}] {{form_title}} application received',
-    html: `<div style="font-family:sans-serif;max-width:620px;margin:0 auto;padding:30px 24px;background:#071018;color:#dbeafe;border:1px solid #123047;border-radius:8px">
-  <div style="font-family:monospace;font-size:10px;letter-spacing:4px;color:#22d3ee;margin-bottom:18px">APPLICATION RECEIVED</div>
-  <h2 style="margin:0 0 12px;color:#fff">{{form_title}}</h2>
-  <p style="color:#93a8bd;line-height:1.7">Hi <strong style="color:#fff">{{username}}</strong>, your application has been submitted and is now waiting for staff review.</p>
-  <div style="background:#0d1b28;border:1px solid #16435d;border-radius:6px;padding:16px;margin:20px 0">
-    <div style="font-family:monospace;font-size:11px;color:#22d3ee">STATUS: {{status}}</div>
-    <div style="font-family:monospace;font-size:11px;color:#93a8bd;margin-top:6px">SUBMISSION: #{{submission_id}}</div>
-  </div>
-  {{answers_table}}
-  <p style="color:#60758a;font-size:12px;margin-top:24px">You will receive another email when staff updates this application.</p>
-</div>`,
+    html: _themeShell('Application received',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, your application has been submitted and is now waiting for staff review.</p>
+       <div style="background:{{theme_bg3}};border:1px solid {{theme_border}};border-radius:8px;padding:16px 18px;margin:0 0 16px;font-size:13px;">
+         <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">STATUS: {{status}} · #{{submission_id}}</div>
+       </div>
+       {{answers_table}}`,
+      '', '', '📝'),
   },
   application_approved: {
     subject: '[{{site_name}}] {{form_title}} application approved',
-    html: `<div style="font-family:sans-serif;max-width:620px;margin:0 auto;padding:30px 24px;background:#071018;color:#dbeafe;border:1px solid #0d6b45;border-radius:8px">
-  <div style="font-family:monospace;font-size:10px;letter-spacing:4px;color:#00ff88;margin-bottom:18px">APPLICATION APPROVED</div>
-  <h2 style="margin:0 0 12px;color:#fff">{{form_title}}</h2>
-  <p style="color:#93a8bd;line-height:1.7">Hi <strong style="color:#fff">{{username}}</strong>, your application has been approved.</p>
-  <div style="background:#092319;border:1px solid #0d6b45;border-radius:6px;padding:16px;margin:20px 0">
-    <div style="font-family:monospace;font-size:11px;color:#00ff88">STATUS: {{status}}</div>
-    <div style="font-family:monospace;font-size:11px;color:#93a8bd;margin-top:6px">NOTE: {{reviewer_note}}</div>
-  </div>
-  {{answers_table}}
-</div>`,
+    html: _themeShell('Application approved',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, congratulations — your application has been approved.</p>
+       <div style="background:{{theme_bg3}};border:1px solid {{theme_border}};border-radius:8px;padding:16px 18px;margin:0 0 16px;font-size:13px;">
+         <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">STATUS: {{status}} · #{{submission_id}}</div>
+         <div style="color:{{theme_text}};margin-top:6px;">Note: {{reviewer_note}}</div>
+       </div>
+       {{answers_table}}`,
+      '', '', '✅'),
   },
   application_denied: {
     subject: '[{{site_name}}] {{form_title}} application update',
-    html: `<div style="font-family:sans-serif;max-width:620px;margin:0 auto;padding:30px 24px;background:#071018;color:#dbeafe;border:1px solid #6b1f2a;border-radius:8px">
-  <div style="font-family:monospace;font-size:10px;letter-spacing:4px;color:#f87171;margin-bottom:18px">APPLICATION UPDATE</div>
-  <h2 style="margin:0 0 12px;color:#fff">{{form_title}}</h2>
-  <p style="color:#93a8bd;line-height:1.7">Hi <strong style="color:#fff">{{username}}</strong>, staff reviewed your application and marked it as {{status}}.</p>
-  <div style="background:#241018;border:1px solid #6b1f2a;border-radius:6px;padding:16px;margin:20px 0">
-    <div style="font-family:monospace;font-size:11px;color:#f87171">STATUS: {{status}}</div>
-    <div style="font-family:monospace;font-size:11px;color:#93a8bd;margin-top:6px">NOTE: {{reviewer_note}}</div>
-  </div>
-  {{answers_table}}
-</div>`,
+    html: _themeShell('Application update',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, staff reviewed your application and marked it as <strong>{{status}}</strong>.</p>
+       <div style="background:{{theme_bg3}};border:1px solid {{theme_border}};border-radius:8px;padding:16px 18px;margin:0 0 16px;font-size:13px;">
+         <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">STATUS: {{status}} · #{{submission_id}}</div>
+         <div style="color:{{theme_text}};margin-top:6px;">Note: {{reviewer_note}}</div>
+       </div>
+       {{answers_table}}`,
+      '', '', '⛔'),
   },
   ticket_reply: {
     subject: '[{{site_name}}] New reply on ticket #{{ticket_id}}',
-    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;background:#0f172a;color:#e2e8f0;border-radius:8px">
-  <h2 style="color:#22d3ee;margin:0 0 12px">New ticket reply</h2>
-  <p><strong>{{staff_name}}</strong> replied to <strong>#{{ticket_id}}</strong> — {{subject}}</p>
-  <div style="background:#111827;border-left:3px solid #22d3ee;padding:14px;margin:18px 0;color:#cbd5e1">{{reply_message}}</div>
-  <a href="{{track_url}}" style="display:inline-block;background:#22d3ee;color:#020617;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:700">VIEW TICKET</a>
-</div>`,
+    html: _themeShell('New reply on your ticket',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;"><strong>{{staff_name}}</strong> replied to <strong>#{{ticket_id}}</strong> — {{subject}}:</p>
+       <blockquote style="margin:0 0 16px;padding:14px 18px;background:{{theme_bg3}};border-left:3px solid {{theme_primary}};color:{{theme_text}};font-size:13px;line-height:1.7;">{{reply_message}}</blockquote>`,
+      'VIEW TICKET', '{{track_url}}', '↩️'),
   },
   chat_message: {
     subject: '[{{site_name}}] New chat message in {{room_name}}',
-    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;background:#0b0f14;color:#e6edf3;border-radius:8px">
-  <div style="font-size:11px;letter-spacing:3px;color:#22d3ee;margin-bottom:10px">CHAT NOTIFICATION</div>
-  <h2 style="margin:0 0 12px">{{room_name}}</h2>
-  <p><strong>{{sender_name}}</strong> sent a message:</p>
-  <blockquote style="border-left:3px solid #22d3ee;background:#111827;padding:12px;color:#cbd5e1">{{message_preview}}</blockquote>
-  <a href="{{chat_url}}" style="display:inline-block;background:#22d3ee;color:#020617;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:700">OPEN CHAT</a>
-</div>`,
+    html: _themeShell('New chat message',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;"><strong>{{sender_name}}</strong> sent a message in <strong>{{room_name}}</strong>:</p>
+       <blockquote style="margin:0 0 16px;padding:14px 18px;background:{{theme_bg3}};border-left:3px solid {{theme_primary}};color:{{theme_text}};font-size:13px;line-height:1.7;">{{message_preview}}</blockquote>`,
+      'OPEN CHAT', '{{chat_url}}', '💬'),
   },
   chat_invite: {
     subject: '[{{site_name}}] You were invited to {{room_name}}',
-    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;background:#0b0f14;color:#e6edf3;border-radius:8px">
-  <h2 style="color:#22d3ee;margin:0 0 12px">Chat room invitation</h2>
-  <p>Hi <strong>{{username}}</strong>, <strong>{{sender_name}}</strong> invited you to <strong>{{room_name}}</strong>.</p>
-  <a href="{{chat_url}}" style="display:inline-block;background:#22d3ee;color:#020617;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:700">OPEN CHAT</a>
-</div>`,
+    html: _themeShell("You're invited",
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, <strong>{{sender_name}}</strong> invited you to join <strong>{{room_name}}</strong>.</p>`,
+      'JOIN THE CHAT', '{{chat_url}}', '➕'),
   },
   admin_user_message: {
     subject: '[{{site_name}}] {{subject}}',
-    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;background:#0f172a;color:#e2e8f0;border-radius:8px">
-  <p>Hi <strong>{{username}}</strong>,</p>
-  <div style="line-height:1.7;color:#cbd5e1">{{message}}</div>
-  <p style="color:#64748b;font-size:12px;margin-top:24px">{{site_name}}</p>
-</div>`,
+    html: _themeShell('Message from the team',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>,</p>
+       <div style="color:{{theme_text}};font-size:14px;line-height:1.8;">{{message}}</div>`,
+      '', '', '📨'),
   },
   password_reset_admin: {
     subject: '[{{site_name}}] Password reset requested',
-    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;background:#0f172a;color:#e2e8f0;border-radius:8px">
-  <h2 style="color:#f87171;margin:0 0 12px">Password reset requested</h2>
-  <p>Hi <strong>{{username}}</strong>, an admin started a password reset for your account.</p>
-  <p>Open the login page and use <strong>Forgot Password</strong> to complete the reset.</p>
-  <a href="{{login_url}}" style="display:inline-block;background:#f87171;color:#020617;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:700">OPEN LOGIN</a>
-</div>`,
+    html: _themeShell('Password reset requested',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, an administrator started a password reset for your account. Open the login page and use <strong>Forgot Password</strong> to complete the reset.</p>`,
+      'OPEN LOGIN', '{{login_url}}', '🔑'),
   },
   discord_welcome: {
     subject: '[{{site_name}}] Welcome — your account is ready',
-    html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;background:#0d1117;color:#e6edf3;border-radius:8px">
-  <h2 style="color:#00ff88;margin:0 0 12px">Welcome to {{site_name}}</h2>
-  <p>Your Discord account <strong>{{discord_username}}</strong> is linked and your forum account <strong>{{username}}</strong> is ready.</p>
-  <a href="{{profile_url}}" style="display:inline-block;background:#00ff88;color:#020617;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:700">GO TO PROFILE</a>
-</div>`,
+    html: _themeShell("You're all set!",
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Your Discord account <strong>{{discord_username}}</strong> is linked and your account <strong>{{username}}</strong> is ready. Head to your profile to continue.</p>`,
+      'GO TO PROFILE', '{{profile_url}}', '🎮'),
+  },
+  mail_test: {
+    subject: '[{{site_name}}] Test email',
+    html: _themeShell('Mail test',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0;">This is a test email to <strong>{{email}}</strong>. Your email provider is configured and working correctly.</p>`,
+      '', '', '🧪'),
+  },
+  contact_confirm: {
+    subject: 'Thanks for contacting {{site_name}}',
+    html: _themeShell('Message received',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{name}}</strong>, we received your message:</p>
+       <blockquote style="margin:0 0 16px;padding:14px 18px;background:{{theme_bg3}};border-left:3px solid {{theme_primary}};color:{{theme_text}};font-size:13px;line-height:1.7;">{{message}}</blockquote>
+       <p style="color:{{theme_muted}};font-size:13px;">We'll get back to you as soon as possible.</p>`,
+      '', '', '📩'),
+  },
+  contact_reply: {
+    subject: 'Re: {{subject}} — {{site_name}}',
+    html: _themeShell('A reply from our team',
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{name}}</strong>,</p>
+       <blockquote style="margin:0 0 16px;padding:14px 18px;background:{{theme_bg3}};border-left:3px solid {{theme_primary}};color:{{theme_text}};font-size:13px;line-height:1.7;">{{reply_message}}</blockquote>
+       <p style="color:{{theme_muted}};font-size:13px;">— The {{site_name}} team</p>`,
+      '', '', '💬'),
   },
 }
 
@@ -292,6 +296,15 @@ function TemplateEditor({ purpose, template, onSave, onReset }) {
     .replace(/\{\{tier\}\}/g, 'Priority')
     .replace(/\{\{level\}\}/g, '2')
     .replace(/\{\{expires_at\}\}/g, 'next month')
+    .replace(/\{\{theme_bg\}\}/g, 'var(--bg, #060a0f)')
+    .replace(/\{\{theme_bg2\}\}/g, 'var(--bg2, #0b1118)')
+    .replace(/\{\{theme_bg3\}\}/g, 'var(--bg3, #111a24)')
+    .replace(/\{\{theme_primary\}\}/g, 'var(--accent, #00ff88)')
+    .replace(/\{\{theme_secondary\}\}/g, 'var(--cyan, #00d4ff)')
+    .replace(/\{\{theme_orange\}\}/g, 'var(--orange, #ff6b35)')
+    .replace(/\{\{theme_text\}\}/g, 'var(--text, #c8d8e8)')
+    .replace(/\{\{theme_muted\}\}/g, 'var(--muted, #6b8296)')
+    .replace(/\{\{theme_border\}\}/g, 'var(--border, rgba(0,212,255,0.15))')
 
   const tabBtn = (id, label) => (
     <button onClick={() => setTab(id)} style={{

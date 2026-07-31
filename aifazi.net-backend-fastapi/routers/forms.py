@@ -233,26 +233,16 @@ def _validate_answers(form: dict, answers: dict[str, Any]) -> None:
 
 
 def _render_template(purpose: str, variables: dict[str, str], fallback_subject: str, fallback_html: str) -> tuple[str, str]:
-    subject, html = fallback_subject, fallback_html
+    from utils.email import render_template
     try:
-        res = (
-            supabase.table("mail_templates")
-            .select("subject,html,active")
-            .eq("purpose", purpose)
-            .eq("active", True)
-            .limit(1)
-            .execute()
-        )
-        if res.data:
-            subject = res.data[0].get("subject") or subject
-            html = res.data[0].get("html") or html
+        return render_template(purpose, variables)
     except Exception:
-        pass
-    for key, value in variables.items():
-        token = "{{" + key + "}}"
-        subject = subject.replace(token, value)
-        html = html.replace(token, value)
-    return subject, html
+        subject, html = fallback_subject, fallback_html
+        for key, value in variables.items():
+            token = "{{" + key + "}}"
+            subject = subject.replace(token, value)
+            html = html.replace(token, value)
+        return subject, html
 
 
 def _answers_table(answers: dict[str, Any]) -> str:
