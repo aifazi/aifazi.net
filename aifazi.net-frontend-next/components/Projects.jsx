@@ -5,117 +5,6 @@ import { useSplitTextReveal } from '../hooks/useSplitTextReveal'
 import { useReveal } from '../hooks/useReveal'
 import api from '@/lib/api'
 
-function NewsletterTerminal() {
-  const [email, setEmail]   = useState('')
-  const [status, setStatus] = useState(null)
-  const [msg, setMsg]       = useState('')
-
-  const submit = async (e) => {
-    e.preventDefault()
-    if (!email.trim()) return
-    setStatus('loading')
-    try {
-      await api.post('/newsletter/subscribe', { email })
-      setStatus('success')
-      setEmail('')
-    } catch (err) {
-      setStatus('error')
-      setMsg(err.response?.data?.error || 'Something went wrong.')
-    }
-  }
-
-  return (
-    <div style={{
-      marginTop: 60,
-      display: 'grid', gridTemplateColumns: '1fr 1fr',
-      gap: 60, alignItems: 'center',
-      borderTop: '1px solid var(--border)',
-      paddingTop: 60,
-    }} className="newsletter-inner-grid">
-
-      {/* Left copy */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <div style={{ width: 28, height: 1, background: 'var(--green)' }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 4, color: 'var(--green)' }}>NEWSLETTER_v1.0</span>
-        </div>
-        <h3 style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 'clamp(20px, 2.5vw, 32px)', lineHeight: 1.2, marginBottom: 16, color: 'var(--text)' }}>
-          <span style={{ color: 'var(--green)' }}>$</span> subscribe<br />
-          <span style={{ color: 'var(--muted)', fontSize: '0.65em' }}>--channel=blog --no-spam</span>
-        </h3>
-        <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.8, fontFamily: 'var(--font-display)', marginBottom: 20 }}>
-          <EditableText contentKey="newsletter.desc" defaultValue="Deep-dives on networking, security, cloud infrastructure, and real-world IT engineering. Published when there's something worth reading." multiline />
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {['✓  No spam. Ever.', '✓  One-click unsubscribe in every email.', '✓  New post → email goes out automatically.'].map((l, i) => (
-            <div key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>{l}</div>
-          ))}
-        </div>
-      </div>
-
-      {/* Right terminal */}
-      <div className="terminal-panel newsletter-terminal">
-        {/* Title bar */}
-        <div className="terminal-panel-header" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6 }}>
-          {['#ff5f57','#ffbd2e','#28c840'].map((c, i) => (
-            <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
-          ))}
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginLeft: 8 }}>visitor@aifazi.net — subscribe</span>
-        </div>
-
-        <div style={{ padding: '24px 24px 28px' }}>
-          <div style={{ marginBottom: 16 }}>
-            {[
-              { prompt: true,  text: 'newsletter --subscribe' },
-              { prompt: false, text: '> Initializing secure channel...' },
-              { prompt: false, text: '> Enter your email to subscribe:' },
-            ].map((line, i) => (
-              <div key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: line.prompt ? 'var(--green)' : 'var(--muted)', lineHeight: 1.9 }}>
-                {line.prompt && <span style={{ color: 'var(--cyan)', marginRight: 8 }}>$</span>}
-                {line.text}
-              </div>
-            ))}
-          </div>
-
-          {status === 'success' ? (
-            <div>
-              {['> Validating address...', '> ✓ Subscribed successfully!', "> You'll hear from me on the next post."].map((line, i) => (
-                <div key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: i === 1 ? 'var(--green)' : 'var(--muted)', lineHeight: 2 }}>{line}</div>
-              ))}
-            </div>
-          ) : (
-            <form onSubmit={submit}>
-              <div className="terminal-prompt-row newsletter-prompt-row" style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-                <span className="terminal-prompt-label" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)', flexShrink: 0 }}>{'>'}</span>
-                <input
-                  className="terminal-command-input newsletter-command-input"
-                  type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="your@email.com" required disabled={status === 'loading'}
-                  style={{ flex: 1, color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13, caretColor: 'var(--green)' }}
-                />
-                <span className="terminal-cursor" style={{ display: 'inline-block', width: 8, height: 14, background: 'var(--green)', marginLeft: 4, animation: 'blink 1s step-end infinite' }} />
-              </div>
-              <button type="submit" disabled={status === 'loading'}
-                style={{ width: '100%', padding: '11px', background: 'transparent', border: '1px solid var(--green)', color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, cursor: 'pointer', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = '#000' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--green)' }}
-              >
-                {status === 'loading' ? 'SUBSCRIBING...' : '[ EXECUTE SUBSCRIBE ]'}
-              </button>
-              {status === 'error' && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 8 }}>{'>'} ERROR: {msg}</div>}
-            </form>
-          )}
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-        @media(max-width:768px){ .newsletter-inner-grid{ grid-template-columns:1fr !important; gap:32px !important; } }
-      `}</style>
-    </div>
-  )
-}
-
 const SP_CLOTHING_PROJECT = {
   id: 'sp-clothingmenu',
   num: '005',
@@ -347,8 +236,6 @@ export default function Projects() {
         />
       </div>
 
-      <NewsletterTerminal />
-
       <style>{`
         .projects-grid {
           display: grid;
@@ -496,9 +383,6 @@ export default function Projects() {
           color: var(--muted);
         }
         #projects .preview-terminal strong { color: var(--green); font-weight: 700; }
-
-        .projects-section .newsletter-terminal,
-        .projects-section .newsletter-inner-grid { max-width: 1500px; margin-left: auto; margin-right: auto; }
 
         @media (max-width: 900px)  { .projects-section { padding: 80px 24px !important; } }
         @media (max-width: 480px)  { .projects-section { padding: 60px 12px !important; } }
