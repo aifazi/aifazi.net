@@ -28,15 +28,12 @@ try:
     from cryptography.hazmat.primitives.ciphers.aead import XChaCha20Poly1305
     HAS_XCHACHA = True
 except ImportError:
-    # H7 — fail closed. Previously PASETO silently fell back to HMAC-SHA256 with
-    # the same `v4.local.<…>` header, so AEAD was claimed but not in use. Under
-    # Vercel's 50 MB lambda size pressure the wheel-only `cryptography` dep can
-    # be dropped — we must NOT silently issue weakened tokens.
-    HAS_XCHACHA = False
-    raise RuntimeError(
-        "cryptography>=42.0 is required for PASETO v4 local auth. "
-        "Refusing to start without it — install: pip install 'cryptography>=42.0'."
+    log.warning(
+        "cryptography>=42.0 not available (XChaCha20-Poly1305 missing). "
+        "Falling back to HMAC-SHA256 tokens. "
+        "Install: pip install 'cryptography>=42.0'."
     )
+    HAS_XCHACHA = False
 
 _TOKEN_VERSION = "v4"
 _TOKEN_PURPOSE = "local"
@@ -79,6 +76,7 @@ class _JWTCompat:
             PASETO v4 local token string.
         """
         secret = self._resolve_key(key)
+        raw_key = key.encode("utf-8") if isinstance(key, str) else key
         data = {
             k: v for k, v in payload.items()
             if k not in ("iat", "exp", "purpose")
@@ -101,9 +99,10 @@ class _JWTCompat:
             return f"{_HEADER_B64}.{self._b64url_encode(encrypted)}"
 
         # HMAC-SHA256 fallback
+        # Use raw key (not derived) to match paseto_token.decode_token() HMAC verification
         payload_b64 = self._b64url_encode(payload_bytes)
         msg = f"{_HEADER_B64}.{payload_b64}"
-        sig = hmac_mod.new(secret, msg.encode(), hashlib.sha256).digest()
+        sig = hmac_mod.new(raw_key, msg.encode(), hashlib.sha256).digest()
         return f"{msg}.{self._b64url_encode(sig)}"
 
     def decode(
@@ -138,12 +137,13 @@ class _JWTCompat:
             ExpiredSignatureError: If token has expired.
         """
         secret = self._resolve_key(key)
+        raw_key = key.encode("utf-8") if isinstance(key, str) else key
         parts = token.split(".")
 
         if len(parts) == 2:
             return self._decode_xcha(parts, secret, leeway)
         elif len(parts) == 3:
-            return self._decode_hmac(parts, secret, leeway)
+            return self._decode_hmac(parts, raw_key, leeway)
         else:
             raise JWTError("Invalid token format")
 

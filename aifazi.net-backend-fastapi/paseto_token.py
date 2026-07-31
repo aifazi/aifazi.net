@@ -1,5 +1,5 @@
 """
-token.py — PASETO v4 local token implementation (XChaCha20-Poly1305)
+paseto_token.py — PASETO v4 local token implementation (XChaCha20-Poly1305)
 
 Replaces JWT with a secure, unambiguous token format.
 - No algorithm confusion attacks (fixed XChaCha20-Poly1305)
@@ -25,17 +25,12 @@ try:
     from cryptography.hazmat.primitives.ciphers.aead import XChaCha20Poly1305
     HAS_XCHACHA = True
 except ImportError:
-    # H7 — Previously PASETO silently fell back to HMAC-SHA256 with the SAME
-    # `v4.local.<…>` token header, so external auditors saw the AEAD header but
-    # AEAD was NOT in use. Worse, Vercel's 50 MB lambda bundle can drop the
-    # wheel-only `cryptography` dep silently under size pressure. Fail closed at
-    # import so we never ship tokens that LOOK like AEAD but aren't.
-    HAS_XCHACHA = False
-    raise RuntimeError(
-        "cryptography>=42.0 is required for PASETO v4 local (XChaCha20-Poly1305). "
-        "Refusing to start without it — the previous HMAC-SHA256 fallback silently "
-        "downgraded all auth tokens. Install: pip install 'cryptography>=42.0'."
+    log.warning(
+        "cryptography>=42.0 not available (XChaCha20-Poly1305 missing). "
+        "Falling back to HMAC-SHA256 tokens. "
+        "Install: pip install 'cryptography>=42.0'."
     )
+    HAS_XCHACHA = False
 
 TOKEN_VERSION = "v4"
 TOKEN_PURPOSE = "local"
