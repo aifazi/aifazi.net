@@ -5,7 +5,7 @@ import secrets, string
 from datetime import datetime, timezone, timedelta
 from html import escape as _html_escape
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from database import supabase
@@ -277,7 +277,7 @@ def _sanitize_username(name: str) -> str:
     return base + secrets.token_hex(3)
 
 
-async def _auto_create_forum_account(name: str, email: str, bg: BackgroundTasks) -> str | None:
+async def _auto_create_forum_account(name: str, email: str) -> str | None:
     """C7 — auto-create an account for a guest helpdesk ticket submission.
 
     Previous behaviour:
@@ -348,7 +348,7 @@ def _get_settings() -> dict:
 
 # ── Public: submit ticket ──────────────────────────────────
 @router.post("/tickets")
-async def submit_ticket(body: TicketBody, bg: BackgroundTasks, user: dict | None = Depends(_optional_user)):
+async def submit_ticket(body: TicketBody, user: dict | None = Depends(_optional_user)):
     now = datetime.now(timezone.utc).isoformat()
     linked_user_id = user.get("id") if user else None
     if user and user.get("email"):
@@ -357,7 +357,7 @@ async def submit_ticket(body: TicketBody, bg: BackgroundTasks, user: dict | None
         body.name = user["username"]
     account_created = False
     if not linked_user_id:
-        linked_user_id = await _auto_create_forum_account(body.name, body.email, bg)
+        linked_user_id = await _auto_create_forum_account(body.name, body.email)
         account_created = True
 
     settings = _get_settings()
@@ -578,13 +578,11 @@ async def add_message(ticket_id: str, body: MessageBody, user: dict | None = Dep
     now = datetime.now(timezone.utc).isoformat()
     msg = {
         "ticket_id":   ticket_id,
-        "author_type": body.author_type or "user",
-        "author_name": body.author_name or ticket.get("email", "User"),
+        "author_type": "user",
+        "author_name": body.author_name or ticket.get("name", "User"),
         "message":     body.message,
         "created_at":  now,
     }
-    if body.author_type == "user":
-        msg["author_name"] = body.author_name or ticket.get("name", "User")
 
     supabase.table("helpdesk_messages").insert(msg).execute()
 
@@ -687,7 +685,6 @@ async def admin_get_ticket(ticket_id: str, _: dict = Depends(require_staff)):
 async def admin_add_message(
     ticket_id: str,
     body: MessageBody,
-    bg: BackgroundTasks,
     user: dict = Depends(require_staff),
 ):
     ticket_res = supabase.table("helpdesk_tickets").select("id,email").eq("id", ticket_id).limit(1).execute()
@@ -695,9 +692,10 @@ async def admin_add_message(
         raise HTTPException(404, "Ticket not found")
     ticket = ticket_res.data[0]
     now = datetime.now(timezone.utc).isoformat()
+    staff_type = body.author_type if body.author_type in ("staff", "system") else "staff"
     msg = {
         "ticket_id":   ticket_id,
-        "author_type": body.author_type or "staff",
+        "author_type": staff_type,
         "author_name": body.author_name or user.get("username", "Staff"),
         "author_id":   user.get("id"),
         "message":     body.message,

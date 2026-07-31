@@ -334,9 +334,12 @@ async def create_reply(thread_id: str, body: ReplyBody, user: dict = Depends(req
     if t["locked"] and user.get("role") not in ("admin","moderator"):
         raise HTTPException(403, "Thread is locked")
     if t.get("category_id"):
-        cat = supabase.table("forum_categories").select("post_roles").eq("id", t["category_id"]).single().execute().data
-        if cat and cat.get("post_roles"):
-            if user.get("role") not in cat["post_roles"]:
+        cat = supabase.table("forum_categories").select("post_roles,reply_roles,locked").eq("id", t["category_id"]).single().execute().data
+        if cat:
+            if cat.get("locked") and user.get("role") not in ("admin","moderator"):
+                raise HTTPException(403, "Category is locked")
+            allowed_roles = cat.get("reply_roles") or cat.get("post_roles") or []
+            if allowed_roles and user.get("role") not in allowed_roles:
                 raise HTTPException(403, "You don't have permission to reply in this category")
     now = datetime.now(timezone.utc).isoformat()
     res = supabase.table("forum_replies").insert({

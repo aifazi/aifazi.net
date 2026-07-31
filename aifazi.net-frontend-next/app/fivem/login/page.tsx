@@ -10,6 +10,13 @@ const G = '#00FF88'
 const C = '#00D4FF'
 const B = '#0f111a'
 
+function safeNext(value: string | null, fallback: string): string {
+  if (!value) return fallback
+  if (value.startsWith('//') || /^[a-z][a-z0-9+.-]*:/i.test(value)) return fallback
+  if (!value.startsWith('/')) return fallback
+  return value
+}
+
 export default function FiveMLogin() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -23,7 +30,7 @@ export default function FiveMLogin() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    setNextHref(params.get('next') || profileHref)
+    setNextHref(safeNext(params.get('next'), profileHref))
     const token = localStorage.getItem('auth_token')
     if (token) router.replace(profileHref)
   }, [profileHref, router])

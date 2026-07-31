@@ -1,7 +1,16 @@
 'use client'
 import { useState } from 'react'
+import DOMPurify from 'isomorphic-dompurify'
 import { loadMammoth, loadXLSX, readAB, readText, downloadBlob, fmtBytes, S, DropZone, FileBadge, Progress } from './shared.jsx'
 import { Select } from '../../core/ui.jsx'
+
+const DOCX_SANITIZE_CONFIG = {
+  ALLOWED_TAGS: ['b','i','u','em','strong','a','p','br','ul','ol','li','h1','h2','h3','h4','h5','h6','span','div','img','blockquote','code','pre','sup','sub','table','tr','td','th','hr'],
+  ALLOWED_ATTR: ['href','src','alt','title','target','rel','style','colspan','rowspan'],
+  FORBID_TAGS: ['script','iframe','object','embed','form','input','textarea','select','button','style','link','meta','base'],
+  FORBID_ATTR: ['onerror','onload','onclick','onmouseover','onmouseout','onfocus','onblur','onsubmit','onchange','srcdoc'],
+  ALLOW_DATA_ATTR: false,
+}
 
 function DocxPreview() {
   const [html, setHtml]   = useState('')
@@ -16,7 +25,7 @@ function DocxPreview() {
       const mammoth = await loadMammoth()
       const ab      = await readAB(f)
       const res     = await mammoth.convertToHtml({ arrayBuffer: ab })
-      setHtml(res.value)
+      setHtml(DOMPurify.sanitize(res.value, DOCX_SANITIZE_CONFIG))
       const text    = res.value.replace(/<[^>]+>/g,'')
       const words   = text.trim().split(/\s+/).filter(Boolean).length
       const chars   = text.replace(/\s/g,'').length

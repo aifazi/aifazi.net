@@ -186,7 +186,7 @@ def migrate() -> dict:
     Called by GET /api/admin/audit/migrate at startup and on demand.
     """
     try:
-        supabase.rpc("exec_sql", {"sql": _MIGRATION_SQL}).execute()
+        supabase.rpc("exec_sql", {"sql_text": _MIGRATION_SQL}).execute()
         return {"ok": True, "message": "audit_logs + auth_logs tables ensured via exec_sql RPC"}
     except Exception as rpc_exc:
         logger.warning("audit.migrate: exec_sql RPC unavailable (%s) — trying table probe", rpc_exc)

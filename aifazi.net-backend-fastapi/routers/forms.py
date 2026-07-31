@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from database import supabase
 from dependencies import get_current_user, require_staff
-from utils.email import send_email
+from utils.email_queue import queue_email
 
 router = APIRouter()
 
@@ -303,7 +303,7 @@ async def _send_submission_email(form: dict, submission: dict, user: dict, answe
         fallback_subject,
         fallback_html,
     )
-    await send_email(to_email, subject, html, "", "application_submitted")
+    queue_email(to_email, subject, html, "", "application_submitted")
 
 
 async def _send_review_email(submission: dict, status: str) -> None:
@@ -343,7 +343,7 @@ async def _send_review_email(submission: dict, status: str) -> None:
   <div style="background:#111827;padding:14px;text-align:center;font-size:11px;color:#64748b">AIFAZI RP · aifazi.net</div>
 </div>"""
     subject, html = _render_template(purpose, variables, fallback_subject, fallback_html)
-    await send_email(to_email, subject, html, "", purpose)
+    queue_email(to_email, subject, html, "", purpose)
 
 
 def _normal_action(action: Any) -> dict[str, Any]:
@@ -503,6 +503,11 @@ async def review_submission(submission_id: str, body: SubmissionReviewBody, staf
     if not cur.data:
         raise HTTPException(404, "Submission not found")
     current = cur.data[0]
+
+    submitter_id = str(current.get("user_id") or "")
+    staff_id = str(staff.get("id") or staff.get("_id") or "")
+    if submitter_id and staff_id and submitter_id == staff_id:
+        raise HTTPException(403, "You cannot review your own application")
 
     form_res = supabase.table("application_forms").select("approval_action").eq("id", current.get("form_id")).limit(1).execute()
     action = _normal_action((form_res.data or [{}])[0].get("approval_action") if form_res.data else {})

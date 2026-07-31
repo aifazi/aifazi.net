@@ -512,7 +512,7 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
             file_id       = path  # we store the file_id as storage_path for B2
             if app_key_id and app_key_secret and file_id:
                 async with httpx.AsyncClient(timeout=15) as c:
-                    auth = c.post(
+                    auth = await c.post(
                         "https://api.backblazeb2.com/b2api/v2/b2_authorize_account",
                         auth=(app_key_id, app_key_secret),
                     )

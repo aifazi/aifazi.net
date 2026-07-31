@@ -6,11 +6,11 @@ Frontend NewsletterPanel calls:
   POST   /newsletter/unsubscribe     { email }  (legacy)
   POST   /newsletter/send            { subject, html, text }
 """
-from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 from database import supabase
 from dependencies import require_staff
-from utils.email import send_email, render_template
+from utils.email import render_template
 from utils.email_queue import queue_email
 router = APIRouter()
 
@@ -58,7 +58,7 @@ async def list_subs_public(_: dict = Depends(require_staff)):
     return res.data or []
 
 @router.post("/send")
-async def send_campaign(body: CampaignBody, bg: BackgroundTasks, _: dict = Depends(require_staff)):
+async def send_campaign(body: CampaignBody, _: dict = Depends(require_staff)):
     res = supabase.table("newsletter_subs").select("email").eq("status", "active").limit(5000).execute()
     emails = [r["email"] for r in (res.data or [])]
     for email in emails:
@@ -83,7 +83,7 @@ async def send_newsletter_for_post(post: dict):
             "post_url": post_url,
             "unsubscribe_link": "https://aifazi.net/newsletter/unsubscribe",
         })
-        await send_email(
+        queue_email(
             sub["email"],
             subject or f"New post: {post['title']}",
             html or f"<h2>{post['title']}</h2><p>{post.get('excerpt','')}</p><a href='{post_url}'>Read more</a>",

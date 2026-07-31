@@ -1,5 +1,5 @@
 """routers/contact.py"""
-from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from database import supabase
 from dependencies import require_staff
@@ -26,7 +26,7 @@ def _html(text: str) -> str:
     return "".join(f"<p style='margin:0 0 12px;line-height:1.7;'>{p}</p>" for p in paras)
 
 @router.post("")
-async def submit(body: ContactBody, bg: BackgroundTasks):
+async def submit(body: ContactBody):
     now = datetime.now(timezone.utc).isoformat()
     res = supabase.table("contacts").insert({
         "name": body.name, "email": body.email,
@@ -52,7 +52,7 @@ async def list_contacts(_: dict = Depends(require_staff)):
 
 
 @router.post("/{contact_id}/reply")
-async def reply(contact_id: str, body: ReplyBody, bg: BackgroundTasks, _: dict = Depends(require_staff)):
+async def reply(contact_id: str, body: ReplyBody, _: dict = Depends(require_staff)):
     reply_text = body.get_body()
     if not reply_text:
         raise HTTPException(400, "Reply body is required")

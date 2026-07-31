@@ -24,6 +24,14 @@ from datetime import datetime, timezone
 
 log = logging.getLogger("jwt_compat")
 
+# Single source of truth for key derivation. Both jwt_compat (used by routers)
+# and paseto_token (used by dependencies) MUST derive the same 32-byte key from
+# the same secret, or tokens issued at login fail to decode at the auth gate.
+try:
+    from paseto_token import _derive_key
+except Exception:
+    _derive_key = None
+
 try:
     from cryptography.hazmat.primitives.ciphers.aead import XChaCha20Poly1305
     HAS_XCHACHA = True
@@ -221,10 +229,12 @@ class _JWTCompat:
     def _resolve_key(key: Union[str, bytes]) -> bytes:
         if isinstance(key, bytes):
             return key
+        if _derive_key is not None:
+            return _derive_key(key)
         raw = key.encode("utf-8")
         if len(raw) >= _KEY_SIZE and len(raw) % 4 == 0:
             return raw[:_KEY_SIZE]
-        return hashlib.pbkdf2_hmac("sha256", raw, b"paseto-v4-compat", 100000, _KEY_SIZE)
+        return hashlib.pbkdf2_hmac("sha256", raw, b"paseto-v4-aifazi", 100000, _KEY_SIZE)
 
     @staticmethod
     def _get_xcha(secret: bytes) -> Optional["XChaCha20Poly1305"]:

@@ -2,8 +2,8 @@ const https = require("https");
 
 const CLOUDFLARE_TOKEN = process.env.CF_API_TOKEN;
 const ZONE_ID = "b8348e1c37ee0ae8316b7033854cab89";
-const FRONTEND_URL = "aifazi-website-new.vercel.app";
-const BACKEND_URL = "aifazi-backend.vercel.app";
+const FRONTEND_URL = "aifazi-net-frontend-next.vercel.app";
+const BACKEND_URL = "aifazinet-backend-fastapi.vercel.app";
 
 const dnsRecords = [
   { type: "CNAME", name: "aifazi.net", content: "cname.vercel-dns.com", ttl: 600, proxied: false },
@@ -67,6 +67,22 @@ async function main() {
 
     if (existing && existing.content === rec.content) {
       console.log("SKIP  " + rec.type + " " + rec.name + " -> " + rec.content + " (already exists)");
+      continue;
+    }
+
+    // Update an existing record that points at a stale target instead of leaving a duplicate.
+    if (existing) {
+      try {
+        const res = await callAPI("PATCH", "/dns_records/" + existing.id, rec);
+        if (res.success) {
+          console.log("UPD   " + rec.type + " " + rec.name + " -> " + rec.content);
+          added++;
+        } else {
+          console.log("ERR   " + rec.type + " " + rec.name + ": " + JSON.stringify(res.errors));
+        }
+      } catch (e) {
+        console.log("ERR   " + rec.type + " " + rec.name + ": " + e.message);
+      }
       continue;
     }
 

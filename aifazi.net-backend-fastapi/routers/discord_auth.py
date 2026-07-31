@@ -17,12 +17,13 @@ Vercel env vars required:
 
 import os, secrets, httpx, urllib.parse as _urlparse
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jwt_compat import jwt, JWTError
 from database import supabase
-from utils.email import send_email, render_template
+from utils.email import render_template
+from utils.email_queue import queue_email
 from utils.oauth_state import make_oauth_state, verify_oauth_state, _safe_relative_path
 
 router = APIRouter()
@@ -111,7 +112,7 @@ async def _send_discord_welcome(email: str, username: str):
             f"and check your application status at any time.</p>"
             f"<p>See you in the city! 🌆</p>"
         )
-    await send_email(to=email, subject=subject, html=html, purpose="discord_welcome")
+    queue_email(email, subject, html, "", "discord_welcome")
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
@@ -136,7 +137,7 @@ async def discord_login(redirect: str = ""):
     return RedirectResponse(f"https://discord.com/oauth2/authorize?{params}")
 
 @router.get("/callback")
-async def discord_callback(background_tasks: BackgroundTasks, code: str = "", error: str = "", state: str = ""):
+async def discord_callback(code: str = "", error: str = "", state: str = ""):
     """Handle Discord OAuth callback, issue JWT, redirect to frontend."""
     if error or not code:
         return RedirectResponse(f"{FRONTEND_URL}/whitelist?discord_error=1")
@@ -180,9 +181,9 @@ async def discord_callback(background_tasks: BackgroundTasks, code: str = "", er
     except Exception as e:
         return RedirectResponse(f"{FRONTEND_URL}/whitelist?discord_error=db")
 
-    # Send welcome email to brand-new Discord signups (fire-and-forget background task)
+    # Send welcome email to brand-new Discord signups (queued, reliable on serverless)
     if is_new and db_user.get("email"):
-        background_tasks.add_task(_send_discord_welcome, db_user["email"], db_user["username"])
+        await _send_discord_welcome(db_user["email"], db_user["username"])
 
     # Issue JWT
     jwt_token = _make_player_token(db_user)

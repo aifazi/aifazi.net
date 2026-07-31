@@ -6,7 +6,7 @@ FIX #5: bcrypt errors are no longer silently swallowed — logged and surfaced a
 """
 import os, re, secrets, asyncio, bcrypt as _bcrypt, pyotp, qrcode, io, base64, hmac as _hmac, logging, urllib.parse as _urlparse
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse as _Redir
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
@@ -15,7 +15,7 @@ from database import supabase
 from dependencies import get_current_user, require_admin, require_staff
 from permissions import MODULES, ACTIONS, ROLE_PERMISSION_PRESETS, normalize_permissions, role_permissions, resolve_staff_access
 from utils.audit import record as _audit, record_auth as _auth_log
-from utils.email import send_email, render_template
+from utils.email import render_template
 from utils.email_queue import queue_email
 try:
     import httpx as _httpx
@@ -226,7 +226,7 @@ def _verify_email_html(verify_url: str) -> str:
     </p>"""
     return _email_layout("Verify your email — aifazi.net", body)
 
-def _queue_activation_email(bg: BackgroundTasks, email: str, verify_url: str, username: str = "") -> None:
+def _queue_activation_email(email: str, verify_url: str, username: str = "") -> None:
     subject, html = render_template("account_activation", {
         "site_name": "aifazi.net",
         "username": username or email.split("@")[0],
@@ -263,8 +263,8 @@ def _ensure_email_available(email: str, *, exclude_forum_user_id: str | None = N
     if _email_owner(email, exclude_forum_user_id=exclude_forum_user_id, exclude_staff_id=exclude_staff_id, exclude_admin=exclude_admin):
         raise HTTPException(409, "Email is already in use.")
 
-def _queue_staff_email_verification(source: str, email: str, bg: BackgroundTasks | None, *, staff_id: str | None = None, admin_username: str | None = None) -> None:
-    if not bg or not email:
+def _queue_staff_email_verification(source: str, email: str, *, staff_id: str | None = None, admin_username: str | None = None) -> None:
+    if not email:
         return
     token = jwt.encode({
         "purpose": "email_verify",
@@ -275,7 +275,7 @@ def _queue_staff_email_verification(source: str, email: str, bg: BackgroundTasks
         "exp": datetime.now(timezone.utc) + timedelta(hours=24),
     }, SECRET, ALGO)
     verify_url = f"{SITE_URL}/forum/verify?token={token}"
-    _queue_activation_email(bg, email, verify_url)
+    _queue_activation_email(email, verify_url)
 
 def _staff_public(row: dict) -> dict:
     perms = normalize_permissions(row.get("staff_permissions") or role_permissions(row.get("role")))
@@ -796,7 +796,7 @@ async def search_staff_users(q: str = "", _: dict = Depends(require_admin)):
 
 # ── Create staff ────────────────────────────────────────────────────────────────
 @router.post("/staff")
-async def create_staff(body: StaffCreateBody, request: Request, bg: BackgroundTasks, admin: dict = Depends(require_admin)):
+async def create_staff(body: StaffCreateBody, request: Request, admin: dict = Depends(require_admin)):
     if body.role not in ("moderator", "editor", "chat"):
         raise HTTPException(400, "Invalid role")
     perms = normalize_permissions(body.module_permissions or role_permissions(body.role))
@@ -817,13 +817,13 @@ async def create_staff(body: StaffCreateBody, request: Request, bg: BackgroundTa
     payload["password_hash"] = _hash(body.password)
     res = supabase.table("users").insert(payload).execute()
     if email:
-        _queue_staff_email_verification("staff", email, bg, staff_id=res.data[0]["id"])
+        _queue_staff_email_verification("staff", email, staff_id=res.data[0]["id"])
     _audit(admin.get("username", "admin"), "staff_create", target=username, details={"role": body.role}, ip=request.client.host if request.client else "")
     return _staff_public(res.data[0])
 
 # ── Update staff ────────────────────────────────────────────────────────────────
 @router.put("/staff/{staff_id}")
-async def update_staff(staff_id: str, body: StaffUpdateBody, bg: BackgroundTasks, _: dict = Depends(require_admin)):
+async def update_staff(staff_id: str, body: StaffUpdateBody, _: dict = Depends(require_admin)):
     updates: dict = {}
     if body.username:  updates["username"]      = _clean_username(body.username)
     if body.email is not None:
@@ -850,7 +850,7 @@ async def update_staff(staff_id: str, body: StaffUpdateBody, bg: BackgroundTasks
         raise HTTPException(404, "Staff member not found")
     row = res.data[0]
     if body.email is not None and row.get("email") and not row.get("email_verified"):
-        _queue_staff_email_verification("staff", row["email"], bg, staff_id=staff_id)
+        _queue_staff_email_verification("staff", row["email"], staff_id=staff_id)
     return _staff_public(row)
 
 # ── Delete staff ────────────────────────────────────────────────────────────────
@@ -865,7 +865,7 @@ async def delete_staff(staff_id: str, request: Request, admin: dict = Depends(re
 
 # ── Admin self-update ── FIX #3: use _check_admin_password() ───────────────────
 @router.put("/me")
-async def update_self(body: AdminSelfUpdateBody, request: Request, bg: BackgroundTasks, user: dict = Depends(get_current_user)):
+async def update_self(body: AdminSelfUpdateBody, request: Request, user: dict = Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(403, "Admin only")
     client_ip = request.client.host if request.client else ""
@@ -898,7 +898,7 @@ async def update_self(body: AdminSelfUpdateBody, request: Request, bg: Backgroun
         email_verified = bool(current.get("email_verified")) if email == current_email else False
         _upsert_admin_2fa({"email": email, "email_verified": email_verified})
         if email and not email_verified:
-            _queue_staff_email_verification("admin", email, bg, admin_username=ADMIN_USERNAME)
+            _queue_staff_email_verification("admin", email, admin_username=ADMIN_USERNAME)
         _audit("admin", "admin_email_update", target=email, ip=client_ip)
         return {"message": "Email connected." if email_verified else "Email changed. Check your inbox to verify it.", "email": email, "email_verified": email_verified}
 
@@ -1196,7 +1196,7 @@ async def check_email(email: EmailStr, creds: HTTPAuthorizationCredentials | Non
     return {"available": owner is None}
 
 @router.post("/resend-verification")
-async def resend_verification(body: ResendBody, bg: BackgroundTasks):
+async def resend_verification(body: ResendBody):
     identifier = body.email.strip()
     if "@" in identifier:
         res = supabase.table("users").select("*").eq("email", identifier).execute()
@@ -1211,11 +1211,11 @@ async def resend_verification(body: ResendBody, bg: BackgroundTasks):
     verify_expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
     supabase.table("users").update({"verify_token": verify_token, "verify_expires": verify_expires}).eq("id", user["id"]).execute()
     verify_url = f"{SITE_URL}/forum/verify?token={verify_token}"
-    _queue_activation_email(bg, user["email"], verify_url, user.get("username") or "")
+    _queue_activation_email(user["email"], verify_url, user.get("username") or "")
     return {"message": "Verification email sent"}
 
 @router.post("/register")
-async def register(body: RegisterBody, bg: BackgroundTasks):
+async def register(body: RegisterBody):
     pw = body.password
     if len(pw) < 8:
         raise HTTPException(400, "Password must be at least 8 characters.")
@@ -1229,7 +1229,7 @@ async def register(body: RegisterBody, bg: BackgroundTasks):
             verify_expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
             supabase.table("users").update({"verify_token": verify_token, "verify_expires": verify_expires}).eq("id", existing["id"]).execute()
             verify_url = f"{SITE_URL}/forum/verify?token={verify_token}"
-            _queue_activation_email(bg, email, verify_url, existing.get("username") or "")
+            _queue_activation_email(email, verify_url, existing.get("username") or "")
             raise HTTPException(409, "pending_verification")
         raise HTTPException(409, "Email already registered")
     if _find_user_by_ci("username", username, "id,username"):
@@ -1245,11 +1245,11 @@ async def register(body: RegisterBody, bg: BackgroundTasks):
         "verify_token": verify_token, "verify_expires": verify_expires,
     }).execute()
     verify_url = f"{SITE_URL}/forum/verify?token={verify_token}"
-    _queue_activation_email(bg, email, verify_url, username)
+    _queue_activation_email(email, verify_url, username)
     return {"message": "Registered — check your email to verify"}
 
 @router.post("/forgot")
-async def forgot(body: ForgotBody, bg: BackgroundTasks):
+async def forgot(body: ForgotBody):
     identifier = body.identifier.strip()
     if not identifier:
         return {"message": "If that account exists, a reset link was sent"}
@@ -1274,7 +1274,7 @@ async def forgot(body: ForgotBody, bg: BackgroundTasks):
     return {"message": "If that account exists, a reset link was sent"}
 
 @router.post("/find-username")
-async def find_username(body: FindUsernameBody, bg: BackgroundTasks):
+async def find_username(body: FindUsernameBody):
     res = supabase.table("users").select("id,email,username").eq("email", body.email.strip()).execute()
     if res.data:
         user = res.data[0]
@@ -1340,7 +1340,7 @@ async def get_current_user_profile(creds: HTTPAuthorizationCredentials | None = 
     }
 
 @router.put("/profile")
-async def update_profile(body: ProfileBody, bg: BackgroundTasks, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
+async def update_profile(body: ProfileBody, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     payload = _get_forum_user(creds)
     if not payload:
         raise HTTPException(401, "Not authenticated")
@@ -1366,7 +1366,7 @@ async def update_profile(body: ProfileBody, bg: BackgroundTasks, creds: HTTPAuth
         else:
             supabase.table("admin_2fa").insert({"username": admin_name, **patch}).execute()
         if body.email is not None and patch.get("email") and not patch.get("email_verified"):
-            _queue_staff_email_verification("admin", patch["email"], bg, admin_username=admin_name)
+            _queue_staff_email_verification("admin", patch["email"], admin_username=admin_name)
         return {"ok": True, "email_verification_sent": bool(body.email is not None and patch.get("email") and not patch.get("email_verified")), "user": _staff_profile_from_payload(payload)}
     if access and access.get("staff_id") and not access.get("forum_user_id"):
         patch = {"username": username, "profile_bio": (body.bio or "").strip()[:1000], "profile_avatar": (body.avatar or "").strip()[:500], "last_seen": datetime.now(timezone.utc).isoformat()}
@@ -1382,7 +1382,7 @@ async def update_profile(body: ProfileBody, bg: BackgroundTasks, creds: HTTPAuth
         if not res.data:
             raise HTTPException(404, "Staff user not found")
         if body.email is not None and patch.get("email") and not patch.get("email_verified"):
-            _queue_staff_email_verification("staff", patch["email"], bg, staff_id=access["staff_id"])
+            _queue_staff_email_verification("staff", patch["email"], staff_id=access["staff_id"])
         return {"ok": True, "email_verification_sent": bool(body.email is not None and patch.get("email") and not patch.get("email_verified")), "user": _staff_profile_from_payload({**payload, "username": username})}
     if not user_id:
         raise HTTPException(400, "A user profile is required")
@@ -1412,7 +1412,7 @@ async def update_profile(body: ProfileBody, bg: BackgroundTasks, creds: HTTPAuth
         verify_expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
         supabase.table("users").update({"verify_token": verify_token, "verify_expires": verify_expires}).eq("id", user_id).execute()
         verify_url = f"{SITE_URL}/forum/verify?token={verify_token}"
-        _queue_activation_email(bg, email, verify_url)
+        _queue_activation_email(email, verify_url)
     _record_user_activity(user_id, username, "profile_update")
     return {"ok": True, "email_verification_sent": email_changed, "user": {"_id": user["id"], "id": user["id"], "username": user["username"], "email": user.get("email"), "pending_email": user.get("pending_email") or None, "email_verified": user.get("email_verified", False), "role": (access or {}).get("role") or user.get("role", "user"), "avatar": user.get("avatar") or "", "bio": user.get("bio") or "", "_staff": bool(access), "staff_account": bool(access), "permissions": normalize_permissions((access or {}).get("permissions"))}}
 
@@ -1504,8 +1504,8 @@ async def _verify_email_token(token: str):
     return {"message": "Email verified"}
 
 @router.post("/forgot-password")
-async def forgot_password_alias(body: ForgotBody, bg: BackgroundTasks):
-    return await forgot(body, bg)
+async def forgot_password_alias(body: ForgotBody):
+    return await forgot(body)
 
 @router.post("/reset-password/{token}")
 async def reset_password_alias(token: str, body: dict):
@@ -1724,7 +1724,7 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
                                 "site_name": "aifazi.net", "username": uname, "discord_username": discord_username,
                                 "profile_url": f"{SITE_URL}/forum/profile", "frontend_url": SITE_URL,
                             })
-                            await send_email(discord_email,
+                            queue_email(discord_email,
                                 subject or "Welcome to aifazi.net — your account is ready!",
                                 html or welcome_html, f"Welcome to aifazi.net! Your account @{uname} is ready.",
                                 "discord_welcome")

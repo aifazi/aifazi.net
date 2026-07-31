@@ -52,6 +52,12 @@ FORBIDDEN_FIELDS = frozenset({
     "staff_permissions",
     "module_permissions",
     "admin_session_id",
+    # Account identity fields — changing these through the generic collection
+    # browser lets a staff member hijack/rename accounts (or lock them out) in
+    # one click. Use the dedicated user-management flows instead.
+    "email", "username",
+    "steam_username", "steam_avatar",
+    "discord_username", "discord_avatar",
 })
 
 def _normalize(doc):

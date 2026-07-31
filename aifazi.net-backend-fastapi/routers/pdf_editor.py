@@ -18,20 +18,36 @@ SQL migration (run once in Supabase — only needed if you persist sessions):
 """
 import io, uuid, base64
 from typing import Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, Response
+from fastapi import APIRouter, UploadFile, File, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 router = APIRouter()
 
 # ── In-memory session store ───────────────────────────────────────
-_sessions: dict[str, bytes] = {}
+# Values are {"bytes": pdf_bytes, "ip": creator_ip} so a leaked session_id
+# (e.g. via <img> Referer headers) can't be used to render someone else's PDF
+# from a different client IP.
+_sessions: dict[str, dict] = {}
 MAX_SESSIONS = 80
 MAX_PDF_MB   = 80
 
 def _evict():
     if len(_sessions) > MAX_SESSIONS:
         del _sessions[next(iter(_sessions))]
+
+def _client_ip(request) -> str:
+    return (request.headers.get("x-vercel-forwarded-for", "")
+            or (request.headers.get("x-forwarded-for", "") or "").rsplit(",", 1)[-1].strip()
+            or (request.client.host if request.client else "unknown"))
+
+def _require_session(request, session_id: str):
+    sess = _sessions.get(session_id)
+    if not sess:
+        raise HTTPException(404, "Session not found")
+    if sess.get("ip") and sess["ip"] != _client_ip(request):
+        raise HTTPException(403, "Session is bound to a different client")
+    return sess
 
 # ── Models ────────────────────────────────────────────────────────
 class Operation(BaseModel):
@@ -123,7 +139,7 @@ def _apply_ops(doc, ops: list[Operation]):
 
 # ── Routes ────────────────────────────────────────────────────────
 @router.post("/open")
-async def open_pdf(file: UploadFile = File(...)):
+async def open_pdf(request: Request, file: UploadFile = File(...)):
     import fitz
     content = await file.read()
     if not content: raise HTTPException(400, "Empty file")
@@ -140,17 +156,17 @@ async def open_pdf(file: UploadFile = File(...)):
         raise HTTPException(400, f"Cannot open PDF: {e}")
     _evict()
     sid = str(uuid.uuid4())
-    _sessions[sid] = content
+    _sessions[sid] = {"bytes": content, "ip": _client_ip(request)}
     return {"session_id": sid, "page_count": count, "filename": file.filename,
             "title": meta.get("title") or file.filename,
             "author": meta.get("author",""), "pages": pages,
             "size_bytes": len(content)}
 
 @router.get("/page/{session_id}/{page_num}")
-async def render_page(session_id: str, page_num: int, scale: float = 1.5):
+async def render_page(request: Request, session_id: str, page_num: int, scale: float = 1.5):
     import fitz
-    if session_id not in _sessions: raise HTTPException(404, "Session not found")
-    doc  = fitz.open(stream=_sessions[session_id], filetype="pdf")
+    sess = _require_session(request, session_id)
+    doc  = fitz.open(stream=sess["bytes"], filetype="pdf")
     if not (0 <= page_num < doc.page_count):
         doc.close(); raise HTTPException(400, "Invalid page")
     mat = fitz.Matrix(max(0.5, min(scale, 4.0)), max(0.5, min(scale, 4.0)))
@@ -161,14 +177,14 @@ async def render_page(session_id: str, page_num: int, scale: float = 1.5):
                     headers={"Cache-Control": "no-store"})
 
 @router.get("/thumb/{session_id}/{page_num}")
-async def thumbnail(session_id: str, page_num: int):
-    return await render_page(session_id, page_num, scale=0.28)
+async def thumbnail(request: Request, session_id: str, page_num: int):
+    return await render_page(request, session_id, page_num, scale=0.28)
 
 @router.get("/info/{session_id}")
-async def get_info(session_id: str):
+async def get_info(request: Request, session_id: str):
     import fitz
-    if session_id not in _sessions: raise HTTPException(404, "Session not found")
-    doc   = fitz.open(stream=_sessions[session_id], filetype="pdf")
+    sess = _require_session(request, session_id)
+    doc   = fitz.open(stream=sess["bytes"], filetype="pdf")
     pages = [{"width": doc[i].rect.width, "height": doc[i].rect.height,
                "rotation": doc[i].rotation} for i in range(doc.page_count)]
     meta  = doc.metadata or {}
@@ -176,10 +192,10 @@ async def get_info(session_id: str):
     return {"page_count": len(pages), "pages": pages, "metadata": meta}
 
 @router.post("/export")
-async def export_pdf(body: ExportBody):
+async def export_pdf(request: Request, body: ExportBody):
     import fitz
-    if body.session_id not in _sessions: raise HTTPException(404, "Session not found")
-    doc = fitz.open(stream=_sessions[body.session_id], filetype="pdf")
+    sess = _require_session(request, body.session_id)
+    doc = fitz.open(stream=sess["bytes"], filetype="pdf")
     if body.operations: _apply_ops(doc, body.operations)
     buf = io.BytesIO()
     doc.save(buf, garbage=4, deflate=True); doc.close(); buf.seek(0)
@@ -187,6 +203,7 @@ async def export_pdf(body: ExportBody):
         headers={"Content-Disposition": 'attachment; filename="edited.pdf"'})
 
 @router.post("/close")
-async def close_session(body: CloseBody):
+async def close_session(request: Request, body: CloseBody):
+    _require_session(request, body.session_id)
     _sessions.pop(body.session_id, None)
     return {"closed": True}

@@ -32,7 +32,8 @@ from html import escape as _fivem_html_escape
 def _e(value) -> str:
     """HTML-escape user/staff-controlled free-text before splicing into HTML."""
     return _fivem_html_escape(str(value if value is not None else ""), quote=True)
-from utils.email import send_email, render_template
+from utils.email import render_template
+from utils.email_queue import queue_email
 
 log = logging.getLogger("fivem")
 router = APIRouter()
@@ -394,8 +395,8 @@ async def _send_whitelist_email(app: dict, status: str, note: str | None = None,
         "status_url": f"{FRONTEND_URL}/profile?tab=fivem",
     })
 
-    await send_email(to_email, subject or fallback_subject, html or fallback_html, "", purpose)
-    log.info("Whitelist email sent to %s status=%s", to_email, status)
+    queue_email(to_email, subject or fallback_subject, html or fallback_html, "", purpose)
+    log.info("Whitelist email queued to %s status=%s", to_email, status)
 
 # â”€â”€â”€ Discord Bot Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _DISCORD_TOKEN    = os.getenv("DISCORD_BOT_TOKEN", "")
@@ -818,7 +819,7 @@ async def my_whitelist_application(user: dict = Depends(get_current_user)):
     return _effective_whitelist_status(app_res.data[0])
 
 @router.post("/whitelist/apply")
-async def apply_whitelist(body: WhitelistApply, background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
+async def apply_whitelist(body: WhitelistApply, user: dict = Depends(get_current_user)):
     if not body.rules_accepted:
         raise HTTPException(400, "You must accept the server rules.")
     user_id = user.get("id") or user.get("forum_user_id")
@@ -860,7 +861,7 @@ async def apply_whitelist(body: WhitelistApply, background_tasks: BackgroundTask
         "sync_source": "website",
     }).execute()
     app = (res.data or [{}])[0]
-    background_tasks.add_task(_send_whitelist_email, app, "applied")
+    await _send_whitelist_email(app, "applied")
     return {"message": "Application submitted!", "id": app.get("id")}
 
 @router.get("/whitelist/check/{identifier}")
@@ -1074,7 +1075,6 @@ async def get_whitelist_app(app_id: str, _: dict = Depends(require_staff)):
 async def update_whitelist_priority(
     app_id: str,
     body: WhitelistPriorityUpdate,
-    background_tasks: BackgroundTasks,
     user: dict = Depends(require_staff),
 ):
     app_res = supabase.table("fivem_whitelist").select("*").eq("id", app_id).execute()
@@ -1090,7 +1090,7 @@ async def update_whitelist_priority(
     }
     res = supabase.table("fivem_whitelist").update(updates).eq("id", app_id).execute()
     updated_app = (res.data or [app_res.data[0]])[0]
-    background_tasks.add_task(_send_whitelist_email, updated_app, "priority", None, {
+    await _send_whitelist_email(updated_app, "priority", None, {
         "tier": updated_app.get("priority_tier") or "None",
         "level": updated_app.get("priority_level") or 0,
         "expires_at": updated_app.get("priority_expires_at"),
@@ -1147,7 +1147,7 @@ async def review_whitelist(
         background_tasks.add_task(_sync_to_txadmin, app_updated, username, "website")
 
         # 3. Send approval email
-        background_tasks.add_task(_send_whitelist_email, app, "approved", body.reviewer_note)
+        await _send_whitelist_email(app, "approved", body.reviewer_note)
 
         return {
             "message":  "Approved â€” syncing to server + sending email in background.",
@@ -1176,7 +1176,7 @@ async def review_whitelist(
             background_tasks.add_task(_discord_remove_whitelist_role, discord_id)
 
         # Send email notification (approved/denied/pending)
-        background_tasks.add_task(_send_whitelist_email, app, body.status, body.reviewer_note)
+        await _send_whitelist_email(app, body.status, body.reviewer_note)
 
         return {"message": f"Application {body.status}. Email notification sent."}
 
@@ -1301,7 +1301,7 @@ async def manual_add_whitelist(
         await _sync_to_txadmin(app, username, "website_manual")
 
     background_tasks.add_task(_push)
-    background_tasks.add_task(_send_whitelist_email, app, "approved", body.reviewer_note or "Manually added by staff.")
+    await _send_whitelist_email(app, "approved", body.reviewer_note or "Manually added by staff.")
     return {"message": "Player manually whitelisted â€” syncing to server in background.", "app": app}
 
 # â”€â”€â”€ Fallback Lua polling endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1686,7 +1686,6 @@ async def mark_ban_synced(body: BanSyncAck, request: Request):
 @router.post("/bans")
 async def create_ban(
     body: BanCreate,
-    background_tasks: BackgroundTasks,
     user: dict = Depends(require_staff)
 ):
     """
@@ -1750,7 +1749,7 @@ async def create_ban(
 
     matched_app = _find_whitelist_by_identifiers(ids)
     if matched_app:
-        background_tasks.add_task(_send_whitelist_email, matched_app, "banned", body.reason, {
+        await _send_whitelist_email(matched_app, "banned", body.reason, {
             "expires_at": expires_at,
             "duration": body.duration,
         })
@@ -1773,7 +1772,6 @@ async def delete_ban(ban_id: str, _: dict = Depends(require_admin)):
 @router.post("/bans/{ban_id}/unban")
 async def unban_player(
     ban_id: str,
-    background_tasks: BackgroundTasks,
     user: dict = Depends(require_staff)
 ):
     """
@@ -1806,7 +1804,7 @@ async def unban_player(
         ids.insert(0, ident)
     matched_app = _find_whitelist_by_identifiers(ids)
     if matched_app:
-        background_tasks.add_task(_send_whitelist_email, matched_app, "unbanned")
+        await _send_whitelist_email(matched_app, "unbanned")
 
     return {"message": "Player unbanned â€” queued for server sync.", "ban": ban}
 

@@ -4,7 +4,7 @@ Structured to match frontend DatabaseGUI shape.
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from html import escape
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from database import supabase
 from dependencies import require_staff, require_admin
@@ -339,7 +339,7 @@ async def user_set_role(user_id: str, body: UserActionBody, user: dict = Depends
     return {"message": f"Role set to {body.role}"}
 
 @router.post("/actions/users/{user_id}/send-reset")
-async def user_send_reset(user_id: str, bg: BackgroundTasks, _: dict = Depends(require_staff)):
+async def user_send_reset(user_id: str, _: dict = Depends(require_staff)):
     user = supabase.table("users").select("username,email").eq("id", user_id).limit(1).execute()
     if not user.data or not user.data[0].get("email"):
         raise HTTPException(status_code=404, detail="User email not found")
@@ -357,7 +357,7 @@ async def user_send_reset(user_id: str, bg: BackgroundTasks, _: dict = Depends(r
     return {"message": "Password reset email queued"}
 
 @router.post("/actions/users/{user_id}/send-email")
-async def user_send_email(user_id: str, body: UserActionBody, bg: BackgroundTasks, _: dict = Depends(require_staff)):
+async def user_send_email(user_id: str, body: UserActionBody, _: dict = Depends(require_staff)):
     user = supabase.table("users").select("username,email").eq("id", user_id).limit(1).execute()
     if not user.data or not user.data[0].get("email"):
         raise HTTPException(status_code=404, detail="User email not found")

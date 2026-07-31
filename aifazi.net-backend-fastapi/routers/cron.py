@@ -2,10 +2,13 @@
 # Called daily at 03:00 UTC by Vercel (see vercel.json "crons").
 # FIX #8: Logs a warning at startup if CRON_SECRET is missing in production.
 # H6: Constant-time comparison for the cron secret (previously used `!=`).
+# P2: Also drains the mail_queue (Hobby plan allows a single daily cron, so the
+#     daily cleanup tick doubles as the mail dispatcher).
 import os, hmac, logging
 from fastapi import APIRouter, Request, HTTPException
 from database import supabase
 from datetime import datetime, timedelta, timezone
+from utils.email_queue import dispatch_pending
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -55,4 +58,8 @@ async def cron_cleanup(request: Request):
         .neq("reset_token", None) \
         .execute()
 
-    return {"status": "ok", "ran_at": datetime.now(timezone.utc).isoformat()}
+    # P2: drain the mail queue so queued emails are actually delivered in production.
+    mail = await dispatch_pending()
+    logger.info("cron_cleanup: mail dispatch summary %s", mail)
+
+    return {"status": "ok", "ran_at": datetime.now(timezone.utc).isoformat(), "mail": mail}

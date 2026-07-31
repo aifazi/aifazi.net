@@ -6,6 +6,7 @@ import asyncio
 import os
 import time
 import hmac
+import ipaddress
 import logging
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -71,6 +72,12 @@ API_HOSTNAME = os.getenv("API_HOSTNAME", "api.aifazi.net")
 # Set INTERNAL_API_SECRET in your .env — use any long random string.
 INTERNAL_API_SECRET = os.getenv("INTERNAL_API_SECRET", "")
 if not INTERNAL_API_SECRET:
+    if _IS_PRODUCTION:
+        raise RuntimeError(
+            "INTERNAL_API_SECRET is not set. Refusing to start in production: "
+            "the middleware gate would fail open. Set it in Vercel Environment "
+            "Variables (Settings → Environment Variables) and redeploy."
+        )
     log.warning(
         "INTERNAL_API_SECRET is not set. Protected API endpoints will return 503 "
         "until the secret is configured."
@@ -143,15 +150,21 @@ _OPEN_EXACT: set[str] = {
     "/api/discord/login",       # redirect to Discord consent screen
     "/api/discord/callback",    # OAuth callback — issues JWT
     "/api/discord/logout",      # clear session
-    # Steam auth (still at legacy /api/forum/auth/steam) — POST/DELETE need internal token
-    "/api/forum/auth/steam/connect",
+    # Steam auth (still at legacy /api/forum/auth/steam) — POST/DELETE need internal token.
+    # NOTE: POST /connect was removed (unverified steam_id linking) — only the
+    # OpenID callback (mode=connect) links accounts now.
     "/api/forum/auth/steam/disconnect",
     # C6: mail delivery webhook (Brevo/Resend) — self-auth via MAIL_WEBHOOK_SECRET HMAC.
     # Without this entry, providers can't reach the endpoint past the X-Internal-Token gate.
     "/api/admin/mail/queue/webhook/inbound",
-    # Phase 1: Vercel cron polls /process-pending every 2 min to drain the mail_queue.
-    # Auth is dual (CRON_SECRET bearer OR staff JWT) handled inside the route.
+    # Phase 2: mail queue drain — the Hobby-tier daily /api/cron/cleanup tick
+    # now calls dispatch_pending() itself (see cron.py). This endpoint remains
+    # available for manual admin drains. Auth is dual (CRON_SECRET bearer OR
+    # staff JWT) handled inside the route.
     "/api/admin/mail/queue/process-pending",
+    # C1: Vercel cron cleanup (daily) — auth via Authorization: Bearer CRON_SECRET inside cron.py.
+    # Without this entry the middleware 403s the cron before cron.py's hmac check runs.
+    "/api/cron/cleanup",
 }
 # GET requests on these prefixes are open (public read)
 _OPEN_GET_PREFIXES: tuple[str, ...] = (
@@ -221,6 +234,50 @@ def _is_allowed_origin(origin: str) -> bool:
 _rl_store: dict[str, list[float]] = defaultdict(list)
 _rl_last_cleanup: float = 0.0
 _RL_CLEANUP_INTERVAL = 300  # prune dead buckets every 5 minutes
+
+# ── IP ban cache (in-memory, TTL-refreshed) ───────────────────────────────────
+# ip_bans rows (single IP or CIDR) are loaded once per TTL window so the hot
+# request path never blocks on a Supabase round-trip. Refreshes are best-effort:
+# a failed refresh keeps serving the previous snapshot.
+_ip_bans_cache: dict = {"networks": [], "fetched_at": 0.0}
+_IP_BANS_TTL = 60.0
+
+def _refresh_ip_bans(force: bool = False) -> None:
+    now = time.monotonic()
+    if not force and now - _ip_bans_cache["fetched_at"] < _IP_BANS_TTL:
+        return
+    try:
+        from database import supabase as _sb
+        res = _sb.table("ip_bans").select("ip").execute()
+        nets = []
+        for row in (res.data or []):
+            ip = (row.get("ip") or "").strip()
+            if not ip:
+                continue
+            try:
+                nets.append(ipaddress.ip_network(ip, strict=False))
+            except ValueError:
+                try:
+                    nets.append(ipaddress.ip_network(f"{ip}/32", strict=False))
+                except ValueError:
+                    continue
+        _ip_bans_cache["networks"] = nets
+        _ip_bans_cache["fetched_at"] = now
+    except Exception:
+        _ip_bans_cache["fetched_at"] = now  # don't retry hot-loop on DB outage
+
+def _ip_is_banned(ip: str) -> bool:
+    try:
+        addr = ipaddress.ip_address(ip.split("%")[0])
+    except ValueError:
+        return False
+    for net in _ip_bans_cache["networks"]:
+        try:
+            if addr in net:
+                return True
+        except TypeError:
+            continue
+    return False
 
 def _prune_rl_store(now: float) -> None:
     """Remove expired buckets to prevent memory growth under high unique-IP traffic."""
@@ -310,12 +367,25 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return resp
 
         # ── 2. Rate limiting ───────────────────────────────────────────────────
-        forwarded = request.headers.get("X-Forwarded-For", "")
-        ip = forwarded.split(",")[0].strip() if forwarded else (
-            request.client.host if request.client else "unknown"
-        )
+        # Client IP must NOT come from the user-supplied X-Forwarded-For: its
+        # first entry is attacker-controlled and lets one client rotate IPs to
+        # bypass the limiter. Vercel sets the authoritative `x-vercel-forwarded-for`;
+        # behind any other proxy the trusted value is the RIGHTMOST XFF entry
+        # (the one appended by the proxy). Fall back to the socket peer only if
+        # neither is present.
+        ip = (request.headers.get("x-vercel-forwarded-for", "")
+              or (request.headers.get("x-forwarded-for", "") or "").rsplit(",", 1)[-1].strip()
+              or (request.client.host if request.client else "unknown"))
         now  = time.monotonic()
         _prune_rl_store(now)   # periodic cleanup — prevents memory growth
+
+        # ── 2b. IP ban enforcement ─────────────────────────────────────────────
+        _refresh_ip_bans()
+        if _ip_is_banned(ip):
+            return JSONResponse(
+                status_code=403,
+                content={"error": "Your IP address is blocked."},
+            )
         max_calls, window = _get_limit(path)
         bucket = f"{ip}:{path}"
         ts = _rl_store.get(bucket, [])

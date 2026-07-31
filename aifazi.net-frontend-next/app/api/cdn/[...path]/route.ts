@@ -41,12 +41,18 @@ export async function GET(
 
   // Build asset path — strip cloud-name prefix if the caller included it
   const { path } = await params
+  if (path.length > 32 || path.join('/').length > 1024) {
+    return NextResponse.json({ error: 'CDN path too long' }, { status: 414 })
+  }
   let assetPath = '/' + path.join('/')
   if (assetPath.startsWith('/' + cloud + '/')) {
     assetPath = assetPath.slice(('/' + cloud).length)
   }
 
   const { search } = new URL(request.url)
+  if (search.length > 512) {
+    return NextResponse.json({ error: 'CDN query too long' }, { status: 414 })
+  }
   const upstream   = `https://res.cloudinary.com/${cloud}${assetPath}${search}`
 
   try {

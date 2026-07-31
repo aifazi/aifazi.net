@@ -4,8 +4,13 @@ routers/steam_auth.py — Steam OpenID 2.0 login for forum users
 Flow:
   1. GET  /api/forum/auth/steam/login          → redirect to Steam OpenID
   2. GET  /api/forum/auth/steam/callback       → validate OpenID → upsert forum_users → JWT → redirect
-  3. POST /api/forum/auth/steam/connect        → link Steam to already-logged-in account
-  4. DEL  /api/forum/auth/steam/disconnect     → unlink Steam (requires password set)
+  3. GET  /api/forum/auth/steam/connect-init   → start link flow (issues link_token)
+  4. GET  /api/forum/auth/steam/connect-url    → OpenID URL for linking (mode=connect)
+  5. DEL  /api/forum/auth/steam/disconnect     → unlink Steam (requires password set)
+
+  Note: Steam linking ONLY happens via the OpenID callback (mode=connect) after
+  Steam verifies ownership. There is intentionally NO client-supplied steam_id
+  link endpoint — that would let a user claim someone else's Steam64.
 
 Vercel env vars needed:
   STEAM_API_KEY    — from https://steamcommunity.com/dev/apikey  (optional but recommended)
@@ -362,46 +367,6 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     new_flag = "&new_account=1" if is_new_account else ""
     # Use hash fragment instead of query param — tokens don't appear in server logs or Referer headers
     return RedirectResponse(f"{front}/auth/steam-callback#token={token}&dest={safe_dest}{new_flag}")
-
-
-@router.post("/connect")
-async def steam_connect(request: Request,
-                        creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
-    """
-    Link a Steam account to an already-logged-in forum_users account.
-    Called from the profile page after a Steam OpenID round-trip.
-    Body: { steam_id, steam_username, steam_avatar }
-    """
-    payload = _get_forum_user(creds)
-    if not payload:
-        raise HTTPException(401, "Not authenticated")
-    if _active_identity_locked(payload["id"]):
-        raise HTTPException(423, ACTIVE_IDENTITY_MESSAGE)
-
-    body = await request.json()
-    steam64        = str(body.get("steam_id", "")).strip()
-    steam_username = body.get("steam_username", "").strip()
-    steam_avatar   = body.get("steam_avatar", "").strip()
-
-    if not steam64 or not re.fullmatch(r"\d{17}", steam64):
-        raise HTTPException(400, "Invalid Steam64 ID (must be 17 digits)")
-
-    # Uniqueness check — make sure this Steam account isn't already linked elsewhere
-    ex = supabase.table("users").select("id,username").eq("steam_id", steam64).execute()
-    if ex.data and ex.data[0]["id"] != payload["id"]:
-        raise HTTPException(409,
-            f"This Steam account is already linked to @{ex.data[0]['username']}")
-
-    supabase.table("users").update({
-        "steam_id":       steam64,
-        "steam_username": steam_username,
-        "steam_avatar":   steam_avatar,
-        "last_seen":      _now(),
-    }).eq("id", payload["id"]).execute()
-
-    _record_activity(payload["id"], payload.get("username", ""),
-                     "steam_connect", f"steam64={steam64}")
-    return {"ok": True, "steam_hex": _steam64_to_hex(steam64)}
 
 
 @router.delete("/disconnect")

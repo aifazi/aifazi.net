@@ -8,7 +8,7 @@ import logging
 import os
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, HTTPException, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from pydantic import BaseModel
 from database import supabase
 from dependencies import require_staff
@@ -177,7 +177,7 @@ class BulkActionBody(BaseModel):
 
 
 @router.post("/action")
-async def bulk_action(body: BulkActionBody, bg: BackgroundTasks, _: dict = Depends(require_staff)):
+async def bulk_action(body: BulkActionBody, _: dict = Depends(require_staff)):
     if body.action not in ("resend", "cancel"):
         raise HTTPException(400, "Invalid action. Use 'resend' or 'cancel'.")
     if not body.ids:
@@ -214,7 +214,7 @@ async def bulk_action(body: BulkActionBody, bg: BackgroundTasks, _: dict = Depen
 # ── POST /{queue_id}/resend — individual resend ─────────────
 
 @router.post("/{queue_id}/resend")
-async def resend_item(queue_id: str, bg: BackgroundTasks, _: dict = Depends(require_staff)):
+async def resend_item(queue_id: str, _: dict = Depends(require_staff)):
     res = supabase.table("mail_queue").select("*").eq("id", queue_id).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Queue item not found")
