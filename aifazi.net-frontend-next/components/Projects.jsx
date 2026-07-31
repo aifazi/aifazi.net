@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
-import { EditableList, EditableText } from '../context/EditContext'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { AnimatableWrapper, EditableList, EditableText } from '../context/EditContext'
 import { useSplitTextReveal } from '../hooks/useSplitTextReveal'
 import { useReveal } from '../hooks/useReveal'
 import api from '@/lib/api'
@@ -229,60 +229,89 @@ function ProjectPreview({ project }) {
 }
 
 function ProjectCard({ project, index }) {
-  const ref = useRef()
-  useEffect(() => {
-    const el = ref.current; if (!el) return
-    el.style.opacity = '0'
-    el.style.transform = 'translateY(40px)'
-    let ctx
-    Promise.all([
-      import('gsap').then(m => m.gsap),
-      import('gsap/ScrollTrigger').then(m => m.ScrollTrigger),
-    ]).then(([gsap, ScrollTrigger]) => {
-      if (!el) return
-      gsap.registerPlugin(ScrollTrigger)
-      ctx = gsap.context(() => {
-        gsap.fromTo(el,
-          { opacity: 0, y: 40 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.7,
-            delay: index * 0.08,
-            ease: 'expo.out',
-            scrollTrigger: { trigger: el, start: 'top bottom', once: true },
-          }
-        )
-      })
-    }).catch(() => {
-      if (el) { el.style.opacity = '1'; el.style.transform = 'none' }
-    })
-    return () => { try { ctx?.revert() } catch {} }
-  }, [index])
+  const ref = useReveal()
+  const cardRef = useRef(null)
+
+  const handleMouseMove = useCallback((e) => {
+    const el = cardRef.current; if (!el) return
+    const rect = el.getBoundingClientRect()
+    el.style.setProperty('--mx', `${((e.clientX - rect.left) / rect.width) * 100}%`)
+    el.style.setProperty('--my', `${((e.clientY - rect.top) / rect.height) * 100}%`)
+  }, [])
+  const handleMouseEnter = useCallback(() => {
+    const el = cardRef.current; if (!el) return
+    el.style.borderColor = 'rgba(0,255,136,0.4)'
+    el.style.transform   = 'translateY(-6px)'
+    el.style.boxShadow   = '0 20px 60px rgba(0,0,0,0.4),0 0 0 1px rgba(0,255,136,0.15),inset 0 1px 0 rgba(0,255,136,0.08)'
+    el.querySelector('.prj-scan')?.classList.add('prj-scan--active')
+  }, [])
+  const handleMouseLeave = useCallback(() => {
+    const el = cardRef.current; if (!el) return
+    el.style.borderColor = 'var(--border)'; el.style.transform = ''; el.style.boxShadow = ''
+    el.querySelector('.prj-scan')?.classList.remove('prj-scan--active')
+  }, [])
 
   const Wrapper = project.link ? 'a' : 'div'
 
   return (
-    <Wrapper ref={ref} className="animated-border" href={project.link || undefined} target={project.link ? '_blank' : undefined} rel="noopener noreferrer"
-      style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: 36, position: 'relative', overflow: 'hidden', transition: 'border-color 0.3s, transform 0.4s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s', opacity: 1, transform: 'translateY(0)', cursor: project.link ? 'pointer' : 'default', textDecoration: 'none', display: 'block' }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,255,136,0.35)'; e.currentTarget.style.transform = 'translateY(-8px) scale(1.01)'; e.currentTarget.style.boxShadow = '0 24px 60px rgba(0,0,0,0.4), 0 0 30px rgba(0,255,136,0.07)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = 'none' }}
+    <AnimatableWrapper
+      animKey={`projects.item.${index}`}
+      label={`Project Card: ${project.title || `Project ${index + 1}`}`}
+      currentAnim="fadeUp 0.75s both"
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}
     >
-      <div style={{ position: 'absolute', top: 0, right: 0, width: 40, height: 40, background: 'linear-gradient(225deg, rgba(0,255,136,0.15) 0%, transparent 60%)' }} />
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 20, opacity: 0.35 }}>{project.num}</div>
-      <ProjectPreview project={project} />
-      {!project.preview && <div style={{ fontSize: 36, marginBottom: 20, display: 'inline-block', animation: 'float 6s ease-in-out infinite', animationDelay: `${index * 0.5}s` }}>{project.icon}</div>}
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 12, lineHeight: 1.2 }}>
-        <EditableText contentKey={`project.${index}.title`} defaultValue={project.title} />
+      <div ref={ref} className="fade-up prj-card-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Wrapper
+          ref={cardRef}
+          href={project.link || undefined}
+          target={project.link ? '_blank' : undefined}
+          rel="noopener noreferrer"
+          className="prj-card"
+          onMouseMove={handleMouseMove}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          style={{ textDecoration: 'none', cursor: project.link ? 'pointer' : 'default' }}
+        >
+          <div className="prj-spotlight" />
+          <div className="prj-scan" />
+          <span className="prj-corner prj-corner--tl" />
+          <span className="prj-corner prj-corner--br" />
+
+          {/* Preview (media / custom) */}
+          <ProjectPreview project={project} />
+
+          {/* Icon + number row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, position: 'relative', zIndex: 1 }}>
+            {project.preview
+              ? <span />
+              : <span style={{ fontSize: 30, display: 'inline-block', animation: 'float 6s ease-in-out infinite', animationDelay: `${index * 0.5}s` }}>{project.icon}</span>}
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{project.num}</span>
+          </div>
+
+          {/* Title */}
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10, lineHeight: 1.25, position: 'relative', zIndex: 1 }}>
+            <EditableText contentKey={`project.${index}.title`} defaultValue={project.title} />
+          </div>
+
+          {/* Description */}
+          <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 18, position: 'relative', zIndex: 1 }}>
+            <EditableText contentKey={`project.${index}.desc`} defaultValue={project.desc} multiline />
+          </p>
+
+          {/* Tags + link */}
+          <div style={{ marginTop: 'auto', position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: project.link ? 14 : 0 }}>
+              {(project.tags || []).map(t => <span key={t} className="tag" style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t}</span>)}
+            </div>
+            {project.link && (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 2, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 14 }}>
+                VIEW PROJECT →
+              </div>
+            )}
+          </div>
+        </Wrapper>
       </div>
-      <p style={{ fontSize: 15, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 24 }}>
-        <EditableText contentKey={`project.${index}.desc`} defaultValue={project.desc} multiline />
-      </p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {(project.tags || []).map(t => <span key={t} className="tag" style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t}</span>)}
-      </div>
-      {project.link && <div style={{ marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 2 }}>VIEW PROJECT →</div>}
-    </Wrapper>
+    </AnimatableWrapper>
   )
 }
 
@@ -298,14 +327,16 @@ export default function Projects() {
   }, [])
 
   return (
-    <section id="projects" style={{ padding: '120px 60px', background: 'var(--bg2)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', position: 'relative', zIndex: 1 }}>
-      <div ref={headerRef} className="fade-up section-header">
-        <span className="section-tag">06 /</span>
-        <h2 ref={titleRef} className="section-title">Projects</h2>
-        <div className="section-line" />
-      </div>
+    <section id="projects" style={{ padding: '120px 60px', background: 'var(--bg2)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', position: 'relative', zIndex: 1 }} className="projects-section">
+      <AnimatableWrapper animKey="projects.header" label="Projects Section Header" currentAnim="fadeUp 0.8s both">
+        <div ref={headerRef} className="fade-up section-header">
+          <span className="section-tag">06 /</span>
+          <h2 ref={titleRef} className="section-title">Projects</h2>
+          <div className="section-line" />
+        </div>
+      </AnimatableWrapper>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1 }} className="projects-grid">
+      <div className="projects-grid">
         <EditableList
           contentKey="projects.items"
           defaultValue={projects}
@@ -316,14 +347,62 @@ export default function Projects() {
         />
       </div>
 
+      <NewsletterTerminal />
+
       <style>{`
+        .projects-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+          gap: 24px;
+          align-items: stretch;
+          width: min(100%, 1500px);
+          margin: 48px auto 0;
+        }
+
+        .prj-card-wrapper { display: flex; flex-direction: column; flex: 1; height: 100%; }
+
+        .prj-card {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          height: 100%;
+          padding: 28px;
+          background: var(--bg3);
+          border: 1px solid var(--border);
+          border-radius: 4px;
+          overflow: hidden;
+          transition: border-color .35s ease, transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s ease;
+          --mx: 50%; --my: 50%;
+        }
+
+        .prj-spotlight {
+          position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+          opacity: 0; background: radial-gradient(200px circle at var(--mx) var(--my), rgba(0,255,136,0.07) 0%, transparent 70%);
+          transition: opacity .3s ease; z-index: 0;
+        }
+        .prj-card:hover .prj-spotlight { opacity: 1; }
+
+        .prj-scan {
+          position: absolute; left: 0; right: 0; height: 2px;
+          background: linear-gradient(90deg,transparent,rgba(0,255,136,0.5),transparent);
+          top: -2px; pointer-events: none; z-index: 2; opacity: 0;
+        }
+        .prj-scan--active { opacity: 1; animation: prjScanLine 1.4s ease-out forwards; }
+        @keyframes prjScanLine { 0%{top:0%;opacity:1} 80%{top:96%;opacity:1} 100%{top:100%;opacity:0} }
+
+        .prj-corner { position:absolute; width:14px; height:14px; pointer-events:none; transition:border-color .35s,width .35s,height .35s; z-index:3; }
+        .prj-corner--tl { top:8px;left:8px; border-top:1.5px solid rgba(0,255,136,0); border-left:1.5px solid rgba(0,255,136,0); }
+        .prj-corner--br { bottom:8px;right:8px; border-bottom:1.5px solid rgba(0,255,136,0); border-right:1.5px solid rgba(0,255,136,0); }
+        .prj-card:hover .prj-corner--tl,.prj-card:hover .prj-corner--br { width:20px;height:20px; border-color:rgba(0,255,136,0.7); }
+
         #projects .project-preview {
           position: relative;
           width: 100%;
           aspect-ratio: 16 / 6.2;
           min-height: 112px;
           max-height: 220px;
-          margin: -8px 0 22px;
+          margin: -8px 0 18px;
           border: 1px solid rgba(0,212,255,0.24);
           background:
             radial-gradient(circle at 50% 38%, rgba(0,255,136,0.13), transparent 35%),
@@ -417,11 +496,13 @@ export default function Projects() {
           color: var(--muted);
         }
         #projects .preview-terminal strong { color: var(--green); font-weight: 700; }
-        @media (max-width: 1024px) { #projects .projects-grid { grid-template-columns: repeat(2,1fr) !important; } }
-        @media (max-width: 640px)  { #projects .projects-grid { grid-template-columns: 1fr !important; } }
-        @media (max-width: 900px)  { #projects { padding: 80px 24px !important; } }
-        @media (max-width: 480px)  { #projects { padding: 60px 12px !important; } #projects .projects-grid > div, #projects .projects-grid > a { padding: 20px !important; } }
-        @media (prefers-reduced-motion: reduce) { #projects .projects-grid > * { opacity: 1 !important; transform: none !important; } }
+
+        .projects-section .newsletter-terminal,
+        .projects-section .newsletter-inner-grid { max-width: 1500px; margin-left: auto; margin-right: auto; }
+
+        @media (max-width: 900px)  { .projects-section { padding: 80px 24px !important; } }
+        @media (max-width: 480px)  { .projects-section { padding: 60px 12px !important; } }
+        @media (prefers-reduced-motion: reduce) { .projects-grid > * { opacity: 1 !important; transform: none !important; } }
       `}</style>
     </section>
   )

@@ -1,8 +1,8 @@
 'use client'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useReveal } from '../hooks/useReveal'
 import { useSplitTextReveal } from '../hooks/useSplitTextReveal'
-import { EditableList, EditableText } from '../context/EditContext'
+import { AnimatableWrapper, EditableList, EditableText } from '../context/EditContext'
 import { IconDisplay, useLordiconScript } from './IconPicker'
 
 const DEFAULT_SERVICES = [
@@ -22,63 +22,81 @@ const SERVICE_FIELDS = [
 
 // Proper sub-component so hooks are called at component top level
 function ServiceCard({ svc, i }) {
-  const ref = useRef()
+  const ref = useReveal()
+  const cardRef = useRef(null)
   useLordiconScript()
   const accent = svc.accent || 'var(--cyan)'
 
-  useEffect(() => {
-    const el = ref.current; if (!el) return
-    el.style.opacity = '0'
-    el.style.transform = 'translateY(36px)'
-    let ctx
-    Promise.all([
-      import('gsap').then(m => m.gsap),
-      import('gsap/ScrollTrigger').then(m => m.ScrollTrigger),
-    ]).then(([gsap, ScrollTrigger]) => {
-      if (!el) return
-      gsap.registerPlugin(ScrollTrigger)
-      ctx = gsap.context(() => {
-        gsap.fromTo(el,
-          { opacity: 0, y: 36 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.7,
-            delay: i * 0.12,
-            ease: 'expo.out',
-            scrollTrigger: { trigger: el, start: 'top bottom', once: true },
-          }
-        )
-      })
-    }).catch(() => {
-      if (el) { el.style.opacity = '1'; el.style.transform = 'none' }
-    })
-    return () => { try { ctx?.revert() } catch {} }
-  }, [i])
+  const handleMouseMove = useCallback((e) => {
+    const el = cardRef.current; if (!el) return
+    const rect = el.getBoundingClientRect()
+    el.style.setProperty('--mx', `${((e.clientX - rect.left) / rect.width) * 100}%`)
+    el.style.setProperty('--my', `${((e.clientY - rect.top) / rect.height) * 100}%`)
+  }, [])
+  const handleMouseEnter = useCallback(() => {
+    const el = cardRef.current; if (!el) return
+    el.style.borderColor = 'rgba(0,255,136,0.4)'
+    el.style.transform   = 'translateY(-6px)'
+    el.style.boxShadow   = '0 20px 60px rgba(0,0,0,0.4),0 0 0 1px rgba(0,255,136,0.15),inset 0 1px 0 rgba(0,255,136,0.08)'
+    el.querySelector('.svc-scan')?.classList.add('svc-scan--active')
+  }, [])
+  const handleMouseLeave = useCallback(() => {
+    const el = cardRef.current; if (!el) return
+    el.style.borderColor = 'var(--border)'; el.style.transform = ''; el.style.boxShadow = ''
+    el.querySelector('.svc-scan')?.classList.remove('svc-scan--active')
+  }, [])
+
   return (
-    <div ref={ref}
-      style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '40px 36px', position: 'relative', overflow: 'hidden', transition: 'border-color 0.3s, transform 0.3s' }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = 'translateY(-4px)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'translateY(0)' }}
+    <AnimatableWrapper
+      animKey={`services.item.${i}`}
+      label={`Services Card: ${svc.title || `Service ${i + 1}`}`}
+      currentAnim="fadeUp 0.75s both"
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}
     >
-      <div style={{ position: 'absolute', top: 0, left: 0, width: 60, height: 60, background: `linear-gradient(135deg, ${accent}18, transparent 60%)` }} />
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${accent}, transparent)` }} />
-      <div style={{ fontSize: 36, marginBottom: 20 }}><IconDisplay value={svc.icon} size={36} /></div>
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 12, lineHeight: 1.2 }}>
-        <EditableText contentKey={`service.${i}.title`} defaultValue={svc.title} />
-      </h3>
-      <p style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>
-        <EditableText contentKey={`service.${i}.desc`} defaultValue={svc.desc} multiline />
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {(svc.features || []).map((f, fi) => (
-          <div key={fi} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>
-            <span style={{ color: accent, fontSize: 14 }}>→</span>
-            <EditableText contentKey={`service.${i}.feature.${fi}`} defaultValue={f} />
+      <div ref={ref} className="fade-up svc-card-wrapper" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div
+          ref={cardRef}
+          className="svc-card"
+          onMouseMove={handleMouseMove}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div className="svc-spotlight" />
+          <div className="svc-scan" />
+          <span className="svc-corner svc-corner--tl" />
+          <span className="svc-corner svc-corner--br" />
+
+          {/* Index + icon row */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18, position: 'relative', zIndex: 1 }}>
+            <div style={{ width: 56, height: 56, border: '1px solid rgba(0,212,255,0.22)', background: 'rgba(0,212,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', borderRadius: 3 }}>
+              <IconDisplay value={svc.icon} size={30} />
+              <span style={{ position: 'absolute', bottom: -1, right: -1, width: 8, height: 8, background: accent, boxShadow: `0 0 10px ${accent}`, borderRadius: '50%' }} />
+            </div>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{String(i + 1).padStart(2, '0')}</span>
           </div>
-        ))}
+
+          {/* Title — admin-editable inline */}
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: 'var(--text)', marginBottom: 10, lineHeight: 1.25, position: 'relative', zIndex: 1 }}>
+            <EditableText contentKey={`service.${i}.title`} defaultValue={svc.title} />
+          </div>
+
+          {/* Description */}
+          <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7, marginBottom: 20, position: 'relative', zIndex: 1 }}>
+            <EditableText contentKey={`service.${i}.desc`} defaultValue={svc.desc} multiline />
+          </p>
+
+          {/* Feature terminal list */}
+          <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 16, position: 'relative', zIndex: 1 }}>
+            {(svc.features || []).map((f, fi) => (
+              <div key={fi} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text)', lineHeight: 1.9 }}>
+                <span style={{ color: accent, fontSize: 12, flexShrink: 0 }}>›</span>
+                <EditableText contentKey={`service.${i}.feature.${fi}`} defaultValue={f} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
+    </AnimatableWrapper>
   )
 }
 
@@ -88,13 +106,15 @@ export default function Services() {
 
   return (
     <section id="services" style={{ padding: '120px 60px', position: 'relative', zIndex: 1 }} className="services-section">
-      <div ref={headerRef} className="fade-up section-header">
-        <span className="section-tag">04 /</span>
-        <h2 ref={titleRef} className="section-title">Services</h2>
-        <div className="section-line" />
-      </div>
+      <AnimatableWrapper animKey="services.header" label="Services Section Header" currentAnim="fadeUp 0.8s both">
+        <div ref={headerRef} className="fade-up section-header">
+          <span className="section-tag">04 /</span>
+          <h2 ref={titleRef} className="section-title">Services</h2>
+          <div className="section-line" />
+        </div>
+      </AnimatableWrapper>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }} className="services-grid">
+      <div className="services-grid">
         <EditableList
           contentKey="services.items"
           defaultValue={DEFAULT_SERVICES}
@@ -104,7 +124,57 @@ export default function Services() {
         />
       </div>
 
-      <style>{`/* responsive handled by globals.css */`}</style>
+      <style>{`
+        .services-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 360px));
+          gap: 24px;
+          align-items: stretch;
+          justify-content: center;
+          width: min(100%, 1500px);
+          margin: 48px auto 0;
+        }
+
+        .svc-card-wrapper { display: flex; flex-direction: column; flex: 1; height: 100%; }
+
+        .svc-card {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          height: 100%;
+          padding: 32px;
+          background: var(--bg2);
+          border: 1px solid var(--border);
+          border-radius: 4px;
+          overflow: hidden;
+          transition: border-color .35s ease, transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s ease;
+          --mx: 50%; --my: 50%;
+        }
+
+        .svc-spotlight {
+          position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+          opacity: 0; background: radial-gradient(200px circle at var(--mx) var(--my), rgba(0,255,136,0.07) 0%, transparent 70%);
+          transition: opacity .3s ease; z-index: 0;
+        }
+        .svc-card:hover .svc-spotlight { opacity: 1; }
+
+        .svc-scan {
+          position: absolute; left: 0; right: 0; height: 2px;
+          background: linear-gradient(90deg,transparent,rgba(0,255,136,0.5),transparent);
+          top: -2px; pointer-events: none; z-index: 2; opacity: 0;
+        }
+        .svc-scan--active { opacity: 1; animation: svcScanLine 1.4s ease-out forwards; }
+        @keyframes svcScanLine { 0%{top:0%;opacity:1} 80%{top:96%;opacity:1} 100%{top:100%;opacity:0} }
+
+        .svc-corner { position:absolute; width:14px; height:14px; pointer-events:none; transition:border-color .35s,width .35s,height .35s; z-index:3; }
+        .svc-corner--tl { top:8px;left:8px; border-top:1.5px solid rgba(0,255,136,0); border-left:1.5px solid rgba(0,255,136,0); }
+        .svc-corner--br { bottom:8px;right:8px; border-bottom:1.5px solid rgba(0,255,136,0); border-right:1.5px solid rgba(0,255,136,0); }
+        .svc-card:hover .svc-corner--tl,.svc-card:hover .svc-corner--br { width:20px;height:20px; border-color:rgba(0,255,136,0.7); }
+
+        @media (max-width: 900px) { .services-section { padding: 80px 24px !important; } }
+        @media (max-width: 480px)  { .services-section { padding: 60px 12px !important; } }
+      `}</style>
     </section>
   )
 }
