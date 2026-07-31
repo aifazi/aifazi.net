@@ -1,6 +1,6 @@
 --[[
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  aifazi_status / config.lua  v6.0
+  aifazi_status / config.lua  v8.0
   ✏️  THIS IS THE ONLY FILE YOU NEED TO EDIT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ]]
@@ -11,7 +11,7 @@ Config = {}
 --  🌐 BACKEND
 --  Your FastAPI backend — no trailing slash
 -- ─────────────────────────────────────────────────────────────
-Config.BackendUrl = "https://api.aifazi.net"
+Config.BackendUrl = GetConvar("backend_url", "https://api.aifazi.net")
 
 -- ─────────────────────────────────────────────────────────────
 --  🔑 SECRET
@@ -24,7 +24,7 @@ Config.Secret = GetConvar("fivem_api_secret", "")
 --  🕒 TIMINGS  (milliseconds)
 --  Set StatusInterval / SyncInterval to 0 to disable interval loops.
 --  Default is event/manual refresh only: startup, connect/drop, shutdown,
---  txAdmin events, or the commands below.
+--  txAdmin events, or the commands in server.lua.
 -- ─────────────────────────────────────────────────────────────
 Config.StatusInterval = 0      -- 0 = no 30s status loop
 Config.SyncInterval   = 0      -- 0 = no 30s pending-sync poll
@@ -43,6 +43,22 @@ Config.StartupDelay   = 8000   -- wait before first push after start
 --                     (safer for production)
 -- ─────────────────────────────────────────────────────────────
 Config.WhitelistFailOpen = false  -- set true only for testing
+
+
+-- ─────────────────────────────────────────────────────────────
+--  APPLICATION ACTIONS
+--  Approved website forms are polled by server.lua. Match is by
+--  license, license2, discord, steam, or fivem identifier.
+-- ─────────────────────────────────────────────────────────────
+Config.ApplicationActionInterval = Config.SyncInterval
+Config.ApplicationActions = {
+    staff = { enabled = true, website_role = "moderator", game = { type = "group", group = "staff" } },
+    moderator = { enabled = true, website_role = "moderator", game = { type = "group", group = "mod" } },
+    admin = { enabled = true, website_role = "admin", game = { type = "group", group = "admin" } },
+    police = { enabled = true, game = { type = "job", job = "police", grade = 0 } },
+    ambulance = { enabled = true, game = { type = "job", job = "ambulance", grade = 0 } },
+    doj = { enabled = true, game = { type = "job", job = "lawyer", grade = 0 } },
+}
 
 -- ─────────────────────────────────────────────────────────────
 --  txAdmin SYNC

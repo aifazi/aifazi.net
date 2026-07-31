@@ -1542,6 +1542,7 @@ async def receive_txadmin_event(
 
         if identifier:
             # Check if ban already exists
+            action_id = data.get("actionId") or data.get("action_id")
             existing = supabase.table("fivem_bans").select("id") \
                 .eq("identifier", identifier).eq("active", True).execute()
             if not existing.data:
@@ -1554,23 +1555,36 @@ async def receive_txadmin_event(
                     "active":      True,
                     "expires_at":  expires_at,
                     "source":      "txadmin",
+                    "txadmin_synced": True,
+                    "txadmin_action_id": str(action_id) if action_id else None,
                 }).execute()
                 log.info("txAdminâ†’website: ban synced for %s by %s", identifier, admin_name)
                 background_tasks.add_task(_push_realtime, "player_banned_txadmin", {
                     "identifier": identifier, "player_name": player_name,
                     "reason": reason, "banned_by": admin_name,
                 })
+            elif action_id:
+                supabase.table("fivem_bans").update({
+                    "txadmin_synced": True,
+                    "txadmin_action_id": str(action_id),
+                }).eq("id", existing.data[0]["id"]).execute()
 
     elif event == "playerUnbanned":
         # txAdmin unbanned a player â€” lift the ban on website
         identifier = data.get("license") or data.get("identifier", "")
         admin_name = data.get("adminName", "txAdmin")
         if identifier:
-            supabase.table("fivem_bans").update({
+            action_id = data.get("actionId") or data.get("action_id")
+            updates: dict = {
                 "active":       False,
                 "unbanned_by":  admin_name,
                 "unbanned_at":  _now(),
-            }).eq("identifier", identifier).eq("active", True).execute()
+                "source":       "txadmin",
+                "txadmin_synced": True,
+            }
+            if action_id:
+                updates["txadmin_action_id"] = str(action_id)
+            supabase.table("fivem_bans").update(updates).eq("identifier", identifier).eq("active", True).execute()
             log.info("txAdminâ†’website: unban synced for %s by %s", identifier, admin_name)
             background_tasks.add_task(_push_realtime, "player_unbanned_txadmin", {
                 "identifier": identifier, "unbanned_by": admin_name,
@@ -1612,6 +1626,7 @@ async def pending_ban_sync(request: Request, limit: int = 25):
             "discord": discord_id,
             "player_name": ban.get("player_name") or "Unknown",
             "reason": ban.get("reason") or "Banned",
+            "duration": _ban_duration_txadmin(ban),
             "banned_by": ban.get("banned_by") or "website",
             "expires_at": ban.get("expires_at"),
             "expire": _ban_expire_epoch(ban.get("expires_at")),
@@ -1624,7 +1639,7 @@ async def pending_unban_sync(request: Request, limit: int = 25):
     res = (supabase.table("fivem_bans").select("*")
            .eq("active", False)
            .eq("txadmin_synced", False)
-           .eq("source", "qbx_unban_pending")
+           .in_("source", ("qbx_unban_pending", "txadmin_unban_pending", "txadmin_revoke_failed"))
            .order("unbanned_at", desc=False)
            .limit(limit)
            .execute())
@@ -1658,9 +1673,119 @@ async def mark_ban_synced(body: BanSyncAck, request: Request):
     supabase.table("fivem_bans").update(updates).eq("id", body.ban_id).execute()
     return {"ok": True, "synced": body.ok}
 
+
+# ── Ban application via txAdmin (website → game server) ───────────────────────
+def _ban_duration_txadmin(ban: dict) -> str:
+    dur = (ban.get("duration") or "").strip().lower()
+    return dur if dur in {"permanent", "2 hours", "12 hours", "1 day", "2 days", "1 week", "2 weeks", "1 month"} else "permanent"
+
+
+def _resolve_net_id(ids: list[str]) -> Optional[int]:
+    """Find the current netId of an online player from the latest fivem_players snapshot."""
+    try:
+        res = supabase.table("fivem_players").select("players").eq("id", "main").execute()
+        if not res.data:
+            return None
+        for p in res.data[0].get("players") or []:
+            if not isinstance(p, dict):
+                continue
+            pids = _player_identifiers(p)
+            known = {str(x).lower() for x in pids.get("all", [])}
+            for ident in ids:
+                if str(ident or "").lower() in known:
+                    return p.get("server_id")
+    except Exception as exc:
+        log.warning("Could not resolve netId for ban: %s", exc)
+    return None
+
+
+async def _push_ban_to_txadmin(ban_id: str) -> dict:
+    """Apply a website ban through txAdmin; marks the row synced on success."""
+    try:
+        res = supabase.table("fivem_bans").select("*").eq("id", ban_id).execute()
+        ban = (res.data or [None])[0]
+        if not ban or not ban.get("active"):
+            return {"ok": False, "skipped": True}
+        ids = _normalize_identifier_list(ban.get("all_ids"))
+        ident = (ban.get("identifier") or "").strip()
+        if ident and ident not in ids:
+            ids.insert(0, ident)
+        reason = ban.get("reason") or "Banned via aifazi.net"
+        duration = _ban_duration_txadmin(ban)
+        action_id: Optional[str] = None
+        net_id = _resolve_net_id(ids)
+        if net_id:
+            ok, result = await txa.ban_online_player(int(net_id), reason, duration)
+            action_id = result if ok else None
+        else:
+            ok, result = await txa.ban_by_identifiers(ids, ban.get("player_name") or "Unknown", reason, duration)
+            action_id = result if ok else None
+        if ok:
+            supabase.table("fivem_bans").update({
+                "txadmin_synced": True,
+                "source": "txadmin",
+                "txadmin_action_id": action_id,
+            }).eq("id", ban_id).execute()
+            await _push_realtime("player_banned_synced", {
+                "ban_id": ban_id,
+                "identifier": ident or (ids[0] if ids else None),
+            })
+            return {"ok": True}
+        supabase.table("fivem_bans").update({
+            "txadmin_synced": False,
+            "source": "txadmin_failed",
+            "txadmin_action_id": None,
+        }).eq("id", ban_id).execute()
+        await _push_realtime("player_ban_sync_failed", {
+            "ban_id": ban_id,
+            "error": str(action_id)[:200],
+        })
+        return {"ok": False, "error": action_id}
+    except Exception as exc:
+        log.warning("txAdmin ban push failed for %s: %s", ban_id, exc)
+        return {"ok": False, "error": str(exc)}
+
+
+async def _push_unban_to_txadmin(ban_id: str) -> dict:
+    """Revoke a txAdmin ban by its stored actionId; marks the row synced on success."""
+    try:
+        res = supabase.table("fivem_bans").select("*").eq("id", ban_id).execute()
+        ban = (res.data or [None])[0]
+        if not ban or ban.get("active"):
+            return {"ok": False, "skipped": True}
+        action_id = (ban.get("txadmin_action_id") or "").strip()
+        if not action_id:
+            supabase.table("fivem_bans").update({
+                "txadmin_synced": False,
+                "source": "txadmin_revoke_failed",
+            }).eq("id", ban_id).execute()
+            return {"ok": False, "error": "no_action_id"}
+        ok, msg = await txa.revoke_ban(action_id)
+        if ok:
+            supabase.table("fivem_bans").update({
+                "txadmin_synced": True,
+                "source": "txadmin_revoked",
+            }).eq("id", ban_id).execute()
+            await _push_realtime("player_unbanned_synced", {"ban_id": ban_id})
+            return {"ok": True}
+        supabase.table("fivem_bans").update({
+            "txadmin_synced": False,
+            "source": "txadmin_revoke_failed",
+        }).eq("id", ban_id).execute()
+        await _push_realtime("player_unban_sync_failed", {
+            "ban_id": ban_id,
+            "error": str(msg)[:200],
+        })
+        return {"ok": False, "error": msg}
+    except Exception as exc:
+        log.warning("txAdmin unban push failed for %s: %s", ban_id, exc)
+        return {"ok": False, "error": str(exc)}
+
+
 @router.post("/bans")
 async def create_ban(
     body: BanCreate,
+    background_tasks: BackgroundTasks,
     user: dict = Depends(require_staff)
 ):
     """
@@ -1712,6 +1837,8 @@ async def create_ban(
     ban = (res.data or [{}])[0]
     ban_id = ban.get("id")
 
+    background_tasks.add_task(_push_ban_to_txadmin, ban_id)
+
     await _push_realtime("player_banned_website", {
         "ban_id":      ban_id,
         "identifier":  primary_id,
@@ -1747,10 +1874,11 @@ async def delete_ban(ban_id: str, _: dict = Depends(require_admin)):
 @router.post("/bans/{ban_id}/unban")
 async def unban_player(
     ban_id: str,
+    background_tasks: BackgroundTasks,
     user: dict = Depends(require_staff)
 ):
     """
-    Lift a ban on the website and queue the server resource to remove it from qbx_core bans.
+    Lift a ban on the website and revoke it via txAdmin in the background.
     """
     ban_res = supabase.table("fivem_bans").select("*").eq("id", ban_id).execute()
     if not ban_res.data: raise HTTPException(404, "Ban not found")
@@ -1762,9 +1890,11 @@ async def unban_player(
         "active":       False,
         "unbanned_by":  username,
         "unbanned_at":  _now(),
-        "source":       "qbx_unban_pending",
+        "source":       "txadmin_unban_pending",
         "txadmin_synced": False,
     }).eq("id", ban_id).execute()
+
+    background_tasks.add_task(_push_unban_to_txadmin, ban_id)
 
     await _push_realtime("player_unbanned_website", {
         "ban_id":     ban_id,
@@ -2120,6 +2250,198 @@ async def list_player_sessions(
         query = query.eq("license_key", license_key)
     res = query.order("joined_at", desc=True).range(offset, offset + limit - 1).execute()
     return {"sessions": res.data or [], "total": res.count or 0}
+
+
+# ── Player data sync (Lua → website) ──────────────────────────────────────────
+class PlayerJoinBody(BaseModel):
+    server_id: int
+    player_name: str
+    license: Optional[str] = None
+    license2: Optional[str] = None
+    steam_hex: Optional[str] = None
+    fivem_id: Optional[str] = None
+    discord_id: Optional[str] = None
+    identifiers: list[str] = []
+
+
+class PlayerLeaveBody(BaseModel):
+    server_id: int
+    player_name: Optional[str] = None
+    license: Optional[str] = None
+    license2: Optional[str] = None
+    identifiers: list[str] = []
+    disconnect_reason: Optional[str] = None
+
+
+class PlayerHeartbeatBody(BaseModel):
+    players: list[dict] = []
+
+
+class WhitelistIdentifiersBody(BaseModel):
+    discord_id: Optional[str] = None
+    license: Optional[str] = None
+    license2: Optional[str] = None
+    steam_hex: Optional[str] = None
+    fivem_id: Optional[str] = None
+    identifiers: list[str] = []
+
+
+def _player_ids_from_fields(
+    license_: Optional[str], license2: Optional[str], steam_hex: Optional[str],
+    fivem_id: Optional[str], discord_id: Optional[str], identifiers: list[str],
+) -> dict:
+    raw = [str(x or "").strip() for x in (identifiers or []) if str(x or "").strip()]
+    ids = _player_identifiers({
+        "identifiers": raw,
+        "license": license_,
+        "license2": license2,
+        "steam_hex": steam_hex,
+        "fivem_id": fivem_id,
+        "discord": discord_id,
+    })
+    ids["license_key"] = (ids.get("license") or ids.get("license2") or ids.get("fivem_license") or "").strip() or None
+    return ids
+
+
+def _upsert_player_record(ids: dict, player_name: str, server_id: Any, now_iso: str) -> dict | None:
+    license_key = ids.get("license_key")
+    if not license_key:
+        return None
+    row: dict = {
+        "license_key":    license_key,
+        "player_name":    player_name or "Unknown",
+        "last_seen_at":   now_iso,
+        "last_server_id": server_id,
+        "updated_at":     now_iso,
+    }
+    for field, val in (
+        ("license_hex", ids.get("license")),
+        ("license2_hex", ids.get("license2")),
+        ("discord_id", ids.get("discord_id")),
+        ("steam_hex", ids.get("steam_hex")),
+        ("fivem_id", ids.get("fivem_id")),
+    ):
+        if val:
+            row[field] = val
+    res = supabase.table("player_records").upsert(row, on_conflict="license_key").execute()
+    return (res.data or [None])[0]
+
+
+@router.post("/players/join")
+async def record_player_join(body: PlayerJoinBody, request: Request):
+    """Lua fires on successful join — creates/updates player record + opens a session."""
+    _check_token(request)
+    now_iso = _now()
+    ids = _player_ids_from_fields(body.license, body.license2, body.steam_hex, body.fivem_id, body.discord_id, body.identifiers)
+    if not ids.get("license_key"):
+        return {"ok": False, "reason": "no_license"}
+    record = _upsert_player_record(ids, body.player_name, body.server_id, now_iso)
+    if not record:
+        return {"ok": False, "reason": "no_record"}
+    sess = supabase.table("player_sessions").insert({
+        "player_id":   record["id"],
+        "license_key": ids["license_key"],
+        "player_name": body.player_name or "Unknown",
+        "joined_at":   now_iso,
+        "server_id":   body.server_id,
+        "identifiers": ids.get("all") or [],
+    }).execute()
+    return {"ok": True, "record_id": record["id"], "session_id": (sess.data or [{}])[0].get("id")}
+
+
+@router.post("/players/leave")
+async def record_player_leave(body: PlayerLeaveBody, request: Request):
+    """Lua fires on playerDropped — closes the open session and bumps totals."""
+    _check_token(request)
+    now_iso = _now()
+    ids = _player_ids_from_fields(body.license, body.license2, body.steam_hex, None, None, body.identifiers)
+    license_key = ids.get("license_key")
+    if not license_key:
+        return {"ok": False, "reason": "no_license"}
+    res = (supabase.table("player_sessions")
+           .select("id,player_id,joined_at")
+           .eq("license_key", license_key)
+           .is_("left_at", "null")
+           .order("joined_at", desc=True).limit(1).execute())
+    session = (res.data or [None])[0]
+    closed = 0
+    if session:
+        joined = _parse_dt(session.get("joined_at")) or datetime.now(timezone.utc)
+        duration = max(0, int((datetime.now(timezone.utc) - joined).total_seconds()))
+        supabase.table("player_sessions").update({
+            "left_at":           now_iso,
+            "duration_seconds":  duration,
+            "disconnect_reason": (body.disconnect_reason or "")[:200],
+        }).eq("id", session["id"]).execute()
+        closed = 1
+        rec_res = (supabase.table("player_records")
+                   .select("id,total_sessions,total_playtime_seconds")
+                   .eq("id", session["player_id"]).limit(1).execute())
+        rec = (rec_res.data or [None])[0]
+        if rec:
+            supabase.table("player_records").update({
+                "total_sessions":         int(rec.get("total_sessions") or 0) + 1,
+                "total_playtime_seconds": int(rec.get("total_playtime_seconds") or 0) + duration,
+                "last_seen_at":           now_iso,
+                "last_server_id":         body.server_id,
+            }).eq("id", rec["id"]).execute()
+    return {"ok": True, "closed": closed, "license_key": license_key}
+
+
+@router.post("/players/heartbeat-sync")
+async def heartbeat_sync_players(body: PlayerHeartbeatBody, request: Request):
+    """Lua sends with each heartbeat — keeps player_records.last_seen fresh."""
+    _check_token(request)
+    now_iso = _now()
+    synced = 0
+    for p in body.players or []:
+        if not isinstance(p, dict):
+            continue
+        ids = _player_identifiers(p)
+        if not (ids.get("license") or ids.get("license2") or ids.get("fivem_license")):
+            continue
+        _upsert_player_record(ids, p.get("name") or "Unknown", p.get("server_id"), now_iso)
+        synced += 1
+    return {"ok": True, "synced": synced}
+
+
+@router.post("/whitelist/update-identifiers")
+async def update_whitelist_identifiers(body: WhitelistIdentifiersBody, request: Request):
+    """Lua patches license/steam/fivem identifiers onto the approved whitelist row on connect."""
+    _check_token(request)
+    ids = _player_ids_from_fields(body.license, body.license2, body.steam_hex, body.fivem_id, body.discord_id, body.identifiers)
+    filters: list[str] = []
+    discord = (ids.get("discord_id") or "").strip()
+    if discord:
+        filters.append(f"discord_id.eq.{discord}")
+    for field in ("fivem_license", "steam_hex", "fivem_id"):
+        val = str(ids.get(field) or "").strip()
+        if val:
+            filters.append(f"{field}.eq.{val}")
+    if not filters:
+        return {"ok": False, "reason": "no_identifiers"}
+    res = (supabase.table("fivem_whitelist")
+           .select("id,fivem_license,steam_hex,fivem_id")
+           .eq("status", "approved")
+           .or_(",".join(dict.fromkeys(filters)))
+           .order("approved_at", desc=True).limit(1).execute())
+    row = (res.data or [None])[0]
+    if not row:
+        return {"ok": False, "reason": "no_match"}
+    updates: dict = {}
+    for field, value in (
+        ("fivem_license", ids.get("license")),
+        ("fivem_license", ids.get("license2")),
+        ("fivem_license", ids.get("fivem_license")),
+        ("steam_hex", ids.get("steam_hex")),
+        ("fivem_id", ids.get("fivem_id")),
+    ):
+        val = str(value or "").strip()
+        if val and not row.get(field):
+            updates.setdefault(field, val)
+    if updates:
+        supabase.table("fivem_whitelist").update(updates).eq("id", row["id"]).execute()
+    return {"ok": True, "updated": updates}
 
 
 # â”€â”€â”€ Bulk whitelist approve â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
