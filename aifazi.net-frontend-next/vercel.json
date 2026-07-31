@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build && node vercel-fix-rootdir.js",
   "regions": ["iad1"],
   "headers": [
     {
