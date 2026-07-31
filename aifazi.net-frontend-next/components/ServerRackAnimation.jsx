@@ -1800,12 +1800,14 @@ const GLOBE_CONNECTIONS = [
 
 const GLOBE_MIN_ZOOM = 0.55
 const GLOBE_MAX_ZOOM = 1.35
+const GLOBE_BASE_RATIO = 0.40
+const GLOBE_CANVAS_SCALE = 1.25
 
 function clampGlobeZoom(value, canvas) {
   const w = canvas?.clientWidth || 0
   const h = canvas?.clientHeight || 0
   const minDim = Math.max(1, Math.min(w || 600, h || 600))
-  const safeMax = Math.max(0.8, Math.min(GLOBE_MAX_ZOOM, (minDim / 2 - 8) / (minDim * 0.44)))
+  const safeMax = Math.max(0.8, Math.min(GLOBE_MAX_ZOOM, (minDim / 2 - 8) / (minDim * GLOBE_BASE_RATIO)))
   return Math.max(GLOBE_MIN_ZOOM, Math.min(safeMax, value))
 }
 
@@ -1941,14 +1943,18 @@ function GlobeMode({ visibleRef }) {
       const p = canvas.parentElement
       if (!p) return
       const dpr = window.devicePixelRatio || 1
-      const w   = p.clientWidth
-      const h   = p.clientHeight || 600
+      const w   = Math.ceil(p.clientWidth  * GLOBE_CANVAS_SCALE)
+      const h   = Math.ceil((p.clientHeight || 600) * GLOBE_CANVAS_SCALE)
       if (w === lastW && h === lastH) return
       lastW = w; lastH = h
       canvas.width  = w * dpr
       canvas.height = h * dpr
       canvas.style.width  = `${w}px`
       canvas.style.height = `${h}px`
+      canvas.style.position = 'absolute'
+      canvas.style.left = '50%'
+      canvas.style.top  = '50%'
+      canvas.style.transform = 'translate(-50%, -50%)'
     }
     fit()
     const ro = new ResizeObserver(fit)
@@ -2112,8 +2118,8 @@ function GlobeMode({ visibleRef }) {
       const cx  = W / 2
       const cy  = H / 2
       s.zoom = clampGlobeZoom(s.zoom, canvas)
-      // Large globe — takes 88% of shorter dimension, multiplied by zoom
-      const R   = Math.min(W, H) * 0.44 * s.zoom
+      // Globe base size — takes 80% of shorter dimension at zoom 1, scaled up
+      const R   = Math.min(W, H) * GLOBE_BASE_RATIO * s.zoom
 
       // ── Update rotation ──
       if (!s.drag) {
@@ -2750,7 +2756,7 @@ function GlobeMode({ visibleRef }) {
   return (
     <div className="globe-network-shell" ref={wrapRef} onMouseDown={markDragged} onTouchStart={markDragged} style={{
       width: '100%', height: '100%',
-      position: 'relative', overflow: 'hidden',
+      position: 'relative', overflow: 'visible',
       background: 'transparent',
     }}>
       {/* Floating title — top left */}
@@ -2782,7 +2788,7 @@ function GlobeMode({ visibleRef }) {
       </div>
 
       {/* Canvas — fills entire panel */}
-      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }}/>
+      <canvas ref={canvasRef} style={{ display: 'block', position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}/>
 
       {/* Visitor info card — bottom left */}
       <div className="globe-visitor-shell" style={{
