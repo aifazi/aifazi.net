@@ -1820,7 +1820,6 @@ function GlobeMode({ visibleRef }) {
   const animRef   = useRef()
   const [visitor, setVisitor] = useState(null)
   const visitorRef = useRef(null)
-  const mapRef = useRef(null)
   const [themeKey, setThemeKey] = useState(0)
   const themeRef = useRef(null)
   const stateRef  = useRef({
@@ -1918,28 +1917,6 @@ function GlobeMode({ visibleRef }) {
 
     loadVisitorGeo()
     return () => { cancelled = true }
-  }, [])
-
-  // ── Load equirectangular earth texture (continents + seas) ──────────────────
-  useEffect(() => {
-    const img = new window.Image()
-    img.crossOrigin = 'anonymous'
-    img.src = '/globe/earth.jpg'
-    img.onload = () => {
-      try {
-        const off = document.createElement('canvas')
-        off.width  = img.naturalWidth
-        off.height = img.naturalHeight
-        const octx = off.getContext('2d')
-        octx.drawImage(img, 0, 0)
-        const data = octx.getImageData(0, 0, off.width, off.height)
-        mapRef.current = { data, w: off.width, h: off.height }
-      } catch {
-        mapRef.current = null
-      }
-    }
-    img.onerror = () => { mapRef.current = null }
-    return () => { img.onload = null; img.onerror = null }
   }, [])
 
   // ── React to theme changes ──
@@ -2119,74 +2096,6 @@ function GlobeMode({ visibleRef }) {
     // Pre-cache base 3D positions (without rotation)
     const base3D = GLOBE_CITIES.map(c => latLng3D(c.lat, c.lng))
 
-    // ── Earth texture renderer (precomputed inverse orthographic mapping) ──
-    // Because the X-tilt is fixed and the sphere only spins on Y, the equirect
-    // texture column for every pixel is constant — we just shift horizontally
-    // by -rotY each frame. No per-pixel trig in the hot loop.
-    const earthCv  = document.createElement('canvas')
-    const earthCtx = earthCv.getContext('2d')
-    let earthCache = null
-    const drawEarth = (cx, cy, R, ry, rx) => {
-      const tex = mapRef.current
-      if (!tex || !tex.data) return false
-      const tw = tex.w, th = tex.h
-      const dia = Math.round(Math.min(R * 2, 360))
-      if (dia < 8) return false
-
-      if (!earthCache || earthCache.dia !== dia || earthCache.tw !== tw) {
-        const baseX = new Float32Array(dia * dia)
-        const baseY = new Float32Array(dia * dia)
-        const r = dia / 2
-        const cosRx = Math.cos(rx), sinRx = Math.sin(rx)
-        const inv2PI = 1 / (2 * Math.PI)
-        const invPI  = 1 / Math.PI
-        for (let py = 0; py < dia; py++) {
-          const v = (r - (py + 0.5)) / r
-          for (let px = 0; px < dia; px++) {
-            const u  = ((px + 0.5) - r) / r
-            const uv2 = u * u + v * v
-            const idx = py * dia + px
-            if (uv2 > 1) { baseX[idx] = -1; baseY[idx] = -1; continue }
-            const z  = Math.sqrt(1 - uv2)
-            // Undo X-tilt: view (u,v,z) -> Y-rotated frame (x1,y1,z1)
-            const y1 = v * cosRx + z * sinRx
-            const z1 = -v * sinRx + z * cosRx
-            const x1 = u
-            const lng = Math.atan2(x1, z1)
-            const lat = Math.asin(Math.max(-1, Math.min(1, y1)))
-            baseX[idx] = (((lng * inv2PI + 0.5) % 1) + 1) % 1 * tw
-            baseY[idx] = Math.max(0, Math.min(th - 1, (0.5 - lat * invPI) * th))
-          }
-        }
-        if (earthCv.width !== dia || earthCv.height !== dia) { earthCv.width = dia; earthCv.height = dia }
-        earthCache = { dia, tw, baseX, baseY, img: earthCtx.createImageData(dia, dia) }
-      }
-
-      const d   = earthCache.img.data
-      const src = tex.data.data
-      const shift = ((ry / (2 * Math.PI)) % 1) * tw
-      const bxA = earthCache.baseX, byA = earthCache.baseY
-      for (let i = 0; i < bxA.length; i++) {
-        const bx = bxA[i]
-        if (bx < 0) { d[i * 4 + 3] = 0; continue }
-        let tx = bx - shift
-        tx -= Math.floor(tx / tw) * tw
-        const txi = tx | 0
-        const ty  = byA[i] | 0
-        const so  = (ty * tw + txi) * 4
-        const o   = i * 4
-        d[o] = src[so]; d[o + 1] = src[so + 1]; d[o + 2] = src[so + 2]; d[o + 3] = 255
-      }
-      earthCtx.putImageData(earthCache.img, 0, 0)
-      ctx.save()
-      ctx.beginPath()
-      ctx.arc(cx, cy, R, 0, Math.PI * 2)
-      ctx.clip()
-      ctx.drawImage(earthCv, cx - R, cy - R, R * 2, R * 2)
-      ctx.restore()
-      return true
-    }
-
     let last = 0
     const frame = ts => {
       if (!visibleRef.current) { animRef.current = requestAnimationFrame(frame); return }
@@ -2196,7 +2105,6 @@ function GlobeMode({ visibleRef }) {
       // ── Globe colors — theme-synced via themeRef (updated on data-theme change) ──
       const { cyanRgb, greenRgb, bgRgb, isLight, textRgb, mutedRgb, orangeRgb } = themeRef.current
       const accentRgb = cyanRgb
-      const gridLineRgb = isLight ? mutedRgb : accentRgb
 
       const dpr = window.devicePixelRatio || 1
       const W   = canvas.width  / dpr
@@ -2367,21 +2275,6 @@ function GlobeMode({ visibleRef }) {
       ctx.fillStyle = sphereGrad
       ctx.fill()
 
-      // ── Real earth texture (continents + seas) ──
-      if (drawEarth(cx, cy, R, ry, rx)) {
-        // Soft holo tint over the map so it blends with the theme
-        ctx.save()
-        ctx.beginPath()
-        ctx.arc(cx, cy, R, 0, Math.PI * 2)
-        ctx.clip()
-        const mapTint = ctx.createRadialGradient(cx - R * 0.26, cy - R * 0.26, 0, cx, cy, R)
-        mapTint.addColorStop(0, `rgba(${isLight ? '255,255,255' : cyanRgb},${isLight ? 0.10 : 0.05})`)
-        mapTint.addColorStop(1, `rgba(${isLight ? '0,0,0' : '0,0,0'},${isLight ? 0.06 : 0.14})`)
-        ctx.fillStyle = mapTint
-        ctx.fill()
-        ctx.restore()
-      }
-
       // ── Sunlight highlight ──
       const hlX = cx - R * 0.3, hlY = cy - R * 0.3
       const hlGrad = ctx.createRadialGradient(hlX, hlY, 0, hlX, hlY, R * 0.4)
@@ -2403,11 +2296,27 @@ function GlobeMode({ visibleRef }) {
       ctx.fillStyle = shadowGrad
       ctx.fill()
 
-      // ── Grid lines ──
+      // ── Wireframe mesh (technical drawing) ──
       ctx.save()
-      const gridGlowFactor = isLight ? 2.5 : 1
-      // Latitude
-      for (let lat = -80; lat <= 80; lat += 20) {
+      const meshGlow = isLight ? 2.2 : 1
+      const meshBase = isLight ? textRgb : accentRgb
+      // Meridians
+      for (let lng2 = -180; lng2 < 180; lng2 += 15) {
+        ctx.beginPath()
+        let first = true
+        for (let lat2 = -90; lat2 <= 90; lat2 += 2) {
+          const p3 = rotate(latLng3D(lat2, lng2), ry, rx)
+          if (p3.z < -0.02) { first = true; continue }
+          const pp = proj(p3, cx, cy, R)
+          if (first) { ctx.moveTo(pp.x, pp.y); first = false }
+          else ctx.lineTo(pp.x, pp.y)
+        }
+        ctx.strokeStyle = `rgba(${meshBase},${0.07 * meshGlow})`
+        ctx.lineWidth   = 0.4
+        ctx.stroke()
+      }
+      // Parallels
+      for (let lat = -75; lat <= 75; lat += 15) {
         ctx.beginPath()
         let first = true
         for (let lng2 = -180; lng2 <= 181; lng2 += 2) {
@@ -2419,42 +2328,37 @@ function GlobeMode({ visibleRef }) {
         }
         const eq = Math.abs(lat) < 1
         ctx.strokeStyle = eq
-          ? `rgba(${accentRgb},${0.18 * gridGlowFactor})`
-          : `rgba(${gridLineRgb},${(0.06 + Math.abs(lat) * 0.0005) * gridGlowFactor})`
-        ctx.lineWidth = eq ? 0.7 : 0.35
+          ? `rgba(${accentRgb},${0.22 * meshGlow})`
+          : `rgba(${meshBase},${(0.07 + Math.abs(lat) * 0.0006) * meshGlow})`
+        ctx.lineWidth = eq ? 0.8 : 0.4
         ctx.stroke()
       }
-      // Longitude
-      for (let lng2 = -180; lng2 < 180; lng2 += 20) {
-        ctx.beginPath()
-        let first = true
-        for (let lat2 = -90; lat2 <= 90; lat2 += 2) {
-          const p3 = rotate(latLng3D(lat2, lng2), ry, rx)
-          if (p3.z < -0.02) { first = true; continue }
-          const pp = proj(p3, cx, cy, R)
-          if (first) { ctx.moveTo(pp.x, pp.y); first = false }
-          else ctx.lineTo(pp.x, pp.y)
-        }
-        ctx.strokeStyle = `rgba(${gridLineRgb},${0.04 * gridGlowFactor})`
-        ctx.lineWidth   = 0.35
-        ctx.stroke()
+      // Terminator arc (edge of the sphere)
+      ctx.beginPath()
+      for (let a = 0; a <= Math.PI * 2; a += 0.04) {
+        const px = cx + Math.cos(a) * R
+        const py = cy - Math.sin(a) * R
+        if (a === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py)
       }
-      ctx.restore()
-
-      // ── Holographic hex lattice (animated tessellation dots) ──
-      if (!s._hexOff) s._hexOff = 0
-      s._hexOff += dt * 0.02
-      ctx.save()
-      for (let lat2 = -75; lat2 <= 75; lat2 += 15) {
+      ctx.strokeStyle = `rgba(${accentRgb},${0.32 * meshGlow})`
+      ctx.lineWidth   = 1.1
+      ctx.shadowBlur  = 8
+      ctx.shadowColor = `rgba(${accentRgb},0.6)`
+      ctx.stroke()
+      ctx.shadowBlur = 0
+      // Vertex nodes at grid intersections
+      if (!s._vertT) s._vertT = 0
+      s._vertT += dt * 0.01
+      for (let lat = -60; lat <= 60; lat += 15) {
         for (let lng2 = -165; lng2 <= 180; lng2 += 15) {
-          const wave = Math.sin(s._hexOff + lat2 * 0.08) * 3
-          const p3 = rotate(latLng3D(lat2 + wave * 0.1, lng2), ry, rx)
-          if (p3.z < 0.05) continue
+          const p3 = rotate(latLng3D(lat, lng2), ry, rx)
+          if (p3.z < 0.04) continue
           const pp = proj(p3, cx, cy, R)
-          const ha = Math.max(0, p3.z * 1.2) * 0.12
+          const tw = 0.5 + 0.5 * Math.sin(s._vertT + lat * 0.5 + lng2 * 0.3)
+          const va = Math.max(0, p3.z * 1.2) * (0.35 + tw * 0.25)
           ctx.beginPath()
-          ctx.arc(pp.x, pp.y, 1.1, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${cyanRgb},${ha})`
+          ctx.arc(pp.x, pp.y, 1.05, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${cyanRgb},${va})`
           ctx.fill()
         }
       }
@@ -2473,10 +2377,10 @@ function GlobeMode({ visibleRef }) {
         if (firstSweep) { ctx.moveTo(pp.x, pp.y); firstSweep = false }
         else ctx.lineTo(pp.x, pp.y)
       }
-      ctx.strokeStyle = `rgba(${cyanRgb},${0.28 + 0.3 * Math.sin(sweepT * Math.PI)})`
-      ctx.lineWidth   = 1.3
-      ctx.shadowBlur  = 12
-      ctx.shadowColor = `rgba(${cyanRgb},0.8)`
+      ctx.strokeStyle = `rgba(${cyanRgb},${0.2 + 0.35 * Math.sin(sweepT * Math.PI)})`
+      ctx.lineWidth   = 1
+      ctx.shadowBlur  = 14
+      ctx.shadowColor = `rgba(${cyanRgb},0.9)`
       ctx.stroke()
       ctx.restore()
 
