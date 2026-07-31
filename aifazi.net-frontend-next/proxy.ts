@@ -215,6 +215,58 @@ function isRelaxedLocalRuntime(hostname: string): boolean {
   return process.env.NODE_ENV === 'development' && isLocalHost(hostname)
 }
 
+// ── CSP (per-request nonce) ───────────────────────────────────────────────────
+// Next.js 16 injects build-specific inline bootstrap scripts for hydration. A
+// static CSP in next.config.js can never list those hashes ahead of time, so the
+// old hash-only script-src silently blocked hydration -> the page rendered but
+// never hydrated ("no login", no API calls). The documented fix is a nonce:
+// when the incoming request carries an `x-nonce` header, Next.js tags its inline
+// scripts with that nonce. We mint one per request, forward it via `x-nonce`,
+// and emit the CSP header from here so the nonce is always in sync.
+//
+// `'unsafe-inline'` is included as a fallback ONLY for statically-prerendered
+// pages whose build-time HTML cannot carry a runtime nonce. Per the CSP spec,
+// a nonce in the directive makes browsers ignore `'unsafe-inline'`, so the
+// dynamic auth/admin pages are still fully strict.
+const CSP_SCRIPT_HASH = "'sha256-d2rPHOmEJr+wC4eqfssd17I04Yo7Zzgrx623znHdh9I='"
+
+function generateNonce(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function buildCsp(nonce: string): string {
+  const isDev = process.env.NODE_ENV === 'development'
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'unsafe-inline' ${CSP_SCRIPT_HASH} https://cdn.lordicon.com https://cdnjs.cloudflare.com`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https://cdn.aifazi.net https://*.supabase.co https://res.cloudinary.com https://api.dicebear.com https://*.aifazi.net https://*.imgur.com https://i.imgur.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://*.unsplash.com https://*.googleusercontent.com https://*.githubusercontent.com",
+    `connect-src 'self' ${isDev ? 'http://localhost:8000 http://127.0.0.1:8000 ' : ''}https://api.aifazi.net https://*.supabase.co wss://*.supabase.co https://cdn.aifazi.net https://*.ingest.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://ipwho.is https://ipapi.co https://ipwhois.app https://api64.ipify.org https://*.livekit.cloud wss://*.livekit.cloud`,
+    "media-src 'self' https://cdn.aifazi.net https://*.aifazi.net data: blob: https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://res.cloudinary.com",
+    "frame-src 'self' https://www.youtube.com https://player.vimeo.com",
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ].join('; ')
+}
+
+function secureRequest(request: NextRequest): { headers: Headers; nonce: string } {
+  const nonce = generateNonce()
+  const headers = new Headers(request.headers)
+  headers.set('x-nonce', nonce)
+  return { headers, nonce }
+}
+
+function withCsp(response: NextResponse, nonce: string): NextResponse {
+  response.headers.set('Content-Security-Policy', buildCsp(nonce))
+  return response
+}
+
 async function isAdminSessionValid(cookieValue: string | undefined, hostname = ''): Promise<boolean> {
   if (!cookieValue) return false
   if (cookieValue === '1') return false
@@ -244,7 +296,8 @@ export async function proxy(request: NextRequest) {
     }
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/api/cdn${pathname}`
-    return NextResponse.rewrite(rewriteUrl)
+    const { headers, nonce } = secureRequest(request)
+    return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce)
   }
 
   // ── 2. Canonicalize FiveM URLs to fivem.aifazi.net ─────────────────────
@@ -269,17 +322,17 @@ export async function proxy(request: NextRequest) {
       FIVEM_SHARED_PATHS.has(pathname) ||
       FIVEM_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
     ) {
+      const { headers, nonce } = secureRequest(request)
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
-        const headers = new Headers(request.headers)
         headers.set('X-Internal-Token', INTERNAL_API_SECRET)
-        return NextResponse.next({ request: { headers } })
       }
-      return NextResponse.next()
+      return withCsp(NextResponse.next({ request: { headers } }), nonce)
     }
     if (pathname === '/' || pathname === '') {
       const rewriteUrl = request.nextUrl.clone()
       rewriteUrl.pathname = '/fivem'
-      return NextResponse.rewrite(rewriteUrl)
+      const { headers, nonce } = secureRequest(request)
+      return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce)
     }
     if (pathname.startsWith('/fivem')) {
       const redirectUrl = request.nextUrl.clone()
@@ -288,7 +341,8 @@ export async function proxy(request: NextRequest) {
     }
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/fivem${pathname}`
-    return NextResponse.rewrite(rewriteUrl)
+    const { headers, nonce } = secureRequest(request)
+    return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce)
   }
 
   // ── 4. Admin route protection ─────────────────────────────────────────────
@@ -303,13 +357,12 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── 5. Internal token injection ───────────────────────────────────────────
+  const { headers, nonce } = secureRequest(request)
   if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
-    const headers = new Headers(request.headers)
     headers.set('X-Internal-Token', INTERNAL_API_SECRET)
-    return NextResponse.next({ request: { headers } })
   }
 
-  return NextResponse.next()
+  return withCsp(NextResponse.next({ request: { headers } }), nonce)
 }
 
 export const config = {

@@ -46,9 +46,8 @@ const nextConfig = {
     ],
   },
 
-  // Security headers — CSP + hardening
+  // Security headers — hardening (CSP is emitted by proxy.ts with a nonce)
   async headers() {
-    const isDev = process.env.NODE_ENV === 'development'
     return [
       {
         source: '/(.*)',
@@ -61,35 +60,12 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           // Permissions policy — restrict powerful browser APIs
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(), payment=()' },
-          // Content Security Policy — tightened for aifazi.net
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              // Scripts: self + exact hash for the one FOUC inline script in
-              // app/layout.tsx (replaces 'unsafe-inline' — M2) + trusted CDNs
-              "script-src 'self' 'sha256-d2rPHOmEJr+wC4eqfssd17I04Yo7Zzgrx623znHdh9I=' https://cdn.lordicon.com https://cdnjs.cloudflare.com",
-              // Styles: self + inline (CSS-in-JS)
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              // Fonts
-              "font-src 'self' https://fonts.gstatic.com",
-              // Images: self + CDN + Supabase + data URIs (avatars) + external avatar sources
-              "img-src 'self' data: blob: https://cdn.aifazi.net https://*.supabase.co https://res.cloudinary.com https://api.dicebear.com https://*.aifazi.net https://*.imgur.com https://i.imgur.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://*.unsplash.com https://*.googleusercontent.com https://*.githubusercontent.com",
-              // API + WebSocket connections — localhost allowed only in dev (M3)
-              `connect-src 'self' ${isDev ? 'http://localhost:8000 http://127.0.0.1:8000 ' : ''}https://api.aifazi.net https://*.supabase.co wss://*.supabase.co https://cdn.aifazi.net https://*.ingest.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://ipwho.is https://ipapi.co https://ipwhois.app https://api64.ipify.org https://*.livekit.cloud wss://*.livekit.cloud`,
-              // Media — scope to CDN + data/blob for chat media previews (M3)
-              "media-src 'self' https://cdn.aifazi.net https://*.aifazi.net data: blob: https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://res.cloudinary.com",
-              // Frames — YouTube + Vimeo embeds for chat media previews
-              "frame-src 'self' https://www.youtube.com https://player.vimeo.com",
-              // Workers (for CometChat etc.)
-              "worker-src 'self' blob:",
-              // M4 — deny objects, pin base-uri/form-action to self, no framing
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'",
-            ].join('; '),
-          },
+          // Content-Security-Policy is NOT set here. Next.js emits build-specific
+          // inline hydration scripts whose hashes can't be known ahead of time, so a
+          // static script-src silently blocked hydration. It is now emitted by
+          // proxy.ts with a per-request nonce (Next.js tags its inline scripts via
+          // the `x-nonce` request header). A duplicate CSP here would intersect with
+          // the nonce'd one and re-block the inline scripts.
         ],
       },
     ]
