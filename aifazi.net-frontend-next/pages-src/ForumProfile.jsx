@@ -934,21 +934,21 @@ function SecurityTab({ user }) {
   }
 
   const disconnectProvider = async provider => {
+    const labels = { steam: 'Steam', discord: 'Discord', github: 'GitHub' }
+    const label = labels[provider] || provider
     if (!await dialog.confirm({
-      title: `Disconnect ${provider === 'steam' ? 'Steam' : 'Discord'}`,
-      message: `Disconnect this ${provider === 'steam' ? 'Steam' : 'Discord'} account from your profile?`,
+      title: `Disconnect ${label}`,
+      message: `Disconnect this ${label} account from your profile?`,
       variant: 'danger',
       confirmLabel: 'DISCONNECT',
     })) return
     setOauthLoading(`${provider}-disconnect`)
     setOauthStatus(null)
     try {
-      const route = provider === 'steam'
-        ? '/forum/auth/steam/disconnect'
-        : '/forum/auth/discord/disconnect'
+      const route = `/forum/auth/${provider}/disconnect`
       await api.delete(route)
       await refreshUser?.()
-      setOauthStatus({ type: 'success', msg: `${provider === 'steam' ? 'Steam' : 'Discord'} disconnected.` })
+      setOauthStatus({ type: 'success', msg: `${label} disconnected.` })
     } catch (err) {
       setOauthStatus({ type: 'error', msg: err?.response?.data?.detail || `Could not disconnect ${provider}.` })
     } finally {
@@ -958,9 +958,9 @@ function SecurityTab({ user }) {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const provider = params.get('discord_error') ? 'Discord' : params.get('steam_error') ? 'Steam' : ''
+    const provider = params.get('discord_error') ? 'Discord' : params.get('steam_error') ? 'Steam' : params.get('github_error') ? 'GitHub' : ''
     if (!provider) return
-    const err = params.get('discord_error') || params.get('steam_error')
+    const err = params.get('discord_error') || params.get('steam_error') || params.get('github_error')
     const messages = {
       duplicate: `${provider} is already linked to another user.`,
       link: `${provider} connect session expired. Please try again.`,
@@ -988,6 +988,15 @@ function SecurityTab({ user }) {
       username: user?.steam_username,
       id: user?.steam_id,
       avatar: user?.steam_avatar,
+    },
+    {
+      key: 'github',
+      label: 'GitHub',
+      color: GITHUB_COLOR,
+      linked: !!user?.github_id,
+      username: user?.github_username,
+      id: user?.github_id,
+      avatar: user?.github_avatar,
     },
   ]
 
@@ -1133,6 +1142,7 @@ function OverviewTab({ user, tickets, onOpenTicket }) {
 const DISCORD_PURPLE = '#5865F2'
 const STEAM_BLUE = '#1b2838'
 const STEAM_LIGHT = '#00b4ff'
+const GITHUB_COLOR = '#e6edf3'
 const WL_STEPS = [
   { key: 'submitted',   label: 'Submitted',    icon: '📋' },
   { key: 'under_review',label: 'Under Review', icon: '🔍' },

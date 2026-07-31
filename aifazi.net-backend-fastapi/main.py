@@ -523,6 +523,7 @@ from routers import (
     webhooks,
     discord_auth,
     steam_auth,
+    github_auth,
     forum_auth,
     db_console,
 )
@@ -567,6 +568,7 @@ app.include_router(txadmin_webhook.router, prefix="/api/txadmin")
 app.include_router(webhooks.router,         prefix="/api/webhook")
 app.include_router(discord_auth.router,   prefix="/api/discord")
 app.include_router(steam_auth.router,     prefix="/api/forum/auth/steam")
+app.include_router(github_auth.router,    prefix="/api/forum/auth/github")
 app.include_router(db_console.router,    prefix="/api/admin/db")
 
 @app.get("/api/health")

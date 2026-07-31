@@ -779,7 +779,8 @@ async def get_me(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     res = supabase.table("users").select(
         "id,username,email,role,avatar,bio,email_verified,banned,created_at,last_seen,"
         "discord_id,discord_username,discord_avatar,"
-        "steam_id,steam_username,steam_avatar"
+        "steam_id,steam_username,steam_avatar,"
+        "github_id,github_username,github_avatar"
         ",totp_enabled"
     ).eq("id", user_id).execute()
 
@@ -833,6 +834,10 @@ async def get_me(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
         "steam_username":   u.get("steam_username"),
         "steam_avatar":     u.get("steam_avatar"),
         "steam_hex":        steam_hex,   # FiveM-ready: "steam:xxxxxxxxxxxxxxx"
+        # GitHub link
+        "github_id":        u.get("github_id"),
+        "github_username":  u.get("github_username"),
+        "github_avatar":    u.get("github_avatar"),
         "active_identity_locked": _active_identity_locked(u["id"]),
         "two_factor_enabled": bool(u.get("totp_enabled")),
         "_staff": bool(staff_access),

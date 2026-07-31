@@ -31,7 +31,7 @@ export function safeNextPath(value: unknown): string | null {
   return value
 }
 
-export function authProviderLoginRoute(provider: 'discord' | 'steam', dest = '/profile') {
+export function authProviderLoginRoute(provider: 'discord' | 'steam' | 'github', dest = '/profile') {
   const apiOrigin = browserApiOrigin()
   const safeDest = safeNextPath(dest) || '/profile'
   return `${apiOrigin}/api/forum/auth/${provider}/login?dest=${encodeURIComponent(safeDest)}`

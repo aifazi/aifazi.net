@@ -106,6 +106,10 @@ export default function FiveMLogin() {
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', background: '#1b2838', color: '#fff', border: '1px solid #2a475e', borderRadius: 8, cursor: 'pointer', fontSize: 11, letterSpacing: 2, fontWeight: 700 }}>
               SIGN IN WITH STEAM
             </button>
+            <button onClick={() => window.location.href = authProviderLoginRoute('github', profileHref)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', background: '#24292f', color: '#fff', border: '1px solid #30363d', borderRadius: 8, cursor: 'pointer', fontSize: 11, letterSpacing: 2, fontWeight: 700 }}>
+              SIGN IN WITH GITHUB
+            </button>
           </div>
 
           <p style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', marginTop: 16 }}>

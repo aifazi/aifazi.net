@@ -1345,7 +1345,8 @@ async def get_current_user_profile(creds: HTTPAuthorizationCredentials | None = 
         return _staff_profile_from_payload(payload)
     res = supabase.table("users").select(
         "id,username,email,role,avatar,bio,email_verified,banned,created_at,last_seen,"
-        "discord_id,discord_username,discord_avatar,steam_id,steam_username,steam_avatar,totp_enabled,"
+        "discord_id,discord_username,discord_avatar,steam_id,steam_username,steam_avatar,"
+        "github_id,github_username,github_avatar,totp_enabled,"
         "pending_email,pending_email_verified"
     ).eq("id", user_id).execute()
     if not res.data:
@@ -1367,6 +1368,7 @@ async def get_current_user_profile(creds: HTTPAuthorizationCredentials | None = 
         "last_seen": u.get("last_seen"), "lastSeen": u.get("last_seen"),
         "discord_id": u.get("discord_id"), "discord_username": u.get("discord_username"), "discord_avatar": u.get("discord_avatar"),
         "steam_id": u.get("steam_id"), "steam_username": u.get("steam_username"), "steam_avatar": u.get("steam_avatar"),
+        "github_id": u.get("github_id"), "github_username": u.get("github_username"), "github_avatar": u.get("github_avatar"),
         "steam_hex": steam_hex, "active_identity_locked": _active_identity_locked(u["id"]),
         "two_factor_enabled": bool(u.get("totp_enabled")),
         "_staff": bool(staff_access), "staff_account": bool(staff_access),
