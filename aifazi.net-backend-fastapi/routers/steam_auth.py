@@ -42,6 +42,7 @@ except ImportError:
 
 from jwt_compat import jwt, JWTError
 from database import supabase
+from dependencies import CookieHTTPBearer
 from utils.audit import record as _audit
 from utils.oauth_state import make_oauth_state, verify_oauth_state, _safe_relative_path
 
@@ -61,7 +62,7 @@ JWT_SECRET = os.getenv("PASETO_SECRET", os.getenv("JWT_SECRET", ""))
 JWT_ALGO   = "HS256"
 JWT_EXPIRE = 60 * 24 * 7   # 7 days in minutes
 
-bearer = HTTPBearer(auto_error=False)
+bearer = CookieHTTPBearer(auto_error=False)
 ACTIVE_IDENTITY_MESSAGE = "Your player identity is active. Contact an admin or open a ticket to change Discord or Steam."
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -387,7 +388,22 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     # For brand-new Steam accounts, send to profile edit tab so they can set email
     new_flag = "&new_account=1" if is_new_account else ""
     # Use hash fragment instead of query param — tokens don't appear in server logs or Referer headers
-    return RedirectResponse(f"{front}/auth/steam-callback#token={token}&dest={safe_dest}{new_flag}")
+    # H4 — also set HttpOnly auth cookies so the session survives without
+    # localStorage; the fragment token stays as a legacy fallback.
+    try:
+        from routers.auth import make_token, _set_auth_cookies
+        refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
+        try:
+            supabase.table("users").update({
+                "refresh_token": refresh, "last_seen": now,
+            }).eq("id", user["id"]).execute()
+        except Exception:
+            pass
+        resp = RedirectResponse(f"{front}/auth/steam-callback#token={token}&dest={safe_dest}{new_flag}")
+        _set_auth_cookies(resp, token, refresh)
+        return resp
+    except Exception:
+        return RedirectResponse(f"{front}/auth/steam-callback#token={token}&dest={safe_dest}{new_flag}")
 
 
 @router.delete("/disconnect")

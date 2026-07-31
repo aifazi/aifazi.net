@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useDialog } from "../core/dialog.jsx";
 import { useNotify } from "../core/notify.jsx";
 import { Checkbox, Select } from "../core/ui.jsx";
-import { getRole } from "../lib/api";
+import { getRole, getAuthToken } from "../lib/api";
 import api from "../lib/api";  // <- use the internal axios proxy (handles /api prefix + auth token)
 
 // API_URL is intentionally empty - all requests go through the Next.js /api proxy
@@ -1363,7 +1363,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
   // #19 - Auto read-only for editor/moderator roles
   const role = getRole()
   const readOnly = readOnlyProp ?? (role === 'editor' || role === 'moderator')
-  const [token, setToken]           = useState(_preloadToken);
+  const [token, setToken]           = useState(_preloadToken || getAuthToken());
   const [tokenInput, setTokenInput] = useState("");
   const [stats, setStats]           = useState(null);
   const [loading, setLoading]       = useState(false);

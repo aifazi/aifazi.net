@@ -68,7 +68,7 @@ const nextConfig = {
               "default-src 'self'",
               // Scripts: self + exact hash for the one FOUC inline script in
               // app/layout.tsx (replaces 'unsafe-inline' — M2) + trusted CDNs
-              "script-src 'self' 'sha256-d2rPHOmEJr+wC4eqfssd17I04Yo7Zzgrx623znHdh9I=' https://cdn.lordicon.com https://cdnjs.cloudflare.com https://*.supabase.co",
+              "script-src 'self' 'sha256-d2rPHOmEJr+wC4eqfssd17I04Yo7Zzgrx623znHdh9I=' https://cdn.lordicon.com https://cdnjs.cloudflare.com",
               // Styles: self + inline (CSS-in-JS)
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               // Fonts

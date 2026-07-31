@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { handOffFiveMAuthCallback } from '@/lib/authCallbackHandoff'
 import { safeNextPath } from '@/lib/authRoutes'
+import { setAccessToken } from '@/lib/api'
 
 const STEAM_BLUE = '#1b2838'
 const STEAM_LIGHT = '#00b4ff'
@@ -55,8 +56,9 @@ export default function SteamAuthCallback() {
 
     if (handOffFiveMAuthCallback('steam', token, dest)) return
 
-    // Store the token (same key as the rest of the site)
-    localStorage.setItem('auth_token', token)
+    // H4 — the backend sets HttpOnly auth cookies on this callback; keep the
+    // token in memory only and notify all listeners.
+    setAccessToken(token)
     window.dispatchEvent(new Event('auth-change'))
     // Clear the hash so the token doesn't linger in the URL
     window.history.replaceState(null, '', window.location.pathname)

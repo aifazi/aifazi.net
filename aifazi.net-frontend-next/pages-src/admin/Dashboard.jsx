@@ -1,7 +1,7 @@
 ﻿'use client'
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from '@/lib/router-compat'
-import api, { isAdmin as checkIsAdmin, getRole, getUsername, hasPermission, getStoredPermissions, setEffectiveAccess } from '@/lib/api'
+import api, { isAdmin as checkIsAdmin, getRole, getUsername, hasPermission, getStoredPermissions, setEffectiveAccess, getAuthToken } from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { Checkbox, Select } from '../../core/ui.jsx'
@@ -177,7 +177,7 @@ function Dashboard({ onLogout }) {
   // Session expiry warning — checks JWT exp, warns 5 min before
   useEffect(() => {
     const checkExpiry = () => {
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('admin_token') || sessionStorage.getItem('staff_token')
+      const token = getAuthToken()
       if (!token) return
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))

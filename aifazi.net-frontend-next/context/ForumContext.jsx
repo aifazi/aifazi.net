@@ -1,6 +1,6 @@
 ﻿'use client'
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
-import api from '@/lib/api'
+import api, { getAuthToken, setAccessToken, clearLegacyTokens, setEffectiveAccess } from '@/lib/api'
 
 const ForumContext = createContext({
   user: null,
@@ -27,23 +27,8 @@ function decodeToken(token) {
 }
 
 function getStoredToken() {
-  if (typeof window === 'undefined') return null
-  const token = localStorage.getItem('auth_token')
-             || sessionStorage.getItem('forum_token')
-             || sessionStorage.getItem('admin_token')
-             || sessionStorage.getItem('staff_token')
-             || localStorage.getItem('forum_token')
-             || localStorage.getItem('admin_token')
-             || localStorage.getItem('staff_token')
-  if (!token) return null
-  if (!localStorage.getItem('auth_token')) localStorage.setItem('auth_token', token)
-  sessionStorage.removeItem('forum_token')
-  sessionStorage.removeItem('admin_token')
-  sessionStorage.removeItem('staff_token')
-  localStorage.removeItem('forum_token')
-  localStorage.removeItem('admin_token')
-  localStorage.removeItem('staff_token')
-  return token
+  // H4 — memory-first, legacy localStorage keys honoured during transition.
+  return getAuthToken()
 }
 
 function userFromToken(token) {
@@ -85,48 +70,85 @@ export function ForumProvider({ children }) {
   const [profileLoading, setProfileLoading] = useState(false)
   const hydrateRef = useRef(null)
 
-  // Render quickly from token/cache, then verify with /auth/verify.
+  // Render quickly from token/cache, then verify.
+  // H4 — cookie session first (HttpOnly auth_token). When the cookie works, the
+  // in-memory access token is refilled from the refresh_token cookie and the
+  // legacy localStorage tokens are removed. Pre-migration Bearer-only sessions
+  // fall back to the stored token and are migrated to cookies via
+  // /auth/session-migrate.
   const hydrate = useCallback(async () => {
     const token = getStoredToken()
 
-    if (!token) {
-      clearCachedUser()
-      setUser(null)
-      setLoading(false)
-      setProfileLoading(false)
-      return
-    }
-
-    const cached = readCachedUser(token)
-    const optimistic = cached || userFromToken(token)
+    const cached = token ? readCachedUser(token) : null
+    const optimistic = cached || (token ? userFromToken(token) : null)
     if (optimistic) {
       setUser(optimistic)
       setLoading(false)
     }
 
-    if (hydrateRef.current?.token === token) return hydrateRef.current.promise
+    if (hydrateRef.current?.token === (token || '')) return hydrateRef.current.promise
 
     setProfileLoading(true)
-    const promise = api.get('/auth/me', {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(r => {
-      setUser(r.data)
-      writeCachedUser(token, r.data)
-      setLoading(false)
-      return r.data
-    }).catch(err => {
-      const status = err?.response?.status
-      if (status === 401 || status === 403 || !optimistic) {
-        localStorage.removeItem('auth_token')
+    const promise = (async () => {
+      // 1) Cookie session — no Authorization header, HttpOnly auth_token cookie.
+      let cookieUser = null
+      try {
+        const r = await fetch('/api/auth/me', { credentials: 'include' })
+        if (r.ok) cookieUser = await r.json()
+      } catch {}
+
+      if (cookieUser) {
+        setUser(cookieUser)
+        setEffectiveAccess(cookieUser)
+        if (token) writeCachedUser(token, cookieUser)
+        clearLegacyTokens()
+        // Refill the in-memory access token from the refresh cookie so
+        // getUsername()/getRole() keep working after a reload.
+        if (!getAuthToken()) {
+          try {
+            const ref = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
+            if (ref.ok) {
+              const j = await ref.json()
+              if (j.token) setAccessToken(j.token)
+            }
+          } catch {}
+        }
+        setLoading(false)
+        setProfileLoading(false)
+        return
+      }
+
+      // 2) Legacy Bearer-only session (pre-migration localStorage token).
+      if (token) {
+        try {
+          const r = await api.get('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+          setUser(r.data)
+          setEffectiveAccess(r.data)
+          writeCachedUser(token, r.data)
+          try {
+            await api.post('/auth/session-migrate', {}, { headers: { Authorization: `Bearer ${token}` } })
+            clearLegacyTokens()
+          } catch {}
+          setLoading(false)
+          setProfileLoading(false)
+          return
+        } catch (err) {
+          const status = err?.response?.status
+          if (status === 401 || status === 403 || !optimistic) {
+            clearCachedUser()
+            setUser(null)
+          }
+        }
+      } else {
         clearCachedUser()
         setUser(null)
       }
+
       setLoading(false)
-    }).finally(() => {
       setProfileLoading(false)
-      hydrateRef.current = null
-    })
-    hydrateRef.current = { token, promise }
+    })()
+
+    hydrateRef.current = { token: token || '', promise }
     await promise
   }, [])
 
@@ -145,13 +167,9 @@ export function ForumProvider({ children }) {
   }, [hydrate])
 
   const login = (token, userData) => {
-    localStorage.setItem('auth_token', token)
-    sessionStorage.removeItem('forum_token')
-    sessionStorage.removeItem('admin_token')
-    sessionStorage.removeItem('staff_token')
-    localStorage.removeItem('forum_token')
-    localStorage.removeItem('admin_token')
-    localStorage.removeItem('staff_token')
+    // H4 — memory only. The backend sets the HttpOnly cookies; nothing goes to localStorage.
+    setAccessToken(token)
+    clearLegacyTokens()
     clearCachedUser()
     setUser(userData || userFromToken(token))
     setLoading(false)
@@ -159,6 +177,7 @@ export function ForumProvider({ children }) {
   }
 
   const logout = () => {
+    setAccessToken(null)
     localStorage.removeItem('auth_token')
     localStorage.removeItem('forum_token')
     localStorage.removeItem('admin_token')
@@ -178,12 +197,11 @@ export function ForumProvider({ children }) {
 
   const refreshUser = async () => {
     const token = getStoredToken()
-    if (!token) return
     setProfileLoading(true)
     try {
       const r = await api.get('/auth/me')
       setUser(r.data)
-      writeCachedUser(token, r.data)
+      if (token) writeCachedUser(token, r.data)
     } catch (err) {
       if ([401, 403].includes(err?.response?.status)) logout()
     } finally {

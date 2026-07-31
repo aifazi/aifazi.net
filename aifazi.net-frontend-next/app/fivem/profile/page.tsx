@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import api from '@/lib/api'
+import api, { getAuthToken, clearAuthTokens } from '@/lib/api'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
 
 const G = '#00FF88'
@@ -24,7 +24,7 @@ export default function FiveMProfile() {
   const formsHref = '/forms'
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token')
+    const token = getAuthToken()
     if (!token) { router.replace(loginHref); return }
 
     Promise.all([
@@ -39,7 +39,7 @@ export default function FiveMProfile() {
   }, [loginHref, router])
 
   async function handleLogout() {
-    localStorage.removeItem('auth_token')
+    clearAuthTokens()
     window.dispatchEvent(new Event('auth-change'))
     router.push(homeHref)
   }

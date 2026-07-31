@@ -47,8 +47,8 @@ export default function Admin() {
 
   useEffect(() => {
     const verify = async () => {
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('admin_token') || sessionStorage.getItem('staff_token')
-      if (!token) { setChecking(false); navigate('/login?next=/admin', { replace: true }); return }
+      // H4 — /auth/verify accepts the HttpOnly cookie, so no localStorage token
+      // is required anymore. A 401 here means genuinely not authenticated.
       try {
         const verified = await api.get('/auth/verify')
         setEffectiveAccess(verified.data?.user)

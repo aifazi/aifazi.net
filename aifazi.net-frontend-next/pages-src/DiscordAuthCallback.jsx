@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { handOffFiveMAuthCallback } from '@/lib/authCallbackHandoff'
 import { safeNextPath } from '@/lib/authRoutes'
+import { setAccessToken } from '@/lib/api'
 
 export default function DiscordAuthCallback() {
   const router       = useRouter()
@@ -51,8 +52,9 @@ export default function DiscordAuthCallback() {
 
     if (handOffFiveMAuthCallback('discord', token, dest)) return
 
-    // Save token to the unified auth_token key and notify all listeners
-    localStorage.setItem('auth_token', token)
+    // H4 — the backend sets HttpOnly auth cookies on this callback; keep the
+    // token in memory only and notify all listeners.
+    setAccessToken(token)
     window.dispatchEvent(new Event('auth-change'))
     // Clear the hash so the token doesn't linger in the URL
     window.history.replaceState(null, '', window.location.pathname)

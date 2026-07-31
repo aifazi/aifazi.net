@@ -20,6 +20,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from dependencies import CookieHTTPBearer
 from jwt_compat import jwt, JWTError
 from database import supabase
 from utils.email import render_template
@@ -41,7 +42,7 @@ JWT_EXPIRE  = 60 * 24 * 7   # 7 days in minutes
 
 DISCORD_API = "https://discord.com/api/v10"
 
-bearer = HTTPBearer(auto_error=False)
+bearer = CookieHTTPBearer(auto_error=False)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def _make_player_token(user: dict) -> str:

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import api from '@/lib/api'
+import api, { getAuthToken } from '@/lib/api'
 import { useNotify } from '../../core/notify.jsx'
 import { useDialog } from '../../core/dialog.jsx'
 import { CollectionBrowser, SessionsTab, MaintenancePanel, AuditLogTab, DbHealthTab } from '../DatabaseGUI'
@@ -21,8 +21,7 @@ const TabIcon = ({ text, active }) => (
 )
 
 function getToken() {
-  if (typeof window === 'undefined') return ''
-  return localStorage.getItem('auth_token') || sessionStorage.getItem('admin_token') || sessionStorage.getItem('staff_token') || ''
+  return getAuthToken() || ''
 }
 
 function AuthLogTab() {

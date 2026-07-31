@@ -6,6 +6,7 @@
  */
 import { useState, useEffect } from 'react'
 import { useDiscord } from '@/context/DiscordContext'
+import { getAuthToken } from '@/lib/api'
 
 const G = '#00FF88'
 const C = '#00D4FF'
@@ -177,7 +178,7 @@ export default function PlayerProfile() {
 
   useEffect(() => {
     if (!player) return
-    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('discord_token')
+    const token = getAuthToken() || sessionStorage.getItem('discord_token')
     if (!token) return
     fetch(API + '/api/forms/my-submissions', { headers:{ Authorization:'Bearer ' + token } })
       .then(r => r.ok ? r.json() : { submissions:[] })

@@ -12,7 +12,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from jwt_compat import jwt, JWTError
 from database import supabase
-from dependencies import get_current_user, require_admin, require_staff
+from dependencies import CookieHTTPBearer, get_current_user, require_admin, require_staff
 from permissions import MODULES, ACTIONS, ROLE_PERMISSION_PRESETS, normalize_permissions, role_permissions, resolve_staff_access
 from utils.audit import record as _audit, record_auth as _auth_log
 from utils.email import render_template
@@ -297,7 +297,7 @@ def _make_qr_b64(uri: str) -> str:
 
 # ── Forum-specific helpers ──────────────────────────────────────────────────────
 
-bearer = HTTPBearer(auto_error=False)
+bearer = CookieHTTPBearer(auto_error=False)
 
 def make_forum_token(user_id: str, username: str, role: str) -> str:
     exp = datetime.now(timezone.utc) + timedelta(days=7)
@@ -763,6 +763,32 @@ async def verify_token(user: dict = Depends(get_current_user)):
         "permissions": normalize_permissions(access.get("permissions")),
         "staff_account": True,
     }}
+
+@router.post("/session-migrate")
+async def session_migrate(request: Request, response: Response, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    """H4 — mint HttpOnly auth cookies for a valid Bearer-only session.
+
+    Pre-migration sessions kept their JWT in localStorage and never had the
+    auth_token/refresh_token cookies set. The frontend calls this once after a
+    successful legacy-Bearer /auth/me so it can drop the localStorage token:
+    the refresh_token cookie then keeps the session alive across reloads.
+    """
+    payload = _get_forum_user(creds)
+    if not payload:
+        raise HTTPException(401, "Not authenticated")
+    user_id = payload.get("id") or payload.get("sub")
+    if not user_id:
+        raise HTTPException(400, "Token has no user id — re-login to migrate")
+    token = make_forum_token(user_id, payload.get("username") or "", payload.get("role") or "user")
+    refresh = make_token({"id": user_id, "username": payload.get("username") or "", "role": payload.get("role") or "user"}, 60 * 24 * 7)
+    try:
+        supabase.table("users").update({
+            "refresh_token": refresh, "last_seen": datetime.now(timezone.utc).isoformat()
+        }).eq("id", user_id).execute()
+    except Exception:
+        pass
+    _set_auth_cookies(response, token, refresh)
+    return {"ok": True}
 
 @router.get("/admin-gate-token")
 async def admin_gate_token(response: Response, user: dict = Depends(require_staff)):
@@ -1753,12 +1779,23 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
         safe_partial = _urlparse.quote(partial, safe="")
         return _Redir(f"{front}/login#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
+    refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
+    try:
+        supabase.table("users").update({
+            "refresh_token": refresh, "last_seen": datetime.now(timezone.utc).isoformat()
+        }).eq("id", user["id"]).execute()
+    except Exception:
+        pass
     _record_user_activity(user["id"], user["username"], "discord_connect" if mode == "connect" else "discord_login", f"discord_id={discord_id}")
     safe_dest = _urlparse.quote(dest, safe="/")
     # M9 — deliver the token as a URL hash fragment, NOT a query param, so it
     # never lands in server logs or Referer headers. The frontend callback
     # (DiscordAuthCallback.jsx) already reads the fragment first.
-    return _Redir(f"{front}/auth/discord-callback#token={token}&dest={safe_dest}")
+    # H4 — also set HttpOnly auth cookies so the session survives without
+    # localStorage; the fragment token stays as a legacy fallback.
+    resp = _Redir(f"{front}/auth/discord-callback#token={token}&dest={safe_dest}")
+    _set_auth_cookies(resp, token, refresh)
+    return resp
 
 @router.post("/discord/connect")
 async def discord_connect(request: Request, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):

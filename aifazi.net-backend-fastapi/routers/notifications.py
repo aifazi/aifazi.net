@@ -1,13 +1,13 @@
 """routers/notifications.py — Forum notifications"""
 from fastapi import APIRouter, Depends, HTTPException
 from database import supabase
-from dependencies import get_current_user
+from dependencies import CookieHTTPBearer, get_current_user
 import os
 from jwt_compat import jwt, JWTError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 router = APIRouter()
-bearer = HTTPBearer(auto_error=False)
+bearer = CookieHTTPBearer(auto_error=False)
 SECRET = os.getenv("PASETO_SECRET", os.getenv("JWT_SECRET", "")); ALGO = "HS256"
 
 def get_forum_user(creds: HTTPAuthorizationCredentials | None = Depends(bearer)) -> dict:

@@ -1,11 +1,11 @@
-﻿'use client'
+'use client'
 /**
  * WhitelistApply.jsx — Public whitelist application form for AIFAZI RP
  * Requires site login (ForumContext). If Discord not linked, prompts to connect.
  * Discord ID/username auto-filled from the linked Discord account on the user's profile.
  */
 import React, { useState, useEffect } from 'react'
-import api from '@/lib/api'
+import api, { getAuthToken } from '@/lib/api'
 import { useForum } from '@/context/ForumContext'
 import { Checkbox } from '../core/ui.jsx'
 import { useNotify } from '../core/notify.jsx'
@@ -296,7 +296,7 @@ export default function WhitelistApply() {
       setChecksLoading(false)
       return
     }
-    const token = localStorage.getItem('auth_token')
+    const token = getAuthToken()
     if (!token) { setDiscordLoading(false); setExistingApp(null); return }
     let cancelled = false
     const headers = { Authorization: `Bearer ${token}` }
@@ -408,7 +408,7 @@ export default function WhitelistApply() {
     if (Object.keys(e).length) { setErrors(e); return }
     setSubmitting(true); setServerError('')
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = getAuthToken()
       await api.post('/fivem/whitelist/apply', {
         // Identity anchors
         forum_user_id:       user?.id || user?._id || null,

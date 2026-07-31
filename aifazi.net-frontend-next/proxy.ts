@@ -10,6 +10,7 @@
  * and legacy JWT tokens for backward compatibility during migration.
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { xchacha20poly1305 } from '@noble/ciphers/chacha'
 
 const CDN_HOSTNAME        = 'cdn.aifazi.net'
 const FIVEM_HOSTNAME      = 'fivem.aifazi.net'
@@ -39,8 +40,70 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
 }
 
 // ── PASETO v4 token helpers ──────────────────────────────────────────────────
+// PASETO header {"v":"v4","t":"local"} base64url-encoded. The backend emits
+// tokens as `<header_b64>.<encrypted>` (NOT a literal "v4." prefix), so matching
+// on this header is the only correct way to detect PASETO tokens.
+const PASETO_HEADER_B64 = 'eyJ2IjoidjQiLCJ0IjoibG9jYWwifQ'
+
 function isPasetoToken(token: string): boolean {
-  return token.startsWith('v4.')
+  return token.startsWith(`${PASETO_HEADER_B64}.`) || token.startsWith('v4.local.')
+}
+
+const PASETO_KEY_SALT = new TextEncoder().encode('paseto-v4-aifazi')
+const PASETO_NONCE_SIZE = 24 // XChaCha20 nonce (prepended to ciphertext per PASETO v4)
+const PASETO_TAG_SIZE = 16   // Poly1305 auth tag
+
+// Backend derives keys with PBKDF2-HMAC-SHA256(secret, salt="paseto-v4-aifazi",
+// 100k iterations, 32 bytes). See paseto_token._derive_key / jwt_compat._resolve_key.
+// The KDF result is cached per secret so it runs once per process, mirroring the
+// backend's _derived_key_cache.
+const pasetoKeyCache = new Map<string, Promise<Uint8Array>>()
+
+function derivePasetoKey(secret: string): Promise<Uint8Array> {
+  let pending = pasetoKeyCache.get(secret)
+  if (!pending) {
+    pending = (async () => {
+      const material = await crypto.subtle.importKey(
+        'raw',
+        new TextEncoder().encode(secret),
+        'PBKDF2',
+        false,
+        ['deriveBits'],
+      )
+      const bits = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt: PASETO_KEY_SALT, iterations: 100000, hash: 'SHA-256' },
+        material,
+        256,
+      )
+      return new Uint8Array(bits)
+    })()
+    pasetoKeyCache.set(secret, pending)
+  }
+  return pending
+}
+
+/**
+ * Decrypt + authenticate a true PASETO v4.local token (2-part, XChaCha20-Poly1305).
+ * Returns the verified payload, or null if the secret is wrong / token tampered /
+ * malformed. Throwing on auth failure is handled internally.
+ */
+async function decryptPasetoV4(token: string, secret: string): Promise<Record<string, any> | null> {
+  if (!secret) return null
+  const parts = token.split('.')
+  if (parts.length !== 2) return null
+  if (parts[0] !== PASETO_HEADER_B64) return null
+  try {
+    const encrypted = base64UrlToBuffer(parts[1])
+    if (encrypted.byteLength < PASETO_NONCE_SIZE + PASETO_TAG_SIZE) return null
+    const nonce = new Uint8Array(encrypted, 0, PASETO_NONCE_SIZE)
+    const ciphertext = new Uint8Array(encrypted, PASETO_NONCE_SIZE)
+    const key = await derivePasetoKey(secret)
+    const aead = xchacha20poly1305(key, nonce)
+    const plaintext = aead.decrypt(ciphertext)
+    return JSON.parse(new TextDecoder().decode(plaintext))
+  } catch {
+    return null
+  }
 }
 
 function decodePasetoPayload(token: string): Record<string, any> | null {
@@ -120,12 +183,22 @@ async function verifyJwtSignature(token: string): Promise<boolean> {
 
 // ── Unified token verification ───────────────────────────────────────────────
 async function verifyTokenSignature(token: string): Promise<boolean> {
-  if (isPasetoToken(token)) return verifyPasetoHmac(token)
+  if (isPasetoToken(token)) {
+    // True PASETO v4.local (XChaCha20-Poly1305) — decryption authenticates the token.
+    const payload = await decryptPasetoV4(token, ADMIN_GATE_SECRET)
+    if (payload) return true
+    // Legacy 3-part HMAC-SHA256 fallback minted before cryptography>=42 was pinned.
+    return verifyPasetoHmac(token)
+  }
   return verifyJwtSignature(token)
 }
 
-function decodeTokenPayload(token: string): Record<string, any> | null {
-  if (isPasetoToken(token)) return decodePasetoPayload(token)
+async function decodeTokenPayload(token: string): Promise<Record<string, any> | null> {
+  if (isPasetoToken(token)) {
+    const payload = await decryptPasetoV4(token, ADMIN_GATE_SECRET)
+    if (payload) return payload
+    return decodePasetoPayload(token)
+  }
   return decodeJwtPayload(token)
 }
 
@@ -149,7 +222,7 @@ async function isAdminSessionValid(cookieValue: string | undefined, hostname = '
   const signatureValid = await verifyTokenSignature(cookieValue)
   if (!signatureValid && !isRelaxedLocalRuntime(hostname)) return false
 
-  const payload = decodeTokenPayload(cookieValue)
+  const payload = await decodeTokenPayload(cookieValue)
   if (!payload) return false
   if (payload.purpose !== 'admin_gate') return false
   if (!ADMIN_ROLES.has(String(payload.role || ''))) return false

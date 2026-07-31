@@ -18,6 +18,32 @@ const BASE = '/api'
 
 const api = axios.create({ baseURL: BASE, timeout: 15000 })
 
+// H4 — the access token lives in memory only. It is NEVER written to
+// localStorage/sessionStorage. Session persistence across reloads is handled by
+// the HttpOnly refresh_token cookie (set by the backend on login) via the
+// 401-refresh interceptor below and the cookie re-hydration in ForumContext.
+let _memToken: string | null = null
+
+/** Set (or clear) the in-memory access token. Replaces localStorage persistence. */
+export function setAccessToken(token: string | null) {
+  _memToken = token
+}
+
+/** Remove the legacy localStorage/sessionStorage token keys after the cookie
+ *  session has been proven to work. Keeps role/permission caches. */
+export function clearLegacyTokens() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('auth_token')
+  localStorage.removeItem('forum_token')
+  localStorage.removeItem('admin_token')
+  localStorage.removeItem('staff_token')
+  localStorage.removeItem('refresh_token')
+  sessionStorage.removeItem('forum_token')
+  sessionStorage.removeItem('admin_token')
+  sessionStorage.removeItem('staff_token')
+  sessionStorage.removeItem('chat_token')
+}
+
 api.interceptors.request.use((config) => {
   const token = getAuthToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -49,8 +75,8 @@ api.interceptors.response.use(
             .finally(() => { _refreshing = null })
         }
         const { data } = await _refreshing
-        // Store refreshed token in localStorage so it persists across tabs
-        localStorage.setItem('auth_token', data.token)
+        // H4 — keep the refreshed token in memory only (never localStorage).
+        setAccessToken(data.token)
         original.headers.Authorization = `Bearer ${data.token}`
         return api(original)
       } catch {
@@ -129,11 +155,10 @@ function decodeToken(token: string): Record<string, any> | null {
 
 export function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null
-  // All tokens now in localStorage - persists across tabs and refresh.
-  // Cleanup-5: priority order restored to admin > staff > auth > forum.
-  // Previously auth_token beat admin_token, so a forum login would shadow an
-  // active admin gate and admin-only endpoints would 403 even when the user
-  // had a valid admin_token in storage.
+  // H4 — memory-first. Legacy localStorage keys are still honoured during the
+  // transition so existing sessions keep working until the cookie migration
+  // (clearLegacyTokens) removes them.
+  if (_memToken) return _memToken
   return (
     localStorage.getItem('admin_token') ||
     localStorage.getItem('staff_token') ||
@@ -198,29 +223,42 @@ export async function ensureAdminGate(): Promise<boolean> {
   if (typeof window === 'undefined') return false
 
   const storedTokens = [
+    _memToken,
     localStorage.getItem('auth_token'),
     localStorage.getItem('forum_token'),
     localStorage.getItem('staff_token'),
     localStorage.getItem('admin_token'),
   ].filter((token, index, all): token is string => !!token && all.indexOf(token) === index)
 
+  // H4 — the backend now accepts the HttpOnly auth_token cookie, so a plain
+  // credentialed call works for cookie sessions too (no token needed).
   for (const token of storedTokens) {
     try {
       const res = await fetch('/api/auth/admin-gate-token', {
         method: 'GET',
         credentials: 'include',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
       if (!res.ok) continue
       return true
     } catch {}
   }
+  if (storedTokens.length > 0) return false
 
-  return false
+  try {
+    const res = await fetch('/api/auth/admin-gate-token', {
+      method: 'GET',
+      credentials: 'include',
+    })
+    return res.ok
+  } catch {
+    return false
+  }
 }
 
 export function clearAuthTokens() {
   if (typeof window === 'undefined') return
+  _memToken = null
   localStorage.removeItem('auth_token')
   localStorage.removeItem('forum_token')
   localStorage.removeItem('admin_token')
@@ -235,11 +273,9 @@ export function clearAuthTokens() {
   window.dispatchEvent(new Event('auth-change'))
 }
 
-/** @deprecated #2 — refreshToken is now an HttpOnly cookie set by the backend.
- *  The refreshToken parameter is accepted but intentionally ignored so old
- *  call-sites don't break; only the access token is written to localStorage. */
+/** H4 — save the access token in memory only. The backend sets the HttpOnly
+ *  refresh_token/auth_token cookies on login/refresh, so nothing sensitive is
+ *  written to localStorage. The refreshToken parameter is intentionally ignored. */
 export function saveTokens({ token, refreshToken: _ignored }: { token?: string; refreshToken?: string }) {
-  if (token) localStorage.setItem('auth_token', token)
-  // refresh_token is NOT stored in sessionStorage/localStorage — the backend sets it
-  // as an HttpOnly cookie automatically on login / refresh responses.
+  setAccessToken(token ?? null)
 }

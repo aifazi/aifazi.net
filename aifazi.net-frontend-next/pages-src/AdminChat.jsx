@@ -7,7 +7,7 @@
  * - Staff moderation: mute, kick, ban per room
  */
 import React, { useState, useEffect, useRef, useCallback, useMemo, Component } from 'react'
-import api, { getRole, getUsername, setEffectiveAccess } from '@/lib/api'
+import api, { getRole, getUsername, setEffectiveAccess, getAuthToken } from '@/lib/api'
 import { useNotify }  from '../core/notify.jsx'
 import { useDialog }  from '../core/dialog.jsx'
 import { Checkbox }   from '../core/ui.jsx'
@@ -28,12 +28,8 @@ function parseJwt(t) {
   } catch { return null }
 }
 function getToken() {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('auth_token') ||
-         localStorage.getItem('admin_token') ||
-         localStorage.getItem('staff_token') ||
-         localStorage.getItem('forum_token') ||
-         sessionStorage.getItem('chat_token') || null
+  // H4 — memory-first via the central API client (cookie auth covers the rest).
+  return getAuthToken()
 }
 const fmt   = d => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 const fmtDt = d => { const n=new Date(),dt=new Date(d); if(dt.toDateString()===n.toDateString()) return 'Today'; const y=new Date(n); y.setDate(n.getDate()-1); return dt.toDateString()===y.toDateString()?'Yesterday':dt.toLocaleDateString([],{month:'short',day:'numeric'}) }

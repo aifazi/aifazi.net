@@ -1,3 +1,5 @@
+import { getAuthToken } from '@/lib/api'
+
 export const T = {
   sidebar:   'rgba(10,12,18,0.95)',
   main:      'rgba(15,17,24,0.98)',
@@ -35,12 +37,8 @@ export function parseJwt(t) {
 }
 
 export function getToken() {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('auth_token') ||
-         localStorage.getItem('admin_token') ||
-         localStorage.getItem('staff_token') ||
-         localStorage.getItem('forum_token') ||
-         sessionStorage.getItem('chat_token') || null
+  // H4 — memory-first via the central API client (cookie auth covers the rest).
+  return getAuthToken()
 }
 
 export const fmt = d => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })

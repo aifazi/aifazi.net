@@ -35,7 +35,7 @@ from database import supabase
 from utils.email import send_email, render_template
 from utils.email_queue import queue_email
 from utils.audit import record as _audit, record_auth as _auth_log
-from dependencies import require_staff
+from dependencies import CookieHTTPBearer, require_staff
 from permissions import normalize_permissions, role_permissions, resolve_staff_access
 from utils.oauth_state import make_oauth_state, verify_oauth_state, _safe_relative_path
 
@@ -163,7 +163,7 @@ def _find_username_email_html(username: str) -> str:
 
 SECRET = os.getenv("PASETO_SECRET", os.getenv("JWT_SECRET", ""))
 ALGO   = "HS256"
-bearer = HTTPBearer(auto_error=False)
+bearer = CookieHTTPBearer(auto_error=False)
 
 def make_forum_token(user_id: str, username: str, role: str) -> str:
     exp = datetime.now(timezone.utc) + timedelta(days=7)
@@ -1589,8 +1589,24 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     # 5. Redirect to frontend callback page with token
     # M9 — use a hash fragment (not a query param) so the token never appears in
     # server logs or Referer headers. The frontend reads the fragment first.
-    safe_dest = _urlparse.quote(dest, safe="/")
-    return _Redir(f"{front}/auth/discord-callback#token={token}&dest={safe_dest}")
+    # H4 — also set HttpOnly auth cookies so the session survives without
+    # localStorage; the fragment token stays as a legacy fallback.
+    try:
+        from routers.auth import make_token, _set_auth_cookies
+        refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
+        try:
+            supabase.table("users").update({
+                "refresh_token": refresh, "last_seen": datetime.now(timezone.utc).isoformat()
+            }).eq("id", user["id"]).execute()
+        except Exception:
+            pass
+        safe_dest = _urlparse.quote(dest, safe="/")
+        resp = _Redir(f"{front}/auth/discord-callback#token={token}&dest={safe_dest}")
+        _set_auth_cookies(resp, token, refresh)
+        return resp
+    except Exception:
+        safe_dest = _urlparse.quote(dest, safe="/")
+        return _Redir(f"{front}/auth/discord-callback#token={token}&dest={safe_dest}")
 
 @router.post("/discord/connect")
 async def discord_connect(request: Request, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):

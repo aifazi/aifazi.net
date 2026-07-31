@@ -27,7 +27,26 @@ if not SECRET:
         "Set PASETO_SECRET in your Vercel environment variables and redeploy."
     )
 
-bearer = HTTPBearer(auto_error=False)
+class CookieHTTPBearer(HTTPBearer):
+    """Bearer dependency that also accepts the HttpOnly `auth_token` cookie.
+
+    H4 — bearer-JWTs used to be stored in localStorage (XSS-exfiltratable). The
+    backend now sets auth_token/refresh_token as HttpOnly cookies on login; this
+    dependency falls back to the cookie when no Authorization header is sent so
+    the frontend can stop persisting tokens in JS-visible storage entirely.
+    Cross-site CSRF is mitigated because the cookie is SameSite=lax.
+    """
+    async def __call__(self, request: Request):
+        creds = await super().__call__(request)
+        if creds:
+            return creds
+        cookie = request.cookies.get("auth_token")
+        if cookie:
+            return HTTPAuthorizationCredentials(scheme="Bearer", credentials=cookie)
+        return None
+
+
+bearer = CookieHTTPBearer(auto_error=False)
 
 _user_cache = {}
 _USER_CACHE_TTL = 60

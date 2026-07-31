@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
-import api from '@/lib/api'
+import api, { getAuthToken } from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { Checkbox, Select } from '../core/ui.jsx'
 
@@ -616,7 +616,7 @@ export default function ForumAdmin({ embedded = false }) {
   const [catPermsTab, setCatPermsTab] = useState('roles')
 
   useEffect(() => {
-    const token = sessionStorage.getItem('admin_token')
+    const token = getAuthToken()
     if (!token && !embedded) { navigate('/admin'); return }
     loadStats()
     loadCats()

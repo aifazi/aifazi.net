@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
-import api, { ensureAdminGate } from '@/lib/api'
+import api, { ensureAdminGate, getAuthToken } from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { Select, useDialog } from '../core/ui.jsx'
 import { useToast } from '../components/Toast'
@@ -1162,7 +1162,7 @@ function FiveMTab({ user }) {
   const [formsLoading, setFormsLoading] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token')
+    const token = getAuthToken()
     if (!token) { setLoading(false); return }
     setFormsLoading(true)
     api.get('/auth/discord/whitelist-status', {
@@ -1244,7 +1244,7 @@ function FiveMTab({ user }) {
 
   const refreshIdentities = async () => {
     await refreshUser?.()
-    const token = localStorage.getItem('auth_token')
+    const token = getAuthToken()
     if (!token) return
     const r = await api.get('/auth/discord/whitelist-status', {
       headers: { Authorization: `Bearer ${token}` },

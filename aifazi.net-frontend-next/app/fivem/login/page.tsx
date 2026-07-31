@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import api from '@/lib/api'
+import api, { getAuthToken, saveTokens } from '@/lib/api'
 import { authProviderLoginRoute } from '@/lib/authRoutes'
 import { fivemRoute, useFiveMRoute } from '@/lib/fivemRoutes'
 
@@ -31,7 +31,7 @@ export default function FiveMLogin() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setNextHref(safeNext(params.get('next'), profileHref))
-    const token = localStorage.getItem('auth_token')
+    const token = getAuthToken()
     if (token) router.replace(profileHref)
   }, [profileHref, router])
 
@@ -41,7 +41,7 @@ export default function FiveMLogin() {
     setLoading(true); setError('')
     try {
       const res = await api.post('/auth/login', { username: email, password })
-      if (res.data?.token) localStorage.setItem('auth_token', res.data.token)
+      if (res.data?.token) saveTokens({ token: res.data.token })
       window.dispatchEvent(new Event('auth-change'))
       router.push(nextHref || profileHref)
     } catch (err: any) {

@@ -1,7 +1,7 @@
 ﻿'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import api from '@/lib/api'
+import api, { saveTokens, clearAuthTokens, getAuthToken } from '@/lib/api'
 import { authProviderLoginRoute, safeNextPath } from '@/lib/authRoutes'
 
 // ── Shared styles ──────────────────────────────────────────────────────────────
@@ -176,7 +176,7 @@ function SignIn({ onSwitch, onTwoFA }) {
       const token = res.data?.token || res.data?.access_token
       const role  = res.data?.user?.role || res.data?.role
       if (token) {
-        localStorage.setItem('auth_token', token)
+        saveTokens({ token })
         window.dispatchEvent(new Event('auth-change'))
         clearFailures(identifier)
         router.push(nextPath || (role === 'chat' ? '/chat' : ADMIN_ROLES.includes(role) ? '/admin' : '/profile'))
@@ -690,7 +690,7 @@ function TwoFAStep({ challenge, onBack }) {
       const token = res.data?.token || res.data?.access_token
       const role  = res.data?.user?.role || res.data?.role
       if (token) {
-        localStorage.setItem('auth_token', token)
+        saveTokens({ token })
         window.dispatchEvent(new Event('auth-change'))
         router.push(challenge.next || (role === 'admin' || role === 'moderator' ? '/admin' : '/profile'))
       } else {
@@ -864,7 +864,7 @@ export default function Login() {
 
   // ── Already logged in? Redirect away from /login ───────────────────────────
   useEffect(() => {
-    const token = localStorage.getItem('auth_token')
+    const token = getAuthToken()
     const nextPath = safeNextPath(searchParams?.get('next'))
     if (!token) return
     // Decode role from JWT payload (no verification needed — just for routing)
@@ -880,7 +880,7 @@ export default function Login() {
       }
     } catch {
       // Malformed token — clear it and stay on login
-      localStorage.removeItem('auth_token')
+      clearAuthTokens()
     }
   }, [])
 

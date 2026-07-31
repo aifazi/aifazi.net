@@ -21,6 +21,7 @@ out/
 
 # Supabase
 supabase/.temp/
+**/supabase/.temp/
 
 # OS files
 .DS_Store

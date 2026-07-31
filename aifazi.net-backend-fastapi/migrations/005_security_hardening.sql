@@ -21,10 +21,12 @@ CREATE POLICY authenticated_update_chat_messages ON chat_messages
 CREATE POLICY authenticated_delete_chat_messages ON chat_messages
   FOR DELETE TO authenticated USING (true);
 
--- chat_rooms: Keep public SELECT, restrict writes to authenticated
-DROP POLICY IF EXISTS anon_insert_chat_rooms ON chat_rooms;
-DROP POLICY IF EXISTS anon_update_chat_rooms ON chat_rooms;
-DROP POLICY IF EXISTS anon_delete_chat_rooms ON chat_rooms;
+-- chat_rooms: Keep public SELECT, restrict writes. The policies migration.sql
+-- created for chat_rooms were role-less (-> TO PUBLIC), so the DROPs below must
+-- target the ACTUAL names: chat_rooms_insert / chat_rooms_update.
+DROP POLICY IF EXISTS chat_rooms_insert ON chat_rooms;
+DROP POLICY IF EXISTS chat_rooms_update ON chat_rooms;
+DROP POLICY IF EXISTS authenticated_insert_chat_rooms ON chat_rooms;
 CREATE POLICY authenticated_insert_chat_rooms ON chat_rooms
   FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY authenticated_update_chat_rooms ON chat_rooms
