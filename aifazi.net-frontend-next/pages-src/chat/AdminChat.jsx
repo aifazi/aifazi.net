@@ -56,6 +56,7 @@ export default function AdminChat({ embedded=false }) {
   const [editing, setEditing] = useState(null)
   const [mediaViewer, setMediaViewer] = useState(null)
   const [typing, setTyping] = useState([])
+  const [roomMembers, setRoomMembers] = useState([])
   const [modal, setModal] = useState(null)
   const [showOnline, setShowOnline] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
@@ -277,6 +278,48 @@ export default function AdminChat({ embedded=false }) {
     return () => { supabase.removeChannel(msgSub) }
   }, [room?.id])
 
+  // ── Room members + typing indicator + live moderation ─────────────────────
+  useEffect(() => {
+    if (!room || !supabase || !me) return
+
+    const loadMembers = () =>
+      api.get(`/chat/rooms/${room.id}/members`).then(r => setRoomMembers(Array.isArray(r.data) ? r.data : [])).catch(() => {})
+
+    loadMembers()
+
+    const typCh = supabase.channel(`typing:${room.id}`)
+    typCh.on('broadcast', { event: 'typing' }, (payload) => {
+      if (payload.payload?.username && payload.payload?.username !== me) {
+        setTyping(prev => {
+          if (prev.find(t => t === payload.payload.username)) return prev
+          return [...prev, payload.payload.username]
+        })
+        setTimeout(() => setTyping(prev => prev.filter(t => t !== payload.payload.username)), 3000)
+      }
+    })
+    typCh.subscribe()
+
+    const modCh = supabase
+      .channel(`mod:${room.id}`)
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_mutes', filter:`room_id=eq.${room.id}` },
+        (payload) => { if (payload.new.username === me) { setIsMutedByStaff(true); notify.error('You have been muted in this channel') } })
+      .on('postgres_changes', { event:'DELETE', schema:'public', table:'chat_mutes', filter:`room_id=eq.${room.id}` },
+        (payload) => { if (payload.old.username === me) { setIsMutedByStaff(false); notify.success('You have been unmuted') } })
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_bans', filter:`room_id=eq.${room.id}` },
+        (payload) => { if (payload.new.username === me) { notify.error('You have been banned from this channel'); setTimeout(() => { setRoom(null); setMsgs([]) }, 1500) } })
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_members', filter:`room_id=eq.${room.id}` }, loadMembers)
+      .on('postgres_changes', { event:'DELETE', schema:'public', table:'chat_members', filter:`room_id=eq.${room.id}` },
+        (payload) => { if (payload.old.username === me) { notify.error('You have been removed from this channel'); setTimeout(() => { setRoom(null); setMsgs([]) }, 1500) } loadMembers() })
+      .subscribe()
+
+    return () => { supabase.removeChannel(typCh); supabase.removeChannel(modCh) }
+  }, [room?.id, me])
+
+  const broadcastTyping = useCallback(() => {
+    if (!room || !supabase || !me) return
+    supabase.channel(`typing:${room.id}`).send({ type:'broadcast', event:'typing', payload:{ username: me } })
+  }, [room?.id, me])
+
   // ── Join voice/video room ─────────────────────────────────────────────────
   const joinCall = useCallback(async (r) => {
     // Leave any existing call first
@@ -317,7 +360,6 @@ export default function AdminChat({ embedded=false }) {
   const sendMsg = async (e) => {
     if (e) e.preventDefault()
     const txt = input.trim()
-    console.log('[AdminChat] sendMsg', { txt, room: room?.name, replyToId: replyTo?.id })
     if (!txt || !room) return
     if (isMutedByStaff) { notify.error('You are muted in this channel'); return }
     const prevInput = input
@@ -407,7 +449,10 @@ export default function AdminChat({ embedded=false }) {
     } catch {} finally { setLoadingMore(false) }
   }, [room?.id, loadingMore, hasMore])
 
-  const onInput = e => setInput(e.target.value)
+  const onInput = e => {
+    setInput(e.target.value)
+    if (e.target.value.trim()) broadcastTyping()
+  }
   const onScroll = useCallback(() => {
     if (!listRef.current) return
     if (listRef.current.scrollTop < 80 && hasMore && !loadingMore) {
@@ -455,10 +500,9 @@ export default function AdminChat({ embedded=false }) {
 
   const kickUser = async (username) => {
     try {
-      await api.post(`/chat/rooms/${room.id}/ban`, { username, reason: 'Kicked by staff' })
+      await api.post(`/chat/rooms/${room.id}/kick`, { username, reason: 'Kicked by staff' })
       notify.success(`${username} kicked from channel`)
-      // Unban immediately if it's a kick (temporary)
-      setTimeout(() => api.delete(`/chat/rooms/${room.id}/ban/${username}`).catch(()=>{}), 100)
+      api.get(`/chat/rooms/${room.id}/members`).then(r => setRoomMembers(Array.isArray(r.data) ? r.data : [])).catch(() => {})
     } catch { notify.error('Kick failed') }
   }
 
@@ -822,6 +866,25 @@ export default function AdminChat({ embedded=false }) {
                   </div>
                 </div>
               ))}
+              {roomMembers.filter(m => m.username !== me && !online.some(o => o.username === m.username)).length > 0 && (
+                <div style={{ borderTop:`1px solid ${T.border}`, marginTop:4, paddingTop:4 }}>
+                  <div style={{ padding:'4px 12px 6px', fontFamily:T.mono, fontSize:8, color:T.muted, letterSpacing:2 }}>
+                    OFFLINE MEMBERS — {roomMembers.filter(m => m.username !== me && !online.some(o => o.username === m.username)).length}
+                  </div>
+                  {roomMembers.filter(m => m.username !== me && !online.some(o => o.username === m.username)).map(m => {
+                    const u = { username: m.username, role: m.role || 'member' }
+                    return (
+                      <div key={m.username} onContextMenu={e => handleUserCtx(e, u)} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 12px', cursor:'default', borderRadius:4 }}>
+                        <span style={{ width:26, height:26, borderRadius:'50%', background:'rgba(255,255,255,0.06)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:T.muted, flexShrink:0, fontFamily:T.mono }}>{m.username.charAt(0).toUpperCase()}</span>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:11, color:T.muted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.username}</div>
+                          <RolePill role={m.role || 'member'} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         )}

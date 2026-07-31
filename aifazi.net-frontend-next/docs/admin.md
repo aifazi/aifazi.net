@@ -82,7 +82,7 @@ Internal navigation uses URL hash or path segments managed by the panel switcher
 | **Help Desk Panel** | `admin/HelpDeskPanel.jsx` | View and manage support tickets |
 | **Changelog** | `admin/Changelog.jsx` | Admin changelog / release notes |
 | **Video Player** | `admin/VideoPlayer.jsx` | Embedded video management |
-| **Admin Chat** | `pages-src/AdminChat.jsx` | CometChat-powered admin chat interface |
+| **Admin Chat** | `pages-src/chat/AdminChat.jsx` | Real-time community chat: rooms, voice/video, moderation |
 | **Forum Admin** | `pages-src/ForumAdmin.jsx` | Forum moderation: users, threads, categories, bans |
 
 ---
