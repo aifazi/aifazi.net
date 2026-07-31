@@ -13,7 +13,6 @@ Migration (run once in Supabase SQL editor):
 from fastapi import APIRouter, Depends, HTTPException, Request
 from database import supabase
 from dependencies import require_staff
-from websocket.chat_ws import broadcast_site_event
 from utils.audit import record as _audit
 
 router = APIRouter()
@@ -75,6 +74,5 @@ async def update_settings(body: dict, request: Request, staff: dict = Depends(re
     _audit(actor, "settings_update", target="site_config",
            details={"changed_keys": list(body.keys())}, ip=ip)
 
-    await broadcast_site_event("settings-update", saved)
     return saved
 

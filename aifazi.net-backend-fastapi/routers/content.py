@@ -2,7 +2,6 @@
 from fastapi import APIRouter, Depends
 from database import supabase
 from dependencies import require_staff
-from websocket.chat_ws import broadcast_site_event
 from utils.cache import get as cache_get, set as cache_set
 router = APIRouter()
 
@@ -38,7 +37,6 @@ async def upsert_block(key: str, body: dict, _: dict = Depends(require_staff)):
     from utils.cache import delete as cache_delete
     res = supabase.table("content_blocks").upsert({"key": key, "value": value}, on_conflict="key").execute()
     cache_delete("content_blocks")
-    await broadcast_site_event("content-update", {"key": key, "data": value})
     return res.data[0]
 
 @router.delete("/{key}")
@@ -46,5 +44,4 @@ async def delete_block(key: str, _: dict = Depends(require_staff)):
     from utils.cache import delete as cache_delete
     supabase.table("content_blocks").delete().eq("key", key).execute()
     cache_delete("content_blocks")
-    await broadcast_site_event("content-update", {"key": key, "data": None})
     return {"message": "Deleted"}

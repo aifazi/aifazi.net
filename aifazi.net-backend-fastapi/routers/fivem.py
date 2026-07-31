@@ -1305,31 +1305,6 @@ async def manual_add_whitelist(
     return {"message": "Player manually whitelisted â€” syncing to server in background.", "app": app}
 
 # â”€â”€â”€ Fallback Lua polling endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.get("/whitelist/pending-sync-legacy")
-async def pending_sync_legacy(request: Request):
-    """
-    FIX: was returning a dict â€” Lua expects a bare JSON array.
-    Returns approved entries with txadmin_synced=false and a valid identifier.
-    """
-    _check_token(request)
-    res = (supabase.table("fivem_whitelist")
-           .select("id,discord_name,steam_hex,fivem_id,fivem_license,approved_at")
-           .eq("status", "approved").eq("txadmin_synced", False)
-           .order("reviewed_at", desc=False).limit(20).execute())
-    rows = res.data or []
-    out = []
-    for r in rows:
-        steam = (r.get("steam_hex") or "").strip()
-        license_id = (r.get("fivem_license") or "").strip()
-        fivem = (r.get("fivem_id") or "").strip()
-        lic = license_id or steam or fivem
-        if not lic:
-            continue
-        r["license"] = lic
-        out.append(r)
-    # Return bare array â€” Lua does: local entries = json.decode(body)
-    return out
-
 @router.post("/whitelist/mark-synced")
 async def mark_synced(body: MarkSynced, request: Request):
     """Lua calls this after successfully adding a player to txAdmin."""
@@ -1911,6 +1886,78 @@ async def get_server_status():
         "peak_players": d.get("peak_players", 0), "dev_override": None,
         "display_message": msg, "fake_data": False,
     }
+
+@router.get("/status/overview")
+async def get_public_status_overview(hours: int = 24):
+    """Public, visitor-safe server overview: status summary + sanitized online
+    player list (names/ping only — all identifiers stripped) + history series.
+    Feed for the public /fivem/status page."""
+    hours = max(1, min(168, int(hours or 24)))
+
+    status_res = supabase.table("fivem_status").select("*").eq("id", "main").execute()
+    if not status_res.data:
+        status = {
+            "status": "offline", "players_online": 0, "max_players": 48,
+            "last_seen": None, "last_seen_label": "No heartbeat received",
+            "uptime_seconds": 0, "uptime_label": "0m", "resource_count": 0,
+            "server_name": "AIFAZI RP", "peak_players": 0, "dev_override": None,
+            "display_message": "No heartbeat received",
+        }
+    else:
+        d = status_res.data[0]
+        ov = d.get("dev_override")
+        uptime = d.get("uptime_seconds", 0)
+        if ov == "maintenance":
+            status = {"status": "maintenance", "players_online": 0, "max_players": d.get("max_players", 48),
+                      "display_message": "Server is under maintenance", "server_name": d.get("server_name"),
+                      "peak_players": d.get("peak_players", 0), "resource_count": d.get("resource_count", 0),
+                      "uptime_seconds": 0, "uptime_label": "0m", "last_seen": d.get("updated_at"),
+                      "last_seen_label": "Maintenance Mode", "dev_override": "maintenance"}
+        elif ov == "force_online":
+            status = {"status": "online", "players_online": d.get("players_online", 0), "max_players": d.get("max_players", 48),
+                      "display_message": "Force Online override active", "dev_override": "force_online",
+                      "uptime_seconds": uptime, "uptime_label": _uptime_str(uptime), "server_name": d.get("server_name"),
+                      "peak_players": d.get("peak_players", 0), "resource_count": d.get("resource_count", 0),
+                      "last_seen": d.get("updated_at"), "last_seen_label": "Force Online (dev)"}
+        else:
+            status_label, age = _compute_status(d.get("updated_at"))
+            players = d.get("players_online", 0) if status_label != "offline" else 0
+            if status_label == "online":     msg = f"Online — {players}/{d.get('max_players',48)} players"
+            elif status_label == "degraded": msg = f"Starting up… (last seen {_last_seen_str(age)})"
+            else:                            msg = f"Offline (last seen {_last_seen_str(age)})"
+            status = {"status": status_label, "players_online": players, "max_players": d.get("max_players", 48),
+                      "last_seen": d.get("updated_at"), "last_seen_label": _last_seen_str(age),
+                      "uptime_seconds": uptime, "uptime_label": _uptime_str(uptime),
+                      "resource_count": d.get("resource_count", 0), "server_name": d.get("server_name", "AIFAZI RP"),
+                      "peak_players": d.get("peak_players", 0), "dev_override": None, "display_message": msg}
+
+    # Sanitized player list — strip every identifier, keep only display fields.
+    players: list[dict] = []
+    players_res = supabase.table("fivem_players").select("*").eq("id", "main").execute()
+    if players_res.data:
+        p = players_res.data[0]
+        try:
+            recent = (datetime.now(timezone.utc) - datetime.fromisoformat(
+                (p.get("updated_at") or "").replace("Z", "+00:00"))).total_seconds() < 120
+        except Exception:
+            recent = False
+        if recent:
+            for row in (p.get("players") or []):
+                if not isinstance(row, dict):
+                    continue
+                players.append({
+                    "name": row.get("name") or row.get("username") or "Unknown",
+                    "ping": row.get("ping") or 0,
+                    "server_id": row.get("server_id"),
+                    "session_seconds": row.get("session_seconds") or 0,
+                })
+
+    since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    hist_res = (supabase.table("server_status_history")
+                .select("recorded_at,players_online,max_players,status")
+                .gte("recorded_at", since).order("recorded_at", desc=False).execute())
+
+    return {"status": status, "players": players, "history": hist_res.data or [], "hours": hours}
 
 @router.post("/status/refresh")
 async def refresh_status_timestamp(user: dict = Depends(require_staff)):

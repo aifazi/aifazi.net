@@ -6,7 +6,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, createContext, useContext, lazy, Suspense } from 'react'
-// import { getSiteSocket } from '@/lib/siteSocket'  // disabled — backend sio removed
 import { ForumProvider } from '@/context/ForumContext'
 // DiscordProvider removed — Discord is now integrated into the unified ForumContext/forum_auth system
 import { EditProvider } from '@/context/EditContext'
@@ -14,7 +13,6 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import Cursor from '@/components/Cursor'
 import FloatingNav from '@/components/FloatingNav'
-import ChatPromo from '@/components/ChatPromo'
 import ContextMenu from '@/components/ContextMenu'
 import SiteBanner from '@/components/SiteBanner'
 import FunDragLayer from '@/components/FunDragLayer'
@@ -498,7 +496,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
             {children}
             {!isFullScreen && <Footer />}
             {!isFullScreen && <FloatingNav />}
-            {!isFullScreen && <ChatPromo />}
             {!isFullScreen && siteConfigReady && siteConfig?.showRoamingRobot !== false && (
               <Suspense fallback={null}><RoamingRobot /></Suspense>
             )}

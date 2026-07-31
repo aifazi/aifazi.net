@@ -1,7 +1,7 @@
 """
 routers/helpdesk.py — Ticket CRUD + threaded messages + admin settings
 """
-import secrets, string
+import secrets
 from datetime import datetime, timezone, timedelta
 from html import escape as _html_escape
 from typing import Optional
@@ -35,25 +35,6 @@ def _email_layout(title: str, body_html: str) -> str:
     <div class="bdy">{body_html}</div>
     <div class="ftr">IF YOU DIDN'T REQUEST THIS, IGNORE THIS EMAIL</div>
     </div></body></html>"""
-
-
-def _new_account_email_html(username: str, password: str, login_url: str) -> str:
-    body = f"""
-    <h1 style="font-size:22px;font-weight:700;margin:0 0 12px;">Your aifazi.net account</h1>
-    <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 20px;">
-      A support ticket was submitted with your email. We've automatically created an account
-      so you can track your tickets and get updates.
-    </p>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">
-      <tr><td style="padding:8px 0;color:#64748b;font-size:11px;letter-spacing:2px;">USERNAME</td>
-           <td style="padding:8px 0;font-weight:700;">{_esc(username)}</td></tr>
-    </table>
-    <a href="{_esc(login_url)}" style="display:inline-block;background:#00ff88;color:#000;font-size:12px;
-       font-weight:700;letter-spacing:3px;padding:14px 32px;text-decoration:none;">
-      SET YOUR PASSWORD &amp; LOGIN →
-    </a>
-    <p style="color:#94a3b8;font-size:11px;margin:20px 0 0;">Click the button above to set your password and log in. This link expires in 24 hours.</p>"""
-    return _email_layout("Your aifazi.net account", body)
 
 
 def _new_account_verification_html(username: str, verify_url: str, forgot_url: str) -> str:
@@ -254,17 +235,6 @@ def _user_owns_ticket(ticket: dict, user: dict | None) -> bool:
     return False
 
 
-def _ticket_email_matches(ticket: dict, email: str | None) -> bool:
-    if not email:
-        return False
-    return (ticket.get("email") or "").strip().lower() == email.strip().lower()
-
-
-def _gen_password(length: int = 12) -> str:
-    alphabet = string.ascii_letters + string.digits + "!@#$%"
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
-
-
 def _sanitize_username(name: str) -> str:
     import re
     slug = re.sub(r'[^a-zA-Z0-9_]', '_', name.strip().lower())[:30] or "user"
@@ -454,38 +424,7 @@ async def submit_ticket(body: TicketBody, user: dict | None = Depends(_optional_
     }
 
 
-# ── Public: look up tickets by email ───────────────────────
-@router.get("/tickets/lookup")
-async def lookup_tickets(
-    email: str = Query(...),
-    status: str | None = None,
-    priority: str | None = None,
-    category: str | None = None,
-    user: dict = Depends(_optional_user),
-):
-    if not user:
-        raise HTTPException(401, "Authentication required")
-    user_email = (user.get("email") or "").strip().lower()
-    if not user_email or user_email != email.strip().lower():
-        raise HTTPException(403, "You can only look up your own tickets")
-    pri = _priority_value(priority)
-    res = supabase.table("helpdesk_tickets").select(
-        "id,ticket_id,subject,status,priority,category,created_at,updated_at,response,responded_at,message_count,user_id,email"
-    ).eq("email", user_email)
-    if status and status != "all":
-        res = res.eq("status", status)
-    if pri:
-        res = res.eq("priority", pri)
-    if category and category != "all":
-        res = res.eq("category", category)
-    res = res.order("created_at", desc=True).limit(50).execute()
-    tickets = [t for t in (res.data or []) if _user_owns_ticket(t, user)]
-    for ticket in tickets:
-        ticket.pop("email", None)
-        ticket.pop("user_id", None)
-    return tickets
-
-
+# ── Public: list my tickets ────────────────────────────────
 @router.get("/tickets/mine")
 async def my_tickets(
     status: str | None = None,
@@ -611,17 +550,6 @@ async def public_stats():
         }
     except Exception:
         return {"total": 0, "openTickets": 0, "resolvedToday": 0, "inProgress": 0}
-
-
-# ── Public: track by ticket_id (legacy) ────────────────────
-@router.get("/track/{ticket_id}")
-async def track_ticket(ticket_id: str):
-    res = supabase.table("helpdesk_tickets").select(
-        "ticket_id,subject,status,priority,response,responded_at,created_at"
-    ).eq("ticket_id", ticket_id).execute()
-    if not res.data:
-        raise HTTPException(404, "Ticket not found")
-    return res.data[0]
 
 
 # ── Admin: get settings ────────────────────────────────────

@@ -56,6 +56,47 @@ def clear_history_cache() -> None:
     with _history_lock:
         _history_cache.clear()
 
+# ── Message send throttling (in-memory, per instance) ────────────────────────
+# Anti-spam. In-memory sliding windows — when the app scales to multiple API
+# instances these move to Redis (per-user rate limits / slow-mode timestamps).
+_MSG_WINDOW  = 20.0   # seconds
+_MSG_MAX     = 8      # max messages per user per window
+_send_times: dict[str, list[float]] = {}                 # username -> send timestamps
+_last_send:  dict[tuple[str, str], float] = {}           # (username, room_id) -> monotonic
+_send_lock   = threading.Lock()
+
+def _check_send_throttle(user: dict, room: dict) -> None:
+    """Per-user sliding-window throttle + per-room slow_mode. Staff exempt.
+    Raises HTTPException(429) on violation."""
+    if user.get("role") in ("admin", "moderator"):
+        return
+    now = time.monotonic()
+    username = user.get("username") or ""
+
+    with _send_lock:
+        times = _send_times.setdefault(username, [])
+        times = [t for t in times if now - t < _MSG_WINDOW]
+        if len(times) >= _MSG_MAX:
+            _send_times[username] = times
+            raise HTTPException(429, "You're sending messages too fast. Slow down.")
+        times.append(now)
+        _send_times[username] = times
+
+    slow = int(room.get("slow_mode") or 0)
+    if slow > 0:
+        key = (username, str(room.get("id") or ""))
+        last = _last_send.get(key)
+        if last and (now - last) < slow:
+            wait = int(slow - (now - last)) + 1
+            raise HTTPException(429, f"Slow mode is on — try again in {wait}s.")
+        _last_send[key] = now
+
+# Reaction emoji allowlist — only actual emoji codepoints are accepted.
+_EMOJI_RE = re.compile(
+    r"^[\U0001F000-\U0001FAFF\U0001F900-\U0001F9FF\U00002600-\U000027BF"
+    r"\U0001F1E6-\U0001F1FF\U00002B00-\U00002BFF\U0000200D\U0000FE0F]+$"
+)
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -82,7 +123,7 @@ def _role_allowed(room: dict, user: dict) -> bool:
 def _get_room_or_404(room_id: str) -> dict:
     room = (
         supabase.table("chat_rooms")
-        .select("id,name,is_private,read_only,allowed_roles,allowed_users,speak_roles,screen_share_roles,type")
+        .select("id,name,is_private,read_only,allowed_roles,allowed_users,speak_roles,screen_share_roles,type,slow_mode")
         .eq("id", room_id)
         .single()
         .execute()
@@ -208,6 +249,9 @@ class EditBody(BaseModel):
 
 class ReactBody(BaseModel):
     emoji: str
+
+class BulkDeleteBody(BaseModel):
+    message_ids: list[str]
 
 class MemberBody(BaseModel):
     user_id: str = ""
@@ -417,6 +461,8 @@ async def send_message(
             "content": str(body.reply_to.get("content", ""))[:200],
         }
 
+    _check_send_throttle(user, room)
+
     res = supabase.table("chat_messages").insert({
         "room_id":    room_id,
         "sender":     user["username"],
@@ -463,7 +509,7 @@ async def toggle_reaction(
     body: ReactBody,
     user: dict = Depends(get_current_user),
 ):
-    if not body.emoji or len(body.emoji) > 8:
+    if not body.emoji or len(body.emoji) > 16 or not _EMOJI_RE.match(body.emoji):
         raise HTTPException(400, "Invalid emoji")
 
     msg = supabase.table("chat_messages").select("reactions,room_id").eq("id", msg_id).single().execute().data
@@ -505,6 +551,30 @@ async def delete_message(
     if msg.get("room_id"):
         _invalidate_history(msg["room_id"])
     return {"message": "Deleted"}
+
+@router.post("/messages/bulk-delete")
+async def bulk_delete_messages(body: BulkDeleteBody, user: dict = Depends(get_current_user)):
+    """Delete multiple messages. Staff/admin can delete any; regular users can
+    only delete their own messages."""
+    ids = list(dict.fromkeys(body.message_ids))[:100]
+    if not ids:
+        raise HTTPException(400, "No messages provided")
+
+    res = supabase.table("chat_messages").select("id,room_id,sender").in_("id", ids).execute()
+    rows = res.data or []
+    is_staff = user.get("role") in ("admin", "moderator")
+    deletable: list[str] = []
+    room_ids: set[str] = set()
+    for m in rows:
+        if is_staff or m.get("sender") == user.get("username"):
+            deletable.append(m["id"])
+            if m.get("room_id"):
+                room_ids.add(m["room_id"])
+    if deletable:
+        supabase.table("chat_messages").delete().in_("id", deletable).execute()
+    for rid in room_ids:
+        _invalidate_history(rid)
+    return {"deleted": len(deletable), "total": len(ids)}
 
 # ── Members (staff only) ───────────────────────────────────────────────────────
 @router.get("/members")

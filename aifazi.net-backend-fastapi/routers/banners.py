@@ -21,7 +21,6 @@ Required SQL migration (run once in Supabase SQL editor):
 from fastapi import APIRouter, Depends, HTTPException, Request
 from database import supabase
 from dependencies import require_staff
-from websocket.chat_ws import broadcast_site_event
 from datetime import datetime, timezone
 from utils.cache import get as cache_get, set as cache_set, delete as cache_delete
 import logging
@@ -87,7 +86,6 @@ async def _expire_due_banners(now_dt: datetime) -> int:
     except Exception as exc:
         logger.warning("banners: failed to expire batch (%s)", exc)
 
-    await broadcast_site_event("banners-update", {})
     return len(ids)
 
 
@@ -149,7 +147,6 @@ async def create_banner(request: Request, _: dict = Depends(require_staff)):
     payload = _map_fields(body)
     res = supabase.table("banners").insert(payload).execute()
     cache_delete("banners_public")
-    await broadcast_site_event("banners-update", {})
     return res.data[0]
 
 
@@ -163,7 +160,6 @@ async def update_banner(banner_id: str, request: Request, _: dict = Depends(requ
     if not res.data:
         raise HTTPException(404, "Not found")
     cache_delete("banners_public")
-    await broadcast_site_event("banners-update", {})
     return res.data[0]
 
 
@@ -176,7 +172,6 @@ async def patch_banner(banner_id: str, request: Request, _: dict = Depends(requi
     if not res.data:
         raise HTTPException(404, "Not found")
     cache_delete("banners_public")
-    await broadcast_site_event("banners-update", {})
     return res.data[0]
 
 
@@ -184,5 +179,4 @@ async def patch_banner(banner_id: str, request: Request, _: dict = Depends(requi
 async def delete_banner(banner_id: str, _: dict = Depends(require_staff)):
     supabase.table("banners").delete().eq("id", banner_id).execute()
     cache_delete("banners_public")
-    await broadcast_site_event("banners-update", {})
     return {"message": "Deleted"}

@@ -13,15 +13,15 @@ export default function FiveMStatus() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      api.get('/fivem/status').then(r => r.data || r).catch(() => ({})),
-      api.get('/fivem/players').then(r => Array.isArray(r.data) ? r.data : []).catch(() => []),
-      api.get('/fivem/history?hours=24').then(r => Array.isArray(r.data) ? r.data : []).catch(() => []),
-    ]).then(([s, p, h]) => {
-      setStatus(s)
-      setPlayers(p as any[])
-      setHistory(h as any[])
-    }).finally(() => setLoading(false))
+    api.get('/fivem/status/overview')
+      .then(r => {
+        const d = r.data || {}
+        setStatus(d.status)
+        setPlayers(Array.isArray(d.players) ? d.players : [])
+        setHistory(Array.isArray(d.history) ? d.history : [])
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }, [])
 
   const online = status?.status === 'online'

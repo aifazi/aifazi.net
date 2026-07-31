@@ -123,6 +123,7 @@ _OPEN_EXACT: set[str] = {
     "/sitemap.xml",
     "/robots.txt",
     "/api/fivem/status",
+    "/api/fivem/status/overview",   # public visitor-safe overview (status + sanitized players + history)
     "/api/fivem/whitelist/apply",
     "/api/txadmin/whitelist-approved",
     "/api/txadmin/whitelist-denied",

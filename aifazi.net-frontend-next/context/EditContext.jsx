@@ -1,7 +1,6 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import api, { canEdit as checkCanEdit, getRole } from '@/lib/api'
-// import { getSiteSocket } from '@/lib/siteSocket'  // disabled — socket.io removed from backend
 import { IconPickerModal, IconDisplay } from '../components/IconPicker'
 import AnimationPicker from '../components/AnimationPicker'
 import DOMPurify from 'isomorphic-dompurify'
