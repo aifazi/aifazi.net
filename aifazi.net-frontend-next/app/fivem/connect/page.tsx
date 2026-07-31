@@ -22,7 +22,7 @@ export default function FiveMConnect() {
   const loginHref = useFiveMLoginRoute('/connect')
   const whitelistHref = useFiveMRoute('/whitelist')
   const profileHref = useFiveMRoute('/profile')
-  const formsHref = '/forms'
+  const formsHref = useFiveMRoute('/forms')
 
   useEffect(() => {
     Promise.all([
@@ -80,10 +80,10 @@ export default function FiveMConnect() {
   return (
     <div style={{ minHeight: '100vh', color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
       <div style={{ maxWidth: 600, margin: '0 auto', padding: '80px 24px' }}>
-        <a href={homeHref} style={{ fontSize: 12, color: '#8b949e', textDecoration: 'none', letterSpacing: 1 }}>&#8592; BACK TO FIVEM</a>
+        <a href={homeHref} style={{ fontSize: 12, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 1 }}>&#8592; BACK TO FIVEM</a>
         <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <a href={profileHref} style={{ padding: '8px 10px', border: `1px solid ${G}33`, color: G, textDecoration: 'none', borderRadius: 7, fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>PROFILE</a>
-          <a href={formsHref} style={{ padding: '8px 10px', border: '1px solid rgba(255,255,255,0.1)', color: '#9fb3c8', textDecoration: 'none', borderRadius: 7, fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>FORMS</a>
+          <a href={formsHref} style={{ padding: '8px 10px', border: '1px solid var(--border)', color: 'var(--muted)', textDecoration: 'none', borderRadius: 7, fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>FORMS</a>
           <a href={whitelistHref} style={{ padding: '8px 10px', border: `1px solid ${C}33`, color: C, textDecoration: 'none', borderRadius: 7, fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>WHITELIST</a>
         </div>
 
@@ -93,13 +93,13 @@ export default function FiveMConnect() {
           <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: 2, background: `linear-gradient(135deg, ${G}, ${C})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             CONNECT TO SERVER
           </h1>
-          <p style={{ fontSize: 13, color: '#8b949e', marginTop: 8 }}>
+          <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 8 }}>
             You must be whitelisted and logged in to connect.
           </p>
         </div>
 
         {/* Server status */}
-        <div style={{ marginTop: 32, padding: 20, borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ marginTop: 32, padding: 20, borderRadius: 12, background: 'color-mix(in srgb, var(--text) 3%, transparent)', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <span style={{ width: 10, height: 10, borderRadius: '50%', background: online ? G : R, display: 'inline-block', animation: online ? 'pulse 2s infinite' : 'none' }} />
             <span style={{ fontSize: 13, color: online ? G : R, fontWeight: 700, letterSpacing: 1 }}>
@@ -107,7 +107,7 @@ export default function FiveMConnect() {
             </span>
           </div>
           {online && (
-            <div style={{ fontSize: 12, color: '#8b949e' }}>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>
               Players: <span style={{ color: C }}>{status?.players_online ?? status?.players_count ?? 0}</span> / {status?.max_players || 128}
             </div>
           )}
@@ -115,19 +115,19 @@ export default function FiveMConnect() {
 
         {/* Requirements checklist */}
         <div style={{ marginTop: 24 }}>
-          <div style={{ fontSize: 12, letterSpacing: 2, color: '#8b949e', marginBottom: 12 }}>REQUIREMENTS</div>
+          <div style={{ fontSize: 12, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>REQUIREMENTS</div>
           {[
             { label: 'Logged in', ok: !!user, detail: !user ? 'Please log in first' : `@${user?.username || ''}` },
             { label: 'Whitelisted', ok: isWhitelisted, detail: !user ? '—' : isWhitelisted ? 'Approved' : whitelistStatus?.status === 'pending' ? 'Application pending' : 'Not applied' },
             { label: 'Server online', ok: online, detail: online ? 'Online' : 'Offline' },
             { label: 'Connect cooldown', ok: cooldownLeft === 0, detail: cooldownLeft ? `${cooldownLeft}s` : 'Ready' },
           ].map((req, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
               <span style={{ width: 20, height: 20, borderRadius: '50%', background: req.ok ? `${G}22` : `${R}22`, color: req.ok ? G : R, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, flexShrink: 0 }}>
                 {req.ok ? '✓' : '✗'}
               </span>
-              <span style={{ fontSize: 13, color: req.ok ? '#c9d1d9' : '#8b949e' }}>{req.label}</span>
-              <span style={{ fontSize: 11, color: '#8b949e', marginLeft: 'auto' }}>{req.detail}</span>
+              <span style={{ fontSize: 13, color: req.ok ? 'var(--text)' : 'var(--muted)' }}>{req.label}</span>
+              <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 'auto' }}>{req.detail}</span>
             </div>
           ))}
         </div>
@@ -144,7 +144,7 @@ export default function FiveMConnect() {
             </a>
           ) : (
             <button onClick={handleConnect} disabled={connecting || !online || cooldownLeft > 0}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', background: (connecting || !online || cooldownLeft > 0) ? 'rgba(255,255,255,0.06)' : `linear-gradient(135deg, ${G}, ${C})`, color: (connecting || !online || cooldownLeft > 0) ? '#8b949e' : '#000', fontWeight: 700, fontSize: 13, letterSpacing: 2, border: 'none', borderRadius: 8, cursor: (connecting || !online || cooldownLeft > 0) ? 'default' : 'pointer' }}>
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', background: (connecting || !online || cooldownLeft > 0) ? 'color-mix(in srgb, var(--text) 6%, transparent)' : `linear-gradient(135deg, ${G}, ${C})`, color: (connecting || !online || cooldownLeft > 0) ? 'var(--muted)' : '#000', fontWeight: 700, fontSize: 13, letterSpacing: 2, border: 'none', borderRadius: 8, cursor: (connecting || !online || cooldownLeft > 0) ? 'default' : 'pointer' }}>
               {connecting ? 'CREATING WEBSITE SESSION...' : !online ? 'SERVER OFFLINE' : cooldownLeft > 0 ? `WAIT ${cooldownLeft}s` : '▶ CONNECT NOW'}
             </button>
           )}
@@ -152,9 +152,9 @@ export default function FiveMConnect() {
         </div>
 
         {/* How it works */}
-        <div style={{ marginTop: 40, padding: 20, borderRadius: 12, background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.1)' }}>
+        <div style={{ marginTop: 40, padding: 20, borderRadius: 12, background: 'color-mix(in srgb, var(--cyan) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 18%, transparent)' }}>
           <div style={{ fontSize: 11, letterSpacing: 2, color: C, marginBottom: 8 }}>HOW CONNECTING WORKS</div>
-          <div style={{ fontSize: 12, color: '#8b949e', lineHeight: 1.8 }}>
+          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.8 }}>
             <div><span style={{ color: C }}>1.</span> Click Connect — a short website-only session is generated for your account</div>
             <div><span style={{ color: C }}>2.</span> The FiveM server validates that session and your whitelist on join</div>
             <div><span style={{ color: C }}>3.</span> If whitelisted and not banned, you enter the server</div>

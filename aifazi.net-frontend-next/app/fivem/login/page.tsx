@@ -3,12 +3,12 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import api, { getAuthToken, saveTokens } from '@/lib/api'
+import { useForum } from '@/context/ForumContext'
 import { authProviderLoginRoute } from '@/lib/authRoutes'
-import { fivemRoute, useFiveMRoute } from '@/lib/fivemRoutes'
+import { useFiveMRoute } from '@/lib/fivemRoutes'
 
 const G = '#00FF88'
 const C = '#00D4FF'
-const B = '#0f111a'
 
 function safeNext(value: string | null, fallback: string): string {
   if (!value) return fallback
@@ -19,6 +19,7 @@ function safeNext(value: string | null, fallback: string): string {
 
 export default function FiveMLogin() {
   const router = useRouter()
+  const { user, loading: authLoading } = useForum()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -31,9 +32,12 @@ export default function FiveMLogin() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setNextHref(safeNext(params.get('next'), profileHref))
-    const token = getAuthToken()
-    if (token) router.replace(profileHref)
-  }, [profileHref, router])
+  }, [profileHref])
+
+  // Already signed in (site-wide session) — go to the FiveM profile.
+  useEffect(() => {
+    if (!authLoading && user) router.replace(profileHref)
+  }, [authLoading, user, profileHref, router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -60,58 +64,58 @@ export default function FiveMLogin() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>🏙️</div>
           <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: 2, background: `linear-gradient(135deg, ${G}, ${C})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AIFAZI RP</h1>
-          <p style={{ fontSize: 12, color: '#8b949e', letterSpacing: 2, marginTop: 4 }}>SIGN IN TO YOUR ACCOUNT</p>
+          <p style={{ fontSize: 12, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>SIGN IN TO YOUR ACCOUNT</p>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: 28 }}>
+        <div style={{ background: 'color-mix(in srgb, var(--text) 3%, transparent)', border: '1px solid var(--border)', borderRadius: 12, padding: 28 }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {error && (
               <div style={{ fontSize: 12, color: '#ff4757', padding: '10px 14px', background: 'rgba(255,71,87,0.07)', border: '1px solid rgba(255,71,87,0.25)', borderRadius: 6 }}>{error}</div>
             )}
 
             <div>
-              <label style={{ fontSize: 10, letterSpacing: 2, color: '#8b949e', display: 'block', marginBottom: 6 }}>EMAIL</label>
+              <label style={{ fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>EMAIL</label>
               <input type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required
-                style={{ width: '100%', padding: '12px 14px', background: `${B}`, border: '1px solid rgba(255,255,255,0.1)', color: '#c9d1d9', fontSize: 14, outline: 'none', borderRadius: 8, boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '12px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 14, outline: 'none', borderRadius: 8, boxSizing: 'border-box' }} />
             </div>
 
             <div>
-              <label style={{ fontSize: 10, letterSpacing: 2, color: '#8b949e', display: 'block', marginBottom: 6 }}>PASSWORD</label>
+              <label style={{ fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>PASSWORD</label>
               <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required
-                style={{ width: '100%', padding: '12px 14px', background: `${B}`, border: '1px solid rgba(255,255,255,0.1)', color: '#c9d1d9', fontSize: 14, outline: 'none', borderRadius: 8, boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '12px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 14, outline: 'none', borderRadius: 8, boxSizing: 'border-box' }} />
             </div>
 
             <button type="submit" disabled={loading}
-              style={{ padding: '14px', background: loading ? 'rgba(255,255,255,0.05)' : `linear-gradient(135deg, ${G}, ${C})`, color: loading ? '#8b949e' : '#000', fontWeight: 700, fontSize: 12, letterSpacing: 2, border: 'none', borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}>
+              style={{ padding: '14px', background: loading ? 'color-mix(in srgb, var(--text) 6%, transparent)' : `linear-gradient(135deg, ${G}, ${C})`, color: loading ? 'var(--muted)' : '#000', fontWeight: 700, fontSize: 12, letterSpacing: 2, border: 'none', borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}>
               {loading ? 'SIGNING IN...' : 'SIGN IN'}
             </button>
           </form>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
-            <span style={{ fontSize: 10, color: '#8b949e', letterSpacing: 2 }}>OR</span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>OR</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button onClick={() => window.location.href = authProviderLoginRoute('discord', fivemRoute('/profile'))}
+            <button onClick={() => window.location.href = authProviderLoginRoute('discord', profileHref)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', background: '#5865F2', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 11, letterSpacing: 2, fontWeight: 700 }}>
               CONTINUE WITH DISCORD
             </button>
-            <button onClick={() => window.location.href = authProviderLoginRoute('steam', fivemRoute('/profile'))}
+            <button onClick={() => window.location.href = authProviderLoginRoute('steam', profileHref)}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px', background: '#1b2838', color: '#fff', border: '1px solid #2a475e', borderRadius: 8, cursor: 'pointer', fontSize: 11, letterSpacing: 2, fontWeight: 700 }}>
               SIGN IN WITH STEAM
             </button>
           </div>
 
-          <p style={{ fontSize: 12, color: '#8b949e', textAlign: 'center', marginTop: 16 }}>
+          <p style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', marginTop: 16 }}>
             No account?{' '}
             <a href="/forum/auth" style={{ color: C, textDecoration: 'none', fontWeight: 600 }}>Create one free</a>
           </p>
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 20 }}>
-          <a href={homeHref} style={{ fontSize: 11, color: '#8b949e', textDecoration: 'none', letterSpacing: 1 }}>← BACK TO FIVEM</a>
+          <a href={homeHref} style={{ fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 1 }}>← BACK TO FIVEM</a>
         </div>
       </div>
     </div>

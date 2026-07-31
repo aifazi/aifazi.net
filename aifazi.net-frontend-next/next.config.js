@@ -46,7 +46,10 @@ const nextConfig = {
     ],
   },
 
-  // Security headers — hardening (CSP is emitted by proxy.ts with a nonce)
+  // Security headers — hardening (CSP is emitted by proxy.ts. Nonce-based
+  // script CSP was dropped there because per-request nonces cannot reach
+  // statically-prerendered pages or the root layout's inline scripts — a nonce
+  // disables 'unsafe-inline', which silently blocked hydration site-wide.)
   async headers() {
     return [
       {
@@ -60,12 +63,9 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           // Permissions policy — restrict powerful browser APIs
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(), payment=()' },
-          // Content-Security-Policy is NOT set here. Next.js emits build-specific
-          // inline hydration scripts whose hashes can't be known ahead of time, so a
-          // static script-src silently blocked hydration. It is now emitted by
-          // proxy.ts with a per-request nonce (Next.js tags its inline scripts via
-          // the `x-nonce` request header). A duplicate CSP here would intersect with
-          // the nonce'd one and re-block the inline scripts.
+          // Content-Security-Policy is NOT set here; it is emitted per request
+          // by proxy.ts (script-src uses 'unsafe-inline' + a source allowlist so
+          // Next.js hydration scripts and the FOUC inline script both run).
         ],
       },
     ]
