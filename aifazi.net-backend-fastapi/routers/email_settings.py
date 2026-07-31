@@ -132,14 +132,18 @@ async def send_test(body: SendTestBody, _: dict = Depends(require_staff)):
             "site_name": "aifazi.net",
             "email": str(body.to),
         })
-        await send_email(
+        result = await send_email(
             to=str(body.to),
             subject=subject or "Test Email from aifazi.net Admin",
             html=html or "<h2>Test Email</h2><p>Your email configuration is working correctly.</p>",
             text="Test Email — Your email configuration is working correctly.",
             purpose="mail_test",
         )
-        return {"message": f"Test email sent to {body.to}"}
+        if not result.get("ok"):
+            raise HTTPException(502, f"Failed to send test email: {result.get('error', 'unknown error')}")
+        return {"message": f"Test email sent to {body.to}", "provider": result.get("provider")}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(500, f"Failed to send test email: {str(e)}")
 

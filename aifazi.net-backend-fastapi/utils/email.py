@@ -83,7 +83,13 @@ async def send_email(
     text: str = "",
     purpose: str = "other",
     recipient_name: str = "",
-):
+) -> dict:
+    """Send one email immediately and record the outcome in mail_queue.
+
+    Returns ``{"ok": True, "msg_id": ..., "provider": ...}`` on success or
+    ``{"ok": False, "error": "<reason>"}`` on failure. Never raises — the
+    caller can decide whether to surface the error (test endpoints) or not.
+    """
     cfg = {}
     provider = "unknown"
     queue_id = None
@@ -100,7 +106,7 @@ async def send_email(
                                  text=text, recipient_name=recipient_name)
         if not queue_id:
             logger.error("Failed to create mail_queue entry for %s", to)
-            return
+            return {"ok": False, "error": "Failed to create mail_queue entry"}
 
         _queue_update(queue_id, "sending")
         logger.info("Sending email to %s via %s (purpose=%s)", to, provider, purpose)
@@ -118,6 +124,7 @@ async def send_email(
 
         logger.info("Email sent to %s", to)
         _queue_update(queue_id, "sent", provider_msg_id=msg_id or "")
+        return {"ok": True, "msg_id": msg_id or "", "provider": provider}
 
     except Exception as e:
         logger.error("Failed to send email to %s: %s", to, e, exc_info=True)
@@ -128,6 +135,7 @@ async def send_email(
                 "status": "failed", "error_msg": str(e), "retry_count": rc + 1,
             }).eq("id", queue_id).execute()
         # Do NOT re-raise — background tasks should never crash the worker
+        return {"ok": False, "error": str(e)}
 
 
 async def _send_brevo(cfg, to, subject, html, text):
