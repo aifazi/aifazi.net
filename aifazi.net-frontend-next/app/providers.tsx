@@ -143,22 +143,39 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const BUILD_ID = process.env.BUILD_ID || 'dev'
 
-    // FIX: Load cached site config FIRST before setLoading(true) so the
-    // loading screen renders with the admin-configured style, not the default.
+    // FIX: Load the server-injected global config (#site-config-data, embedded in
+    // the HTML by the root layout on every request) FIRST so the loading screen
+    // renders with the admin-configured style, not the default. Falls back to the
+    // localStorage cache only when no server config was embedded (build-time).
     let cachedConfig: Record<string, any> | null = null
     try {
-      const cached = localStorage.getItem('site-config-cache')
-      if (cached) {
-        const parsed = JSON.parse(cached)
+      const el = document.getElementById('site-config-data')
+      if (el?.textContent) {
+        const parsed = JSON.parse(el.textContent)
         const keys = Object.keys(parsed)
         const isCorrupted = keys.length > 0 && keys.slice(0, 5).every((k) => /^\d+$/.test(k))
-        if (!isCorrupted) {
+        if (!isCorrupted && keys.length > 0) {
           setSiteConfig((prev) => ({ ...prev, ...parsed }))
           cachedConfig = parsed
           setSiteConfigReady(true)
-        } else localStorage.removeItem('site-config-cache')
+        }
       }
     } catch {}
+    if (!cachedConfig) {
+      try {
+        const cached = localStorage.getItem('site-config-cache')
+        if (cached) {
+          const parsed = JSON.parse(cached)
+          const keys = Object.keys(parsed)
+          const isCorrupted = keys.length > 0 && keys.slice(0, 5).every((k) => /^\d+$/.test(k))
+          if (!isCorrupted) {
+            setSiteConfig((prev) => ({ ...prev, ...parsed }))
+            cachedConfig = parsed
+            setSiteConfigReady(true)
+          } else localStorage.removeItem('site-config-cache')
+        }
+      } catch {}
+    }
 
     // Show loading screen only after config is applied (React 18 batches these)
     if (sessionStorage.getItem('site-loaded') !== BUILD_ID) setLoading(true)
