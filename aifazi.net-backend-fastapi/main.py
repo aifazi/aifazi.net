@@ -318,6 +318,11 @@ _RL_RULES: list[tuple[str, int, int]] = [
 ]
 _RL_DEFAULT = (100, 60)   # 100 requests / 60 s general
 
+# Paths with a dedicated (stricter) limit are brute-force sensitive — they get
+# an ADDITIONAL shared-store (Supabase) check in dispatch() so the limit holds
+# across all Vercel serverless instances, not just within one instance's memory.
+_RL_SENSITIVE_SUFFIXES = {suffix for suffix, _, _ in _RL_RULES}
+
 def _get_limit(path: str) -> tuple[int, int]:
     for suffix, calls, period in _RL_RULES:
         if path.endswith(suffix):
@@ -399,6 +404,32 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
         ts.append(now)
         _rl_store[bucket] = ts
+
+        # ── 2c. Shared (DB) rate limit for brute-force-sensitive paths ──────
+        # H5 — the in-memory window above is per-instance. On serverless, an
+        # attacker can exceed the intended limit by spraying across instances,
+        # so sensitive paths are ALSO enforced against a single Supabase bucket
+        # via an atomic upsert. Fail-open on DB error (if the DB is down the
+        # auth endpoints themselves are down, and login must never be a worse
+        # DoS than it already is).
+        if any(path.endswith(s) for s in _RL_SENSITIVE_SUFFIXES):
+            try:
+                from database import supabase as _sb
+                res = _sb.rpc("rate_limit_check", {
+                    "p_bucket": bucket,
+                    "p_max":    max_calls,
+                    "p_window": window,
+                }).execute()
+                allowed = bool(res.data)
+            except Exception:
+                allowed = True
+            if not allowed:
+                return JSONResponse(
+                    status_code=429,
+                    content={"error": "Too many requests. Please slow down."},
+                    headers={"Retry-After": str(window)},
+                )
+
 
         # ── 3. Internal token gate ─────────────────────────────────────────────
         is_open = (

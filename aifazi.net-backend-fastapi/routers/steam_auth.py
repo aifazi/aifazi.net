@@ -43,6 +43,7 @@ except ImportError:
 from jwt_compat import jwt, JWTError
 from database import supabase
 from utils.audit import record as _audit
+from utils.oauth_state import make_oauth_state, verify_oauth_state, _safe_relative_path
 
 router = APIRouter()
 
@@ -249,20 +250,31 @@ async def _verify_steam_openid(raw_params: dict) -> str | None:
 @router.get("/login")
 async def steam_login(dest: str = "/forum/profile"):
     """Redirect user to Steam OpenID consent screen."""
+    # M10 — sign dest into a time-bound OAuth state token. Steam OpenID 2.0 has
+    # no native state param, but return_to (which Steam echoes back on the
+    # callback) is under our control, so we embed the state there. The callback
+    # verifies signature + expiry and rejects any forged/echoed login (login-CSRF).
+    safe_dest = _safe_relative_path(dest, default="/forum/profile")
+    state = make_oauth_state("steam", safe_dest)
     # Embed dest in return_to so it survives the OpenID redirect
-    return_to = f"{STEAM_CALLBACK}?dest={_urlparse.quote(dest, safe='/')}"
+    return_to = (
+        f"{STEAM_CALLBACK}?state={_urlparse.quote(state, safe='')}"
+        f"&dest={_urlparse.quote(safe_dest, safe='/')}"
+    )
     return RedirectResponse(_steam_openid_url(return_to))
 
 
 @router.get("/callback")
 async def steam_callback(request: Request, dest: str = "/forum/profile",
-                         mode: str = "login", link_token: str | None = None):
+                         mode: str = "login", link_token: str | None = None,
+                         state: str | None = None):
     """
     Handle Steam OpenID callback:
       1. Validate signature with Steam
-      2. Fetch profile from Steam API
-      3. Upsert forum_users (create or link)
-      4. Issue JWT → redirect to frontend /auth/steam-callback
+      2. Verify the signed OAuth state (M10 — login-CSRF guard)
+      3. Fetch profile from Steam API
+      4. Upsert forum_users (create or link)
+      5. Issue JWT → redirect to frontend /auth/steam-callback
     """
     front = FRONTEND_URL
 
@@ -273,6 +285,15 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     steam64 = await _verify_steam_openid(raw_params)
     if not steam64:
         return RedirectResponse(f"{front}/login?steam_error=1")
+
+    # M10 — verify the signed state token. Steam echoes `openid.return_to` back,
+    # so `state` here is the one we issued in /login or /connect-*. Any forged,
+    # replayed, or expired state fails closed (prevents login-CSRF + open-redirect).
+    try:
+        dest = verify_oauth_state(state, "steam")
+    except ValueError:
+        return RedirectResponse(f"{front}/login?steam_error=state")
+    dest = _safe_relative_path(dest, default="/forum/profile")
 
     # Fetch Steam profile
     profile = await _fetch_steam_profile(steam64)
@@ -415,9 +436,14 @@ async def steam_connect_init(dest: str = "/forum/profile",
         raise HTTPException(423, ACTIVE_IDENTITY_MESSAGE)
 
     link_token = _make_steam_link_token(payload["id"])
+    # M10 — sign dest into the state token so the connect callback rejects a
+    # forged/echoed flow and can't be driven as an open-redirect.
+    safe_dest = _safe_relative_path(dest, default="/forum/profile")
+    state = make_oauth_state("steam", safe_dest)
     return_to = (
-        f"{STEAM_CALLBACK}?dest={_urlparse.quote(dest, safe='/')}"
+        f"{STEAM_CALLBACK}?dest={_urlparse.quote(safe_dest, safe='/')}"
         f"&mode=connect&link_token={_urlparse.quote(link_token)}"
+        f"&state={_urlparse.quote(state, safe='')}"
     )
     return RedirectResponse(_steam_openid_url(return_to))
 
@@ -433,8 +459,12 @@ async def steam_connect_url(dest: str = "/forum/profile",
         raise HTTPException(423, ACTIVE_IDENTITY_MESSAGE)
 
     link_token = _make_steam_link_token(payload["id"])
+    # M10 — sign dest into the state token (see /connect-init).
+    safe_dest = _safe_relative_path(dest, default="/forum/profile")
+    state = make_oauth_state("steam", safe_dest)
     return_to = (
-        f"{STEAM_CALLBACK}?dest={_urlparse.quote(dest, safe='/')}"
+        f"{STEAM_CALLBACK}?dest={_urlparse.quote(safe_dest, safe='/')}"
         f"&mode=connect&link_token={_urlparse.quote(link_token)}"
+        f"&state={_urlparse.quote(state, safe='')}"
     )
     return {"url": _steam_openid_url(return_to)}

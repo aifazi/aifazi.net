@@ -20,7 +20,6 @@ const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET   || ''
 const PASETO_SECRET       = process.env.PASETO_SECRET || process.env.JWT_SECRET || ''
 const JWT_SECRET          = process.env.JWT_SECRET || ''
 const ADMIN_GATE_SECRET   = process.env.ADMIN_GATE_SECRET || INTERNAL_API_SECRET || PASETO_SECRET
-const APP_ENV             = (process.env.ENVIRONMENT || process.env.ENV || '').toLowerCase()
 const ADMIN_ROLES         = new Set(['admin', 'moderator', 'editor', 'chat'])
 
 // ── Base64url helpers ────────────────────────────────────────────────────────
@@ -136,8 +135,11 @@ function isLocalHost(hostname: string): boolean {
   return host === 'localhost' || host === '127.0.0.1' || host === '[::1]'
 }
 
+// M1 — only relax signature verification during local development. Never rely on
+// a raw Host header or a build-time ENV flag, both of which an attacker can
+// influence in non-Vercel/standalone deployments.
 function isRelaxedLocalRuntime(hostname: string): boolean {
-  return APP_ENV !== 'production' && isLocalHost(hostname)
+  return process.env.NODE_ENV === 'development' && isLocalHost(hostname)
 }
 
 async function isAdminSessionValid(cookieValue: string | undefined, hostname = ''): Promise<boolean> {
@@ -157,7 +159,9 @@ async function isAdminSessionValid(cookieValue: string | undefined, hostname = '
 }
 
 export async function proxy(request: NextRequest) {
-  const hostname = (request.headers.get('host') || request.nextUrl.hostname).split(':')[0]
+  // M1 — trust request.nextUrl.hostname (derived from the TLS SNI / routing),
+  // not the raw Host header which an attacker controls.
+  const hostname = (request.nextUrl.hostname || request.headers.get('host') || '').split(':')[0]
   const { pathname } = request.nextUrl
 
   // ── 1. cdn.aifazi.net — true reverse proxy via /api/cdn ──────────────────
@@ -215,7 +219,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── 4. Admin route protection ─────────────────────────────────────────────
-  if (pathname.startsWith('/admin')) {
+  if (pathname.toLowerCase().startsWith('/admin')) {
     const sessionCookie = request.cookies.get('admin_session')?.value
     if (!sessionCookie || !(await isAdminSessionValid(sessionCookie, hostname))) {
       const loginUrl = new URL('/login', request.url)

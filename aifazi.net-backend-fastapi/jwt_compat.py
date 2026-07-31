@@ -173,6 +173,9 @@ class _JWTCompat:
             raise JWTError(f"Invalid token: {e}")
 
     def _decode_hmac(self, parts: list, secret: bytes, leeway: int) -> dict:
+        # M5 — never silently downgrade to HMAC when XChaCha is available.
+        if HAS_XCHACHA:
+            raise JWTError("HMAC tokens not accepted while XChaCha is available (downgrade attempt?)")
         msg = f"{parts[0]}.{parts[1]}"
         expected = hmac_mod.new(secret, msg.encode(), hashlib.sha256).digest()
         provided = self._b64url_decode(parts[2])
@@ -232,8 +235,8 @@ class _JWTCompat:
         if _derive_key is not None:
             return _derive_key(key)
         raw = key.encode("utf-8")
-        if len(raw) >= _KEY_SIZE and len(raw) % 4 == 0:
-            return raw[:_KEY_SIZE]
+        # M6 — never truncate raw secrets to their first 32 bytes; always
+        # expand to the full key size via the KDF (mirrors paseto_token).
         return hashlib.pbkdf2_hmac("sha256", raw, b"paseto-v4-aifazi", 100000, _KEY_SIZE)
 
     @staticmethod

@@ -1587,34 +1587,19 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     _record_user_activity(user["id"], user["username"], "discord_connect" if mode == "connect" else "discord_login", f"discord_id={discord_id}")
 
     # 5. Redirect to frontend callback page with token
+    # M9 — use a hash fragment (not a query param) so the token never appears in
+    # server logs or Referer headers. The frontend reads the fragment first.
     safe_dest = _urlparse.quote(dest, safe="/")
-    return _Redir(f"{front}/auth/discord-callback?token={token}&dest={safe_dest}")
+    return _Redir(f"{front}/auth/discord-callback#token={token}&dest={safe_dest}")
 
 @router.post("/discord/connect")
 async def discord_connect(request: Request, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
-    """Link a Discord account to an already-logged-in forum_users account."""
-    payload = _get_forum_user(creds)
-    if not payload:
-        raise HTTPException(401, "Not authenticated")
-    user_id = payload.get("id")
-    if not user_id:
-        raise HTTPException(400, "A player account is required to connect Discord")
-    if _active_identity_locked(user_id):
-        raise HTTPException(423, ACTIVE_IDENTITY_MESSAGE)
-    body = await request.json()
-    discord_id       = str(body.get("discord_id", "")).strip()
-    discord_username = body.get("discord_username", "").strip()
-    discord_avatar   = body.get("discord_avatar", "").strip()
-    if not discord_id:
-        raise HTTPException(400, "discord_id is required")
-    _ensure_identity_available("discord_id", discord_id, user_id, "Discord account")
-    supabase.table("users").update({
-        "discord_id": discord_id,
-        "discord_username": discord_username,
-        "discord_avatar": discord_avatar,
-    }).eq("id", user_id).execute()
-    _record_user_activity(user_id, payload.get("username",""), "discord_connect", f"discord_id={discord_id}")
-    return {"ok": True}
+    # H3 — linking a Discord account by a client-supplied discord_id is an
+    # unauthenticated identity claim (a user could claim a victim's Discord ID
+    # and hijack their whitelist identity). Linking is ONLY done by the verified
+    # Discord OAuth callback (mode=connect), which carries a signed link_token.
+    # This legacy raw endpoint is disabled — fail closed.
+    raise HTTPException(400, "Direct Discord linking is disabled. Use the Discord OAuth connect flow (GET /discord/connect-url).")
 
 @router.delete("/discord/disconnect")
 async def discord_disconnect(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):

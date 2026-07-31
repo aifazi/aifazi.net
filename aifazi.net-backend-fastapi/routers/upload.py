@@ -59,7 +59,10 @@ def _sniff_mimetype(content: bytes, fallback: str) -> str:
     """Detect actual file type via magic bytes rather than trusting the client
     Content-Type. H11 — the previous validation passed the attacker's own
     Content-Type header straight through, so a .exe labelled `image/png`
-    passed and got served as image/png. Sniff the first bytes to confirm."""
+    passed and got served as image/png. Sniff the first bytes to confirm.
+    H6 (audit) — if NO magic signature matches, return 'application/octet-stream'
+    instead of the caller-supplied fallback, so a client-claimed allow-listed
+    MIME can never smuggle arbitrary content through."""
     for magic, mime in _MAGIC_BYTES:
         if content.startswith(magic):
             # Disambiguate WebP (RIFF....WEBP) from WAV (RIFF....WAVE)
@@ -70,8 +73,13 @@ def _sniff_mimetype(content: bytes, fallback: str) -> str:
                 if fourcc == b"WAVE":
                     return "audio/wav"
             return mime
-    return fallback  # Office formats can't be reliably sniffed here because
-                     # their container is shared with .zip; rely on the allow-list
+    # Office formats (docx/xlsx) share the .zip container; we can't distinguish
+    # them by magic bytes alone, so let the allow-list decide — but never let an
+    # arbitrary claimed MIME through without a matching signature.
+    if fallback in ("application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") and content.startswith(b"PK\x03\x04"):
+        return fallback
+    return "application/octet-stream"
 
 
 def _scrub_provider_error(text: str, *, max_len: int = 200) -> str:
@@ -100,6 +108,15 @@ def _scrub_provider_error(text: str, *, max_len: int = 200) -> str:
 def _get_cdn_config() -> dict:
     res = supabase.table("cdn_config").select("settings").eq("key", "global").execute()
     return (res.data[0].get("settings") or {}) if res.data else {}
+
+
+def _safe_storage_filename(filename: str) -> str:
+    """H6/M11 — strip path separators and traversal so the client-supplied
+    filename can never escape its prefix inside the bucket (e.g. `../../x` on
+    BunnyCDN becomes a URL path traversal against the storage zone)."""
+    base = (filename or "").replace("\\", "/").rsplit("/", 1)[-1]
+    base = base.replace("..", "").replace("/", "_").strip()[:80]
+    return base or "file"
 
 
 def _save_media(filename: str, original_name: str, mimetype: str, size: int, url: str,
@@ -157,7 +174,7 @@ async def _upload_r2(content: bytes, filename: str, mimetype: str, cfg: dict) ->
     if not (account and key_id and secret and bucket):
         raise HTTPException(500, "Cloudflare R2 credentials not configured.")
 
-    storage_key = f"uploads/{uuid.uuid4()}_{filename}"
+    storage_key = f"uploads/{uuid.uuid4()}_{_safe_storage_filename(filename)}"
     try:
         client = boto3.client(
             "s3",
@@ -184,7 +201,7 @@ async def _upload_b2(content: bytes, filename: str, mimetype: str, cfg: dict) ->
     if not (key_id and app_key and bucket):
         raise HTTPException(500, "Backblaze B2 credentials not configured.")
 
-    storage_key = f"uploads/{uuid.uuid4()}_{filename}"
+    storage_key = f"uploads/{uuid.uuid4()}_{_safe_storage_filename(filename)}"
     async with httpx.AsyncClient(timeout=30) as client:
         # 1. Authorize
         auth = base64.b64encode(f"{key_id}:{app_key}".encode()).decode()
@@ -275,7 +292,7 @@ async def _upload_bunny(content: bytes, filename: str, mimetype: str, cfg: dict)
         raise HTTPException(500, "BunnyCDN credentials not configured.")
 
     host = f"storage.bunnycdn.com" if not region else f"{region}.storage.bunnycdn.com"
-    storage_key = f"uploads/{uuid.uuid4()}_{filename}"
+    storage_key = f"uploads/{uuid.uuid4()}_{_safe_storage_filename(filename)}"
     url = f"https://{host}/{zone}/{storage_key}"
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.put(
@@ -335,6 +352,7 @@ async def upload_file(
     mimetype = sniffed
 
     filename = file.filename or f"upload_{uuid.uuid4()}"
+    filename = _safe_storage_filename(filename)  # M11 — strip traversal/separators
 
     cfg      = _get_cdn_config()
     # Frontend saves as 'provider'; fall back to 'activeProvider' for compat
@@ -420,6 +438,7 @@ async def upload_multiple(
         mimetype = sniffed
 
         filename = file.filename or f"upload_{uuid.uuid4()}"
+        filename = _safe_storage_filename(filename)  # M11 — strip traversal/separators
         provider = (cfg.get("provider") or cfg.get("activeProvider") or "supabase").lower()
 
         if provider == "cloudinary":

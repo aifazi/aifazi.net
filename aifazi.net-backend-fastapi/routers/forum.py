@@ -9,9 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from dependencies import get_current_user
 from database import supabase
+import bcrypt as _bcrypt
 
 router = APIRouter()
 ACCOUNT_LOCKED_MESSAGE = "Account locked. Contact support if you believe this is a mistake."
+
+def _hash_password(pw: str) -> str:
+    return _bcrypt.hashpw(pw.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
 
 def _is_uuid(value: str) -> bool:
     try:
@@ -501,6 +505,16 @@ async def user_replies(user_id: str, limit: int = 10):
 async def ban_user(user_id: str, body: dict, user: dict = Depends(require_forum_user)):
     if user.get("role") not in ("admin","moderator"):
         raise HTTPException(403, "Moderator+ only")
+    if not _is_uuid(user_id):
+        raise HTTPException(400, "Invalid user id")
+    target = supabase.table("users").select("id,role,username").eq("id", user_id).single().execute().data
+    if not target:
+        raise HTTPException(404, "User not found")
+    # C3 — moderators may not ban admins, and nobody may ban themselves
+    if target.get("role") == "admin":
+        raise HTTPException(403, "Admins cannot be banned")
+    if user_id == _user_id(user):
+        raise HTTPException(403, "You cannot ban yourself")
     supabase.table("users").update({
         "banned": body.get("banned", True),
         "ban_reason": body.get("reason",""),
@@ -531,11 +545,42 @@ async def get_forum_user_admin(user_id: str, user: dict = Depends(require_forum_
 async def update_forum_user(user_id: str, body: dict, user: dict = Depends(require_forum_user)):
     if user.get("role") not in ("admin","moderator"):
         raise HTTPException(403, "Moderator+ only")
+    if not _is_uuid(user_id):
+        raise HTTPException(400, "Invalid user id")
+    target = supabase.table("users").select("id,role,username").eq("id", user_id).single().execute().data
+    if not target:
+        raise HTTPException(404, "User not found")
+    target_role = target.get("role") or "user"
+    my_role = user.get("role") or "user"
+
+    # C2 — only admins may change roles, and no self-demotion/self-promotion
+    allowed_fields = {"username","email","bio","avatar","banned","banReason","newPassword"}
+    if my_role != "admin":
+        if "role" in body:
+            raise HTTPException(403, "Only admins can change roles")
+        if user_id == _user_id(user):
+            raise HTTPException(403, "You cannot modify your own account")
+    if "role" in body:
+        if user_id == _user_id(user):
+            raise HTTPException(403, "You cannot change your own role")
+        new_role = body["role"]
+        if new_role not in ("user","moderator","admin"):
+            raise HTTPException(400, "Invalid role")
+        # prevent an admin from being demoted by a moderator (already blocked above)
+        if target_role == "admin" and my_role != "admin":
+            raise HTTPException(403, "Only admins can modify other admins")
+        allowed_fields.add("role")
+
     update = {}
-    for k in ("username","email","bio","avatar","role","banned","banReason","newPassword"):
+    for k in allowed_fields:
         if k in body:
-            col = "ban_reason" if k == "banReason" else ("password" if k == "newPassword" else k)
-            update[col] = body[k]
+            if k == "banReason":
+                update["ban_reason"] = body[k]
+            elif k == "newPassword":
+                # C2 — never store plaintext; hash into password_hash
+                update["password_hash"] = _hash_password(body[k])
+            else:
+                update[k] = body[k]
     if update:
         supabase.table("users").update(update).eq("id", user_id).execute()
     return {"message": "Updated"}
@@ -544,6 +589,16 @@ async def update_forum_user(user_id: str, body: dict, user: dict = Depends(requi
 async def delete_forum_user(user_id: str, user: dict = Depends(require_forum_user)):
     if user.get("role") not in ("admin","moderator"):
         raise HTTPException(403, "Moderator+ only")
+    if not _is_uuid(user_id):
+        raise HTTPException(400, "Invalid user id")
+    target = supabase.table("users").select("id,role,username").eq("id", user_id).single().execute().data
+    if not target:
+        raise HTTPException(404, "User not found")
+    # C3 — only admins may delete admins, and nobody may delete themselves
+    if target.get("role") == "admin" and user.get("role") != "admin":
+        raise HTTPException(403, "Only admins can delete admins")
+    if user_id == _user_id(user):
+        raise HTTPException(403, "You cannot delete your own account")
     supabase.table("users").delete().eq("id", user_id).execute()
     supabase.table("forum_threads").delete().eq("author_id", user_id).execute()
     supabase.table("forum_replies").delete().eq("author_id", user_id).execute()

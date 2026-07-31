@@ -52,12 +52,24 @@ def _b64url_decode(s: str) -> bytes:
     return base64.urlsafe_b64decode(s)
 
 
+_derived_key_cache: dict = {}
+
 def _derive_key(secret: str) -> bytes:
-    """Derive a 32-byte key from an arbitrary-length secret using HKDF."""
+    """Derive a 32-byte key from an arbitrary-length secret using PBKDF2.
+
+    Always expands to the full key size instead of truncating raw secrets to
+    their first 32 bytes (truncation silently reduced entropy for base64-style
+    secrets, e.g. a 44-char base64 value collapsed to 24 bytes). Result is
+    cached per secret so the 100k-iteration KDF runs once per process, not on
+    every token create/decode.
+    """
+    cached = _derived_key_cache.get(secret)
+    if cached is not None:
+        return cached
     raw = secret.encode("utf-8")
-    if len(raw) >= KEY_SIZE and len(raw) % 4 == 0:
-        return raw[:KEY_SIZE]
-    return hashlib.pbkdf2_hmac("sha256", raw, b"paseto-v4-aifazi", 100000, KEY_SIZE)
+    key = hashlib.pbkdf2_hmac("sha256", raw, b"paseto-v4-aifazi", 100000, KEY_SIZE)
+    _derived_key_cache[secret] = key
+    return key
 
 
 def _get_xcha() -> Optional["XChaCha20Poly1305"]:
@@ -148,6 +160,10 @@ def decode_token(token: str, purpose: str = "auth") -> Optional[dict]:
             pass
 
     # ── Fallback: HMAC-SHA256 verification ──
+    # M5 — never silently downgrade to HMAC when XChaCha is available.
+    if HAS_XCHACHA:
+        log.warning("Rejecting 3-part HMAC token while XChaCha is available (downgrade attempt?)")
+        return None
     if len(parts) != 3:
         return None
     secret = os.environ.get("PASETO_SECRET", os.environ.get("JWT_SECRET", ""))
@@ -178,8 +194,9 @@ def decode_token(token: str, purpose: str = "auth") -> Optional[dict]:
 
 def verify_token_signature(token: str) -> bool:
     """
-    Verify only the signature/encryption of a PASETO token (no expiry check).
-    Used by the frontend proxy for admin session validation.
+    Verify the signature/encryption AND expiry of a PASETO token.
+    M7 — previously skipped the expiry check, so an attacker who managed to
+    mint a signature-valid token could keep it alive forever.
     """
     parts = token.split(".")
     if len(parts) < 2:
@@ -194,12 +211,15 @@ def verify_token_signature(token: str) -> bool:
                 return False
             nonce = encrypted[:NONCE_SIZE]
             ciphertext = encrypted[NONCE_SIZE:]
-            xcha.decrypt(nonce, ciphertext, None)
-            return True
+            plaintext = xcha.decrypt(nonce, ciphertext, None)
+            data = json.loads(plaintext.decode())
+            return data.get("exp", 0) >= time.time()
         except Exception:
             return False
 
-    # HMAC-SHA256 fallback (3 parts)
+    # HMAC-SHA256 fallback (3 parts) — M5: reject downgrade when XChaCha available
+    if HAS_XCHACHA:
+        return False
     if len(parts) != 3:
         return False
     secret = os.environ.get("PASETO_SECRET", os.environ.get("JWT_SECRET", ""))
@@ -208,7 +228,14 @@ def verify_token_signature(token: str) -> bool:
     msg = f"{parts[0]}.{parts[1]}"
     expected = hmac_mod.new(secret.encode(), msg.encode(), hashlib.sha256).digest()
     provided = _b64url_decode(parts[2])
-    return hmac_mod.compare_digest(expected, provided)
+    if not hmac_mod.compare_digest(expected, provided):
+        return False
+    try:
+        payload_bytes = _b64url_decode(parts[1])
+        data = json.loads(payload_bytes.decode())
+        return data.get("exp", 0) >= time.time()
+    except Exception:
+        return False
 
 
 def decode_token_payload(token: str) -> Optional[dict]:

@@ -73,16 +73,24 @@ export async function GET(
       const v = up.headers.get(h)
       if (v) out.set(h, v)
     }
-    out.set(
-      'Cache-Control',
-      up.headers.get('cache-control') ?? 'public, max-age=31536000, immutable'
-    )
-    out.set('Access-Control-Allow-Origin', '*')
+    // M12 — restrict CORS to aifazi.net subdomains; never an open cross-origin proxy
+    out.set('Access-Control-Allow-Origin', 'https://aifazi.net')
+    out.set('Vary', 'Origin')
+    if (up.ok) {
+      out.set(
+        'Cache-Control',
+        up.headers.get('cache-control') ?? 'public, max-age=31536000, immutable'
+      )
+    } else {
+      // M12 — never cache errors for a year
+      out.set('Cache-Control', 'no-store')
+    }
 
     return new NextResponse(up.body, { status: up.status, headers: out })
   } catch (err) {
+    // M12 — generic 502; never echo upstream error text
     return NextResponse.json(
-      { error: 'CDN proxy error', detail: String(err) },
+      { error: 'CDN proxy error' },
       { status: 502 }
     )
   }

@@ -153,11 +153,15 @@ BEGIN
 END;
 $$;
 
--- C8 — Nobody except `service_role` (the backend's auth role) and `authenticated`
--- users may call exec_sql. Supabase exposes functions to anon over REST by default,
--- which was the original CRITICAL privilege-escalation surface.
+-- C8 — Only `service_role` (the backend's auth role) may call exec_sql.
+-- Supabase exposes functions to anon over REST by default (revoked below), and
+-- `authenticated` is the JWT role of EVERY logged-in site user — granting it
+-- EXECUTE let any registered user call supabase.rpc('exec_sql', ...) from the
+-- browser and read password_hash / totp_secret / refresh_token as superuser,
+-- bypassing the Python require_admin gate entirely. service_role only.
 REVOKE EXECUTE ON FUNCTION exec_sql(text) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION exec_sql(text) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION exec_sql(text) FROM authenticated;
+GRANT EXECUTE ON FUNCTION exec_sql(text) TO service_role;
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- 2b. chat_rooms.encryption_key — anon read must not leak the E2EE key
@@ -197,7 +201,7 @@ DO $$
 BEGIN
   RAISE NOTICE 'Security hardening migration (005) completed successfully.';
   RAISE NOTICE 'Chat table anon write access: REMOVED';
-  RAISE NOTICE 'exec_sql: actually executes single SELECT-only, REVOKEd from anon/PUBLIC';
+  RAISE NOTICE 'exec_sql: actually executes single SELECT-only, REVOKEd from anon/PUBLIC/authenticated (service_role only)';
   RAISE NOTICE 'chat_rooms.encryption_key: anon SELECT revoked';
   RAISE NOTICE 'audit/auth/session logs: anon SELECT revoked';
 END $$;

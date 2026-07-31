@@ -678,6 +678,10 @@ async def login(body: LoginBody, request: Request, response: Response):
     _record_user_activity(user["id"], user["username"], "login", f"IP: {client_ip}", client_ip)
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
     refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
+    # H4 — persist the refresh token so /refresh can validate + rotate it.
+    supabase.table("users").update({
+        "refresh_token": refresh, "last_seen": datetime.now(timezone.utc).isoformat()
+    }).eq("id", user["id"]).execute()
     _set_auth_cookies(response, token, refresh)
     return {
         "token": token,
@@ -710,11 +714,16 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
             raise HTTPException(401, "Invalid refresh token")
     else:
         row = supabase.table("users").select("refresh_token").eq("id", user_id).execute()
-        if not row.data or row.data[0].get("refresh_token") != token_str:
+        # H4 — timing-safe compare; the token must match the one we persisted at login.
+        stored = (row.data[0].get("refresh_token") if row.data else None) or ""
+        if not stored or not _hmac.compare_digest(stored, token_str):
             raise HTTPException(401, "Refresh token revoked or invalid")
 
     new_access = make_token({k: v for k, v in payload.items() if k != "exp"})
     new_refresh = make_token({k: v for k, v in payload.items() if k != "exp"}, 60 * 24 * 7)
+    # H4 — rotate server-side so a leaked/stolen token is invalid after one use.
+    if user_id:
+        supabase.table("users").update({"refresh_token": new_refresh}).eq("id", user_id).execute()
     _set_auth_cookies(response, new_access, new_refresh)  # rotate both cookies
     return {"token": new_access}
 
@@ -729,9 +738,12 @@ async def logout(request: Request, response: Response):
         user = {}
     if user.get("id"):
         supabase.table("users").update({"refresh_token": None}).eq("id", user["id"]).execute()
-    response.delete_cookie("auth_token", path="/")
-    response.delete_cookie("admin_session", path="/")
-    response.delete_cookie("refresh_token", path="/")
+    # M8 — the Set-Cookie used domain=COOKIE_DOMAIN (.aifazi.net); deletion MUST
+    # match it, otherwise the browser treats the delete as a host-only cookie and
+    # the domain-scoped auth_token/admin_session/refresh_token survive logout.
+    response.delete_cookie("auth_token", path="/", domain=COOKIE_DOMAIN or None)
+    response.delete_cookie("admin_session", path="/", domain=COOKIE_DOMAIN or None)
+    response.delete_cookie("refresh_token", path="/", domain=COOKIE_DOMAIN or None)
     return {"message": "Logged out"}
 
 # ── Verify token ───────────────────────────────────────────────────────────────
@@ -1743,28 +1755,19 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
     _record_user_activity(user["id"], user["username"], "discord_connect" if mode == "connect" else "discord_login", f"discord_id={discord_id}")
     safe_dest = _urlparse.quote(dest, safe="/")
-    return _Redir(f"{front}/auth/discord-callback?token={token}&dest={safe_dest}")
+    # M9 — deliver the token as a URL hash fragment, NOT a query param, so it
+    # never lands in server logs or Referer headers. The frontend callback
+    # (DiscordAuthCallback.jsx) already reads the fragment first.
+    return _Redir(f"{front}/auth/discord-callback#token={token}&dest={safe_dest}")
 
 @router.post("/discord/connect")
 async def discord_connect(request: Request, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
-    payload = _get_forum_user(creds)
-    if not payload:
-        raise HTTPException(401, "Not authenticated")
-    user_id = payload.get("id")
-    if not user_id:
-        raise HTTPException(400, "A player account is required to connect Discord")
-    if _active_identity_locked(user_id):
-        raise HTTPException(423, ACTIVE_IDENTITY_MESSAGE)
-    body = await request.json()
-    discord_id = str(body.get("discord_id", "")).strip()
-    discord_username = body.get("discord_username", "").strip()
-    discord_avatar = body.get("discord_avatar", "").strip()
-    if not discord_id:
-        raise HTTPException(400, "discord_id is required")
-    _ensure_identity_available("discord_id", discord_id, user_id, "Discord account")
-    supabase.table("users").update({"discord_id": discord_id, "discord_username": discord_username, "discord_avatar": discord_avatar}).eq("id", user_id).execute()
-    _record_user_activity(user_id, payload.get("username", ""), "discord_connect", f"discord_id={discord_id}")
-    return {"ok": True}
+    # H3 — linking a Discord account by a client-supplied discord_id is an
+    # unauthenticated identity claim (a user could claim a victim's Discord ID
+    # and hijack their whitelist identity). Linking is ONLY done by the verified
+    # Discord OAuth callback (mode=connect), which carries a signed link_token.
+    # This legacy raw endpoint is disabled — fail closed.
+    raise HTTPException(400, "Direct Discord linking is disabled. Use the Discord OAuth connect flow (GET /discord/connect-url).")
 
 @router.delete("/discord/disconnect")
 async def discord_disconnect(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):

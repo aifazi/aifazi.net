@@ -30,13 +30,26 @@ def _role_allowed(room: dict, user: dict) -> bool:
     role = user.get("role") or "member"
     if role in ("admin", "moderator"):
         return True
+    # H1 — a private room restricted to a user allowlist must NOT be readable by
+    # anyone just because allowed_roles is empty. Enforce membership explicitly,
+    # matching the voice gate in chat_livekit.py (empty allowlist => deny all).
     allowed_roles = room.get("allowed_roles") or []
+    allowed_users = room.get("allowed_users") or []
+    is_private = bool(room.get("is_private"))
+    if is_private:
+        username = (user.get("username") or "").lower()
+        user_id = (user.get("id") or user.get("sub") or "").lower()
+        allow_names = {str(u).lower() for u in allowed_users}
+        allow_ids = {str(u).lower() for u in allowed_users}
+        if username in allow_names or user_id in allow_ids:
+            return True
+        return False
     return not allowed_roles or role in allowed_roles
 
 def _get_room_or_404(room_id: str) -> dict:
     room = (
         supabase.table("chat_rooms")
-        .select("id,name,is_private,read_only,allowed_roles,speak_roles,screen_share_roles,type")
+        .select("id,name,is_private,read_only,allowed_roles,allowed_users,speak_roles,screen_share_roles,type")
         .eq("id", room_id)
         .single()
         .execute()
