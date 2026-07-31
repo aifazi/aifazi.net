@@ -1820,6 +1820,7 @@ function GlobeMode({ visibleRef }) {
   const animRef   = useRef()
   const [visitor, setVisitor] = useState(null)
   const visitorRef = useRef(null)
+  const mapRef = useRef(null)
   const [themeKey, setThemeKey] = useState(0)
   const themeRef = useRef(null)
   const stateRef  = useRef({
@@ -1919,6 +1920,28 @@ function GlobeMode({ visibleRef }) {
     return () => { cancelled = true }
   }, [])
 
+  // ── Load equirectangular earth texture (continents + seas) ──────────────────
+  useEffect(() => {
+    const img = new window.Image()
+    img.crossOrigin = 'anonymous'
+    img.src = '/globe/earth.jpg'
+    img.onload = () => {
+      try {
+        const off = document.createElement('canvas')
+        off.width  = img.naturalWidth
+        off.height = img.naturalHeight
+        const octx = off.getContext('2d')
+        octx.drawImage(img, 0, 0)
+        const data = octx.getImageData(0, 0, off.width, off.height)
+        mapRef.current = { data, w: off.width, h: off.height }
+      } catch {
+        mapRef.current = null
+      }
+    }
+    img.onerror = () => { mapRef.current = null }
+    return () => { img.onload = null; img.onerror = null }
+  }, [])
+
   // ── React to theme changes ──
   useEffect(() => {
     themeRef.current = readGlobeTheme()
@@ -1972,6 +1995,7 @@ function GlobeMode({ visibleRef }) {
       const { x, y } = getXY(e)
       s.drag = { startX: x, startY: y, lastRotY: s.rotY, lastX: x, prevVelY: 0 }
       s.velYDamp = 0
+      s._face = null
       canvas.style.cursor = 'grabbing'
     }
     const onMove = e => {
@@ -2095,6 +2119,74 @@ function GlobeMode({ visibleRef }) {
     // Pre-cache base 3D positions (without rotation)
     const base3D = GLOBE_CITIES.map(c => latLng3D(c.lat, c.lng))
 
+    // ── Earth texture renderer (precomputed inverse orthographic mapping) ──
+    // Because the X-tilt is fixed and the sphere only spins on Y, the equirect
+    // texture column for every pixel is constant — we just shift horizontally
+    // by -rotY each frame. No per-pixel trig in the hot loop.
+    const earthCv  = document.createElement('canvas')
+    const earthCtx = earthCv.getContext('2d')
+    let earthCache = null
+    const drawEarth = (cx, cy, R, ry, rx) => {
+      const tex = mapRef.current
+      if (!tex || !tex.data) return false
+      const tw = tex.w, th = tex.h
+      const dia = Math.round(Math.min(R * 2, 360))
+      if (dia < 8) return false
+
+      if (!earthCache || earthCache.dia !== dia || earthCache.tw !== tw) {
+        const baseX = new Float32Array(dia * dia)
+        const baseY = new Float32Array(dia * dia)
+        const r = dia / 2
+        const cosRx = Math.cos(rx), sinRx = Math.sin(rx)
+        const inv2PI = 1 / (2 * Math.PI)
+        const invPI  = 1 / Math.PI
+        for (let py = 0; py < dia; py++) {
+          const v = (r - (py + 0.5)) / r
+          for (let px = 0; px < dia; px++) {
+            const u  = ((px + 0.5) - r) / r
+            const uv2 = u * u + v * v
+            const idx = py * dia + px
+            if (uv2 > 1) { baseX[idx] = -1; baseY[idx] = -1; continue }
+            const z  = Math.sqrt(1 - uv2)
+            // Undo X-tilt: view (u,v,z) -> Y-rotated frame (x1,y1,z1)
+            const y1 = v * cosRx + z * sinRx
+            const z1 = -v * sinRx + z * cosRx
+            const x1 = u
+            const lng = Math.atan2(x1, z1)
+            const lat = Math.asin(Math.max(-1, Math.min(1, y1)))
+            baseX[idx] = (((lng * inv2PI + 0.5) % 1) + 1) % 1 * tw
+            baseY[idx] = Math.max(0, Math.min(th - 1, (0.5 - lat * invPI) * th))
+          }
+        }
+        if (earthCv.width !== dia || earthCv.height !== dia) { earthCv.width = dia; earthCv.height = dia }
+        earthCache = { dia, tw, baseX, baseY, img: earthCtx.createImageData(dia, dia) }
+      }
+
+      const d   = earthCache.img.data
+      const src = tex.data.data
+      const shift = ((ry / (2 * Math.PI)) % 1) * tw
+      const bxA = earthCache.baseX, byA = earthCache.baseY
+      for (let i = 0; i < bxA.length; i++) {
+        const bx = bxA[i]
+        if (bx < 0) { d[i * 4 + 3] = 0; continue }
+        let tx = bx - shift
+        tx -= Math.floor(tx / tw) * tw
+        const txi = tx | 0
+        const ty  = byA[i] | 0
+        const so  = (ty * tw + txi) * 4
+        const o   = i * 4
+        d[o] = src[so]; d[o + 1] = src[so + 1]; d[o + 2] = src[so + 2]; d[o + 3] = 255
+      }
+      earthCtx.putImageData(earthCache.img, 0, 0)
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(cx, cy, R, 0, Math.PI * 2)
+      ctx.clip()
+      ctx.drawImage(earthCv, cx - R, cy - R, R * 2, R * 2)
+      ctx.restore()
+      return true
+    }
+
     let last = 0
     const frame = ts => {
       if (!visibleRef.current) { animRef.current = requestAnimationFrame(frame); return }
@@ -2117,9 +2209,23 @@ function GlobeMode({ visibleRef }) {
 
       // ── Update rotation ──
       if (!s.drag) {
-        // Gently decay back toward auto-spin speed after a drag flick
-        s.velY += (0.0018 - s.velY) * 0.012 * dt
-        s.rotY += s.velY * dt
+        if (s._face) {
+          // Gently spin to center the visitor before resuming auto-spin
+          const fp = s._face
+          const target = Math.atan2(-fp.x, fp.z)
+          let diff = target - s.rotY
+          diff = Math.atan2(Math.sin(diff), Math.cos(diff))
+          s.rotY += diff * 0.02 * dt
+          if (Math.abs(diff) < 0.01) {
+            s._faceHold = (s._faceHold || 0) + dt
+            if (s._faceHold > 160) { s._face = null; s._faceHold = 0 }
+          }
+          s.velY += (0 - s.velY) * 0.05 * dt
+        } else {
+          // Gently decay back toward auto-spin speed after a drag flick
+          s.velY += (0.0018 - s.velY) * 0.012 * dt
+          s.rotY += s.velY * dt
+        }
       }
 
       const ry = s.rotY
@@ -2260,6 +2366,21 @@ function GlobeMode({ visibleRef }) {
       ctx.arc(cx, cy, R, 0, Math.PI * 2)
       ctx.fillStyle = sphereGrad
       ctx.fill()
+
+      // ── Real earth texture (continents + seas) ──
+      if (drawEarth(cx, cy, R, ry, rx)) {
+        // Soft holo tint over the map so it blends with the theme
+        ctx.save()
+        ctx.beginPath()
+        ctx.arc(cx, cy, R, 0, Math.PI * 2)
+        ctx.clip()
+        const mapTint = ctx.createRadialGradient(cx - R * 0.26, cy - R * 0.26, 0, cx, cy, R)
+        mapTint.addColorStop(0, `rgba(${isLight ? '255,255,255' : cyanRgb},${isLight ? 0.10 : 0.05})`)
+        mapTint.addColorStop(1, `rgba(${isLight ? '0,0,0' : '0,0,0'},${isLight ? 0.06 : 0.14})`)
+        ctx.fillStyle = mapTint
+        ctx.fill()
+        ctx.restore()
+      }
 
       // ── Sunlight highlight ──
       const hlX = cx - R * 0.3, hlY = cy - R * 0.3
@@ -2551,6 +2672,10 @@ function GlobeMode({ visibleRef }) {
         const traceKey = `${visitorLat.toFixed(3)},${visitorLon.toFixed(3)}`
         if (!s._trace || s._trace.key !== traceKey) {
           s._trace = { key: traceKey, t: 0, pings: [], pingTimer: 0 }
+          if (!s.drag) {
+            s._face = visitorBase
+            s._faceHold = 0
+          }
         }
         const tr = s._trace
         tr.t = Math.min(1, tr.t + dt * 0.0018)
