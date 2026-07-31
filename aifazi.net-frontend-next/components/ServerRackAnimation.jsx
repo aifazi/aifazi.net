@@ -2156,6 +2156,71 @@ function GlobeMode({ visibleRef }) {
         ctx.fill()
       })
 
+      // ── Sci-fi meteor streaks ──
+      if (!s._meteors) s._meteors = Array.from({ length: 2 }, (_, i) => ({
+        x: Math.random() * W, y: Math.random() * H * 0.5,
+        vx: 1.6 + Math.random() * 2.4, vy: 0.9 + Math.random() * 1.4,
+        life: 0, maxLife: 90 + Math.random() * 80,
+        hue: i % 2 === 0 ? greenRgb : cyanRgb,
+      }))
+      s._meteors.forEach(m => {
+        m.life += dt
+        m.x += m.vx * dt
+        m.y += m.vy * dt
+        const fade = 1 - m.life / m.maxLife
+        if (fade <= 0 || m.x > W + 40 || m.y > H + 40) {
+          Object.assign(m, { x: Math.random() * W, y: -10, vx: 1.4 + Math.random() * 2.6, vy: 0.8 + Math.random() * 1.6, life: 0, maxLife: 90 + Math.random() * 90 })
+        } else {
+          const tl = 14 + fade * 22
+          const tailX = m.x - m.vx * 5, tailY = m.y - m.vy * 5
+          const g = ctx.createLinearGradient(m.x, m.y, tailX, tailY)
+          g.addColorStop(0, `rgba(${m.hue},${0.75 * fade})`)
+          g.addColorStop(1, `rgba(${m.hue},0)`)
+          ctx.save()
+          ctx.strokeStyle = g
+          ctx.lineWidth = 1 + fade
+          ctx.lineCap = 'round'
+          ctx.beginPath()
+          ctx.moveTo(m.x, m.y)
+          ctx.lineTo(tailX, tailY)
+          ctx.stroke()
+          ctx.restore()
+        }
+      })
+
+      // ── Orbiting satellites (holo satellites circling the globe) ──
+      if (!s._sats) s._sats = Array.from({ length: 6 }, (_, i) => ({
+        a: i * 1.04,
+        tilt: ((i % 3) - 1) * 0.3,
+        speed: 0.0009 + (i % 2) * 0.0007,
+        r: 1.18 + (i % 3) * 0.07,
+        hue: i % 2 === 0 ? greenRgb : cyanRgb,
+      }))
+      s._sats.forEach(sat => {
+        sat.a += sat.speed * dt
+        const cyc = Math.cos(sat.a)
+        const orbBase = { x: sat.r * cyc, y: sat.r * Math.sin(sat.a) * 0.32, z: sat.r * cyc * 0.6 }
+        const orbP = rotate(orbBase, ry, rx)
+        const orbZ = orbP.z
+        if (orbZ > -0.1) {
+          const oq = proj(orbP, cx, cy, R)
+          const oa = Math.max(0, (orbZ + 0.5) * 0.9)
+          ctx.save()
+          ctx.shadowBlur = 10
+          ctx.shadowColor = `rgba(${sat.hue},0.9)`
+          ctx.beginPath()
+          ctx.arc(oq.x, oq.y, 1.8, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${sat.hue},${oa * 0.9})`
+          ctx.fill()
+          ctx.shadowBlur = 0
+          ctx.beginPath()
+          ctx.arc(oq.x, oq.y, 0.7, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(255,255,255,${oa})`
+          ctx.fill()
+          ctx.restore()
+        }
+      })
+
       // ── Atmosphere halo (capped, theme-synced) ──
       const breathe = 1 + 0.03 * Math.sin(ts * 0.001)
       const maxDist  = Math.min(cx, cy, W - cx, H - cy) * 0.92
@@ -2253,6 +2318,45 @@ function GlobeMode({ visibleRef }) {
         ctx.lineWidth   = 0.35
         ctx.stroke()
       }
+      ctx.restore()
+
+      // ── Holographic hex lattice (animated tessellation dots) ──
+      if (!s._hexOff) s._hexOff = 0
+      s._hexOff += dt * 0.02
+      ctx.save()
+      for (let lat2 = -75; lat2 <= 75; lat2 += 15) {
+        for (let lng2 = -165; lng2 <= 180; lng2 += 15) {
+          const wave = Math.sin(s._hexOff + lat2 * 0.08) * 3
+          const p3 = rotate(latLng3D(lat2 + wave * 0.1, lng2), ry, rx)
+          if (p3.z < 0.05) continue
+          const pp = proj(p3, cx, cy, R)
+          const ha = Math.max(0, p3.z * 1.2) * 0.12
+          ctx.beginPath()
+          ctx.arc(pp.x, pp.y, 1.1, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${cyanRgb},${ha})`
+          ctx.fill()
+        }
+      }
+      ctx.restore()
+
+      // ── Holo scan sweep (bright lat-line sweeping the sphere) ──
+      const sweepT = (ts * 0.00016) % 1
+      const sweepLat = -80 + sweepT * 160
+      ctx.save()
+      ctx.beginPath()
+      let firstSweep = true
+      for (let lng2 = -180; lng2 <= 180; lng2 += 2) {
+        const p3 = rotate(latLng3D(sweepLat, lng2), ry, rx)
+        if (p3.z < 0.0) { firstSweep = true; continue }
+        const pp = proj(p3, cx, cy, R)
+        if (firstSweep) { ctx.moveTo(pp.x, pp.y); firstSweep = false }
+        else ctx.lineTo(pp.x, pp.y)
+      }
+      ctx.strokeStyle = `rgba(${cyanRgb},${0.28 + 0.3 * Math.sin(sweepT * Math.PI)})`
+      ctx.lineWidth   = 1.3
+      ctx.shadowBlur  = 12
+      ctx.shadowColor = `rgba(${cyanRgb},0.8)`
+      ctx.stroke()
       ctx.restore()
 
       // ── Connection arcs + packets ──
@@ -2432,15 +2536,118 @@ function GlobeMode({ visibleRef }) {
         ctx.restore()
       })
 
-      // ── Current visitor marker ──
+      // ── Current visitor marker + sci-fi great-circle trace ──
       const visitorLat = Number(liveVisitor?.lat)
       const visitorLon = Number(liveVisitor?.lon)
       if (Number.isFinite(visitorLat) && Number.isFinite(visitorLon)) {
         const v3 = rotate(latLng3D(visitorLat, visitorLon), ry, rx)
         const vp = proj(v3, cx, cy, R)
         const alpha = Math.max(0, v3.z * 1.4)
+
+        // Progressive great-circle trace: RIYADH hub -> visitor
+        const hubIdx = 9
+        const hubBase = base3D[hubIdx]
+        const visitorBase = latLng3D(visitorLat, visitorLon)
+        const traceKey = `${visitorLat.toFixed(3)},${visitorLon.toFixed(3)}`
+        if (!s._trace || s._trace.key !== traceKey) {
+          s._trace = { key: traceKey, t: 0, pings: [], pingTimer: 0 }
+        }
+        const tr = s._trace
+        tr.t = Math.min(1, tr.t + dt * 0.0018)
+        tr.pingTimer += dt
+        if (tr.pingTimer > 70) {
+          tr.pingTimer = 0
+          tr.pings.push({ r: 0 })
+        }
+        tr.pings.forEach(p => { p.r += dt * 0.02 })
+        tr.pings = tr.pings.filter(p => p.r < 1.5)
+
+        // Trace line (partial or full great-circle)
+        ctx.save()
+        ctx.lineCap = 'round'
+        const tracePts = []
+        const SAMPLES = 90
+        for (let k = 0; k <= SAMPLES; k++) {
+          const tt = (k / SAMPLES) * tr.t
+          const mid = slerp(hubBase, visitorBase, tt)
+          const pm = rotate(mid, ry, rx)
+          if (pm.z > -0.03) tracePts.push(proj(pm, cx, cy, R))
+        }
+        if (tracePts.length > 1) {
+          const full = tr.t >= 1
+          const glowA = full ? 0.12 + 0.08 * Math.sin(ts * 0.004) : 0.18
+          ctx.save()
+          ctx.shadowBlur = 14
+          ctx.shadowColor = `rgba(${greenRgb},0.9)`
+          ctx.strokeStyle = `rgba(${greenRgb},${glowA})`
+          ctx.lineWidth = 3.5
+          ctx.beginPath()
+          ctx.moveTo(tracePts[0].x, tracePts[0].y)
+          for (let k = 1; k < tracePts.length; k++) ctx.lineTo(tracePts[k].x, tracePts[k].y)
+          ctx.stroke()
+          ctx.shadowBlur = 0
+          ctx.setLineDash([3, 6])
+          ctx.lineDashOffset = -ts * 0.02
+          ctx.strokeStyle = `rgba(${greenRgb},${full ? 0.5 + 0.2 * Math.sin(ts * 0.004) : 0.75})`
+          ctx.lineWidth = 1.2
+          ctx.beginPath()
+          ctx.moveTo(tracePts[0].x, tracePts[0].y)
+          for (let k = 1; k < tracePts.length; k++) ctx.lineTo(tracePts[k].x, tracePts[k].y)
+          ctx.stroke()
+          ctx.setLineDash([])
+          ctx.restore()
+
+          // Comet head riding the trace
+          if (!full && tracePts.length > 2) {
+            const head = tracePts[tracePts.length - 1]
+            const prev = tracePts[tracePts.length - 2]
+            const ang = Math.atan2(head.y - prev.y, head.x - prev.x)
+            ctx.save()
+            ctx.translate(head.x, head.y)
+            ctx.rotate(ang)
+            ctx.shadowBlur = 16
+            ctx.shadowColor = `rgba(${greenRgb},1)`
+            ctx.beginPath()
+            ctx.arc(0, 0, 3.2, 0, Math.PI * 2)
+            ctx.fillStyle = 'rgba(220,255,235,0.95)'
+            ctx.fill()
+            ctx.shadowBlur = 0
+            ctx.beginPath()
+            ctx.moveTo(-14, 0)
+            ctx.lineTo(0, -2.2)
+            ctx.lineTo(0, 2.2)
+            ctx.closePath()
+            const cg = ctx.createLinearGradient(-14, 0, 0, 0)
+            cg.addColorStop(0, 'rgba(30,140,90,0)')
+            cg.addColorStop(1, `rgba(${greenRgb},0.85)`)
+            ctx.fillStyle = cg
+            ctx.fill()
+            ctx.restore()
+          }
+        }
+        ctx.restore()
+
+        // Expanding radar pings from the visitor
+        if (alpha > 0.05) {
+          tr.pings.forEach(p => {
+            const ringR = 12 + p.r * 46
+            ctx.save()
+            ctx.strokeStyle = `rgba(${greenRgb},${alpha * 0.55 * (1 - p.r / 1.5)})`
+            ctx.lineWidth = 1
+            ctx.beginPath()
+            ctx.arc(vp.x, vp.y, ringR, 0, Math.PI * 2)
+            ctx.stroke()
+            ctx.restore()
+          })
+        }
+
+        // Visitor marker + rotating targeting reticle
         if (alpha > 0.05) {
           const pulse = 1 + Math.sin(ts * 0.006) * 0.18
+          const retAng = ts * 0.0012
+          const retR = 16
+          ctx.save()
+          ctx.translate(vp.x, vp.y)
           ctx.save()
           ctx.shadowBlur = 22
           ctx.shadowColor = `rgba(${greenRgb},0.95)`
@@ -2448,18 +2655,43 @@ function GlobeMode({ visibleRef }) {
           ctx.fillStyle = `rgba(${greenRgb},${alpha * 0.2})`
           ctx.lineWidth = 1.3
           ctx.beginPath()
-          ctx.arc(vp.x, vp.y, 11 * pulse, 0, Math.PI * 2)
+          ctx.arc(0, 0, 11 * pulse, 0, Math.PI * 2)
           ctx.fill()
           ctx.stroke()
           ctx.beginPath()
-          ctx.arc(vp.x, vp.y, 4.4, 0, Math.PI * 2)
+          ctx.arc(0, 0, 4.4, 0, Math.PI * 2)
           ctx.fillStyle = `rgba(220,255,235,${alpha})`
           ctx.fill()
-          ctx.shadowBlur = 0
+          ctx.restore()
+          // Rotating bracket reticle
+          for (let k = 0; k < 4; k++) {
+            const a0 = retAng + (k * Math.PI) / 2
+            const a1 = a0 + 0.55
+            ctx.beginPath()
+            ctx.arc(0, 0, retR, a0, a1)
+            ctx.strokeStyle = `rgba(${cyanRgb},${alpha * 0.8})`
+            ctx.lineWidth = 1.4
+            ctx.shadowBlur = 8
+            ctx.shadowColor = `rgba(${cyanRgb},0.9)`
+            ctx.stroke()
+            ctx.shadowBlur = 0
+          }
+          ctx.rotate(-retAng * 1.6)
+          for (let k = 0; k < 2; k++) {
+            const d = k === 0 ? -1 : 1
+            ctx.beginPath()
+            ctx.moveTo(retR + 6, d * 5)
+            ctx.lineTo(retR + 1, d * 5)
+            ctx.strokeStyle = `rgba(${cyanRgb},${alpha * 0.6})`
+            ctx.lineWidth = 1
+            ctx.stroke()
+          }
+          ctx.restore()
+          ctx.save()
           ctx.font = '8px monospace'
           ctx.textAlign = 'center'
           ctx.fillStyle = `rgba(${greenRgb},${Math.min(1, alpha * 1.2)})`
-          ctx.fillText('YOU', vp.x, vp.y - 17)
+          ctx.fillText('YOU', vp.x, vp.y - 26)
           ctx.restore()
         }
       }
