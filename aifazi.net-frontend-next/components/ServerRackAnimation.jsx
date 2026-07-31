@@ -1799,13 +1799,13 @@ const GLOBE_CONNECTIONS = [
 ]
 
 const GLOBE_MIN_ZOOM = 0.55
-const GLOBE_MAX_ZOOM = 1.08
+const GLOBE_MAX_ZOOM = 1.35
 
 function clampGlobeZoom(value, canvas) {
   const w = canvas?.clientWidth || 0
   const h = canvas?.clientHeight || 0
   const minDim = Math.max(1, Math.min(w || 600, h || 600))
-  const safeMax = Math.max(0.8, Math.min(GLOBE_MAX_ZOOM, (minDim / 2 - 24) / (minDim * 0.44)))
+  const safeMax = Math.max(0.8, Math.min(GLOBE_MAX_ZOOM, (minDim / 2 - 8) / (minDim * 0.44)))
   return Math.max(GLOBE_MIN_ZOOM, Math.min(safeMax, value))
 }
 
@@ -1942,7 +1942,7 @@ function GlobeMode({ visibleRef }) {
       if (!p) return
       const dpr = window.devicePixelRatio || 1
       const w   = p.clientWidth
-      const h   = Math.min(p.clientHeight || 600, 600)
+      const h   = p.clientHeight || 600
       if (w === lastW && h === lastH) return
       lastW = w; lastH = h
       canvas.width  = w * dpr
@@ -2749,7 +2749,7 @@ function GlobeMode({ visibleRef }) {
 
   return (
     <div className="globe-network-shell" ref={wrapRef} onMouseDown={markDragged} onTouchStart={markDragged} style={{
-      width: '100%', height: '100%', minHeight: 560,
+      width: '100%', height: '100%',
       position: 'relative', overflow: 'hidden',
       background: 'transparent',
     }}>
