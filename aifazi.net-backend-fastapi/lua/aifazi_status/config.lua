@@ -1,6 +1,6 @@
 --[[
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  aifazi_status / config.lua  v8.0
+  aifazi_status / config.lua  v9.0
   ✏️  THIS IS THE ONLY FILE YOU NEED TO EDIT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ]]
@@ -43,6 +43,18 @@ Config.StartupDelay   = 8000   -- wait before first push after start
 --                     (safer for production)
 -- ─────────────────────────────────────────────────────────────
 Config.WhitelistFailOpen = false  -- set true only for testing
+
+-- ─────────────────────────────────────────────────────────────
+--  🔗 CONNECT SESSION GATE
+--
+--  The whitelist gate (/playerConnecting) always runs. When
+--  RequireConnectSession = true, the server ALSO requires the player to
+--  have clicked "Connect" on fivem.aifazi.net/connect first (a recent,
+--  single-use session token linked to their account). Set false to keep
+--  the old permissive behavior where whitelisted players can join
+--  directly by IP / cfx link without a website connect session.
+-- ─────────────────────────────────────────────────────────────
+Config.RequireConnectSession = false  -- true = block direct joins not started from the website
 
 
 -- ─────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 --[[
-    aifazi_status / server.lua  v8
+    aifazi_status / server.lua  v9
     1. Pushes live status + player list on startup/connect/drop/manual refresh
     2. Syncs /whitelist/pending-sync on startup/manual refresh or optional interval
        (FiveM server can reach txAdmin on localhost — Vercel cannot)
@@ -10,6 +10,8 @@
     6. Ban fallback sync: polls /bans/pending-sync + /bans/pending-unban and
        applies them via txAdmin's monitor exports (backup for the backend's
        direct txAdmin push)
+    7. Connect-session gate: playerConnecting also calls /connect/session-check;
+       the token requirement is enforced only when Config.RequireConnectSession=true
 
     server.cfg:
         set fivem_api_secret "mOlVcBjLEzA6kDrFEgKPwt2EM7NakQ3tCp84h0vRhoe"
@@ -500,7 +502,25 @@ RegisterNetEvent("aifazi:syncNow", function()
     SyncApplicationActions()
     SyncBans()
 end)
--- ── Whitelist enforcement on playerConnecting ─────────────────────────────────
+-- ── Whitelist + connect-session enforcement on playerConnecting ───────────────
+-- Two gates run in parallel:
+--   1. /playerConnecting  — whitelist + ban check (primary, always enforced)
+--   2. /connect/session-check — verifies the player started from the website
+--      connect page (fivem.aifazi.net/connect). Its token requirement is only
+--      enforced when Config.RequireConnectSession = true.
+local function gateResult(code, body, blockMsg)
+    if code == 0 then
+        if whitelistFailOpen() then return { allowed = true } end
+        return { allowed = false, reason = "\n[AIFAZI RP] " .. blockMsg }
+    end
+    local ok, resp = pcall(json.decode, body or "")
+    if not ok or type(resp) ~= "table" then
+        if whitelistFailOpen() then return { allowed = true } end
+        return { allowed = false, reason = "\n[AIFAZI RP] " .. blockMsg }
+    end
+    return resp
+end
+
 AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
     local src    = source
     deferrals.defer()
@@ -513,51 +533,45 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
         return
     end
 
-    local checked = false
+    local requireSession = (Config and Config.RequireConnectSession == true) or false
+    local resolved = false
+    local primary, session
 
-    PerformHttpRequest(TXADMIN_BASE .. "/playerConnecting", function(code, body)
-        if checked then return end
-        checked = true
+    local function tryDecide()
+        if resolved then return end
+        if not primary then return end
+        if requireSession and not session then return end
+        resolved = true
 
-        if code == 0 then
-            if whitelistFailOpen() then
-                print("^3[aifazi_status]^7 Whitelist API unreachable — letting " .. name .. " in (fail-open)")
-                cachePriority(src, identifiers, nil)
-                joinedAt[tostring(src)] = os.time()
-                deferrals.done()
-                QueuePushAll(1000)
-            else
-                print("^1[aifazi_status]^7 Whitelist API unreachable — blocking " .. name .. " (fail-closed)")
-                deferrals.done("\n[AIFAZI RP] Whitelist system is temporarily unavailable. Please try again soon.")
-            end
-            return
+        local allow = primary.allowed == true
+        local reason = primary.reason
+        local prioData = primary.priority
+
+        if requireSession then
+            allow = allow and session.allowed == true
+            if not session.allowed and session.reason then reason = session.reason end
+            prioData = session.priority or prioData
         end
 
-        local ok, resp = pcall(json.decode, body or "")
-        if not ok or type(resp) ~= "table" then
-            if whitelistFailOpen() then
-                cachePriority(src, identifiers, nil)
-                joinedAt[tostring(src)] = os.time()
-                deferrals.done()
-                QueuePushAll(1000)
-            else
-                deferrals.done("\n[AIFAZI RP] Could not verify whitelist response. Please try again soon.")
-            end
-            return
-        end
-
-        if resp.allowed == true then
-            local prio = cachePriority(src, identifiers, resp.priority)
+        if allow then
+            local prio = cachePriority(src, identifiers, prioData)
             local suffix = prio.active and (" priority=%s:%d"):format(prio.tier or "Priority", prio.level) or ""
             print(("^2[aifazi_status]^7 %s whitelisted%s"):format(name, suffix))
             joinedAt[tostring(src)] = os.time()
             deferrals.done()
-                QueuePushAll(1000)
+            QueuePushAll(1000)
         else
-            local msg = resp.reason or "\n[AIFAZI RP] You are not whitelisted. Apply at: aifazi.net/whitelist"
+            local msg = reason or "\n[AIFAZI RP] You are not whitelisted. Apply at: aifazi.net/whitelist"
             deferrals.done(msg)
             print(("^1[aifazi_status]^7 Blocked %s"):format(name))
         end
+    end
+
+    PerformHttpRequest(TXADMIN_BASE .. "/playerConnecting", function(code, body)
+        if resolved then return end
+        primary = gateResult(code, body,
+            "Whitelist system is temporarily unavailable. Please try again soon.")
+        tryDecide()
     end, "POST", json.encode({
         player_name = name,
         discord_id = identifiers.discord_id,
@@ -566,11 +580,26 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
         fivem_id = identifiers.fivem_id,
     }), authHeader())
 
+    PerformHttpRequest(API_BASE .. "/connect/session-check", function(code, body)
+        if resolved then return end
+        session = gateResult(code, body,
+            "Connect session could not be verified. Please reconnect from fivem.aifazi.net/connect.")
+        tryDecide()
+    end, "POST", json.encode({
+        player_name = name,
+        fivem_license = identifiers.fivem_license,
+        license2 = identifiers.license2,
+        steam_hex = identifiers.steam_hex,
+        fivem_id = identifiers.fivem_id,
+        discord_id = identifiers.discord_id,
+        identifiers = identifiers.all or {},
+    }), authHeader())
+
     -- Timeout guard follows Config.WhitelistFailOpen.
     CreateThread(function()
         Wait(whitelistTimeout())
-        if not checked then
-            checked = true
+        if not resolved then
+            resolved = true
             if whitelistFailOpen() then
                 print("^3[aifazi_status]^7 Whitelist check timeout for " .. name .. " — fail-open")
                 cachePriority(src, identifiers, nil)
@@ -588,7 +617,7 @@ end)
 -- ── Main loop ─────────────────────────────────────────────────────────────────
 CreateThread(function()
     Wait(10000)
-    print("^2[aifazi_status]^7 v8 started — event/manual status refresh, session tracking, sync on changes/manual refresh")
+    print("^2[aifazi_status]^7 v9 started — event/manual status refresh, session tracking, sync on changes/manual refresh")
 
     for _, id in ipairs(GetPlayers()) do
         joinedAt[tostring(id)] = os.time()
