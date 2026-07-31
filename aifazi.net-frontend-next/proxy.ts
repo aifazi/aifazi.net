@@ -216,25 +216,24 @@ function isRelaxedLocalRuntime(hostname: string): boolean {
 }
 
 // ── CSP ──────────────────────────────────────────────────────────────────────
-// A per-request nonce would be the strict ideal, but it is incompatible with
-// this app for two reasons:
+// No per-request nonce and no script hash may appear in script-src. Per the CSP
+// spec, 'unsafe-inline' is IGNORED whenever the directive also contains a nonce
+// or hash value. A nonce/hash cannot cover this app's inline scripts anyway:
 //   1. Many pages are statically prerendered — Next.js cannot inject a runtime
-//      nonce into build-time HTML, so every inline script there is blocked.
+//      nonce into build-time HTML, so every inline script there would be blocked.
 //   2. The root layout emits inline FOUC / site-config scripts via
 //      dangerouslySetInnerHTML which have no way to carry a request nonce.
-// Per the CSP spec a nonce in script-src makes browsers IGNORE 'unsafe-inline',
-// so emitting a nonce alongside 'unsafe-inline' blocks ALL inline scripts and
-// hydration never runs (pages stuck on their loading skeletons). The nonce is
-// therefore not emitted: 'unsafe-inline' is the operative allowance for the
-// framework's hydration scripts, while script-src still restricts origins to
-// self + the explicit third-party allowlist below.
-const CSP_SCRIPT_HASH = "'sha256-d2rPHOmEJr+wC4eqfssd17I04Yo7Zzgrx623znHdh9I='"
-
+// With a nonce or hash present, ALL inline scripts (including the framework's
+// hydration bootstrap) are blocked and hydration never runs (pages stuck on
+// their loading skeletons, then "Connection closed" once the fetch times out).
+// So neither is emitted: 'unsafe-inline' is the operative allowance for inline
+// scripts, while script-src still restricts origins to self + the explicit
+// third-party allowlist below.
 function buildCsp(): string {
   const isDev = process.env.NODE_ENV === 'development'
   return [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' ${CSP_SCRIPT_HASH} https://cdn.lordicon.com https://cdnjs.cloudflare.com`,
+    `script-src 'self' 'unsafe-inline' https://cdn.lordicon.com https://cdnjs.cloudflare.com`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://cdn.aifazi.net https://*.supabase.co https://res.cloudinary.com https://api.dicebear.com https://*.aifazi.net https://*.imgur.com https://i.imgur.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://*.unsplash.com https://*.googleusercontent.com https://*.githubusercontent.com",
