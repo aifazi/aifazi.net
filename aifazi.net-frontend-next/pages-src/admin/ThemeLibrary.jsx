@@ -310,14 +310,25 @@ const ANIM_CATEGORIES = [
 
 // -- Background Animation -------------------------------------------------------
 const ANIMATION_PATTERNS = [
-  { id: 'none',          name: 'None',       icon: '∅', desc: 'No animated background',                preview: 'none' },
-  { id: 'aurora-ribbons',name: 'Ribbons',    icon: '⌁', desc: 'Slow drifting aurora ribbons',          preview: 'gradient' },
-  { id: 'contours',      name: 'Contours',   icon: '≋', desc: 'Animated hand-drawn flow lines',        preview: 'svg' },
-  { id: 'flow-grid',     name: 'Flow Grid',  icon: '⌗', desc: 'Moving technical grid and light sweep', preview: 'linear-gradient' },
-  { id: 'particle-field',name: 'Particles',  icon: '✦', desc: 'Floating star-like micro particles',    preview: 'radial' },
-  { id: 'nebula',        name: 'Nebula',     icon: '🌌', desc: 'Slow-morphing cosmic gas clouds',      preview: 'radial-gradient' },
-  { id: 'kaleidoscope',  name: 'Kaleidoscope', icon: '🕐', desc: 'Rotating geometric mandala',          preview: 'conic-gradient' },
-  { id: 'glow-orbs',     name: 'Glow Orbs',  icon: '💫', desc: 'Floating soft light spheres',          preview: 'radial-gradient' },
+  { id: 'none',          name: 'None',        icon: '∅', desc: 'No animated background',                preview: 'none' },
+  { id: 'aurora-ribbons',name: 'Ribbons',     icon: '⌁', desc: 'Slow drifting aurora ribbons',          preview: 'gradient' },
+  { id: 'contours',      name: 'Contours',    icon: '≋', desc: 'Animated hand-drawn flow lines',        preview: 'svg' },
+  { id: 'flow-grid',     name: 'Flow Grid',   icon: '⌗', desc: 'Moving technical grid and light sweep', preview: 'linear-gradient' },
+  { id: 'particle-field',name: 'Particles',   icon: '✦', desc: 'Floating star-like micro particles',    preview: 'radial' },
+  { id: 'nebula',        name: 'Nebula',      icon: '🌌', desc: 'Slow-morphing cosmic gas clouds',      preview: 'radial-gradient' },
+  { id: 'kaleidoscope',  name: 'Kaleidoscope',icon: '🕐', desc: 'Rotating geometric mandala',           preview: 'conic-gradient' },
+  { id: 'glow-orbs',     name: 'Glow Orbs',   icon: '💫', desc: 'Floating soft light spheres',          preview: 'radial-gradient' },
+  { id: 'gradient-mesh', name: 'Gradient Mesh',icon: '🎨', desc: 'Slow-morphing colored mesh gradient', preview: 'radial-gradient' },
+  { id: 'bokeh',         name: 'Bokeh',       icon: '🌫️', desc: 'Soft blurred light circles',           preview: 'radial-gradient' },
+  { id: 'shooting-stars',name: 'Shooting Stars', icon: '☄️', desc: 'Streaking light trails',             preview: 'linear-gradient' },
+  { id: 'circuit-glow',  name: 'Circuit Glow',icon: '🟢', desc: 'Animated circuit board traces',        preview: 'svg' },
+  { id: 'wave-lines',    name: 'Wave Lines',  icon: '〰️', desc: 'Layered flowing sine waves',           preview: 'svg' },
+  { id: 'cyber-grid',    name: 'Cyber Grid',  icon: '🔳', desc: 'Perspective grid moving toward viewer',preview: 'linear-gradient' },
+  { id: 'stardust',      name: 'Stardust',    icon: '🌟', desc: 'Slow-drifting twinkling starfield',    preview: 'radial' },
+  { id: 'light-beams',   name: 'Light Beams', icon: '🔦', desc: 'Rotating conic light beams',           preview: 'conic-gradient' },
+  { id: 'scan-sweep',    name: 'Scan Sweep',  icon: '📡', desc: 'Vertical light sweep over grid',       preview: 'linear-gradient' },
+  { id: 'hex-flow',      name: 'Hex Flow',    icon: '⬡', desc: 'Flowing hexagon field',                preview: 'linear-gradient' },
+  { id: 'matrix-rain',   name: 'Matrix Rain', icon: '🌧️', desc: 'Falling green code columns',           preview: 'grid' },
 ]
 
 // -- Grid Overlay ---------------------------------------------------------------
@@ -336,6 +347,16 @@ const GRID_PATTERNS = [
   { id: 'terminal',      name: 'Terminal',   icon: '💻', desc: 'Phosphor scanline surface',            preview: 'repeating-linear-gradient' },
   { id: 'neon-stage',    name: 'Neon Stage', icon: '🎭', desc: 'Dual-axis neon glow grid',             preview: 'linear-gradient' },
   { id: 'dashboard',     name: 'Dashboard',  icon: '📊', desc: 'Dense telemetry grid',                preview: 'linear-gradient' },
+  { id: 'blueprint',     name: 'Blueprint',  icon: '📐', desc: 'Engineering blueprint double grid',    preview: 'linear-gradient' },
+  { id: 'isometric',     name: 'Isometric',  icon: '📦', desc: 'Angled 3D tile grid',                 preview: 'linear-gradient' },
+  { id: 'rhombus',       name: 'Rhombus',    icon: '◆', desc: 'Diamond weave grid',                   preview: 'linear-gradient' },
+  { id: 'crosshatch',    name: 'Crosshatch', icon: '𝄳', desc: 'Tight diagonal hatch',                preview: 'repeating-linear-gradient' },
+  { id: 'weave',         name: 'Weave',      icon: '🕸️', desc: 'Interlocking woven bands',             preview: 'repeating-linear-gradient' },
+  { id: 'plus',          name: 'Plus',       icon: '✚', desc: 'Plus-sign tile pattern',               preview: 'linear-gradient' },
+  { id: 'pixel',         name: 'Pixel',      icon: '👾', desc: 'Blocky pixelated grid',               preview: 'linear-gradient' },
+  { id: 'corner',        name: 'Corner',     icon: '❐', desc: 'Bracket corner marks',                 preview: 'linear-gradient' },
+  { id: 'fiber',         name: 'Fiber',      icon: '🔹', desc: 'Fiber-optic dots on traces',          preview: 'linear-gradient' },
+  { id: 'polar',         name: 'Polar',      icon: '◎', desc: 'Concentric polar rings with axes',    preview: 'radial-gradient' },
 ]
 
 // -- Custom theme builder -------------------------------------------------------
@@ -1905,6 +1926,7 @@ function ThemeLibrary() {
       {activeTab === 'backgrounds' && (() => {
         const cardBtn = (p, active, previewClass, onSelect) => (
           <button key={p.id} onClick={() => { if (!savingBg) onSelect(p.id) }} disabled={savingBg}
+            className="bg-card-btn"
             style={{ padding: 0, background: active ? 'rgba(0,255,136,0.07)' : 'var(--bg2)', border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`, boxShadow: active ? '0 0 12px rgba(0,255,136,0.2)' : 'none', cursor: savingBg ? 'wait' : 'pointer', borderRadius: 8, overflow: 'hidden', transition: 'all 0.15s', textAlign: 'center' }}>
             <div className={`${previewClass} ${p.id}`} style={{ background: 'var(--bg)', borderBottom: `1px solid ${active ? 'rgba(0,255,136,0.3)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {p.id === 'none' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: 'var(--muted)', opacity: 0.3 }}>—</span>}

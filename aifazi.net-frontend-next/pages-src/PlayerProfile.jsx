@@ -197,7 +197,7 @@ export default function PlayerProfile() {
   /* ── Not logged in ── */
   if (!player) {
     return (
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <div style={{ textAlign: 'center', maxWidth: 400 }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: DISCORD_PURPLE + '20', border: '2px solid ' + DISCORD_PURPLE + '60', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
             <svg width="32" height="32" viewBox="0 0 127.14 96.36" fill={DISCORD_PURPLE}>
@@ -224,7 +224,7 @@ export default function PlayerProfile() {
 
   /* ── Profile page ── */
   return (
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: '80px 20px 60px' }}>
+    <main style={{ minHeight: '100vh', padding: '80px 20px 60px' }}>
       <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
 
         {/* Header */}

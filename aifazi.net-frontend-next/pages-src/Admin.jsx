@@ -29,7 +29,7 @@ function ModeratorPortal({ onLogout }) {
         </div>
       )}
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {view === 'forum' && <div style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}><ForumAdmin embedded /></div>}
+        {view === 'forum' && <div style={{ flex: 1, overflowY: 'auto' }}><ForumAdmin embedded /></div>}
         {view === 'chat' && <div style={{ flex: 1, minWidth: 0, display: 'flex', minHeight: 0, overflow: 'hidden', alignItems: 'stretch', height: '100%' }}><PanelErrorBoundary label="Chat"><AdminChat embedded /></PanelErrorBoundary></div>}
       </div>
     </div>
@@ -78,7 +78,7 @@ export default function Admin() {
     const username = getUsername()
     const role = getRole()
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20, padding: 24, background: 'var(--bg)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20, padding: 24 }}>
         <div style={{ fontSize: 64 }}>⚙️</div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: '#ff4757', padding: '4px 14px', background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.3)' }}>
           UNAUTHORIZED ACCESS

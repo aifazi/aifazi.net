@@ -454,7 +454,7 @@ export default function WhitelistApply() {
   if (authLoading) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: '92px 20px 48px' }}>
+      <main style={{ minHeight: '100vh', padding: '92px 20px 48px' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {Array.from({ length: 6 }).map((_, i) => <ThreadRowSkeleton key={i} />)}
         </div>
@@ -467,7 +467,7 @@ export default function WhitelistApply() {
   if (!user) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: '80px 20px 40px' }}>
+      <main style={{ minHeight: '100vh', padding: '80px 20px 40px' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP — NEON OPS CITY</div>
@@ -484,7 +484,7 @@ export default function WhitelistApply() {
   if (!isStaffPreview && discordLoading && !discordStatus && !user?.discord_id) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: '92px 20px 48px' }}>
+      <main style={{ minHeight: '100vh', padding: '92px 20px 48px' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {Array.from({ length: 6 }).map((_, i) => <ThreadRowSkeleton key={i} />)}
         </div>
@@ -496,7 +496,7 @@ export default function WhitelistApply() {
   if (!isStaffPreview && !discordLinked) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: '80px 20px 40px' }}>
+      <main style={{ minHeight: '100vh', padding: '80px 20px 40px' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP — NEON OPS CITY</div>
@@ -513,7 +513,7 @@ export default function WhitelistApply() {
   if (!isStaffPreview && existingApp) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: '80px 20px 40px' }}>
+      <main style={{ minHeight: '100vh', padding: '80px 20px 40px' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP — NEON OPS CITY</div>
@@ -530,7 +530,7 @@ export default function WhitelistApply() {
   if (done) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <div style={{ maxWidth: 520, textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
           <h2 style={{ fontFamily: 'var(--font-mono)', color: G, fontSize: 20, letterSpacing: 2, marginBottom: 12 }}>APPLICATION SUBMITTED</h2>
@@ -553,7 +553,7 @@ export default function WhitelistApply() {
   /* ── Form (logged in + Discord linked) ── */
   return (
     <MotionPage animation={pageConfig.animation || 'fade-up'}>
-    <main style={{ minHeight: '100vh', background: 'var(--bg)', padding: '80px 20px 60px' }}>
+    <main style={{ minHeight: '100vh', padding: '80px 20px 60px' }}>
       <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
 
         {/* Header */}

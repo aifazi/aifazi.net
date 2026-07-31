@@ -17,7 +17,7 @@ function Shell({ children, narrow = false }) {
   const pageConfig = usePageConfig('forms', {})
   return (
     <MotionPage animation={pageConfig.animation || 'fade-up'}>
-    <main style={{ minHeight:'100vh', background:'var(--bg)', padding:'92px 20px 64px' }}>
+    <main style={{ minHeight:'100vh', padding:'92px 20px 64px' }}>
       <div style={{ maxWidth:narrow ? 760 : 1040, margin:'0 auto' }}>{children}</div>
     </main>
     </MotionPage>

@@ -667,7 +667,7 @@ export default function HelpDesk() {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 80 }}>
       {/* Hero */}
       <div className="helpdesk-header" style={{ borderBottom: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -60, right: -60, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />

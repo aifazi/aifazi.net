@@ -1713,7 +1713,7 @@ export default function ForumProfile() {
   const role = roleCfg[user.role] || { color: CLRS.cyan, label: (user.role || 'MEMBER').toUpperCase() }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 80 }}>
       <style>{`
         .profile-act-grid  { grid-template-columns: 1fr 1fr !important; }
         .profile-grid-2    { grid-template-columns: 1fr 1fr !important; }

@@ -3113,6 +3113,133 @@ input.terminal-command-input:focus-visible {
   animation: glowOrbsDrift 35s ease-in-out infinite alternate;
 }
 
+/* -- Gradient Mesh: slow-morphing colored mesh gradient -- */
+[data-bg-animation="gradient-mesh"] body::before {
+  background-image:
+    radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--green) 14%, transparent), transparent 40%),
+    radial-gradient(circle at 80% 25%, color-mix(in srgb, var(--cyan) 12%, transparent), transparent 42%),
+    radial-gradient(circle at 30% 75%, color-mix(in srgb, var(--purple, #a855f7) 12%, transparent), transparent 40%),
+    radial-gradient(circle at 75% 75%, color-mix(in srgb, var(--orange, #ff6b35) 10%, transparent), transparent 42%),
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--bg3) 22%, transparent), transparent 55%);
+  background-size: 150% 150%, 160% 160%, 170% 170%, 180% 180%, 200% 200%;
+  background-position: 0% 0%, 100% 0%, 0% 100%, 100% 100%, 50% 50%;
+  opacity: .72;
+  animation: gradientMeshDrift 24s ease-in-out infinite;
+}
+
+/* -- Bokeh: soft blurred light circles -- */
+[data-bg-animation="bokeh"] body::before {
+  background-image:
+    radial-gradient(circle at 15% 25%, color-mix(in srgb, var(--green) 16%, transparent) 0%, transparent 9%),
+    radial-gradient(circle at 85% 20%, color-mix(in srgb, var(--cyan) 14%, transparent) 0%, transparent 10%),
+    radial-gradient(circle at 60% 75%, color-mix(in srgb, var(--purple, #a855f7) 13%, transparent) 0%, transparent 11%),
+    radial-gradient(circle at 25% 80%, color-mix(in srgb, var(--orange, #ff6b35) 12%, transparent) 0%, transparent 8%),
+    radial-gradient(circle at 90% 60%, color-mix(in srgb, var(--green) 12%, transparent) 0%, transparent 9%),
+    radial-gradient(circle at 45% 15%, color-mix(in srgb, var(--cyan) 12%, transparent) 0%, transparent 7%);
+  background-size: 100% 100%, 110% 110%, 120% 120%, 130% 130%, 140% 140%, 150% 150%;
+  background-position: 0% 0%, 100% 0%, 50% 100%, 0% 100%, 100% 100%, 50% 0%;
+  opacity: .8;
+  animation: bokehDrift 28s ease-in-out infinite alternate;
+}
+
+/* -- Shooting Stars: streaking light trails -- */
+[data-bg-animation="shooting-stars"] body::before {
+  background-image:
+    linear-gradient(115deg, transparent 0 70%, color-mix(in srgb, var(--cyan) 30%, transparent) 72%, transparent 76%),
+    linear-gradient(115deg, transparent 0 60%, color-mix(in srgb, var(--green) 24%, transparent) 62%, transparent 66%),
+    linear-gradient(115deg, transparent 0 80%, color-mix(in srgb, var(--purple, #a855f7) 22%, transparent) 82%, transparent 86%);
+  background-size: 220% 220%, 280% 280%, 340% 340%;
+  background-position: -80% -80%, -60% -60%, -30% -30%;
+  opacity: .7;
+  animation: shootingStars 8s linear infinite;
+}
+
+/* -- Circuit Glow: animated circuit traces -- */
+[data-bg-animation="circuit-glow"] body::before {
+  background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%2300ff88' stroke-opacity='.16' fill='none'%3E%3Cpath d='M0 40h60l20 20h120'/%3E%3Cpath d='M40 0v60l20 20v120'/%3E%3Cpath d='M200 120h-60l-20 20H0'/%3E%3Cpath d='M160 200v-60l-20-20v-80'/%3E%3Ccircle cx='80' cy='40' r='3' fill='%2300ff88' fill-opacity='.5'/%3E%3Ccircle cx='160' cy='140' r='3' fill='%2300d4ff' fill-opacity='.5'/%3E%3Ccircle cx='40' cy='60' r='3' fill='%2300ff88' fill-opacity='.5'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  background-position: 0 0;
+  opacity: .6;
+  animation: circuitGlowDrift 30s linear infinite;
+}
+
+/* -- Wave Lines: layered flowing sine waves -- */
+[data-bg-animation="wave-lines"] body::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='240' height='40' viewBox='0 0 240 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 20 C30 0 60 40 90 20 S150 0 180 20 240 20' fill='none' stroke='%2300ff88' stroke-opacity='.18' stroke-width='1.5'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg width='240' height='40' viewBox='0 0 240 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 20 C30 0 60 40 90 20 S150 0 180 20 240 20' fill='none' stroke='%2300d4ff' stroke-opacity='.12' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 240px 40px, 240px 40px;
+  background-position: 0 40px, 0 80px;
+  opacity: .7;
+  animation: waveLinesDrift 24s linear infinite;
+}
+
+/* -- Cyber Grid: perspective grid moving toward viewer -- */
+[data-bg-animation="cyber-grid"] body::before {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+    radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--cyan) 12%, transparent), transparent 60%);
+  background-size: 48px 48px, 48px 48px, 100% 100%;
+  background-position: 0 0, 0 0, center;
+  opacity: .8;
+  animation: cyberGridDrift 16s linear infinite;
+}
+
+/* -- Stardust: slow-drifting twinkling starfield -- */
+[data-bg-animation="stardust"] body::before {
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, var(--green) 80%, transparent) 0 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(255,255,255,.5) 0 1px, transparent 1.5px),
+    radial-gradient(circle, color-mix(in srgb, var(--cyan) 70%, transparent) 0 1px, transparent 1.8px);
+  background-size: 120px 120px, 200px 200px, 300px 300px;
+  background-position: 0 0, 60px 40px, 120px 100px;
+  opacity: .7;
+  animation: stardustDrift 60s linear infinite;
+}
+
+/* -- Light Beams: rotating light beams -- */
+[data-bg-animation="light-beams"] body::before {
+  background-image:
+    conic-gradient(from 0deg at 50% 50%, transparent 0deg, color-mix(in srgb, var(--green) 8%, transparent) 40deg, transparent 90deg),
+    conic-gradient(from 180deg at 50% 50%, transparent 0deg, color-mix(in srgb, var(--cyan) 8%, transparent) 40deg, transparent 90deg);
+  background-size: 200% 200%, 200% 200%;
+  opacity: .6;
+  animation: lightBeamsSpin 30s linear infinite;
+}
+
+/* -- Scan Sweep: vertical light sweep -- */
+[data-bg-animation="scan-sweep"] body::before {
+  background-image:
+    linear-gradient(180deg, transparent 0 30%, color-mix(in srgb, var(--cyan) 10%, transparent) 49.5%, color-mix(in srgb, var(--green) 14%, transparent) 50%, color-mix(in srgb, var(--cyan) 10%, transparent) 50.5%, transparent 70% 100%),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 100% 200%, 42px 42px, 42px 42px;
+  opacity: .75;
+  animation: scanSweepDrift 8s linear infinite;
+}
+
+/* -- Hex Flow: flowing hexagon field -- */
+[data-bg-animation="hex-flow"] body::before {
+  background-image:
+    linear-gradient(60deg, transparent 33%, color-mix(in srgb, var(--green) 8%, transparent) 33%, color-mix(in srgb, var(--green) 8%, transparent) 34%, transparent 34%),
+    linear-gradient(-60deg, transparent 33%, color-mix(in srgb, var(--cyan) 8%, transparent) 33%, color-mix(in srgb, var(--cyan) 8%, transparent) 34%, transparent 34%),
+    linear-gradient(180deg, transparent 49.5%, color-mix(in srgb, var(--purple, #a855f7) 9%, transparent) 49.5%, color-mix(in srgb, var(--purple, #a855f7) 9%, transparent) 50.5%, transparent 50.5%);
+  background-size: 40px 70px;
+  opacity: .7;
+  animation: hexFlowDrift 30s linear infinite;
+}
+
+/* -- Matrix Rain: falling green code columns -- */
+[data-bg-animation="matrix-rain"] body::before {
+  background-image:
+    linear-gradient(90deg, transparent 0 14px, color-mix(in srgb, var(--green) 20%, transparent) 14px 15px, transparent 15px 29px, color-mix(in srgb, var(--green) 12%, transparent) 29px 30px, transparent 30px),
+    repeating-linear-gradient(180deg, color-mix(in srgb, var(--green) 18%, transparent) 0 2px, transparent 2px 22px);
+  background-size: 30px 22px;
+  opacity: .7;
+  animation: matrixRainFall 6s linear infinite;
+}
+
 /* ══════════════════════════════════════════
    GRID OVERLAYS (body::after)
    Applied via siteConfig.gridPattern.
@@ -3223,6 +3350,96 @@ input.terminal-command-input:focus-visible {
   background-size: 24px 24px;
 }
 
+/* -- Blueprint: engineering blueprint double grid -- */
+[data-bg-grid="blueprint"] body::after {
+  background-image:
+    linear-gradient(rgba(56,189,248,.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56,189,248,.08) 1px, transparent 1px),
+    linear-gradient(rgba(56,189,248,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56,189,248,.035) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 8px 8px, 8px 8px;
+}
+
+/* -- Isometric: angled 3D tile grid -- */
+[data-bg-grid="isometric"] body::after {
+  background-image:
+    linear-gradient(150deg, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(30deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 70px;
+}
+
+/* -- Rhombus: diamond weave grid -- */
+[data-bg-grid="rhombus"] body::after {
+  background-image:
+    linear-gradient(45deg, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(-45deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: 0 0, 16px 16px;
+}
+
+/* -- Crosshatch: tight diagonal hatch -- */
+[data-bg-grid="crosshatch"] body::after {
+  background-image:
+    repeating-linear-gradient(45deg, var(--grid-line) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(-45deg, var(--grid-line) 0 1px, transparent 1px 6px);
+  background-size: 8px 8px;
+}
+
+/* -- Weave: interlocking woven bands -- */
+[data-bg-grid="weave"] body::after {
+  background-image:
+    repeating-linear-gradient(90deg, transparent 0 8px, var(--grid-line) 8px 9px),
+    repeating-linear-gradient(0deg, transparent 0 8px, var(--grid-line) 8px 9px);
+  background-size: 18px 18px;
+}
+
+/* -- Plus: plus-sign tile pattern -- */
+[data-bg-grid="plus"] body::after {
+  background-image:
+    linear-gradient(90deg, transparent 0 44%, var(--grid-line) 44% 56%, transparent 56% 100%),
+    linear-gradient(0deg, transparent 0 44%, var(--grid-line) 44% 56%, transparent 56% 100%);
+  background-size: 24px 24px;
+}
+
+/* -- Pixel: blocky pixelated grid -- */
+[data-bg-grid="pixel"] body::after {
+  background-image:
+    linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 6px);
+  background-size: 6px 6px;
+  background-position: 0 0, 3px 3px;
+}
+
+/* -- Corner: bracket corner marks -- */
+[data-bg-grid="corner"] body::after {
+  background-image:
+    linear-gradient(135deg, transparent 70%, var(--grid-line) 70% 72%, transparent 72%),
+    linear-gradient(45deg, transparent 70%, var(--grid-line) 70% 72%, transparent 72%),
+    linear-gradient(225deg, transparent 70%, var(--grid-line) 70% 72%, transparent 72%),
+    linear-gradient(315deg, transparent 70%, var(--grid-line) 70% 72%, transparent 72%);
+  background-size: 80px 80px;
+  background-position: 0 0, 80px 0, 0 80px, 80px 80px;
+}
+
+/* -- Fiber: fiber-optic dots on traces -- */
+[data-bg-grid="fiber"] body::after {
+  background-image:
+    linear-gradient(45deg, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(-45deg, var(--grid-line) 1px, transparent 1px),
+    radial-gradient(var(--grid-line) 2px, transparent 2px);
+  background-size: 40px 40px, 40px 40px, 40px 40px;
+  background-position: 0 0, 0 0, 20px 20px;
+}
+
+/* -- Polar: concentric polar rings with axes -- */
+[data-bg-grid="polar"] body::after {
+  background-image:
+    repeating-radial-gradient(circle at 50% 50%, transparent 0 30px, var(--grid-line) 30px 31px),
+    linear-gradient(0deg, transparent 49.5%, var(--grid-line) 49.5% 50.5%, transparent 50.5%),
+    linear-gradient(90deg, transparent 49.5%, var(--grid-line) 49.5% 50.5%, transparent 50.5%);
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+}
+
 @keyframes contoursDrift {
   0% { background-position: center, 0 0; transform: translate3d(0,0,0) scale(1); }
   50% { background-position: center, -360px 180px; transform: translate3d(0,0,0) scale(1.025); }
@@ -3264,6 +3481,54 @@ input.terminal-command-input:focus-visible {
   50% { background-position: 15% 40%, 60% 30%, 60% 60%, 25% 40%, 70% 70%; }
   75% { background-position: 40% 10%, 80% 40%, 30% 80%, 5% 80%, 95% 60%; }
   100% { background-position: 25% 25%, 75% 15%, 45% 75%, 10% 50%, 90% 90%; }
+}
+@keyframes gradientMeshDrift {
+  0%   { background-position: 0% 0%, 100% 0%, 0% 100%, 100% 100%, 50% 50%; transform: scale(1); }
+  25%  { background-position: 30% 20%, 70% 15%, 20% 80%, 85% 85%, 40% 60%; }
+  50%  { background-position: 60% 10%, 40% 40%, 50% 60%, 60% 40%, 55% 45%; transform: scale(1.03); }
+  75%  { background-position: 20% 40%, 80% 55%, 30% 40%, 45% 80%, 60% 40%; }
+  100% { background-position: 10% 25%, 90% 30%, 15% 70%, 70% 60%, 50% 55%; transform: scale(1); }
+}
+@keyframes bokehDrift {
+  0%   { background-position: 0% 0%, 100% 0%, 50% 100%, 0% 100%, 100% 100%, 50% 0%; }
+  100% { background-position: 20% 15%, 80% 25%, 40% 70%, 15% 80%, 85% 55%, 60% 20%; }
+}
+@keyframes shootingStars {
+  0%   { background-position: -160% -160%, -100% -100%, -60% -60%; }
+  100% { background-position: 260% 260%, 200% 200%, 160% 160%; }
+}
+@keyframes circuitGlowDrift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 200px 200px; }
+}
+@keyframes waveLinesDrift {
+  0%   { background-position: 0 40px, 0 80px; }
+  100% { background-position: -240px 40px, 240px 80px; }
+}
+@keyframes cyberGridDrift {
+  0%   { background-position: 0 0, 0 0, center; }
+  100% { background-position: 0 48px, 48px 48px, center; }
+}
+@keyframes stardustDrift {
+  0%   { background-position: 0 0, 60px 40px, 120px 100px; opacity: .5; }
+  50%  { background-position: -60px 40px, 100px -20px, 200px 140px; opacity: .8; }
+  100% { background-position: 0 0, 60px 40px, 120px 100px; opacity: .5; }
+}
+@keyframes lightBeamsSpin {
+  0%   { transform: rotate(0deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(1.15); }
+}
+@keyframes scanSweepDrift {
+  0%   { background-position: 0 -100%, 0 0, 0 0; }
+  100% { background-position: 0 200%, 0 0, 0 0; }
+}
+@keyframes hexFlowDrift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 40px 70px; }
+}
+@keyframes matrixRainFall {
+  0%   { background-position: 0 0, 0 0; }
+  100% { background-position: 0 0, 0 22px; }
 }
 
 /* ══════════════════════════════════════════
@@ -3334,6 +3599,91 @@ input.terminal-command-input:focus-visible {
   background-size: 220% 220%, 220% 220%, 220% 220%;
   animation: glowOrbsDrift 10s ease-in-out infinite alternate;
 }
+.bp-preview.gradient-mesh::before {
+  background-image:
+    radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--green) 22%, transparent), transparent 42%),
+    radial-gradient(circle at 80% 25%, color-mix(in srgb, var(--cyan) 20%, transparent), transparent 44%),
+    radial-gradient(circle at 50% 80%, color-mix(in srgb, var(--purple, #a855f7) 20%, transparent), transparent 42%);
+  background-size: 160% 160%, 180% 180%, 200% 200%;
+  animation: gradientMeshDrift 8s ease-in-out infinite;
+}
+.bp-preview.bokeh::before {
+  background-image:
+    radial-gradient(circle at 15% 25%, color-mix(in srgb, var(--green) 26%, transparent), transparent 12%),
+    radial-gradient(circle at 85% 20%, color-mix(in srgb, var(--cyan) 22%, transparent), transparent 13%),
+    radial-gradient(circle at 60% 75%, color-mix(in srgb, var(--purple, #a855f7) 22%, transparent), transparent 13%),
+    radial-gradient(circle at 30% 80%, color-mix(in srgb, var(--orange, #ff6b35) 20%, transparent), transparent 10%);
+  background-size: 120% 120%, 130% 130%, 140% 140%, 150% 150%;
+  animation: bokehDrift 9s ease-in-out infinite alternate;
+}
+.bp-preview.shooting-stars::before {
+  background-image:
+    linear-gradient(115deg, transparent 0 70%, color-mix(in srgb, var(--cyan) 42%, transparent) 73%, transparent 78%),
+    linear-gradient(115deg, transparent 0 58%, color-mix(in srgb, var(--green) 36%, transparent) 62%, transparent 67%),
+    linear-gradient(115deg, transparent 0 78%, color-mix(in srgb, var(--purple, #a855f7) 30%, transparent) 82%, transparent 87%);
+  background-size: 220% 220%, 280% 280%, 340% 340%;
+  background-position: -80% -80%, -60% -60%, -30% -30%;
+  animation: shootingStars 4s linear infinite;
+}
+.bp-preview.circuit-glow::before {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%2300ff88' stroke-opacity='.28' fill='none'%3E%3Cpath d='M0 16h24l8 8h48'/%3E%3Cpath d='M16 0v24l8 8v48'/%3E%3Cpath d='M80 48h-24l-8 8H0'/%3E%3Cpath d='M64 80v-24l-8-8v-32'/%3E%3Ccircle cx='32' cy='16' r='1.6' fill='%2300ff88' fill-opacity='.7'/%3E%3Ccircle cx='64' cy='56' r='1.6' fill='%2300d4ff' fill-opacity='.7'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 80px 80px;
+  animation: circuitGlowDrift 10s linear infinite;
+}
+.bp-preview.wave-lines::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='120' height='20' viewBox='0 0 120 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 C15 0 30 20 45 10 S75 0 90 10 120 10 120 10' fill='none' stroke='%2300ff88' stroke-opacity='.4' stroke-width='1.5'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg width='120' height='20' viewBox='0 0 120 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 C15 0 30 20 45 10 S75 0 90 10 120 10 120 10' fill='none' stroke='%2300d4ff' stroke-opacity='.28' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 120px 20px, 120px 20px;
+  background-position: 0 12px, 0 40px;
+  animation: waveLinesDrift 6s linear infinite;
+}
+.bp-preview.cyber-grid::before {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 16px 16px, 16px 16px;
+  animation: cyberGridDrift 5s linear infinite;
+}
+.bp-preview.stardust::before {
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, var(--green) 90%, transparent) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(255,255,255,.55) 0 1px, transparent 1.5px),
+    radial-gradient(circle, color-mix(in srgb, var(--cyan) 85%, transparent) 0 1px, transparent 1.7px);
+  background-size: 40px 40px, 66px 66px, 100px 100px;
+  background-position: 0 0, 20px 13px, 40px 33px;
+  animation: stardustDrift 12s linear infinite;
+}
+.bp-preview.light-beams::before {
+  background-image:
+    conic-gradient(from 0deg at 50% 50%, transparent 0deg, color-mix(in srgb, var(--green) 20%, transparent) 40deg, transparent 90deg),
+    conic-gradient(from 180deg at 50% 50%, transparent 0deg, color-mix(in srgb, var(--cyan) 20%, transparent) 40deg, transparent 90deg);
+  background-size: 200% 200%, 200% 200%;
+  animation: lightBeamsSpin 8s linear infinite;
+}
+.bp-preview.scan-sweep::before {
+  background-image:
+    linear-gradient(180deg, transparent 0 30%, color-mix(in srgb, var(--cyan) 24%, transparent) 49.5%, color-mix(in srgb, var(--green) 32%, transparent) 50%, color-mix(in srgb, var(--cyan) 24%, transparent) 50.5%, transparent 70% 100%),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 100% 200%, 14px 14px, 14px 14px;
+  animation: scanSweepDrift 3s linear infinite;
+}
+.bp-preview.hex-flow::before {
+  background-image:
+    linear-gradient(60deg, transparent 33%, color-mix(in srgb, var(--green) 22%, transparent) 33% 34%, transparent 34%),
+    linear-gradient(-60deg, transparent 33%, color-mix(in srgb, var(--cyan) 22%, transparent) 33% 34%, transparent 34%),
+    linear-gradient(180deg, transparent 49.5%, color-mix(in srgb, var(--purple, #a855f7) 24%, transparent) 49.5% 50.5%, transparent 50.5%);
+  background-size: 16px 28px;
+  animation: hexFlowDrift 6s linear infinite;
+}
+.bp-preview.matrix-rain::before {
+  background-image:
+    linear-gradient(90deg, transparent 0 14px, color-mix(in srgb, var(--green) 42%, transparent) 14px 15px, transparent 15px 29px, color-mix(in srgb, var(--green) 26%, transparent) 29px 30px, transparent 30px),
+    repeating-linear-gradient(180deg, color-mix(in srgb, var(--green) 40%, transparent) 0 2px, transparent 2px 22px);
+  background-size: 30px 22px;
+  animation: matrixRainFall 1.2s linear infinite;
+}
 .bp-preview.none::before  { display: none; }
 .bp-preview.clean::before { display: none; }
 
@@ -3371,8 +3721,42 @@ input.terminal-command-input:focus-visible {
 .gp-preview.terminal::before  { background-image: repeating-linear-gradient(0deg, rgba(51,255,51,.05) 0 1px, transparent 1px 4px); background-size: 100% 4px; }
 .gp-preview.neon-stage::before { background-image: linear-gradient(rgba(255,45,139,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(0,240,255,.05) 1px, transparent 1px); background-size: 34px 18px; }
 .gp-preview.dashboard::before { background-image: linear-gradient(rgba(56,189,248,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,.05) 1px, transparent 1px); background-size: 12px 12px; }
+.gp-preview.blueprint::before  { background-image: linear-gradient(rgba(56,189,248,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,.12) 1px, transparent 1px), linear-gradient(rgba(56,189,248,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,.05) 1px, transparent 1px); background-size: 32px 32px, 32px 32px, 4px 4px, 4px 4px; }
+.gp-preview.isometric::before  { background-image: linear-gradient(150deg, var(--grid-line) 1px, transparent 1px), linear-gradient(30deg, var(--grid-line) 1px, transparent 1px); background-size: 16px 28px; }
+.gp-preview.rhombus::before    { background-image: linear-gradient(45deg, var(--grid-line) 1px, transparent 1px), linear-gradient(-45deg, var(--grid-line) 1px, transparent 1px); background-size: 14px 14px; background-position: 0 0, 7px 7px; }
+.gp-preview.crosshatch::before { background-image: repeating-linear-gradient(45deg, var(--grid-line) 0 1px, transparent 1px 6px), repeating-linear-gradient(-45deg, var(--grid-line) 0 1px, transparent 1px 6px); background-size: 8px 8px; }
+.gp-preview.weave::before      { background-image: repeating-linear-gradient(90deg, transparent 0 8px, var(--grid-line) 8px 9px), repeating-linear-gradient(0deg, transparent 0 8px, var(--grid-line) 8px 9px); background-size: 18px 18px; }
+.gp-preview.plus::before       { background-image: linear-gradient(90deg, transparent 0 44%, var(--grid-line) 44% 56%, transparent 56% 100%), linear-gradient(0deg, transparent 0 44%, var(--grid-line) 44% 56%, transparent 56% 100%); background-size: 16px 16px; }
+.gp-preview.pixel::before      { background-image: linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 6px), linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 6px); background-size: 6px 6px; background-position: 0 0, 3px 3px; }
+.gp-preview.corner::before     { background-image: linear-gradient(135deg, transparent 70%, var(--grid-line) 70% 72%, transparent 72%), linear-gradient(45deg, transparent 70%, var(--grid-line) 70% 72%, transparent 72%), linear-gradient(225deg, transparent 70%, var(--grid-line) 70% 72%, transparent 72%), linear-gradient(315deg, transparent 70%, var(--grid-line) 70% 72%, transparent 72%); background-size: 24px 24px; background-position: 0 0, 24px 0, 0 24px, 24px 24px; }
+.gp-preview.fiber::before      { background-image: linear-gradient(45deg, var(--grid-line) 1px, transparent 1px), linear-gradient(-45deg, var(--grid-line) 1px, transparent 1px), radial-gradient(var(--grid-line) 2px, transparent 2px); background-size: 16px 16px, 16px 16px, 16px 16px; background-position: 0 0, 0 0, 8px 8px; }
+.gp-preview.polar::before      { background-image: repeating-radial-gradient(circle at 50% 50%, transparent 0 12px, var(--grid-line) 12px 13px), linear-gradient(0deg, transparent 49.5%, var(--grid-line) 49.5% 50.5%, transparent 50.5%), linear-gradient(90deg, transparent 49.5%, var(--grid-line) 49.5% 50.5%, transparent 50.5%); background-size: 100% 100%, 100% 100%, 100% 100%; }
 .gp-preview.clean::before     { display: none; }
 .gp-preview.none::before      { display: none; }
+
+/* ══════════════════════════════════════════
+   ADMIN THEME-LIBRARY CARD HOVER (.bg-card-btn)
+   Used by the Background Animation + Grid Overlay cards
+   in ThemeLibrary → backgrounds tab.
+══════════════════════════════════════════ */
+.bg-card-btn {
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+  will-change: transform;
+}
+.bg-card-btn:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.35), 0 0 18px rgba(0,255,136,0.10);
+  border-color: color-mix(in srgb, var(--green) 40%, var(--border));
+}
+.bg-card-btn:active { transform: translateY(-1px) scale(0.99); }
+.bg-card-btn .bp-preview,
+.bg-card-btn .gp-preview { transition: transform 0.22s ease; }
+.bg-card-btn:hover .bp-preview,
+.bg-card-btn:hover .gp-preview { transform: scale(1.06); }
+.bg-card-btn .bp-preview::before,
+.bg-card-btn .gp-preview::before { transition: filter 0.22s ease; }
+.bg-card-btn:hover .bp-preview::before,
+.bg-card-btn:hover .gp-preview::before { filter: brightness(1.25) saturate(1.15); }
 
 /* ══════════════════════════════════════════════════════════════
    COMPREHENSIVE RESPONSIVE SYSTEM — All breakpoints

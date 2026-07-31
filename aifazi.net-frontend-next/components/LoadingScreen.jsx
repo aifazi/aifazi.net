@@ -545,11 +545,10 @@ export default function LoadingScreen({ onComplete, style }) {
   useEffect(() => { setMounted(true) }, [])
   const s = style || (mounted ? localStorage.getItem('loading-style') : null) || 'terminal'
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:9999, background:'var(--bg)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
-      <div style={{ position:'absolute', inset:0, pointerEvents:'none', backgroundImage:'linear-gradient(rgba(0,212,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.04) 1px,transparent 1px)', backgroundSize:'40px 40px' }} />
+    <div style={{ position:'fixed', inset:0, zIndex:9999, background:'transparent', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
       <div className="scanline" />
-      <div style={{ position:'absolute', width:'min(500px, 90vw)', height:'min(500px, 90vw)', borderRadius:'50%', background:'radial-gradient(circle,rgba(0,255,136,0.06) 0%,transparent 70%)', top:'10%', left:'10%', animation:'ls-drift 8s ease-in-out infinite', pointerEvents:'none' }} />
-      <div style={{ position:'absolute', width:'min(400px, 80vw)', height:'min(400px, 80vw)', borderRadius:'50%', background:'radial-gradient(circle,rgba(0,212,255,0.06) 0%,transparent 70%)', bottom:'10%', right:'10%', animation:'ls-drift 12s ease-in-out infinite reverse', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', width:'min(500px, 90vw)', height:'min(500px, 90vw)', borderRadius:'50%', background:'radial-gradient(circle,color-mix(in srgb,var(--green) 10%,transparent) 0%,transparent 70%)', top:'10%', left:'10%', animation:'ls-drift 8s ease-in-out infinite', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', width:'min(400px, 80vw)', height:'min(400px, 80vw)', borderRadius:'50%', background:'radial-gradient(circle,color-mix(in srgb,var(--cyan) 10%,transparent) 0%,transparent 70%)', bottom:'10%', right:'10%', animation:'ls-drift 12s ease-in-out infinite reverse', pointerEvents:'none' }} />
       <div style={{ position:'relative', zIndex:1, width:'100%', maxWidth:560, padding:'0 24px', display:'flex', flexDirection:'column', alignItems:'center' }}>
         {s === 'terminal' && <TerminalLoader onComplete={onComplete} />}
         {s === 'minimal'  && <MinimalLoader  onComplete={onComplete} />}
