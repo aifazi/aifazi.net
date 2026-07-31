@@ -1181,12 +1181,12 @@ export default function ThemePicker({ open, onClose }) {
           0%   { background-position: -200% 0; }
           100% { background-position:  200% 0; }
         }
-        .tp-filter-btn:hover { border-color: #00ff88 !important; color: #c8d8e8 !important; }
-        .tp-cat-btn:hover    { border-color: #00ff88 !important; color: #c8d8e8 !important; }
-        .tp-close:hover      { border-color: #00ff88 !important; color: #00ff88 !important; }
+        .tp-filter-btn:hover { border-color: var(--green) !important; color: var(--text) !important; }
+        .tp-cat-btn:hover    { border-color: var(--green) !important; color: var(--text) !important; }
+        .tp-close:hover      { border-color: var(--green) !important; color: var(--green) !important; }
         /*
-         * .tp-drawer-chrome no longer pins CSS vars here — they are set as inline styles
-         * on the drawer div itself (highest specificity, not affected by data-theme cascade).
+         * .tp-drawer-chrome uses the active theme's CSS variables so the theme
+         * library background and colors sync with whatever theme is applied.
          */
       `}</style>
 
@@ -1207,18 +1207,8 @@ export default function ThemePicker({ open, onClose }) {
         display: 'flex', flexDirection: 'column',
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.38s cubic-bezier(0.16,1,0.3,1)',
-        /* ── Inline CSS variable overrides — immune to data-theme cascade ── */
-        '--green':  '#00ff88',
-        '--cyan':   '#00d4ff',
-        '--orange': '#ff6b35',
-        '--red':    '#ff4757',
-        '--bg':     '#060a0f',
-        '--bg2':    '#0b1118',
-        '--bg3':    '#111a24',
-        '--text':   '#c8d8e8',
-        '--muted':  '#6b8296',
-        '--border': 'rgba(0,212,255,0.15)',
-        background: '#0b1118',   /* explicit fallback — var(--bg2) resolves to our override */
+        /* ── Drawer follows the active theme's CSS variables (data-theme cascade) ── */
+        background: 'var(--bg2)',
       }}>
 
         {/* ── Header ── */}

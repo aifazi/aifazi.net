@@ -477,6 +477,7 @@ export default function Hero() {
       {mounted && (
         <div ref={rackRef} style={{
           flex: '1 1 0', minWidth: 0, minHeight: 500,
+          alignSelf: 'stretch',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative',
         }} className="hero-rack-panel">

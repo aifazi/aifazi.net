@@ -1800,12 +1800,11 @@ const GLOBE_CONNECTIONS = [
 
 const GLOBE_MIN_ZOOM = 0.55
 const GLOBE_MAX_ZOOM = 1.35
+const GLOBE_BASE_RATIO = 0.36
+const GLOBE_MAX_RATIO = 0.44
 
-function clampGlobeZoom(value, canvas) {
-  const w = canvas?.clientWidth || 0
-  const h = canvas?.clientHeight || 0
-  const minDim = Math.max(1, Math.min(w || 600, h || 600))
-  const safeMax = Math.max(0.8, Math.min(GLOBE_MAX_ZOOM, (minDim / 2 - 8) / (minDim * 0.44)))
+function clampGlobeZoom(value) {
+  const safeMax = Math.max(0.8, Math.min(GLOBE_MAX_ZOOM, GLOBE_MAX_RATIO / GLOBE_BASE_RATIO))
   return Math.max(GLOBE_MIN_ZOOM, Math.min(safeMax, value))
 }
 
@@ -1982,7 +1981,7 @@ function GlobeMode({ visibleRef }) {
         const dy   = e.touches[0].clientY - e.touches[1].clientY
         const dist = Math.sqrt(dx * dx + dy * dy)
         if (!s.pinch) { s.pinch = { dist0: dist, zoom0: s.zoom } }
-        else { s.zoom = clampGlobeZoom(s.pinch.zoom0 * (dist / s.pinch.dist0), canvas) }
+        else { s.zoom = clampGlobeZoom(s.pinch.zoom0 * (dist / s.pinch.dist0)) }
         return
       }
       s.pinch = null
@@ -2015,7 +2014,7 @@ function GlobeMode({ visibleRef }) {
     // Scroll-to-zoom
     const onWheel = e => {
       e.preventDefault()
-      s.zoom = clampGlobeZoom(s.zoom - e.deltaY * 0.0008, canvas)
+      s.zoom = clampGlobeZoom(s.zoom - e.deltaY * 0.0008)
     }
     canvas.addEventListener('wheel', onWheel, { passive: false })
 
@@ -2111,9 +2110,9 @@ function GlobeMode({ visibleRef }) {
       const H   = canvas.height / dpr
       const cx  = W / 2
       const cy  = H / 2
-      s.zoom = clampGlobeZoom(s.zoom, canvas)
-      // Large globe — takes 88% of shorter dimension, multiplied by zoom
-      const R   = Math.min(W, H) * 0.44 * s.zoom
+      s.zoom = clampGlobeZoom(s.zoom)
+      // Globe base size — grows from 36% to 44% of the shorter dimension when zoomed in
+      const R   = Math.min(W, H) * GLOBE_BASE_RATIO * s.zoom
 
       // ── Update rotation ──
       if (!s.drag) {
