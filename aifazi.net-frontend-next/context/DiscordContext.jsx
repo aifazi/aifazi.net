@@ -2,7 +2,9 @@
 /**
  * DiscordContext.jsx
  * Manages the public player Discord OAuth session.
- * Token is stored in sessionStorage under 'discord_token'.
+ * The token is kept in memory ONLY (never written to sessionStorage/localStorage).
+ * It is set from the /auth/discord callback and lost on page reload — the
+ * player re-authenticates via Discord after a reload.
  */
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
@@ -16,12 +18,13 @@ const DiscordContext = createContext({
   refreshPlayer: async () => {},
 })
 
+let _memDiscordToken = null
+
 export function DiscordProvider({ children }) {
   const [player,  setPlayer]  = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const getToken = () =>
-    (typeof window !== 'undefined' ? sessionStorage.getItem('discord_token') : null)
+  const getToken = () => _memDiscordToken
 
   const hydrate = useCallback(async () => {
     const token = getToken()
@@ -32,7 +35,7 @@ export function DiscordProvider({ children }) {
       })
       setPlayer(data)
     } catch {
-      sessionStorage.removeItem('discord_token')
+      _memDiscordToken = null
       setPlayer(null)
     } finally {
       setLoading(false)
@@ -54,13 +57,13 @@ export function DiscordProvider({ children }) {
   }
 
   const logout = () => {
-    sessionStorage.removeItem('discord_token')
+    _memDiscordToken = null
     setPlayer(null)
     window.dispatchEvent(new Event('discord-logout'))
   }
 
   const saveToken = (token) => {
-    sessionStorage.setItem('discord_token', token)
+    _memDiscordToken = token
     window.dispatchEvent(new Event('discord-login'))
   }
 

@@ -1,6 +1,7 @@
 ﻿'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from '@/lib/router-compat'
+import { getAuthToken } from '@/lib/api'
 
 const BANNER = [
   '╔══════════════════════════════════════════════════╗',
@@ -52,7 +53,7 @@ const COMMANDS = {
   whoami: {
     desc: 'Display user info',
     run: () => {
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('admin_token')
+      const token = getAuthToken()
       let role = 'guest'
       if (token) {
         try { role = JSON.parse(atob(token.split('.')[1])).role || 'user' } catch {}

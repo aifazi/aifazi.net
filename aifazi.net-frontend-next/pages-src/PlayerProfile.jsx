@@ -167,7 +167,7 @@ export default function PlayerProfile() {
   useEffect(() => {
     if (!player) return
     setAppLoading(true)
-    const token = sessionStorage.getItem('discord_token')
+    const token = getAuthToken()
     fetch(API + '/api/discord/my-application', {
       headers: { Authorization: 'Bearer ' + token },
     })
@@ -178,7 +178,7 @@ export default function PlayerProfile() {
 
   useEffect(() => {
     if (!player) return
-    const token = getAuthToken() || sessionStorage.getItem('discord_token')
+    const token = getAuthToken()
     if (!token) return
     fetch(API + '/api/forms/my-submissions', { headers:{ Authorization:'Bearer ' + token } })
       .then(r => r.ok ? r.json() : { submissions:[] })

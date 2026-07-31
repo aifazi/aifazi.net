@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useReveal } from '../hooks/useReveal'
 import { EditableText } from '../context/EditContext'
-import api from '@/lib/api'
+import api, { getAuthToken } from '@/lib/api'
 
 export default function Newsletter() {
   const headerRef = useReveal()
@@ -16,7 +16,7 @@ export default function Newsletter() {
   useEffect(() => {
     const check = async () => {
       try {
-        const token = localStorage.getItem('auth_token')
+        const token = getAuthToken()
         if (!token) { setChecking(false); return }
         const payload = JSON.parse(atob(token.split('.')[1]))
         const userEmail = payload.email || payload.sub

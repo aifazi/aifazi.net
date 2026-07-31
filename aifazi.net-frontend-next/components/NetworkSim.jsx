@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import api from '@/lib/api'
+import api, { getAuthToken } from '@/lib/api'
 
 const BANNER = [
   '╔══════════════════════════════════════════════════════╗',
@@ -103,7 +103,7 @@ export default function NetworkSim({ embedded }) {
   }, [lines])
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token')
+    const token = getAuthToken()
     if (token) {
       try {
         const stored = localStorage.getItem('network-sim-history')
@@ -129,7 +129,7 @@ export default function NetworkSim({ embedded }) {
     const entry = { cmd, ts: new Date().toISOString(), mode: getPrompt() }
     setSavedHistory(p => [entry, ...p].slice(0, 200))
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = getAuthToken()
       if (token) {
         api.post('/network-sim/history', { command: cmd, mode: getPrompt() }).catch(() => {})
       }

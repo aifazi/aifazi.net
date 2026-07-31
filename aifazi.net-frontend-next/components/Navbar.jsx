@@ -8,7 +8,7 @@ import Terminal from './Terminal'
 import ThemePicker from './ThemePicker'
 import api from '@/lib/api'
 import NotificationBell from './NotificationBell'
-import { getUsername, getRole } from '@/lib/api'
+import { getUsername, getRole, getAuthToken } from '@/lib/api'
 import { getSiteSettings } from '@/lib/siteSettings'
 
 // ── Theme Toggle — animated pill slider ───────────────────────────────────────
@@ -195,7 +195,7 @@ export default function Navbar() {
   // ── Admin/staff auth state ─────────────────────────────────────────────────
   const getAdminAuth = useCallback(() => {
     if (typeof window === 'undefined') return null
-    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('admin_token') || sessionStorage.getItem('staff_token')
+    const token = getAuthToken()
     if (!token) return null
     try {
       const payload = JSON.parse(atob(token.split('.')[1]))

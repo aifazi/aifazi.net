@@ -64,7 +64,7 @@ Authentication is JWT-based with two tokens:
 
 | Token | Storage | Lifetime | Purpose |
 |---|---|---|---|
-| **Access token** | `sessionStorage` | Short (minutes) | Bearer token sent with every API request |
+| **Access token** | In-memory (JS module) | Short (minutes) | Bearer token sent with every API request |
 | **Refresh token** | HttpOnly cookie (set by backend) | Long (days/weeks) | Used to obtain a new access token on 401 |
 
 The refresh token is an **HttpOnly cookie** — it cannot be read by JavaScript. The browser sends it automatically with every request to `/api/auth/refresh`.
@@ -73,25 +73,17 @@ The refresh token is an **HttpOnly cookie** — it cannot be read by JavaScript.
 
 ## Token Storage
 
-Access tokens are stored in `sessionStorage` (tab-scoped, cleared on tab close):
+Access tokens are kept **in memory only** (a JS module variable in `lib/api.ts`). They are **never** written to or read back from `localStorage`/`sessionStorage`. Session persistence across page reloads is handled by the HttpOnly `auth_token`/`refresh_token` cookies set by the backend — `ForumContext` re-hydrates the in-memory token from `/api/auth/refresh` after a reload.
 
-| Key | Role |
-|---|---|
-| `admin_token` | Admin |
-| `staff_token` | Staff (moderator / editor) |
-| `auth_token` | Regular user |
-| `forum_token` | Forum-only user |
+Legacy `admin_token`/`staff_token`/`auth_token`/`forum_token` keys in storage are treated as obsolete — they are purged (`clearLegacyTokens()`) once the cookie session is proven to work and are never read.
 
-The Axios request interceptor picks the first available token from this priority list:
+The Axios request interceptor uses the in-memory access token:
 
 ```ts
 // lib/api.ts — request interceptor
-const token =
-  sessionStorage.getItem('admin_token') ||
-  sessionStorage.getItem('staff_token') ||
-  localStorage.getItem('auth_token')  ||
-  sessionStorage.getItem('forum_token') ||
-  null
+const token = getAuthToken() // in-memory only; null after reload until cookie re-hydration
+if (token) config.headers.Authorization = `Bearer ${token}`
+```
 if (token) config.headers.Authorization = `Bearer ${token}`
 ```
 
@@ -104,7 +96,7 @@ When any API call returns `401 Unauthorized`:
 1. The response interceptor fires.
 2. If not already refreshing, it POSTs to `/api/auth/refresh` with `withCredentials: true` (sends the HttpOnly cookie).
 3. Multiple concurrent 401s are deduplicated — they all share the same in-flight refresh promise.
-4. On success: the new access token is stored back in `sessionStorage` under the correct key and the original request is retried.
+4. On success: the new access token is stored in memory (`setAccessToken`) and the original request is retried.
 5. On failure: `clearAuthTokens()` is called and a `auth:expired` window event is dispatched so the UI can redirect to login.
 
 ```ts
@@ -115,7 +107,7 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && !original._retry) {
       original._retry = true
       const { data } = await axios.post('/api/auth/refresh', {}, { withCredentials: true })
-      sessionStorage.setItem(tokenKey, data.token)
+      setAccessToken(data.token)  // memory only
       return api(original)  // retry
     }
   }

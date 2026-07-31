@@ -48,16 +48,16 @@ function userFromToken(token) {
   }
 }
 
-function readCachedUser(token) {
+function readCachedUser() {
   try {
     const cached = JSON.parse(sessionStorage.getItem(USER_CACHE_KEY) || 'null')
-    if (cached?.token === token && cached?.user && Date.now() - cached.ts < USER_CACHE_TTL) return cached.user
+    if (cached?.user && Date.now() - cached.ts < USER_CACHE_TTL) return cached.user
   } catch {}
   return null
 }
 
-function writeCachedUser(token, user) {
-  try { sessionStorage.setItem(USER_CACHE_KEY, JSON.stringify({ token, user, ts: Date.now() })) } catch {}
+function writeCachedUser(user) {
+  try { sessionStorage.setItem(USER_CACHE_KEY, JSON.stringify({ user, ts: Date.now() })) } catch {}
 }
 
 function clearCachedUser() {
@@ -79,7 +79,7 @@ export function ForumProvider({ children }) {
   const hydrate = useCallback(async () => {
     const token = getStoredToken()
 
-    const cached = token ? readCachedUser(token) : null
+    const cached = readCachedUser()
     const optimistic = cached || (token ? userFromToken(token) : null)
     if (optimistic) {
       setUser(optimistic)
@@ -100,7 +100,7 @@ export function ForumProvider({ children }) {
       if (cookieUser) {
         setUser(cookieUser)
         setEffectiveAccess(cookieUser)
-        if (token) writeCachedUser(token, cookieUser)
+        if (token) writeCachedUser(cookieUser)
         clearLegacyTokens()
         // Refill the in-memory access token from the refresh cookie so
         // getUsername()/getRole() keep working after a reload.
@@ -109,7 +109,10 @@ export function ForumProvider({ children }) {
             const ref = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
             if (ref.ok) {
               const j = await ref.json()
-              if (j.token) setAccessToken(j.token)
+              if (j.token) {
+                setAccessToken(j.token)
+                window.dispatchEvent(new Event('auth-change'))
+              }
             }
           } catch {}
         }
@@ -124,7 +127,7 @@ export function ForumProvider({ children }) {
           const r = await api.get('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
           setUser(r.data)
           setEffectiveAccess(r.data)
-          writeCachedUser(token, r.data)
+          writeCachedUser(r.data)
           try {
             await api.post('/auth/session-migrate', {}, { headers: { Authorization: `Bearer ${token}` } })
             clearLegacyTokens()

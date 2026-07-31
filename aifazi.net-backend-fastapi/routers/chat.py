@@ -18,10 +18,43 @@ from datetime import datetime, timezone
 from html import escape
 import re
 import os
+import threading
+import time
 from utils.email import send_email, render_template
 from utils.email_queue import queue_email
 
 router = APIRouter()
+
+# ── In-memory chat history cache ────────────────────────────────────────────
+# Caches the "latest N messages in a room" fetch (the hot path) for a short TTL
+# so repeat history loads don't hammer Postgres. Single-process only — when the
+# app scales to multiple API instances this should be replaced with Redis
+# (Upstash/Railway) for presence/typing/rate-limit/cross-instance invalidation.
+_HISTORY_TTL = 20.0          # seconds
+_history_lock = threading.Lock()
+_history_cache: dict[str, tuple[float, list]] = {}
+
+def _get_cached_history(room_id: str, limit: int) -> list | None:
+    with _history_lock:
+        entry = _history_cache.get(room_id)
+        if entry and time.monotonic() - entry[0] < _HISTORY_TTL:
+            rows = entry[1]
+            if len(rows) >= limit:
+                return list(rows[:limit])
+    return None
+
+def _set_cached_history(room_id: str, rows: list) -> None:
+    with _history_lock:
+        _history_cache[room_id] = (time.monotonic(), list(rows))
+
+def _invalidate_history(room_id: str) -> None:
+    with _history_lock:
+        _history_cache.pop(room_id, None)
+
+def clear_history_cache() -> None:
+    """Drop all cached history (used by the admin 'clear all chat' action)."""
+    with _history_lock:
+        _history_cache.clear()
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -321,6 +354,11 @@ async def get_messages(
     user: dict = Depends(get_current_user),
 ):
     _ensure_room_access(room_id, user)
+    # Cache hit path — only for the "latest messages" fetch (no cursor).
+    if not before:
+        cached = _get_cached_history(room_id, limit)
+        if cached is not None:
+            return cached
     q = (
         supabase.table("chat_messages")
         .select("*")
@@ -331,7 +369,10 @@ async def get_messages(
     if before:
         q = q.lt("created_at", before)
     res = q.execute()
-    return list(reversed(res.data or []))
+    rows = list(reversed(res.data or []))
+    if not before:
+        _set_cached_history(room_id, rows)
+    return rows
 
 @router.post("/rooms/{room_id}/messages")
 async def send_message(
@@ -387,6 +428,7 @@ async def send_message(
         "reply_to":   safe_reply,
         "created_at": _now(),
     }).execute()
+    _invalidate_history(room_id)
     await _queue_chat_message_notifications(room, room_id, user, content)
     return res.data[0]
 
@@ -400,7 +442,7 @@ async def edit_message(
     if not content or len(content) > 4000:
         raise HTTPException(400, "Invalid content")
 
-    msg = supabase.table("chat_messages").select("sender").eq("id", msg_id).single().execute().data
+    msg = supabase.table("chat_messages").select("sender,room_id").eq("id", msg_id).single().execute().data
     if not msg:
         raise HTTPException(404, "Message not found")
     if msg["sender"] != user["username"] and user.get("role") != "admin":
@@ -411,6 +453,8 @@ async def edit_message(
         "edited":    True,
         "edited_at": _now(),
     }).eq("id", msg_id).execute()
+    if msg.get("room_id"):
+        _invalidate_history(msg["room_id"])
     return res.data[0]
 
 @router.patch("/messages/{msg_id}/react")
@@ -422,7 +466,7 @@ async def toggle_reaction(
     if not body.emoji or len(body.emoji) > 8:
         raise HTTPException(400, "Invalid emoji")
 
-    msg = supabase.table("chat_messages").select("reactions").eq("id", msg_id).single().execute().data
+    msg = supabase.table("chat_messages").select("reactions,room_id").eq("id", msg_id).single().execute().data
     if not msg:
         raise HTTPException(404, "Message not found")
 
@@ -439,6 +483,8 @@ async def toggle_reaction(
         reactions[body.emoji] = users
 
     supabase.table("chat_messages").update({"reactions": reactions}).eq("id", msg_id).execute()
+    if msg.get("room_id"):
+        _invalidate_history(msg["room_id"])
     return {"reactions": reactions}
 
 @router.delete("/messages/{msg_id}")
@@ -447,7 +493,7 @@ async def delete_message(
     user: dict = Depends(get_current_user),
 ):
     """Owners can delete their own messages; staff/admin can delete any."""
-    msg = supabase.table("chat_messages").select("sender").eq("id", msg_id).single().execute().data
+    msg = supabase.table("chat_messages").select("sender,room_id").eq("id", msg_id).single().execute().data
     if not msg:
         raise HTTPException(404, "Message not found")
 
@@ -456,6 +502,8 @@ async def delete_message(
         raise HTTPException(403, "Not your message")
 
     supabase.table("chat_messages").delete().eq("id", msg_id).execute()
+    if msg.get("room_id"):
+        _invalidate_history(msg["room_id"])
     return {"message": "Deleted"}
 
 # ── Members (staff only) ───────────────────────────────────────────────────────

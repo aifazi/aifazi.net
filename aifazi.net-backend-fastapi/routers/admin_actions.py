@@ -123,6 +123,8 @@ async def recalculate_views(_: dict = Depends(require_staff)):
 @router.post("/actions/chat/clear-all")
 async def clear_chat(_: dict = Depends(require_staff)):
     supabase.table("chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+    from routers.chat import clear_history_cache
+    clear_history_cache()
     return {"message": "All chat messages deleted"}
 
 @router.post("/actions/search/rebuild")

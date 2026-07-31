@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useLocation } from '@/lib/router-compat'
 import { useEdit } from '../context/EditContext'
 import ThemePicker from './ThemePicker'
+import { getAuthToken } from '@/lib/api'
 
 const NAV_ITEMS = [
   { icon: '⬡', label: 'Projects',  desc: 'View my work',       href: '#projects', color: '#00ff88' },
@@ -50,7 +51,7 @@ export default function FloatingNav() {
   const [isAdmin, setIsAdmin] = useState(false)
   useEffect(() => {
     const check = () => {
-      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('admin_token') || sessionStorage.getItem('staff_token')
+      const token = getAuthToken()
       if (!token) { setIsAdmin(false); return }
       try {
         const p = JSON.parse(atob(token.split('.')[1]))

@@ -4,7 +4,8 @@
  * New token priority (matches documented contract + ensureAdminGate ordering):
  * admin > staff > auth > forum
  *
- * SECURITY: Access tokens stored in localStorage.
+ * SECURITY: Access tokens are stored in memory ONLY — never written to
+ * localStorage/sessionStorage (and never read back from them).
  * The HttpOnly refresh_token cookie keeps the user logged in across sessions.
  * Long-lived persistence is handled by the HttpOnly refresh_token cookie —
  * the interceptor below silently reissues a new access token on 401.
@@ -154,25 +155,16 @@ function decodeToken(token: string): Record<string, any> | null {
 }
 
 export function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null
-  // H4 — memory-first. Legacy localStorage keys are still honoured during the
-  // transition so existing sessions keep working until the cookie migration
-  // (clearLegacyTokens) removes them.
-  if (_memToken) return _memToken
-  return (
-    localStorage.getItem('admin_token') ||
-    localStorage.getItem('staff_token') ||
-    localStorage.getItem('auth_token') ||
-    localStorage.getItem('forum_token') ||
-    null
-  )
+  // H4 — memory-only. No localStorage/sessionStorage reads. Session persistence
+  // across reloads is handled by the HttpOnly refresh_token cookie via the
+  // 401-refresh interceptor and ForumContext cookie re-hydration.
+  return _memToken
 }
 
 /** @deprecated #2 — refresh_token is now an HttpOnly cookie set by the backend.
- *  This function is kept only for legacy compatibility and should not be called. */
+ *  Returns null — the browser sends the cookie automatically. */
 export function getRefreshToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('refresh_token') || null
+  return null
 }
 
 export function getRole(): string | null {
@@ -222,13 +214,7 @@ export function hasStaffAccess() { return ['admin', 'moderator', 'editor', 'chat
 export async function ensureAdminGate(): Promise<boolean> {
   if (typeof window === 'undefined') return false
 
-  const storedTokens = [
-    _memToken,
-    localStorage.getItem('auth_token'),
-    localStorage.getItem('forum_token'),
-    localStorage.getItem('staff_token'),
-    localStorage.getItem('admin_token'),
-  ].filter((token, index, all): token is string => !!token && all.indexOf(token) === index)
+  const storedTokens = _memToken ? [_memToken] : []
 
   // H4 — the backend now accepts the HttpOnly auth_token cookie, so a plain
   // credentialed call works for cookie sessions too (no token needed).

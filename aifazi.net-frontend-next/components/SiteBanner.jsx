@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react'
 import { useLocation } from '@/lib/router-compat'
-import api from '@/lib/api'
+import api, { getAuthToken } from '@/lib/api'
 import { getSupabase } from '@/lib/supabase'
 import MaintenanceScreen from './MaintenanceScreen'
 
@@ -465,7 +465,7 @@ export default function SiteBanner() {
   useEffect(() => {
     const sb = getSupabase()
     try {
-      const t = localStorage.getItem('token')
+      const t = getAuthToken()
       if (t) { const p = JSON.parse(atob(t.split('.')[1])); if (p.role === 'admin') setIsAdmin(true) }
     } catch {}
 
