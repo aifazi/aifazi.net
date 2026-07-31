@@ -10,6 +10,7 @@ import api from '@/lib/api'
 import NotificationBell from './NotificationBell'
 import { getUsername, getRole, getAuthToken } from '@/lib/api'
 import { getSiteSettings } from '@/lib/siteSettings'
+import { isFiveMHost, fivemRoute, useFiveMRoute, useFiveMLoginRoute } from '@/lib/fivemRoutes'
 
 // ── Theme Toggle — animated pill slider ───────────────────────────────────────
 function ThemeToggle({ theme, onToggle }) {
@@ -150,6 +151,27 @@ export default function Navbar() {
   const { theme, toggleTheme, siteConfig } = useTheme()
   const isThemeLocked = !!(siteConfig?.lockTheme && siteConfig?.globalTheme)
 
+  // ── FiveM awareness ─────────────────────────────────────────────────────
+  // Active on /fivem/* routes and the fivem.aifazi.net host — swaps the
+  // portfolio nav links / branding for FiveM-specific ones while keeping the
+  // shared header shell, theme, and auth controls.
+  const [isFiveMHostState, setIsFiveMHostState] = useState(false)
+  useEffect(() => setIsFiveMHostState(isFiveMHost()), [])
+  const isFiveM = location.pathname.startsWith('/fivem') || isFiveMHostState
+
+  // Host-aware FiveM routes (bare path on fivem.aifazi.net, /fivem/x otherwise)
+  const fiveMHomeRoute      = fivemRoute('/')            // always the FiveM landing
+  const fiveMConnectRoute   = useFiveMRoute('/connect')
+  const fiveMWhitelistRoute = useFiveMRoute('/whitelist')
+  const fiveMStatusRoute    = useFiveMRoute('/status')
+  const fiveMProfileRoute   = useFiveMRoute('/profile')
+  const fiveMLoginRoute     = useFiveMLoginRoute('/connect')
+  const loginRoute          = isFiveM ? fiveMLoginRoute : '/login'
+  const registerRoute       = isFiveM
+    ? `/login?tab=register&next=${encodeURIComponent(fivemRoute('/connect'))}`
+    : '/login?tab=register'
+  const profileRoute        = isFiveM ? fiveMProfileRoute : '/profile'
+
   // Load header style from site settings
   useEffect(() => {
     getSiteSettings().then(s => { if (s.headerStyle) setHeaderStyle(s.headerStyle) }).catch(() => {})
@@ -220,7 +242,7 @@ export default function Navbar() {
     localStorage.removeItem('auth_token'); localStorage.removeItem('admin_token'); localStorage.removeItem('staff_token')
     window.dispatchEvent(new Event('auth-change'))
     setAdminAuth(null)
-    navigate('/login', { state: { signedOut: true } })
+    navigate(loginRoute, { state: { signedOut: true } })
   }
 
   const ADMIN_ROLE_COLORS = {
@@ -283,7 +305,7 @@ export default function Navbar() {
     }
   }
 
-  const navLinks = [
+  const portfolioNavLinks = [
     { type: 'hash',    hash: 'about',          label: 'About'      },
     { type: 'hash',    hash: 'experience',      label: 'Experience' },
     { type: 'hash',    hash: 'services',        label: 'Services'   },
@@ -294,6 +316,17 @@ export default function Navbar() {
     { type: 'contact',                          label: 'Contact'    },
   ]
 
+  // FiveM nav links — shared header shell, FiveM-specific destinations
+  const fiveMNavLinks = [
+    { type: 'route',   to: fiveMHomeRoute,      label: 'Home',      exact: true },
+    { type: 'route',   to: fiveMConnectRoute,   label: 'Connect'   },
+    { type: 'route',   to: fiveMWhitelistRoute, label: 'Whitelist' },
+    { type: 'route',   to: fiveMStatusRoute,    label: 'Status'    },
+    { type: 'route',   to: fiveMProfileRoute,   label: 'Profile'   },
+  ]
+
+  const navLinks = isFiveM ? fiveMNavLinks : portfolioNavLinks
+
   // Tools dropdown entries
   const toolsLinks = [
     { to: '/tools/network', label: '🛠️  Network Tools' },
@@ -303,7 +336,10 @@ export default function Navbar() {
   ]
 
   const isActive = (link) => {
-    if (link.type === 'route')   return location.pathname.startsWith(link.to)
+    if (link.type === 'route') {
+      if (link.exact) return location.pathname === link.to
+      return location.pathname.startsWith(link.to)
+    }
     if (link.type === 'contact') return location.pathname === '/contact' || activeSection === 'contact'
     if (link.type === 'hash')    return activeSection === link.hash
     return false
@@ -407,7 +443,28 @@ export default function Navbar() {
           `}</style>
           <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flexShrink: 1 }}
             className="site-logo">
-            {headerStyle === 'editorial' ? (
+            {isFiveM ? (
+              <>
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none" className="site-logo-mark"
+                  xmlns="http://www.w3.org/2000/svg">
+                  <polygon points="18,1 33,9.5 33,26.5 18,35 3,26.5 3,9.5"
+                    fill="none" stroke={hs.accent} strokeWidth="1.5" opacity="0.45"/>
+                  <polygon points="18,6 28,11.5 28,24.5 18,30 8,24.5 8,11.5"
+                    fill={hs.accent} opacity="0.07"/>
+                  <circle cx="3"  cy="9.5"  r="2" fill={hs.accent} opacity="0.55"/>
+                  <circle cx="33" cy="26.5" r="2" fill={hs.secondary || hs.accent}  opacity="0.55"/>
+                  <line x1="11" y1="13" x2="25" y2="13" stroke={hs.accent} strokeWidth="2.5" strokeLinecap="round"/>
+                  <line x1="18" y1="13" x2="18" y2="25" stroke={hs.accent} strokeWidth="2.5" strokeLinecap="round"/>
+                  <line x1="25" y1="11" x2="25" y2="15" stroke={hs.secondary || hs.accent} strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700,
+                    letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>AIFAZI</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 4,
+                    color: hs.accent, marginTop: 3, opacity: 0.75 }}>NEON OPS</span>
+                </div>
+              </>
+            ) : headerStyle === 'editorial' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 18, height: 18, background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--bg)' }}>T</span>
@@ -479,6 +536,7 @@ export default function Navbar() {
               <li key={link.hash || link.to || 'contact'} style={{ display: 'flex', alignItems: 'center' }}>{renderLink(link)}</li>
             ))}
             {/* Tools dropdown */}
+            {!isFiveM && (
             <li style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <button
                 onClick={() => setToolsOpen(o => !o)}
@@ -523,6 +581,7 @@ export default function Navbar() {
                 </div>
               )}
             </li>
+            )}
           </ul>
           )}
 
@@ -539,7 +598,7 @@ export default function Navbar() {
             {adminAuth ? (
               // Admin / Staff user
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none' }} title="Profile">
+                <Link to={profileRoute} style={{ display: 'flex', alignItems: 'center', gap: 7, textDecoration: 'none' }} title="Profile">
                   <div style={{
                     width: 28, height: 28, borderRadius: 6,
                     background: `${ADMIN_ROLE_COLORS[adminAuth.role] || 'var(--green)'}18`,
@@ -561,7 +620,7 @@ export default function Navbar() {
             ) : forumUser ? (
               // Forum user
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Link to="/profile"
+              <Link to={profileRoute}
                   style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
                   title="Account"
                 >
@@ -570,10 +629,10 @@ export default function Navbar() {
                     style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--green)', objectFit: 'cover' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
-                <button onClick={() => { forumLogout(); navigate('/login', { state: { signedOut: true } }) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
+                <button onClick={() => { forumLogout(); navigate(loginRoute, { state: { signedOut: true } }) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
               </div>
             ) : (
-              <Link to="/login" style={{
+              <Link to={loginRoute} style={{
                 fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
                 padding: '6px 14px', color: hs.accent,
                 border: `1px solid ${hs.accent}55`, textDecoration: 'none',
@@ -643,15 +702,19 @@ export default function Navbar() {
           <div id="site-mobile-menu" className="nav-mobile-menu" style={{ background: 'var(--bg)', backgroundImage: 'linear-gradient(180deg, color-mix(in srgb, var(--bg2) 88%, var(--bg) 12%), var(--bg))', backdropFilter: 'none', WebkitBackdropFilter: 'none', borderTop: '1px solid var(--border)', borderBottom: '1px solid color-mix(in srgb, var(--cyan) 22%, transparent)', display: 'flex', flexDirection: 'column', maxHeight: 'calc(100dvh - 68px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', animation: 'mobileMenuIn 0.22s cubic-bezier(0.16,1,0.3,1)', paddingBottom: 'env(safe-area-inset-bottom, 8px)', position: 'fixed', top: 68, left: 0, right: 0, width: '100vw', zIndex: 120, boxShadow: '0 24px 90px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
             {navLinks.map(link => renderLink(link, true))}
             {/* Tools section */}
-            <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }} />
-            {toolsLinks.map(({ to, label }) => (
-              <Link key={to} to={to} onClick={() => setMenuOpen(false)} style={{
-                fontFamily: 'var(--font-code)', fontSize: 13, letterSpacing: 2,
-                textTransform: 'uppercase', padding: '16px 24px',
-                color: 'var(--muted)', textDecoration: 'none',
-                borderLeft: '3px solid transparent', display: 'block', minHeight: 52,
-              }}>{label}</Link>
-            ))}
+            {!isFiveM && (
+            <>
+              <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }} />
+              {toolsLinks.map(({ to, label }) => (
+                <Link key={to} to={to} onClick={() => setMenuOpen(false)} style={{
+                  fontFamily: 'var(--font-code)', fontSize: 13, letterSpacing: 2,
+                  textTransform: 'uppercase', padding: '16px 24px',
+                  color: 'var(--muted)', textDecoration: 'none',
+                  borderLeft: '3px solid transparent', display: 'block', minHeight: 52,
+                }}>{label}</Link>
+              ))}
+            </>
+            )}
             <button onClick={() => { setTerminalOpen(true); setMenuOpen(false) }} style={{
               fontFamily: 'var(--font-code)', fontSize: 13, letterSpacing: 2,
               textTransform: 'uppercase', padding: '16px 24px',
@@ -662,7 +725,7 @@ export default function Navbar() {
             <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }} />
             {adminAuth ? (
               <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Link to="/profile" onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+                <Link to={profileRoute} onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
                   <div style={{ width: 32, height: 32, borderRadius: 8, background: `${ADMIN_ROLE_COLORS[adminAuth.role]}18`, border: `1px solid ${ADMIN_ROLE_COLORS[adminAuth.role]}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
                     {adminAuth.role === 'admin' ? '⚡' : adminAuth.role === 'moderator' ? '🛡️' : '✏️'}
                   </div>
@@ -675,16 +738,16 @@ export default function Navbar() {
               </div>
             ) : forumUser ? (
               <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Link to="/profile" onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+              <Link to={profileRoute} onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
                   <img src={forumUser.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${forumUser.username}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`} alt={forumUser.username} loading="lazy" style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--green)', objectFit: 'cover' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
-                <button onClick={() => { forumLogout(); navigate('/login', { state: { signedOut: true } }); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>
+                <button onClick={() => { forumLogout(); navigate(loginRoute, { state: { signedOut: true } }); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 10, margin: '8px 24px 12px' }}>
-                <Link to="/login" onClick={() => setMenuOpen(false)} style={{ flex: 1, display: 'block', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '11px 0', color: 'var(--green)', border: '1px solid rgba(0,255,136,0.35)', textDecoration: 'none', background: 'rgba(0,255,136,0.06)' }}>SIGN IN</Link>
-                <Link to="/login?tab=register" onClick={() => setMenuOpen(false)} style={{ flex: 1, display: 'block', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '11px 0', color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.35)', textDecoration: 'none', background: 'rgba(0,212,255,0.06)' }}>SIGN UP</Link>
+                <Link to={loginRoute} onClick={() => setMenuOpen(false)} style={{ flex: 1, display: 'block', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '11px 0', color: 'var(--green)', border: '1px solid rgba(0,255,136,0.35)', textDecoration: 'none', background: 'rgba(0,255,136,0.06)' }}>SIGN IN</Link>
+                <Link to={registerRoute} onClick={() => setMenuOpen(false)} style={{ flex: 1, display: 'block', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '11px 0', color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.35)', textDecoration: 'none', background: 'rgba(0,212,255,0.06)' }}>SIGN UP</Link>
               </div>
             )}
             <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 14, borderTop: '1px solid var(--border)' }}>

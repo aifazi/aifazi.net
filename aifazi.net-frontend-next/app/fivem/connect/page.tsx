@@ -79,7 +79,7 @@ export default function FiveMConnect() {
 
   return (
     <div style={{ minHeight: '100vh', color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '60px 24px' }}>
+      <div style={{ maxWidth: 600, margin: '0 auto', padding: '80px 24px' }}>
         <a href={homeHref} style={{ fontSize: 12, color: '#8b949e', textDecoration: 'none', letterSpacing: 1 }}>&#8592; BACK TO FIVEM</a>
         <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <a href={profileHref} style={{ padding: '8px 10px', border: `1px solid ${G}33`, color: G, textDecoration: 'none', borderRadius: 7, fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>PROFILE</a>

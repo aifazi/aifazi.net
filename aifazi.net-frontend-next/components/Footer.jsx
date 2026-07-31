@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import LiveVisitorBadge from './LiveVisitorBadge'
 import api from '@/lib/api'
 import { getSiteSettings } from '@/lib/siteSettings'
+import { isFiveMHost, fivemRoute, useFiveMRoute } from '@/lib/fivemRoutes'
 
 // ── Social icons ───────────────────────────────────────────────────────────────
 const GitHubIcon   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
@@ -419,12 +420,136 @@ function FooterDarkCompact({ siteConfig, sectionLinks, platformLinks, socialLink
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// ── FiveM footer (shown on /fivem/* routes and fivem.aifazi.net) ──────────────
+// Shares the theme CSS vars, logo, and socials with the site chrome but
+// presents FiveM-specific navigation, branding, and live server status.
+function FooterFiveM({ socialLinks, year }) {
+  const [status, setStatus] = useState(null)
+  useEffect(() => {
+    api.get('/fivem/status').then(r => setStatus(r.data || null)).catch(() => {})
+  }, [])
+  const online  = status?.status === 'online'
+  const players = status?.players_online ?? status?.players_count ?? 0
+  const max     = status?.max_players ?? 128
+
+  const homeRoute      = fivemRoute('/')            // always the FiveM landing
+  const connectRoute   = useFiveMRoute('/connect')
+  const whitelistRoute = useFiveMRoute('/whitelist')
+  const statusRoute    = useFiveMRoute('/status')
+  const profileRoute   = useFiveMRoute('/profile')
+
+  const navLinks = [
+    { label: 'Connect',   to: connectRoute },
+    { label: 'Whitelist', to: whitelistRoute },
+    { label: 'Server Status', to: statusRoute },
+    { label: 'Player Profile', to: profileRoute },
+  ]
+
+  const monoLink = {
+    fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
+    textDecoration: 'none', letterSpacing: 1, lineHeight: 2.3,
+    transition: 'color 0.2s, padding-left 0.2s', display: 'block',
+    background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left',
+  }
+
+  const onEnter = e => { e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.paddingLeft = '6px' }
+  const onLeave = e => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.paddingLeft = '0' }
+
+  return (
+    <footer suppressHydrationWarning style={{ borderTop: '1px solid var(--border)', background: 'var(--bg2)', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
+      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, backgroundImage: 'radial-gradient(var(--green)08 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      <div aria-hidden style={{ position: 'absolute', bottom: -80, left: '50%', transform: 'translateX(-50%)', width: 500, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,255,136,0.06) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+
+      <div className="ftm5-grid" style={{ position: 'relative', zIndex: 1, padding: 'clamp(28px,4vw,44px) clamp(16px,5vw,60px) 32px', display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr 1.2fr', gap: 40 }}>
+        {/* Brand */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+            <FooterLogo />
+            <div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, letterSpacing: 3, color: 'var(--text)', lineHeight: 1 }}>AIFAZI</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 4, color: 'var(--green)', opacity: 0.75, marginTop: 3 }}>NEON OPS CITY</div>
+            </div>
+          </div>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.9, maxWidth: 300, marginBottom: 18 }}>
+            Serious QBX roleplay — Neon Ops City.<br />Whitelist, connect, and play.
+          </p>
+          {socialLinks.length > 0 && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              {socialLinks.map(({ href, icon, label }) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" title={label}
+                  style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', color: 'var(--muted)', textDecoration: 'none', borderRadius: 6, transition: 'all 0.2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
+                >{icon}</a>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Play */}
+        <div>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)', display: 'block' }}>PLAY</span>
+          {navLinks.map(({ label, to }) => (
+            <Link key={label} to={to} style={monoLink} onMouseEnter={onEnter} onMouseLeave={onLeave}>{label}</Link>
+          ))}
+        </div>
+
+        {/* Community */}
+        <div>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)', display: 'block' }}>COMMUNITY</span>
+          <Link to={homeRoute} style={monoLink} onMouseEnter={onEnter} onMouseLeave={onLeave}>Home</Link>
+          <a href="https://discord.gg/aifazi" target="_blank" rel="noopener noreferrer" style={monoLink} onMouseEnter={onEnter} onMouseLeave={onLeave}>Discord</a>
+          <Link to="/forms" style={monoLink} onMouseEnter={onEnter} onMouseLeave={onLeave}>Forms</Link>
+          <Link to="/forum" style={monoLink} onMouseEnter={onEnter} onMouseLeave={onLeave}>Forum</Link>
+        </div>
+
+        {/* Server status */}
+        <div>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)', display: 'block' }}>SERVER</span>
+          <div style={{ background: 'rgba(0,255,136,0.03)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: 8, padding: '14px 16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>STATUS</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: online ? 'var(--green)' : '#ff4757', boxShadow: online ? '0 0 6px var(--green)' : '0 0 6px #ff4757', animation: 'ftPulse 2s ease-in-out infinite', display: 'inline-block' }} />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: online ? 'var(--green)' : '#ff4757', letterSpacing: 1 }}>{online ? 'ONLINE' : 'OFFLINE'}</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>PLAYERS</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 1 }}>{players}/{max}</span>
+            </div>
+            <Link to={connectRoute} style={{ display: 'block', marginTop: 12, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, fontWeight: 700, padding: '8px 0', color: '#000', background: 'var(--green)', textDecoration: 'none', borderRadius: 5 }}>CONNECT NOW</Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div style={{ position: 'relative', zIndex: 1, padding: '12px clamp(16px,5vw,60px)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, background: 'rgba(0,0,0,0.15)' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>© {year} <span style={{ color: 'var(--green)' }}>AIFAZI RP</span> · Neon Ops City · All rights reserved</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>UAE / GMT+4</span>
+      </div>
+
+      <style>{`
+        @keyframes ftPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @media (max-width: 900px) { .ftm5-grid { grid-template-columns: 1fr 1fr !important; } }
+        @media (max-width: 560px) { .ftm5-grid { grid-template-columns: 1fr !important; } }
+      `}</style>
+    </footer>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 export default function Footer() {
   const [hasAdminAccess, setHasAdminAccess] = useState(false)
   const [siteConfig, setSiteConfig] = useState({})
   const [footerStyle, setFooterStyle] = useState('cyber')
   const navigate  = useNavigate()
   const location  = useLocation()
+
+  // FiveM-aware footer — active on /fivem/* routes and the fivem.aifazi.net host
+  const [isFiveMHostState, setIsFiveMHostState] = useState(false)
+  useEffect(() => setIsFiveMHostState(isFiveMHost()), [])
+  const isFiveM = location.pathname.startsWith('/fivem') || isFiveMHostState
 
   useEffect(() => {
     getSiteSettings().then(s => { if (s.footerStyle) setFooterStyle(s.footerStyle) }).catch(() => {})
@@ -485,6 +610,9 @@ export default function Footer() {
   ].filter(Boolean)
 
   const year = new Date().getFullYear()
+
+  // ── FiveM footer (shares theme/socials, FiveM-specific content) ─────────────
+  if (isFiveM) return <FooterFiveM socialLinks={socialLinks} year={year} />
 
   // ── Shared props for variant layouts ────────────────────────────────────────
   const sharedProps = { siteConfig, sectionLinks, platformLinks, socialLinks, hasAdminAccess, handleHashLink, year }

@@ -30,7 +30,7 @@ export default function FiveMStatus() {
 
   return (
     <div style={{ minHeight: '100vh', color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '60px 24px' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '80px 24px' }}>
         <a href={homeHref} style={{ fontSize: 12, color: '#8b949e', textDecoration: 'none', letterSpacing: 1 }}>&#8592; BACK TO FIVEM</a>
         <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: 2, marginTop: 16, background: `linear-gradient(135deg, ${G}, ${C})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           SERVER STATUS

@@ -54,7 +54,7 @@ export default function FiveMProfile() {
 
   return (
     <div style={{ minHeight: '100vh', color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '60px 24px' }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '80px 24px' }}>
         <a href={homeHref} style={{ fontSize: 12, color: '#8b949e', textDecoration: 'none', letterSpacing: 1 }}>← BACK TO FIVEM</a>
 
         <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
