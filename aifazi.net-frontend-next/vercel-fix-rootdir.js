@@ -16,14 +16,14 @@ if (!process.env.VERCEL || parentDir === appDir) {
   process.exit(0)
 }
 
-for (const name of ['node_modules', '.next']) {
+for (const name of fs.readdirSync(appDir)) {
   const src = path.join(appDir, name)
   const dst = path.join(parentDir, name)
-  if (!fs.existsSync(src) || fs.existsSync(dst)) {
+  if (fs.existsSync(dst)) {
     continue
   }
   try {
-    fs.symlinkSync(src, dst, 'dir')
+    fs.symlinkSync(src, dst)
     console.log(`[vercel-fix-rootdir] symlinked ${dst} -> ${src}`)
   } catch (err) {
     if (err.code === 'EEXIST') continue
