@@ -12,12 +12,46 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from database import supabase
 from dependencies import require_staff
-import httpx, socket
+import httpx, socket, logging
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+_EMAIL_CONFIG_MIGRATION_SQL = """
+CREATE TABLE IF NOT EXISTS email_config (
+    key         TEXT PRIMARY KEY,
+    settings    JSONB NOT NULL DEFAULT '{}',
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO email_config (key, settings)
+    VALUES ('global', '{}')
+    ON CONFLICT (key) DO NOTHING;
+"""
+
+def _ensure_email_config_table():
+    """Idempotent: create the email_config table + global row if missing."""
+    try:
+        supabase.rpc("exec_sql", {"sql_text": _EMAIL_CONFIG_MIGRATION_SQL}).execute()
+        return True
+    except Exception as rpc_exc:
+        logger.warning("email_settings: exec_sql RPC unavailable (%s) — trying probe", rpc_exc)
+    try:
+        supabase.table("email_config").select("key").limit(1).execute()
+        return True
+    except Exception as probe_exc:
+        logger.error("email_settings: email_config table still missing (%s)", probe_exc)
+        return False
 
 def _get_row():
-    res = supabase.table("email_config").select("settings").eq("key", "global").execute()
-    return res.data[0] if res.data else None
+    try:
+        res = supabase.table("email_config").select("settings").eq("key", "global").execute()
+        return res.data[0] if res.data else None
+    except Exception as exc:
+        logger.error("email_settings: read failed (%s) — attempting table repair", exc)
+        if not _ensure_email_config_table():
+            raise
+        res = supabase.table("email_config").select("settings").eq("key", "global").execute()
+        return res.data[0] if res.data else None
 
 def _get_settings() -> dict:
     """Return the settings dict (handles nested JSONB 'settings' column)."""
