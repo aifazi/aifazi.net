@@ -303,7 +303,7 @@ async def _send_submission_email(form: dict, submission: dict, user: dict, answe
         fallback_subject,
         fallback_html,
     )
-    queue_email(to_email, subject, html, "", "application_submitted")
+    await queue_email(to_email, subject, html, "", "application_submitted")
 
 
 async def _send_review_email(submission: dict, status: str) -> None:
@@ -343,7 +343,7 @@ async def _send_review_email(submission: dict, status: str) -> None:
   <div style="background:#111827;padding:14px;text-align:center;font-size:11px;color:#64748b">AIFAZI RP · aifazi.net</div>
 </div>"""
     subject, html = _render_template(purpose, variables, fallback_subject, fallback_html)
-    queue_email(to_email, subject, html, "", purpose)
+    await queue_email(to_email, subject, html, "", purpose)
 
 
 def _normal_action(action: Any) -> dict[str, Any]:

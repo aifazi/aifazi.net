@@ -10,43 +10,55 @@ In production on Vercel, every single one of those sends was being dropped
 silently: verification emails, password resets, ticket confirmations, contact
 replies, newsletter broadcasts, admin user-message emails.
 
-WHAT THIS MODULE DOES:
-──────────────────────
-  • `queue_email()` — synchronous insert-only. Returns immediately after
-    dropping a `pending` row into `mail_queue`. The actual send is performed
-    later by the `/api/admin/mail/queue/process-pending` cron endpoint.
+DESIGN (Phase 2 — synchronous sends + self-healing retry):
+─────────────────────────────────────────────────────────────────────────────
+  • `queue_email()` — async. Inserts a durable `pending` row into `mail_queue`
+    FIRST (so the attempt can never be lost), then immediately attempts the
+    real provider send inline within the request lifecycle. The row is updated
+    to `sent` on success or `failed` (retry_count+1) on failure. Because the
+    send is awaited inside the request, the Lambda stays alive until it
+    completes — no reliance on background tasks or the daily cron for
+    transactional mail.
 
-  • `dispatch_pending(limit)` — atomically claims `pending` rows older than
-    2 minutes (turns them to `sending`) and dispatches them through the
-    configured provider (Brevo/Resend/SMTP). Failures land back in `failed`
-    with `retry_count` incremented; the next cron tick picks them up again
-    once their `created_at` is older than the cutoff. **Idempotent** under
-    concurrent cron runs because the claim UPDATE predicates on
-    `status='pending'`, so two cron invocations cannot double-send the same
-    row (the second sees it as `sending` already).
+  • `queue_email_bulk()` — synchronous insert-only variant for large fan-outs
+    (newsletter campaigns, 1000s of rows). Returns immediately. Rows are
+    drained by `dispatch_pending()` (daily cron + admin "process pending").
+
+  • `dispatch_pending(limit)` — the self-healing dispatcher. It claims:
+      1. `pending` rows older than the 2-minute grace window (durability
+         backstop — anything inserted but not yet sent),
+      2. `sending` rows that went stale (older than STALE_SENDING_MINUTES —
+         the Lambda froze mid-send; reclaim and retry),
+      3. `failed` rows eligible for retry (retry_count < MAX_RETRIES and past
+         the exponential-backoff window).
+    Sends each through the configured provider (Brevo/Resend/SMTP). Failures
+    land back in `failed` with retry_count incremented; the next tick retries
+    once the backoff window expires. **Idempotent** under concurrent cron runs
+    because the claim UPDATE predicates on the current status, so two cron
+    invocations cannot double-send the same row.
 
 CALL-SITE MIGRATION:
 ───────────────────
   BEFORE:  bg.add_task(send_email, to, subject, html, text, purpose, name)
-  AFTER:   queue_email(to, subject, html, text, purpose, name)
+  AFTER:   await queue_email(to, subject, html, text, purpose, name)
 
-The `BackgroundTasks` parameter can often be removed entirely (no longer
-needed for email delivery). Use `queue_email` only for **fire-and-forget**
-sends; for sends where the caller needs to know *immediately* whether the
-send succeeded (rare — not currently anywhere in this codebase), call
-`send_email(...)` inline instead.
+Use `queue_email` for transactional sends (send immediately inline). Use
+`queue_email_bulk` only for large fire-and-forget fan-outs (newsletters).
 """
 import logging
 from datetime import datetime, timezone, timedelta
 
 from database import supabase
-from utils.email import _get_config, _c, _send_brevo, _send_resend, _send_smtp
+from utils.email import send_email, _get_config, _c, _send_brevo, _send_resend, _send_smtp
 
 logger = logging.getLogger(__name__)
 
 PENDING_GRACE_MINUTES = 2
-DEFAULT_BATCH = 20
-MAX_BATCH = 100
+STALE_SENDING_MINUTES = 10
+MAX_RETRIES = 5
+RETRY_BASE_MINUTES = 15
+DEFAULT_BATCH = 50
+MAX_BATCH = 200
 
 
 def _resolve_provider() -> str:
@@ -69,7 +81,7 @@ def _resolve_provider() -> str:
     return "smtp"
 
 
-def queue_email(
+def _insert_pending(
     to: str,
     subject: str,
     html: str,
@@ -77,17 +89,7 @@ def queue_email(
     purpose: str = "other",
     recipient_name: str = "",
 ) -> str | None:
-    """Insert a `pending` row into `mail_queue` and return its id.
-    Returns None on insert failure (logged). No network send is attempted —
-    `dispatch_pending()` (cron-driven) handles that.
-
-    Safe to call in a hot request path: it's one INSERT, no outbound network
-    I/O. Even if the request's Lambda freezes immediately after, the row is
-    already durable in Postgres and the next cron tick will pick it up.
-    """
-    if not to:
-        logger.warning("queue_email: missing 'to', skipping (purpose=%s)", purpose)
-        return None
+    """Insert a `pending` row and return its id (or None on failure)."""
     provider = _resolve_provider()
     try:
         res = supabase.table("mail_queue").insert({
@@ -98,12 +100,62 @@ def queue_email(
             "status":         "pending",
             "purpose":        purpose,
             "provider":       provider,
-            "recipient_name":  recipient_name,
+            "recipient_name": recipient_name,
         }).execute()
         return res.data[0]["id"] if res.data else None
     except Exception as e:
-        logger.error("queue_email insert failed for %s (purpose=%s): %s", to, purpose, e)
+        logger.error("mail_queue insert failed for %s (purpose=%s): %s", to, purpose, e)
         return None
+
+
+async def queue_email(
+    to: str,
+    subject: str,
+    html: str,
+    text: str = "",
+    purpose: str = "other",
+    recipient_name: str = "",
+) -> dict:
+    """Insert a durable `pending` row, then send it immediately (inline await).
+
+    Returns the `send_email` result dict: ``{"ok": True, "msg_id": ...}`` on
+    success or ``{"ok": False, "error": ...}`` on failure. On failure the row
+    is persisted as `failed` and later retried by `dispatch_pending()`.
+
+    Safe to call in a hot request path: one INSERT plus the awaited provider
+    HTTP call. Even if the request's Lambda freezes after, the row is already
+    durable in Postgres for the retry/cron backstop.
+    """
+    if not to:
+        logger.warning("queue_email: missing 'to', skipping (purpose=%s)", purpose)
+        return {"ok": False, "error": "missing recipient"}
+
+    qid = _insert_pending(to, subject, html, text, purpose, recipient_name)
+    if not qid:
+        return {"ok": False, "error": "failed to create mail_queue entry"}
+
+    result = await send_email(
+        to, subject, html, text, purpose, recipient_name, queue_id=qid,
+    )
+    if not result.get("ok"):
+        logger.error("queue_email: inline send failed for qid=%s to=%s: %s",
+                     qid, to, result.get("error"))
+    return result
+
+
+def queue_email_bulk(
+    to: str,
+    subject: str,
+    html: str,
+    text: str = "",
+    purpose: str = "other",
+    recipient_name: str = "",
+) -> str | None:
+    """Insert-only variant for large fan-outs (newsletters). Returns row id or None."""
+    if not to:
+        logger.warning("queue_email_bulk: missing 'to', skipping (purpose=%s)", purpose)
+        return None
+    return _insert_pending(to, subject, html, text, purpose, recipient_name)
 
 
 def _mark_failed(qid: str, error: str) -> None:
@@ -114,6 +166,7 @@ def _mark_failed(qid: str, error: str) -> None:
             "status":      "failed",
             "error_msg":   str(error)[:500],
             "retry_count": rc + 1,
+            "updated_at":  datetime.now(timezone.utc).isoformat(),
         }).eq("id", qid).execute()
     except Exception as inner:
         logger.error("dispatch_pending: failed to mark %s as failed: %s", qid, inner)
@@ -122,38 +175,118 @@ def _mark_failed(qid: str, error: str) -> None:
 def _requeue_as_pending(qid: str) -> None:
     """Used when the dispatch layer couldn't even start (no provider config).
     Returns the row to pending so the next cron tick tries again — but the
-    2-min `created_at` cutoff means we won't spin on a misconfiguration."""
+    grace/cutoff windows mean we won't spin on a misconfiguration."""
     try:
-        supabase.table("mail_queue").update({"status": "pending"}).eq("id", qid).execute()
+        supabase.table("mail_queue").update({
+            "status":     "pending",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", qid).execute()
     except Exception as e:
         logger.error("dispatch_pending: failed to requeue %s: %s", qid, e)
 
 
+def _claim(limit: int) -> list[dict]:
+    """Atomically claim rows eligible for dispatch and return them.
+
+    Claims three buckets in one pass:
+      1. `pending` rows older than the grace window (never attempted yet).
+      2. `sending` rows stuck longer than STALE_SENDING_MINUTES (frozen Lambda).
+      3. `failed` rows with retry_count < MAX_RETRIES past exponential backoff.
+
+    Each bucket is a separate atomic UPDATE … WHERE <status>, so concurrent
+    cron runs can never double-claim a row (the second sees it as `sending`).
+    """
+    now = datetime.now(timezone.utc)
+    claimed: list[dict] = []
+
+    # Bucket 1: fresh pending past the grace window.
+    grace_cutoff = (now - timedelta(minutes=PENDING_GRACE_MINUTES)).isoformat()
+    try:
+        res = (
+            supabase.table("mail_queue")
+            .update({"status": "sending", "updated_at": now.isoformat()})
+            .eq("status", "pending")
+            .lt("created_at", grace_cutoff)
+            .order("created_at")
+            .limit(limit)
+            .execute()
+        )
+        claimed.extend(res.data or [])
+    except Exception as e:
+        logger.error("dispatch_pending: bucket 1 claim failed: %s", e)
+
+    # Bucket 2: stale `sending` rows — the Lambda froze mid-send.
+    stale_cutoff = (now - timedelta(minutes=STALE_SENDING_MINUTES)).isoformat()
+    try:
+        res = (
+            supabase.table("mail_queue")
+            .update({"status": "sending", "updated_at": now.isoformat()})
+            .eq("status", "sending")
+            .lt("updated_at", stale_cutoff)
+            .order("updated_at")
+            .limit(limit - len(claimed))
+            .execute()
+        )
+        claimed.extend(res.data or [])
+    except Exception as e:
+        logger.error("dispatch_pending: bucket 2 claim failed: %s", e)
+
+    # Bucket 3: retryable `failed` rows past exponential backoff.
+    if len(claimed) < limit:
+        try:
+            failed = (
+                supabase.table("mail_queue")
+                .select("id,retry_count,updated_at")
+                .eq("status", "failed")
+                .lt("retry_count", MAX_RETRIES)
+                .order("updated_at")
+                .limit(limit * 4)
+                .execute()
+            )
+            eligible: list[str] = []
+            for row in (failed.data or []):
+                rc = row.get("retry_count", 0) or 0
+                backoff_minutes = RETRY_BASE_MINUTES * (2 ** rc)
+                backoff_cutoff = now - timedelta(minutes=backoff_minutes)
+                updated = row.get("updated_at")
+                if not updated:
+                    continue
+                try:
+                    updated_dt = datetime.fromisoformat(str(updated).replace("Z", "+00:00"))
+                except Exception:
+                    updated_dt = now
+                if updated_dt <= backoff_cutoff:
+                    eligible.append(row["id"])
+                if len(eligible) >= limit - len(claimed):
+                    break
+            if eligible:
+                res = (
+                    supabase.table("mail_queue")
+                    .update({"status": "sending", "updated_at": now.isoformat()})
+                    .in_("id", eligible)
+                    .eq("status", "failed")
+                    .execute()
+                )
+                claimed.extend(res.data or [])
+        except Exception as e:
+            logger.error("dispatch_pending: bucket 3 claim failed: %s", e)
+
+    return claimed[:limit]
+
+
 async def dispatch_pending(limit: int = DEFAULT_BATCH) -> dict:
-    """Atomically claim pending rows older than the grace window and send them.
+    """Claim eligible rows (pending/stale-sending/retryable-failed) and send them.
 
     Returns a summary dict: ``{"claimed": N, "sent": N, "failed": N}``.
 
-    Concurrency contract: the claim step is a single UPDATE … WHERE
-    status='pending'. Two concurrent cron runs can therefore never claim the
-    same row — the second invocation will see the row as `sending` and skip
-    it. Safe to schedule aggressively.
+    Concurrency contract: each claim bucket is a single UPDATE … WHERE
+    status=..., so two concurrent cron runs can never send the same row.
+    Safe to schedule aggressively.
     """
     if limit > MAX_BATCH:
         limit = MAX_BATCH
-    cutoff = (datetime.now(timezone.utc) - timedelta(minutes=PENDING_GRACE_MINUTES)).isoformat()
 
-    # Atomic claim: pending → sending for rows past the grace window.
-    claim_res = (
-        supabase.table("mail_queue")
-        .update({"status": "sending"})
-        .eq("status", "pending")
-        .lt("created_at", cutoff)
-        .order("created_at")
-        .limit(limit)
-        .execute()
-    )
-    items = claim_res.data or []
+    items = _claim(limit)
     if not items:
         return {"claimed": 0, "sent": 0, "failed": 0}
 
@@ -201,6 +334,7 @@ async def dispatch_pending(limit: int = DEFAULT_BATCH) -> dict:
                 "sent_at":          datetime.now(timezone.utc).isoformat(),
                 "provider_msg_id":  msg_id or "",
                 "error_msg":        "",
+                "updated_at":       datetime.now(timezone.utc).isoformat(),
             }).eq("id", qid).execute()
             sent += 1
         except Exception as e:

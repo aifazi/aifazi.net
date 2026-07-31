@@ -116,14 +116,14 @@ def _verify_email_html(verify_url: str) -> str:
     </p>"""
     return _email_layout("Verify your email — aifazi.net", body)
 
-def _queue_activation_email(email: str, verify_url: str, username: str = "") -> None:
+async def _queue_activation_email(email: str, verify_url: str, username: str = "") -> None:
     subject, html = render_template("account_activation", {
         "site_name": "aifazi.net",
         "username": username or email.split("@")[0],
         "activation_link": verify_url,
         "expires_in": "24 hours",
     })
-    queue_email(email, subject or "Verify your email - aifazi.net", html or _verify_email_html(verify_url), f"Verify your aifazi.net account: {verify_url}", "account_activation")
+    await queue_email(email, subject or "Verify your email - aifazi.net", html or _verify_email_html(verify_url), f"Verify your aifazi.net account: {verify_url}", "account_activation")
 
 def _reset_email_html(reset_url: str) -> str:
     body = f"""
@@ -437,7 +437,7 @@ def _ensure_email_available(email: str, *, exclude_forum_user_id: str | None = N
         raise HTTPException(409, "Email is already in use.")
 
 
-def _queue_forum_email_verification(user_id: str, email: str) -> None:
+async def _queue_forum_email_verification(user_id: str, email: str) -> None:
     if not email:
         return
     verify_token = secrets.token_urlsafe(32)
@@ -447,10 +447,10 @@ def _queue_forum_email_verification(user_id: str, email: str) -> None:
         "verify_expires": verify_expires,
     }).eq("id", user_id).execute()
     verify_url = f"{SITE_URL}/forum/verify?token={verify_token}"
-    _queue_activation_email(email, verify_url)
+    await _queue_activation_email(email, verify_url)
 
 
-def _queue_staff_email_verification(source: str, email: str, *, staff_id: str | None = None, admin_username: str | None = None) -> None:
+async def _queue_staff_email_verification(source: str, email: str, *, staff_id: str | None = None, admin_username: str | None = None) -> None:
     if not email:
         return
     token = jwt.encode({
@@ -462,7 +462,7 @@ def _queue_staff_email_verification(source: str, email: str, *, staff_id: str | 
         "exp": datetime.now(timezone.utc) + timedelta(hours=24),
     }, SECRET, ALGO)
     verify_url = f"{SITE_URL}/forum/verify?token={token}"
-    _queue_activation_email(email, verify_url)
+    await _queue_activation_email(email, verify_url)
 
 
 def _active_identity_locked(user_id: str) -> bool:
@@ -564,7 +564,7 @@ async def resend_verification(body: ResendBody):
         "verify_token": verify_token, "verify_expires": verify_expires
     }).eq("id", user["id"]).execute()
     verify_url = f"{SITE_URL}/forum/verify?token={verify_token}"
-    _queue_activation_email(user["email"], verify_url, user.get("username") or "")
+    await _queue_activation_email(user["email"], verify_url, user.get("username") or "")
     return {"message": "Verification email sent"}
 
 @router.post("/register")
@@ -584,7 +584,7 @@ async def register(body: RegisterBody):
                 "verify_token": verify_token, "verify_expires": verify_expires
             }).eq("id", existing["id"]).execute()
             verify_url = f"{SITE_URL}/forum/verify?token={verify_token}"
-            _queue_activation_email(email, verify_url, existing.get("username") or "")
+            await _queue_activation_email(email, verify_url, existing.get("username") or "")
             raise HTTPException(409, "pending_verification")
         raise HTTPException(409, "Email already registered")
     if _find_user_by_ci("username", username, "id,username"):
@@ -604,7 +604,7 @@ async def register(body: RegisterBody):
     }).execute()
 
     verify_url = f"{SITE_URL}/forum/verify?token={verify_token}"
-    _queue_activation_email(email, verify_url, username)
+    await _queue_activation_email(email, verify_url, username)
     return {"message": "Registered — check your email to verify"}
 
 @router.get("/verify")
@@ -725,7 +725,7 @@ async def forgot(body: ForgotBody):
         "reset_link": reset_url,
         "expires_in": "1 hour",
     })
-    queue_email(user["email"], subject or "Reset your password - aifazi.net", html or _reset_email_html(reset_url), f"Reset your aifazi.net password: {reset_url}", "password_reset")
+    await queue_email(user["email"], subject or "Reset your password - aifazi.net", html or _reset_email_html(reset_url), f"Reset your aifazi.net password: {reset_url}", "password_reset")
     return {"message": "If that account exists, a reset link was sent"}
 
 @router.post("/find-username")
@@ -738,7 +738,7 @@ async def find_username(body: FindUsernameBody):
         .execute()
     if res.data:
         user = res.data[0]
-        queue_email(
+        await queue_email(
             user["email"],
             "Your username — aifazi.net",
             _find_username_email_html(user["username"]),
@@ -876,7 +876,7 @@ async def update_profile(body: ProfileBody, creds: HTTPAuthorizationCredentials 
         else:
             supabase.table("admin_2fa").insert({"username": admin_name, **patch}).execute()
         if body.email is not None and patch.get("email") and not patch.get("email_verified"):
-            _queue_staff_email_verification("admin", patch["email"], admin_username=admin_name)
+            await _queue_staff_email_verification("admin", patch["email"], admin_username=admin_name)
         return {"ok": True, "email_verification_sent": bool(body.email is not None and patch.get("email") and not patch.get("email_verified")), "user": _staff_profile_from_payload(payload)}
 
     # Standalone staff token: update staff profile row.
@@ -894,7 +894,7 @@ async def update_profile(body: ProfileBody, creds: HTTPAuthorizationCredentials 
         if not res.data:
             raise HTTPException(404, "Staff user not found")
         if body.email is not None and patch.get("email") and not patch.get("email_verified"):
-            _queue_staff_email_verification("staff", patch["email"], staff_id=access["staff_id"])
+            await _queue_staff_email_verification("staff", patch["email"], staff_id=access["staff_id"])
         return {"ok": True, "email_verification_sent": bool(body.email is not None and patch.get("email") and not patch.get("email_verified")), "user": _staff_profile_from_payload({**payload, "username": username})}
 
     if not user_id:
@@ -917,7 +917,7 @@ async def update_profile(body: ProfileBody, creds: HTTPAuthorizationCredentials 
         raise HTTPException(404, "User not found")
     user = res.data[0]
     if email_changed:
-        _queue_forum_email_verification(user_id, user.get("email") or "")
+        await _queue_forum_email_verification(user_id, user.get("email") or "")
     _record_user_activity(user_id, username, "profile_update")
     return {"ok": True, "email_verification_sent": email_changed, "user": {"_id": user["id"], "id": user["id"], "username": user["username"], "email": user.get("email"), "email_verified": user.get("email_verified", False), "role": (access or {}).get("role") or user.get("role", "user"), "avatar": user.get("avatar") or "", "bio": user.get("bio") or "", "_staff": bool(access), "staff_account": bool(access), "permissions": normalize_permissions((access or {}).get("permissions"))}}
 
@@ -1559,7 +1559,7 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
                                 "profile_url": f"{SITE_URL}/forum/profile",
                                 "frontend_url": SITE_URL,
                             })
-                            queue_email(
+                            await queue_email(
                                 discord_email,
                                 subject or "Welcome to aifazi.net — your account is ready!",
                                 html or welcome_html,

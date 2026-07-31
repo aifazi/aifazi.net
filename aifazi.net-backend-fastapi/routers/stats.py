@@ -353,7 +353,7 @@ async def user_send_reset(user_id: str, _: dict = Depends(require_staff)):
     subject = subject or "Password reset requested"
     text = "An admin started a password reset for your account. Open the login page and use Forgot Password to complete the reset."
     html = html or f"<p>Hi {escape(row.get('username') or 'there')},</p><p>An admin started a password reset for your account.</p><p>Open the login page and use <strong>Forgot Password</strong> to complete the reset.</p>"
-    queue_email(row["email"], subject, html, text, "password_reset_admin", row.get("username") or "")
+    await queue_email(row["email"], subject, html, text, "password_reset_admin", row.get("username") or "")
     return {"message": "Password reset email queued"}
 
 @router.post("/actions/users/{user_id}/send-email")
@@ -373,7 +373,7 @@ async def user_send_email(user_id: str, body: UserActionBody, _: dict = Depends(
     subject = subject or body.subject
     safe_message = escape(body.message).replace("\n", "<br>")
     html = html or f"<p>Hi {escape(row.get('username') or 'there')},</p><p>{safe_message}</p>"
-    queue_email(row["email"], subject, html, body.message, "admin_user_message", row.get("username") or "")
+    await queue_email(row["email"], subject, html, body.message, "admin_user_message", row.get("username") or "")
     return {"message": "Email to user queued"}
 
 

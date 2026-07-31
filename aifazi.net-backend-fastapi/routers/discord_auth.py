@@ -112,7 +112,7 @@ async def _send_discord_welcome(email: str, username: str):
             f"and check your application status at any time.</p>"
             f"<p>See you in the city! 🌆</p>"
         )
-    queue_email(email, subject, html, "", "discord_welcome")
+    await queue_email(email, subject, html, "", "discord_welcome")
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 

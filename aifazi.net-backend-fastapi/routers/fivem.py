@@ -395,7 +395,7 @@ async def _send_whitelist_email(app: dict, status: str, note: str | None = None,
         "status_url": f"{FRONTEND_URL}/profile?tab=fivem",
     })
 
-    queue_email(to_email, subject or fallback_subject, html or fallback_html, "", purpose)
+    await queue_email(to_email, subject or fallback_subject, html or fallback_html, "", purpose)
     log.info("Whitelist email queued to %s status=%s", to_email, status)
 
 # â”€â”€â”€ Discord Bot Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

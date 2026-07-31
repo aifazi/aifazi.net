@@ -188,6 +188,8 @@ async def bulk_action(body: BulkActionBody, _: dict = Depends(require_staff)):
         raise HTTPException(404, "No matching queue items found")
 
     done = 0
+    sent = 0
+    failed = 0
     for item in items.data:
         if body.action == "cancel":
             if item["status"] in ("sent", "delivered", "cancelled"):
@@ -198,7 +200,7 @@ async def bulk_action(body: BulkActionBody, _: dict = Depends(require_staff)):
             if item["status"] == "cancelled":
                 continue
             supabase.table("mail_queue").update({"status": "resent"}).eq("id", item["id"]).execute()
-            queue_email(
+            result = await queue_email(
                 item["to_email"],
                 item.get("subject", ""),
                 item.get("html", ""),
@@ -207,8 +209,17 @@ async def bulk_action(body: BulkActionBody, _: dict = Depends(require_staff)):
                 item.get("recipient_name", ""),
             )
             done += 1
+            if result.get("ok"):
+                sent += 1
+            else:
+                failed += 1
 
-    return {"message": f"{body.action.upper()} queued for {done} email(s)", "done": done}
+    return {
+        "message": f"{body.action.upper()} processed for {done} email(s)",
+        "done": done,
+        "sent": sent,
+        "failed": failed,
+    }
 
 
 # ── POST /{queue_id}/resend — individual resend ─────────────
@@ -224,7 +235,7 @@ async def resend_item(queue_id: str, _: dict = Depends(require_staff)):
     if item.get("status") == "cancelled":
         raise HTTPException(400, "Cannot resend a cancelled email")
     supabase.table("mail_queue").update({"status": "resent"}).eq("id", queue_id).execute()
-    queue_email(
+    result = await queue_email(
         item["to_email"],
         item.get("subject", ""),
         item.get("html", ""),
@@ -232,7 +243,9 @@ async def resend_item(queue_id: str, _: dict = Depends(require_staff)):
         item.get("purpose", "resend"),
         item.get("recipient_name", ""),
     )
-    return {"message": "Resend queued"}
+    if not result.get("ok"):
+        raise HTTPException(502, f"Resend failed: {result.get('error', 'unknown error')}")
+    return {"message": "Resent successfully"}
 
 
 # ── DELETE /{queue_id} — cancel individual ──────────────────

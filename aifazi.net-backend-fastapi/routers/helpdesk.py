@@ -328,7 +328,7 @@ async def _auto_create_forum_account(name: str, email: str) -> str | None:
         f"Your username: {username}\n\n"
         f"— aifazi.net support"
     )
-    queue_email(
+    await queue_email(
         email,
         subject or "Verify your aifazi.net account",
         html or fallback_html,
@@ -444,7 +444,7 @@ async def submit_ticket(body: TicketBody, user: dict | None = Depends(_optional_
         body.description, track_url, settings,
     )
     conf_text = _ticket_confirmation_text(body.name, tid, body.subject, body.priority, track_url)
-    queue_email(body.email, conf_subject, conf_html, conf_text, "ticket_confirmation")
+    await queue_email(body.email, conf_subject, conf_html, conf_text, "ticket_confirmation")
 
     return {
         "message":         "Ticket submitted",
@@ -728,7 +728,7 @@ async def admin_add_message(
         "reply_message": body.message,
         "track_url": track_url,
     })
-    queue_email(ticket.get("email", ""), bg_subject or fallback_subject, bg_html or fallback_html, bg_text, "ticket_reply")
+    await queue_email(ticket.get("email", ""), bg_subject or fallback_subject, bg_html or fallback_html, bg_text, "ticket_reply")
 
     return {"message": "Reply added"}
 

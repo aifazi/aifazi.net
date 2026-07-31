@@ -11,7 +11,7 @@ from pydantic import BaseModel, EmailStr
 from database import supabase
 from dependencies import require_staff
 from utils.email import render_template
-from utils.email_queue import queue_email
+from utils.email_queue import queue_email_bulk
 router = APIRouter()
 
 class SubBody(BaseModel):
@@ -68,8 +68,8 @@ async def send_campaign(body: CampaignBody, _: dict = Depends(require_staff)):
             "body": body.html,
             "unsubscribe_link": "https://aifazi.net/newsletter/unsubscribe",
         })
-        queue_email(email, subject or body.subject, html or body.html, body.text, "newsletter_broadcast")
-    return {"message": f"Sending to {len(emails)} subscribers"}
+        queue_email_bulk(email, subject or body.subject, html or body.html, body.text, "newsletter_broadcast")
+    return {"message": f"Queued {len(emails)} newsletter emails (delivered via next process-pending run)"}
 
 async def send_newsletter_for_post(post: dict):
     """Called by scheduler when a post is auto-published."""
@@ -83,7 +83,7 @@ async def send_newsletter_for_post(post: dict):
             "post_url": post_url,
             "unsubscribe_link": "https://aifazi.net/newsletter/unsubscribe",
         })
-        queue_email(
+        queue_email_bulk(
             sub["email"],
             subject or f"New post: {post['title']}",
             html or f"<h2>{post['title']}</h2><p>{post.get('excerpt','')}</p><a href='{post_url}'>Read more</a>",

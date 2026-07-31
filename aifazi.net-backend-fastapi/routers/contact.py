@@ -38,10 +38,10 @@ async def submit(body: ContactBody):
         "subject": body.subject or "Your message",
         "message": body.message,
     })
-    queue_email(body.email,
-                subject or f"Re: {body.subject or 'Your message'}",
-                html or f"<p>Thanks {body.name}, we received your message and will get back to you shortly.</p>",
-                purpose="contact_confirm")
+    await queue_email(body.email,
+                      subject or f"Re: {body.subject or 'Your message'}",
+                      html or f"<p>Thanks {body.name}, we received your message and will get back to you shortly.</p>",
+                      purpose="contact_confirm")
     return {"message": "Message sent", "id": res.data[0]["id"]}
 
 
@@ -70,7 +70,7 @@ async def reply(contact_id: str, body: ReplyBody, _: dict = Depends(require_staf
         "reply_message": reply_text,
         "original_message": c.get("message") or "",
     })
-    queue_email(c["email"], tpl_subject or subject, tpl_html or _html(reply_text), purpose="contact_reply")
+    await queue_email(c["email"], tpl_subject or subject, tpl_html or _html(reply_text), purpose="contact_reply")
     return {"message": "Reply sent"}
 
 @router.delete("/{contact_id}")

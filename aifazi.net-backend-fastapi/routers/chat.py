@@ -67,7 +67,7 @@ def _chat_link(room_id: str) -> str:
     base = (os.getenv("FRONTEND_URL") or os.getenv("SITE_URL") or "https://aifazi.net").rstrip("/")
     return f"{base}/chat?room={room_id}"
 
-def _notify_chat_user(user_row: dict, subject: str, html: str, text: str, message: str, link: str, purpose: str):
+async def _notify_chat_user(user_row: dict, subject: str, html: str, text: str, message: str, link: str, purpose: str):
     user_id = user_row.get("id")
     email = (user_row.get("email") or "").strip()
     if user_id:
@@ -81,9 +81,9 @@ def _notify_chat_user(user_row: dict, subject: str, html: str, text: str, messag
         except Exception:
             pass
     if email:
-        queue_email(email, subject, html, text, purpose, user_row.get("username") or "")
+        await queue_email(email, subject, html, text, purpose, user_row.get("username") or "")
 
-def _queue_chat_message_notifications(room: dict, room_id: str, sender: dict, content: str):
+async def _queue_chat_message_notifications(room: dict, room_id: str, sender: dict, content: str):
     sender_name = sender.get("username") or "Someone"
     mentions = {m.lower() for m in re.findall(r"@([A-Za-z0-9_.-]{2,40})", content)}
     recipients: dict[str, dict] = {}
@@ -134,7 +134,7 @@ def _queue_chat_message_notifications(room: dict, room_id: str, sender: dict, co
         })
         subject = subject or fallback_subject
         html = html or fallback_html
-        _notify_chat_user(row, subject, html, text, f"{sender_name} posted in {room_name}", link, "chat_message")
+        await _notify_chat_user(row, subject, html, text, f"{sender_name} posted in {room_name}", link, "chat_message")
 
 class RoomBody(BaseModel):
     name: str
@@ -374,7 +374,7 @@ async def send_message(
         "reply_to":   safe_reply,
         "created_at": _now(),
     }).execute()
-    _queue_chat_message_notifications(room, room_id, user, content)
+    await _queue_chat_message_notifications(room, room_id, user, content)
     return res.data[0]
 
 @router.patch("/messages/{msg_id}")
@@ -545,7 +545,7 @@ async def invite_user(room_id: str, body: InviteBody, user: dict = Depends(requi
     })
     subject = subject or fallback_subject
     html = html or fallback_html
-    _notify_chat_user(target, subject, html, text, f"You were invited to {room_name}", link, "chat_invite")
+    await _notify_chat_user(target, subject, html, text, f"You were invited to {room_name}", link, "chat_invite")
     return res.data[0]
 
 # ── User search ──────────────────────────────────────────────────────────────

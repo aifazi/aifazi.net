@@ -43,9 +43,8 @@ def _queue_insert(to: str, subject: str, html: str, purpose: str, provider: str,
 def _queue_update(queue_id: str, status: str, error_msg: str = "",
                   provider_msg_id: str = ""):
     try:
-        payload = {"status": status, "error_msg": error_msg}
-        if status == "sending":
-            pass
+        payload = {"status": status, "error_msg": error_msg,
+                   "updated_at": datetime.now(timezone.utc).isoformat()}
         if status in ("sent", "delivered"):
             payload["sent_at"] = datetime.now(timezone.utc).isoformat()
         if provider_msg_id:
@@ -83,8 +82,13 @@ async def send_email(
     text: str = "",
     purpose: str = "other",
     recipient_name: str = "",
+    queue_id: str | None = None,
 ) -> dict:
     """Send one email immediately and record the outcome in mail_queue.
+
+    If ``queue_id`` is provided, that existing mail_queue row is updated
+    (used by queue_email to avoid double-inserting). Otherwise a new
+    ``pending`` row is created first so the attempt is always durable.
 
     Returns ``{"ok": True, "msg_id": ..., "provider": ...}`` on success or
     ``{"ok": False, "error": "<reason>"}`` on failure. Never raises — the
@@ -92,7 +96,7 @@ async def send_email(
     """
     cfg = {}
     provider = "unknown"
-    queue_id = None
+    queue_id_final = queue_id
     try:
         cfg      = await _get_config()
         provider = _c(cfg, "outgoingProvider", "outgoing_provider", default="smtp")
@@ -102,13 +106,14 @@ async def send_email(
         provider = "smtp"
 
     try:
-        queue_id = _queue_insert(to, subject, html, purpose, provider,
-                                 text=text, recipient_name=recipient_name)
-        if not queue_id:
+        if not queue_id_final:
+            queue_id_final = _queue_insert(to, subject, html, purpose, provider,
+                                           text=text, recipient_name=recipient_name)
+        if not queue_id_final:
             logger.error("Failed to create mail_queue entry for %s", to)
             return {"ok": False, "error": "Failed to create mail_queue entry"}
 
-        _queue_update(queue_id, "sending")
+        _queue_update(queue_id_final, "sending")
         logger.info("Sending email to %s via %s (purpose=%s)", to, provider, purpose)
 
         msg_id = None
@@ -123,17 +128,18 @@ async def send_email(
             await _send_smtp(cfg, to, subject, html, text)
 
         logger.info("Email sent to %s", to)
-        _queue_update(queue_id, "sent", provider_msg_id=msg_id or "")
+        _queue_update(queue_id_final, "sent", provider_msg_id=msg_id or "")
         return {"ok": True, "msg_id": msg_id or "", "provider": provider}
 
     except Exception as e:
         logger.error("Failed to send email to %s: %s", to, e, exc_info=True)
-        if queue_id:
-            retries = supabase.table("mail_queue").select("retry_count").eq("id", queue_id).execute()
+        if queue_id_final:
+            retries = supabase.table("mail_queue").select("retry_count").eq("id", queue_id_final).execute()
             rc = (retries.data[0].get("retry_count", 0) if retries.data else 0) or 0
             supabase.table("mail_queue").update({
                 "status": "failed", "error_msg": str(e), "retry_count": rc + 1,
-            }).eq("id", queue_id).execute()
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("id", queue_id_final).execute()
         # Do NOT re-raise — background tasks should never crash the worker
         return {"ok": False, "error": str(e)}
 
