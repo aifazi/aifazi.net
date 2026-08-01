@@ -22,7 +22,6 @@ import os
 import random
 from datetime import datetime, timezone
 
-import stripe as _stripe
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -47,11 +46,13 @@ def _number(prefix: str) -> str:
     return f"{prefix}-{random.randint(100000, 999999)}"
 
 
+# Lazily import stripe so cold starts that never touch payments don't pay for it.
 def _stripe():
     if not STRIPE_SECRET_KEY:
         raise HTTPException(503, "Stripe is not configured. Set STRIPE_SECRET_KEY.")
-    _stripe.api_key = STRIPE_SECRET_KEY
-    return _stripe
+    import stripe
+    stripe.api_key = STRIPE_SECRET_KEY
+    return stripe
 
 
 def _risk_from_intent(pi: dict) -> dict:

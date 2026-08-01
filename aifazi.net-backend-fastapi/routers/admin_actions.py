@@ -58,6 +58,12 @@ FORBIDDEN_FIELDS = frozenset({
     "email", "username",
     "steam_username", "steam_avatar",
     "discord_username", "discord_avatar",
+    # OAuth identity links — binding a staff member's own GitHub id to a target
+    # account row lets them sign in as that user (github_auth callback matches on
+    # github_id). The same applies to any other provider link columns.
+    "github_id", "github_username", "github_avatar",
+    "fivem_id", "fivem_license", "license_hex", "license2_hex",
+    "forum_user_id", "admin_2fa",
 })
 
 def _normalize(doc):

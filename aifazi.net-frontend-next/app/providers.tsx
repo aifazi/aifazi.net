@@ -175,8 +175,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       } catch {}
     }
 
-    // Show loading screen only after config is applied (React 18 batches these)
-    if (sessionStorage.getItem('site-loaded') !== BUILD_ID) setLoading(true)
+    // Show loading screen only when this build hasn't been booted before.
+    // localStorage (not sessionStorage) so repeat visits/tabs skip the ~1.3s
+    // boot animation and reach LCP immediately — it only plays once per deploy.
+    if (localStorage.getItem('site-loaded') !== BUILD_ID) setLoading(true)
 
     setUserIsAdmin(checkIsAdmin())
 
@@ -391,8 +393,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => { sb.removeChannel(channel) }
   }, [refreshSiteConfig])
 
-  // #6 — Extend Supabase Realtime to contacts & staff_activity
+  // #6 — Extend Supabase Realtime to contacts & staff_activity.
+  // Only staff need these channels — skip them for visitors (saves 2 WebSocket
+  // subscriptions for every anonymous user on every page).
   useEffect(() => {
+    if (!userIsAdmin) return
     const sb = getSupabase()
     if (!sb) return
     const contactsChannel = sb
@@ -411,7 +416,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       sb.removeChannel(contactsChannel)
       sb.removeChannel(activityChannel)
     }
-  }, [])
+  }, [userIsAdmin])
 
   // Re-check when the tab becomes visible again (user returns from another tab)
   useEffect(() => {
@@ -455,7 +460,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const onLoadComplete = useCallback(() => {
     setLoading(false)
     const BUILD_ID = process.env.BUILD_ID || 'dev'
-    sessionStorage.setItem('site-loaded', BUILD_ID)
+    localStorage.setItem('site-loaded', BUILD_ID)
   }, [])
 
   return (

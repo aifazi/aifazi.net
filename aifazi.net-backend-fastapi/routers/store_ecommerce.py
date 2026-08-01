@@ -31,7 +31,6 @@ import random
 import string
 from datetime import datetime, timedelta, timezone
 
-import stripe as _stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -56,9 +55,16 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# Lazily import stripe so cold starts that never touch payments don't pay for it.
+def _stripe_module():
+    import stripe
+    return stripe
+
+
 def _stripe_client():
     if not STRIPE_SECRET_KEY:
         raise HTTPException(503, "Stripe is not configured. Set STRIPE_SECRET_KEY.")
+    _stripe = _stripe_module()
     _stripe.api_key = STRIPE_SECRET_KEY
     return _stripe
 
@@ -674,19 +680,29 @@ async def my_orders(user: dict = Depends(get_current_user)):
            .order("created_at", desc=True)
            .limit(100)
            .execute())
-    out = []
-    for o in res.data or []:
+    orders = res.data or []
+    # Batch items + downloads — TWO round-trips total instead of 2 per order.
+    item_rows = {}
+    dl_rows = {}
+    if orders:
+        ids = [o["id"] for o in orders]
         items = (supabase.table("store_order_items")
-                 .select("product_name,product_sku,unit_price_cents,quantity,line_total_cents")
-                 .eq("order_id", o["id"]).order("created_at").execute())
+                 .select("order_id,product_name,product_sku,unit_price_cents,quantity,line_total_cents")
+                 .in_("order_id", ids).order("created_at").execute()).data or []
+        for it in items:
+            item_rows.setdefault(it.get("order_id"), []).append(it)
         downloads = (supabase.table("store_downloads")
-                     .select("id,product_name,filename,token,downloads_allowed,downloads_used")
-                     .eq("order_id", o["id"]).execute()).data or []
+                     .select("order_id,id,product_name,filename,token,downloads_allowed,downloads_used")
+                     .in_("order_id", ids).execute()).data or []
+        for d in downloads:
+            dl_rows.setdefault(d.get("order_id"), []).append(d)
+    out = []
+    for o in orders:
         out.append({
             **o,
-            "items": items.data or [],
+            "items": item_rows.get(o["id"]) or [],
             "total": (o.get("total_cents") or 0) / 100,
-            "downloads": downloads,
+            "downloads": dl_rows.get(o["id"]) or [],
         })
     return out
 
@@ -865,7 +881,7 @@ async def product_order_webhook(request: Request):
     payload = await request.body()
     sig = request.headers.get("Stripe-Signature", "")
     try:
-        event = _stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET).to_dict()
+        event = _stripe_module().Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET).to_dict()
     except Exception as exc:
         raise HTTPException(400, f"Webhook signature verification failed: {exc}")
 

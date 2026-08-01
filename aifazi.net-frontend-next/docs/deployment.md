@@ -170,12 +170,12 @@ All API proxying is done via `next.config.js` rewrites, **not** via `vercel.json
 
 ### Build ID
 
-The `BUILD_ID` environment variable is set at build time to `VERCEL_GIT_COMMIT_SHA` (or a timestamp). It is used as a cache-busting key for `sessionStorage` — the loading screen is shown once per build.
+The `BUILD_ID` environment variable is set at build time to `VERCEL_GIT_COMMIT_SHA` (or a timestamp). It is used as a cache-busting key for `localStorage` — the loading screen is shown once per build, then skipped on repeat visits/tabs.
 
 ```ts
 // In providers.tsx
 const BUILD_ID = process.env.BUILD_ID || 'dev'
-if (sessionStorage.getItem('site-loaded') !== BUILD_ID) setLoading(true)
+if (localStorage.getItem('site-loaded') !== BUILD_ID) setLoading(true)
 ```
 
 ### Image Domains

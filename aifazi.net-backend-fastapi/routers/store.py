@@ -28,7 +28,6 @@ import logging
 import hmac
 from datetime import datetime, timezone
 
-import stripe as _stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
@@ -51,9 +50,16 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# Lazily import stripe so cold starts that never touch payments don't pay for it.
+def _stripe_module():
+    import stripe
+    return stripe
+
+
 def _stripe_client():
     if not STRIPE_SECRET_KEY:
         raise HTTPException(503, "Stripe is not configured. Set STRIPE_SECRET_KEY.")
+    _stripe = _stripe_module()
     _stripe.api_key = STRIPE_SECRET_KEY
     return _stripe
 
@@ -350,7 +356,7 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig = request.headers.get("Stripe-Signature", "")
     try:
-        event = _stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET).to_dict()
+        event = _stripe_module().Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET).to_dict()
     except Exception as exc:
         raise HTTPException(400, f"Webhook signature verification failed: {exc}")
 
@@ -490,7 +496,13 @@ async def _handle_payment_failed(invoice: dict) -> None:
 
 
 # ── FiveM Lua bridge ───────────────────────────────────────────────────────────
-@router.get("/subscriptions/pending-sync")
+# Exposed ONLY via /api/fivem/store/* (auth via X-FiveM-Token). A dedicated
+# router so the Lua bridge never re-exposes the rest of the store API (checkout,
+# webhook, portal, …) under the /api/fivem/store prefix.
+bridge_router = APIRouter()
+
+
+@bridge_router.get("/subscriptions/pending-sync")
 async def pending_subscription_sync(request: Request, limit: int = 25):
     _check_token(request)
     res = (supabase.table("user_subscriptions")
@@ -525,7 +537,7 @@ class SubscriptionSyncBody(BaseModel):
     note: str = ""
 
 
-@router.post("/subscriptions/mark-synced")
+@bridge_router.post("/subscriptions/mark-synced")
 async def mark_subscription_synced(body: SubscriptionSyncBody, request: Request):
     _check_token(request)
     current = supabase.table("user_subscriptions").select("sync_attempts").eq("id", body.subscription_id).limit(1).execute()

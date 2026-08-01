@@ -32,9 +32,11 @@ function BlogCover({ src, title }) {
   )
 }
 
-export default function Blog() {
-  const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
+export default function Blog({ initialPosts }) {
+  // ISR: when the server page renders, it passes cached posts so visitors see
+  // content on first paint instead of a client-side fetch + skeleton.
+  const [posts, setPosts] = useState(initialPosts || [])
+  const [loading, setLoading] = useState(!initialPosts)
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
   const [searchInput, setSearchInput] = useState('')
@@ -66,7 +68,13 @@ export default function Blog() {
     }
   }
 
-  useEffect(() => { fetchPosts() }, [category, search, activeTag])
+  const hasInitialData = !!(initialPosts && initialPosts.length)
+  useEffect(() => {
+    // When the ISR-rendered default view is already present, skip the redundant
+    // first fetch — the Realtime channel below keeps live edits in sync.
+    if (hasInitialData && !search && category === 'All' && !activeTag) return
+    fetchPosts()
+  }, [category, search, activeTag])
 
   // Live-sync: re-fetch whenever a post is inserted/updated/deleted in Supabase
   useEffect(() => {

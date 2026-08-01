@@ -98,9 +98,10 @@ async def sales_dashboard(_: dict = Depends(ANALYTICS)):
     products = _product_rows()
     low_stock = [p for p in products if p["track_inventory"] and int(p["stock_qty"] or 0) <= int(p.get("low_stock_threshold") or 0)]
 
-    # Top products by units sold
+    # Top products by units sold (bounded — full-table fetch was unbounded)
     items = (supabase.table("store_order_items")
              .select("product_name,quantity,line_total_cents")
+             .order("created_at", desc=True).limit(5000)
              .execute()).data or []
     sold: dict[str, int] = {}
     revenue_by: dict[str, int] = {}
@@ -304,12 +305,19 @@ async def admin_orders(status: str | None = None, _: dict = Depends(ORDERS)):
     if status:
         q = q.eq("status", status)
     res = q.execute()
-    out = []
-    for o in res.data or []:
+    orders = res.data or []
+    # Batch item fetch — ONE round-trip instead of one per order.
+    item_rows = {}
+    if orders:
+        ids = [o["id"] for o in orders]
         items = (supabase.table("store_order_items")
-                 .select("product_name,product_sku,unit_price_cents,quantity,line_total_cents")
-                 .eq("order_id", o["id"]).order("created_at").execute())
-        out.append({**o, "items": items.data or [], "total": (o.get("total_cents") or 0) / 100})
+                 .select("order_id,product_name,product_sku,unit_price_cents,quantity,line_total_cents")
+                 .in_("order_id", ids).order("created_at").execute()).data or []
+        for it in items:
+            item_rows.setdefault(it.get("order_id"), []).append(it)
+    out = []
+    for o in orders:
+        out.append({**o, "items": item_rows.get(o["id"]) or [], "total": (o.get("total_cents") or 0) / 100})
     return out
 
 

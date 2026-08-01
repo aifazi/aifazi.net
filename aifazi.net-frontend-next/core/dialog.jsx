@@ -37,14 +37,18 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
   const [inputVal, setInputVal] = useState(entry.defaultValue || '')
   const confirmRef = useRef(null)
   const inputRef   = useRef(null)
+  const panelRef   = useRef(null)
   const isAlert    = entry.type === 'alert'
   const isPrompt   = entry.type === 'prompt'
   const variant    = entry.variant || (isPrompt ? 'info' : 'danger')
   const v = VARIANTS[variant] || VARIANTS.danger
+  const titleId    = `dlg-title-${entry.id}`
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true))
-    // Focus input for prompts, confirm button otherwise
+    // Focus input for prompts, confirm button otherwise; remember where we came
+    // from so we can restore focus when the dialog closes.
+    const previouslyFocused = document.activeElement
     setTimeout(() => {
       if (isPrompt) inputRef.current?.focus()
       else confirmRef.current?.focus()
@@ -52,9 +56,32 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
     const onKey = e => {
       if (e.key === 'Escape') resolve(isPrompt ? null : false)
       if (e.key === 'Enter' && !isPrompt) resolve(true)
+      // Focus trap: keep Tab / Shift+Tab cycling inside the dialog.
+      if (e.key === 'Tab' && panelRef.current) {
+        const focusables = panelRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusables.length === 0) return
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        const active = document.activeElement
+        if (e.shiftKey && (active === first || active === panelRef.current)) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      // Restore focus to the element that opened the dialog.
+      if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+        previouslyFocused.focus()
+      }
+    }
   }, [])
 
   const resolve = useCallback((value) => {
@@ -103,12 +130,12 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
   return (
     <>
       <div onClick={() => resolve(isPrompt ? null : false)} role="presentation" style={backdropStyle} />
-      <div role="dialog" aria-modal="true" aria-labelledby="dlg-title" style={{
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={entry.message ? `${titleId}-desc` : undefined} style={{
         position: 'fixed', inset: 0, zIndex: zIndex.modal,
         display: 'flex', alignItems: isSheet ? 'flex-end' : 'center', justifyContent: isDrawer ? 'flex-end' : 'center',
         padding: isSheet ? 0 : 24, pointerEvents: 'none',
       }}>
-        <div style={panelStyle}>
+        <div ref={panelRef} style={panelStyle}>
           {/* Terminal: title bar with traffic dots */}
           {isTerminal && (
             <div style={{ background: 'rgba(0,255,136,0.08)', borderBottom: `1px solid ${v.color}44`, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -130,10 +157,10 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
           {/* Content */}
           <div style={{ padding: isSheet ? '16px 28px 32px' : '28px 32px 24px' }}>
             <div style={{ fontFamily: t.fontMono, fontSize: 9, letterSpacing: 3, color: v.color, marginBottom: 14, textTransform: 'uppercase' }}>{v.icon} {v.label}</div>
-            <h2 id="dlg-title" style={{ fontFamily: t.fontDisplay, fontSize: isBrutal ? 26 : 22, fontWeight: isBrutal ? 900 : 700, color: t.text, marginBottom: entry.message || isPrompt ? 10 : 0, lineHeight: 1.2, textTransform: isBrutal ? 'uppercase' : 'none' }}>
+            <h2 id={titleId} style={{ fontFamily: t.fontDisplay, fontSize: isBrutal ? 26 : 22, fontWeight: isBrutal ? 900 : 700, color: t.text, marginBottom: entry.message || isPrompt ? 10 : 0, lineHeight: 1.2, textTransform: isBrutal ? 'uppercase' : 'none' }}>
               {entry.title || (isPrompt ? 'Enter a value' : 'Are you sure?')}
             </h2>
-            {entry.message && <p style={{ fontFamily: t.fontDisplay, fontSize: 15, color: t.muted, lineHeight: 1.6, marginBottom: isPrompt ? 14 : 0 }}>{entry.message}</p>}
+            {entry.message && <p id={`${titleId}-desc`} style={{ fontFamily: t.fontDisplay, fontSize: 15, color: t.muted, lineHeight: 1.6, marginBottom: isPrompt ? 14 : 0 }}>{entry.message}</p>}
             {isPrompt && (
               <input ref={inputRef} value={inputVal} onChange={e => setInputVal(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePromptSubmit() } }}

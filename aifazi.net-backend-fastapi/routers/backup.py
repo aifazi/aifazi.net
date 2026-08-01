@@ -10,7 +10,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import PlainTextResponse, JSONResponse
 from database import supabase
-from dependencies import require_staff
+from dependencies import require_staff, require_admin
 from datetime import datetime, timezone
 import logging
 
@@ -224,7 +224,7 @@ async def backup_stats(_: dict = Depends(require_staff)):
 
 
 @router.get("")
-async def backup(_: dict = Depends(require_staff)):
+async def backup(_: dict = Depends(require_admin)):
     data = {}
     errors = {}
     tables = _discover_tables()
@@ -246,7 +246,7 @@ async def export_sql(
     mode: str = Query("schema", description="schema | data | full"),
     tables: str = Query("", description="comma-separated table filter"),
     if_not_exists: bool = Query(True, description="Use IF NOT EXISTS in CREATE TABLE"),
-    _: dict = Depends(require_staff),
+    _: dict = Depends(require_admin),
 ):
     if mode not in ("schema", "data", "full"):
         raise HTTPException(400, "mode must be one of: schema, data, full")

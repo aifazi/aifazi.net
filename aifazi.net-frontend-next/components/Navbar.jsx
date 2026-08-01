@@ -1,11 +1,15 @@
 ﻿'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { Link, useLocation, useNavigate } from '@/lib/router-compat'
 import { useForum } from '../context/ForumContext'
 import { useTheme } from '@/app/providers'
 import CommandPalette from './CommandPalette'
 import Terminal from './Terminal'
-import ThemePicker from './ThemePicker'
+// ThemePicker is ~113KB (theme catalog + admin global panel). It only matters
+// when the drawer opens, so load it lazily instead of shipping it to every
+// visitor on every page.
+const ThemePicker = dynamic(() => import('./ThemePicker'), { ssr: false })
 import api from '@/lib/api'
 import NotificationBell from './NotificationBell'
 import { getUsername, getRole, getAuthToken } from '@/lib/api'

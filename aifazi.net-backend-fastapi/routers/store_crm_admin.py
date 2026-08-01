@@ -22,6 +22,9 @@ router = APIRouter()
 CUSTOMERS = require_any_permission("store", "store.customers", action="view")
 PAYMENTS = require_any_permission("store", "store.payments", action="view")
 REVIEWS = require_any_permission("store", "store.reviews", action="view")
+# Refunds are a destructive financial write — never gate them behind a read-only
+# "view" permission. Only explicit manage-level access may reverse a payment.
+REFUND = require_any_permission("store", "store.payments", action="manage")
 
 
 def _now() -> str:
@@ -164,16 +167,25 @@ async def list_transactions(kind: str | None = None, limit: int = 300, _: dict =
 
 
 @router.post("/orders/{order_id}/refund")
-async def refund_order(order_id: str, staff: dict = Depends(PAYMENTS)):
+async def refund_order(order_id: str, staff: dict = Depends(REFUND)):
     res = supabase.table("store_orders").select("*").eq("id", order_id).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Order not found")
     order = res.data[0]
     if order.get("status") != "paid":
         raise HTTPException(400, "Only paid orders can be refunded")
-    if not order.get("payment_intent_id"):
-        # Manual refund for non-Stripe paid orders still records the ledger entry
-        pass
+
+    payment_intent_id = order.get("payment_intent_id") or order.get("stripe_payment_intent_id")
+
+    # Reverse the payment at Stripe FIRST. Only if that succeeds (or there is
+    # nothing to reverse) do we flip local state — otherwise the customer stays
+    # charged while the admin panel claims the order is refunded.
+    if payment_intent_id:
+        try:
+            from routers.store import _stripe_client
+            _stripe_client().Refund.create(payment_intent=payment_intent_id)
+        except Exception as exc:
+            raise HTTPException(502, f"Stripe refund failed: {exc}")
 
     # Record refund transaction
     supabase.table("store_transactions").insert({
@@ -182,7 +194,7 @@ async def refund_order(order_id: str, staff: dict = Depends(PAYMENTS)):
         "kind": "refund",
         "amount_cents": int(order.get("total_cents") or 0),
         "currency": order.get("currency") or "usd",
-        "stripe_payment_intent_id": order.get("payment_intent_id"),
+        "stripe_payment_intent_id": payment_intent_id,
     }).execute()
 
     supabase.table("store_orders").update({

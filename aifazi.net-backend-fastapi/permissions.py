@@ -59,6 +59,7 @@ ROLE_PERMISSION_PRESETS: dict[str, dict[str, list[str]]] = {
     "moderator": {
         "home": ["view"], "community.forum": ["view", "edit", "delete", "manage"],
         "community.chat": ["view", "edit", "delete", "manage"], "support.helpdesk": ["view", "edit"],
+        "content.media": ["view", "create", "edit", "delete"],
         "store": ["view", "edit", "manage"],
         "fivem.status": ["view"], "fivem.whitelist": ["view", "approve", "sync"],
         "fivem.forms": ["view", "approve"], "fivem.approval_log": ["view"], "fivem.bans": ["view", "create", "edit"],

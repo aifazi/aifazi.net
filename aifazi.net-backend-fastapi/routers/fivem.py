@@ -38,6 +38,22 @@ from utils.email_queue import queue_email
 log = logging.getLogger("fivem")
 router = APIRouter()
 
+# Hot-path throttle: the Lua heartbeat fires every ~30s and each stamping pass
+# runs up to 64 players x (1 fivem_whitelist UPDATE + 2 application_submissions
+# queries) — a serious N+1 against Supabase. Gate the whole stamping pass so it
+# runs at most once per 120s regardless of heartbeat frequency.
+_STAMP_INTERVAL_SECONDS = 120
+_stamp_last_ran: float = 0.0
+
+def _stamp_due() -> bool:
+    import time as _t
+    global _stamp_last_ran
+    now = _t.time()
+    if now - _stamp_last_ran < _STAMP_INTERVAL_SECONDS:
+        return False
+    _stamp_last_ran = now
+    return True
+
 WL_PUBLIC_FIELDS = (
     "id,status,txadmin_synced,character_name,fivem_id,fivem_license,steam_hex,"
     "discord_id,discord_name,email,applied_at,reviewed_at,reviewer_note,"
@@ -168,6 +184,9 @@ def _stamp_application_activity(player_ids: dict[str, Any], player_name: str, no
 
 def _stamp_whitelist_activity(players: List[Any] | None, now_iso: str) -> None:
     if not players:
+        return
+    # Throttle: only run the N+1 stamping pass once per _STAMP_INTERVAL_SECONDS.
+    if not _stamp_due():
         return
     for player in players[:64]:
         if not isinstance(player, dict):
@@ -874,7 +893,15 @@ async def check_whitelist(identifier: str):
     res = q.execute()
     if not res.data: return {"whitelisted": False}
     app = res.data[0]
-    return {"whitelisted": True, **app, "priority": _active_priority(app)}
+    # Do NOT echo the matched row's other identifiers back to an unauthenticated
+    # caller — that lets anyone enumerate steam_hex/fivem_license/fivem_id by
+    # probing identifiers. The caller already knows the identifier it queried.
+    return {
+        "whitelisted": True,
+        "status": app.get("status"),
+        "character_name": app.get("character_name"),
+        "priority": _active_priority(app),
+    }
 
 @router.get("/whitelist/search")
 async def search_whitelist(
@@ -2022,7 +2049,7 @@ async def get_public_status_overview(hours: int = 24):
     """Public, visitor-safe server overview: status summary + sanitized online
     player list (names/ping only — all identifiers stripped) + history series.
     Feed for the public /fivem/status page."""
-    hours = max(1, min(168, int(hours or 24)))
+    hours = max(1, min(24, int(hours or 24)))
 
     status_res = supabase.table("fivem_status").select("*").eq("id", "main").execute()
     if not status_res.data:
@@ -2085,7 +2112,8 @@ async def get_public_status_overview(hours: int = 24):
     since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
     hist_res = (supabase.table("server_status_history")
                 .select("recorded_at,players_online,max_players,status")
-                .gte("recorded_at", since).order("recorded_at", desc=False).execute())
+                .gte("recorded_at", since).order("recorded_at", desc=False)
+                .limit(1000).execute())
 
     return {"status": status, "players": players, "history": hist_res.data or [], "hours": hours}
 
@@ -2303,7 +2331,7 @@ def _player_ids_from_fields(
     return ids
 
 
-def _upsert_player_record(ids: dict, player_name: str, server_id: Any, now_iso: str) -> dict | None:
+def _build_player_record_row(ids: dict, player_name: str, server_id: Any, now_iso: str) -> dict | None:
     license_key = ids.get("license_key")
     if not license_key:
         return None
@@ -2323,6 +2351,13 @@ def _upsert_player_record(ids: dict, player_name: str, server_id: Any, now_iso: 
     ):
         if val:
             row[field] = val
+    return row
+
+
+def _upsert_player_record(ids: dict, player_name: str, server_id: Any, now_iso: str) -> dict | None:
+    row = _build_player_record_row(ids, player_name, server_id, now_iso)
+    if not row:
+        return None
     res = supabase.table("player_records").upsert(row, on_conflict="license_key").execute()
     return (res.data or [None])[0]
 
@@ -2394,14 +2429,20 @@ async def heartbeat_sync_players(body: PlayerHeartbeatBody, request: Request):
     _check_token(request)
     now_iso = _now()
     synced = 0
+    # Batch all player upserts into ONE round-trip (was 1 upsert per player).
+    rows = []
     for p in body.players or []:
         if not isinstance(p, dict):
             continue
         ids = _player_identifiers(p)
         if not (ids.get("license") or ids.get("license2") or ids.get("fivem_license")):
             continue
-        _upsert_player_record(ids, p.get("name") or "Unknown", p.get("server_id"), now_iso)
-        synced += 1
+        row = _build_player_record_row(ids, p.get("name") or "Unknown", p.get("server_id"), now_iso)
+        if row:
+            rows.append(row)
+            synced += 1
+    if rows:
+        supabase.table("player_records").upsert(rows, on_conflict="license_key").execute()
     return {"ok": True, "synced": synced}
 
 

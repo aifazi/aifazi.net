@@ -1,8 +1,10 @@
 ﻿'use client'
 import { useState, useEffect, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { Link, useLocation } from '@/lib/router-compat'
 import { useEdit } from '../context/EditContext'
-import ThemePicker from './ThemePicker'
+// Lazy-load the ~113KB theme drawer — it only renders when opened.
+const ThemePicker = dynamic(() => import('./ThemePicker'), { ssr: false })
 import { canEdit } from '@/lib/api'
 
 const NAV_ITEMS = [

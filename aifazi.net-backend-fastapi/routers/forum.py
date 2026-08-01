@@ -201,7 +201,7 @@ async def get_thread(thread_id: str):
         raise HTTPException(404, "Thread not found")
     thread = res.data
     supabase.table("forum_threads").update({"views": (thread["views"] or 0) + 1}).eq("id", thread_id).execute()
-    replies_res = supabase.table("forum_replies").select("*").eq("thread_id", thread_id).order("created_at").limit(1000).execute()
+    replies_res = supabase.table("forum_replies").select("*").eq("thread_id", thread_id).order("created_at").limit(500).execute()
     replies = replies_res.data or []
 
     author_ids = set()

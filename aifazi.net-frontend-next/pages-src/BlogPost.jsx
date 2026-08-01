@@ -303,10 +303,13 @@ function PostReactions({ postId }) {
   )
 }
 
-export default function BlogPost() {
+export default function BlogPost({ initialPost }) {
   const { slug } = useParams()
-  const [post, setPost] = useState(null)
-  const [loading, setLoading] = useState(true)
+  // ISR: when the server renders the page it passes the cached post body, so the
+  // article is visible immediately. The client re-fetches to stay live (Realtime)
+  // and to bump the view counter.
+  const [post, setPost] = useState(initialPost || null)
+  const [loading, setLoading] = useState(!initialPost)
   const [error, setError] = useState(null)
   const [scrollProgress, setScrollProgress] = useState(0)
   const [toc, setToc] = useState([])
@@ -339,6 +342,12 @@ export default function BlogPost() {
   }
 
   useEffect(() => {
+    // ISR-provided body already matches this slug — skip the initial fetch to
+    // avoid a loader flash. Realtime (below) keeps edits in sync.
+    if (initialPost && initialPost.slug === slug) {
+      setLoading(false)
+      return
+    }
     fetchPost()
   }, [slug])
 
