@@ -8,7 +8,7 @@ import { useTheme } from '@/app/providers'
 import { useNotify } from '../../core/notify.jsx'
 import { useDialog } from '../../core/dialog.jsx'
 import { clearSiteSettingsCache } from '@/lib/siteSettings'
-import { S, useIsMobile } from './shared'
+import { S, useIsMobile, PageHeader } from './shared'
 import {
   Toggle, PillPicker,
   HEADER_PRESETS, FOOTER_PRESETS,
@@ -913,12 +913,11 @@ function ThemeLibrary() {
 
   const TabBtn = ({ id, label }) => (
     <button onClick={() => { setActiveTab(id); setFocusedIdx(-1) }} style={{
-      fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '9px 18px',
+      fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '9px 16px',
       background: activeTab === id ? 'var(--green)' : 'transparent',
       color: activeTab === id ? '#000' : 'var(--muted)',
-      border: 'none', cursor: 'pointer',
-      borderBottom: activeTab === id ? '2px solid var(--green)' : '2px solid transparent',
-      transition: 'all 0.15s',
+      border: 'none', cursor: 'pointer', borderRadius: 8,
+      transition: 'all 0.15s', fontWeight: activeTab === id ? 700 : 400,
     }}>{label}</button>
   )
 
@@ -995,13 +994,11 @@ function ThemeLibrary() {
       `}</style>
 
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>SYSTEM  APPEARANCE</div>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, margin: 0 }}>Theme Library</h2>
-        <p style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 8 }}>
-          {THEME_DEFS.length} themes available  select then apply. Changes persist across sessions.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="SYSTEM · APPEARANCE"
+        title="Theme Library"
+        subtitle={`${THEME_DEFS.length} themes available — select then apply. Changes persist across sessions.`}
+      />
 
       {/* -- Always-global banner -------------------------------------------- */}
       <div style={{ marginBottom: 16, padding: '12px 16px', background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.25)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
@@ -1042,7 +1039,7 @@ function ThemeLibrary() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24, flexWrap: 'wrap', gap: 0 }}>
+      <div style={{ display: 'flex', gap: 3, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24, flexWrap: 'wrap', width: 'fit-content', maxWidth: '100%' }}>
         <TabBtn id="packages"   label="▧ PACKAGES" />
         <TabBtn id="themes"     label="🎨 THEMES" />
         <TabBtn id="animations" label="✨ ANIMATIONS" />
@@ -2004,7 +2001,7 @@ function ThemeLibrary() {
       {activeTab === 'global' && (() => {
         const setGA = (k, v) => autoSaveGlobalAppearance({ ...gAppearance, [k]: v })
         const T = {
-          card:  { background: 'var(--bg2)', border: '1px solid var(--border)', padding: '24px', marginBottom: 20, borderRadius: 8 },
+          card:  { background: 'var(--bg2)', border: '1px solid var(--border)', padding: '22px', marginBottom: 20, borderRadius: 12 },
           sec:   { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid var(--border)' },
           label: { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, display: 'block' },
           sub:   { fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4, lineHeight: 1.5 },

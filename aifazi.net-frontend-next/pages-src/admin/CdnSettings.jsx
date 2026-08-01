@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react'
 import api, { refreshCdnConfig } from '@/lib/api'
 import { Select } from '../../core/ui.jsx'
-import { S, useIsMobile } from './shared'
+import { S, useIsMobile, PageHeader } from './shared'
+import { Icon } from './icons'
 
 function CdnSettings() {
   const [cfg, setCfg]           = useState(null)
@@ -69,22 +70,21 @@ function CdnSettings() {
   // -- Style tokens (mirrors MailSettings) ------------------------------------
   const T = {
     label: { display: 'block', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' },
-    inp:   { width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--fg)', padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' },
-    card:  { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 2, padding: '24px' },
+    inp:   { width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box', borderRadius: 10, transition: 'border-color 0.15s, box-shadow 0.15s' },
+    card:  { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '22px' },
     btn: (variant = 'primary') => ({
       padding: '11px 22px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
-      cursor: testing || saving ? 'not-allowed' : 'pointer', border: 'none',
+      cursor: testing || saving ? 'not-allowed' : 'pointer', border: 'none', borderRadius: 8,
       background: variant === 'primary' ? 'var(--green)' : variant === 'danger' ? '#ff4757' : variant === 'ghost' ? 'transparent' : '#1e2d45',
-      color: variant === 'ghost' ? 'var(--muted)' : variant === 'secondary' ? 'var(--fg)' : '#000',
+      color: variant === 'ghost' ? 'var(--muted)' : variant === 'secondary' ? 'var(--text)' : '#000',
       ...(variant === 'ghost' ? { border: '1px solid var(--border)' } : {}),
       opacity: testing || saving ? 0.6 : 1, transition: 'opacity 0.15s', whiteSpace: 'nowrap',
     }),
     tabBtn: (active) => ({
       padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
-      cursor: 'pointer', border: 'none',
+      cursor: 'pointer', border: 'none', borderRadius: 8,
       background: active ? 'var(--green)' : 'transparent',
       color: active ? '#000' : 'var(--muted)',
-      borderBottom: active ? '2px solid var(--green)' : '2px solid transparent',
       transition: 'all 0.15s',
     }),
     statusDot: (status) => ({
@@ -164,25 +164,23 @@ function CdnSettings() {
     <div style={{ maxWidth: 820, paddingBottom: 60 }}>
 
       {/* -- Header ---------------------------------------------------------- */}
-      <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 4, marginBottom: 6 }}>ADMIN  CDN SETTINGS</div>
-          <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--fg)', margin: 0, lineHeight: 1 }}>CDN & File Storage</h2>
-          <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 8, lineHeight: 1.6, maxWidth: 520 }}>
-            Choose your file upload provider, configure credentials, and map a custom delivery domain. Live reload  no server restart needed.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {testStatus && (
-            <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: testStatus === 'ok' ? '#00ff88' : '#ff4757' }}>
-              <span style={T.statusDot(testStatus)} />{testStatus === 'ok' ? 'CONNECTED' : 'FAILED'}
-            </div>
-          )}
-          <button onClick={() => setShowLog(p => !p)} style={{ ...T.btn('ghost'), fontSize: 9 }}>
-            {showLog ? 'HIDE LOG' : `📋 LOG${activityLog.length ? ` (${activityLog.length})` : ''}`}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="ADMIN · CDN SETTINGS"
+        title="CDN & File Storage"
+        subtitle="Choose your file upload provider, configure credentials, and map a custom delivery domain. Live reload — no server restart needed."
+        actions={
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {testStatus && (
+              <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: testStatus === 'ok' ? '#00ff88' : '#ff4757' }}>
+                <span style={T.statusDot(testStatus)} />{testStatus === 'ok' ? 'CONNECTED' : 'FAILED'}
+              </div>
+            )}
+            <button onClick={() => setShowLog(p => !p)} style={{ ...T.btn('ghost'), fontSize: 9, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="clipboard" size={14} />{showLog ? 'HIDE LOG' : `LOG${activityLog.length ? ` (${activityLog.length})` : ''}`}
+            </button>
+          </div>
+        }
+      />
 
       {/* -- Activity log ---------------------------------------------------- */}
       {showLog && (
@@ -215,10 +213,10 @@ function CdnSettings() {
       )}
 
       {/* -- Section tabs ---------------------------------------------------- */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24, gap: 0, overflowX: 'auto' }}>
-        {[['provider','○','Provider'],['credentials','○','Credentials'],['domain','○','Custom Domain'],['guide','○','Setup Guide']].map(([k, icon, label]) => (
+      <div style={{ display: 'flex', gap: 3, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24, width: 'fit-content', maxWidth: '100%', overflowX: 'auto' }}>
+        {[['provider','Provider'],['credentials','Credentials'],['domain','Custom Domain'],['guide','Setup Guide']].map(([k, label]) => (
           <button key={k} onClick={() => setActiveSection(k)} style={T.tabBtn(activeSection === k)}>
-            {icon} {label.toUpperCase()}
+            {label.toUpperCase()}
           </button>
         ))}
       </div>
@@ -233,12 +231,12 @@ function CdnSettings() {
               const active = cfg.provider === key
               return (
                 <div key={key} onClick={() => set('provider', key)} style={{
-                  padding: 18, cursor: 'pointer', position: 'relative',
+                  padding: 18, cursor: 'pointer', position: 'relative', borderRadius: 12,
                   background: active ? `${info.color}11` : 'var(--bg3)',
                   border: `1px solid ${active ? info.color : 'var(--border)'}`,
                   transition: 'all 0.15s',
                 }}>
-                  {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: info.color }} />}
+                  {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: info.color, borderRadius: '12px 12px 0 0' }} />}
                   <div style={{ fontSize: 22, marginBottom: 8 }}>{info.icon}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: active ? info.color : 'var(--fg)', letterSpacing: 1 }}>{info.name}</span>
@@ -257,7 +255,7 @@ function CdnSettings() {
           </div>
 
           {/* Active provider summary */}
-          <div style={{ padding: '16px 20px', background: `${activeProvider.color}0d`, border: `1px solid ${activeProvider.color}33`, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ padding: '16px 20px', background: `${activeProvider.color}0d`, border: `1px solid ${activeProvider.color}33`, borderRadius: 12, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 24 }}>{activeProvider.icon}</span>
             <div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: activeProvider.color, letterSpacing: 2, marginBottom: 2 }}>ACTIVE PROVIDER: {activeProvider.name.toUpperCase()}</div>
@@ -568,7 +566,7 @@ function CdnSettings() {
               'Paste credentials and Pull Zone URL, Save & Test',
             ]},
           ].map(({ key, color, icon, title, steps }) => (
-            <div key={key} style={{ ...T.card, borderLeft: `3px solid ${color}`, opacity: cfg.provider === key ? 1 : 0.55, transition: 'opacity 0.2s' }}>
+            <div key={key} style={{ ...T.card, borderLeft: `3px solid ${color}`, borderRadius: 12, opacity: cfg.provider === key ? 1 : 0.55, transition: 'opacity 0.2s' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                 <span style={{ fontSize: 18 }}>{icon}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color, letterSpacing: 2 }}>{title.toUpperCase()}</span>

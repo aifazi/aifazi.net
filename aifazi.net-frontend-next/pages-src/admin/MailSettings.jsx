@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { Checkbox, Select } from '../../core/ui.jsx'
-import { S, useIsMobile } from './shared'
+import { S, useIsMobile, PageHeader } from './shared'
 
 function MailSettings() {
   const [cfg, setCfg]               = useState(null)
@@ -121,14 +121,14 @@ function MailSettings() {
   // -- Shared style tokens ----------------------------------------------------
   const T = {
     label:    { display: 'block', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' },
-    inp:      { width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--fg)', padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' },
+    inp:      { width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box', borderRadius: 10, transition: 'border-color 0.15s, box-shadow 0.15s' },
     inpFocus: { borderColor: 'var(--cyan)' },
-    card:     { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 2, padding: '24px' },
+    card:     { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '22px' },
     btn:      (variant = 'primary') => ({
       padding: '11px 22px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
-      cursor: testing || saving ? 'not-allowed' : 'pointer', border: 'none',
+      cursor: testing || saving ? 'not-allowed' : 'pointer', border: 'none', borderRadius: 8,
       background: variant === 'primary' ? 'var(--cyan)' : variant === 'danger' ? '#ff4757' : variant === 'ghost' ? 'transparent' : '#1e2d45',
-      color: variant === 'ghost' ? 'var(--muted)' : variant === 'secondary' ? 'var(--fg)' : '#000',
+      color: variant === 'ghost' ? 'var(--muted)' : variant === 'secondary' ? 'var(--text)' : '#000',
       ...(variant === 'ghost' ? { border: '1px solid var(--border)' } : {}),
       opacity: testing || saving ? 0.6 : 1,
       transition: 'opacity 0.15s',
@@ -136,16 +136,15 @@ function MailSettings() {
     }),
     tabBtn:   (active) => ({
       padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
-      cursor: 'pointer', border: 'none',
+      cursor: 'pointer', border: 'none', borderRadius: 8,
       background: active ? 'var(--cyan)' : 'transparent',
       color: active ? '#000' : 'var(--muted)',
-      borderBottom: active ? '2px solid var(--cyan)' : '2px solid transparent',
       transition: 'all 0.15s',
     }),
     provBtn:  (active) => ({
       flex: 1, padding: '14px 10px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
-      cursor: 'pointer', transition: 'all 0.15s',
-      background: active ? 'var(--cyan)' : 'var(--bg2)',
+      cursor: 'pointer', transition: 'all 0.15s', borderRadius: 8,
+      background: active ? 'var(--cyan)' : 'var(--bg3)',
       color: active ? '#000' : 'var(--muted)',
       border: `1px solid ${active ? 'var(--cyan)' : 'var(--border)'}`,
       fontWeight: active ? 700 : 400,
@@ -167,26 +166,24 @@ function MailSettings() {
     <div style={{ maxWidth: 780, paddingBottom: 60 }}>
 
       {/* -- Page header ------------------------------------------------------- */}
-      <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>ADMIN  MAIL SETTINGS</div>
-          <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--fg)', margin: 0, lineHeight: 1 }}>Email Configuration</h2>
-          <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 8, lineHeight: 1.6, maxWidth: 480 }}>
-            Configure outgoing &amp; incoming providers. Live reload  no server restart needed.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {verifyStatus && (
-            <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: verifyStatus === 'ok' ? '#00ff88' : '#ff4757' }}>
-              <span style={T.statusDot(verifyStatus)} />
-              {verifyStatus === 'ok' ? 'VERIFIED' : 'FAILED'}
-            </div>
-          )}
-          <button onClick={() => setShowLog(p => !p)} style={{ ...T.btn('ghost'), fontSize: 9 }}>
-            {showLog ? 'HIDE LOG' : `📋 LOG${emailLog.length ? ` (${emailLog.length})` : ''}`}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="ADMIN · MAIL SETTINGS"
+        title="Email Configuration"
+        subtitle="Configure outgoing & incoming providers. Live reload — no server restart needed."
+        actions={
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {verifyStatus && (
+              <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: verifyStatus === 'ok' ? '#00ff88' : '#ff4757' }}>
+                <span style={T.statusDot(verifyStatus)} />
+                {verifyStatus === 'ok' ? 'VERIFIED' : 'FAILED'}
+              </div>
+            )}
+            <button onClick={() => setShowLog(p => !p)} style={{ ...T.btn('ghost'), fontSize: 9 }}>
+              {showLog ? 'HIDE LOG' : `📋 LOG${emailLog.length ? ` (${emailLog.length})` : ''}`}
+            </button>
+          </div>
+        }
+      />
 
       {/* -- Email send log ---------------------------------------------------- */}
       {showLog && (
@@ -244,15 +241,15 @@ function MailSettings() {
       )}
 
       {/* -- Section tabs ------------------------------------------------------ */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24, gap: 0, overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: 3, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24, width: 'fit-content', maxWidth: '100%', overflowX: 'auto' }}>
         {[
-          ['outgoing',      '○', 'Outgoing'],
-          ['incoming',      '○', 'Incoming'],
-          ['identity',      '○',  'Identity'],
-          ['notifications', '○', 'Notifications'],
-        ].map(([k, icon, label]) => (
+          ['outgoing',      'Outgoing'],
+          ['incoming',      'Incoming'],
+          ['identity',      'Identity'],
+          ['notifications', 'Notifications'],
+        ].map(([k, label]) => (
           <button key={k} onClick={() => setActiveSection(k)} style={T.tabBtn(activeSection === k)}>
-            {icon} {label.toUpperCase()}
+            {label.toUpperCase()}
           </button>
         ))}
       </div>

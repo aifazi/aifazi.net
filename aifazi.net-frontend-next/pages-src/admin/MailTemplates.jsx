@@ -438,8 +438,11 @@ export default function MailTemplates() {
     <div style={{ paddingBottom:60 }}>
       {/* Header */}
       <div style={{ marginBottom:24 }}>
-        <div style={{ fontFamily:C.mono, fontSize:9, color:C.cyan, letterSpacing:4, marginBottom:6 }}>ADMIN · MAIL</div>
-        <h2 style={{ fontFamily:C.mono, fontSize:24, fontWeight:800, margin:0, color:C.text, letterSpacing:1 }}>Mail Templates</h2>
+        <div style={{ display:'flex', alignItems:'center', gap:8, fontFamily:C.mono, fontSize:9, color:C.cyan, letterSpacing:4, marginBottom:8, textTransform:'uppercase' }}>
+          <span style={{ width:14, height:2, background:'linear-gradient(90deg,#22d3ee,transparent)', borderRadius:2 }} />
+          ADMIN · MAIL
+        </div>
+        <h2 style={{ fontFamily:'var(--font-display)', fontSize:26, fontWeight:700, margin:0, color:C.text, letterSpacing:-0.5, lineHeight:1.2 }}>Mail Templates</h2>
         <div style={{ fontFamily:C.ui, fontSize:12, color:C.muted, marginTop:6 }}>
           Customise HTML templates for every system email. Variables are highlighted — click to insert.
         </div>

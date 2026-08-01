@@ -114,8 +114,9 @@ export default function AdminChat({ embedded=false }) {
     let cancelled = false
     api.get('/auth/me').then(r => {
       if (cancelled) return
-      if (!r.data?.user) { setAuthState('no'); return }
-      const nextUser = r.data.user
+      // /auth/me returns the user flat (top-level), so accept both shapes.
+      const nextUser = r.data?.user || r.data
+      if (!nextUser?.username && !nextUser?._id) { setAuthState('no'); return }
       setEffectiveAccess(nextUser)
       setAuthState('ok')
       const nextName = nextUser.username || getUsername() || parseJwt(token)?.username
@@ -213,8 +214,8 @@ export default function AdminChat({ embedded=false }) {
           const row = payload.new || payload.old
           if (row?.username === me && !cancelled) {
             api.get('/auth/me').then(r => {
-              if (!cancelled && r.data?.user) {
-                const nextUser = r.data.user
+              const nextUser = r.data?.user || r.data
+              if (!cancelled && (nextUser?.username || nextUser?._id)) {
                 setEffectiveAccess(nextUser)
                 const nextRole = nextUser.role || getRole() || 'user'
                 setRole(nextRole)
@@ -235,8 +236,8 @@ export default function AdminChat({ embedded=false }) {
     const intervalId = setInterval(() => {
       api.get('/auth/me')
         .then(r => {
-          if (!cancelled && r.data?.user) {
-            const nextUser = r.data.user
+          const nextUser = r.data?.user || r.data
+          if (!cancelled && (nextUser?.username || nextUser?._id)) {
             setEffectiveAccess(nextUser)
             const nextRole = nextUser.role || getRole() || 'user'
             setRole(nextRole)

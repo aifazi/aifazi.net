@@ -228,8 +228,11 @@ export default function MailQueue() {
       {/* Header */}
       <div style={{ marginBottom:24, display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div>
-          <div style={{ fontFamily:C.mono, fontSize:9, color:C.cyan, letterSpacing:4, marginBottom:6 }}>ADMIN · MAIL</div>
-          <h2 style={{ fontFamily:C.mono, fontSize:24, fontWeight:800, margin:0, color:C.text, letterSpacing:1 }}>Mail Queue</h2>
+          <div style={{ display:'flex', alignItems:'center', gap:8, fontFamily:C.mono, fontSize:9, color:C.cyan, letterSpacing:4, marginBottom:8, textTransform:'uppercase' }}>
+            <span style={{ width:14, height:2, background:'linear-gradient(90deg,#22d3ee,transparent)', borderRadius:2 }} />
+            ADMIN · MAIL
+          </div>
+          <h2 style={{ fontFamily:'var(--font-display)', fontSize:26, fontWeight:700, margin:0, color:C.text, letterSpacing:-0.5, lineHeight:1.2 }}>Mail Queue</h2>
           <div style={{ fontFamily:C.ui, fontSize:12, color:C.muted, marginTop:6 }}>
             All outgoing system emails — delivery stats from every provider.
             {syncing && <span style={{ color:C.cyan, marginLeft:8, fontSize:11 }}>⟳ syncing</span>}
