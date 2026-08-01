@@ -31,6 +31,7 @@ from datetime import datetime, timedelta, timezone
 import stripe as _stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from postgrest.exceptions import APIError
 
 from database import supabase
 from dependencies import get_current_user
@@ -492,7 +493,7 @@ async def product_order_webhook(request: Request):
     payload = await request.body()
     sig = request.headers.get("Stripe-Signature", "")
     try:
-        event = _stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
+        event = _stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET).to_dict()
     except Exception as exc:
         raise HTTPException(400, f"Webhook signature verification failed: {exc}")
 
@@ -513,9 +514,12 @@ async def product_order_webhook(request: Request):
 
 async def _mark_order_paid(order_id: str, payment_intent_id: str | None) -> None:
     now = _now()
-    res = supabase.table("store_orders").select(
-        "id,status,total_cents,subtotal_cents,discount_cents,tax_cents,currency,user_id,order_number,customer_name,customer_email,billing_address"
-    ).eq("id", order_id).limit(1).execute()
+    try:
+        res = supabase.table("store_orders").select(
+            "id,status,total_cents,subtotal_cents,discount_cents,tax_cents,currency,user_id,order_number,customer_name,customer_email,billing_address"
+        ).eq("id", order_id).limit(1).execute()
+    except APIError:
+        return
     if not res.data:
         return
     order = res.data[0]

@@ -13,8 +13,9 @@ Authenticated (JWT):
   POST /api/store/portal              — Stripe Billing Portal session → {url}
   POST /api/store/cancel              — cancel at period end
 Webhook (Stripe signature verified):
-  POST /api/store/webhook             — checkout.session.completed,
-                                        customer.subscription.updated/deleted,
+  POST /api/store/webhook             — checkout.session.completed (subscription OR
+                                        product_order), payment_intent.succeeded,
+                                        customer.subscription.created/updated/deleted,
                                         invoice.payment_failed
 FiveM Lua bridge (X-FiveM-Token):
   GET  /api/fivem/store/subscriptions/pending-sync
@@ -33,6 +34,7 @@ from pydantic import BaseModel
 
 from database import supabase
 from dependencies import get_current_user
+from routers.store_ecommerce import _mark_order_paid
 
 log = logging.getLogger("store")
 router = APIRouter()
@@ -348,7 +350,7 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig = request.headers.get("Stripe-Signature", "")
     try:
-        event = _stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
+        event = _stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET).to_dict()
     except Exception as exc:
         raise HTTPException(400, f"Webhook signature verification failed: {exc}")
 
@@ -357,7 +359,17 @@ async def stripe_webhook(request: Request):
     log.info("stripe webhook: %s (id=%s)", event_type, data.get("id"))
 
     if event_type == "checkout.session.completed":
-        await _handle_checkout_completed(data)
+        meta = data.get("metadata") or {}
+        if meta.get("kind") == "product_order" and meta.get("order_id"):
+            await _mark_order_paid(meta["order_id"], data.get("payment_intent"))
+        else:
+            await _handle_checkout_completed(data)
+    elif event_type == "payment_intent.succeeded":
+        pi_id = data.get("id")
+        if pi_id:
+            res = supabase.table("store_orders").select("id").eq("payment_intent_id", pi_id).limit(1).execute()
+            if res.data:
+                await _mark_order_paid(res.data[0]["id"], pi_id)
     elif event_type in ("customer.subscription.created", "customer.subscription.updated"):
         await _handle_subscription_upsert(data)
     elif event_type == "customer.subscription.deleted":
@@ -433,7 +445,7 @@ async def _handle_checkout_completed(session: dict) -> None:
         return
     # Fetch full subscription to get plan + period info.
     try:
-        sub = _stripe_client().subscriptions.retrieve(sub_id)
+        sub = _stripe_client().subscriptions.retrieve(sub_id).to_dict()
     except Exception:
         sub = {"id": sub_id, "customer": session.get("customer"),
                "status": "active", "items": {"data": []}}
