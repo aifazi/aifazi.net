@@ -32,6 +32,16 @@ MODULES = {
     "system.settings": "Settings",
     "support.helpdesk": "Help desk",
     "store": "Store",
+    "store.analytics": "Store analytics",
+    "store.products": "Store products",
+    "store.categories": "Store categories",
+    "store.orders": "Store orders",
+    "store.payments": "Store payments",
+    "store.customers": "Store customers",
+    "store.coupons": "Store coupons",
+    "store.deals": "Store deals",
+    "store.reviews": "Store reviews",
+    "store.settings": "Store settings",
     "fivem.status": "FiveM status",
     "fivem.whitelist": "FiveM whitelist",
     "fivem.forms": "FiveM forms",
@@ -154,5 +164,21 @@ def require_permission(module: str, action: str = "view"):
             raise HTTPException(status_code=403, detail="Staff only")
         if access.get("role") != "admin" and not has_permission(user, module, action):
             raise HTTPException(status_code=403, detail=f"Permission required: {module}.{action}")
+        return {**user, **{k: v for k, v in access.items() if k != "staff_row"}}
+    return _check
+
+
+def require_any_permission(*modules: str, action: str = "view"):
+    """Allow access if the caller has ANY of the given modules (e.g. the
+    umbrella 'store' module OR a fine-grained 'store.<sub>' module)."""
+    from dependencies import get_current_user
+    def _check(user: dict = Depends(get_current_user)) -> dict:
+        access = resolve_staff_access(user)
+        if not access:
+            raise HTTPException(status_code=403, detail="Staff only")
+        if access.get("role") == "admin":
+            return {**user, **{k: v for k, v in access.items() if k != "staff_row"}}
+        if not any(has_permission(user, m, action) for m in modules):
+            raise HTTPException(status_code=403, detail=f"Permission required: {', '.join(modules)}")
         return {**user, **{k: v for k, v in access.items() if k != "staff_row"}}
     return _check

@@ -70,7 +70,7 @@ function numberInput(v, onChange) {
 }
 
 // ── Sales overview tab ─────────────────────────────────────────────────────────
-function SalesTab({ data, onRefresh }) {
+export function SalesTab({ data, onRefresh }) {
   const stats = data ? [
     { label: 'REVENUE', value: money(data.revenue_cents), color: G, sub: `${data.paid_orders_count} paid orders` },
     { label: 'REFUNDS', value: money(data.refund_cents), color: R, sub: 'all time' },
@@ -141,7 +141,7 @@ const EMPTY_PRODUCT = {
   digital_file_url: '', download_limit: 5,
 }
 
-function ProductsTab({ categories }) {
+export function ProductsTab({ categories, onOpenVariants }) {
   const toast = useToast()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -337,6 +337,9 @@ function ProductsTab({ categories }) {
               ) : <Badge color="var(--muted)">untracked</Badge>}
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
+              {typeof onOpenVariants === 'function' && (
+                <Btn onClick={() => onOpenVariants(p)} small color={Y}>🧩 {p.variant_count || 0}</Btn>
+              )}
               <Btn onClick={() => startEdit(p)} small color={C}>EDIT</Btn>
               <Btn onClick={() => remove(p)} small danger>DEL</Btn>
             </div>
@@ -350,7 +353,7 @@ function ProductsTab({ categories }) {
 // ── Categories tab ─────────────────────────────────────────────────────────────
 const EMPTY_CAT = { slug: '', name: '', icon: '🛒', description: '', scope: 'all', display_order: 0, active: true }
 
-function CategoriesTab() {
+export function CategoriesTab() {
   const toast = useToast()
   const [cats, setCats] = useState([])
   const [loading, setLoading] = useState(true)
@@ -433,7 +436,7 @@ function CategoriesTab() {
 }
 
 // ── Orders tab ─────────────────────────────────────────────────────────────────
-function OrdersTab() {
+export function OrdersTab() {
   const toast = useToast()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -578,7 +581,7 @@ function OrdersTab() {
 }
 
 // ── Invoices tab ───────────────────────────────────────────────────────────────
-function InvoicesTab() {
+export function InvoicesTab() {
   const toast = useToast()
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(true)
@@ -622,7 +625,7 @@ function InvoicesTab() {
 }
 
 // ── Quotes tab ─────────────────────────────────────────────────────────────────
-function QuotesTab() {
+export function QuotesTab() {
   const toast = useToast()
   const [quotes, setQuotes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -687,7 +690,7 @@ const EMPTY_PLAN = {
   category_id: '', display_order: 0, active: true,
 }
 
-function PlansTab({ categories }) {
+export function PlansTab({ categories }) {
   const toast = useToast()
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
@@ -841,7 +844,7 @@ function PlansTab({ categories }) {
 }
 
 // ── Subscriptions tab (user_subscriptions) ─────────────────────────────────────
-function SubscriptionsTab() {
+export function SubscriptionsTab() {
   const toast = useToast()
   const [subs, setSubs] = useState([])
   const [loading, setLoading] = useState(true)

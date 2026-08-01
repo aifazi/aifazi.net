@@ -39,6 +39,7 @@ from postgrest.exceptions import APIError
 
 from database import supabase
 from dependencies import get_current_user
+from routers.store_ledger import log_stock_change
 
 log = logging.getLogger("store.ecommerce")
 router = APIRouter()
@@ -85,8 +86,8 @@ def _number(prefix: str) -> str:
     return f"{prefix}-{n}"
 
 
-def _product_payload(row: dict) -> dict:
-    return {
+def _product_payload(row: dict, variants=None, deal=None, rating=None) -> dict:
+    payload = {
         "id": row.get("id"),
         "slug": row.get("slug"),
         "name": row.get("name"),
@@ -107,7 +108,101 @@ def _product_payload(row: dict) -> dict:
         "category": row.get("category_slug") or "",
         "sort_order": int(row.get("sort_order") or 0),
         "created_at": row.get("created_at"),
+        "variants": variants or [],
+        "rating": rating or {"rating": None, "count": 0},
     }
+    if deal:
+        deal_price = max(0, round(payload["price_cents"] * (100 - int(deal.get("discount_percent") or 0)) / 100))
+        payload["deal"] = {
+            "id": deal.get("id"),
+            "name": deal.get("name"),
+            "subtitle": deal.get("subtitle") or "",
+            "discount_percent": int(deal.get("discount_percent") or 0),
+            "starts_at": deal.get("starts_at"),
+            "ends_at": deal.get("ends_at"),
+        }
+        payload["deal_price_cents"] = deal_price
+        payload["deal_price"] = deal_price / 100
+    else:
+        payload["deal"] = None
+    return payload
+
+
+def _variants_for(product_id: str) -> list[dict]:
+    res = (supabase.table("store_product_variants").select("*")
+           .eq("product_id", product_id).eq("active", True).order("sort_order").execute()).data or []
+    out = []
+    for v in res:
+        out.append({
+            "id": v.get("id"),
+            "product_id": v.get("product_id"),
+            "name": v.get("name"),
+            "sku": v.get("sku") or "",
+            "price_cents": int(v.get("price_cents") or 0),
+            "price": (v.get("price_cents") or 0) / 100,
+            "stock_qty": int(v.get("stock_qty") or 0),
+            "track_inventory": bool(v.get("track_inventory", True)),
+            "attributes": v.get("attributes") or {},
+            "image_url": v.get("image_url") or "",
+            "in_stock": not v.get("track_inventory", True) or int(v.get("stock_qty") or 0) > 0,
+            "sort_order": int(v.get("sort_order") or 0),
+        })
+    return out
+
+
+def _rating_for(product_id: str) -> dict:
+    res = (supabase.table("store_reviews")
+           .select("rating").eq("product_id", product_id).eq("status", "approved").execute().data or [])
+    if not res:
+        return {"rating": None, "count": 0}
+    avg = round(sum(int(r.get("rating") or 0) for r in res) / len(res), 1)
+    return {"rating": avg, "count": len(res)}
+
+
+def _active_deal_for(product_id: str) -> dict | None:
+    now = _now()
+    res = (supabase.table("store_deals")
+           .select("*").eq("product_id", product_id).eq("active", True).execute().data or [])
+    for d in res:
+        if d.get("starts_at") and d["starts_at"] > now:
+            continue
+        if d.get("ends_at") and d["ends_at"] < now:
+            continue
+        return d
+    return None
+
+
+def _resolve_coupon(code: str, subtotal_cents: int, product_ids: list[str]) -> dict | None:
+    """Validate a coupon code and compute the discount. Returns None if invalid."""
+    if not code:
+        return None
+    res = supabase.table("store_coupons").select("*").ilike("code", code.strip()).limit(1).execute()
+    if not res.data:
+        return None
+    c = res.data[0]
+    now = _now()
+    if not c.get("active"):
+        return None
+    if c.get("starts_at") and c["starts_at"] > now:
+        return None
+    if c.get("expires_at") and c["expires_at"] < now:
+        return None
+    if int(c.get("max_uses") or 0) > 0 and int(c.get("used_count") or 0) >= int(c["max_uses"]):
+        return None
+    if subtotal_cents < int(c.get("min_subtotal_cents") or 0):
+        return None
+    restricted = [p for p in (c.get("product_ids") or []) if p]
+    if restricted and not all(pid in restricted for pid in product_ids):
+        return None
+    ctype = c.get("type") or "fixed"
+    if ctype == "fixed":
+        discount = min(int(c.get("value_cents") or 0), subtotal_cents)
+    elif ctype == "percent":
+        discount = round(subtotal_cents * int(c.get("value_percent") or 0) / 100)
+    else:
+        discount = 0
+    return {"id": c.get("id"), "code": c.get("code"), "type": ctype,
+            "discount_cents": min(discount, subtotal_cents)}
 
 
 def _product_rows(include_inactive: bool = False) -> list[dict]:
@@ -137,7 +232,56 @@ async def list_products(category: str | None = None, featured: bool | None = Non
         rows = [r for r in rows if (r.get("category_slug") or "") == category]
     if featured is not None:
         rows = [r for r in rows if bool(r.get("featured")) == featured]
-    return [_product_payload(r) for r in rows]
+
+    pids = [r.get("id") for r in rows if r.get("id")]
+    variants: dict[str, list[dict]] = {}
+    deals: dict[str, dict] = {}
+    ratings: dict[str, dict] = {}
+    if pids:
+        vs = (supabase.table("store_product_variants").select("*")
+              .eq("active", True).in_("product_id", pids).order("sort_order").execute().data or [])
+        for v in vs:
+            variants.setdefault(v.get("product_id"), []).append(v)
+        now = _now()
+        ds = (supabase.table("store_deals").select("*")
+              .eq("active", True).in_("product_id", pids).execute().data or [])
+        for d in ds:
+            if d.get("product_id") in deals:
+                continue
+            if d.get("starts_at") and d["starts_at"] > now:
+                continue
+            if d.get("ends_at") and d["ends_at"] < now:
+                continue
+            deals[d.get("product_id")] = d
+        rs = (supabase.table("store_reviews").select("product_id,rating")
+              .eq("status", "approved").in_("product_id", pids).execute().data or [])
+        cnt: dict[str, int] = {}
+        tot: dict[str, int] = {}
+        for r in rs:
+            pid = r.get("product_id")
+            if not pid:
+                continue
+            cnt[pid] = cnt.get(pid, 0) + 1
+            tot[pid] = tot.get(pid, 0) + int(r.get("rating") or 0)
+        ratings = {pid: {"rating": round(tot[pid] / cnt[pid], 1), "count": cnt[pid]} for pid in cnt}
+
+    out = []
+    for r in rows:
+        pid = r.get("id")
+        # transform raw variant rows
+        transformed = []
+        for v in variants.get(pid, []):
+            transformed.append({
+                "id": v.get("id"), "product_id": v.get("product_id"), "name": v.get("name"),
+                "sku": v.get("sku") or "", "price_cents": int(v.get("price_cents") or 0),
+                "price": (v.get("price_cents") or 0) / 100, "stock_qty": int(v.get("stock_qty") or 0),
+                "track_inventory": bool(v.get("track_inventory", True)),
+                "attributes": v.get("attributes") or {}, "image_url": v.get("image_url") or "",
+                "in_stock": not v.get("track_inventory", True) or int(v.get("stock_qty") or 0) > 0,
+                "sort_order": int(v.get("sort_order") or 0),
+            })
+        out.append(_product_payload(r, variants=transformed, deal=deals.get(pid), rating=ratings.get(pid)))
+    return out
 
 
 @router.get("/products/{slug}")
@@ -153,7 +297,87 @@ async def get_product(slug: str):
         p["category_slug"] = cats[0].get("slug")
     elif isinstance(cats, dict):
         p["category_slug"] = cats.get("slug")
-    return _product_payload(p)
+    pid = p.get("id")
+    return _product_payload(p, variants=_variants_for(pid), deal=_active_deal_for(pid), rating=_rating_for(pid))
+
+
+# ── Reviews (customer-facing) ──────────────────────────────────────────────────
+@router.get("/products/{slug}/reviews")
+async def product_reviews(slug: str):
+    res = supabase.table("store_products").select("id").eq("slug", slug).eq("active", True).limit(1).execute()
+    if not res.data:
+        raise HTTPException(404, "Product not found")
+    pid = res.data[0]["id"]
+    rows = (supabase.table("store_reviews").select("*")
+            .eq("product_id", pid).eq("status", "approved")
+            .order("created_at", desc=True).limit(50).execute()).data or []
+    uids = sorted({r.get("user_id") for r in rows if r.get("user_id")})
+    names: dict[str, dict] = {}
+    if uids:
+        users = supabase.table("users").select("id,username,profile_avatar").in_("id", uids).execute().data or []
+        names = {u["id"]: u for u in users}
+    out = []
+    for r in rows:
+        out.append({
+            "id": r.get("id"),
+            "rating": int(r.get("rating") or 0),
+            "title": r.get("title") or "",
+            "body": r.get("body") or "",
+            "helpful_count": int(r.get("helpful_count") or 0),
+            "username": (names.get(r.get("user_id")) or {}).get("username") or "Anonymous",
+            "avatar": (names.get(r.get("user_id")) or {}).get("profile_avatar"),
+            "created_at": r.get("created_at"),
+        })
+    return out
+
+
+class ReviewBody(BaseModel):
+    rating: int = 5
+    title: str = ""
+    body: str = ""
+
+
+@router.post("/products/{slug}/reviews")
+async def submit_review(slug: str, body: ReviewBody, user: dict = Depends(get_current_user)):
+    uid = _user_id(user)
+    if not (1 <= body.rating <= 5):
+        raise HTTPException(400, "Rating must be 1-5")
+    res = supabase.table("store_products").select("id").eq("slug", slug).eq("active", True).limit(1).execute()
+    if not res.data:
+        raise HTTPException(404, "Product not found")
+    pid = res.data[0]["id"]
+    bought = (supabase.table("store_orders").select("id").eq("user_id", uid).eq("status", "paid").execute()).data or []
+    order_ids = [o["id"] for o in bought]
+    if order_ids:
+        own = (supabase.table("store_order_items").select("id")
+               .in_("order_id", order_ids).eq("product_id", pid).limit(1).execute()).data or []
+        if not own:
+            raise HTTPException(403, "Only verified buyers can review this product")
+    else:
+        raise HTTPException(403, "Only verified buyers can review this product")
+    try:
+        res2 = supabase.table("store_reviews").insert({
+            "product_id": pid, "user_id": uid,
+            "rating": body.rating, "title": body.title, "body": body.body,
+            "status": "pending",
+        }).execute()
+    except Exception as exc:
+        raise HTTPException(400, f"Review not submitted: {exc}")
+    return res2.data[0] if res2.data else {"id": None}
+
+
+# ── Coupon validation (customer-facing) ───────────────────────────────────────
+@router.get("/coupons/validate")
+async def validate_coupon(code: str, user: dict = Depends(get_current_user)):
+    cart = await get_cart(user)
+    coupon = _resolve_coupon(code, cart["subtotal_cents"], [i["product"]["id"] for i in cart["items"]])
+    if not coupon:
+        raise HTTPException(404, "Invalid or expired coupon code")
+    return {
+        **coupon,
+        "subtotal_cents": cart["subtotal_cents"],
+        "total_after_cents": cart["subtotal_cents"] - coupon["discount_cents"],
+    }
 
 
 # ── Cart ───────────────────────────────────────────────────────────────────────
@@ -174,11 +398,30 @@ async def get_cart(user: dict = Depends(get_current_user)):
         if not prod or not prod.get("active", True):
             continue
         qty = int(r.get("quantity") or 1)
-        price = int(prod.get("price_cents") or 0)
+        variant = None
+        vid = r.get("variant_id")
+        if vid:
+            vres = supabase.table("store_product_variants").select("*").eq("id", vid).eq("active", True).limit(1).execute()
+            if vres.data:
+                v = vres.data[0]
+                variant = {
+                    "id": v.get("id"), "name": v.get("name"), "sku": v.get("sku") or "",
+                    "price_cents": int(v.get("price_cents") or 0),
+                    "attributes": v.get("attributes") or {}, "image_url": v.get("image_url") or "",
+                    "in_stock": not v.get("track_inventory", True) or int(v.get("stock_qty") or 0) > 0,
+                }
+        if variant and variant.get("price_cents"):
+            price = variant["price_cents"]
+        else:
+            price = int(prod.get("price_cents") or 0)
         items.append({
             "id": r.get("id"),
+            "variant_id": vid,
             "product": _product_payload(dict(prod)),
+            "variant": variant,
             "quantity": qty,
+            "unit_price_cents": price,
+            "unit_price": price / 100,
             "line_total_cents": price * qty,
             "line_total": (price * qty) / 100,
         })
@@ -189,6 +432,7 @@ async def get_cart(user: dict = Depends(get_current_user)):
 class CartItemBody(BaseModel):
     product_id: str
     quantity: int = 1
+    variant_id: str | None = None
 
 
 @router.post("/cart")
@@ -202,14 +446,33 @@ async def add_to_cart(body: CartItemBody, user: dict = Depends(get_current_user)
     p = prod.data[0]
     if not p.get("active", True):
         raise HTTPException(404, "Product not found")
+
+    variant = None
+    if body.variant_id:
+        vres = (supabase.table("store_product_variants")
+                .select("id,product_id,track_inventory,stock_qty,active")
+                .eq("id", body.variant_id).limit(1).execute())
+        if not vres.data or vres.data[0].get("product_id") != body.product_id:
+            raise HTTPException(404, "Variant not found")
+        variant = vres.data[0]
+        if not variant.get("active", True):
+            raise HTTPException(404, "Variant not found")
+        if variant.get("track_inventory", True) and body.quantity > int(variant.get("stock_qty") or 0):
+            raise HTTPException(400, f"Only {variant.get('stock_qty')} of this option in stock")
+    elif p.get("track_inventory", True) and body.quantity > int(p.get("stock_qty") or 0):
+        raise HTTPException(400, f"Only {p.get('stock_qty')} in stock")
+
     existing = (supabase.table("store_cart_items")
-                .select("id,quantity").eq("user_id", uid).eq("product_id", body.product_id).limit(1).execute())
-    if existing.data:
-        new_qty = int(existing.data[0].get("quantity") or 1) + body.quantity
-        supabase.table("store_cart_items").update({"quantity": new_qty, "updated_at": _now()}).eq("id", existing.data[0]["id"]).execute()
+                .select("id,quantity,variant_id").eq("user_id", uid).eq("product_id", body.product_id)
+                .execute().data or [])
+    row = next((e for e in existing if (e.get("variant_id") or None) == (body.variant_id or None)), None)
+    if row:
+        new_qty = int(row.get("quantity") or 1) + body.quantity
+        supabase.table("store_cart_items").update({"quantity": new_qty, "updated_at": _now()}).eq("id", row["id"]).execute()
     else:
         supabase.table("store_cart_items").insert({
             "user_id": uid, "product_id": body.product_id, "quantity": body.quantity,
+            "variant_id": body.variant_id,
         }).execute()
     return await get_cart(user)
 
@@ -224,13 +487,20 @@ async def update_cart_item(item_id: str, body: CartPatchBody, user: dict = Depen
     if body.quantity < 1:
         raise HTTPException(400, "Quantity must be at least 1")
     res = (supabase.table("store_cart_items")
-           .select("id,product_id").eq("id", item_id).eq("user_id", uid).limit(1).execute())
+           .select("id,product_id,variant_id").eq("id", item_id).eq("user_id", uid).limit(1).execute())
     if not res.data:
         raise HTTPException(404, "Cart item not found")
-    prod = supabase.table("store_products").select("id,track_inventory,stock_qty").eq("id", res.data[0]["product_id"]).limit(1).execute()
-    p = (prod.data or [{}])[0]
-    if p.get("track_inventory", True) and body.quantity > int(p.get("stock_qty") or 0):
-        raise HTTPException(400, f"Only {p.get('stock_qty')} in stock")
+    row = res.data[0]
+    if row.get("variant_id"):
+        prod = supabase.table("store_product_variants").select("id,track_inventory,stock_qty").eq("id", row["variant_id"]).limit(1).execute()
+        v = (prod.data or [{}])[0]
+        if v.get("track_inventory", True) and body.quantity > int(v.get("stock_qty") or 0):
+            raise HTTPException(400, f"Only {v.get('stock_qty')} of this option in stock")
+    else:
+        prod = supabase.table("store_products").select("id,track_inventory,stock_qty").eq("id", row["product_id"]).limit(1).execute()
+        p = (prod.data or [{}])[0]
+        if p.get("track_inventory", True) and body.quantity > int(p.get("stock_qty") or 0):
+            raise HTTPException(400, f"Only {p.get('stock_qty')} in stock")
     supabase.table("store_cart_items").update({"quantity": body.quantity, "updated_at": _now()}).eq("id", item_id).execute()
     return await get_cart(user)
 
@@ -262,6 +532,7 @@ class CheckoutBody(BaseModel):
     shipping_address: dict = {}
     billing_address: dict = {}
     notes: str = ""
+    coupon_code: str = ""
 
 
 @router.post("/checkout/cart")
@@ -272,31 +543,36 @@ async def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_u
         raise HTTPException(400, "Cart is empty")
     st = _stripe_client()
 
-    # Validate stock + build line items
+    # Validate stock + build line items (variant-aware amounts)
     line_items = []
     for item in cart["items"]:
         prod = item["product"]
         if prod["track_inventory"] and item["quantity"] > prod["stock_qty"]:
             raise HTTPException(400, f"Only {prod['stock_qty']} of {prod['name']} in stock")
-        # Idempotent Stripe price for one-time payment
-        price_id = _ensure_one_time_price(prod)
+        price_id = _ensure_one_time_price(prod, amount_cents=item["unit_price_cents"], variant_id=item.get("variant_id"))
         line_items.append({"price": price_id, "quantity": item["quantity"]})
 
     email = body.customer_email or _user_email(user)
-    order_no = _number("AFA")
 
-    # Create order row first (pending)
-    total = cart["subtotal_cents"]
+    # Coupon discount
+    coupon = _resolve_coupon(body.coupon_code, cart["subtotal_cents"], [i["product"]["id"] for i in cart["items"]])
+    discount = coupon["discount_cents"] if coupon else 0
+
+    order_no = _number("AFA")
+    total = cart["subtotal_cents"] - discount
     order = supabase.table("store_orders").insert({
         "order_number": order_no,
         "user_id": uid,
         "status": "pending",
         "subtotal_cents": cart["subtotal_cents"],
-        "discount_cents": 0,
+        "discount_cents": discount,
         "tax_cents": 0,
         "shipping_cents": 0,
         "total_cents": total,
         "currency": "usd",
+        "coupon_id": (coupon or {}).get("id"),
+        "coupon_code": (coupon or {}).get("code"),
+        "coupon_discount_cents": discount,
         "customer_name": body.customer_name or user.get("username") or "",
         "customer_email": email,
         "shipping_address": body.shipping_address or {},
@@ -318,11 +594,13 @@ async def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_u
         supabase.table("store_order_items").insert({
             "order_id": order_row["id"],
             "product_id": prod["id"],
+            "variant_id": item.get("variant_id"),
+            "variant_name": (item.get("variant") or {}).get("name") or "",
             "product_name": prod["name"],
             "product_sku": prod["sku"],
-            "unit_price_cents": prod["price_cents"],
+            "unit_price_cents": item["unit_price_cents"],
             "quantity": qty,
-            "line_total_cents": prod["price_cents"] * qty,
+            "line_total_cents": item["unit_price_cents"] * qty,
         }).execute()
 
     success_url = body.success_url or f"{FRONTEND_URL}/store/success?session_id={{CHECKOUT_SESSION_ID}}"
@@ -348,9 +626,16 @@ async def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_u
     return {"url": session.url, "session_id": session.id, "order_number": order_row["order_number"]}
 
 
-def _ensure_one_time_price(product: dict) -> str:
-    """Idempotently create/lookup a one-time Stripe Price for a product."""
-    lookup = f"aifazi-prod-{product['slug']}"
+def _ensure_one_time_price(product: dict, amount_cents: int | None = None, variant_id: str | None = None) -> str:
+    """Idempotently create/lookup a one-time Stripe Price for a product.
+
+    The lookup key bakes in the amount so price edits create fresh prices, and
+    includes a short variant id so different options keep separate prices.
+    """
+    amount = amount_cents if amount_cents is not None else int(product.get("price_cents") or 0)
+    lookup = f"aifazi-prod-{product['slug']}-{amount}"
+    if variant_id:
+        lookup += f"-v{variant_id[:8]}"
     existing = _stripe_client().Price.list(lookup_keys=[lookup], limit=1)
     if existing.data:
         return existing.data[0].id
@@ -370,7 +655,7 @@ def _ensure_one_time_price(product: dict) -> str:
         )
     price = _stripe_client().Price.create(
         currency="usd",
-        unit_amount=int(product.get("price_cents") or 0),
+        unit_amount=amount,
         product=stripe_prod.id,
         metadata={"store_product_id": prod_id},
         lookup_key=lookup,
@@ -624,9 +909,9 @@ async def _mark_order_paid(order_id: str, payment_intent_id: str | None) -> None
     except Exception:
         pass
 
-    # Decrement inventory + create digital downloads
+    # Decrement inventory (product or variant) + create digital downloads
     items = (supabase.table("store_order_items")
-             .select("id,product_id,product_name,quantity").eq("order_id", order_id).execute()).data or []
+             .select("id,product_id,variant_id,variant_name,product_name,quantity").eq("order_id", order_id).execute()).data or []
     product_ids = [it["product_id"] for it in items if it.get("product_id")]
     prods: dict[str, dict] = {}
     if product_ids:
@@ -634,28 +919,58 @@ async def _mark_order_paid(order_id: str, payment_intent_id: str | None) -> None
                 .select("id,type,track_inventory,stock_qty,digital_file_url,download_limit")
                 .in_("id", product_ids).execute()).data or []
         prods = {p["id"]: p for p in pres}
+    variant_ids = [it["variant_id"] for it in items if it.get("variant_id")]
+    variants: dict[str, dict] = {}
+    if variant_ids:
+        vres = (supabase.table("store_product_variants")
+                .select("id,product_id,track_inventory,stock_qty")
+                .in_("id", variant_ids).execute()).data or []
+        variants = {v["id"]: v for v in vres}
     for it in items:
-        if not it.get("product_id"):
-            continue
-        pid = it["product_id"]
-        prod = prods.get(pid)
-        if prod and prod.get("track_inventory", True):
-            new_stock = max(0, int(prod.get("stock_qty") or 0) - int(it.get("quantity") or 1))
-            supabase.table("store_products").update({"stock_qty": new_stock, "updated_at": now}).eq("id", pid).execute()
-        if prod and prod.get("type") == "digital" and prod.get("digital_file_url"):
+        qty = int(it.get("quantity") or 1)
+        pid = it.get("product_id")
+        vid = it.get("variant_id")
+        if vid and vid in variants:
+            v = variants[vid]
+            if v.get("track_inventory", True):
+                new_stock = max(0, int(v.get("stock_qty") or 0) - qty)
+                supabase.table("store_product_variants").update({"stock_qty": new_stock, "updated_at": now}).eq("id", vid).execute()
+                log_stock_change(None, -qty, reason="sale", ref_type="order", ref_id=order_id,
+                                 variant_id=vid, actor="webhook",
+                                 note=f"Sale of {it.get('variant_name') or it.get('product_name')}")
+        elif pid:
+            prod = prods.get(pid)
+            if prod and prod.get("track_inventory", True):
+                new_stock = max(0, int(prod.get("stock_qty") or 0) - qty)
+                supabase.table("store_products").update({"stock_qty": new_stock, "updated_at": now}).eq("id", pid).execute()
+                log_stock_change(pid, -qty, reason="sale", ref_type="order", ref_id=order_id,
+                                 actor="webhook", note=f"Sale of {it.get('product_name')}")
+        if pid and prods.get(pid) and prods[pid].get("type") == "digital" and prods[pid].get("digital_file_url"):
             try:
                 supabase.table("store_downloads").insert({
                     "order_id": order_id,
                     "order_item_id": it.get("id"),
                     "product_id": pid,
-                    "product_name": it.get("product_name") or prod.get("name") or "Digital item",
+                    "product_name": it.get("product_name") or prods[pid].get("name") or "Digital item",
                     "token": _download_token(),
-                    "file_url": prod.get("digital_file_url"),
-                    "filename": _download_filename(prod.get("digital_file_url")),
-                    "downloads_allowed": int(prod.get("download_limit") or 5),
+                    "file_url": prods[pid].get("digital_file_url"),
+                    "filename": _download_filename(prods[pid].get("digital_file_url")),
+                    "downloads_allowed": int(prods[pid].get("download_limit") or 5),
                 }).execute()
             except Exception as exc:
                 log.warning("digital download insert failed for %s: %s", pid, exc)
+
+    # Increment coupon usage
+    if order.get("coupon_id"):
+        try:
+            cup = supabase.table("store_coupons").select("used_count").eq("id", order["coupon_id"]).limit(1).execute()
+            if cup.data:
+                supabase.table("store_coupons").update({
+                    "used_count": int((cup.data[0] or {}).get("used_count") or 0) + 1,
+                    "updated_at": now,
+                }).eq("id", order["coupon_id"]).execute()
+        except Exception as exc:
+            log.warning("coupon usage increment failed: %s", exc)
 
     # Record transaction
     supabase.table("store_transactions").insert({

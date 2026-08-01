@@ -14,13 +14,21 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 
 from database import supabase
-from permissions import require_permission
+from permissions import require_any_permission
 from routers.cdn_upload import upload_media
+from routers.store_ledger import log_stock_change
 
 log = logging.getLogger("store.admin")
 router = APIRouter()
 
-MANAGE = require_permission("store.manage")
+# Umbrella 'store' module always grants access; fine-grained store.<sub> modules
+# let owners restrict staff to only their areas (Odoo-style).
+MANAGE    = require_any_permission("store", action="manage")
+ANALYTICS = require_any_permission("store", "store.analytics", action="view")
+CATALOG   = require_any_permission("store", "store.products", action="manage")
+CATEGORIES = require_any_permission("store", "store.categories", action="manage")
+ORDERS    = require_any_permission("store", "store.orders", action="manage")
+SETTINGS  = require_any_permission("store", "store.settings", action="manage")
 
 
 def _now() -> str:
@@ -78,7 +86,7 @@ def _product_rows() -> list[dict]:
 
 # ── Sales dashboard ────────────────────────────────────────────────────────────
 @router.get("/sales")
-async def sales_dashboard(_: dict = Depends(MANAGE)):
+async def sales_dashboard(_: dict = Depends(ANALYTICS)):
     orders = (supabase.table("store_orders")
               .select("id,status,total_cents,currency,created_at,user_id,order_number")
               .order("created_at", desc=True).limit(500).execute()).data or []
@@ -115,6 +123,24 @@ async def sales_dashboard(_: dict = Depends(MANAGE)):
         })
 
     pending_quotes = (supabase.table("store_quotes").select("id").eq("status", "pending").execute().data or [])
+    # Daily revenue for the last 30 days (all paid orders, grouped by date)
+    by_day: dict[str, dict] = {}
+    for o in orders:
+        if o.get("status") != "paid":
+            continue
+        try:
+            day = (o.get("created_at") or "")[:10]
+        except Exception:
+            continue
+        if not day:
+            continue
+        entry = by_day.setdefault(day, {"revenue_cents": 0, "orders": 0})
+        entry["revenue_cents"] += int(o.get("total_cents") or 0)
+        entry["orders"] += 1
+    revenue_by_day = [
+        {"date": day, "revenue_cents": by_day[day]["revenue_cents"], "orders": by_day[day]["orders"]}
+        for day in sorted(by_day)[-30:]
+    ]
     return {
         "revenue_cents": revenue,
         "revenue": revenue / 100,
@@ -128,13 +154,14 @@ async def sales_dashboard(_: dict = Depends(MANAGE)):
         "low_stock": low_stock,
         "top_products": top_products,
         "recent_orders": recent,
+        "revenue_by_day": revenue_by_day,
         "currency": "usd",
     }
 
 
 # ── Categories ─────────────────────────────────────────────────────────────────
 @router.get("/categories")
-async def admin_categories(_: dict = Depends(MANAGE)):
+async def admin_categories(_: dict = Depends(CATEGORIES)):
     res = (supabase.table("store_categories").select("*").order("display_order").execute())
     return res.data or []
 
@@ -150,7 +177,7 @@ class CategoryBody(BaseModel):
 
 
 @router.post("/categories")
-async def create_category(body: CategoryBody, _: dict = Depends(MANAGE)):
+async def create_category(body: CategoryBody, _: dict = Depends(CATEGORIES)):
     try:
         res = supabase.table("store_categories").insert(body.dict()).execute()
     except Exception as exc:
@@ -159,7 +186,7 @@ async def create_category(body: CategoryBody, _: dict = Depends(MANAGE)):
 
 
 @router.patch("/categories/{cat_id}")
-async def update_category(cat_id: str, body: CategoryBody, _: dict = Depends(MANAGE)):
+async def update_category(cat_id: str, body: CategoryBody, _: dict = Depends(CATEGORIES)):
     res = supabase.table("store_categories").update(body.dict()).eq("id", cat_id).execute()
     if not res.data:
         raise HTTPException(404, "Category not found")
@@ -167,7 +194,7 @@ async def update_category(cat_id: str, body: CategoryBody, _: dict = Depends(MAN
 
 
 @router.delete("/categories/{cat_id}")
-async def delete_category(cat_id: str, _: dict = Depends(MANAGE)):
+async def delete_category(cat_id: str, _: dict = Depends(CATEGORIES)):
     res = supabase.table("store_categories").delete().eq("id", cat_id).execute()
     if not res.data:
         raise HTTPException(404, "Category not found")
@@ -176,8 +203,22 @@ async def delete_category(cat_id: str, _: dict = Depends(MANAGE)):
 
 # ── Products + inventory ───────────────────────────────────────────────────────
 @router.get("/products")
-async def admin_products(_: dict = Depends(MANAGE)):
-    return [_product_payload(p) for p in _product_rows()]
+async def admin_products(_: dict = Depends(CATALOG)):
+    rows = _product_rows()
+    # Attach active variant counts so the admin can see which products need variants managed
+    pids = [p.get("id") for p in rows if p.get("id")]
+    vcount: dict[str, int] = {}
+    if pids:
+        vs = (supabase.table("store_product_variants")
+              .select("product_id").eq("active", True).in_("product_id", pids).execute().data or [])
+        for v in vs:
+            vcount[v.get("product_id")] = vcount.get(v.get("product_id"), 0) + 1
+    out = []
+    for p in rows:
+        payload = _product_payload(p)
+        payload["variant_count"] = vcount.get(p.get("id"), 0)
+        out.append(payload)
+    return out
 
 
 class ProductBody(BaseModel):
@@ -201,7 +242,7 @@ class ProductBody(BaseModel):
 
 
 @router.post("/products")
-async def create_product(body: ProductBody, _: dict = Depends(MANAGE)):
+async def create_product(body: ProductBody, _: dict = Depends(CATALOG)):
     try:
         res = supabase.table("store_products").insert(body.dict()).execute()
     except Exception as exc:
@@ -210,7 +251,7 @@ async def create_product(body: ProductBody, _: dict = Depends(MANAGE)):
 
 
 @router.patch("/products/{prod_id}")
-async def update_product(prod_id: str, body: ProductBody, _: dict = Depends(MANAGE)):
+async def update_product(prod_id: str, body: ProductBody, _: dict = Depends(CATALOG)):
     res = supabase.table("store_products").update({**body.dict(), "updated_at": _now()}).eq("id", prod_id).execute()
     if not res.data:
         raise HTTPException(404, "Product not found")
@@ -223,20 +264,26 @@ class StockPatchBody(BaseModel):
 
 
 @router.patch("/products/{prod_id}/stock")
-async def adjust_stock(prod_id: str, body: StockPatchBody, _: dict = Depends(MANAGE)):
+async def adjust_stock(prod_id: str, body: StockPatchBody, _: dict = Depends(CATALOG)):
     if body.stock_qty < 0:
         raise HTTPException(400, "Stock cannot be negative")
+    old = supabase.table("store_products").select("stock_qty").eq("id", prod_id).limit(1).execute()
+    old_qty = int((old.data[0] or {}).get("stock_qty") or 0) if old.data else 0
     patch = {"stock_qty": body.stock_qty, "updated_at": _now()}
     if body.low_stock_threshold is not None:
         patch["low_stock_threshold"] = body.low_stock_threshold
     res = supabase.table("store_products").update(patch).eq("id", prod_id).execute()
     if not res.data:
         raise HTTPException(404, "Product not found")
+    if body.stock_qty != old_qty:
+        log_stock_change(prod_id, body.stock_qty - old_qty, reason="adjustment",
+                         ref_type="manual", ref_id=prod_id,
+                         actor=_.get("username") or "staff", note="Manual stock adjustment")
     return _product_payload(res.data[0])
 
 
 @router.delete("/products/{prod_id}")
-async def delete_product(prod_id: str, _: dict = Depends(MANAGE)):
+async def delete_product(prod_id: str, _: dict = Depends(CATALOG)):
     res = supabase.table("store_products").delete().eq("id", prod_id).execute()
     if not res.data:
         raise HTTPException(404, "Product not found")
@@ -245,7 +292,7 @@ async def delete_product(prod_id: str, _: dict = Depends(MANAGE)):
 
 # ── Orders ─────────────────────────────────────────────────────────────────────
 @router.get("/orders")
-async def admin_orders(status: str | None = None, _: dict = Depends(MANAGE)):
+async def admin_orders(status: str | None = None, _: dict = Depends(ORDERS)):
     q = supabase.table("store_orders").select("*").order("created_at", desc=True).limit(200)
     if status:
         q = q.eq("status", status)
@@ -260,7 +307,7 @@ async def admin_orders(status: str | None = None, _: dict = Depends(MANAGE)):
 
 
 @router.get("/orders/{order_id}")
-async def admin_order_detail(order_id: str, _: dict = Depends(MANAGE)):
+async def admin_order_detail(order_id: str, _: dict = Depends(ORDERS)):
     res = supabase.table("store_orders").select("*").eq("id", order_id).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Order not found")
@@ -284,7 +331,7 @@ class OrderStatusBody(BaseModel):
 
 
 @router.patch("/orders/{order_id}/status")
-async def update_order_status(order_id: str, body: OrderStatusBody, staff: dict = Depends(MANAGE)):
+async def update_order_status(order_id: str, body: OrderStatusBody, staff: dict = Depends(ORDERS)):
     res = supabase.table("store_orders").select("status").eq("id", order_id).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Order not found")
@@ -316,7 +363,7 @@ async def update_order_status(order_id: str, body: OrderStatusBody, staff: dict 
 
 # ── Invoices ───────────────────────────────────────────────────────────────────
 @router.get("/invoices")
-async def admin_invoices(_: dict = Depends(MANAGE)):
+async def admin_invoices(_: dict = Depends(ORDERS)):
     res = (supabase.table("store_invoices").select("*").order("created_at", desc=True).limit(200).execute())
     return [{**i, "total": (i.get("total_cents") or 0) / 100} for i in res.data or []]
 
@@ -336,7 +383,7 @@ class InvoiceBody(BaseModel):
 
 
 @router.post("/invoices")
-async def create_invoice(body: InvoiceBody, _: dict = Depends(MANAGE)):
+async def create_invoice(body: InvoiceBody, _: dict = Depends(ORDERS)):
     try:
         res = supabase.table("store_invoices").insert({
             **body.dict(), "invoice_number": _number("INV"),
@@ -354,7 +401,7 @@ class InvoicePatchBody(BaseModel):
 
 
 @router.patch("/invoices/{invoice_id}")
-async def update_invoice(invoice_id: str, body: InvoicePatchBody, _: dict = Depends(MANAGE)):
+async def update_invoice(invoice_id: str, body: InvoicePatchBody, _: dict = Depends(ORDERS)):
     patch = {k: v for k, v in body.dict().items() if v is not None}
     if body.status == "paid" and not patch.get("paid_at"):
         patch["paid_at"] = _now()
@@ -365,7 +412,7 @@ async def update_invoice(invoice_id: str, body: InvoicePatchBody, _: dict = Depe
 
 
 @router.delete("/invoices/{invoice_id}")
-async def delete_invoice(invoice_id: str, _: dict = Depends(MANAGE)):
+async def delete_invoice(invoice_id: str, _: dict = Depends(ORDERS)):
     res = supabase.table("store_invoices").delete().eq("id", invoice_id).execute()
     if not res.data:
         raise HTTPException(404, "Invoice not found")
@@ -374,7 +421,7 @@ async def delete_invoice(invoice_id: str, _: dict = Depends(MANAGE)):
 
 # ── Quotes ─────────────────────────────────────────────────────────────────────
 @router.get("/quotes")
-async def admin_quotes(_: dict = Depends(MANAGE)):
+async def admin_quotes(_: dict = Depends(ORDERS)):
     res = (supabase.table("store_quotes").select("*").order("created_at", desc=True).limit(200).execute())
     return [{**q, "total": (q.get("total_cents") or 0) / 100} for q in res.data or []]
 
@@ -392,7 +439,7 @@ class QuoteBody(BaseModel):
 
 
 @router.post("/quotes")
-async def create_quote(body: QuoteBody, _: dict = Depends(MANAGE)):
+async def create_quote(body: QuoteBody, _: dict = Depends(ORDERS)):
     try:
         res = supabase.table("store_quotes").insert({
             "quote_number": _number("QT"),
@@ -413,7 +460,7 @@ async def create_quote(body: QuoteBody, _: dict = Depends(MANAGE)):
 
 
 @router.patch("/quotes/{quote_id}")
-async def update_quote(quote_id: str, body: QuoteBody, _: dict = Depends(MANAGE)):
+async def update_quote(quote_id: str, body: QuoteBody, _: dict = Depends(ORDERS)):
     patch = {k: v for k, v in body.dict().items() if v is not None}
     patch["updated_at"] = _now()
     res = supabase.table("store_quotes").update(patch).eq("id", quote_id).execute()
@@ -423,7 +470,7 @@ async def update_quote(quote_id: str, body: QuoteBody, _: dict = Depends(MANAGE)
 
 
 @router.delete("/quotes/{quote_id}")
-async def delete_quote(quote_id: str, _: dict = Depends(MANAGE)):
+async def delete_quote(quote_id: str, _: dict = Depends(ORDERS)):
     res = supabase.table("store_quotes").delete().eq("id", quote_id).execute()
     if not res.data:
         raise HTTPException(404, "Quote not found")
@@ -455,7 +502,7 @@ def _plan_payload(row: dict) -> dict:
 
 
 @router.get("/plans")
-async def admin_plans(_: dict = Depends(MANAGE)):
+async def admin_plans(_: dict = Depends(SETTINGS)):
     res = (supabase.table("store_plans")
            .select("*,store_categories(slug)").order("display_order").execute())
     out = []
@@ -486,7 +533,7 @@ class PlanBody(BaseModel):
 
 
 @router.post("/plans")
-async def create_plan(body: PlanBody, _: dict = Depends(MANAGE)):
+async def create_plan(body: PlanBody, _: dict = Depends(SETTINGS)):
     try:
         res = supabase.table("store_plans").insert(body.dict()).execute()
     except Exception as exc:
@@ -495,7 +542,7 @@ async def create_plan(body: PlanBody, _: dict = Depends(MANAGE)):
 
 
 @router.patch("/plans/{plan_id}")
-async def update_plan(plan_id: str, body: PlanBody, _: dict = Depends(MANAGE)):
+async def update_plan(plan_id: str, body: PlanBody, _: dict = Depends(SETTINGS)):
     res = supabase.table("store_plans").update({**body.dict(), "updated_at": _now()}).eq("id", plan_id).execute()
     if not res.data:
         raise HTTPException(404, "Plan not found")
@@ -503,7 +550,7 @@ async def update_plan(plan_id: str, body: PlanBody, _: dict = Depends(MANAGE)):
 
 
 @router.delete("/plans/{plan_id}")
-async def delete_plan(plan_id: str, _: dict = Depends(MANAGE)):
+async def delete_plan(plan_id: str, _: dict = Depends(SETTINGS)):
     res = supabase.table("store_plans").delete().eq("id", plan_id).execute()
     if not res.data:
         raise HTTPException(404, "Plan not found")
@@ -512,7 +559,7 @@ async def delete_plan(plan_id: str, _: dict = Depends(MANAGE)):
 
 # ── Subscriptions (user_subscriptions) ─────────────────────────────────────────
 @router.get("/subscriptions")
-async def admin_subscriptions(_: dict = Depends(MANAGE)):
+async def admin_subscriptions(_: dict = Depends(SETTINGS)):
     res = (supabase.table("user_subscriptions")
            .select("*").order("updated_at", desc=True).limit(200).execute())
     out = []
@@ -536,7 +583,7 @@ class SubscriptionPatchBody(BaseModel):
 
 
 @router.patch("/subscriptions/{sub_id}")
-async def update_subscription(sub_id: str, body: SubscriptionPatchBody, _: dict = Depends(MANAGE)):
+async def update_subscription(sub_id: str, body: SubscriptionPatchBody, _: dict = Depends(SETTINGS)):
     patch = {k: v for k, v in body.dict().items() if v is not None}
     if not patch:
         raise HTTPException(400, "Nothing to update")
@@ -548,7 +595,7 @@ async def update_subscription(sub_id: str, body: SubscriptionPatchBody, _: dict 
 
 
 @router.post("/subscriptions/{sub_id}/sync")
-async def resync_subscription(sub_id: str, _: dict = Depends(MANAGE)):
+async def resync_subscription(sub_id: str, _: dict = Depends(SETTINGS)):
     res = (supabase.table("user_subscriptions")
            .update({"sync_status": "pending", "sync_attempts": 0, "sync_error": None, "updated_at": _now()})
            .eq("id", sub_id).execute())
@@ -559,7 +606,7 @@ async def resync_subscription(sub_id: str, _: dict = Depends(MANAGE)):
 
 # ── Store file upload (digital product files) ──────────────────────────────────
 @router.post("/files/upload")
-async def upload_store_file(file: UploadFile = File(...), _: dict = Depends(MANAGE)):
+async def upload_store_file(file: UploadFile = File(...), _: dict = Depends(CATALOG)):
     content = await file.read()
     if len(content) > 100 * 1024 * 1024:
         raise HTTPException(413, "File exceeds 100 MB limit")

@@ -18,7 +18,7 @@ import { NewsletterPanel, StatsPanel, PageContentPanel } from './AdminPanels'
 import HelpDeskPanel from './HelpDeskPanel'
 import Changelog from './Changelog'
 import FiveMPanel from './FiveMPanel'
-import StorePanel from './StorePanel'
+import StoreCenter from './storeModules/StoreCenter'
 import { useFadeUp, useStaggerIn } from '@/lib/animate'
 
 function StatsGrid({ dashStats, isMobile, setView }) {
@@ -59,7 +59,9 @@ const PERMISSION_MODULES = [
   ['home','Dashboard'], ['content.posts','Posts'], ['content.editor','Post editor'], ['content.media','Media'], ['content.pages','Pages'], ['content.themes','Theme library'],
   ['community.contacts','Contacts'], ['community.staff','Staff'], ['community.forum','Forum'], ['community.chat','Chat'], ['community.newsletter','Newsletter'],
   ['system.db','DB monitor'], ['system.db.console','DB SQL Console'], ['system.mail','Mail'], ['system.cdn','CDN'], ['system.backup','Backup'],
-  ['support.helpdesk','Help desk'], ['store','Store'], ['fivem.status','FiveM status'], ['fivem.whitelist','FiveM whitelist'], ['fivem.forms','FiveM forms'], ['fivem.approval_log','FiveM approval log'], ['fivem.bans','FiveM bans'],
+  ['support.helpdesk','Help desk'], ['store','Store'],
+  ['store.analytics','Store analytics'], ['store.customers','Store customers (CRM)'], ['store.payments','Store payments'], ['store.products','Store catalog & stock'], ['store.coupons','Store coupons'], ['store.deals','Store flash deals'], ['store.reviews','Store reviews'], ['store.orders','Store orders'], ['store.settings','Store settings'],
+  ['fivem.status','FiveM status'], ['fivem.whitelist','FiveM whitelist'], ['fivem.forms','FiveM forms'], ['fivem.approval_log','FiveM approval log'], ['fivem.bans','FiveM bans'],
   ['changelog','Changelog'],
 ]
 const PERMISSION_ACTIONS = ['view','create','edit','delete','approve','sync','manage']
@@ -1086,7 +1088,7 @@ function Dashboard({ onLogout }) {
           {view === 'stats' && adminUser && <PanelErrorBoundary label="Statistics"><StatsPanel /></PanelErrorBoundary>}
 
           {view === 'helpdesk' && adminUser && <PanelErrorBoundary label="Help Desk"><HelpDeskPanel /></PanelErrorBoundary>}
-          {view === 'store' && adminUser && <PanelErrorBoundary label="Store"><StorePanel /></PanelErrorBoundary>}
+          {view === 'store' && adminUser && <PanelErrorBoundary label="Store"><StoreCenter /></PanelErrorBoundary>}
           {view === 'changelog' && <PanelErrorBoundary label="Changelog"><Changelog /></PanelErrorBoundary>}
           {view === 'fivem' && adminUser && (
             <PanelErrorBoundary label="FiveM Server">
