@@ -18,6 +18,7 @@ import { NewsletterPanel, StatsPanel, PageContentPanel } from './AdminPanels'
 import HelpDeskPanel from './HelpDeskPanel'
 import Changelog from './Changelog'
 import FiveMPanel from './FiveMPanel'
+import StorePanel from './StorePanel'
 import { useFadeUp, useStaggerIn } from '@/lib/animate'
 
 function StatsGrid({ dashStats, isMobile, setView }) {
@@ -58,12 +59,12 @@ const PERMISSION_MODULES = [
   ['home','Dashboard'], ['content.posts','Posts'], ['content.editor','Post editor'], ['content.media','Media'], ['content.pages','Pages'], ['content.themes','Theme library'],
   ['community.contacts','Contacts'], ['community.staff','Staff'], ['community.forum','Forum'], ['community.chat','Chat'], ['community.newsletter','Newsletter'],
   ['system.db','DB monitor'], ['system.db.console','DB SQL Console'], ['system.mail','Mail'], ['system.cdn','CDN'], ['system.backup','Backup'],
-  ['support.helpdesk','Help desk'], ['fivem.status','FiveM status'], ['fivem.whitelist','FiveM whitelist'], ['fivem.forms','FiveM forms'], ['fivem.approval_log','FiveM approval log'], ['fivem.bans','FiveM bans'],
+  ['support.helpdesk','Help desk'], ['store','Store'], ['fivem.status','FiveM status'], ['fivem.whitelist','FiveM whitelist'], ['fivem.forms','FiveM forms'], ['fivem.approval_log','FiveM approval log'], ['fivem.bans','FiveM bans'],
   ['changelog','Changelog'],
 ]
 const PERMISSION_ACTIONS = ['view','create','edit','delete','approve','sync','manage']
 const PRESET_PERMISSIONS = {
-  moderator: { home:['view'], 'community.forum':['view','edit','delete','manage'], 'community.chat':['view','edit','delete','manage'], 'support.helpdesk':['view','edit'], 'fivem.status':['view'], 'fivem.whitelist':['view','approve','sync'], 'fivem.forms':['view','approve'], 'fivem.approval_log':['view'], 'fivem.bans':['view','create','edit'], changelog:['view'] },
+  moderator: { home:['view'], 'community.forum':['view','edit','delete','manage'], 'community.chat':['view','edit','delete','manage'], 'support.helpdesk':['view','edit'], 'store':['view','edit','manage'], 'fivem.status':['view'], 'fivem.whitelist':['view','approve','sync'], 'fivem.forms':['view','approve'], 'fivem.approval_log':['view'], 'fivem.bans':['view','create','edit'], changelog:['view'] },
   editor: { home:['view'], 'content.posts':['view','create','edit','delete'], 'content.editor':['view','create','edit'], 'content.media':['view','create','edit','delete'], 'content.pages':['view','edit'], 'content.themes':['view','edit'], changelog:['view'] },
   chat: { 'community.chat':['view','create','edit'] },
   fivem: { home:['view'], 'fivem.status':['view'], 'fivem.whitelist':['view','approve','sync'], 'fivem.forms':['view','create','edit','approve'], 'fivem.approval_log':['view'], 'fivem.bans':['view','create','edit','delete'] },
@@ -73,7 +74,7 @@ const NAV_PERMISSION = {
   content:['content.posts', 'content.editor', 'community.forum'], communications:['community.contacts', 'community.newsletter'],
   contacts:'community.contacts', staff:'community.staff', forum:'community.forum', chat:'community.chat', newsletter:'community.newsletter',
   db:'system.db', delivery:['system.mail', 'system.cdn'], mail:'system.mail', cdn:'system.cdn',
-  helpdesk:'support.helpdesk', fivem:'fivem.status', changelog:'changelog',
+  helpdesk:'support.helpdesk', store:'store', fivem:'fivem.status', changelog:'changelog',
 }
 function canViewNavItem(item) {
   if (checkIsAdmin()) return true
@@ -421,6 +422,7 @@ function Dashboard({ onLogout }) {
     { key: 'delivery',      label: 'Mail & CDN',    group: 'SYSTEM',     icon: '📨',  badge: null, aliases: ['mail', 'cdn'] },
 
     { key: 'helpdesk',     label: 'Help Desk',     group: 'SUPPORT',    icon: '🎫', badge: null },
+    { key: 'store',        label: 'Store',         group: 'BUSINESS',   icon: '🛒', badge: null },
     { key: 'fivem',        label: 'FiveM Server',  group: 'FIVEM',      icon: '🎮', badge: null },
     { key: 'changelog',    label: 'Changelog',     group: 'MANAGE',     icon: '📋',   badge: 'NEW' },
   ]
@@ -1084,6 +1086,7 @@ function Dashboard({ onLogout }) {
           {view === 'stats' && adminUser && <PanelErrorBoundary label="Statistics"><StatsPanel /></PanelErrorBoundary>}
 
           {view === 'helpdesk' && adminUser && <PanelErrorBoundary label="Help Desk"><HelpDeskPanel /></PanelErrorBoundary>}
+          {view === 'store' && adminUser && <PanelErrorBoundary label="Store"><StorePanel /></PanelErrorBoundary>}
           {view === 'changelog' && <PanelErrorBoundary label="Changelog"><Changelog /></PanelErrorBoundary>}
           {view === 'fivem' && adminUser && (
             <PanelErrorBoundary label="FiveM Server">

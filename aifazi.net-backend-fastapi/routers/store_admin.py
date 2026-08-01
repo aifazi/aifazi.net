@@ -1,0 +1,391 @@
+"""
+routers/store_admin.py — Store management for staff (categories, products,
+inventory, orders, invoices, quotes, sales stats). Mounted at /api/store/admin.
+"""
+from __future__ import annotations
+
+import logging
+import random
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
+from database import supabase
+from permissions import require_permission
+
+log = logging.getLogger("store.admin")
+router = APIRouter()
+
+MANAGE = require_permission("store.manage")
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _number(prefix: str) -> str:
+    return f"{prefix}-{random.randint(100000, 999999)}"
+
+
+def _product_payload(row: dict) -> dict:
+    return {
+        "id": row.get("id"),
+        "slug": row.get("slug"),
+        "name": row.get("name"),
+        "sku": row.get("sku") or "",
+        "description": row.get("description") or "",
+        "price_cents": int(row.get("price_cents") or 0),
+        "price": (row.get("price_cents") or 0) / 100,
+        "compare_at_cents": row.get("compare_at_cents"),
+        "compare_at": (row.get("compare_at_cents") or 0) / 100 if row.get("compare_at_cents") else None,
+        "image_url": row.get("image_url") or "",
+        "type": row.get("type") or "physical",
+        "stock_qty": int(row.get("stock_qty") or 0),
+        "low_stock_threshold": int(row.get("low_stock_threshold") or 0),
+        "track_inventory": bool(row.get("track_inventory", True)),
+        "active": bool(row.get("active", True)),
+        "featured": bool(row.get("featured")),
+        "category_id": row.get("category_id"),
+        "category": row.get("category_slug") or "",
+        "sort_order": int(row.get("sort_order") or 0),
+        "low_stock": bool(row.get("track_inventory", True)) and int(row.get("stock_qty") or 0) <= int(row.get("low_stock_threshold") or 0),
+        "created_at": row.get("created_at"),
+    }
+
+
+def _product_rows() -> list[dict]:
+    res = (supabase.table("store_products")
+           .select("*,store_categories(slug)")
+           .order("sort_order")
+           .execute())
+    out = []
+    for p in res.data or []:
+        p = dict(p)
+        cats = p.get("store_categories")
+        if isinstance(cats, dict):
+            p["category_slug"] = cats.get("slug")
+        elif isinstance(cats, list) and cats:
+            p["category_slug"] = cats[0].get("slug")
+        out.append(p)
+    return out
+
+
+# ── Sales dashboard ────────────────────────────────────────────────────────────
+@router.get("/sales")
+async def sales_dashboard(_: dict = Depends(MANAGE)):
+    orders = (supabase.table("store_orders")
+              .select("id,status,total_cents,currency,created_at,user_id,order_number")
+              .order("created_at", desc=True).limit(500).execute()).data or []
+    paid = [o for o in orders if o.get("status") == "paid"]
+    revenue = sum(int(o.get("total_cents") or 0) for o in paid)
+    refunds = sum(int(t.get("amount_cents") or 0) for t in
+                  (supabase.table("store_transactions").select("kind,amount_cents").eq("kind", "refund").execute().data or []))
+    products = _product_rows()
+    low_stock = [p for p in products if p["track_inventory"] and int(p["stock_qty"] or 0) <= int(p.get("low_stock_threshold") or 0)]
+
+    # Top products by units sold
+    items = (supabase.table("store_order_items")
+             .select("product_name,quantity,line_total_cents")
+             .execute()).data or []
+    sold: dict[str, int] = {}
+    revenue_by: dict[str, int] = {}
+    for it in items:
+        name = it.get("product_name") or "Unknown"
+        sold[name] = sold.get(name, 0) + int(it.get("quantity") or 0)
+        revenue_by[name] = revenue_by.get(name, 0) + int(it.get("line_total_cents") or 0)
+    top_products = [
+        {"name": name, "units": qty, "revenue_cents": revenue_by.get(name, 0)}
+        for name, qty in sorted(sold.items(), key=lambda kv: -kv[1])[:8]
+    ]
+
+    # Recent orders
+    recent = []
+    for o in orders[:10]:
+        recent.append({
+            "order_number": o.get("order_number"), "status": o.get("status"),
+            "total_cents": int(o.get("total_cents") or 0),
+            "total": (o.get("total_cents") or 0) / 100,
+            "created_at": o.get("created_at"), "user_id": o.get("user_id"),
+        })
+
+    pending_quotes = (supabase.table("store_quotes").select("id").eq("status", "pending").execute().data or [])
+    return {
+        "revenue_cents": revenue,
+        "revenue": revenue / 100,
+        "refund_cents": refunds,
+        "net_revenue_cents": revenue - refunds,
+        "orders_count": len(orders),
+        "paid_orders_count": len(paid),
+        "products_count": len(products),
+        "low_stock_count": len(low_stock),
+        "pending_quotes_count": len(pending_quotes),
+        "low_stock": low_stock,
+        "top_products": top_products,
+        "recent_orders": recent,
+        "currency": "usd",
+    }
+
+
+# ── Categories ─────────────────────────────────────────────────────────────────
+@router.get("/categories")
+async def admin_categories(_: dict = Depends(MANAGE)):
+    res = (supabase.table("store_categories").select("*").order("display_order").execute())
+    return res.data or []
+
+
+class CategoryBody(BaseModel):
+    slug: str
+    name: str
+    icon: str = "🛒"
+    description: str = ""
+    scope: str = "all"
+    display_order: int = 0
+    active: bool = True
+
+
+@router.post("/categories")
+async def create_category(body: CategoryBody, _: dict = Depends(MANAGE)):
+    try:
+        res = supabase.table("store_categories").insert(body.dict()).execute()
+    except Exception as exc:
+        raise HTTPException(400, f"Category not created: {exc}")
+    return res.data[0] if res.data else {"id": None}
+
+
+@router.patch("/categories/{cat_id}")
+async def update_category(cat_id: str, body: CategoryBody, _: dict = Depends(MANAGE)):
+    res = supabase.table("store_categories").update(body.dict()).eq("id", cat_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Category not found")
+    return res.data[0]
+
+
+@router.delete("/categories/{cat_id}")
+async def delete_category(cat_id: str, _: dict = Depends(MANAGE)):
+    res = supabase.table("store_categories").delete().eq("id", cat_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Category not found")
+    return {"ok": True}
+
+
+# ── Products + inventory ───────────────────────────────────────────────────────
+@router.get("/products")
+async def admin_products(_: dict = Depends(MANAGE)):
+    return [_product_payload(p) for p in _product_rows()]
+
+
+class ProductBody(BaseModel):
+    slug: str
+    name: str
+    category_id: str | None = None
+    sku: str = ""
+    description: str = ""
+    price_cents: int = 0
+    compare_at_cents: int | None = None
+    image_url: str = ""
+    type: str = "physical"
+    stock_qty: int = 0
+    low_stock_threshold: int = 5
+    track_inventory: bool = True
+    active: bool = True
+    featured: bool = False
+    sort_order: int = 0
+
+
+@router.post("/products")
+async def create_product(body: ProductBody, _: dict = Depends(MANAGE)):
+    try:
+        res = supabase.table("store_products").insert(body.dict()).execute()
+    except Exception as exc:
+        raise HTTPException(400, f"Product not created: {exc}")
+    return _product_payload(res.data[0]) if res.data else {"id": None}
+
+
+@router.patch("/products/{prod_id}")
+async def update_product(prod_id: str, body: ProductBody, _: dict = Depends(MANAGE)):
+    res = supabase.table("store_products").update({**body.dict(), "updated_at": _now()}).eq("id", prod_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Product not found")
+    return _product_payload(res.data[0])
+
+
+class StockPatchBody(BaseModel):
+    stock_qty: int
+    low_stock_threshold: int | None = None
+
+
+@router.patch("/products/{prod_id}/stock")
+async def adjust_stock(prod_id: str, body: StockPatchBody, _: dict = Depends(MANAGE)):
+    if body.stock_qty < 0:
+        raise HTTPException(400, "Stock cannot be negative")
+    patch = {"stock_qty": body.stock_qty, "updated_at": _now()}
+    if body.low_stock_threshold is not None:
+        patch["low_stock_threshold"] = body.low_stock_threshold
+    res = supabase.table("store_products").update(patch).eq("id", prod_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Product not found")
+    return _product_payload(res.data[0])
+
+
+@router.delete("/products/{prod_id}")
+async def delete_product(prod_id: str, _: dict = Depends(MANAGE)):
+    res = supabase.table("store_products").delete().eq("id", prod_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Product not found")
+    return {"ok": True}
+
+
+# ── Orders ─────────────────────────────────────────────────────────────────────
+@router.get("/orders")
+async def admin_orders(status: str | None = None, _: dict = Depends(MANAGE)):
+    q = supabase.table("store_orders").select("*").order("created_at", desc=True).limit(200)
+    if status:
+        q = q.eq("status", status)
+    res = q.execute()
+    out = []
+    for o in res.data or []:
+        items = (supabase.table("store_order_items")
+                 .select("product_name,product_sku,unit_price_cents,quantity,line_total_cents")
+                 .eq("order_id", o["id"]).order("created_at").execute())
+        out.append({**o, "items": items.data or [], "total": (o.get("total_cents") or 0) / 100})
+    return out
+
+
+@router.get("/orders/{order_id}")
+async def admin_order_detail(order_id: str, _: dict = Depends(MANAGE)):
+    res = supabase.table("store_orders").select("*").eq("id", order_id).limit(1).execute()
+    if not res.data:
+        raise HTTPException(404, "Order not found")
+    o = res.data[0]
+    items = (supabase.table("store_order_items")
+             .select("*").eq("order_id", o["id"]).order("created_at").execute())
+    return {**o, "items": items.data or [], "total": (o.get("total_cents") or 0) / 100}
+
+
+class OrderStatusBody(BaseModel):
+    status: str
+
+
+@router.patch("/orders/{order_id}/status")
+async def update_order_status(order_id: str, body: OrderStatusBody, _: dict = Depends(MANAGE)):
+    res = supabase.table("store_orders").update({"status": body.status, "updated_at": _now()}).eq("id", order_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Order not found")
+    return res.data[0]
+
+
+# ── Invoices ───────────────────────────────────────────────────────────────────
+@router.get("/invoices")
+async def admin_invoices(_: dict = Depends(MANAGE)):
+    res = (supabase.table("store_invoices").select("*").order("created_at", desc=True).limit(200).execute())
+    return [{**i, "total": (i.get("total_cents") or 0) / 100} for i in res.data or []]
+
+
+class InvoiceBody(BaseModel):
+    order_id: str | None = None
+    user_id: str | None = None
+    status: str = "draft"
+    subtotal_cents: int = 0
+    discount_cents: int = 0
+    tax_cents: int = 0
+    total_cents: int = 0
+    customer_name: str = ""
+    customer_email: str = ""
+    due_at: str | None = None
+    notes: str = ""
+
+
+@router.post("/invoices")
+async def create_invoice(body: InvoiceBody, _: dict = Depends(MANAGE)):
+    try:
+        res = supabase.table("store_invoices").insert({
+            **body.dict(), "invoice_number": _number("INV"),
+        }).execute()
+    except Exception as exc:
+        raise HTTPException(400, f"Invoice not created: {exc}")
+    return res.data[0] if res.data else {"id": None}
+
+
+class InvoicePatchBody(BaseModel):
+    status: str | None = None
+    paid_at: str | None = None
+    due_at: str | None = None
+    notes: str | None = None
+
+
+@router.patch("/invoices/{invoice_id}")
+async def update_invoice(invoice_id: str, body: InvoicePatchBody, _: dict = Depends(MANAGE)):
+    patch = {k: v for k, v in body.dict().items() if v is not None}
+    if body.status == "paid" and not patch.get("paid_at"):
+        patch["paid_at"] = _now()
+    res = supabase.table("store_invoices").update({**patch, "updated_at": _now()}).eq("id", invoice_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Invoice not found")
+    return res.data[0]
+
+
+@router.delete("/invoices/{invoice_id}")
+async def delete_invoice(invoice_id: str, _: dict = Depends(MANAGE)):
+    res = supabase.table("store_invoices").delete().eq("id", invoice_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Invoice not found")
+    return {"ok": True}
+
+
+# ── Quotes ─────────────────────────────────────────────────────────────────────
+@router.get("/quotes")
+async def admin_quotes(_: dict = Depends(MANAGE)):
+    res = (supabase.table("store_quotes").select("*").order("created_at", desc=True).limit(200).execute())
+    return [{**q, "total": (q.get("total_cents") or 0) / 100} for q in res.data or []]
+
+
+class QuoteBody(BaseModel):
+    status: str | None = None
+    items: list[dict] = []
+    subtotal_cents: int = 0
+    tax_cents: int = 0
+    total_cents: int = 0
+    customer_name: str = ""
+    customer_email: str = ""
+    notes: str = ""
+    valid_until: str | None = None
+
+
+@router.post("/quotes")
+async def create_quote(body: QuoteBody, _: dict = Depends(MANAGE)):
+    try:
+        res = supabase.table("store_quotes").insert({
+            "quote_number": _number("QT"),
+            "status": body.status or "pending",
+            "items": body.items or [],
+            "subtotal_cents": body.subtotal_cents,
+            "tax_cents": body.tax_cents,
+            "total_cents": body.total_cents or body.subtotal_cents,
+            "currency": "usd",
+            "customer_name": body.customer_name,
+            "customer_email": body.customer_email,
+            "notes": body.notes,
+            "valid_until": body.valid_until,
+        }).execute()
+    except Exception as exc:
+        raise HTTPException(400, f"Quote not created: {exc}")
+    return res.data[0] if res.data else {"id": None}
+
+
+@router.patch("/quotes/{quote_id}")
+async def update_quote(quote_id: str, body: QuoteBody, _: dict = Depends(MANAGE)):
+    patch = {k: v for k, v in body.dict().items() if v is not None}
+    patch["updated_at"] = _now()
+    res = supabase.table("store_quotes").update(patch).eq("id", quote_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Quote not found")
+    return res.data[0]
+
+
+@router.delete("/quotes/{quote_id}")
+async def delete_quote(quote_id: str, _: dict = Depends(MANAGE)):
+    res = supabase.table("store_quotes").delete().eq("id", quote_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Quote not found")
+    return {"ok": True}

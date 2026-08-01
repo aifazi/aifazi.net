@@ -31,6 +31,7 @@ MODULES = {
     "system.announcements": "Announcements",
     "system.settings": "Settings",
     "support.helpdesk": "Help desk",
+    "store": "Store",
     "fivem.status": "FiveM status",
     "fivem.whitelist": "FiveM whitelist",
     "fivem.forms": "FiveM forms",
@@ -48,6 +49,7 @@ ROLE_PERMISSION_PRESETS: dict[str, dict[str, list[str]]] = {
     "moderator": {
         "home": ["view"], "community.forum": ["view", "edit", "delete", "manage"],
         "community.chat": ["view", "edit", "delete", "manage"], "support.helpdesk": ["view", "edit"],
+        "store": ["view", "edit", "manage"],
         "fivem.status": ["view"], "fivem.whitelist": ["view", "approve", "sync"],
         "fivem.forms": ["view", "approve"], "fivem.approval_log": ["view"], "fivem.bans": ["view", "create", "edit"],
         "profile": ["view", "edit"], "changelog": ["view"],

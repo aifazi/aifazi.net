@@ -226,7 +226,11 @@ async def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_u
     plan = plans.data[0]
     if not plan.get("active", True):
         raise HTTPException(404, "Plan not found")
-    price_id = _ensure_stripe_price(plan)
+    try:
+        price_id = _ensure_stripe_price(plan)
+    except Exception as exc:
+        log.error("checkout ensure-stripe-price failed: %s", exc)
+        raise HTTPException(502, f"Stripe setup failed: {exc}")
 
     st = _stripe_client()
     email = user.get("email") or ""

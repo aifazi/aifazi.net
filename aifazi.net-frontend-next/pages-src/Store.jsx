@@ -20,6 +20,13 @@ export default function StorePage({ fivem = false }) {
   const [checkoutLoading, setCheckoutLoading] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [tab, setTab] = useState('vip')
+  const [products, setProducts] = useState([])
+  const [productsLoading, setProductsLoading] = useState(true)
+  const [activeCategory, setActiveCategory] = useState('')
+  const [cart, setCart] = useState({ items: [], subtotal: 0, count: 0 })
+  const [cartLoading, setCartLoading] = useState(false)
+  const [checkoutCartLoading, setCheckoutCartLoading] = useState(false)
   const homeHref = useFiveMRoute('/')
   const loginHref = fivem
     ? `/login?next=${encodeURIComponent('/fivem/store')}`
@@ -36,6 +43,71 @@ export default function StorePage({ fivem = false }) {
       setSub(s)
     }).finally(() => setLoading(false))
   }, [user])
+
+  const loadProducts = () => {
+    setProductsLoading(true)
+    api.get('/store/products').then(r => setProducts(r.data || [])).catch(() => setProducts([]))
+      .finally(() => setProductsLoading(false))
+  }
+  const loadCart = () => {
+    if (!user) { setCart({ items: [], subtotal: 0, count: 0 }); return }
+    api.get('/store/cart').then(r => setCart(r.data || { items: [], subtotal: 0, count: 0 })).catch(() => {})
+  }
+
+  useEffect(() => {
+    if (tab === 'shop') { loadProducts(); loadCart() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, user])
+
+  const addToCart = async (product) => {
+    if (!user) { window.location.href = loginHref; return }
+    setCartLoading(true)
+    try {
+      await api.post('/store/cart', { product_id: product.id, quantity: 1 })
+      toastMessage(`Added ${product.name} to cart`)
+      loadCart()
+    } catch (err) {
+      setError(err?.response?.data?.error || err?.response?.data?.detail || 'Could not add to cart.')
+    } finally { setCartLoading(false) }
+  }
+
+  const updateCartQty = async (item, qty) => {
+    try {
+      if (qty < 1) { await api.delete(`/store/cart/${item.id}`) }
+      else await api.patch(`/store/cart/${item.id}`, { quantity: qty })
+      loadCart()
+    } catch (err) {
+      setError(err?.response?.data?.error || err?.response?.data?.detail || 'Could not update cart.')
+    }
+  }
+
+  const removeCartItem = async (item) => {
+    try { await api.delete(`/store/cart/${item.id}`); loadCart() }
+    catch (err) { setError(err?.response?.data?.error || 'Could not remove item.') }
+  }
+
+  const clearCart = async () => {
+    try { await api.post('/store/cart/clear'); loadCart() }
+    catch (err) { setError(err?.response?.data?.error || 'Could not clear cart.') }
+  }
+
+  const checkoutCart = async () => {
+    if (!user) { window.location.href = loginHref; return }
+    setError(''); setNotice(''); setCheckoutCartLoading(true)
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://aifazi.net'
+    try {
+      const r = await api.post('/store/checkout/cart', {
+        success_url: `${origin}/store/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/store`,
+      })
+      if (r.data?.url) window.location.href = r.data.url
+      else setError('Checkout could not be started. Please try again.')
+    } catch (err) {
+      setError(err?.response?.data?.error || err?.response?.data?.detail || 'Checkout failed. Please try again.')
+    } finally { setCheckoutCartLoading(false) }
+  }
+
+  const toastMessage = (msg) => { setNotice(msg); setTimeout(() => setNotice(''), 3000) }
 
   const handleSubscribe = async (plan) => {
     setError(''); setNotice(''); setCheckoutLoading(plan.slug)
@@ -124,6 +196,22 @@ export default function StorePage({ fivem = false }) {
         </div>
       </div>
 
+      {/* Tab switcher */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '28px 24px 0' }}>
+        {[['vip', '👑 VIP SUBSCRIPTIONS'], ['shop', '🛒 PRODUCTS']].map(([k, label]) => (
+          <button key={k} onClick={() => { setTab(k); setError(''); setNotice('') }}
+            style={{
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
+              padding: '11px 22px', borderRadius: 8, cursor: 'pointer', border: `1px solid ${tab === k ? `${G}55` : 'var(--border)'}`,
+              background: tab === k ? `color-mix(in srgb, var(--green) 10%, transparent)` : 'color-mix(in srgb, var(--text) 2%, transparent)',
+              color: tab === k ? G : 'var(--muted)', transition: 'all 0.15s',
+            }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'vip' && (<>
       {/* Tier grid */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px 0' }}>
         {loading ? (
@@ -246,6 +334,130 @@ export default function StorePage({ fivem = false }) {
           ))}
         </div>
       </div>
+      </>)}
+
+      {tab === 'shop' && (
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 24px 0' }}>
+          {/* Category filter */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+            <button onClick={() => setActiveCategory('')}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, padding: '7px 14px', borderRadius: 20, cursor: 'pointer',
+                background: activeCategory === '' ? `${G}14` : 'transparent', color: activeCategory === '' ? G : 'var(--muted)',
+                border: `1px solid ${activeCategory === '' ? `${G}50` : 'var(--border)'}` }}>ALL</button>
+            {categories.map(c => (
+              <button key={c.id} onClick={() => setActiveCategory(c.slug)}
+                style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, padding: '7px 14px', borderRadius: 20, cursor: 'pointer',
+                  background: activeCategory === c.slug ? `${G}14` : 'transparent', color: activeCategory === c.slug ? G : 'var(--muted)',
+                  border: `1px solid ${activeCategory === c.slug ? `${G}50` : 'var(--border)'}` }}>{c.icon} {c.name}</button>
+            ))}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 28, alignItems: 'start' }}>
+            {/* Product grid */}
+            <div>
+              {productsLoading ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} style={{ padding: 20, borderRadius: 12, border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--text) 2%, transparent)' }}>
+                      <div style={{ width: '100%', height: 80, background: 'var(--border)', borderRadius: 6, marginBottom: 12 }} />
+                      <div style={{ width: '60%', height: 12, background: 'var(--border)', borderRadius: 4, marginBottom: 8 }} />
+                      <div style={{ width: '40%', height: 20, background: 'var(--border)', borderRadius: 4 }} />
+                    </div>
+                  ))}
+                </div>
+              ) : products.filter(p => !activeCategory || p.category === activeCategory).length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)', fontSize: 13 }}>No products here right now. Check back soon.</div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                  {products.filter(p => !activeCategory || p.category === activeCategory).map(p => {
+                    const color = p.on_sale ? '#ff6b6b' : C
+                    return (
+                      <div key={p.id} style={{ position: 'relative', padding: 20, borderRadius: 12, border: '1px solid var(--border)',
+                        background: 'color-mix(in srgb, var(--text) 2%, transparent)', display: 'flex', flexDirection: 'column',
+                        transition: 'transform 0.2s, border-color 0.2s' }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.borderColor = `${color}55` }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'var(--border)' }}>
+                        {p.image_url ? (
+                          <img src={p.image_url} alt={p.name} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 12, background: 'var(--bg3)' }} />
+                        ) : (
+                          <div style={{ width: '100%', height: 100, borderRadius: 8, marginBottom: 12, background: 'color-mix(in srgb, var(--text) 4%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30 }}>🛒</div>
+                        )}
+                        {p.on_sale && (
+                          <div style={{ position: 'absolute', top: 14, right: 14, padding: '3px 10px', borderRadius: 12, background: '#ff6b6b', color: '#000', fontSize: 9, fontWeight: 900, letterSpacing: 1 }}>SALE</div>
+                        )}
+                        <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>{p.category || 'Store'}</div>
+                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, marginBottom: 6, flex: 1 }}>{p.name}</div>
+                        {p.description && <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10, lineHeight: 1.5 }}>{p.description}</div>}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
+                          <span style={{ fontSize: 22, fontWeight: 800, color }}>${p.price.toFixed(2)}</span>
+                          {p.compare_at > 0 && <span style={{ fontSize: 11, color: 'var(--muted)', textDecoration: 'line-through' }}>${p.compare_at.toFixed(2)}</span>}
+                        </div>
+                        <button onClick={() => addToCart(p)} disabled={cartLoading || !p.in_stock}
+                          style={{ width: '100%', padding: '10px 0', borderRadius: 8, cursor: p.in_stock ? 'pointer' : 'not-allowed', fontWeight: 800, fontSize: 10, letterSpacing: 2,
+                            background: p.in_stock ? `linear-gradient(135deg, ${C}, ${G})` : 'color-mix(in srgb, var(--text) 8%, transparent)', color: p.in_stock ? '#000' : 'var(--muted)', border: 'none' }}>
+                          {!p.in_stock ? 'OUT OF STOCK' : 'ADD TO CART'}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Cart */}
+            <div style={{ position: 'sticky', top: 24 }}>
+              <div style={{ padding: 20, borderRadius: 12, border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--text) 2%, transparent)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <h2 style={{ fontSize: 12, letterSpacing: 3, color: C, margin: 0 }}>YOUR CART</h2>
+                  {cart.count > 0 && <button onClick={clearCart} style={{ background: 'none', border: 'none', color: '#ff6b6b', fontSize: 10, letterSpacing: 1, cursor: 'pointer' }}>CLEAR</button>}
+                </div>
+
+                {!user ? (
+                  <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--muted)', fontSize: 12, lineHeight: 1.7 }}>
+                    Sign in to add products to your cart.
+                    <div style={{ marginTop: 14 }}>
+                      <Link to={loginHref} style={{ display: 'inline-block', padding: '9px 20px', borderRadius: 8, background: `linear-gradient(135deg, ${G}, ${C})`, color: '#000', fontWeight: 700, fontSize: 10, letterSpacing: 2, textDecoration: 'none' }}>SIGN IN</Link>
+                    </div>
+                  </div>
+                ) : cart.items.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--muted)', fontSize: 12 }}>Your cart is empty.</div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+                      {cart.items.map(item => (
+                        <div key={item.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.product.name}</div>
+                            <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>${item.product.price.toFixed(2)} each</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <button onClick={() => updateCartQty(item, item.quantity - 1)} style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: 12 }}>−</button>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', minWidth: 20, textAlign: 'center' }}>{item.quantity}</span>
+                            <button onClick={() => updateCartQty(item, item.quantity + 1)} style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: 12 }}>+</button>
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', fontWeight: 700, minWidth: 62, textAlign: 'right' }}>${item.line_total.toFixed(2)}</div>
+                          <button onClick={() => removeCartItem(item)} title="Remove" style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: 12 }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginBottom: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text)' }}>
+                        <span>SUBTOTAL</span>
+                        <span style={{ fontWeight: 800, color: G }}>${cart.subtotal.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <button onClick={checkoutCart} disabled={checkoutCartLoading}
+                      style={{ width: '100%', padding: '13px 0', borderRadius: 8, cursor: 'pointer', fontWeight: 800, fontSize: 11, letterSpacing: 2,
+                        background: `linear-gradient(135deg, ${G}, ${C})`, color: '#000', border: 'none' }}>
+                      {checkoutCartLoading ? 'REDIRECTING...' : 'CHECKOUT — STRIPE'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px 0', textAlign: 'center', fontSize: 10, color: 'var(--muted)', lineHeight: 1.8 }}>
         Payments are processed securely by <span style={{ color: '#635bff' }}>Stripe</span>. By subscribing you agree to the server rules.

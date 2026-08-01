@@ -26,7 +26,7 @@ const ROLE_META = {
 const GROUP_LABELS = {
   OVERVIEW:'Overview', CONTENT:'Content', COMMUNITY:'Community',
   SYSTEM:'System', SUPPORT:'Support', MANAGE:'Manage', MAIN:'General',
-  FIVEM:'FiveM',
+  BUSINESS:'Business', FIVEM:'FiveM',
 }
 
 /* ── Single nav item ── */

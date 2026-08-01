@@ -94,6 +94,7 @@ const SEARCH_NAV = [
   { key:'delivery',      icon:'📨', label:'Mail & CDN',     group:'System'     },
   { key:'backup',        icon:'💾', label:'Backup',         group:'System'     },
   { key:'helpdesk',      icon:'🎫', label:'Help Desk',      group:'Support'    },
+  { key:'store',         icon:'🛒', label:'Store',          group:'Business'   },
   { key:'changelog',     icon:'📋', label:'Changelog',      group:'Manage'     },
 ]
 

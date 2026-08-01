@@ -168,6 +168,7 @@ _OPEN_EXACT: set[str] = {
     "/api/cron/cleanup",
     # Store: Stripe webhook (signature verified inside route) + Lua subscription sync
     "/api/store/webhook",
+    "/api/store/stripe/webhook",
     "/api/fivem/store/subscriptions/pending-sync",
     "/api/fivem/store/subscriptions/mark-synced",
 }
@@ -526,6 +527,8 @@ from routers import (
     fivem,
     forms,
     store,
+    store_ecommerce,
+    store_admin,
     txadmin_webhook,
     webhooks,
     discord_auth,
@@ -572,6 +575,8 @@ app.include_router(file_tools.router,     prefix="/api/file-tools")
 app.include_router(fivem.router,          prefix="/api/fivem")
 app.include_router(store.router,          prefix="/api/store")
 app.include_router(store.router,          prefix="/api/fivem/store")  # Lua bridge sync endpoints
+app.include_router(store_ecommerce.router, prefix="/api/store")
+app.include_router(store_admin.router,     prefix="/api/store/admin")
 app.include_router(forms.router,          prefix="/api/forms")
 app.include_router(txadmin_webhook.router, prefix="/api/txadmin")
 app.include_router(webhooks.router,         prefix="/api/webhook")
