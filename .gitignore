@@ -36,3 +36,6 @@ Thumbs.db
 .idea/
 
 .vercel
+
+# Agent session notes
+.claude/

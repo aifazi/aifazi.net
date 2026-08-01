@@ -165,6 +165,9 @@ export default function Navbar() {
   const fiveMWhitelistRoute = useFiveMRoute('/whitelist')
   const fiveMStatusRoute    = useFiveMRoute('/status')
   const fiveMProfileRoute   = useFiveMRoute('/profile')
+  const fiveMStoreRoute     = useFiveMRoute('/store')
+  const fiveMRulesRoute     = useFiveMRoute('/rules')
+  const fiveMGuidesRoute    = useFiveMRoute('/guides')
   const fiveMLoginRoute     = useFiveMLoginRoute('/connect')
   const loginRoute          = isFiveM ? fiveMLoginRoute : '/login'
   const registerRoute       = isFiveM
@@ -313,6 +316,7 @@ export default function Navbar() {
     { type: 'hash',    hash: 'projects',        label: 'Projects'   },
     { type: 'route',   to: '/blog',             label: 'Blog'       },
     { type: 'route',   to: '/forum',            label: 'Forum'      },
+    { type: 'route',   to: '/store',            label: 'Store'      },
     { type: 'contact',                          label: 'Contact'    },
   ]
 
@@ -322,6 +326,9 @@ export default function Navbar() {
     { type: 'route',   to: fiveMConnectRoute,   label: 'Connect'   },
     { type: 'route',   to: fiveMWhitelistRoute, label: 'Whitelist' },
     { type: 'route',   to: fiveMStatusRoute,    label: 'Status'    },
+    { type: 'route',   to: fiveMStoreRoute,     label: 'Store'     },
+    { type: 'route',   to: fiveMRulesRoute,     label: 'Rules'     },
+    { type: 'route',   to: fiveMGuidesRoute,    label: 'Guides'    },
     { type: 'route',   to: fiveMProfileRoute,   label: 'Profile'   },
   ]
 

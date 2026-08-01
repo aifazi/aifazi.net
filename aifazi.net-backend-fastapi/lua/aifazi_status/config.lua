@@ -73,6 +73,24 @@ Config.ApplicationActions = {
 }
 
 -- ─────────────────────────────────────────────────────────────
+--  🛒 SUBSCRIPTION SYNC  (Store / VIP)
+--  Stripe subscriptions purchased on aifazi.net store are polled by
+--  server.lua. Match is by license / steam / discord / fivem identifier.
+--  Each tier applies:
+--      group.vip  +  group.vip{level}   (ACE principals for permissions)
+--      SetPlayerResourceKvp aifazi_vip_* (level/plan/expires/perks json) so
+--      any other resource can gate features (vehicle class, phone digits,
+--      plates, weapon skins, auction access, garage/home slots, etc.).
+--  Exports: GetSubscriptionLevel(src), GetSubscriptionPlan(src),
+--           GetSubscriptionPerks(src), IsSubscribed(src)
+--
+--  Set SubscriptionSyncInterval = 0 to disable the poller (no auto perks).
+--  The 30s status loop does NOT apply perks — this poller does.
+-- ─────────────────────────────────────────────────────────────
+Config.SubscriptionSyncInterval = 30000
+Config.SubscriptionKvpPrefix = "aifazi_vip"
+
+-- ─────────────────────────────────────────────────────────────
 --  txAdmin SYNC
 --
 --  Website approvals are stored in Supabase first. This resource polls the

@@ -356,6 +356,127 @@ end
 -- ── Player session tracking ───────────────────────────────────────────────────
 local joinedAt = {}
 
+-- ── Subscription / VIP sync (store) ───────────────────────────────────────────
+-- Stripe subscriptions from aifazi.net are polled from /store/subscriptions/
+-- pending-sync. Each active tier adds group principals + per-player KVP so
+-- other resources can gate features (vehicle class, phone digits, plates,
+-- weapon skins, auction access, garage/home slots, etc).
+local function subscriptionKvpPrefix()
+    return (Config and Config.SubscriptionKvpPrefix) or "aifazi_vip"
+end
+
+local function principalForIdentifiers(ids)
+    for _, ident in ipairs(ids or {}) do
+        if ident:find("^license:") or ident:find("^license2:") or ident:find("^discord:") or ident:find("^steam:") then
+            return "identifier." .. ident
+        end
+    end
+    return nil
+end
+
+-- Apply an ACTIVE subscription to an online player (groups + KVP).
+local function applySubscription(src, ids, entry)
+    local plan = entry.plan or {}
+    local level = tonumber(plan.level) or 0
+    if level < 1 then return false, "no level" end
+
+    local principal = principalForIdentifiers(ids and ids.all or {})
+    if principal then
+        ExecuteCommand(("add_principal %s group.vip"):format(principal))
+        ExecuteCommand(("add_principal %s group.vip%d"):format(principal, level))
+    end
+
+    local prefix = subscriptionKvpPrefix()
+    SetPlayerResourceKvp(src, prefix .. "_level", tostring(level))
+    SetPlayerResourceKvp(src, prefix .. "_plan", tostring(plan.slug or ""))
+    SetPlayerResourceKvp(src, prefix .. "_expires", tostring(entry.current_period_end or ""))
+    SetPlayerResourceKvp(src, prefix .. "_perks", json.encode(plan.perks or {}))
+    print(("^2[aifazi_status]^7 VIP %s (level %d) applied to %d (%s)"):format(
+        tostring(plan.slug or "?"), level, tonumber(src),
+        principal or tostring(ids.discord_id or ids.steam_hex or "?")))
+    return true, "applied"
+end
+
+-- Remove VIP state from a player (used when sub is canceled / expired).
+local function clearSubscription(src, ids)
+    local principal = principalForIdentifiers(ids and ids.all or {})
+    if principal then
+        ExecuteCommand(("remove_principal %s group.vip"):format(principal))
+        for lv = 1, 6 do
+            ExecuteCommand(("remove_principal %s group.vip%d"):format(principal, lv))
+        end
+    end
+    local prefix = subscriptionKvpPrefix()
+    for _, key in ipairs({ prefix .. "_level", prefix .. "_plan", prefix .. "_expires", prefix .. "_perks" }) do
+        SetPlayerResourceKvp(src, key, "")
+    end
+    print(("^3[aifazi_status]^7 VIP cleared for %d"):format(tonumber(src)))
+end
+
+local function markSubscription(entry, ok, message)
+    PerformHttpRequest(API_BASE .. "/store/subscriptions/mark-synced", function(code)
+        if code == 200 then
+            print(("^2[aifazi_status]^7 Subscription %s: %s (%s)"):format(
+                ok and "synced" or "FAILED", tostring(entry.subscription_id or "?"), message))
+        elseif code ~= 0 then
+            print(("^1[aifazi_status]^7 Subscription mark HTTP %d"):format(code))
+        end
+    end, "POST", json.encode({
+        subscription_id = entry.subscription_id,
+        ok     = ok,
+        note   = ok and "lua_synced" or message,
+    }), authHeader())
+end
+
+local function SyncSubscriptions()
+    PerformHttpRequest(API_BASE .. "/store/subscriptions/pending-sync", function(code, body)
+        if code == 0 then
+            print("^3[aifazi_status]^7 Subscription sync — API unreachable")
+            return
+        end
+        if code ~= 200 or not body then return end
+        local ok, entries = pcall(json.decode, body)
+        if not ok or type(entries) ~= "table" or #entries == 0 then return end
+
+        print(("^5[aifazi_status]^7 Syncing %d subscription change(s)"):format(#entries))
+        for _, entry in ipairs(entries) do
+            local src, ids = findOnlinePlayerByIdentifiers(entry.identifiers or {})
+            if not src then
+                markSubscription(entry, false, "player_offline")
+            elseif entry.active then
+                local applied, message = applySubscription(src, ids, entry)
+                markSubscription(entry, applied, message)
+            else
+                clearSubscription(src, ids)
+                markSubscription(entry, true, "cleared")
+            end
+        end
+    end, "GET", "", authHeader())
+end
+
+-- Public exports for other resources to gate features by VIP level/plan.
+exports("GetSubscriptionLevel", function(source)
+    local lvl = GetPlayerResourceKvp(source, subscriptionKvpPrefix() .. "_level")
+    return tonumber(lvl) or 0
+end)
+
+exports("GetSubscriptionPlan", function(source)
+    return GetPlayerResourceKvp(source, subscriptionKvpPrefix() .. "_plan")
+end)
+
+exports("GetSubscriptionPerks", function(source)
+    local raw = GetPlayerResourceKvp(source, subscriptionKvpPrefix() .. "_perks")
+    if not raw or raw == "" then return {} end
+    local ok, perks = pcall(json.decode, raw)
+    if ok and type(perks) == "table" then return perks end
+    return {}
+end)
+
+exports("IsSubscribed", function(source)
+    return (tonumber(GetPlayerResourceKvp(source, subscriptionKvpPrefix() .. "_level")) or 0) > 0
+end)
+
+-- On disconnect, next poll applies the correct state to any new connection.
 AddEventHandler('playerDropped', function(reason)
     local src = source
     RecordLeave(src, reason)
@@ -488,6 +609,7 @@ RegisterCommand("aifazi_sync", function(src)
     SyncWhitelist()
     SyncApplicationActions()
     SyncBans()
+    SyncSubscriptions()
     print("^5[aifazi_status]^7 Manual sync check requested")
 end, true)
 
@@ -501,6 +623,7 @@ RegisterNetEvent("aifazi:syncNow", function()
     SyncWhitelist()
     SyncApplicationActions()
     SyncBans()
+    SyncSubscriptions()
 end)
 -- ── Whitelist + connect-session enforcement on playerConnecting ───────────────
 -- Two gates run in parallel:
@@ -627,6 +750,7 @@ CreateThread(function()
     SyncWhitelist()
     SyncApplicationActions()
     SyncBans()
+    SyncSubscriptions()
 
     if PUSH_INTERVAL and PUSH_INTERVAL > 0 then
         CreateThread(function()
@@ -657,10 +781,22 @@ CreateThread(function()
                 SyncWhitelist()
                 SyncApplicationActions()
                 SyncBans()
+                SyncSubscriptions()
             end
         end)
     else
         print("^5[aifazi_status]^7 Sync interval disabled; using startup/manual refresh only")
+    end
+
+    local SUB_INTERVAL = (Config and Config.SubscriptionSyncInterval) or 30000
+    if SUB_INTERVAL and SUB_INTERVAL > 0 then
+        CreateThread(function()
+            print(("^6[aifazi_status]^7 Subscription sync interval enabled (%d ms)"):format(SUB_INTERVAL))
+            while true do
+                Wait(SUB_INTERVAL)
+                SyncSubscriptions()
+            end
+        end)
     end
 end)
 

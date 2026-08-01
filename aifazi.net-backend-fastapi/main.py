@@ -166,6 +166,10 @@ _OPEN_EXACT: set[str] = {
     # C1: Vercel cron cleanup (daily) — auth via Authorization: Bearer CRON_SECRET inside cron.py.
     # Without this entry the middleware 403s the cron before cron.py's hmac check runs.
     "/api/cron/cleanup",
+    # Store: Stripe webhook (signature verified inside route) + Lua subscription sync
+    "/api/store/webhook",
+    "/api/fivem/store/subscriptions/pending-sync",
+    "/api/fivem/store/subscriptions/mark-synced",
 }
 # GET requests on these prefixes are open (public read)
 _OPEN_GET_PREFIXES: tuple[str, ...] = (
@@ -198,6 +202,8 @@ _OPEN_GET_PREFIXES: tuple[str, ...] = (
     # Player records — staff-only GET endpoints, JWT auth handles access control
     "/api/fivem/players/records",
     "/api/fivem/players/sessions",
+    # Store catalog — public reads (categories/plans); protected routes use JWT
+    "/api/store",
 )
 
 # ── CORS allowed origins ───────────────────────────────────────────────────────
@@ -519,6 +525,7 @@ from routers import (
     mail_queue, mail_templates,
     fivem,
     forms,
+    store,
     txadmin_webhook,
     webhooks,
     discord_auth,
@@ -563,6 +570,8 @@ app.include_router(content_aggregator.router, prefix="/api/content")
 app.include_router(pdf_editor.router,     prefix="/api/pdf-editor")
 app.include_router(file_tools.router,     prefix="/api/file-tools")
 app.include_router(fivem.router,          prefix="/api/fivem")
+app.include_router(store.router,          prefix="/api/store")
+app.include_router(store.router,          prefix="/api/fivem/store")  # Lua bridge sync endpoints
 app.include_router(forms.router,          prefix="/api/forms")
 app.include_router(txadmin_webhook.router, prefix="/api/txadmin")
 app.include_router(webhooks.router,         prefix="/api/webhook")

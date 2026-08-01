@@ -21,6 +21,9 @@ export default function FiveMLanding() {
   const whitelistHref = useFiveMRoute('/whitelist')
   const statusHref = useFiveMRoute('/status')
   const formsHref = useFiveMRoute('/forms')
+  const storeHref = useFiveMRoute('/store')
+  const rulesHref = useFiveMRoute('/rules')
+  const guidesHref = useFiveMRoute('/guides')
 
   return (
     <div style={{ minHeight: '100vh', color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
@@ -59,12 +62,14 @@ export default function FiveMLanding() {
 
       {/* Info cards */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20 }}>
-        {[
-          { icon: '📋', title: 'WHITELIST REQUIRED', desc: 'Apply for access to join our serious RP community. We review every application.', link: whitelistHref },
-          { icon: '🛡️', title: 'FAIR PLAY', desc: 'Active admin team, anti-cheat, and strict rules enforcement ensure quality RP.', link: statusHref },
-          { icon: '🔊', title: 'VOICE & ECONOMY', desc: 'In-game voice chat, player-run businesses, and a deep economy system.', link: null },
-          { icon: '📊', title: 'SERVER STATUS', desc: 'Real-time server status, player count, and uptime monitoring.', link: statusHref },
-        ].map(card => (
+          {[
+            { icon: '📋', title: 'WHITELIST REQUIRED', desc: 'Apply for access to join our serious RP community. We review every application.', link: whitelistHref },
+            { icon: '🛡️', title: 'FAIR PLAY', desc: 'Active admin team, anti-cheat, and strict rules enforcement ensure quality RP.', link: statusHref },
+            { icon: '👑', title: 'VIP SUBSCRIPTIONS', desc: 'Unlock in-game perks with monthly VIP tiers — applied automatically on join.', link: storeHref },
+            { icon: '📜', title: 'SERVER RULES', desc: 'The full rulebook: value of life, NLR, no metagaming, and fair play.', link: rulesHref },
+            { icon: '📖', title: 'RP GUIDES', desc: 'New to roleplay? Quick-start guides for your first days in the city.', link: guidesHref },
+            { icon: '📊', title: 'SERVER STATUS', desc: 'Real-time server status, player count, and uptime monitoring.', link: statusHref },
+          ].map(card => (
           <a key={card.title} href={card.link || '#'} style={{ display: 'block', padding: 24, borderRadius: 12, background: 'color-mix(in srgb, var(--text) 2%, transparent)', border: '1px solid var(--border)', textDecoration: 'none', color: 'inherit', cursor: card.link ? 'pointer' : 'default' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--text) 4%, transparent)'; e.currentTarget.style.borderColor = `${C}44` }}
             onMouseLeave={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--text) 2%, transparent)'; e.currentTarget.style.borderColor = 'var(--border)' }}>

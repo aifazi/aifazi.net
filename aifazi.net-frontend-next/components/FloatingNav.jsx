@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { icon: '✉', label: 'Contact',   desc: 'Get in touch',        href: '#contact',  color: '#00ff88' },
   { icon: '◉', label: 'Forum',     desc: 'Community',           href: '/forum',    isRoute: true, color: '#00d4ff' },
   { icon: '◇', label: 'Blog',      desc: 'Articles',            href: '/blog',     isRoute: true, color: '#00ff88' },
+  { icon: '👑', label: 'Store',    desc: 'VIP subscriptions',   href: '/store',    isRoute: true, color: '#ffd700' },
 ]
 
 function NavItem({ item, expanded, onHover, onLeave, delay }) {
