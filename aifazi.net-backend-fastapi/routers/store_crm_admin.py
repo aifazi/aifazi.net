@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from database import supabase
 from permissions import require_any_permission
 from routers.store_ledger import log_stock_change
+from routers.store_inventory import restock
 
 log = logging.getLogger("store.crm")
 router = APIRouter()
@@ -197,28 +198,14 @@ async def refund_order(order_id: str, staff: dict = Depends(PAYMENTS)):
     except Exception:
         pass
 
-    # Restock items
+    # Restock items (location-aware via the inventory helper)
     items = (supabase.table("store_order_items")
              .select("id,product_id,variant_id,product_name,quantity").eq("order_id", order_id).execute()).data or []
     for it in items:
         qty = int(it.get("quantity") or 1)
-        if it.get("variant_id"):
-            v = supabase.table("store_product_variants").select("stock_qty").eq("id", it["variant_id"]).limit(1).execute()
-            if v.data:
-                supabase.table("store_product_variants").update(
-                    {"stock_qty": int((v.data[0] or {}).get("stock_qty") or 0) + qty, "updated_at": _now()}
-                ).eq("id", it["variant_id"]).execute()
-            log_stock_change(None, qty, reason="refund", ref_type="order", ref_id=order_id,
-                             variant_id=it.get("variant_id"), actor=actor,
-                             note=f"Restock on refund ({it.get('product_name')})")
-        elif it.get("product_id"):
-            p = supabase.table("store_products").select("track_inventory,stock_qty").eq("id", it["product_id"]).limit(1).execute()
-            if p.data and (p.data[0] or {}).get("track_inventory", True):
-                supabase.table("store_products").update(
-                    {"stock_qty": int((p.data[0] or {}).get("stock_qty") or 0) + qty, "updated_at": _now()}
-                ).eq("id", it["product_id"]).execute()
-                log_stock_change(it["product_id"], qty, reason="refund", ref_type="order", ref_id=order_id,
-                                 actor=actor, note=f"Restock on refund ({it.get('product_name')})")
+        restock(it.get("product_id"), it.get("variant_id"), qty, actor=actor,
+                ref_type="order", ref_id=order_id,
+                note=f"Restock on refund ({it.get('product_name')})")
 
     # Void any linked invoice
     supabase.table("store_invoices").update({"status": "void"}).eq("order_id", order_id).execute()

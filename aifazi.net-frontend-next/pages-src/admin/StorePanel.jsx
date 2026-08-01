@@ -135,7 +135,7 @@ export function SalesTab({ data, onRefresh }) {
 
 // ── Products tab ───────────────────────────────────────────────────────────────
 const EMPTY_PRODUCT = {
-  slug: '', name: '', category_id: '', sku: '', description: '', price_cents: 0,
+  slug: '', name: '', category_id: '', sku: '', barcode: '', description: '', price_cents: 0,
   compare_at_cents: null, image_url: '', type: 'digital', stock_qty: 0,
   low_stock_threshold: 5, track_inventory: true, active: true, featured: false, sort_order: 0,
   digital_file_url: '', download_limit: 5,
@@ -241,6 +241,10 @@ export function ProductsTab({ categories, onOpenVariants }) {
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>SKU</label>
                 {input(form.sku, v => inp('sku', v))}
+              </div>
+              <div>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Barcode (scan on phone)</label>
+                {input(form.barcode, v => inp('barcode', v))}
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Price (cents)</label>

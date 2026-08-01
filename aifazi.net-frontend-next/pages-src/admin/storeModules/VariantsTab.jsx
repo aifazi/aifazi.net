@@ -8,7 +8,7 @@ const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15'
 const money = c => `$${((c || 0) / 100).toFixed(2)}`
 
-const EMPTY = { product_id: '', name: '', sku: '', price_cents: '', stock_qty: 0, attributes: '' }
+const EMPTY = { product_id: '', name: '', sku: '', barcode: '', price_cents: '', stock_qty: 0, attributes: '' }
 
 export default function VariantsTab({ focusProductId }) {
   const toast = useToast()
@@ -57,7 +57,7 @@ export default function VariantsTab({ focusProductId }) {
   const startEdit = v => {
     setEditing(v.id)
     const attrs = v.attributes || {}
-    setForm({ product_id: v.product_id, name: v.name || '', sku: v.sku || '', price_cents: v.price_cents ?? '', stock_qty: v.stock_qty ?? 0, attributes: Object.entries(attrs).map(([k, val]) => `${k}:${val}`).join(', ') })
+    setForm({ product_id: v.product_id, name: v.name || '', sku: v.sku || '', barcode: v.barcode || '', price_cents: v.price_cents ?? '', stock_qty: v.stock_qty ?? 0, attributes: Object.entries(attrs).map(([k, val]) => `${k}:${val}`).join(', ') })
     setStockQty(v.stock_qty ?? 0)
   }
   const cancel = () => { setEditing(null); setStockQty('') }
@@ -69,6 +69,7 @@ export default function VariantsTab({ focusProductId }) {
       product_id: form.product_id,
       name: form.name.trim(),
       sku: form.sku.trim() || '',
+      barcode: form.barcode.trim() || '',
       price_cents: Number(form.price_cents) || 0,
       stock_qty: Number(form.stock_qty) || 0,
       track_inventory: true,
@@ -127,6 +128,10 @@ export default function VariantsTab({ focusProductId }) {
             <div>
               <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>SKU</label>
               <input value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" style={{ ...input, width: '100%' }} />
+            </div>
+            <div>
+              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>BARCODE (scan on phone)</label>
+              <input value={form.barcode} onChange={e => setForm({ ...form, barcode: e.target.value })} placeholder="EAN / UPC" style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>PRICE (CENTS)</label>

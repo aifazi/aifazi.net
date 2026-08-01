@@ -40,6 +40,7 @@ from postgrest.exceptions import APIError
 from database import supabase
 from dependencies import get_current_user
 from routers.store_ledger import log_stock_change
+from routers.store_inventory import consume_stock, restock
 
 log = logging.getLogger("store.ecommerce")
 router = APIRouter()
@@ -878,12 +879,21 @@ async def product_order_webhook(request: Request):
         pi = event.get("data", {}).get("object", {})
         res = supabase.table("store_orders").select("id").eq("payment_intent_id", pi.get("id")).limit(1).execute()
         if res.data:
-            await _mark_order_paid(res.data[0]["id"], pi.get("id"))
+            charges = (pi.get("charges") or {}).get("data") or []
+            outcome = (charges[0].get("outcome") or {}) if charges else {}
+            pm = (charges[0].get("payment_method_details") or {}).get("type") if charges else None
+            await _mark_order_paid(res.data[0]["id"], pi.get("id"),
+                                   payment_method=pm,
+                                   risk_level=outcome.get("risk_level"),
+                                   risk_score=outcome.get("risk_score"))
 
     return {"received": True}
 
 
-async def _mark_order_paid(order_id: str, payment_intent_id: str | None) -> None:
+async def _mark_order_paid(order_id: str, payment_intent_id: str | None,
+                           payment_method: str | None = None,
+                           risk_level: str | None = None,
+                           risk_score: int | None = None) -> None:
     now = _now()
     try:
         res = supabase.table("store_orders").select(
@@ -896,10 +906,17 @@ async def _mark_order_paid(order_id: str, payment_intent_id: str | None) -> None
     order = res.data[0]
     if order.get("status") == "paid":
         return
-    supabase.table("store_orders").update({
+    patch: dict = {
         "status": "paid", "paid_at": now, "payment_intent_id": payment_intent_id,
         "updated_at": now,
-    }).eq("id", order_id).execute()
+    }
+    if payment_method:
+        patch["payment_method"] = payment_method
+    if risk_level:
+        patch["radar_risk_level"] = risk_level
+    if risk_score is not None:
+        patch["radar_risk_score"] = risk_score
+    supabase.table("store_orders").update(patch).eq("id", order_id).execute()
 
     # Status timeline
     try:
@@ -933,18 +950,13 @@ async def _mark_order_paid(order_id: str, payment_intent_id: str | None) -> None
         if vid and vid in variants:
             v = variants[vid]
             if v.get("track_inventory", True):
-                new_stock = max(0, int(v.get("stock_qty") or 0) - qty)
-                supabase.table("store_product_variants").update({"stock_qty": new_stock, "updated_at": now}).eq("id", vid).execute()
-                log_stock_change(None, -qty, reason="sale", ref_type="order", ref_id=order_id,
-                                 variant_id=vid, actor="webhook",
-                                 note=f"Sale of {it.get('variant_name') or it.get('product_name')}")
+                consume_stock(pid, vid, qty, actor="webhook", ref_type="order", ref_id=order_id,
+                              note=f"Sale of {it.get('variant_name') or it.get('product_name')}")
         elif pid:
             prod = prods.get(pid)
             if prod and prod.get("track_inventory", True):
-                new_stock = max(0, int(prod.get("stock_qty") or 0) - qty)
-                supabase.table("store_products").update({"stock_qty": new_stock, "updated_at": now}).eq("id", pid).execute()
-                log_stock_change(pid, -qty, reason="sale", ref_type="order", ref_id=order_id,
-                                 actor="webhook", note=f"Sale of {it.get('product_name')}")
+                consume_stock(pid, None, qty, actor="webhook", ref_type="order", ref_id=order_id,
+                              note=f"Sale of {it.get('product_name')}")
         if pid and prods.get(pid) and prods[pid].get("type") == "digital" and prods[pid].get("digital_file_url"):
             try:
                 supabase.table("store_downloads").insert({
@@ -973,14 +985,21 @@ async def _mark_order_paid(order_id: str, payment_intent_id: str | None) -> None
             log.warning("coupon usage increment failed: %s", exc)
 
     # Record transaction
-    supabase.table("store_transactions").insert({
+    tx: dict = {
         "order_id": order_id,
         "user_id": order.get("user_id"),
         "kind": "sale",
         "amount_cents": int(order.get("total_cents") or 0),
         "currency": order.get("currency") or "usd",
         "stripe_payment_intent_id": payment_intent_id,
-    }).execute()
+    }
+    if payment_method:
+        tx["payment_method"] = payment_method
+    if risk_level:
+        tx["risk_level"] = risk_level
+    if risk_score is not None:
+        tx["risk_score"] = risk_score
+    supabase.table("store_transactions").insert(tx).execute()
 
     # Auto-create invoice for paid order
     existing = supabase.table("store_invoices").select("id").eq("order_id", order_id).limit(1).execute()

@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from database import supabase
 from permissions import require_any_permission
 from routers.store_ledger import log_stock_change
+from routers.store_inventory import default_location_id, set_quant
 
 log = logging.getLogger("store.catalog")
 router = APIRouter()
@@ -31,6 +32,7 @@ def _variant_payload(row: dict) -> dict:
         "product_id": row.get("product_id"),
         "name": row.get("name"),
         "sku": row.get("sku") or "",
+        "barcode": row.get("barcode") or "",
         "price_cents": int(row.get("price_cents") or 0),
         "price": (row.get("price_cents") or 0) / 100,
         "stock_qty": int(row.get("stock_qty") or 0),
@@ -56,6 +58,7 @@ class VariantBody(BaseModel):
     product_id: str
     name: str
     sku: str = ""
+    barcode: str = ""
     price_cents: int = 0
     stock_qty: int = 0
     track_inventory: bool = True
@@ -72,6 +75,10 @@ async def create_variant(body: VariantBody, _: dict = Depends(PRODUCTS)):
     except Exception as exc:
         raise HTTPException(400, f"Variant not created: {exc}")
     v = res.data[0] if res.data else {"id": None}
+    if res.data and body.stock_qty:
+        loc = default_location_id()
+        if loc:
+            set_quant(body.product_id, v["id"], loc, body.stock_qty)
     return _variant_payload(v) if res.data else v
 
 
@@ -86,6 +93,9 @@ async def update_variant(variant_id: str, body: VariantBody, _: dict = Depends(P
         old_qty = int((old.data[0] or {}).get("stock_qty") or 0)
         new_qty = int(body.stock_qty)
         if new_qty != old_qty:
+            loc = default_location_id()
+            if loc:
+                set_quant(res.data[0].get("product_id"), variant_id, loc, new_qty)
             log_stock_change(None, new_qty - old_qty, reason="adjustment",
                              ref_type="variant", ref_id=variant_id,
                              variant_id=variant_id, note="Manual variant stock set")
@@ -107,6 +117,9 @@ async def adjust_variant_stock(variant_id: str, body: VariantStockPatchBody, _: 
     old_qty = int((old.data[0] or {}).get("stock_qty") or 0)
     res = supabase.table("store_product_variants").update(
         {"stock_qty": body.stock_qty, "updated_at": _now()}).eq("id", variant_id).execute()
+    loc = default_location_id()
+    if loc:
+        set_quant(old.data[0].get("product_id"), variant_id, loc, body.stock_qty)
     log_stock_change(None, body.stock_qty - old_qty, reason="adjustment",
                      ref_type="variant", ref_id=variant_id,
                      variant_id=variant_id, note="Manual variant stock adjustment")

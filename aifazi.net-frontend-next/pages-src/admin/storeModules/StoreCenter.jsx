@@ -16,6 +16,8 @@ import VariantsTab from './VariantsTab'
 import StockLedgerTab from './StockLedgerTab'
 import DealsTab from './DealsTab'
 import ReviewsTab from './ReviewsTab'
+import InventoryTab from './InventoryTab'
+import TerminalTab from './TerminalTab'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88'
@@ -30,6 +32,8 @@ const MODULES = [
   { key: 'categories',    label: 'CATEGORIES',  icon: '🗂️', perm: 'store.products' },
   { key: 'variants',      label: 'VARIANTS',    icon: '🧩', perm: 'store.products' },
   { key: 'stock',         label: 'STOCK',       icon: '📦', perm: 'store.products' },
+  { key: 'inventory',     label: 'INVENTORY',   icon: '📊', perm: 'store.products' },
+  { key: 'terminal',      label: 'TERMINAL',    icon: '📲', perm: 'store.payments' },
   { key: 'coupons',       label: 'COUPONS',     icon: '🎟️', perm: 'store.coupons' },
   { key: 'deals',         label: 'FLASH DEALS', icon: '⚡', perm: 'store.deals' },
   { key: 'reviews',       label: 'REVIEWS',     icon: '⭐', perm: 'store.reviews' },
@@ -101,6 +105,8 @@ export default function StoreCenter() {
         {tab === 'categories' && <CategoriesTab />}
         {tab === 'variants' && <VariantsTab key={focusVariantProduct || 'all'} focusProductId={focusVariantProduct} />}
         {tab === 'stock' && <StockLedgerTab />}
+        {tab === 'inventory' && <InventoryTab />}
+        {tab === 'terminal' && <TerminalTab />}
         {tab === 'coupons' && <CouponsTab />}
         {tab === 'deals' && <DealsTab />}
         {tab === 'reviews' && <ReviewsTab />}

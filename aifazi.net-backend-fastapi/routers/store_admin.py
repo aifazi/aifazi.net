@@ -45,6 +45,7 @@ def _product_payload(row: dict) -> dict:
         "slug": row.get("slug"),
         "name": row.get("name"),
         "sku": row.get("sku") or "",
+        "barcode": row.get("barcode") or "",
         "description": row.get("description") or "",
         "price_cents": int(row.get("price_cents") or 0),
         "price": (row.get("price_cents") or 0) / 100,
@@ -226,6 +227,7 @@ class ProductBody(BaseModel):
     name: str
     category_id: str | None = None
     sku: str = ""
+    barcode: str = ""
     description: str = ""
     price_cents: int = 0
     compare_at_cents: int | None = None
@@ -276,6 +278,11 @@ async def adjust_stock(prod_id: str, body: StockPatchBody, _: dict = Depends(CAT
     if not res.data:
         raise HTTPException(404, "Product not found")
     if body.stock_qty != old_qty:
+        # Location-aware: set the default location quant to match the new total
+        from routers.store_inventory import default_location_id, set_quant
+        loc = default_location_id()
+        if loc:
+            set_quant(prod_id, None, loc, body.stock_qty)
         log_stock_change(prod_id, body.stock_qty - old_qty, reason="adjustment",
                          ref_type="manual", ref_id=prod_id,
                          actor=_.get("username") or "staff", note="Manual stock adjustment")
