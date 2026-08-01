@@ -59,9 +59,12 @@ async def upload_document(
 
     filename = _safe_filename(file.filename or name or "document")
 
-    # All documents are stored via the active CDN provider (Cloudflare R2).
+    # All documents are stored via the active CDN provider (Cloudflare R2),
+    # grouped under the 'documents' folder for easy management in R2.
     try:
-        file_url, storage_path, provider = await upload_media(content, filename, mimetype)
+        file_url, storage_path, provider = await upload_media(
+            content, filename, mimetype, folder="documents"
+        )
     except Exception as exc:
         raise HTTPException(500, f"Upload failed: {str(exc)[:200]}")
 

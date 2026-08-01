@@ -54,7 +54,7 @@ def _public_base(cfg: dict) -> str:
     return (cfg.get("customDomain") or cfg.get("r2PublicUrl") or "").strip().rstrip("/")
 
 
-def _upload_r2(content: bytes, filename: str, mimetype: str, cfg: dict) -> tuple[str, str]:
+def _upload_r2(content: bytes, filename: str, mimetype: str, cfg: dict, folder: str = "media") -> tuple[str, str]:
     import boto3
     from botocore.client import Config
     account  = (cfg.get("r2AccountId") or "").strip()
@@ -65,7 +65,7 @@ def _upload_r2(content: bytes, filename: str, mimetype: str, cfg: dict) -> tuple
     if not (account and key_id and secret and bucket):
         raise RuntimeError("Cloudflare R2 credentials not configured.")
 
-    storage_key = f"uploads/{uuid.uuid4()}_{_safe_storage_filename(filename)}"
+    storage_key = f"{folder}/{uuid.uuid4()}_{_safe_storage_filename(filename)}"
     client = boto3.client(
         "s3",
         endpoint_url=f"https://{account}.r2.cloudflarestorage.com",
@@ -102,9 +102,9 @@ def _delete_r2(storage_path: str, cfg: dict) -> bool:
     return True
 
 
-def _upload_supabase(content: bytes, filename: str, mimetype: str) -> tuple[str, str]:
+def _upload_supabase(content: bytes, filename: str, mimetype: str, folder: str = "media") -> tuple[str, str]:
     ext = os.path.splitext(filename)[1] or ""
-    storage_path = f"uploads/{uuid.uuid4()}{ext}"
+    storage_path = f"{folder}/{uuid.uuid4()}{ext}"
     supabase.storage.from_(SUPABASE_BUCKET).upload(
         path=storage_path,
         file=content,
@@ -119,20 +119,25 @@ async def upload_media(
     filename: str,
     mimetype: str,
     *,
+    folder: str = "media",
     fallback_to_supabase: bool = True,
 ) -> tuple[str, str, str]:
-    """Upload bytes to the active provider. Returns (public_url, storage_path, provider)."""
+    """Upload bytes to the active provider. Returns (public_url, storage_path, provider).
+
+    folder groups objects by purpose in the bucket, e.g. 'media' (forum/chat
+    uploads), 'store' (digital product files), 'documents' (user documents).
+    """
     cfg = get_cdn_config()
     provider = ((cfg.get("provider") or cfg.get("activeProvider") or "supabase") or "").lower()
     if provider == "r2":
         try:
-            url, path = _upload_r2(content, filename, mimetype, cfg)
+            url, path = _upload_r2(content, filename, mimetype, cfg, folder)
             return url, path, "r2"
         except Exception as exc:
             log.warning("R2 upload failed (%s); fallback_to_supabase=%s", exc, fallback_to_supabase)
             if not fallback_to_supabase:
                 raise
-    url, path = _upload_supabase(content, filename, mimetype)
+    url, path = _upload_supabase(content, filename, mimetype, folder)
     return url, path, "supabase"
 
 

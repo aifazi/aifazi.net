@@ -565,10 +565,12 @@ async def upload_store_file(file: UploadFile = File(...), _: dict = Depends(MANA
         raise HTTPException(413, "File exceeds 100 MB limit")
     filename = (file.filename or "file").replace("\\", "/").rsplit("/", 1)[-1]
     filename = filename.replace("..", "").strip()[:80] or "file"
-    # Digital product files are stored via the active CDN provider (R2).
+    # Digital product files are stored via the active CDN provider (R2),
+    # grouped under the 'store' folder for easy management in R2.
     try:
         url, storage_path, provider = await upload_media(
-            content, filename, file.content_type or "application/octet-stream"
+            content, filename, file.content_type or "application/octet-stream",
+            folder="store",
         )
     except Exception as exc:
         raise HTTPException(500, f"Upload failed: {str(exc)[:200]}")

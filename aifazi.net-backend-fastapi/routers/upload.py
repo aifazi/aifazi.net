@@ -279,7 +279,7 @@ async def _upload_bunny(content: bytes, filename: str, mimetype: str, cfg: dict)
 async def _upload_supabase(content: bytes, filename: str, mimetype: str) -> tuple[str, str]:
     """Upload to Supabase Storage. Returns (public_url, storage_path)."""
     ext = os.path.splitext(filename)[1] or ""
-    storage_path = f"uploads/{uuid.uuid4()}{ext}"
+    storage_path = f"media/{uuid.uuid4()}{ext}"
     try:
         supabase.storage.from_(SUPABASE_BUCKET).upload(
             path=storage_path,
@@ -339,7 +339,7 @@ async def upload_file(
             )
 
     elif provider == "r2":
-        public_url, storage_path = _upload_r2(content, filename, mimetype, cfg)
+            public_url, storage_path = _upload_r2(content, filename, mimetype, cfg, "media")
 
     elif provider == "b2":
         public_url, storage_path = await _upload_b2(content, filename, mimetype, cfg)
@@ -410,7 +410,7 @@ async def upload_multiple(
         if provider == "cloudinary":
             public_url, storage_path = await _upload_cloudinary(content, filename, mimetype, cfg)
         elif provider == "r2":
-            public_url, storage_path = _upload_r2(content, filename, mimetype, cfg)
+            public_url, storage_path = _upload_r2(content, filename, mimetype, cfg, "media")
         elif provider == "b2":
             public_url, storage_path = await _upload_b2(content, filename, mimetype, cfg)
         elif provider == "imagekit":
