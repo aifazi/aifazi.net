@@ -27,6 +27,9 @@ export default function StorePage({ fivem = false }) {
   const [cart, setCart] = useState({ items: [], subtotal: 0, count: 0 })
   const [cartLoading, setCartLoading] = useState(false)
   const [checkoutCartLoading, setCheckoutCartLoading] = useState(false)
+  const [orders, setOrders] = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [orderDetail, setOrderDetail] = useState(null)
   const homeHref = useFiveMRoute('/')
   const loginHref = fivem
     ? `/login?next=${encodeURIComponent('/fivem/store')}`
@@ -53,9 +56,22 @@ export default function StorePage({ fivem = false }) {
     if (!user) { setCart({ items: [], subtotal: 0, count: 0 }); return }
     api.get('/store/cart').then(r => setCart(r.data || { items: [], subtotal: 0, count: 0 })).catch(() => {})
   }
+  const loadOrders = () => {
+    if (!user) { setOrders([]); return }
+    setOrdersLoading(true)
+    api.get('/store/orders').then(r => setOrders(r.data || [])).catch(() => setOrders([]))
+      .finally(() => setOrdersLoading(false))
+  }
+  const openOrder = async (o) => {
+    try {
+      const r = await api.get(`/store/orders/${o.order_number}`)
+      setOrderDetail(r.data || o)
+    } catch { setOrderDetail(o) }
+  }
 
   useEffect(() => {
     if (tab === 'shop') { loadProducts(); loadCart() }
+    if (tab === 'orders') loadOrders()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, user])
 
@@ -197,8 +213,8 @@ export default function StorePage({ fivem = false }) {
       </div>
 
       {/* Tab switcher */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '28px 24px 0' }}>
-        {[['vip', '👑 VIP SUBSCRIPTIONS'], ['shop', '🛒 PRODUCTS']].map(([k, label]) => (
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '28px 24px 0', flexWrap: 'wrap' }}>
+        {[['vip', '👑 VIP SUBSCRIPTIONS'], ['shop', '🛒 PRODUCTS'], ['orders', '🧾 MY ORDERS']].map(([k, label]) => (
           <button key={k} onClick={() => { setTab(k); setError(''); setNotice('') }}
             style={{
               fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
@@ -454,6 +470,114 @@ export default function StorePage({ fivem = false }) {
                   </>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'orders' && (
+        <div style={{ maxWidth: 860, margin: '0 auto', padding: '40px 24px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
+            <h2 style={{ fontSize: 13, letterSpacing: 3, color: C, margin: 0 }}>ORDER TRACKER</h2>
+            <button onClick={loadOrders} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', fontSize: 10, letterSpacing: 1, padding: '7px 14px', borderRadius: 6, cursor: 'pointer' }}>↻ REFRESH</button>
+          </div>
+
+          {!user ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)', fontSize: 13 }}>
+              Sign in to track your orders.
+              <div style={{ marginTop: 14 }}><Link to={loginHref} style={{ display: 'inline-block', padding: '9px 20px', borderRadius: 8, background: `linear-gradient(135deg, ${G}, ${C})`, color: '#000', fontWeight: 700, fontSize: 10, letterSpacing: 2, textDecoration: 'none' }}>SIGN IN</Link></div>
+            </div>
+          ) : ordersLoading ? (
+            <div className="loader" />
+          ) : orders.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)', fontSize: 13 }}>No orders yet. Head to PRODUCTS to place your first one.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {orders.map(o => {
+                const st = (o.status || 'pending').toUpperCase()
+                const stColor = o.status === 'delivered' || o.status === 'paid' ? G : o.status === 'cancelled' || o.status === 'refunded' ? '#ff6b6b' : o.status === 'shipped' ? '#a78bfa' : o.status === 'processing' ? C : Y
+                return (
+                  <div key={o.id} style={{ padding: 18, borderRadius: 12, border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--text) 2%, transparent)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => openOrder(o)}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: C, fontWeight: 700 }}>{o.order_number}</span>
+                      <span style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(o.created_at).toLocaleDateString()}</span>
+                      <span style={{ flex: 1 }} />
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>${(o.total_cents / 100).toFixed(2)}</span>
+                      <span style={{ fontSize: 9, letterSpacing: 1.5, padding: '3px 10px', borderRadius: 12, border: `1px solid ${stColor}55`, color: stColor, fontWeight: 800 }}>{st}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                      {(o.items || []).map((it, i) => (
+                        <span key={i} style={{ fontSize: 11, color: 'var(--text)', background: 'color-mix(in srgb, var(--text) 4%, transparent)', padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)' }}>
+                          {it.product_name} × {it.quantity}
+                        </span>
+                      ))}
+                    </div>
+                    {o.tracking_number && (
+                      <div style={{ marginTop: 10, fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+                        📦 {o.carrier || 'Carrier'}: {o.tracking_number}
+                        {o.tracking_url && <a href={o.tracking_url} target="_blank" rel="noreferrer" style={{ color: C, marginLeft: 8 }}>TRACK ↗</a>}
+                      </div>
+                    )}
+                    {(o.downloads || []).length > 0 && (
+                      <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ fontSize: 10, letterSpacing: 2, color: G, fontWeight: 800 }}>DIGITAL DOWNLOADS</div>
+                        {o.downloads.map(d => (
+                          <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: C, textDecoration: 'none', padding: '7px 12px', border: `1px solid ${C}40`, borderRadius: 8 }}>
+                            ⬇ {d.filename || d.product_name} <span style={{ fontSize: 10, color: 'var(--muted)' }}>({d.downloads_used}/{d.downloads_allowed} used)</span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {orderDetail && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }} onClick={() => setOrderDetail(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: 2, color: G }}>{orderDetail.order_number}</div>
+              <span style={{ fontSize: 9, letterSpacing: 1.5, padding: '3px 10px', borderRadius: 12, border: `1px solid ${C}55`, color: C, fontWeight: 800 }}>{(orderDetail.status || '').toUpperCase()}</span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>
+              Placed {orderDetail.created_at ? new Date(orderDetail.created_at).toLocaleString() : '—'}
+              {(orderDetail.carrier || orderDetail.tracking_number) && <div style={{ marginTop: 4 }}>📦 {orderDetail.carrier || ''} {orderDetail.tracking_number || ''}</div>}
+            </div>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: C, marginBottom: 6, fontWeight: 800 }}>STATUS TIMELINE</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+              {(orderDetail.events || []).map((ev, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 12 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 4, background: G, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: 'var(--text)', fontWeight: 700 }}>{(ev.status || '').toUpperCase()}</div>
+                    {ev.note && <div style={{ color: 'var(--muted)', fontSize: 11 }}>{ev.note}</div>}
+                    <div style={{ color: 'var(--muted)', fontSize: 10 }}>{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: C, marginBottom: 6, fontWeight: 800 }}>ITEMS</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+              {(orderDetail.items || []).map((it, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                  <span style={{ color: 'var(--text)' }}>{it.product_name} × {it.quantity}</span>
+                  <span style={{ color: 'var(--muted)' }}>${((it.line_total_cents || 0) / 100).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: C, marginBottom: 6, fontWeight: 800 }}>DOWNLOADS</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+              {(orderDetail.downloads || []).length === 0 ? <span style={{ fontSize: 12, color: 'var(--muted)' }}>None</span> : orderDetail.downloads.map(d => (
+                <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: C, textDecoration: 'none' }}>⬇ {d.filename || d.product_name} ({d.downloads_used}/{d.downloads_allowed} used)</a>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setOrderDetail(null)} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', fontSize: 10, letterSpacing: 1, padding: '8px 16px', borderRadius: 6, cursor: 'pointer' }}>CLOSE</button>
             </div>
           </div>
         </div>

@@ -4,11 +4,13 @@ inventory, orders, invoices, quotes, sales stats). Mounted at /api/store/admin.
 """
 from __future__ import annotations
 
+import os
 import logging
 import random
+import uuid as _uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 
 from database import supabase
@@ -18,6 +20,8 @@ log = logging.getLogger("store.admin")
 router = APIRouter()
 
 MANAGE = require_permission("store.manage")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+STORE_FILES_BUCKET = os.getenv("STORE_FILES_BUCKET", "store-files")
 
 
 def _now() -> str:
@@ -41,6 +45,8 @@ def _product_payload(row: dict) -> dict:
         "compare_at": (row.get("compare_at_cents") or 0) / 100 if row.get("compare_at_cents") else None,
         "image_url": row.get("image_url") or "",
         "type": row.get("type") or "physical",
+        "digital_file_url": row.get("digital_file_url") or "",
+        "download_limit": int(row.get("download_limit") or 5),
         "stock_qty": int(row.get("stock_qty") or 0),
         "low_stock_threshold": int(row.get("low_stock_threshold") or 0),
         "track_inventory": bool(row.get("track_inventory", True)),
@@ -185,6 +191,8 @@ class ProductBody(BaseModel):
     compare_at_cents: int | None = None
     image_url: str = ""
     type: str = "physical"
+    digital_file_url: str = ""
+    download_limit: int = 5
     stock_qty: int = 0
     low_stock_threshold: int = 5
     track_inventory: bool = True
@@ -260,19 +268,51 @@ async def admin_order_detail(order_id: str, _: dict = Depends(MANAGE)):
     o = res.data[0]
     items = (supabase.table("store_order_items")
              .select("*").eq("order_id", o["id"]).order("created_at").execute())
-    return {**o, "items": items.data or [], "total": (o.get("total_cents") or 0) / 100}
+    events = (supabase.table("store_order_events")
+              .select("status,note,actor,created_at").eq("order_id", o["id"]).order("created_at").execute())
+    downloads = (supabase.table("store_downloads")
+                 .select("*").eq("order_id", o["id"]).order("created_at").execute())
+    return {**o, "items": items.data or [], "events": events.data or [],
+            "downloads": downloads.data or [], "total": (o.get("total_cents") or 0) / 100}
 
 
 class OrderStatusBody(BaseModel):
     status: str
+    note: str = ""
+    tracking_number: str = ""
+    carrier: str = ""
+    tracking_url: str = ""
 
 
 @router.patch("/orders/{order_id}/status")
-async def update_order_status(order_id: str, body: OrderStatusBody, _: dict = Depends(MANAGE)):
-    res = supabase.table("store_orders").update({"status": body.status, "updated_at": _now()}).eq("id", order_id).execute()
+async def update_order_status(order_id: str, body: OrderStatusBody, staff: dict = Depends(MANAGE)):
+    res = supabase.table("store_orders").select("status").eq("id", order_id).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Order not found")
-    return res.data[0]
+    old = (res.data[0] or {}).get("status")
+    patch: dict = {"status": body.status, "updated_at": _now()}
+    if body.status in ("shipped", "delivered") and not res.data[0].get("shipped_at"):
+        patch["shipped_at"] = _now()
+    if body.status == "delivered":
+        patch["delivered_at"] = _now()
+    if body.tracking_number:
+        patch["tracking_number"] = body.tracking_number
+    if body.carrier:
+        patch["carrier"] = body.carrier
+    if body.tracking_url:
+        patch["tracking_url"] = body.tracking_url
+    updated = supabase.table("store_orders").update(patch).eq("id", order_id).execute()
+    if not updated.data:
+        raise HTTPException(404, "Order not found")
+    actor = staff.get("username") or staff.get("id") or "staff"
+    note = body.note or (f"Status changed from {old} to {body.status}" if old and old != body.status else "Status updated")
+    try:
+        supabase.table("store_order_events").insert({
+            "order_id": order_id, "status": body.status, "note": note, "actor": actor,
+        }).execute()
+    except Exception as exc:
+        log.warning("order event insert failed: %s", exc)
+    return updated.data[0]
 
 
 # ── Invoices ───────────────────────────────────────────────────────────────────
@@ -389,3 +429,157 @@ async def delete_quote(quote_id: str, _: dict = Depends(MANAGE)):
     if not res.data:
         raise HTTPException(404, "Quote not found")
     return {"ok": True}
+
+
+# ── Plans (VIP subscription tiers) ─────────────────────────────────────────────
+def _plan_payload(row: dict) -> dict:
+    return {
+        "id": row.get("id"),
+        "slug": row.get("slug"),
+        "name": row.get("name"),
+        "level": int(row.get("level") or 0),
+        "price_cents": int(row.get("price_cents") or 0),
+        "price": (row.get("price_cents") or 0) / 100,
+        "interval": row.get("interval") or "month",
+        "headline": row.get("headline") or "",
+        "description": row.get("description") or "",
+        "perks": row.get("perks") or {},
+        "features": row.get("features") or [],
+        "category_id": row.get("category_id"),
+        "category": row.get("category_slug") or "",
+        "display_order": int(row.get("display_order") or 0),
+        "active": bool(row.get("active", True)),
+        "stripe_product_id": row.get("stripe_product_id") or "",
+        "stripe_price_id": row.get("stripe_price_id") or "",
+        "created_at": row.get("created_at"),
+    }
+
+
+@router.get("/plans")
+async def admin_plans(_: dict = Depends(MANAGE)):
+    res = (supabase.table("store_plans")
+           .select("*,store_categories(slug)").order("display_order").execute())
+    out = []
+    for p in res.data or []:
+        p = dict(p)
+        cats = p.get("store_categories")
+        if isinstance(cats, dict):
+            p["category_slug"] = cats.get("slug")
+        elif isinstance(cats, list) and cats:
+            p["category_slug"] = cats[0].get("slug")
+        out.append(p)
+    return [_plan_payload(p) for p in out]
+
+
+class PlanBody(BaseModel):
+    slug: str
+    name: str
+    level: int = 1
+    price_cents: int = 0
+    interval: str = "month"
+    headline: str = ""
+    description: str = ""
+    perks: dict = {}
+    features: list = []
+    category_id: str | None = None
+    display_order: int = 0
+    active: bool = True
+
+
+@router.post("/plans")
+async def create_plan(body: PlanBody, _: dict = Depends(MANAGE)):
+    try:
+        res = supabase.table("store_plans").insert(body.dict()).execute()
+    except Exception as exc:
+        raise HTTPException(400, f"Plan not created: {exc}")
+    return _plan_payload(res.data[0]) if res.data else {"id": None}
+
+
+@router.patch("/plans/{plan_id}")
+async def update_plan(plan_id: str, body: PlanBody, _: dict = Depends(MANAGE)):
+    res = supabase.table("store_plans").update({**body.dict(), "updated_at": _now()}).eq("id", plan_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Plan not found")
+    return _plan_payload(res.data[0])
+
+
+@router.delete("/plans/{plan_id}")
+async def delete_plan(plan_id: str, _: dict = Depends(MANAGE)):
+    res = supabase.table("store_plans").delete().eq("id", plan_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Plan not found")
+    return {"ok": True}
+
+
+# ── Subscriptions (user_subscriptions) ─────────────────────────────────────────
+@router.get("/subscriptions")
+async def admin_subscriptions(_: dict = Depends(MANAGE)):
+    res = (supabase.table("user_subscriptions")
+           .select("*").order("updated_at", desc=True).limit(200).execute())
+    out = []
+    for s in res.data or []:
+        u = (supabase.table("users").select("username,email")
+             .eq("id", s.get("user_id")).limit(1).execute()).data or [{}]
+        out.append({**s, "username": (u[0] or {}).get("username"), "email": (u[0] or {}).get("email")})
+    return out
+
+
+class SubscriptionPatchBody(BaseModel):
+    status: str | None = None
+    plan_slug: str | None = None
+    plan_name: str | None = None
+    plan_level: int | None = None
+    perks: dict | None = None
+    cancel_at_period_end: bool | None = None
+    current_period_end: str | None = None
+    sync_status: str | None = None
+    sync_error: str | None = None
+
+
+@router.patch("/subscriptions/{sub_id}")
+async def update_subscription(sub_id: str, body: SubscriptionPatchBody, _: dict = Depends(MANAGE)):
+    patch = {k: v for k, v in body.dict().items() if v is not None}
+    if not patch:
+        raise HTTPException(400, "Nothing to update")
+    patch["updated_at"] = _now()
+    res = supabase.table("user_subscriptions").update(patch).eq("id", sub_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Subscription not found")
+    return res.data[0]
+
+
+@router.post("/subscriptions/{sub_id}/sync")
+async def resync_subscription(sub_id: str, _: dict = Depends(MANAGE)):
+    res = (supabase.table("user_subscriptions")
+           .update({"sync_status": "pending", "sync_attempts": 0, "sync_error": None, "updated_at": _now()})
+           .eq("id", sub_id).execute())
+    if not res.data:
+        raise HTTPException(404, "Subscription not found")
+    return {"ok": True, "sync_status": "pending"}
+
+
+# ── Store file upload (digital product files) ──────────────────────────────────
+@router.post("/files/upload")
+async def upload_store_file(file: UploadFile = File(...), _: dict = Depends(MANAGE)):
+    content = await file.read()
+    if len(content) > 100 * 1024 * 1024:
+        raise HTTPException(413, "File exceeds 100 MB limit")
+    filename = (file.filename or "file").replace("\\", "/").rsplit("/", 1)[-1]
+    filename = filename.replace("..", "").strip()[:80] or "file"
+    ext = os.path.splitext(filename)[1] or ""
+    path = f"{_uuid.uuid4()}{ext}"
+    try:
+        supabase.storage.from_(STORE_FILES_BUCKET).upload(
+            path=path,
+            file=content,
+            file_options={"content-type": file.content_type or "application/octet-stream"},
+        )
+    except Exception as exc:
+        err = str(exc)
+        if "already exists" not in err.lower():
+            if "not found" in err.lower():
+                raise HTTPException(500,
+                    f"Storage bucket '{STORE_FILES_BUCKET}' not found. Create it under Supabase Storage.")
+            raise HTTPException(500, f"Upload failed: {err[:200]}")
+    url = f"{SUPABASE_URL}/storage/v1/object/public/{STORE_FILES_BUCKET}/{path}"
+    return {"storage_path": path, "url": url, "filename": filename}

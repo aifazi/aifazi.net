@@ -529,6 +529,7 @@ from routers import (
     store,
     store_ecommerce,
     store_admin,
+    documents,
     txadmin_webhook,
     webhooks,
     discord_auth,
@@ -577,6 +578,7 @@ app.include_router(store.router,          prefix="/api/store")
 app.include_router(store.router,          prefix="/api/fivem/store")  # Lua bridge sync endpoints
 app.include_router(store_ecommerce.router, prefix="/api/store")
 app.include_router(store_admin.router,     prefix="/api/store/admin")
+app.include_router(documents.router,       prefix="/api/documents")
 app.include_router(forms.router,          prefix="/api/forms")
 app.include_router(txadmin_webhook.router, prefix="/api/txadmin")
 app.include_router(webhooks.router,         prefix="/api/webhook")

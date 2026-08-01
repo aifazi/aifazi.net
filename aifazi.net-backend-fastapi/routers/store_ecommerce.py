@@ -11,18 +11,21 @@ Authenticated (JWT):
   PATCH  /api/store/cart/{item_id}       — update qty
   DELETE /api/store/cart/{item_id}       — remove item
   POST   /api/store/cart/clear           — empty cart
-   POST   /api/store/checkout/cart        — Stripe Checkout (payment mode) for cart
-  GET    /api/store/orders               — caller's orders (with items)
-  GET    /api/store/orders/{order_no}    — order detail
+    POST   /api/store/checkout/cart        — Stripe Checkout (payment mode) for cart
+  GET    /api/store/orders               — caller's orders (with items, downloads)
+  GET    /api/store/orders/{order_no}    — order detail (items + status timeline + downloads)
   GET    /api/store/invoices             — caller's invoices
   GET    /api/store/invoices/{no}        — invoice detail
   POST   /api/store/quotes               — request a quote
   GET    /api/store/quotes               — caller's quotes
+  GET    /api/store/downloads            — caller's digital downloads
+  GET    /api/store/downloads/{token}    — token-gated file download (public redirect)
   POST   /api/store/stripe/webhook       — checkout.session.completed for product orders
 """
 from __future__ import annotations
 
 import os
+import secrets
 import logging
 import random
 import string
@@ -30,6 +33,7 @@ from datetime import datetime, timedelta, timezone
 
 import stripe as _stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from postgrest.exceptions import APIError
 
@@ -42,6 +46,8 @@ router = APIRouter()
 STRIPE_SECRET_KEY   = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 FRONTEND_URL        = os.getenv("FRONTEND_URL", "https://aifazi.net")
+SUPABASE_URL        = os.getenv("SUPABASE_URL", "")
+STORE_FILES_BUCKET  = os.getenv("STORE_FILES_BUCKET", "store-files")
 
 
 def _now() -> str:
@@ -299,6 +305,13 @@ async def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_u
     }).execute()
     order_row = order.data[0] if order.data else {"id": None, "order_number": order_no}
 
+    try:
+        supabase.table("store_order_events").insert({
+            "order_id": order_row["id"], "status": "pending", "note": "Order placed", "actor": uid,
+        }).execute()
+    except Exception:
+        pass
+
     for item in cart["items"]:
         prod = item["product"]
         qty = item["quantity"]
@@ -331,7 +344,7 @@ async def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_u
         supabase.table("store_orders").update({"status": "cancelled"}).eq("id", order_row["id"]).execute()
         raise HTTPException(502, f"Stripe checkout failed: {exc}")
 
-    supabase.table("store_orders").update({"payment_intent_id": session.get("payment_intent")}).eq("id", order_row["id"]).execute()
+    supabase.table("store_orders").update({"payment_intent_id": session.to_dict().get("payment_intent")}).eq("id", order_row["id"]).execute()
     return {"url": session.url, "session_id": session.id, "order_number": order_row["order_number"]}
 
 
@@ -346,7 +359,8 @@ def _ensure_one_time_price(product: dict) -> str:
     prod_list = _stripe_client().Product.list(limit=100)
     stripe_prod = None
     for candidate in prod_list.data:
-        if candidate.get("metadata", {}).get("store_product_id") == prod_id:
+        meta = candidate.to_dict().get("metadata") or {}
+        if meta.get("store_product_id") == prod_id:
             stripe_prod = candidate
             break
     if not stripe_prod:
@@ -379,10 +393,14 @@ async def my_orders(user: dict = Depends(get_current_user)):
         items = (supabase.table("store_order_items")
                  .select("product_name,product_sku,unit_price_cents,quantity,line_total_cents")
                  .eq("order_id", o["id"]).order("created_at").execute())
+        downloads = (supabase.table("store_downloads")
+                     .select("id,product_name,filename,token,downloads_allowed,downloads_used")
+                     .eq("order_id", o["id"]).execute()).data or []
         out.append({
             **o,
             "items": items.data or [],
             "total": (o.get("total_cents") or 0) / 100,
+            "downloads": downloads,
         })
     return out
 
@@ -396,7 +414,75 @@ async def order_detail(order_no: str, user: dict = Depends(get_current_user)):
     o = res.data[0]
     items = (supabase.table("store_order_items")
              .select("*").eq("order_id", o["id"]).order("created_at").execute())
-    return {**o, "items": items.data or [], "total": (o.get("total_cents") or 0) / 100}
+    events = (supabase.table("store_order_events")
+              .select("status,note,actor,created_at").eq("order_id", o["id"]).order("created_at").execute())
+    downloads = (supabase.table("store_downloads")
+                 .select("id,product_name,filename,token,downloads_allowed,downloads_used,created_at")
+                 .eq("order_id", o["id"]).order("created_at").execute())
+    return {
+        **o,
+        "items": items.data or [],
+        "events": events.data or [],
+        "downloads": downloads.data or [],
+        "total": (o.get("total_cents") or 0) / 100,
+    }
+
+
+# ── Digital downloads ──────────────────────────────────────────────────────────
+def _download_token() -> str:
+    return secrets.token_urlsafe(24)
+
+
+def _download_filename(url: str) -> str:
+    if not url:
+        return ""
+    base = url.replace("\\", "/").rsplit("/", 1)[-1] or ""
+    return base.split("?")[0].split("#")[0] or "download"
+
+
+@router.get("/downloads")
+async def my_downloads(user: dict = Depends(get_current_user)):
+    uid = _user_id(user)
+    orders = (supabase.table("store_orders")
+              .select("id,order_number,status").eq("user_id", uid).execute()).data or []
+    order_ids = [o["id"] for o in orders]
+    if not order_ids:
+        return []
+    rows = (supabase.table("store_downloads")
+            .select("*").in_("order_id", order_ids).order("created_at", desc=True).execute()).data or []
+    by_id = {o["id"]: o for o in orders}
+    return [{
+        "id": d.get("id"),
+        "token": d.get("token"),
+        "product_name": d.get("product_name"),
+        "filename": d.get("filename") or d.get("product_name"),
+        "downloads_allowed": int(d.get("downloads_allowed") or 5),
+        "downloads_used": int(d.get("downloads_used") or 0),
+        "order_number": (by_id.get(d.get("order_id")) or {}).get("order_number"),
+        "order_status": (by_id.get(d.get("order_id")) or {}).get("status"),
+        "created_at": d.get("created_at"),
+    } for d in rows]
+
+
+@router.get("/downloads/{token}")
+async def download_content(token: str):
+    """Token-gated download. The token itself is the credential (generated on
+    payment), so no auth is required — mirroring a signed delivery link."""
+    res = supabase.table("store_downloads").select("*").eq("token", token).limit(1).execute()
+    if not res.data:
+        raise HTTPException(404, "Download not found")
+    d = res.data[0]
+    used = int(d.get("downloads_used") or 0)
+    allowed = int(d.get("downloads_allowed") or 5)
+    if used >= allowed:
+        raise HTTPException(403, "Download limit reached")
+    supabase.table("store_downloads").update({"downloads_used": used + 1}).eq("id", d["id"]).execute()
+    file_url = d.get("file_url") or ""
+    if not file_url:
+        raise HTTPException(404, "File is not available")
+    if not file_url.startswith(("http://", "https://")):
+        file_url = f"{SUPABASE_URL}/storage/v1/object/public/{STORE_FILES_BUCKET}/{file_url.lstrip('/')}"
+    return RedirectResponse(file_url)
 
 
 # ── Invoices ───────────────────────────────────────────────────────────────────
@@ -530,16 +616,46 @@ async def _mark_order_paid(order_id: str, payment_intent_id: str | None) -> None
         "updated_at": now,
     }).eq("id", order_id).execute()
 
-    # Decrement inventory
+    # Status timeline
+    try:
+        supabase.table("store_order_events").insert({
+            "order_id": order_id, "status": "paid", "note": "Payment received", "actor": "webhook",
+        }).execute()
+    except Exception:
+        pass
+
+    # Decrement inventory + create digital downloads
     items = (supabase.table("store_order_items")
-             .select("product_id,quantity").eq("order_id", order_id).execute()).data or []
+             .select("id,product_id,product_name,quantity").eq("order_id", order_id).execute()).data or []
+    product_ids = [it["product_id"] for it in items if it.get("product_id")]
+    prods: dict[str, dict] = {}
+    if product_ids:
+        pres = (supabase.table("store_products")
+                .select("id,type,track_inventory,stock_qty,digital_file_url,download_limit")
+                .in_("id", product_ids).execute()).data or []
+        prods = {p["id"]: p for p in pres}
     for it in items:
         if not it.get("product_id"):
             continue
-        prod = supabase.table("store_products").select("id,track_inventory,stock_qty").eq("id", it["product_id"]).limit(1).execute()
-        if prod.data and prod.data[0].get("track_inventory", True):
-            new_stock = max(0, int(prod.data[0].get("stock_qty") or 0) - int(it.get("quantity") or 1))
-            supabase.table("store_products").update({"stock_qty": new_stock, "updated_at": now}).eq("id", it["product_id"]).execute()
+        pid = it["product_id"]
+        prod = prods.get(pid)
+        if prod and prod.get("track_inventory", True):
+            new_stock = max(0, int(prod.get("stock_qty") or 0) - int(it.get("quantity") or 1))
+            supabase.table("store_products").update({"stock_qty": new_stock, "updated_at": now}).eq("id", pid).execute()
+        if prod and prod.get("type") == "digital" and prod.get("digital_file_url"):
+            try:
+                supabase.table("store_downloads").insert({
+                    "order_id": order_id,
+                    "order_item_id": it.get("id"),
+                    "product_id": pid,
+                    "product_name": it.get("product_name") or prod.get("name") or "Digital item",
+                    "token": _download_token(),
+                    "file_url": prod.get("digital_file_url"),
+                    "filename": _download_filename(prod.get("digital_file_url")),
+                    "downloads_allowed": int(prod.get("download_limit") or 5),
+                }).execute()
+            except Exception as exc:
+                log.warning("digital download insert failed for %s: %s", pid, exc)
 
     # Record transaction
     supabase.table("store_transactions").insert({

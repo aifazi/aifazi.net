@@ -138,6 +138,7 @@ const EMPTY_PRODUCT = {
   slug: '', name: '', category_id: '', sku: '', description: '', price_cents: 0,
   compare_at_cents: null, image_url: '', type: 'digital', stock_qty: 0,
   low_stock_threshold: 5, track_inventory: true, active: true, featured: false, sort_order: 0,
+  digital_file_url: '', download_limit: 5,
 }
 
 function ProductsTab({ categories }) {
@@ -193,6 +194,19 @@ function ProductsTab({ categories }) {
       load()
     } catch (e) { toast.error(e.response?.data?.error || 'Stock update failed', { title: 'Error' }) }
     finally { setStockUpdating(null) }
+  }
+
+  const uploadDigitalFile = async (e) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    const fd = new FormData()
+    fd.append('file', f)
+    try {
+      const r = await api.post('/store/admin/files/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      inp('digital_file_url', r.data?.storage_path || r.data?.url || '')
+      toast.success('File uploaded — buyers get access on purchase')
+    } catch (err) { toast.error(err.response?.data?.error || 'Upload failed', { title: 'Error' }) }
+    e.target.value = ''
   }
 
   const inp = (key, val) => setForm(f => ({ ...f, [key]: val }))
@@ -261,6 +275,22 @@ function ProductsTab({ categories }) {
               <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Image URL</label>
               {input(form.image_url, v => inp('image_url', v), false)}
             </div>
+            {form.type === 'digital' && (
+              <>
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Digital file (upload or paste path/URL)</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ flex: 1 }}>{input(form.digital_file_url, v => inp('digital_file_url', v), false)}</div>
+                    <Btn onClick={() => document.getElementById('storeFileInput')?.click()} small color={C}>UPLOAD</Btn>
+                  </div>
+                  <input id="storeFileInput" type="file" hidden onChange={uploadDigitalFile} />
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Downloads allowed per purchase</label>
+                  {numberInput(form.download_limit, v => inp('download_limit', v))}
+                </div>
+              </>
+            )}
             <div style={{ display: 'flex', gap: 16, margin: '14px 0', flexWrap: 'wrap' }}>
               {[{ k: 'track_inventory', label: 'Track inventory' }, { k: 'active', label: 'Active (visible)' }, { k: 'featured', label: 'Featured' }].map(t => (
                 <label key={t.k} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>
@@ -410,6 +440,7 @@ function OrdersTab() {
   const [filter, setFilter] = useState('')
   const [detail, setDetail] = useState(null)
   const [expanded, setExpanded] = useState({})
+  const [trackForm, setTrackForm] = useState({})
 
   const load = useCallback(() => {
     setLoading(true)
@@ -425,6 +456,41 @@ function OrdersTab() {
       await api.patch(`/store/admin/orders/${o.id}/status`, { status })
       toast.success(`${o.order_number} → ${status}`, { title: 'Order updated' }); load()
     } catch (e) { toast.error(e.response?.data?.error || 'Update failed', { title: 'Error' }) }
+  }
+
+  const saveTracking = async (o) => {
+    const tf = trackForm[o.id] || {}
+    try {
+      await api.patch(`/store/admin/orders/${o.id}/status`, {
+        status: o.status, note: tf.note || '',
+        tracking_number: tf.tracking_number || '', carrier: tf.carrier || '', tracking_url: tf.tracking_url || '',
+      })
+      toast.success('Tracking saved', { title: o.order_number }); load()
+    } catch (e) { toast.error(e.response?.data?.error || 'Update failed', { title: 'Error' }) }
+  }
+
+  const setTF = (id, k, v) => setTrackForm(f => ({ ...f, [id]: { ...(f[id] || {}), [k]: v } }))
+
+  const openDetail = async (o) => {
+    try {
+      const r = await api.get(`/store/admin/orders/${o.id}`)
+      setDetail(r.data || o)
+    } catch { setDetail(o) }
+  }
+
+  const Tracking = ({ o }) => {
+    const tf = trackForm[o.id] || {}
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10, padding: 10, background: 'var(--bg3)', borderRadius: 8 }}>
+        <div>{input(tf.carrier ?? o.carrier ?? '', v => setTF(o.id, 'carrier', v))}</div>
+        <div>{input(tf.tracking_number ?? o.tracking_number ?? '', v => setTF(o.id, 'tracking_number', v))}</div>
+        <div style={{ gridColumn: '1 / -1' }}>{input(tf.tracking_url ?? o.tracking_url ?? '', v => setTF(o.id, 'tracking_url', v))}</div>
+        <div style={{ gridColumn: '1 / -1' }}>{input(tf.note ?? '', v => setTF(o.id, 'note', v))}</div>
+        <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}>
+          <Btn onClick={() => saveTracking(o)} small color={C}>SAVE TRACKING</Btn>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -461,11 +527,12 @@ function OrdersTab() {
                 ))}
               </div>
               {o.notes && <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginBottom: 10 }}>Notes: {o.notes}</div>}
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <Tracking o={o} />
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                 {['processing', 'shipped', 'delivered', 'cancelled', 'refunded'].map(s => (
                   <Btn key={s} onClick={() => setStatus(o, s)} small color={STATUS_COLORS[s]} disabled={o.status === s}>{s.toUpperCase()}</Btn>
                 ))}
-                <Btn onClick={() => setDetail(o)} small color={C}>VIEW</Btn>
+                <Btn onClick={() => openDetail(o)} small color={C}>DETAIL</Btn>
               </div>
             </div>
           )}
@@ -474,12 +541,32 @@ function OrdersTab() {
 
       {detail && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }} onClick={() => setDetail(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 24, width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 24, width: '100%', maxWidth: 600, maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: G }}>{detail.order_number}</div>
               <StatusBadge status={detail.status} />
             </div>
-            <pre style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 320, overflowY: 'auto' }}>{JSON.stringify(detail, null, 2)}</pre>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Customer: {detail.customer_name || '—'} · {detail.customer_email || '—'} · {money(detail.total_cents)}</div>
+            <div style={{ fontSize: 11, fontFamily: MONO, color: C, letterSpacing: 2, marginBottom: 6 }}>TRACKING</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)', marginBottom: 12 }}>
+              {detail.carrier || '—'} {detail.tracking_number || ''} {detail.tracking_url ? <a href={detail.tracking_url} target="_blank" rel="noreferrer" style={{ color: C }}>track ↗</a> : ''}
+            </div>
+            <div style={{ fontSize: 11, fontFamily: MONO, color: C, letterSpacing: 2, marginBottom: 6 }}>TIMELINE</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+              {(detail.events || []).map((ev, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 11 }}>
+                  <Badge color={STATUS_COLORS[ev.status] || 'var(--muted)'}>{ev.status}</Badge>
+                  <span style={{ color: 'var(--muted)' }}>{ev.note}</span>
+                  <span style={{ color: 'var(--muted)', fontSize: 10 }}><RelTime iso={ev.created_at} /></span>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 11, fontFamily: MONO, color: C, letterSpacing: 2, marginBottom: 6 }}>DIGITAL DOWNLOADS</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)', marginBottom: 12 }}>
+              {(detail.downloads || []).length === 0 ? <span style={{ color: 'var(--muted)' }}>None</span> : detail.downloads.map(d => (
+                <div key={d.id}>{d.product_name} · {d.downloads_used}/{d.downloads_allowed} used</div>
+              ))}
+            </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
               <Btn onClick={() => setDetail(null)} color="var(--muted)">CLOSE</Btn>
             </div>
@@ -593,6 +680,214 @@ function QuotesTab() {
   )
 }
 
+// ── Plans tab (VIP subscription tiers) ─────────────────────────────────────────
+const EMPTY_PLAN = {
+  slug: '', name: '', level: 1, price_cents: 0, interval: 'month',
+  headline: '', description: '', perks: '{}', features: '[]',
+  category_id: '', display_order: 0, active: true,
+}
+
+function PlansTab({ categories }) {
+  const toast = useToast()
+  const [plans, setPlans] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [form, setForm] = useState(EMPTY_PLAN)
+  const [saving, setSaving] = useState(false)
+
+  const load = useCallback(() => {
+    setLoading(true)
+    api.get('/store/admin/plans').then(r => setPlans(r.data || [])).catch(() => toast.error('Failed to load plans'))
+      .finally(() => setLoading(false))
+  }, [toast])
+
+  useEffect(load, [load])
+
+  const startEdit = (p) => {
+    setEditing(p?.id || null)
+    setForm(p ? {
+      slug: p.slug, name: p.name, level: p.level || 1, price_cents: p.price_cents || 0, interval: p.interval || 'month',
+      headline: p.headline || '', description: p.description || '',
+      perks: JSON.stringify(p.perks || {}, null, 1), features: JSON.stringify(p.features || [], null, 1),
+      category_id: p.category_id || '', display_order: p.display_order || 0, active: !!p.active,
+    } : EMPTY_PLAN)
+    setModalOpen(true)
+  }
+
+  const closeModal = () => { setModalOpen(false); setEditing(null) }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      let perks = {}, features = []
+      try { perks = JSON.parse(form.perks || '{}') } catch { throw new Error('Perks must be valid JSON') }
+      try { features = JSON.parse(form.features || '[]') } catch { throw new Error('Features must be valid JSON array') }
+      const payload = { ...form, perks, features }
+      delete payload.perks_text; delete payload.features_text
+      if (editing) await api.patch(`/store/admin/plans/${editing}`, payload)
+      else await api.post('/store/admin/plans', payload)
+      toast.success(editing ? 'Plan updated' : 'Plan created', { title: 'Saved' })
+      closeModal(); load()
+    } catch (e) { toast.error(e.response?.data?.error || e.message || 'Failed to save plan', { title: 'Error' }) }
+    finally { setSaving(false) }
+  }
+
+  const remove = async (p) => {
+    if (!window.confirm(`Delete plan ${p.name}?`)) return
+    try { await api.delete(`/store/admin/plans/${p.id}`); toast.success('Plan deleted'); load() }
+    catch (e) { toast.error(e.response?.data?.error || 'Delete failed', { title: 'Error' }) }
+  }
+
+  const inp = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Btn onClick={() => startEdit(null)} color={C}>+ NEW PLAN</Btn>
+        <Btn onClick={load} small>↻ REFRESH</Btn>
+      </div>
+
+      {modalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 24, width: '100%', maxWidth: 680, maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: G, marginBottom: 18 }}>{editing ? 'EDIT PLAN' : 'NEW PLAN'}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Name *</label>
+                {input(form.name, v => inp('name', v), false)}
+              </div>
+              <div>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Slug *</label>
+                {input(form.slug, v => inp('slug', v))}
+              </div>
+              <div>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Price (cents)</label>
+                {numberInput(form.price_cents, v => inp('price_cents', v))}
+              </div>
+              <div>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Interval</label>
+                <select value={form.interval} onChange={e => inp('interval', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }}>
+                  <option value="month">month</option><option value="year">year</option><option value="week">week</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Level</label>
+                {numberInput(form.level, v => inp('level', v))}
+              </div>
+              <div>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Category</label>
+                <select value={form.category_id || ''} onChange={e => inp('category_id', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }}>
+                  <option value="">— None —</option>
+                  {(categories || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Display order</label>
+                {numberInput(form.display_order, v => inp('display_order', v))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>
+                  <input type="checkbox" checked={!!form.active} onChange={e => inp('active', e.target.checked)} style={{ accentColor: G }} /> Active (visible)
+                </label>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Headline</label>
+                {input(form.headline, v => inp('headline', v), false)}
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Description</label>
+                <textarea value={form.description} onChange={e => inp('description', e.target.value)} rows={2} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Perks (JSON object)</label>
+                <textarea value={form.perks} onChange={e => inp('perks', e.target.value)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Features (JSON array)</label>
+                <textarea value={form.features} onChange={e => inp('features', e.target.value)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+              <Btn onClick={closeModal} color="var(--muted)">CANCEL</Btn>
+              <Btn onClick={save} disabled={saving || !form.name || !form.slug} color={G}>{saving ? 'SAVING…' : 'SAVE PLAN'}</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading ? <div className="loader" /> : plans.length === 0 ? (
+        <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No plans yet.</div>
+      ) : plans.map(p => (
+        <div key={p.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>👑</div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {p.name}
+              {!p.active && <Badge color="var(--muted)">hidden</Badge>}
+              {p.level > 0 && <Badge color={C}>LVL {p.level}</Badge>}
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>{p.slug} · {p.interval}ly · {p.category || 'uncategorized'}</div>
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 700, color: 'var(--text)', textAlign: 'right' }}>{money(p.price_cents)}<span style={{ fontSize: 10, color: 'var(--muted)' }}>/{p.interval}</span></div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <Btn onClick={() => startEdit(p)} small color={C}>EDIT</Btn>
+            <Btn onClick={() => remove(p)} small danger>DEL</Btn>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Subscriptions tab (user_subscriptions) ─────────────────────────────────────
+function SubscriptionsTab() {
+  const toast = useToast()
+  const [subs, setSubs] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(() => {
+    setLoading(true)
+    api.get('/store/admin/subscriptions').then(r => setSubs(r.data || [])).catch(() => toast.error('Failed to load subscriptions'))
+      .finally(() => setLoading(false))
+  }, [toast])
+
+  useEffect(load, [load])
+
+  const patch = async (s, body) => {
+    try { await api.patch(`/store/admin/subscriptions/${s.id}`, body); toast.success('Subscription updated'); load() }
+    catch (e) { toast.error(e.response?.data?.error || 'Update failed', { title: 'Error' }) }
+  }
+
+  const resync = async (s) => {
+    try { await api.post(`/store/admin/subscriptions/${s.id}/sync`); toast.success('Queued for in-game sync'); load() }
+    catch (e) { toast.error(e.response?.data?.error || 'Sync failed', { title: 'Error' }) }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {loading ? <div className="loader" /> : subs.length === 0 ? (
+        <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No subscriptions yet.</div>
+      ) : subs.map(s => (
+        <div key={s.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{s.username || s.user_id}</div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{s.plan_name || s.plan_slug || '—'} · LVL {s.plan_level} · ends {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString() : '—'}</div>
+          </div>
+          <StatusBadge status={s.status} />
+          <Badge color={s.sync_status === 'synced' ? G : s.sync_status === 'failed' ? R : Y}>{s.sync_status}</Badge>
+          <select defaultValue="" onChange={e => { if (e.target.value) patch(s, { status: e.target.value }) }} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 11, padding: '6px 8px', borderRadius: 6, outline: 'none' }}>
+            <option value="">status…</option>
+            {['active', 'trialing', 'past_due', 'canceled'].map(st => <option key={st} value={st}>{st}</option>)}
+          </select>
+          <Btn onClick={() => patch(s, { cancel_at_period_end: !s.cancel_at_period_end })} small color={s.cancel_at_period_end ? R : C}>{s.cancel_at_period_end ? 'UNCANCEL' : 'CANCEL AT END'}</Btn>
+          <Btn onClick={() => resync(s)} small color={Y}>SYNC</Btn>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Main panel ─────────────────────────────────────────────────────────────────
 const TABS = [
   { key: 'sales', label: 'SALES', icon: '📈' },
@@ -601,6 +896,8 @@ const TABS = [
   { key: 'orders', label: 'ORDERS', icon: '🧾' },
   { key: 'invoices', label: 'INVOICES', icon: '📄' },
   { key: 'quotes', label: 'QUOTES', icon: '💬' },
+  { key: 'plans', label: 'PLANS', icon: '👑' },
+  { key: 'subscriptions', label: 'SUBSCRIPTIONS', icon: '🔁' },
 ]
 
 export default function StorePanel() {
@@ -626,7 +923,7 @@ export default function StorePanel() {
       <PageHeader
         eyebrow="STORE"
         title="Store Management"
-        subtitle="Products, inventory, orders, invoices, and quotes."
+        subtitle="Products, inventory, orders, invoices, quotes, plans and subscriptions."
         actions={<button onClick={loadSales} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>↻ REFRESH</button>}
       />
 
@@ -646,6 +943,8 @@ export default function StorePanel() {
       {tab === 'orders' && <OrdersTab />}
       {tab === 'invoices' && <InvoicesTab />}
       {tab === 'quotes' && <QuotesTab />}
+      {tab === 'plans' && <PlansTab categories={categories} />}
+      {tab === 'subscriptions' && <SubscriptionsTab />}
     </div>
   )
 }

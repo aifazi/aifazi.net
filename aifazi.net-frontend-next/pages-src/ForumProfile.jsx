@@ -1631,10 +1631,229 @@ function FiveMTab({ user }) {
   )
 }
 
+/* ─── Orders & Documents tab ─────────────────────────────────────────────── */
+function OrdersDocumentsTab({ user }) {
+  const toast = useToast()
+  const [orders, setOrders] = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(true)
+  const [detail, setDetail] = useState(null)
+  const [docs, setDocs] = useState([])
+  const [docsLoading, setDocsLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [docName, setDocName] = useState('')
+  const [docCategory, setDocCategory] = useState('other')
+
+  const statusColor = s =>
+    s === 'delivered' || s === 'paid' ? CLRS.green
+    : s === 'cancelled' || s === 'refunded' ? CLRS.red
+    : s === 'shipped' ? CLRS.purple
+    : s === 'processing' ? CLRS.cyan : CLRS.orange
+
+  const inputStyle = {
+    flex: 1, minWidth: 160, padding: '9px 12px', fontSize: 12, color: 'var(--text)',
+    background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, outline: 'none',
+  }
+  const ghostBtn = {
+    background: 'none', border: '1px solid var(--border)', color: 'var(--muted)',
+    fontSize: 9, letterSpacing: 1, padding: '6px 10px', borderRadius: 5, cursor: 'pointer',
+  }
+
+  const loadOrders = () => {
+    setOrdersLoading(true)
+    api.get('/store/orders')
+      .then(r => setOrders(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setOrders([]))
+      .finally(() => setOrdersLoading(false))
+  }
+  const loadDocs = () => {
+    setDocsLoading(true)
+    api.get('/documents')
+      .then(r => setDocs(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setDocs([]))
+      .finally(() => setDocsLoading(false))
+  }
+  useEffect(() => { loadOrders(); loadDocs() }, [user?.id])
+
+  const openDetail = async (o) => {
+    try {
+      const r = await api.get(`/store/orders/${o.order_number}`)
+      setDetail(r.data || o)
+    } catch { setDetail(o) }
+  }
+
+  const onUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    if (docName.trim()) fd.append('name', docName.trim())
+    fd.append('category', docCategory || 'other')
+    try {
+      await api.post('/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      toast.success('Document uploaded')
+      setDocName('')
+      loadDocs()
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || err?.response?.data?.error || 'Upload failed')
+    } finally { setUploading(false); e.target.value = '' }
+  }
+
+  const onDelete = async (id) => {
+    if (!window.confirm('Delete this document?')) return
+    try {
+      await api.delete(`/documents/${id}`)
+      toast.success('Document deleted')
+      loadDocs()
+    } catch (err) { toast.error(err?.response?.data?.detail || 'Delete failed') }
+  }
+
+  const downloadDoc = async (id, name) => {
+    try {
+      const r = await api.get(`/documents/${id}/content`, { responseType: 'blob' })
+      const url = URL.createObjectURL(r.data)
+      const a = document.createElement('a')
+      a.href = url; a.download = name || 'document'; a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 4000)
+    } catch (err) { toast.error(err?.response?.data?.detail || 'Download failed') }
+  }
+
+  return (
+    <div>
+      <SectionCard title="My Orders" tag="ORDER TRACKER">
+        {ordersLoading ? <div className="loader" /> : orders.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--muted)', padding: '8px 0' }}>No orders yet.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {orders.map(o => (
+              <div key={o.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => openDetail(o)}>
+                  <span style={{ ...M, fontSize: 11, color: CLRS.cyan, fontWeight: 700 }}>{o.order_number}</span>
+                  <span style={{ fontSize: 10, color: 'var(--muted)' }}>{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</span>
+                  <span style={{ flex: 1 }} />
+                  <span style={{ ...M, fontSize: 12, fontWeight: 800 }}>${(o.total_cents / 100).toFixed(2)}</span>
+                  <span style={{ ...M, fontSize: 8, letterSpacing: 1.5, padding: '3px 10px', borderRadius: 12, border: `1px solid ${statusColor(o.status)}55`, color: statusColor(o.status), fontWeight: 800 }}>{(o.status || '').toUpperCase()}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                  {(o.items || []).map((it, i) => (
+                    <span key={i} style={{ fontSize: 10, color: 'var(--muted)', background: 'rgba(255,255,255,0.03)', padding: '3px 8px', borderRadius: 5 }}>{it.product_name} × {it.quantity}</span>
+                  ))}
+                </div>
+                {o.tracking_number && (
+                  <div style={{ ...M, fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>
+                    📦 {o.carrier || 'Carrier'}: {o.tracking_number}
+                    {o.tracking_url && <a href={o.tracking_url} target="_blank" rel="noreferrer" style={{ color: CLRS.cyan, marginLeft: 8 }}>TRACK ↗</a>}
+                  </div>
+                )}
+                {(o.downloads || []).length > 0 && (
+                  <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {o.downloads.map(d => (
+                      <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 10, color: CLRS.green, border: `1px solid ${CLRS.green}40`, borderRadius: 5, padding: '4px 8px', textDecoration: 'none' }}>
+                        ⬇ {d.filename || d.product_name} ({d.downloads_used}/{d.downloads_allowed})
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {detail && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }} onClick={() => setDetail(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ ...M, fontSize: 12, letterSpacing: 2, color: CLRS.green, fontWeight: 800 }}>{detail.order_number}</div>
+              <span style={{ ...M, fontSize: 8, letterSpacing: 1.5, padding: '3px 10px', borderRadius: 12, border: `1px solid ${CLRS.cyan}55`, color: CLRS.cyan, fontWeight: 800 }}>{(detail.status || '').toUpperCase()}</span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
+              Placed {detail.created_at ? new Date(detail.created_at).toLocaleString() : '—'}
+              {(detail.carrier || detail.tracking_number) && <div style={{ marginTop: 4 }}>📦 {detail.carrier || ''} {detail.tracking_number || ''}</div>}
+            </div>
+            <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>STATUS TIMELINE</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+              {(detail.events || []).length === 0 ? (
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>No updates yet.</span>
+              ) : detail.events.map((ev, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 11 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 4, background: CLRS.green, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: 'var(--text)', fontWeight: 700 }}>{(ev.status || '').toUpperCase()}</div>
+                    {ev.note && <div style={{ color: 'var(--muted)', fontSize: 10 }}>{ev.note}</div>}
+                    <div style={{ color: 'var(--muted)', fontSize: 9 }}>{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>ITEMS</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+              {(detail.items || []).map((it, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                  <span style={{ color: 'var(--text)' }}>{it.product_name} × {it.quantity}</span>
+                  <span style={{ color: 'var(--muted)' }}>${((it.line_total_cents || 0) / 100).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>DOWNLOADS</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+              {(detail.downloads || []).length === 0 ? (
+                <span style={{ fontSize: 11, color: 'var(--muted)' }}>None</span>
+              ) : detail.downloads.map(d => (
+                <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: CLRS.green, textDecoration: 'none' }}>
+                  ⬇ {d.filename || d.product_name} ({d.downloads_used}/{d.downloads_allowed})
+                </a>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setDetail(null)} style={ghostBtn}>CLOSE</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SectionCard title="Documents" tag="PROFILE FILES" action={
+        <label style={{ ...M, fontSize: 8, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: '#000', background: 'var(--green)', borderRadius: 6, cursor: 'pointer' }}>
+          {uploading ? 'UPLOADING…' : '+ UPLOAD'}
+          <input type="file" hidden onChange={onUpload} />
+        </label>
+      }>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+          <input value={docName} onChange={e => setDocName(e.target.value)} placeholder="Document name (optional)" style={inputStyle} />
+          <select value={docCategory} onChange={e => setDocCategory(e.target.value)} style={{ ...inputStyle, maxWidth: 140 }}>
+            {['other', 'id', 'license', 'proof', 'contract'].map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        {docsLoading ? <div className="loader" /> : docs.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--muted)', padding: '8px 0' }}>No documents uploaded yet. Upload an ID, license or proof document above.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {docs.map(d => (
+              <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 10, border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
+                <span style={{ fontSize: 14 }}>📄</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
+                  <div style={{ fontSize: 9, color: 'var(--muted)' }}>
+                    {d.category} · {d.mime_type} · {d.file_size ? (d.file_size / 1024).toFixed(1) + ' KB' : '—'} · {d.created_at ? new Date(d.created_at).toLocaleDateString() : ''}
+                  </div>
+                </div>
+                <button onClick={() => downloadDoc(d.id, d.name)} style={ghostBtn}>⬇</button>
+                <button onClick={() => onDelete(d.id)} style={{ ...ghostBtn, color: CLRS.red, borderColor: CLRS.red + '55' }}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+    </div>
+  )
+}
+
 /* ─── Main ForumProfile page ─────────────────────────────────────────────── */
 const TABS = [
   { key: 'overview',  label: '⊞ Overview',        },
   { key: 'tickets',   label: '🎫 My Tickets',     },
+  { key: 'orders',    label: '🧾 Orders & Docs',  },
   { key: 'activity',  label: '💬 Forum Activity', },
   { key: 'fivem',     label: '🎮 FiveM',          },
   { key: 'edit',      label: '✎ Edit Profile',   },
@@ -1801,6 +2020,7 @@ export default function ForumProfile() {
       <div className="profile-body">
         {tab === 'overview'  && <OverviewTab user={user} tickets={tickets} onOpenTicket={openTicket} />}
         {tab === 'tickets'   && <MyTicketsTab user={user} initialTicketId={profileTicketId} onTicketViewChange={openTicket} />}
+        {tab === 'orders'    && <OrdersDocumentsTab user={user} />}
         {tab === 'activity'  && <ActivityTab user={user} />}
         {tab === 'fivem'     && <FiveMTab user={user} />}
         {tab === 'edit'      && <ProfileEditTab user={user} onUpdate={u => setUser(prev => ({ ...prev, ...u }))} />}
