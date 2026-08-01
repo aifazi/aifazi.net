@@ -51,6 +51,24 @@ const THEMES = [
     bg: '#020b04', bg2: '#051508', bg3: '#091f0d', primary: '#4ade80', secondary: '#a3e635',
     text: '#d1fae5', muted: '#4a7858', border: 'rgba(74,222,128,0.15)',
   },
+  {
+    id: 'lava', name: 'Lava', tag: 'DARK', type: 'color', style: 'cyber',
+    desc: 'Molten magma',
+    bg: '#0a0502', bg2: '#140a04', bg3: '#1e0f06', primary: '#ff3d00', secondary: '#ff9100',
+    text: '#ffe8d6', muted: '#8a5a40', border: 'rgba(255,61,0,0.2)',
+  },
+  {
+    id: 'toxic', name: 'Toxic', tag: 'DARK', type: 'color', style: 'cyber',
+    desc: 'Hazard acid',
+    bg: '#060803', bg2: '#0b1005', bg3: '#121a08', primary: '#a3e635', secondary: '#ccff00',
+    text: '#ecffc8', muted: '#6a7a3a', border: 'rgba(163,230,53,0.2)',
+  },
+  {
+    id: 'ice', name: 'Ice', tag: 'LIGHT', type: 'color', style: 'cyber',
+    desc: 'Arctic frost',
+    bg: '#eef4fa', bg2: '#e3edf7', bg3: '#d8e6f2', primary: '#0284c7', secondary: '#0891b2',
+    text: '#0b1a2a', muted: '#4a6a86', border: 'rgba(2,132,199,0.22)',
+  },
   // ── DESIGN STYLE THEMES ──────────────────────────────────────────────────
   {
     id: 'glass-dark', name: 'Glass', tag: 'STYLE', type: 'design', style: 'glass',

@@ -53,6 +53,7 @@ const VALID_THEMES = [
   'amber','amber-light',
   'rose','rose-light',
   'forest','forest-light',
+  'lava','toxic','ice',
   'glass-dark','glass-light',
   'brutalist','brutalist-dark',
   'synthwave','synthwave-light',
@@ -70,6 +71,7 @@ const LIGHT_THEMES = [
   'midnight-light','crimson-light','ocean-light','amber-light',
   'rose-light','forest-light','glass-light','synthwave-light',
   'terminal-light','neon-noir-light','aurora-light',
+  'ice',
   'brutalist','paper','neumorph','macos','pastel','win95',
 ]
 
@@ -574,8 +576,32 @@ export function Providers({ children }: { children: React.ReactNode }) {
               border-radius: 8px !important;
               font-family: var(--font-mono) !important;
             }
+            [data-input-style="holo"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+            [data-input-style="holo"] textarea,
+            [data-input-style="holo"] select {
+              background: rgba(8,20,32,0.72) !important;
+              border-color: rgba(0,229,255,.4) !important;
+              color: var(--text) !important;
+              border-radius: 12px !important;
+              backdrop-filter: blur(14px);
+              box-shadow: 0 0 0 1px rgba(0,229,255,.08), 0 0 14px rgba(0,229,255,.08) !important;
+            }
+            [data-input-style="crt"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+            [data-input-style="crt"] textarea,
+            [data-input-style="crt"] select {
+              background: #020604 !important;
+              border-color: rgba(51,255,51,.4) !important;
+              color: #33ff33 !important;
+              font-family: var(--font-mono) !important;
+              border-radius: 2px !important;
+              box-shadow: 0 0 0 1px rgba(51,255,51,.06) !important;
+            }
             [data-surface-style="brutalist"] body::after { display:none; }
             [data-surface-style="clean-app"] body::after { display:none; }
+            [data-surface-style="void"] body::after { display:none; }
+            [data-surface-style="holo"] body::after { display:none; }
+            [data-surface-style="holo"] body { background: linear-gradient(180deg, rgba(0,229,255,0.03), transparent 40%) !important; }
+            [data-surface-style="void"] body { background: #04050a !important; }
           `}</style>
         </ForumProvider>
         </ErrorBoundary>

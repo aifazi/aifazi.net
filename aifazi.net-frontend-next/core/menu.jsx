@@ -60,6 +60,8 @@ export function MenuPanel({ items = [], x, y, header, onClose, style = {}, menuS
       case 'rail':     return { background: '#08111c', border: '1px solid rgba(167,139,250,0.28)', borderRadius: 4, boxShadow: '0 12px 40px rgba(0,0,0,0.5)', padding: '6px 4px' }
       case 'paper':    return { background: '#fbf5ea', border: '1px solid #d8c7b3', borderRadius: 2, boxShadow: '0 8px 24px rgba(40,25,10,0.22)', padding: '6px 4px' }
       case 'arcade':   return { background: '#06060a', border: '3px solid var(--cyan)', borderRadius: 0, boxShadow: '4px 4px 0 var(--purple)', padding: '5px 4px' }
+      case 'holo':     return { background: 'rgba(8,20,32,0.72)', border: '1px solid rgba(0,229,255,0.45)', borderRadius: 14, backdropFilter: 'blur(22px)', boxShadow: '0 0 30px rgba(0,229,255,0.18), inset 0 0 24px rgba(0,229,255,0.08), 0 16px 48px rgba(0,0,0,0.55)', padding: '6px 4px' }
+      case 'matrix':   return { background: '#020604', border: '1px solid #22ff2244', borderRadius: 0, boxShadow: '0 0 24px rgba(0,255,0,0.1), inset 0 0 32px rgba(0,255,0,0.04)', padding: '4px', backgroundImage: 'repeating-linear-gradient(90deg, rgba(0,255,0,0.03) 0 1px, transparent 1px 3px)' }
       default:         return { background: t.bg2, border: `1px solid ${t.border}`, borderRadius: 8, padding: '6px 4px', boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,255,136,0.06)', backdropFilter: 'blur(12px)' }
     }
   })()
@@ -74,17 +76,17 @@ export function MenuPanel({ items = [], x, y, header, onClose, style = {}, menuS
       }} onMouseLeave={() => setActiveIdx(-1)}>
         {/* Optional header */}
         {header && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px 6px', borderBottom: `1px solid ${menuStyle === 'terminal' ? '#00ff8833' : t.border}`, marginBottom: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px 6px', borderBottom: `1px solid ${menuStyle === 'terminal' || menuStyle === 'matrix' ? '#00ff8833' : t.border}`, marginBottom: 4 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: menuStyle === 'neon' ? 'var(--cyan)' : t.green, display: 'inline-block', boxShadow: menuStyle !== 'minimal' ? `0 0 6px ${t.green}` : 'none' }} />
-            <span style={{ fontFamily: t.fontMono, fontSize: 9, letterSpacing: 2, color: menuStyle === 'terminal' ? '#33ff33' : t.muted, textTransform: 'uppercase' }}>{header}</span>
+            <span style={{ fontFamily: t.fontMono, fontSize: 9, letterSpacing: 2, color: menuStyle === 'terminal' || menuStyle === 'matrix' ? '#33ff33' : t.muted, textTransform: 'uppercase' }}>{header}</span>
           </div>
         )}
         {/* Items */}
         {items.map((item, i) => {
-          if (item.type === 'separator') return <div key={i} style={{ height: 1, background: menuStyle === 'terminal' ? '#00ff8822' : t.border, margin: '3px 8px' }} />
-          const itemColor = item.variant ? (VARIANTS[item.variant]?.color || t.text) : (item.color || (menuStyle === 'terminal' ? '#33ff33' : t.text))
+          if (item.type === 'separator') return <div key={i} style={{ height: 1, background: menuStyle === 'terminal' || menuStyle === 'matrix' ? '#00ff8822' : t.border, margin: '3px 8px' }} />
+          const itemColor = item.variant ? (VARIANTS[item.variant]?.color || t.text) : (item.color || (menuStyle === 'terminal' || menuStyle === 'matrix' ? '#33ff33' : t.text))
           const isActive = activeIdx === i
-          const hoverBg = menuStyle === 'neon' ? 'rgba(0,212,255,0.1)' : menuStyle === 'floating' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)'
+          const hoverBg = menuStyle === 'neon' ? 'rgba(0,212,255,0.1)' : menuStyle === 'floating' ? 'rgba(255,255,255,0.08)' : menuStyle === 'holo' ? 'rgba(0,229,255,0.12)' : menuStyle === 'matrix' ? 'rgba(0,255,0,0.08)' : 'rgba(255,255,255,0.05)'
           return (
             <div key={item.id != null ? item.id : i} role="menuitem" tabIndex={item.disabled ? -1 : 0} aria-disabled={item.disabled}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 12px', height: menuStyle === 'floating' ? 38 : 34, cursor: item.disabled ? 'not-allowed' : 'pointer', borderRadius: menuStyle === 'floating' ? 10 : 4, opacity: item.disabled ? 0.4 : 1, background: isActive ? hoverBg : 'transparent', transition: 'background 0.08s', userSelect: 'none' }}
@@ -94,7 +96,7 @@ export function MenuPanel({ items = [], x, y, header, onClose, style = {}, menuS
             >
               {item.icon != null && <span style={{ width: 18, textAlign: 'center', fontSize: 13, flexShrink: 0, opacity: 0.85, color: itemColor }}>{item.icon}</span>}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: t.fontMono, fontSize: 11, letterSpacing: 0.5, color: isActive ? itemColor : (menuStyle === 'terminal' ? '#a0d0a0' : t.text), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</div>
+                <div style={{ fontFamily: t.fontMono, fontSize: 11, letterSpacing: 0.5, color: isActive ? itemColor : (menuStyle === 'terminal' || menuStyle === 'matrix' ? '#a0d0a0' : t.text), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</div>
                 {item.sublabel && <div style={{ fontFamily: t.fontMono, fontSize: 9, color: t.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.sublabel}</div>}
               </div>
               {item.shortcut && <span style={{ fontFamily: t.fontMono, fontSize: 9, color: t.muted, flexShrink: 0 }}>{item.shortcut}</span>}

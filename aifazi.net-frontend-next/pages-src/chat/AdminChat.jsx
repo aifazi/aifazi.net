@@ -46,6 +46,10 @@ export default function AdminChat({ embedded=false }) {
   }, [token])
 
   const [mounted, setMounted] = useState(false)
+  // H4 — access token is memory-only, so on a fresh page load getToken() is null
+  // even for a cookie-session user. Gate on the /auth/me result instead of the
+  // in-memory token: 'loading' → nothing, 'ok' → chat, 'no' → login screen.
+  const [authState, setAuthState] = useState(() => (token ? 'ok' : 'loading'))
   const [rooms, setRooms] = useState([])
   const [room, setRoom] = useState(null)
   const [msgs, setMsgs] = useState([])
@@ -106,18 +110,23 @@ export default function AdminChat({ embedded=false }) {
 
   // ── Fetch real role from server immediately on mount ────────────────────
   useEffect(() => {
-    if (!mounted || !token) return
+    if (!mounted) return
     let cancelled = false
     api.get('/auth/me').then(r => {
-      if (cancelled || !r.data?.user) return
+      if (cancelled) return
+      if (!r.data?.user) { setAuthState('no'); return }
       const nextUser = r.data.user
       setEffectiveAccess(nextUser)
+      setAuthState('ok')
       const nextName = nextUser.username || getUsername() || parseJwt(token)?.username
       const nextRole = nextUser.role || getRole() || 'user'
       if (nextName) { setMe(nextName); meRef.current = nextName }
       setRole(nextRole)
       setProfile({ username: nextName || me, role: nextRole, avatar: nextUser.avatar || '' })
-    }).catch(() => {})
+    }).catch(err => {
+      if (cancelled) return
+      setAuthState('no')
+    })
     return () => { cancelled = true }
   }, [mounted])
 
@@ -601,7 +610,15 @@ export default function AdminChat({ embedded=false }) {
 
   // ── render ────────────────────────────────────────────────────────────────
   if (!mounted) return null
-  if (!token) return (
+  if (authState === 'loading') return (
+    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:T.main }}>
+      <div style={{ textAlign:'center', color:T.muted }}>
+        <div style={{ fontSize:32, marginBottom:10, animation:'spin 1s linear infinite' }}>⏳</div>
+        <div style={{ fontFamily:T.mono, fontSize:11, letterSpacing:2 }}>CONNECTING…</div>
+      </div>
+    </div>
+  )
+  if (authState === 'no') return (
     <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:T.main }}>
       <div style={{ background:'rgba(20,23,34,0.98)', border:`1px solid ${T.border}`, borderRadius:16, padding:'36px 28px', textAlign:'center', maxWidth:320 }}>
         <div style={{ fontSize:38, marginBottom:10 }}>🔒</div>

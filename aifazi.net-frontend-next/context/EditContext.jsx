@@ -602,9 +602,12 @@ export function EditableList({ contentKey, defaultValue, renderItem, fields, add
     const safeList = Array.isArray(list) ? list : []
     return typeof normalizeItems === 'function' ? normalizeItems(safeList) : safeList
   }
-  // Always ensure value is an array — never crash on undefined/bad DB data
+  // Always ensure value is an array — never crash on undefined/bad DB data.
+  // normalizeItems is applied ONLY to the default (seed) value. User edits/deletes
+  // are respected as-is — otherwise e.g. Projects' mergeFeaturedProject would
+  // resurrect a card the admin just deleted.
   const safeDefault = normalizeList(defaultValue)
-  const value = normalizeList(Array.isArray(raw) ? raw : safeDefault)
+  const value = Array.isArray(raw) ? raw : safeDefault
   const [items, setItems] = useState(value)
   const [editIdx, setEditIdx] = useState(null)
   const [draft, setDraft] = useState({})

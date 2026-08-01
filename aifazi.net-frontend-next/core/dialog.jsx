@@ -103,6 +103,8 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
   const isSplit    = dialogStyle === 'split'
   const isDrawer   = dialogStyle === 'drawer'
   const isPaper    = dialogStyle === 'paper'
+  const isHolo     = dialogStyle === 'holo'
+  const isCrt      = dialogStyle === 'crt'
 
   const panelStyle = (() => {
     const base = { width: '100%', maxWidth: 420, position: 'relative', overflow: 'hidden', pointerEvents: 'auto' }
@@ -116,6 +118,8 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
     if (isSplit)    return { ...base, ...anim, background: t.bg2, border: `1px solid ${t.border}`, borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.55)' }
     if (isDrawer)   return { ...base, ...anim, background: t.bg2, border: `1px solid ${t.border}`, borderRadius: '14px 0 0 14px', position: 'fixed', top: 0, right: 0, bottom: 0, maxWidth: 420, height: '100%', boxShadow: '-20px 0 70px rgba(0,0,0,0.55)' }
     if (isPaper)    return { ...base, ...anim, background: '#fbf5ea', color: '#1f2937', border: '1px solid #d8c7b3', borderRadius: 2, boxShadow: '0 18px 50px rgba(40,25,10,0.26)' }
+    if (isHolo)     return { ...base, ...anim, background: 'rgba(8,20,32,0.8)', border: '1px solid rgba(0,229,255,0.45)', borderRadius: 16, backdropFilter: 'blur(24px)', boxShadow: '0 0 40px rgba(0,229,255,0.18), inset 0 0 32px rgba(0,229,255,0.06), 0 12px 48px rgba(0,0,0,0.6)' }
+    if (isCrt)      return { ...base, ...anim, background: '#020604', border: `1px solid ${v.color}66`, borderRadius: 4, boxShadow: `0 0 30px ${v.glow}, 0 0 60px rgba(0,0,0,0.8)` }
     return { ...base, ...anim, background: t.bg2, border: `1px solid ${v.color}`, boxShadow: `0 0 40px ${v.glow}, 0 0 80px rgba(0,0,0,0.8)` } // cyber
   })()
 
@@ -129,6 +133,7 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
 
   return (
     <>
+      <style>{`@keyframes dlg-crt-blink { 0%,100%{opacity:1} 50%{opacity:0.2} }`}</style>
       <div onClick={() => resolve(isPrompt ? null : false)} role="presentation" style={backdropStyle} />
       <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={entry.message ? `${titleId}-desc` : undefined} style={{
         position: 'fixed', inset: 0, zIndex: zIndex.modal,
@@ -143,10 +148,20 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
               <span style={{ fontFamily: t.fontMono, fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginLeft: 8 }}>DIALOG.SH</span>
             </div>
           )}
+          {/* CRT: scanline overlay + green status bar */}
+          {isCrt && (
+            <>
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.25) 2px,rgba(0,0,0,0.25) 4px)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: `1px solid ${v.color}33`, fontFamily: t.fontMono, fontSize: 9, color: v.color, letterSpacing: 2 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: v.color, boxShadow: `0 0 6px ${v.color}`, animation: 'dlg-crt-blink 1.2s steps(2) infinite' }} />
+                <span>PHOSPHOR.DIALOG</span>
+              </div>
+            </>
+          )}
           {/* Sheet: top handle */}
           {isSheet && <div style={{ width: 36, height: 4, borderRadius: 4, background: 'var(--muted)', margin: '10px auto 0', opacity: 0.4 }} />}
           {/* Cyber: top accent bar + corner accents */}
-          {(!isTerminal && !isSheet && !isMinimal && !isBrutal && !isGlass) && (
+          {(!isTerminal && !isSheet && !isMinimal && !isBrutal && !isGlass && !isCrt) && (
             <>
               <div style={{ height: 3, background: `linear-gradient(90deg, ${v.color}, transparent)`, boxShadow: `0 0 12px ${v.color}` }} />
               {[{ top: 8, right: 8, borderTop: `1px solid ${v.color}`, borderRight: `1px solid ${v.color}` }, { bottom: 8, left: 8, borderBottom: `1px solid ${v.color}`, borderLeft: `1px solid ${v.color}` }].map((s, i) => (
@@ -154,18 +169,29 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
               ))}
             </>
           )}
+          {/* Holo: corner brackets on all four corners */}
+          {isHolo && (
+            <>
+              {[{ top: 10, left: 10, borderTop: '1px solid rgba(0,229,255,0.5)', borderLeft: '1px solid rgba(0,229,255,0.5)' },
+                { top: 10, right: 10, borderTop: '1px solid rgba(0,229,255,0.5)', borderRight: '1px solid rgba(0,229,255,0.5)' },
+                { bottom: 10, left: 10, borderBottom: '1px solid rgba(0,229,255,0.5)', borderLeft: '1px solid rgba(0,229,255,0.5)' },
+                { bottom: 10, right: 10, borderBottom: '1px solid rgba(0,229,255,0.5)', borderRight: '1px solid rgba(0,229,255,0.5)' }].map((s, i) => (
+                <div key={i} style={{ position: 'absolute', width: 14, height: 14, opacity: 0.7, ...s }} />
+              ))}
+            </>
+          )}
           {/* Content */}
           <div style={{ padding: isSheet ? '16px 28px 32px' : '28px 32px 24px' }}>
             <div style={{ fontFamily: t.fontMono, fontSize: 9, letterSpacing: 3, color: v.color, marginBottom: 14, textTransform: 'uppercase' }}>{v.icon} {v.label}</div>
-            <h2 id={titleId} style={{ fontFamily: t.fontDisplay, fontSize: isBrutal ? 26 : 22, fontWeight: isBrutal ? 900 : 700, color: t.text, marginBottom: entry.message || isPrompt ? 10 : 0, lineHeight: 1.2, textTransform: isBrutal ? 'uppercase' : 'none' }}>
+            <h2 id={titleId} style={{ fontFamily: t.fontDisplay, fontSize: isBrutal ? 26 : 22, fontWeight: isBrutal ? 900 : 700, color: isCrt ? '#33ff33' : t.text, marginBottom: entry.message || isPrompt ? 10 : 0, lineHeight: 1.2, textTransform: isBrutal ? 'uppercase' : 'none' }}>
               {entry.title || (isPrompt ? 'Enter a value' : 'Are you sure?')}
             </h2>
-            {entry.message && <p id={`${titleId}-desc`} style={{ fontFamily: t.fontDisplay, fontSize: 15, color: t.muted, lineHeight: 1.6, marginBottom: isPrompt ? 14 : 0 }}>{entry.message}</p>}
+            {entry.message && <p id={`${titleId}-desc`} style={{ fontFamily: t.fontDisplay, fontSize: 15, color: isCrt ? 'rgba(51,255,51,0.75)' : t.muted, lineHeight: 1.6, marginBottom: isPrompt ? 14 : 0 }}>{entry.message}</p>}
             {isPrompt && (
               <input ref={inputRef} value={inputVal} onChange={e => setInputVal(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handlePromptSubmit() } }}
                 placeholder={entry.placeholder || ''}
-                style={{ width: '100%', boxSizing: 'border-box', background: t.bg3, border: `1px solid ${v.color}44`, color: t.text, fontFamily: t.fontMono, fontSize: 13, padding: '10px 14px', outline: 'none', borderRadius: isMinimal ? 6 : 0 }}
+                style={{ width: '100%', boxSizing: 'border-box', background: t.bg3, border: `1px solid ${v.color}44`, color: isCrt ? '#33ff33' : t.text, fontFamily: t.fontMono, fontSize: 13, padding: '10px 14px', outline: 'none', borderRadius: isMinimal ? 6 : 0 }}
                 onFocus={e => { e.currentTarget.style.borderColor = v.color }}
                 onBlur={e => { e.currentTarget.style.borderColor = `${v.color}44` }}
               />

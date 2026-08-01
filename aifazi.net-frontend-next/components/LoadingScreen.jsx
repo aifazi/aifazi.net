@@ -192,6 +192,72 @@ function PulseLoader({ onComplete }) {
   )
 }
 
+// ── Style: Holo ───────────────────────────────────────────────────────────────
+function HoloLoader({ onComplete }) {
+  const [exiting, setExiting] = useState(false)
+  const [deg, setDeg] = useState(0)
+  useEffect(() => {
+    const iv = setInterval(() => setDeg(d => d + 45), 160)
+    const t = setTimeout(() => { setExiting(true); clearInterval(iv); setTimeout(onComplete, 300) }, 1100)
+    return () => { clearInterval(iv); clearTimeout(t) }
+  }, [])
+  return (
+    <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:34 }}>
+      <div style={{ position:'relative', width:130, height:130, display:'flex', alignItems:'center', justifyContent:'center' }}>
+        {/* rotating holo ring */}
+        <div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'1px solid rgba(0,229,255,0.4)', borderTop:'1px solid var(--cyan)', transform:`rotate(${deg}deg)`, transition:'transform 0.16s linear' }} />
+        <div style={{ position:'absolute', inset:14, borderRadius:'50%', border:'1px dashed rgba(0,229,255,0.35)', animation:'ls-holo-spin 3.2s linear infinite' }} />
+        <div style={{ position:'absolute', inset:30, borderRadius:'50%', border:'1px solid rgba(0,229,255,0.25)', transform:`rotate(${-deg}deg)`, transition:'transform 0.16s linear' }} />
+        {/* corner brackets */}
+        {[[-2,-2,'borderLeft','borderTop'],[2,-2,'borderRight','borderTop'],[-2,2,'borderLeft','borderBottom'],[2,2,'borderRight','borderBottom']].map(([dx,dy,b1,b2],i)=>(
+          <div key={i} style={{ position:'absolute', left:'50%', top:'50%', transform:`translate(${dx*52}px,${dy*52}px)`, width:10, height:10, borderLeft:i%2===0?`1px solid var(--cyan)`:'none', borderRight:i%2===1?`1px solid var(--cyan)`:'none', borderTop:i<2?`1px solid var(--cyan)`:'none', borderBottom:i>=2?`1px solid var(--cyan)`:'none', opacity:0.7 }} />
+        ))}
+        <div style={{ width:12, height:12, borderRadius:'50%', background:'var(--cyan)', boxShadow:'0 0 18px var(--cyan)' }} />
+      </div>
+      <div style={{ textAlign:'center' }}>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING HOLOGRAPHIC INTERFACE</div>
+      </div>
+      <style>{`@keyframes ls-holo-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
+    </div>
+  )
+}
+
+// ── Style: CRT ────────────────────────────────────────────────────────────────
+function CRTLoader({ onComplete }) {
+  const [exiting, setExiting] = useState(false)
+  const [lines, setLines] = useState([])
+  useEffect(() => {
+    const boot = [
+      '> BIOS  aifazi-boot-v4.2',
+      '> MEM   32768K OK',
+      '> GRID  loading neon.dat',
+      '> NET   eth0: 10.0.0.1 UP',
+      '> PWR   systems nominal',
+      '> OK    ready to serve',
+    ]
+    const timeouts = boot.map((line, i) => setTimeout(() => setLines(p => [...p, line]), i * 150))
+    const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1150)
+    return () => { timeouts.forEach(clearTimeout); clearTimeout(done) }
+  }, [])
+  return (
+    <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', fontFamily:'var(--font-mono)', width:'100%', maxWidth:440, padding:'0 8px' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'rgba(0,255,0,0.04)', border:'1px solid rgba(0,255,0,0.2)', borderRadius:4, marginBottom:10 }}>
+        <span style={{ width:8, height:8, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 8px var(--green)' }} />
+        <span style={{ fontSize:10, color:'var(--green)', letterSpacing:2 }}>aifazi.net — BOOT</span>
+        <span style={{ marginLeft:'auto', fontSize:9, color:'var(--muted)' }}>v4.2</span>
+      </div>
+      <div style={{ height:130, overflow:'hidden', position:'relative' }}>
+        {lines.map((l, i) => (
+          <div key={i} style={{ fontSize:11, color:'var(--green)', opacity:0.85, lineHeight:1.7, textShadow:'0 0 6px rgba(0,255,0,0.5)' }}>{l}</div>
+        ))}
+        <div style={{ position:'absolute', inset:0, pointerEvents:'none', background:'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.22) 2px,rgba(0,0,0,0.22) 4px)' }} />
+        <span style={{ position:'absolute', bottom:0, left:0, display:'inline-block', width:7, height:13, background:'var(--green)', animation:'ls-blink 0.8s steps(2) infinite' }} />
+      </div>
+    </div>
+  )
+}
+
 // ── Style: Cyber ──────────────────────────────────────────────────────────────
 function CyberLoader({ onComplete }) {
   const [lit, setLit] = useState([])
@@ -563,6 +629,8 @@ export default function LoadingScreen({ onComplete, style }) {
         {s === 'typewriter'  && <TypewriterLoader  onComplete={onComplete} />}
         {s === 'dna'         && <DNALoader         onComplete={onComplete} />}
         {s === 'countdown'   && <CountdownLoader   onComplete={onComplete} />}
+        {s === 'holo'        && <HoloLoader        onComplete={onComplete} />}
+        {s === 'crt'         && <CRTLoader         onComplete={onComplete} />}
       </div>
       {s === 'matrix' && <MatrixLoader onComplete={onComplete} />}
       <style>{`

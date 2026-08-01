@@ -17,6 +17,8 @@ export const MENU_STYLES = [
   { id: 'rail',     label: 'Rail',      desc: 'Left icon rail with detail pane',   icon: '▌' },
   { id: 'paper',    label: 'Paper',     desc: 'Light document popover',           icon: '□' },
   { id: 'arcade',   label: 'Arcade',    desc: 'Chunky pixel menu states',         icon: '▣' },
+  { id: 'holo',     label: 'Holo',      desc: 'Holographic layered glow',         icon: '❋' },
+  { id: 'matrix',   label: 'Matrix',    desc: 'Phosphor rain green monochrome',   icon: '🌧' },
 ]
 
 export const NOTIFY_STYLES = [
@@ -30,6 +32,8 @@ export const NOTIFY_STYLES = [
   { id: 'glitch',   label: 'Glitch',    desc: 'High-impact system alert',         icon: '!' },
   { id: 'inbox',    label: 'Inbox',     desc: 'Stacked notification feed',        icon: '≡' },
   { id: 'hud',      label: 'HUD',       desc: 'Compact corner telemetry',         icon: '◇' },
+  { id: 'holo',     label: 'Holo',      desc: 'Holographic layered glow',         icon: '❋' },
+  { id: 'chip',     label: 'Chip',      desc: 'Compact telemetry chip',           icon: '●' },
 ]
 
 export const DIALOG_STYLES = [
@@ -43,6 +47,8 @@ export const DIALOG_STYLES = [
   { id: 'split',    label: 'Split',     desc: 'Icon panel beside copy',           icon: '▥' },
   { id: 'drawer',   label: 'Drawer',    desc: 'Right-side inspector panel',       icon: '▐' },
   { id: 'paper',    label: 'Paper',     desc: 'Editorial document modal',         icon: '□' },
+  { id: 'holo',     label: 'Holo',      desc: 'Holographic corner brackets',      icon: '❋' },
+  { id: 'crt',      label: 'CRT',       desc: 'Green phosphor scanline terminal', icon: '🖥' },
 ]
 
 export const INPUT_STYLES = [
@@ -54,6 +60,8 @@ export const INPUT_STYLES = [
   { id: 'paper',    label: 'Paper',    desc: 'Form-on-paper editorial fields',     icon: '□' },
   { id: 'pill',     label: 'Pill',     desc: 'Rounded search and filter fields',   icon: '◉' },
   { id: 'command',  label: 'Command',  desc: 'Palette-style stacked controls',     icon: '⌘' },
+  { id: 'holo',     label: 'Holo',     desc: 'Cyan holographic glowing fields',    icon: '❋' },
+  { id: 'crt',      label: 'CRT',      desc: 'Green phosphor monospace fields',    icon: '🖥' },
 ]
 
 export const SURFACE_STYLES = [
@@ -65,6 +73,8 @@ export const SURFACE_STYLES = [
   { id: 'neon-stage', label: 'Neon Stage', desc: 'Dark stage with luminous strips',     icon: '✴' },
   { id: 'brutalist',  label: 'Brutalist',  desc: 'Hard edges, blocks, no blur',         icon: '■' },
   { id: 'dashboard',  label: 'Dashboard',  desc: 'Dense operations layout',             icon: '▥' },
+  { id: 'holo',       label: 'Holo Deck',  desc: 'Layered holographic translucent panels', icon: '❋' },
+  { id: 'void',       label: 'Void',       desc: 'Minimal near-black surfaces',         icon: '◐' },
 ]
 
 export const LOADING_STYLES = [
@@ -82,6 +92,8 @@ export const LOADING_STYLES = [
   { id: 'typewriter', label: 'Typewriter', desc: 'Animejs char-by-char'},
   { id: 'dna',        label: 'DNA',        desc: 'Animejs helix'      },
   { id: 'countdown',  label: 'Countdown',  desc: 'Animejs 3-2-1-GO'   },
+  { id: 'holo',       label: 'Holo',       desc: 'Holographic rings'  },
+  { id: 'crt',        label: 'CRT',        desc: 'Green phosphor boot'},
 ]
 
 export const ANIMATION_PRESETS = [
@@ -293,6 +305,54 @@ export const THEME_PACKAGES = [
       gridPattern: 'dashboard',
       bgAnimation: 'none',
       loadingScreenStyle: 'bars',
+      animationPreset: 'snappy',
+    },
+  },
+  {
+    id: 'holo-deck',
+    name: 'Holo Deck',
+    mood: 'holographic command surface',
+    desc: 'Layered cyan glow, corner-bracketed dialogs, telemetry chips, and holo boot.',
+    accent: '#00e5ff',
+    previewBg: '#08121c',
+    settings: {
+      globalTheme: 'glass-dark',
+      headerStyle: 'glass',
+      footerStyle: 'glass',
+      menuStyle: 'holo',
+      notifyStyle: 'holo',
+      notifyPosition: 'bottom-right',
+      dialogStyle: 'holo',
+      inputStyle: 'holo',
+      surfaceStyle: 'holo',
+      backgroundPattern: 'grid',
+      gridPattern: 'radial',
+      bgAnimation: 'none',
+      loadingScreenStyle: 'holo',
+      animationPreset: 'smooth',
+    },
+  },
+  {
+    id: 'phosphor-terminal',
+    name: 'Phosphor CRT',
+    mood: 'green phosphor mainframe',
+    desc: 'CRT scanlines, matrix menus, phosphor fields, and a blink-cursor boot.',
+    accent: '#33ff33',
+    previewBg: '#020604',
+    settings: {
+      globalTheme: 'toxic',
+      headerStyle: 'terminal',
+      footerStyle: 'terminal',
+      menuStyle: 'matrix',
+      notifyStyle: 'chip',
+      notifyPosition: 'bottom-left',
+      dialogStyle: 'crt',
+      inputStyle: 'crt',
+      surfaceStyle: 'terminal',
+      backgroundPattern: 'scanlines',
+      gridPattern: 'terminal',
+      bgAnimation: 'none',
+      loadingScreenStyle: 'crt',
       animationPreset: 'snappy',
     },
   },

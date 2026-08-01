@@ -22,31 +22,13 @@ const loadGsap = () => {
 }
 
 // ── Word-mask clip reveal (Dave Holloway style) ───────────────────────────────
-// Wraps each word in an overflow:hidden clip so words slide up into view
+// Wraps each word in an overflow:hidden clip so words slide up into view.
+// Pure CSS keyframe animation (no gsap dependency) — the LCP name reveals
+// immediately instead of waiting on the lazy-loaded gsap chunk.
 function MaskReveal({ children, delay = 0, style = {} }) {
-  const ref = useRef()
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    el.style.transform = 'translateY(110%)'
-    let ctx
-    loadGsap().then(gsap => {
-      if (!gsap || !ref.current) return
-      ctx = gsap.context(() => {
-        gsap.to(el, {
-          y: 0,
-          duration: 1.1,
-          ease: 'expo.out',
-          delay,
-        })
-      }, ref)
-    })
-    return () => { try { ctx?.revert() } catch {} }
-  }, [delay])
-
   return (
     <span style={{ display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom', ...style }}>
-      <span ref={ref} style={{ display: 'inline-block' }}>{children}</span>
+      <span style={{ display: 'inline-block', animation: `maskReveal 0.85s cubic-bezier(0.16,1,0.3,1) ${delay}s both` }}>{children}</span>
     </span>
   )
 }
@@ -343,8 +325,8 @@ export default function Hero() {
       if (!gsap || !rackRef.current) return
       gsap.set(panel, { opacity: 0, x: 60 })
       setTimeout(() => {
-        gsap.to(panel, { opacity: 1, x: 0, duration: 0.9, ease: 'expo.out' })
-      }, 400)
+        gsap.to(panel, { opacity: 1, x: 0, duration: 0.6, ease: 'expo.out' })
+      }, 120)
     })
   }, [mounted])
 
@@ -368,7 +350,7 @@ export default function Hero() {
       {/* Left: all existing content */}
       <div ref={heroLeftRef} className="hero-left" style={{ flex: '1 1 520px', width: '100%', maxWidth: 680, minWidth: 0 }}>
         {/* Status row */}
-        <AnimatableWrapper animKey="hero.statusRow" label="Status Row" currentAnim="fadeRight 0.8s 0.2s both">
+        <AnimatableWrapper animKey="hero.statusRow" label="Status Row" currentAnim="fadeRight 0.6s 0.05s both">
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--green)', letterSpacing: 4, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'glow-pulse 2s ease-in-out infinite' }} />
@@ -381,14 +363,14 @@ export default function Hero() {
         </AnimatableWrapper>
 
         {/* Glitching name */}
-        <AnimatableWrapper animKey="hero.name" label="Hero Name" currentAnim="fadeUp 0.9s 0.4s both">
+        <AnimatableWrapper animKey="hero.name" label="Hero Name" currentAnim="fadeUp 0.7s 0.1s both">
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(56px, 8vw, 110px)', fontWeight: 700, lineHeight: 0.9, letterSpacing: -3, marginBottom: 16 }}>
-          <MaskReveal delay={0.2} style={{ color: 'var(--text)', textShadow: '0 0 40px color-mix(in srgb, var(--text) 20%, transparent)' }}>
+          <MaskReveal delay={0.05} style={{ color: 'var(--text)', textShadow: '0 0 40px color-mix(in srgb, var(--text) 20%, transparent)' }}>
             <GlitchName color="var(--text)">
               <EditableText contentKey="hero.name1" defaultValue="TANVIR" />
             </GlitchName>
           </MaskReveal><br />
-          <MaskReveal delay={0.38} style={{ color: 'var(--green)', textShadow: '0 0 50px color-mix(in srgb, var(--green) 35%, transparent)' }}>
+          <MaskReveal delay={0.12} style={{ color: 'var(--green)', textShadow: '0 0 50px color-mix(in srgb, var(--green) 35%, transparent)' }}>
             <GlitchName color="var(--green)">
               <EditableText contentKey="hero.name2" defaultValue="AIFAZI" />
             </GlitchName>
@@ -396,7 +378,7 @@ export default function Hero() {
         </h1>
         </AnimatableWrapper>
 
-        <AnimatableWrapper animKey="hero.typewriter" label="Typewriter Row" currentAnim="fadeUp 0.9s 0.6s both">
+        <AnimatableWrapper animKey="hero.typewriter" label="Typewriter Row" currentAnim="fadeUp 0.7s 0.2s both">
         <div style={{
           fontFamily: 'var(--font-code)', fontSize: 'clamp(13px, 2vw, 18px)',
           color: 'var(--cyan)', letterSpacing: 3, marginBottom: 36, minHeight: 28,
@@ -408,7 +390,7 @@ export default function Hero() {
         </div>
         </AnimatableWrapper>
 
-        <AnimatableWrapper animKey="hero.desc" label="Description" currentAnim="fadeUp 0.9s 0.8s both">
+        <AnimatableWrapper animKey="hero.desc" label="Description" currentAnim="fadeUp 0.7s 0.3s both">
         <p style={{
           fontSize: 17, lineHeight: 2, marginBottom: 52,
           maxWidth: 520, width: '100%', boxSizing: 'border-box',
@@ -424,7 +406,7 @@ export default function Hero() {
         </p>
         </AnimatableWrapper>
 
-        <AnimatableWrapper animKey="hero.buttons" label="CTA Buttons" currentAnim="fadeUp 0.9s 1s both">
+        <AnimatableWrapper animKey="hero.buttons" label="CTA Buttons" currentAnim="fadeUp 0.7s 0.4s both">
         <div className="hero-cta-row" style={{ display: 'flex', gap: 20, flexWrap: 'wrap', width: '100%', maxWidth: '100%' }}>
           <MagneticBtn href="#projects" className="btn-primary" strength={0.4}><EditableText contentKey="hero.btn.projects" defaultValue="View Projects" /></MagneticBtn>
           <MagneticBtn href="/contact"  className="btn-outline"  strength={0.4}><EditableText contentKey="hero.btn.contact" defaultValue="Get In Touch" /></MagneticBtn>
@@ -441,7 +423,7 @@ export default function Hero() {
         </AnimatableWrapper>
 
         {/* Stats strip — always visible, no absolute positioning */}
-        <AnimatableWrapper animKey="hero.stats" label="Stats Strip" currentAnim="fadeUp 0.9s 1.15s both">
+        <AnimatableWrapper animKey="hero.stats" label="Stats Strip" currentAnim="fadeUp 0.7s 0.5s both">
         <div ref={statsRef} className="hero-stats" style={{ display: 'flex', gap: 0, marginTop: 40, maxWidth: 360, width: '100%' }}>
           {DEFAULT_STATS.map(({ num, label, color, numKey, labelKey }, i) => (
             <div key={label}
@@ -466,7 +448,7 @@ export default function Hero() {
         </div>
         </AnimatableWrapper>
 
-        <AnimatableWrapper animKey="hero.badges" label="Tech Badges" currentAnim="fadeUp 0.9s 1.2s both">
+        <AnimatableWrapper animKey="hero.badges" label="Tech Badges" currentAnim="fadeUp 0.7s 0.6s both">
           <div className="hero-badges">
           <MarqueeBadges badges={DEFAULT_BADGES} />
         </div>
@@ -488,6 +470,11 @@ export default function Hero() {
       </div>{/* end two-column flex */}
 
       <style>{`
+        /* ── Word-mask reveal (pure CSS) ── */
+        @keyframes maskReveal {
+          from { transform: translateY(110%); }
+          to   { transform: translateY(0); }
+        }
         /* ── Glitch effect ── */
         .glitch-active {
           animation: glitch 0.6s steps(1) forwards !important;

@@ -287,6 +287,59 @@ function GlassToast({ toast, v, leaving, progress, dismiss }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STYLE 9 — HOLO (holographic layered glow)
+// ─────────────────────────────────────────────────────────────────────────────
+function HoloToast({ toast, v, leaving, progress, dismiss }) {
+  return (
+    <div role="alert" onClick={dismiss} style={{
+      position:'relative', minWidth:280, maxWidth:380, overflow:'hidden',
+      marginBottom:8, cursor:'pointer',
+      background:'rgba(8,20,32,0.78)', backdropFilter:'blur(22px) saturate(1.4)',
+      border:'1px solid rgba(0,229,255,0.4)', borderRadius:14,
+      padding:'14px 36px 14px 44px',
+      boxShadow:'0 0 28px rgba(0,229,255,0.16), inset 0 0 24px rgba(0,229,255,0.06), 0 8px 32px rgba(0,0,0,0.5)',
+      animation: leaving ? 'ntfy-fadeOut .3s ease forwards' : 'ntfy-floatIn .4s cubic-bezier(.16,1,.3,1) both',
+    }}>
+      {/* corner brackets */}
+      <div aria-hidden style={{ position:'absolute', top:5, left:5, width:8, height:8, borderLeft:`1px solid rgba(0,229,255,0.5)`, borderTop:`1px solid rgba(0,229,255,0.5)` }} />
+      <div aria-hidden style={{ position:'absolute', top:5, right:5, width:8, height:8, borderRight:`1px solid rgba(0,229,255,0.5)`, borderTop:`1px solid rgba(0,229,255,0.5)` }} />
+      <div aria-hidden style={{ position:'absolute', bottom:5, left:5, width:8, height:8, borderLeft:`1px solid rgba(0,229,255,0.5)`, borderBottom:`1px solid rgba(0,229,255,0.5)` }} />
+      <div aria-hidden style={{ position:'absolute', bottom:5, right:5, width:8, height:8, borderRight:`1px solid rgba(0,229,255,0.5)`, borderBottom:`1px solid rgba(0,229,255,0.5)` }} />
+      <div style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', width:20, height:20, borderRadius:'50%', border:`1px solid ${v.color}88`, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:t.fontMono, fontSize:10, color:v.color, boxShadow:`0 0 10px ${v.glow}` }}>{v.icon}</div>
+      <div style={{ fontFamily:t.fontMono, fontSize:9, letterSpacing:3, color:v.color, marginBottom:3 }}>{v.label}</div>
+      <div style={{ fontFamily:t.fontMono, fontSize:11, color:'rgba(200,216,232,0.9)', lineHeight:1.5 }}>
+        {toast.title && <strong style={{color:v.color}}>{toast.title} — </strong>}{toast.message}
+      </div>
+      <button onClick={e=>{e.stopPropagation();dismiss()}} style={{ position:'absolute', top:9, right:10, background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:9, fontFamily:t.fontMono }}>✕</button>
+      {!toast.persistent && <div style={{ position:'absolute', bottom:0, left:0, height:'1px', background:v.color, opacity:.5, width:`${progress}%`, transition:'width .05s linear' }} />}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STYLE 10 — CHIP (compact telemetry chip)
+// ─────────────────────────────────────────────────────────────────────────────
+function ChipToast({ toast, v, leaving, dismiss }) {
+  return (
+    <div role="alert" onClick={dismiss} style={{
+      display:'flex', alignItems:'center', gap:10, padding:'8px 14px 8px 10px',
+      background:'var(--bg2)', border:`1px solid ${v.border}`, borderRadius:5,
+      marginBottom:8, cursor:'pointer', maxWidth:400,
+      boxShadow:'0 2px 8px rgba(0,0,0,0.35)',
+      animation: leaving ? 'ntfy-fadeOut .3s ease forwards' : 'ntfy-slideLeft .3s cubic-bezier(.16,1,.3,1) both',
+    }}>
+      <span style={{ width:8, height:8, borderRadius:'50%', flexShrink:0, background:v.color, boxShadow:`0 0 6px ${v.glow}` }} />
+      <span style={{ fontFamily:t.fontMono, fontSize:8, letterSpacing:2, color:t.muted, flexShrink:0 }}>{ts()}</span>
+      <span style={{ fontFamily:t.fontMono, fontSize:10, color:t.text, flex:1, lineHeight:1.4, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+        {toast.title && <strong style={{color:v.color, marginRight:4}}>{toast.title}:</strong>}
+        {toast.message}
+      </span>
+      <span style={{ fontFamily:t.fontMono, fontSize:8, color:v.color, flexShrink:0, letterSpacing:1 }}>▶</span>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TERMINAL WINDOW WRAPPER (collects terminal-style toasts)
 // ─────────────────────────────────────────────────────────────────────────────
 function TerminalWindow({ toasts, onRemove }) {
@@ -352,6 +405,8 @@ function ToastItem({ toast, onRemove, notifyStyle }) {
   if (activeStyle === 'pill')     return <PillToast     {...props} />
   if (activeStyle === 'minimal')  return <MinimalToast  {...props} />
   if (activeStyle === 'glass')    return <GlassToast    {...props} />
+  if (activeStyle === 'holo')     return <HoloToast     {...props} />
+  if (activeStyle === 'chip')     return <ChipToast     {...props} />
   return <CyberToast {...props} />  // default: cyber
 }
 
