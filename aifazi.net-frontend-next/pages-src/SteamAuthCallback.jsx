@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { handOffFiveMAuthCallback } from '@/lib/authCallbackHandoff'
 import { safeNextPath } from '@/lib/authRoutes'
-import { setAccessToken } from '@/lib/api'
+import api, { setAccessToken } from '@/lib/api'
 
 const STEAM_BLUE = '#1b2838'
 const STEAM_LIGHT = '#00b4ff'
@@ -48,9 +48,29 @@ export default function SteamAuthCallback() {
     }
 
     if (!token) {
-      setError('No token received from Steam. Please try again.')
-      setStatus('')
-      setTimeout(() => nav.replace('/login?tab=signin'), 3000)
+      // H4 — the session may already be live via the HttpOnly cookie (e.g. this
+      // page was reloaded after the token hash was cleared). Restore it instead
+      // of failing hard.
+      const restoreFromCookie = async () => {
+        try {
+          const me = await api.get('/auth/me')
+          if (me.data && (me.data._id || me.data.id)) {
+            window.dispatchEvent(new Event('auth-change'))
+            if (isNewAccount) {
+              setStatus('Account created! Setting up your profile…')
+              setTimeout(() => nav.replace('/profile?tab=edit&steam_setup=1'), 900)
+            } else {
+              setStatus('Steam connected! Redirecting…')
+              setTimeout(() => nav.replace(dest), 800)
+            }
+            return
+          }
+        } catch {}
+        setError('No token received from Steam. Please try again.')
+        setStatus('')
+        setTimeout(() => nav.replace('/login?tab=signin'), 3000)
+      }
+      restoreFromCookie()
       return
     }
 
