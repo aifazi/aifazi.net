@@ -4,6 +4,7 @@ import { Link } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { getUsername, getRole } from '@/lib/api'
 import { getSupabase } from '@/lib/supabase'
+import { Icon, NAV_ICONS } from './icons'
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Design tokens — CSS-variable-first with sensible dark fallbacks
@@ -67,8 +68,8 @@ function HBtn({ icon, label, onClick, danger, badge, active }) {
         background: on ? (danger ? 'rgba(248,113,113,0.1)' : 'rgba(255,255,255,0.07)') : 'transparent',
         color: on ? (danger ? '#f87171' : C.text) : C.muted,
         transition:'all 0.14s ease', whiteSpace:'nowrap' }}>
-      <span style={{ fontSize:15 }}>{icon}</span>
-      <span>{label}</span>
+      <Icon name={icon} size={15} strokeWidth={1.8} />
+      {label && <span>{label}</span>}
       {badge > 0 && (
         <span style={{ position:'absolute', top:-3, right:-3, minWidth:16, height:16, borderRadius:8,
           background:'#ef4444', fontSize:9, color:'#fff', display:'flex', alignItems:'center',
@@ -82,20 +83,20 @@ function HBtn({ icon, label, onClick, danger, badge, active }) {
 
 /* ── Search modal ── */
 const SEARCH_NAV = [
-  { key:'home',          icon:'📊', label:'Dashboard',      group:'Overview'   },
-  { key:'content',       icon:'📝', label:'Content Hub',    group:'Content'    },
-  { key:'media',         icon:'🖼',  label:'Media Library',  group:'Content'    },
-  { key:'pages',         icon:'🧩', label:'Pages',          group:'Content'    },
-  { key:'themes',        icon:'🎨', label:'Theme Library',  group:'Content'    },
-  { key:'communications',icon:'📧', label:'Communications', group:'Community'  },
-  { key:'staff',         icon:'👥', label:'Staff',          group:'Community'  },
-  { key:'chat',          icon:'🗨️',  label:'Live Chat',      group:'Community'  },
-  { key:'db',            icon:'🗄',  label:'DB Monitor',     group:'System'     },
-  { key:'delivery',      icon:'📨', label:'Mail & CDN',     group:'System'     },
-  { key:'backup',        icon:'💾', label:'Backup',         group:'System'     },
-  { key:'helpdesk',      icon:'🎫', label:'Help Desk',      group:'Support'    },
-  { key:'store',         icon:'🛒', label:'Store',          group:'Business'   },
-  { key:'changelog',     icon:'📋', label:'Changelog',      group:'Manage'     },
+  { key:'home',          icon:'grid',     label:'Dashboard',      group:'Overview'   },
+  { key:'content',       icon:'file',     label:'Content Hub',    group:'Content'    },
+  { key:'media',         icon:'image',    label:'Media Library',  group:'Content'    },
+  { key:'pages',         icon:'layout',   label:'Pages',          group:'Content'    },
+  { key:'themes',        icon:'palette',  label:'Theme Library',  group:'Content'    },
+  { key:'communications',icon:'mail',     label:'Communications', group:'Community'  },
+  { key:'staff',         icon:'users',    label:'Staff',          group:'Community'  },
+  { key:'chat',          icon:'chat',     label:'Live Chat',      group:'Community'  },
+  { key:'db',            icon:'database', label:'DB Monitor',     group:'System'     },
+  { key:'delivery',      icon:'send',     label:'Mail & CDN',     group:'System'     },
+  { key:'backup',        icon:'database', label:'Backup',         group:'System'     },
+  { key:'helpdesk',      icon:'lifebuoy', label:'Help Desk',      group:'Support'    },
+  { key:'store',         icon:'cart',     label:'Store',          group:'Business'   },
+  { key:'changelog',     icon:'clipboard',label:'Changelog',      group:'Manage'     },
 ]
 
 function SearchModal({ onClose, setView }) {
@@ -128,7 +129,7 @@ function SearchModal({ onClose, setView }) {
         animation:'ahIn 0.16s ease', fontFamily:C.fontUi }} onKeyDown={handleKey}>
         {/* Input row */}
         <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 16px', borderBottom:`1px solid ${C.border}` }}>
-          <span style={{ fontSize:16, opacity:0.4 }}>🔍</span>
+          <Icon name="search" size={16} style={{ opacity:0.4 }} />
           <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)}
             placeholder="Search pages and actions…"
             style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:14,
@@ -153,7 +154,7 @@ function SearchModal({ onClose, setView }) {
                         background: isCur ? 'rgba(167,139,250,0.12)' : 'transparent',
                         border:'none', cursor:'pointer', color: isCur ? '#c4b5fd' : C.text,
                         transition:'background 0.1s', fontFamily:C.fontUi }}>
-                      <span style={{ fontSize:16, flexShrink:0, width:20, textAlign:'center' }}>{item.icon}</span>
+                      <Icon name={item.icon} size={16} style={{ flexShrink:0, width:20 }} />
                       <span style={{ fontSize:13 }}>{item.label}</span>
                       {isCur && <span style={{ marginLeft:'auto', fontSize:10, color:'#a78bfa',
                         padding:'1px 6px', background:'rgba(167,139,250,0.12)', borderRadius:4,
@@ -251,7 +252,7 @@ function Breadcrumb({ view }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    MAIN EXPORT
 ───────────────────────────────────────────────────────────────────────────── */
-export default function AdminHeader({ view, setView, onLogout }) {
+export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed, onToggleSidebar }) {
   const username = getUsername()
   const role = getRole()
   const [stats, setStats] = useState({ visitors:'—', posts:'—', msgs:'—' })
@@ -431,7 +432,20 @@ export default function AdminHeader({ view, setView, onLogout }) {
 
       {/* ── Main header bar ── */}
       <header style={{ height:56, background:C.bg2, borderBottom:`1px solid ${C.border}`,
-        display:'flex', alignItems:'center', padding:'0 16px', gap:0, flexShrink:0 }}>
+        display:'flex', alignItems:'center', padding:'0 16px', gap:0, flexShrink:0,
+        backdropFilter:'blur(10px)' }}>
+
+        {/* Collapse toggle */}
+        {onToggleSidebar && (
+          <button onClick={onToggleSidebar} title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            style={{ display:'flex', alignItems:'center', justifyContent:'center', width:34, height:34,
+              borderRadius:8, background:'transparent', border:'none', cursor:'pointer', color:C.muted,
+              transition:'all 0.14s', flexShrink:0, marginRight:10 }}
+            onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.06)'; e.currentTarget.style.color=C.text }}
+            onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color=C.muted }}>
+            <Icon name={sidebarCollapsed ? 'panelClose' : 'panelOpen'} size={18} />
+          </button>
+        )}
 
         {/* Brand */}
         <div style={{ display:'flex', alignItems:'center', gap:10, paddingRight:16,
@@ -439,7 +453,7 @@ export default function AdminHeader({ view, setView, onLogout }) {
           <div style={{ width:32, height:32, borderRadius:9, background:`${accent}18`,
             border:`1px solid ${accent}40`, display:'flex', alignItems:'center',
             justifyContent:'center', fontSize:14 }}>
-            {role === 'moderator' ? '🛡' : '⚡'}
+            <Icon name={role === 'moderator' ? 'shield' : 'zap'} size={18} filled />
           </div>
           <div>
             <div style={{ fontSize:11, fontWeight:700, color:accent, letterSpacing:1.2,
@@ -496,22 +510,22 @@ export default function AdminHeader({ view, setView, onLogout }) {
               fontSize:13, fontFamily:C.fontUi, transition:'all 0.14s' }}
             onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.06)'; e.currentTarget.style.color=C.text }}
             onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color=C.muted }}>
-            <span style={{ fontSize:15 }}>🔍</span>
+            <Icon name="search" size={15} strokeWidth={1.8} />
             <span>Search</span>
             <kbd style={{ fontSize:10, fontFamily:C.fontMono, color:C.muted, padding:'1px 6px',
               background:'rgba(255,255,255,0.06)', border:`1px solid ${C.border}`, borderRadius:5 }}>⌘K</kbd>
           </button>
           {/* Alerts */}
           <div ref={notifRef} style={{ position:'relative' }}>
-            <HBtn icon="🔔" label="Alerts" badge={alerts.length} active={notifOpen}
+            <HBtn icon="bell" label="Alerts" badge={alerts.length} active={notifOpen}
               onClick={() => setNotifOpen(o => !o)} />
             {notifOpen && <NotifDropdown alerts={alerts}
               onDismiss={i => setAlerts(p => p.filter((_,idx) => idx !== i))}
               onClearAll={() => setAlerts([])} />}
           </div>
           <div style={{ width:1, height:20, background:C.border2, margin:'0 4px' }} />
-          <HBtn icon="↗" label="View Site" onClick={() => window.open('/','_blank')} />
-          <HBtn icon="🚪" label="Sign out" onClick={onLogout} danger />
+          <HBtn icon="external" label="View Site" onClick={() => window.open('/','_blank')} />
+          <HBtn icon="logout" label="Sign out" onClick={onLogout} danger />
         </div>
       </header>
 

@@ -1,9 +1,10 @@
 'use client'
 import React, { useState } from 'react'
+import { Icon, NAV_ICONS } from './icons'
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   All colours now use CSS variables so the sidebar responds to theme changes.
-   The hardcoded C.* palette has been removed — globals.css drives everything.
+   All colours use CSS variables so the sidebar responds to theme changes.
+   Supports a collapsed rail (icon-only) on desktop, drawer on mobile.
 ───────────────────────────────────────────────────────────────────────────── */
 const C = {
   bg:      'var(--bg)',
@@ -12,6 +13,7 @@ const C = {
   border:  'var(--border)',
   text:    'var(--text)',
   muted:   'var(--muted)',
+  accent:  'var(--accent, #a78bfa)',
   fontUi:  "var(--font-display, 'Inter','Segoe UI',system-ui,sans-serif)",
   fontMono:"var(--font-mono, 'JetBrains Mono','Fira Code',monospace)",
 }
@@ -29,44 +31,58 @@ const GROUP_LABELS = {
   BUSINESS:'Business', FIVEM:'FiveM',
 }
 
+const NAV_ICON = item => NAV_ICONS[item.key] || NAV_ICONS[item.icon] || 'grid'
+
 /* ── Single nav item ── */
-function NavItem({ item, active, accentDot, onClick }) {
+function NavItem({ item, active, accentDot, onClick, collapsed }) {
   const [hov, setHov] = useState(false)
+  const iconName = NAV_ICON(item)
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'8px 10px',
+      title={collapsed ? item.label : undefined}
+      style={{ position:'relative', display:'flex', alignItems:'center', gap:10,
+        width:'100%', padding: collapsed ? '10px 0' : '8px 10px',
+        justifyContent: collapsed ? 'center' : 'flex-start',
         borderRadius:8, background: active ? 'rgba(var(--green-rgb,0,255,136),0.08)' : hov ? 'rgba(255,255,255,0.04)' : 'transparent',
         border:'none', cursor:'pointer', color: active ? 'var(--green)' : hov ? C.text : C.muted,
-        transition:'all 0.14s ease', position:'relative', marginBottom:1 }}>
-
+        transition:'all 0.14s ease', marginBottom:1 }}>
       {/* Active bar */}
-      {active && (
+      {active && !collapsed && (
         <span style={{ position:'absolute', left:0, top:'18%', bottom:'18%', width:3,
+          borderRadius:'0 3px 3px 0', background:accentDot, boxShadow:`0 0 8px ${accentDot}80` }} />
+      )}
+      {active && collapsed && (
+        <span style={{ position:'absolute', left:0, top:'18%', bottom:'18%', width:2.5,
           borderRadius:'0 3px 3px 0', background:accentDot, boxShadow:`0 0 8px ${accentDot}80` }} />
       )}
 
       {/* Icon */}
-      <span style={{ fontSize:15, lineHeight:1, flexShrink:0, width:22, textAlign:'center',
-        filter: active || hov ? 'none' : 'grayscale(40%) opacity(0.55)',
-        transition:'filter 0.14s' }}>
-        {item.icon}
-      </span>
+      <Icon name={iconName} size={18} strokeWidth={active ? 2.1 : 1.7}
+        style={{ filter: active || hov ? 'none' : 'grayscale(30%) opacity(0.55)', transition:'filter 0.14s' }} />
 
       {/* Label */}
-      <span style={{ fontSize:13, fontWeight: active ? 500 : 400, flex:1, textAlign:'left',
-        overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-        letterSpacing:0.1, fontFamily:C.fontUi }}>
-        {item.label}
-      </span>
+      {!collapsed && (
+        <span style={{ fontSize:13, fontWeight: active ? 500 : 400, flex:1, textAlign:'left',
+          overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+          letterSpacing:0.1, fontFamily:C.fontUi }}>
+          {item.label}
+        </span>
+      )}
 
       {/* Badge */}
-      {item.badge != null && (
+      {!collapsed && item.badge != null && (
         <span style={{ fontSize:10, padding:'2px 6px', borderRadius:20,
           background: active ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.06)',
           color: active ? 'var(--green)' : C.muted, fontFamily:C.fontMono,
           border:`1px solid ${active ? 'rgba(0,255,136,0.3)' : C.border}`, flexShrink:0 }}>
           {item.badge}
         </span>
+      )}
+
+      {/* Collapsed badge → dot */}
+      {collapsed && item.badge != null && (
+        <span style={{ position:'absolute', top:8, right:12, width:6, height:6, borderRadius:'50%',
+          background:'var(--green)', boxShadow:'0 0 6px rgba(0,255,136,0.7)' }} />
       )}
     </button>
   )
@@ -75,7 +91,7 @@ function NavItem({ item, active, accentDot, onClick }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    MAIN EXPORT
 ───────────────────────────────────────────────────────────────────────────── */
-export default function Sidebar({ view, setView, navItems, username, role, onLogout, isMobile, open, onClose }) {
+export default function Sidebar({ view, setView, navItems, username, role, onLogout, isMobile, open, onClose, collapsed }) {
   const meta = ROLE_META[role] || ROLE_META.editor
   const initials = username ? username.slice(0, 2).toUpperCase() : '??'
 
@@ -86,9 +102,12 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
     return acc
   }, {})
 
+  const width = collapsed ? 64 : 232
+
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap')`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@keyframes ahIn{from{opacity:0;transform:translateY(-8px) scale(0.98)}to{opacity:1;transform:none}}`}</style>
 
       {/* Mobile backdrop */}
       {isMobile && open && (
@@ -97,24 +116,25 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
       )}
 
       <aside style={{
-        width:232, flexShrink:0,
+        width, flexShrink:0,
         background:C.bg2,
         borderRight:`1px solid ${C.border}`,
         display:'flex', flexDirection:'column',
         ...(isMobile ? {
           position:'fixed', top:44, bottom:0,
-          left: open ? 0 : -240, zIndex:99,
+          left: open ? 0 : -(width + 8), zIndex:99,
           transition:'left 0.26s cubic-bezier(0.4,0,0.2,1)',
           boxShadow: open ? '4px 0 40px rgba(0,0,0,0.7)' : 'none',
         } : {
           position:'relative', height:'100%', overflow:'hidden', minHeight:0,
           flexShrink:0,
+          transition:'width 0.24s cubic-bezier(0.4,0,0.2,1)',
         }),
       }}>
 
         {/* ── User card ── */}
-        <div style={{ padding:'14px 14px 12px', borderBottom:`1px solid ${C.border}` }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ padding: collapsed ? '14px 0' : '14px 14px 12px', borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, justifyContent: collapsed ? 'center' : 'flex-start' }}>
             {/* Avatar */}
             <div style={{ width:36, height:36, borderRadius:10, background:meta.bg,
               border:`1px solid ${meta.border}`, display:'flex', alignItems:'center',
@@ -122,36 +142,43 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
               flexShrink:0, fontFamily:C.fontMono }}>
               {initials}
             </div>
-            <div style={{ minWidth:0, flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:600, color:C.text, overflow:'hidden',
-                textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:C.fontUi }}>
-                {username}
+            {!collapsed && (
+              <div style={{ minWidth:0, flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:C.text, overflow:'hidden',
+                  textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:C.fontUi }}>
+                  {username}
+                </div>
+                {/* Role pill */}
+                <div style={{ display:'inline-flex', alignItems:'center', gap:5, marginTop:3,
+                  padding:'2px 8px', borderRadius:20, background:meta.bg, border:`1px solid ${meta.border}` }}>
+                  <span style={{ width:5, height:5, borderRadius:'50%', background:meta.dot,
+                    flexShrink:0, boxShadow:`0 0 5px ${meta.dot}` }} />
+                  <span style={{ fontSize:10, fontWeight:500, color:meta.dot,
+                    fontFamily:C.fontMono, letterSpacing:0.5 }}>{meta.label}</span>
+                </div>
               </div>
-              {/* Role pill */}
-              <div style={{ display:'inline-flex', alignItems:'center', gap:5, marginTop:3,
-                padding:'2px 8px', borderRadius:20, background:meta.bg, border:`1px solid ${meta.border}` }}>
-                <span style={{ width:5, height:5, borderRadius:'50%', background:meta.dot,
-                  flexShrink:0, boxShadow:`0 0 5px ${meta.dot}` }} />
-                <span style={{ fontSize:10, fontWeight:500, color:meta.dot,
-                  fontFamily:C.fontMono, letterSpacing:0.5 }}>{meta.label}</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* ── Navigation ── */}
-        <div style={{ flex:1, overflowY:'auto', padding:'8px 8px 4px',
+        <div style={{ flex:1, overflowY:'auto', overflowX:'visible', padding: collapsed ? '8px 0' : '8px 8px 4px',
           scrollbarWidth:'thin', scrollbarColor:`${C.border} transparent` }}>
           {Object.entries(grouped).map(([groupName, items]) => (
             <div key={groupName} style={{ marginBottom:6 }}>
-              <div style={{ padding:'8px 10px 4px', fontSize:10, fontWeight:600, letterSpacing:0.8,
-                color:'rgba(255,255,255,0.2)', textTransform:'uppercase',
-                userSelect:'none', fontFamily:C.fontMono }}>
-                {GROUP_LABELS[groupName] || groupName}
-              </div>
+              {!collapsed && (
+                <div style={{ padding:'8px 10px 4px', fontSize:10, fontWeight:600, letterSpacing:0.8,
+                  color:'rgba(255,255,255,0.2)', textTransform:'uppercase',
+                  userSelect:'none', fontFamily:C.fontMono }}>
+                  {GROUP_LABELS[groupName] || groupName}
+                </div>
+              )}
+              {collapsed && (
+                <div style={{ height:8, margin:'0 16px 4px', borderBottom:`1px solid ${C.border}`, opacity:0.5 }} />
+              )}
               {items.map(item => (
                 <NavItem key={item.key} item={item} active={view === item.key || item.aliases?.includes(view)}
-                  accentDot={meta.dot} onClick={() => { setView(item.key); onClose?.() }} />
+                  accentDot={meta.dot} collapsed={collapsed} onClick={() => { setView(item.key); onClose?.() }} />
               ))}
             </div>
           ))}
@@ -159,18 +186,21 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
 
         {/* ── Footer ── */}
         <div style={{ borderTop:`1px solid ${C.border}`, padding:'6px 8px' }}>
-          <div style={{ padding:'4px 10px 8px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-            <span style={{ fontSize:10, color:'rgba(255,255,255,0.18)', fontFamily:C.fontMono }}>aifazi.net</span>
-            <span style={{ fontSize:10, color:'rgba(255,255,255,0.12)', fontFamily:C.fontMono }}>v2.0</span>
-          </div>
+          {!collapsed && (
+            <div style={{ padding:'4px 10px 8px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <span style={{ fontSize:10, color:'rgba(255,255,255,0.18)', fontFamily:C.fontMono }}>aifazi.net</span>
+              <span style={{ fontSize:10, color:'rgba(255,255,255,0.12)', fontFamily:C.fontMono }}>v2.0</span>
+            </div>
+          )}
           <button onClick={onLogout}
             style={{ display:'flex', alignItems:'center', gap:9, width:'100%', padding:'9px 10px',
+              justifyContent: collapsed ? 'center' : 'flex-start',
               borderRadius:8, background:'transparent', border:'none', cursor:'pointer',
               color:'#f87171', fontFamily:C.fontUi, fontSize:13, fontWeight:400, transition:'background 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(248,113,113,0.08)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-            <span style={{ fontSize:15, flexShrink:0, width:22, textAlign:'center' }}>🚪</span>
-            Sign out
+            <Icon name="logout" size={17} strokeWidth={1.8} />
+            {!collapsed && <span>Sign out</span>}
           </button>
         </div>
       </aside>

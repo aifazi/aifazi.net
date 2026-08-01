@@ -78,7 +78,7 @@ const S = {
     background: 'var(--bg3)', border: '1px solid var(--border)',
     color: 'var(--text)', fontFamily: 'var(--font-display)',
     fontSize: 15, padding: '12px 16px', outline: 'none', width: '100%',
-    transition: 'border-color 0.2s', borderRadius: 6,
+    transition: 'border-color 0.2s, box-shadow 0.2s', borderRadius: 10,
   },
   label: {
     fontFamily: 'var(--font-mono)', fontSize: 10,
@@ -88,11 +88,12 @@ const S = {
   btn: (color = 'var(--green)', textColor = '#000') => ({
     fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
     padding: '10px 20px', background: color, color: textColor,
-    border: 'none', cursor: 'pointer', transition: 'opacity 0.2s', borderRadius: 6,
+    border: 'none', cursor: 'pointer', transition: 'opacity 0.2s', borderRadius: 8,
   }),
   card: {
     background: 'var(--bg2)', border: '1px solid var(--border)',
-    padding: 20, marginBottom: 8, borderRadius: 8,
+    padding: 20, marginBottom: 8, borderRadius: 12,
+    transition: 'border-color 0.2s, box-shadow 0.2s',
   },
   // -- Reusable page section header --
   sectionHead: (label) => (
@@ -113,11 +114,12 @@ function PageHeader({ eyebrow, title, subtitle, actions }) {
     <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
       <div>
         {eyebrow && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6, textTransform: 'uppercase' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 8, textTransform: 'uppercase' }}>
+            <span style={{ width:14, height:2, background:'linear-gradient(90deg,var(--cyan),transparent)', borderRadius:2 }} />
             {eyebrow}
           </div>
         )}
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{title}</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, margin: 0, lineHeight: 1.2, letterSpacing:-0.5 }}>{title}</h2>
         {subtitle && <p style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6 }}>{subtitle}</p>}
       </div>
       {actions && <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>{actions}</div>}

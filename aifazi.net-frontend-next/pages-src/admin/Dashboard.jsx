@@ -12,6 +12,7 @@ import Sidebar from './Sidebar'
 import { PostEditor, MediaLibrary } from './PostEditor'
 import { S, useIsMobile, PageHeader, PanelErrorBoundary } from './shared'
 import AdminHeader from './AdminHeader'
+import { Icon, NAV_ICONS } from './icons'
 import Mail from './Mail'
 import ThemeHub from './ThemeHub'
 import { NewsletterPanel, StatsPanel, PageContentPanel } from './AdminPanels'
@@ -24,16 +25,16 @@ import { useFadeUp, useStaggerIn } from '@/lib/animate'
 function StatsGrid({ dashStats, isMobile, setView }) {
   const ref = useStaggerIn('.stat-card', { stagger: 80, distance: 16, duration: 480 })
   const cards = [
-    { label: 'TOTAL POSTS', value: dashStats.totalPosts, icon: '[P]', color: 'var(--cyan)', sub: `${dashStats.publishedPosts} live · ${dashStats.draftPosts} drafts`, action: () => setView('content') },
-    { label: 'TOTAL VIEWS', value: dashStats.totalViews.toLocaleString(), icon: '[V]', color: 'var(--green)', sub: 'all time', action: () => setView('db') },
-    { label: 'MESSAGES',    value: dashStats.contacts, icon: '[@]', color: '#ff6b35', sub: 'in inbox', action: () => setView('communications') },
-    { label: 'STAFF',       value: dashStats.staff,    icon: '[S]', color: '#ffd700', sub: 'members',  action: () => setView('staff') },
+    { label: 'TOTAL POSTS', value: dashStats.totalPosts, navKey: 'content', color: 'var(--cyan)', sub: `${dashStats.publishedPosts} live · ${dashStats.draftPosts} drafts`, action: () => setView('content') },
+    { label: 'TOTAL VIEWS', value: dashStats.totalViews.toLocaleString(), navKey: 'activity', color: 'var(--green)', sub: 'all time', action: () => setView('db') },
+    { label: 'MESSAGES',    value: dashStats.contacts, navKey: 'communications', color: '#ff6b35', sub: 'in inbox', action: () => setView('communications') },
+    { label: 'STAFF',       value: dashStats.staff,    navKey: 'staff', color: '#ffd700', sub: 'members',  action: () => setView('staff') },
   ]
   return (
     <div ref={ref} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
       {cards.map(card => (
         <div key={card.label} className="stat-card" onClick={card.action} style={{
-          background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10,
+          background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14,
           padding: isMobile ? '14px' : '18px 20px', cursor: card.action ? 'pointer' : 'default',
           transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s',
           position: 'relative', overflow: 'hidden',
@@ -41,10 +42,12 @@ function StatsGrid({ dashStats, isMobile, setView }) {
           onMouseEnter={e => { e.currentTarget.style.borderColor = card.color; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 4px 20px ${card.color}18` }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
         >
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${card.color}, transparent)`, borderRadius: '10px 10px 0 0' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${card.color}, transparent)`, borderRadius: '14px 14px 0 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--muted)' }}>{card.label}</div>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: `${card.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>{card.icon}</div>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: `${card.color}15`, border: `1px solid ${card.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
+              <Icon name={NAV_ICONS[card.navKey] || 'activity'} size={16} style={{ color: card.color }} />
+            </div>
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 28 : 36, fontWeight: 800, color: card.color, lineHeight: 1, marginBottom: 6 }}>{card.value}</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{card.sub}</div>
@@ -129,6 +132,14 @@ function Dashboard({ onLogout }) {
 
   const [view, setView] = useState('home')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('admin_sidebar_collapsed') === '1' } catch { return false }
+  })
+  const toggleSidebar = () => setSidebarCollapsed(v => {
+    const next = !v
+    try { localStorage.setItem('admin_sidebar_collapsed', next ? '1' : '0') } catch {}
+    return next
+  })
   const [sessionWarning, setSessionWarning] = useState(false)
   const [posts, setPosts] = useState([])
   const [contacts, setContacts] = useState([])
@@ -443,13 +454,16 @@ function Dashboard({ onLogout }) {
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', zIndex: 10 }}>
       {/*  Global Admin Header (desktop)  */}
       {!isMobile && (
-        <AdminHeader view={view} setView={v => { setView(v); if (v === 'editor') setEditingPost(null) }} onLogout={onLogout} />
+        <AdminHeader view={view} setView={v => { setView(v); if (v === 'editor') setEditingPost(null) }}
+          onLogout={onLogout} sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
       )}
       {/* Mobile top bar */}
       {isMobile && (
         <div style={{ position: 'relative', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px', height: 44, flexShrink: 0, zIndex: 97 }}>
-          <button onClick={() => setSidebarOpen(o => !o)} style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1, display: 'flex', alignItems: 'center' }}>☰</button>
-          <span style={{ fontSize: 16 }}>{navItems.find(n => n.key === view || n.aliases?.includes(view))?.icon || '📊'}</span>
+          <button onClick={() => setSidebarOpen(o => !o)} style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', padding: '0 4px', lineHeight: 1, display: 'flex', alignItems: 'center' }}>
+            <Icon name="panelOpen" size={20} />
+          </button>
+          <Icon name={NAV_ICONS[view] || 'grid'} size={16} style={{ color: 'var(--green)' }} />
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', flex: 1 }}>
             {navItems.find(n => n.key === view || n.aliases?.includes(view))?.label || 'ADMIN'}
           </span>
@@ -469,6 +483,7 @@ function Dashboard({ onLogout }) {
           isMobile={isMobile}
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          collapsed={!isMobile && sidebarCollapsed}
         />
 
         {/* Main content — hidden when full-screen panel active */}
@@ -482,6 +497,8 @@ function Dashboard({ onLogout }) {
             padding: isMobile ? '16px 12px' : mainPad,
             display: 'flex',
             flexDirection: 'column',
+            borderRadius: 14,
+            margin: isMobile ? 0 : 4,
           }}>
 
           {/* Session expiry warning */}
@@ -513,7 +530,7 @@ function Dashboard({ onLogout }) {
                   <StatsGrid dashStats={dashStats} isMobile={isMobile} setView={setView} />
 
                   {/* Post breakdown bar */}
-                  <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '16px 20px', marginBottom: 20 }}>
+                  <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '16px 20px', marginBottom: 20, borderRadius: 14 }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>POST BREAKDOWN</div>
                     <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                       {[
@@ -536,7 +553,7 @@ function Dashboard({ onLogout }) {
                   {/* Quick actions + recent posts */}
                   <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 20 }}>
                     {/* Quick actions */}
-                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px' }}>
+                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px', borderRadius: 14 }}>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>QUICK ACTIONS</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                         {[
@@ -561,7 +578,7 @@ function Dashboard({ onLogout }) {
                     </div>
 
                     {/* System health — live from API */}
-                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px' }}>
+                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px', borderRadius: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>SYSTEM STATUS</div>
                         <button onClick={fetchDashStats} title="Refresh" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 12, padding: 0 }}></button>
@@ -590,7 +607,7 @@ function Dashboard({ onLogout }) {
 
                     {/* Activity feed — from audit log */}
                     {activityFeed.length > 0 && (
-                      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px' }}>
+                      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px', borderRadius: 14 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>RECENT ACTIVITY</div>
                           <button onClick={() => setView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>AUDIT LOG </button>
@@ -610,7 +627,7 @@ function Dashboard({ onLogout }) {
 
                   {/* Recent posts */}
                   {dashStats.recentPosts?.length > 0 && (
-                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px' }}>
+                    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px', borderRadius: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>RECENT POSTS</div>
                         <button onClick={() => setView('content')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL </button>
