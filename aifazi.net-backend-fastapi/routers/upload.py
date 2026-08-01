@@ -10,6 +10,7 @@ import os, uuid, mimetypes, base64
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from database import supabase
 from dependencies import require_staff
+from routers.cdn_upload import get_cdn_config as _get_cdn_config, _upload_r2, _delete_r2
 import httpx
 
 router = APIRouter()
@@ -105,11 +106,6 @@ def _scrub_provider_error(text: str, *, max_len: int = 200) -> str:
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
-def _get_cdn_config() -> dict:
-    res = supabase.table("cdn_config").select("settings").eq("key", "global").execute()
-    return (res.data[0].get("settings") or {}) if res.data else {}
-
-
 def _safe_storage_filename(filename: str) -> str:
     """H6/M11 — strip path separators and traversal so the client-supplied
     filename can never escape its prefix inside the bucket (e.g. `../../x` on
@@ -161,36 +157,6 @@ async def _upload_cloudinary(content: bytes, filename: str, mimetype: str, cfg: 
     # public_id is needed to delete/transform the asset later
     return body["secure_url"], body.get("public_id", body["secure_url"])
 
-
-async def _upload_r2(content: bytes, filename: str, mimetype: str, cfg: dict) -> tuple[str, str]:
-    """Upload to Cloudflare R2 via boto3 (S3-compatible). Returns (public_url, storage_key)."""
-    import boto3
-    from botocore.client import Config
-    account    = cfg.get("r2AccountId", "").strip()
-    key_id     = cfg.get("r2AccessKeyId", "").strip()
-    secret     = cfg.get("r2SecretAccessKey", "").strip()
-    bucket     = cfg.get("r2BucketName", "").strip()
-    public_url = cfg.get("r2PublicUrl", "").strip().rstrip("/")
-    if not (account and key_id and secret and bucket):
-        raise HTTPException(500, "Cloudflare R2 credentials not configured.")
-
-    storage_key = f"uploads/{uuid.uuid4()}_{_safe_storage_filename(filename)}"
-    try:
-        client = boto3.client(
-            "s3",
-            endpoint_url=f"https://{account}.r2.cloudflarestorage.com",
-            aws_access_key_id=key_id,
-            aws_secret_access_key=secret,
-            config=Config(signature_version="s3v4"),
-            region_name="auto",
-        )
-        client.put_object(Bucket=bucket, Key=storage_key, Body=content, ContentType=mimetype)
-    except Exception as e:
-        raise HTTPException(500, f"R2 upload failed: {_scrub_provider_error(str(e))}")
-
-    if public_url:
-        return f"{public_url}/{storage_key}", storage_key
-    return f"https://{account}.r2.cloudflarestorage.com/{bucket}/{storage_key}", storage_key
 
 async def _upload_b2(content: bytes, filename: str, mimetype: str, cfg: dict) -> tuple[str, str]:
     """Upload to Backblaze B2 via native API. Returns (file_url, storage_key)."""
@@ -373,7 +339,7 @@ async def upload_file(
             )
 
     elif provider == "r2":
-        public_url, storage_path = await _upload_r2(content, filename, mimetype, cfg)
+        public_url, storage_path = _upload_r2(content, filename, mimetype, cfg)
 
     elif provider == "b2":
         public_url, storage_path = await _upload_b2(content, filename, mimetype, cfg)
@@ -444,7 +410,7 @@ async def upload_multiple(
         if provider == "cloudinary":
             public_url, storage_path = await _upload_cloudinary(content, filename, mimetype, cfg)
         elif provider == "r2":
-            public_url, storage_path = await _upload_r2(content, filename, mimetype, cfg)
+            public_url, storage_path = _upload_r2(content, filename, mimetype, cfg)
         elif provider == "b2":
             public_url, storage_path = await _upload_b2(content, filename, mimetype, cfg)
         elif provider == "imagekit":
@@ -508,20 +474,9 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
                     )
 
         elif provider == "r2":
-            # boto3 DeleteObject via the S3-compatible R2 endpoint.
-            import boto3
-            account_id = cfg.get("r2AccountId", "").strip()
-            access_key = cfg.get("r2AccessKeyId", "").strip()
-            secret_key = cfg.get("r2SecretAccessKey", "").strip()
-            bucket     = cfg.get("r2Bucket", "").strip()
-            if account_id and access_key and secret_key and bucket and path:
-                endpoint = f"https://{account_id}.r2.cloudflarestorage.com"
-                client = boto3.client(
-                    "s3", endpoint_url=endpoint,
-                    aws_access_key_id=access_key, aws_secret_access_key=secret_key,
-                    region_name="auto",
-                )
-                client.delete_object(Bucket=bucket, Key=path)
+            # boto3 DeleteObject via the S3-compatible R2 endpoint (uses the
+            # same cdn_config bucket key as the upload path).
+            _delete_r2(path, cfg)
 
         elif provider == "b2":
             # B2 native API: authorize → get_upload_url is per-bucket, but the

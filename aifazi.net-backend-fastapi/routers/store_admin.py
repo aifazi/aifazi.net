@@ -15,13 +15,12 @@ from pydantic import BaseModel
 
 from database import supabase
 from permissions import require_permission
+from routers.cdn_upload import upload_media
 
 log = logging.getLogger("store.admin")
 router = APIRouter()
 
 MANAGE = require_permission("store.manage")
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-STORE_FILES_BUCKET = os.getenv("STORE_FILES_BUCKET", "store-files")
 
 
 def _now() -> str:
@@ -566,20 +565,11 @@ async def upload_store_file(file: UploadFile = File(...), _: dict = Depends(MANA
         raise HTTPException(413, "File exceeds 100 MB limit")
     filename = (file.filename or "file").replace("\\", "/").rsplit("/", 1)[-1]
     filename = filename.replace("..", "").strip()[:80] or "file"
-    ext = os.path.splitext(filename)[1] or ""
-    path = f"{_uuid.uuid4()}{ext}"
+    # Digital product files are stored via the active CDN provider (R2).
     try:
-        supabase.storage.from_(STORE_FILES_BUCKET).upload(
-            path=path,
-            file=content,
-            file_options={"content-type": file.content_type or "application/octet-stream"},
+        url, storage_path, provider = await upload_media(
+            content, filename, file.content_type or "application/octet-stream"
         )
     except Exception as exc:
-        err = str(exc)
-        if "already exists" not in err.lower():
-            if "not found" in err.lower():
-                raise HTTPException(500,
-                    f"Storage bucket '{STORE_FILES_BUCKET}' not found. Create it under Supabase Storage.")
-            raise HTTPException(500, f"Upload failed: {err[:200]}")
-    url = f"{SUPABASE_URL}/storage/v1/object/public/{STORE_FILES_BUCKET}/{path}"
-    return {"storage_path": path, "url": url, "filename": filename}
+        raise HTTPException(500, f"Upload failed: {str(exc)[:200]}")
+    return {"storage_path": storage_path, "url": url, "filename": filename, "provider": provider}

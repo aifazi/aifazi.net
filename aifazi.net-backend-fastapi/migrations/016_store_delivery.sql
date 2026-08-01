@@ -48,11 +48,13 @@ CREATE TABLE IF NOT EXISTS public.user_documents (
     category      TEXT DEFAULT 'other',
     file_url      TEXT,
     storage_path  TEXT,
+    provider      TEXT DEFAULT 'r2',       -- storage backend ('r2' primary, 'supabase' fallback)
     mime_type     TEXT,
     file_size     INT  DEFAULT 0,
     created_at    TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_user_documents_user ON public.user_documents (user_id);
+ALTER TABLE public.user_documents ADD COLUMN IF NOT EXISTS provider TEXT DEFAULT 'r2';
 
 -- ── 6. RLS ────────────────────────────────────────────────────────────────────
 ALTER TABLE public.store_order_events ENABLE ROW LEVEL SECURITY;

@@ -5,21 +5,18 @@ enforce ownership (a user can only see/manage their own documents).
 """
 from __future__ import annotations
 
-import os
 import logging
-import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 from database import supabase
 from dependencies import get_current_user
+from routers.cdn_upload import upload_media, delete_media
 
 log = logging.getLogger("documents")
 router = APIRouter()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-DOCUMENTS_BUCKET = os.getenv("DOCUMENTS_BUCKET", "documents")
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
 
 ALLOWED_MIMETYPES = {
@@ -44,14 +41,6 @@ def _safe_filename(filename: str) -> str:
     return base.replace("..", "").strip()[:80] or "file"
 
 
-def _ensure_bucket() -> None:
-    try:
-        supabase.storage.create_bucket(DOCUMENTS_BUCKET, {"public": True})
-    except Exception as exc:
-        if "already exists" not in str(exc).lower() and "duplicate" not in str(exc).lower():
-            log.warning("documents bucket ensure failed: %s", exc)
-
-
 @router.post("")
 async def upload_document(
     file: UploadFile = File(...),
@@ -69,32 +58,21 @@ async def upload_document(
         raise HTTPException(415, f"File type '{mimetype}' is not allowed")
 
     filename = _safe_filename(file.filename or name or "document")
-    ext = os.path.splitext(filename)[1] or ""
-    path = f"{uid}/{uuid.uuid4()}{ext}"
 
-    _ensure_bucket()
+    # All documents are stored via the active CDN provider (Cloudflare R2).
     try:
-        supabase.storage.from_(DOCUMENTS_BUCKET).upload(
-            path=path,
-            file=content,
-            file_options={"content-type": mimetype},
-        )
+        file_url, storage_path, provider = await upload_media(content, filename, mimetype)
     except Exception as exc:
-        err = str(exc)
-        if "already exists" not in err.lower():
-            if "not found" in err.lower():
-                raise HTTPException(500,
-                    f"Storage bucket '{DOCUMENTS_BUCKET}' not found. Create it under Supabase Storage.")
-            raise HTTPException(500, f"Upload failed: {err[:200]}")
+        raise HTTPException(500, f"Upload failed: {str(exc)[:200]}")
 
-    file_url = f"{SUPABASE_URL}/storage/v1/object/public/{DOCUMENTS_BUCKET}/{path}"
     try:
         row = supabase.table("user_documents").insert({
             "user_id": uid,
             "name": name or filename,
             "category": category or "other",
             "file_url": file_url,
-            "storage_path": path,
+            "storage_path": storage_path,
+            "provider": provider,
             "mime_type": mimetype,
             "file_size": len(content),
         }).execute()
@@ -126,16 +104,13 @@ async def my_documents(user: dict = Depends(get_current_user)):
 async def document_content(doc_id: str, user: dict = Depends(get_current_user)):
     uid = _user_id(user)
     res = (supabase.table("user_documents")
-           .select("id,file_url,storage_path").eq("id", doc_id).eq("user_id", uid).limit(1).execute())
+           .select("id,file_url").eq("id", doc_id).eq("user_id", uid).limit(1).execute())
     if not res.data:
         raise HTTPException(404, "Document not found")
     doc = res.data[0]
     file_url = doc.get("file_url") or ""
     if not file_url:
-        storage = doc.get("storage_path")
-        if not storage:
-            raise HTTPException(404, "File is not available")
-        file_url = f"{SUPABASE_URL}/storage/v1/object/public/{DOCUMENTS_BUCKET}/{storage.lstrip('/')}"
+        raise HTTPException(404, "File is not available")
     return RedirectResponse(file_url)
 
 
@@ -160,14 +135,10 @@ async def update_document(doc_id: str, body: DocumentPatchBody, user: dict = Dep
 async def delete_document(doc_id: str, user: dict = Depends(get_current_user)):
     uid = _user_id(user)
     res = (supabase.table("user_documents")
-           .select("id,storage_path").eq("id", doc_id).eq("user_id", uid).limit(1).execute())
+           .select("id,storage_path,provider").eq("id", doc_id).eq("user_id", uid).limit(1).execute())
     if not res.data:
         raise HTTPException(404, "Document not found")
     doc = res.data[0]
-    if doc.get("storage_path"):
-        try:
-            supabase.storage.from_(DOCUMENTS_BUCKET).remove([doc["storage_path"]])
-        except Exception as exc:
-            log.warning("document storage delete failed: %s", exc)
+    await delete_media(doc.get("provider") or "r2", doc.get("storage_path") or "")
     supabase.table("user_documents").delete().eq("id", doc_id).execute()
     return {"ok": True}
