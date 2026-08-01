@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useLocation } from '@/lib/router-compat'
 import { useEdit } from '../context/EditContext'
 import ThemePicker from './ThemePicker'
-import { getAuthToken } from '@/lib/api'
+import { canEdit } from '@/lib/api'
 
 const NAV_ITEMS = [
   { icon: '⬡', label: 'Projects',  desc: 'View my work',       href: '#projects', color: '#00ff88' },
@@ -47,17 +47,12 @@ export default function FloatingNav() {
   const location = useLocation()
   const editCtx  = useEdit()
 
-  // Check if user is admin (for Edit Site button only)
+  // Check if user can edit (admin/editor role or content.pages permission) —
+  // consistent with EditContext. Reads the cached effective role so it works
+  // even before the in-memory token is refilled after a page reload.
   const [isAdmin, setIsAdmin] = useState(false)
   useEffect(() => {
-    const check = () => {
-      const token = getAuthToken()
-      if (!token) { setIsAdmin(false); return }
-      try {
-        const p = JSON.parse(atob(token.split('.')[1]))
-        setIsAdmin(!!p.role && p.role !== 'user')
-      } catch { setIsAdmin(false) }
-    }
+    const check = () => setIsAdmin(canEdit())
     check()
     window.addEventListener('auth-change', check)
     window.addEventListener('storage', check)

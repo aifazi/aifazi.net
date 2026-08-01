@@ -58,7 +58,7 @@ export default function FiveMConnect() {
     try {
       const r = await api.post('/fivem/connect/token')
       if (!r.data?.token) { setError('Failed to generate connect session'); return }
-      const connectUrl = r.data?.connect_url || 'https://cfx.re/join/o9g397'
+      const connectUrl = r.data?.connect_url || 'fivem://connect/127.0.0.1:30120'
       const until = Date.now() + 30_000
       setCooldownUntil(until)
       localStorage.setItem('fivem_connect_cooldown_until', String(until))

@@ -213,7 +213,7 @@ def _email_approved(name: str, char: str, note: str | None) -> tuple[str, str]:
     <p style="color:#e6edf3;line-height:1.7">You can now join the server. Connect to <strong style="color:#00FF88">aifazi.net</strong> via FiveM and start your roleplay journey!</p>
     <div style="background:#0d1117;border:1px solid #00FF8830;border-radius:8px;padding:16px;margin-top:24px;text-align:center">
       <div style="font-size:11px;color:#8b949e;margin-bottom:8px;font-family:monospace;letter-spacing:2px">CONNECT NOW</div>
-      <div style="font-size:18px;font-weight:700;color:#00FF88;font-family:monospace">connect cfx.re/join/o9g397</div>
+      <div style="font-size:18px;font-weight:700;color:#00FF88;font-family:monospace">connect fivem://connect/127.0.0.1:30120</div>
     </div>
   </div>
   <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">
@@ -2781,7 +2781,7 @@ async def generate_connect_token(user: dict = Depends(get_current_user)):
         token=token,
         expires_in=_CONNECT_TOKEN_EXP,
         username=username,
-        connect_url=os.environ.get("FIVEM_CONNECT_URL", "https://cfx.re/join/o9g397"),
+        connect_url=os.environ.get("FIVEM_CONNECT_URL", "fivem://connect/127.0.0.1:30120"),
     )
 
 

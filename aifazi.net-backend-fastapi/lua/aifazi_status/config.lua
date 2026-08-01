@@ -26,7 +26,7 @@ Config.Secret = GetConvar("fivem_api_secret", "")
 --  Default is event/manual refresh only: startup, connect/drop, shutdown,
 --  txAdmin events, or the commands in server.lua.
 -- ─────────────────────────────────────────────────────────────
-Config.StatusInterval = 0      -- 0 = no 30s status loop
+Config.StatusInterval = 30000   -- push status every 30s so the website stays online
 Config.SyncInterval   = 0      -- 0 = no 30s pending-sync poll
 Config.WhitelistTimeout = 8000  -- join whitelist check timeout
 Config.StartupDelay   = 8000   -- wait before first push after start
