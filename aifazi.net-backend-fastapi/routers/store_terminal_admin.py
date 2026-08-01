@@ -66,6 +66,26 @@ def _risk_from_intent(pi: dict) -> dict:
     return {"risk_level": None, "risk_score": None}
 
 
+def _stripe_error(exc: Exception, action: str) -> HTTPException:
+    """Turn a Stripe exception into an actionable 400/502.
+
+    The most common failure is Terminal not being enabled on the Stripe
+    account, which Stripe reports as an InvalidRequestError / PermissionError
+    mentioning Terminal. Surface that clearly so the dashboard can tell staff
+    what to enable instead of a generic 502.
+    """
+    msg = getattr(exc, "user_message", None) or str(exc)
+    low = msg.lower()
+    if "terminal" in low and any(k in low for k in ("enabled", "not have", "permission", "not supported", "account")):
+        raise HTTPException(
+            400,
+            f"Stripe Terminal is not enabled for this account — enable it at "
+            f"https://dashboard.stripe.com/terminal (Settings → Terminal → Enable). "
+            f"Details: {msg}",
+        )
+    raise HTTPException(502, f"Stripe {action} failed: {msg}")
+
+
 # ── Terminal locations / readers (Stripe side) ──────────────────────────────
 @router.get("/terminal/locations")
 async def terminal_locations(_: dict = Depends(POS)):
@@ -74,7 +94,7 @@ async def terminal_locations(_: dict = Depends(POS)):
     try:
         return [loc.to_dict() for loc in _stripe().terminal.Location.list(limit=50)]
     except Exception as exc:
-        raise HTTPException(502, f"Stripe Terminal locations failed: {exc}")
+        raise _stripe_error(exc, "Terminal locations")
 
 
 class TerminalLocationBody(BaseModel):
@@ -90,7 +110,7 @@ async def create_terminal_location(body: TerminalLocationBody, _: dict = Depends
             address=body.address,
         ).to_dict()
     except Exception as exc:
-        raise HTTPException(502, f"Stripe Terminal location failed: {exc}")
+        raise _stripe_error(exc, "Terminal location create")
 
 
 @router.get("/terminal/readers")
@@ -103,7 +123,7 @@ async def terminal_readers(location: str | None = None, _: dict = Depends(POS)):
             kw["location"] = location
         return [r.to_dict() for r in _stripe().terminal.Reader.list(**kw)]
     except Exception as exc:
-        raise HTTPException(502, f"Stripe Terminal readers failed: {exc}")
+        raise _stripe_error(exc, "Terminal readers")
 
 
 class ReaderBody(BaseModel):
@@ -120,7 +140,7 @@ async def register_reader(body: ReaderBody, _: dict = Depends(POS)):
             kw["location"] = body.location
         return _stripe().terminal.Reader.create(**kw).to_dict()
     except Exception as exc:
-        raise HTTPException(502, f"Stripe Terminal reader registration failed: {exc}")
+        raise _stripe_error(exc, "Terminal reader registration")
 
 
 @router.post("/terminal/connection-token")
@@ -131,7 +151,7 @@ async def terminal_connection_token(_: dict = Depends(POS)):
         tok = _stripe().terminal.ConnectionToken.create().to_dict()
         return {"secret": tok.get("secret"), "object": tok.get("object")}
     except Exception as exc:
-        raise HTTPException(502, f"Stripe Terminal connection token failed: {exc}")
+        raise _stripe_error(exc, "Terminal connection token")
 
 
 # ── In-person orders ────────────────────────────────────────────────────────
@@ -317,7 +337,7 @@ async def create_pos_payment_intent(body: PosPaymentBody, _: dict = Depends(POS)
                 "amount_cents": amount, "currency": order.get("currency") or "usd",
                 "capture_method": body.capture_method}
     except Exception as exc:
-        raise HTTPException(502, f"Stripe PaymentIntent failed: {exc}")
+        raise _stripe_error(exc, "PaymentIntent")
 
 
 @router.get("/terminal/payment-intents/{order_id}")
@@ -332,7 +352,7 @@ async def get_pos_payment_intent(order_id: str, _: dict = Depends(POS)):
                 "client_secret": pi.get("client_secret"), "amount_cents": pi.get("amount"),
                 "radar": _risk_from_intent(pi)}
     except Exception as exc:
-        raise HTTPException(502, f"Stripe PaymentIntent retrieve failed: {exc}")
+        raise _stripe_error(exc, "PaymentIntent retrieve")
 
 
 @router.post("/terminal/capture/{order_id}")
@@ -349,12 +369,12 @@ async def capture_pos_order(order_id: str, _: dict = Depends(POS)):
     try:
         pi = _stripe().PaymentIntent.retrieve(pid).to_dict()
     except Exception as exc:
-        raise HTTPException(502, f"Stripe retrieve failed: {exc}")
+        raise _stripe_error(exc, "PaymentIntent retrieve")
     if pi.get("status") == "requires_capture":
         try:
             pi = _stripe().PaymentIntent.capture(pid).to_dict()
         except Exception as exc:
-            raise HTTPException(502, f"Stripe capture failed: {exc}")
+            raise _stripe_error(exc, "PaymentIntent capture")
     risk = _risk_from_intent(pi)
     if pi.get("status") in ("succeeded", "requires_capture"):
         await _mark_order_paid(order_id, pid, **risk)
@@ -424,3 +444,4 @@ async def pos_summary(_: dict = Depends(POS)):
         "elevated": sum(1 for r in rows if r.get("risk_level") == "elevated"),
         "highest": sum(1 for r in rows if r.get("risk_level") == "highest"),
     }
+

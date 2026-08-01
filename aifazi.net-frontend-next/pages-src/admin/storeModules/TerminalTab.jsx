@@ -27,16 +27,24 @@ export default function TerminalTab() {
   const [connToken, setConnToken] = useState(null)
   const [custName, setCustName] = useState('')
   const [loc, setLoc] = useState('')
+  const [terminalErr, setTerminalErr] = useState('')
 
   const load = useCallback(() => {
     setLoading(true)
+    let terr = ''
     Promise.all([
       api.get('/store/admin/terminal/payments?limit=60').then(r => setPayments(r.data || [])).catch(() => []),
       api.get('/store/admin/terminal/summary').then(r => setSummary(r.data || null)).catch(() => null),
-      api.get('/store/admin/terminal/readers').then(r => setReaders(r.data || [])).catch(() => []),
-      api.get('/store/admin/terminal/locations').then(r => setLocations(r.data || [])).catch(() => []),
+      api.get('/store/admin/terminal/readers').then(r => setReaders(r.data || [])).catch(e => {
+        const d = e?.response?.data?.detail || ''
+        if (e?.response?.status === 400 && d) terr = d
+      }),
+      api.get('/store/admin/terminal/locations').then(r => setLocations(r.data || [])).catch(e => {
+        const d = e?.response?.data?.detail || ''
+        if (e?.response?.status === 400 && d && !terr) terr = d
+      }),
       api.get('/store/admin/products?limit=200').then(r => setProducts(r.data || [])).catch(() => []),
-    ]).finally(() => setLoading(false))
+    ]).finally(() => { setTerminalErr(terr); setLoading(false) })
   }, [])
 
   useEffect(() => { load() }, [load])
@@ -76,17 +84,36 @@ export default function TerminalTab() {
   const createOrder = async () => {
     if (!lines.length) return toast.error('Add at least one item', { title: 'POS' })
     setPaying(true)
+    setOrder(null)
     try {
       const r = await api.post('/store/admin/terminal/orders', {
         items: lines.map(l => ({ product_id: l.product_id, variant_id: l.kind === 'variant' ? l.id : null, quantity: l.qty })),
         customer_name: custName, location_id: loc || null, notes: '',
       })
-      setOrder(r.data)
-      const pi = await api.post('/store/admin/terminal/payment-intents', { order_id: r.data.order_id, capture_method: 'manual' })
-      setPiInfo(pi.data)
-      const tok = await api.post('/store/admin/terminal/connection-token')
-      setConnToken(tok.data?.secret || '')
-      toast.success(`Ready to tap — ${money(r.data.total_cents)}`, { title: 'Terminal' })
+      const o = r.data
+      setOrder(o)
+      let pi = null
+      try {
+        const pres = await api.post('/store/admin/terminal/payment-intents', { order_id: o.order_id, capture_method: 'manual' })
+        pi = pres.data
+        setPiInfo(pi)
+      } catch (err) {
+        // Intent could not be created (e.g. Terminal not enabled) — void the
+        // draft order so nothing lingers, and surface the real Stripe reason.
+        await api.post(`/store/admin/terminal/void/${o.order_id}`).catch(() => {})
+        setOrder(null)
+        toast.error(err?.response?.data?.detail || 'Could not create a payment for this sale', { title: 'Terminal' })
+        return
+      }
+      let tok = ''
+      try {
+        const tres = await api.post('/store/admin/terminal/connection-token')
+        tok = tres.data?.secret || ''
+      } catch (err) {
+        toast.warning?.('Paid reader pairing may be limited — contact your Stripe admin.', { title: 'Terminal' })
+      }
+      setConnToken(tok)
+      toast.success(`Ready to tap — ${money(o.total_cents)}`, { title: 'Terminal' })
     } catch (e) {
       toast.error(e?.response?.data?.detail || 'Could not create POS sale', { title: 'POS' })
     } finally { setPaying(false) }
@@ -108,21 +135,24 @@ export default function TerminalTab() {
   }
 
   const pollStatus = useCallback(async () => {
-    if (!order) return
+    if (!order || !piInfo?.payment_intent_id) return
     try {
       const r = await api.get(`/store/admin/terminal/payment-intents/${order.order_id}`)
-      if (r.data?.status === 'succeeded') {
-        setPiInfo(prev => prev ? { ...prev, status: 'succeeded' } : prev)
-        toast.success('NFC card presented — ready to capture', { title: 'Terminal' })
+      const status = r.data?.status
+      if (status === 'succeeded' || status === 'requires_capture') {
+        setPiInfo(prev => prev ? { ...prev, status } : prev)
+        toast.success(status === 'succeeded' ? 'NFC card presented — ready to capture' : 'Payment authorized', { title: 'Terminal' })
       }
-    } catch (e) { /* noop */ }
-  }, [order, toast])
+    } catch (e) {
+      if (e?.response?.status !== 404) toast.error('Could not check terminal status', { title: 'Terminal' })
+    }
+  }, [order, piInfo, toast])
 
   useEffect(() => {
-    if (!order) return
+    if (!order || !piInfo?.payment_intent_id) return
     const t = setInterval(pollStatus, 2500)
     return () => clearInterval(t)
-  }, [order, pollStatus])
+  }, [order, piInfo, pollStatus])
 
   const voidOrder = async () => {
     if (!order) return
@@ -143,6 +173,16 @@ export default function TerminalTab() {
 
   return (
     <div>
+      {terminalErr && (
+        <div style={{ background: 'rgba(255,71,87,.07)', border: '1px solid rgba(255,71,87,.4)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <span style={{ fontSize: 18 }}>⚠️</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: R, marginBottom: 4 }}>STRIPE TERMINAL NOT READY</div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--text)', lineHeight: 1.6 }}>{terminalErr}</div>
+          </div>
+          <button onClick={load} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>↻ RETRY</button>
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10, marginBottom: 16 }}>
         {[
           { label: 'IN-PERSON SALES', value: money(totalSales), color: G },
