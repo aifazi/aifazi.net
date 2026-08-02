@@ -55,7 +55,7 @@ export default function ForumHome() {
           <p className="community-banner-text">
             Discuss networking, security, homelabs and everything in between with the community.
           </p>
-          <div style={{ marginTop: 26, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ marginTop: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {user ? (
               <NeonButton to="/forum/new" variant="primary" size="lg">+ New Thread</NeonButton>
             ) : (
@@ -78,7 +78,7 @@ export default function ForumHome() {
             <NeonButton variant="ghost" onClick={() => { setError(false); setLoading(true); window.location.reload() }}>RETRY</NeonButton>
           </Card>
         ) : (
-          <div className="forum-home-grid" style={{ display: 'grid', gridTemplateColumns: '280px minmax(0,1fr)', gap: 26, alignItems: 'start' }}>
+          <div className="forum-home-grid forum-frame" style={{ display: 'grid', gridTemplateColumns: '280px minmax(0,1fr)', gap: 26, alignItems: 'start' }}>
             {/* ── Left sidebar: categories ── */}
             <aside className="forum-home-sidebar" style={{ position: 'sticky', top: 96, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Stats */}

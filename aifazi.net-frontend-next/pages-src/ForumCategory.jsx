@@ -106,7 +106,7 @@ export default function ForumCategory() {
         )}
 
         {/* Body: sidebar + thread list */}
-        <div className="forum-cat-grid" style={{ display: 'grid', gridTemplateColumns: '280px minmax(0,1fr)', gap: 26, alignItems: 'start' }}>
+        <div className="forum-cat-grid forum-frame" style={{ display: 'grid', gridTemplateColumns: '280px minmax(0,1fr)', gap: 26, alignItems: 'start' }}>
           <aside className="forum-cat-sidebar" style={{ position: 'sticky', top: 96, display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* All categories */}
             {cats.length > 1 && (

@@ -134,7 +134,7 @@ export default function ForumThread() {
   }
 
   const handleReactReply = async (replyId, emoji) => {
-    if (!userId) return
+    if (!userId || !replyId) return
     try {
       const r = await api.post(`/forum/replies/${replyId}/react`, { emoji })
       setReplyReactions(prev => ({ ...prev, [replyId]: r.data.reactions }))
@@ -162,7 +162,7 @@ export default function ForumThread() {
   }
 
   const handleLikeReply = async (replyId) => {
-    if (!user) return
+    if (!user || !replyId) return
     const r = await api.post(`/forum/replies/${replyId}/like`)
     setReplies(rs => rs.map(rp => rp._id === replyId ? { ...rp, likes: r.data.likes, _liked: r.data.liked } : rp))
   }
