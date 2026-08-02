@@ -988,16 +988,28 @@ export default function Login() {
   const tabIndex = TABS.findIndex(t => t.key === tab)
   const formKey = twoFAChallenge ? '2fa' : tab
 
-  // ── Ambient particles (SSR-safe; only rendered client-side) ────────────────
+  // ── Ambient particles (SSR-safe) ─────────────────────────────────────────────
+  // Deterministic seeded PRNG so the server and client render identical HTML —
+  // Math.random() here caused React error #418 (hydration mismatch) and killed
+  // the OAuth button event handlers on the live site.
   const particles = useMemo(
-    () => (typeof window === 'undefined' ? [] : Array.from({ length: 22 }, () => ({
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      size: 1.5 + Math.random() * 3.5,
-      dur: 11 + Math.random() * 14,
-      delay: Math.random() * 8,
-      alpha: 0.15 + Math.random() * 0.35,
-    }))),
+    () => {
+      let seed = 1337
+      const rnd = () => {
+        seed |= 0; seed = (seed + 0x6D2B79F5) | 0
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+      }
+      return Array.from({ length: 22 }, () => ({
+        left: rnd() * 100,
+        top: rnd() * 100,
+        size: 1.5 + rnd() * 3.5,
+        dur: 11 + rnd() * 14,
+        delay: rnd() * 8,
+        alpha: 0.15 + rnd() * 0.35,
+      }))
+    },
     []
   )
 
