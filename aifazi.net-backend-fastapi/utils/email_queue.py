@@ -5,7 +5,7 @@ WHY THIS EXISTS (Phase 1 of email-reliability refactor):
 On Vercel serverless, FastAPI `BackgroundTasks` are unreliable — the Lambda
 freezes shortly after the HTTP response is shipped, killing anything still in
 flight. Across the codebase there were 15 `bg.add_task(send_email, ...)` call
-sites in routers/{auth,forum_auth,chat,contact,helpdesk,newsletter,stats}.py.
+sites in routers/{auth,chat,contact,helpdesk,newsletter,stats}.py.
 In production on Vercel, every single one of those sends was being dropped
 silently: verification emails, password resets, ticket confirmations, contact
 replies, newsletter broadcasts, admin user-message emails.

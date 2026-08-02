@@ -1,7 +1,7 @@
 ﻿'use client'
 /**
  * DiscordAuthCallback.jsx
- * Handles the redirect from /api/forum/auth/discord/callback
+ * Handles the redirect from /api/auth/discord/callback
  * Supports both query params (?token=...) and hash fragments (#token=...)
  * Hash fragments are preferred — they don't appear in server logs or Referer headers.
  */

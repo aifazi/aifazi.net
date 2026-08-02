@@ -16,6 +16,9 @@ const CLRS = {
   red:    '#ff4757',       yellow:'#ffd700',
   purple: '#a855f7',       orange:'#ff6b35',
 }
+// Discord OAuth lives on the unified /api/auth router; Steam/GitHub keep their
+// dedicated routers at /api/forum/auth/{steam,github}.
+const oauthApiBase = (provider) => (provider === 'discord' ? '/auth/discord' : `/forum/auth/${provider}`)
 const STAFF_PORTAL_ROLES = new Set(['admin', 'moderator', 'editor'])
 
 function canAccessAdminPortal(user) {
@@ -925,7 +928,7 @@ function SecurityTab({ user }) {
     setOauthLoading(`${provider}-connect`)
     setOauthStatus(null)
     try {
-      const r = await api.get(`/forum/auth/${provider}/connect-url?dest=${encodeURIComponent('/profile?tab=security')}`)
+      const r = await api.get(`${oauthApiBase(provider)}/connect-url?dest=${encodeURIComponent('/profile?tab=security')}`)
       window.location.href = r.data.url
     } catch (err) {
       setOauthStatus({ type: 'error', msg: err?.response?.data?.detail || `Could not start ${provider} connect.` })
@@ -945,7 +948,7 @@ function SecurityTab({ user }) {
     setOauthLoading(`${provider}-disconnect`)
     setOauthStatus(null)
     try {
-      const route = `/forum/auth/${provider}/disconnect`
+      const route = `${oauthApiBase(provider)}/disconnect`
       await api.delete(route)
       await refreshUser?.()
       setOauthStatus({ type: 'success', msg: `${label} disconnected.` })
@@ -1267,8 +1270,8 @@ function FiveMTab({ user }) {
     setActionStatus(null)
     try {
       const route = provider === 'steam'
-        ? '/forum/auth/steam/disconnect'
-        : '/forum/auth/discord/disconnect'
+        ? `${oauthApiBase('steam')}/disconnect`
+        : `${oauthApiBase('discord')}/disconnect`
       await api.delete(route)
       await refreshIdentities()
       setActionStatus({ type: 'success', msg: `${provider === 'steam' ? 'Steam' : 'Discord'} disconnected.` })
@@ -1284,7 +1287,7 @@ function FiveMTab({ user }) {
     setActionLoading('steam-connect')
     setActionStatus(null)
     try {
-      const r = await api.get(`/forum/auth/steam/connect-url?dest=${encodeURIComponent('/profile?tab=fivem')}`)
+      const r = await api.get(`${oauthApiBase('steam')}/connect-url?dest=${encodeURIComponent('/profile?tab=fivem')}`)
       window.location.href = r.data.url
     } catch (err) {
       setActionStatus({ type: 'error', msg: err?.response?.data?.detail || 'Could not start Steam connect.' })
@@ -1297,7 +1300,7 @@ function FiveMTab({ user }) {
     setActionLoading('discord-connect')
     setActionStatus(null)
     try {
-      const r = await api.get(`/forum/auth/discord/connect-url?dest=${encodeURIComponent('/profile?tab=fivem')}`)
+      const r = await api.get(`${oauthApiBase('discord')}/connect-url?dest=${encodeURIComponent('/profile?tab=fivem')}`)
       window.location.href = r.data.url
     } catch (err) {
       setActionStatus({ type: 'error', msg: err?.response?.data?.detail || 'Could not start Discord connect.' })

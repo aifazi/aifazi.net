@@ -108,18 +108,6 @@ _OPEN_EXACT: set[str] = {
     "/api/auth/steam/login",
     "/api/auth/steam/callback",
     "/api/auth/steam/connect-url",
-    "/api/forum/auth/login",
-    "/api/forum/auth/register",
-    "/api/forum/auth/forgot",
-    "/api/forum/auth/reset",
-    "/api/forum/auth/forgot-password",
-    "/api/forum/auth/discord/login",
-    "/api/forum/auth/discord/callback",
-    "/api/forum/auth/discord/connect-url",
-    "/api/forum/auth/discord/disconnect",
-    "/api/forum/auth/steam/login",
-    "/api/forum/auth/steam/callback",
-    "/api/forum/auth/steam/connect-url",
     "/sitemap.xml",
     "/robots.txt",
     "/api/fivem/status",
@@ -540,7 +528,6 @@ from routers import (
     discord_auth,
     steam_auth,
     github_auth,
-    forum_auth,
     db_console,
 )
 
@@ -551,7 +538,6 @@ app.include_router(contact.router,        prefix="/api/contact")
 app.include_router(content_aggregator.router, prefix="/api/content")  # /global first — avoids shadowing by content's /{key} catch-all
 app.include_router(content.router,        prefix="/api/content")
 app.include_router(notifications.router,  prefix="/api/forum/notifications")
-app.include_router(forum_auth.router,     prefix="/api/forum/auth")
 app.include_router(forum.router,          prefix="/api/forum")
 
 app.include_router(chat_ai.router,        prefix="/api/chat/ai")

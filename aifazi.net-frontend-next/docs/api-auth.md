@@ -170,9 +170,9 @@ const { user, loading, login, logout, refreshUser } = useForum()
 - `user` — the current forum user object (`null` if not logged in).
 - `login(token, userData)` — stores the token and sets user state.
 - `logout()` — clears all tokens and resets user state.
-- `refreshUser()` — re-fetches the user profile from `GET /api/forum/auth/me`.
+- `refreshUser()` — re-fetches the user profile from `GET /api/auth/me`.
 
-The context hydrates on mount by calling `GET /api/forum/auth/me` if a token is present. It re-hydrates on `auth-change` and `storage` window events (supports multiple tabs).
+The context hydrates on mount by calling `GET /api/auth/me` if a token is present. It re-hydrates on `auth-change` and `storage` window events (supports multiple tabs).
 
 ---
 

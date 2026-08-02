@@ -1,8 +1,49 @@
 ﻿'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import gsap from 'gsap'
 import api, { saveTokens, clearAuthTokens, getAuthToken } from '@/lib/api'
 import { authProviderLoginRoute, safeNextPath } from '@/lib/authRoutes'
+
+// Theme-reactive animation helpers — colors always come from var(--tokens).
+const reducedMotion = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+// Animated SVG checkmark — stroke uses var(--green); drawn in with GSAP.
+function AuthCheck({ size = 72 }) {
+  const circleRef = useRef(null)
+  const pathRef = useRef(null)
+
+  useEffect(() => {
+    const circle = circleRef.current
+    const path = pathRef.current
+    if (!circle || !path) return
+    if (reducedMotion()) {
+      gsap.set([circle, path], { strokeDashoffset: 0 })
+      return
+    }
+    const cLen = circle.getTotalLength()
+    const pLen = path.getTotalLength()
+    gsap.set([circle, path], {
+      strokeDasharray: (el) => (el === circle ? cLen : pLen),
+      strokeDashoffset: (el) => (el === circle ? cLen : pLen),
+    })
+    const tl = gsap.timeline()
+    tl.to(circle, { strokeDashoffset: 0, duration: 0.5, ease: 'power2.out' })
+      .to(path, { strokeDashoffset: 0, duration: 0.42, ease: 'power2.out' }, '-=0.12')
+    return () => tl.kill()
+  }, [])
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 72 72" fill="none" aria-hidden="true">
+      <circle ref={circleRef} cx="36" cy="36" r="30"
+        stroke="var(--green)" strokeWidth="3" strokeLinecap="round" />
+      <path ref={pathRef} d="M23 37l9 9 17-19"
+        stroke="var(--green)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
 
 // ── Shared styles ──────────────────────────────────────────────────────────────
 const inputStyle = {
@@ -327,9 +368,13 @@ function VerifyWaiting({ email, onSwitch }) {
 
   if (activated) return (
     <div className="auth-state" style={{ textAlign: 'center', padding: '8px 0' }}>
-      <div className="auth-state-ico" style={{ animation: 'authBounce 0.5s ease' }}>✅</div>
+      <AuthCheck />
       <SuccessBox msg="Account activated! You can now sign in." />
       <div className="auth-countdown">Redirecting in <span>{countdown}</span>s…</div>
+      {/* Progress bar toward auto-redirect */}
+      <div className="auth-progress" aria-hidden="true">
+        <div className="auth-progress-fill" style={{ width: `${Math.max(0, Math.min(100, ((3 - countdown) / 3) * 100))}%` }} />
+      </div>
       <button type="button" className="auth-ghost-btn" onClick={() => onSwitch('signin')}>
         SIGN IN NOW →
       </button>
@@ -576,13 +621,14 @@ function ForgotPassword({ onSwitch }) {
 }
 
 // ── Two-Factor Auth Step ───────────────────────────────────────────────────────
-function TwoFAStep({ challenge, onBack }) {
+function TwoFAStep({ challenge, onBack, shake }) {
   const router  = useRouter()
   const [code, setCode]           = useState('')
   const [error, setError]         = useState('')
   const [loading, setLoading]     = useState(false)
   const [expired, setExpired]     = useState(false)
   const [countdown, setCountdown] = useState(30)
+  const formRef = useRef(null)
 
   // Count down then auto-redirect when session expires
   useEffect(() => {
@@ -593,7 +639,11 @@ function TwoFAStep({ challenge, onBack }) {
   }, [expired, countdown, onBack])
 
   async function verify(trimmed) {
-    if (trimmed.length !== 6) { setError('Enter the 6-digit code from your authenticator app.'); return }
+    if (trimmed.length !== 6) {
+      setError('Enter the 6-digit code from your authenticator app.')
+      shake?.(formRef.current)
+      return
+    }
     setLoading(true); setError('')
     try {
       const verifyPath = challenge.verify_path || '/auth/2fa/verify'
@@ -609,6 +659,7 @@ function TwoFAStep({ challenge, onBack }) {
         router.push(challenge.next || (role === 'admin' || role === 'moderator' ? '/admin' : '/profile'))
       } else {
         setError('Verification failed — no token received.')
+        shake?.(formRef.current)
       }
     } catch (err) {
       if (err?.response?.status === 401) {
@@ -616,6 +667,7 @@ function TwoFAStep({ challenge, onBack }) {
         setError('')
       } else {
         setError(err?.response?.data?.detail || 'Invalid or expired code. Try again.')
+        shake?.(formRef.current)
       }
     } finally { setLoading(false) }
   }
@@ -626,7 +678,7 @@ function TwoFAStep({ challenge, onBack }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="auth-form" noValidate>
+    <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
       {/* Icon + title */}
       <div style={{ textAlign: 'center', paddingBottom: 4 }}>
         <div className="auth-state-ico" style={{ animation: 'authSpinSlow 6s linear infinite', display: 'inline-flex' }}>{expired ? '⏳' : '🔐'}</div>
@@ -644,7 +696,7 @@ function TwoFAStep({ challenge, onBack }) {
           <span style={{ flex: 1 }}>
             <strong style={{ letterSpacing: 1 }}>SESSION EXPIRED</strong><br />
             Your sign-in session timed out. Please sign in again.
-            <span style={{ color: '#fbbf24' }}> Redirecting in {countdown}s…</span>
+            <span style={{ color: 'var(--orange)' }}> Redirecting in {countdown}s…</span>
           </span>
         </div>
       )}
@@ -787,26 +839,81 @@ export default function Login() {
   const tabIndex = TABS.findIndex(t => t.key === tab)
   const formKey = twoFAChallenge ? '2fa' : tab
 
+  // ── GSAP: background blob drift ──────────────────────────────────────────────
+  const bgRef = useRef(null)
+  useEffect(() => {
+    if (reducedMotion() || !bgRef.current) return
+    const blobs = bgRef.current.querySelectorAll('.auth-blob')
+    if (!blobs.length) return
+    const tweens = Array.from(blobs).map((b, i) =>
+      gsap.to(b, {
+        x: i === 0 ? 70 : i === 1 ? -60 : 40,
+        y: i === 0 ? 50 : i === 1 ? -40 : -60,
+        scale: i === 0 ? 1.15 : i === 1 ? 1.1 : 1.2,
+        duration: i === 0 ? 16 : i === 1 ? 18 : 20,
+        ease: 'sine.inOut',
+        repeat: -1,
+        yoyo: true,
+      })
+    )
+    return () => tweens.forEach(t => t.kill())
+  }, [])
+
+  // ── GSAP: card + header entrance timeline ───────────────────────────────────
+  const cardRef = useRef(null)
+  useEffect(() => {
+    if (reducedMotion() || !cardRef.current) return
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+    tl.fromTo(cardRef.current,
+        { opacity: 0, y: 26, scale: 0.97 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.6 })
+      .fromTo(cardRef.current.querySelectorAll('.auth-brand, .auth-head, .auth-tabs'),
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.45, stagger: 0.09 }, '-=0.25')
+    return () => tl.kill()
+  }, [])
+
+  // ── GSAP: stagger form fields on tab/form change ────────────────────────────
+  const formRef = useRef(null)
+  useEffect(() => {
+    if (reducedMotion() || !formRef.current) return
+    const els = formRef.current.querySelectorAll(
+      '.auth-field-wrap, .auth-submit, .auth-oauth-row, .auth-switch-line, .auth-intro, .auth-state, .auth-2fa-title, .auth-2fa-sub'
+    )
+    if (!els.length) return
+    gsap.fromTo(els,
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: 0.5, stagger: 0.07, ease: 'power2.out' })
+  }, [formKey])
+
+  // ── GSAP: 2FA invalid-code shake ─────────────────────────────────────────────
+  const shake2FA = (el) => {
+    if (reducedMotion() || !el) return
+    gsap.fromTo(el,
+      { x: 0 },
+      { keyframes: [
+        { x: -10, duration: 0.07 }, { x: 10, duration: 0.07 },
+        { x: -8, duration: 0.06 }, { x: 8, duration: 0.06 },
+        { x: -4, duration: 0.05 }, { x: 0, duration: 0.05 },
+      ], ease: 'power2.out' })
+  }
+
   return (
     <>
       <style>{`
         /* ══ AUTH PAGE — MINIMAL ═══════════════════════════════ */
 
-        /* Animated gradient blobs */
+        /* Animated gradient blobs — position/motion driven by GSAP.
+           Colors are theme tokens only: green/cyan under the dark theme,
+           purple/pink under midnight, etc. */
         .auth-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
         .auth-blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .5; will-change: transform; }
         .auth-blob-1 { width: 480px; height: 480px; top: -140px; left: -120px;
-          background: radial-gradient(circle at 30% 30%, var(--green, #00ff88), transparent 70%);
-          animation: authBlobA 22s ease-in-out infinite alternate; }
+          background: radial-gradient(circle at 30% 30%, var(--green), transparent 70%); }
         .auth-blob-2 { width: 420px; height: 420px; bottom: -140px; right: -120px;
-          background: radial-gradient(circle at 70% 70%, var(--cyan, #00d4ff), transparent 70%);
-          animation: authBlobB 26s ease-in-out infinite alternate; }
+          background: radial-gradient(circle at 70% 70%, var(--cyan), transparent 70%); }
         .auth-blob-3 { width: 340px; height: 340px; top: 45%; left: 42%;
-          background: radial-gradient(circle at 50% 50%, #a78bfa, transparent 70%); opacity: .32;
-          animation: authBlobC 30s ease-in-out infinite alternate; }
-        @keyframes authBlobA { from { transform: translate(0,0) scale(1); } to { transform: translate(70px,50px) scale(1.15); } }
-        @keyframes authBlobB { from { transform: translate(0,0) scale(1); } to { transform: translate(-60px,-40px) scale(1.1); } }
-        @keyframes authBlobC { from { transform: translate(0,0) scale(1); } to { transform: translate(40px,-60px) scale(1.2); } }
+          background: radial-gradient(circle at 50% 50%, var(--purple), transparent 70%); opacity: .32; }
 
         .auth-page { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center;
           min-height: calc(100vh - 170px); padding: 44px 16px 40px; }
@@ -815,18 +922,16 @@ export default function Login() {
           width: 100%; max-width: 400px; padding: 34px 32px 28px; border-radius: 18px;
           background: color-mix(in srgb, var(--bg2) 82%, transparent);
           border: 1px solid var(--border);
-          box-shadow: 0 24px 60px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.02) inset;
+          box-shadow: var(--shadow-card), 0 0 0 1px color-mix(in srgb, var(--text) 3%, transparent) inset;
           backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-          animation: authCardIn .55s cubic-bezier(.16,1,.3,1) both;
         }
-        @keyframes authCardIn { from { opacity:0; transform: translateY(22px) scale(.98); } to { opacity:1; transform:none; } }
 
         /* Brand row */
         .auth-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
         .auth-brand-mark { width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
           background: linear-gradient(135deg, var(--green), var(--cyan));
-          color: #000; box-shadow: 0 6px 22px color-mix(in srgb, var(--green) 40%, transparent); }
+          color: var(--text); box-shadow: 0 6px 22px color-mix(in srgb, var(--green) 40%, transparent); }
         .auth-brand-text { display: flex; flex-direction: column; }
         .auth-brand-name { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--text); letter-spacing: -.2px; }
         .auth-brand-tag { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 2.5px; color: var(--muted); }
@@ -848,11 +953,10 @@ export default function Login() {
           font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 2px; text-transform: uppercase;
           color: var(--muted); transition: color .18s; border-radius: 9px; }
         .auth-tab:hover { color: var(--text); }
-        .auth-tab.is-active { color: #000; font-weight: 800; }
+        .auth-tab.is-active { color: var(--text); font-weight: 800; }
 
         /* Form */
-        .auth-form { display: flex; flex-direction: column; gap: 16px; animation: authFormIn .4s ease both; }
-        @keyframes authFormIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform:none; } }
+        .auth-form { display: flex; flex-direction: column; gap: 16px; }
 
         .auth-field-wrap { display: flex; flex-direction: column; }
         .auth-field { position: relative; }
@@ -865,22 +969,22 @@ export default function Login() {
         .auth-field:focus-within .auth-field-line { background: transparent; }
         .auth-field-status { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 6px; letter-spacing: 1px; display: block; }
         .auth-field-status-ok   { color: var(--green); }
-        .auth-field-status-bad  { color: #ff4757; }
-        .auth-field-status-warn { color: #ff9800; }
+        .auth-field-status-bad  { color: var(--red); }
+        .auth-field-status-warn { color: var(--orange); }
 
         /* Alerts */
         .auth-alert { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; border-radius: 10px;
           font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6; animation: authAlertIn .3s ease both; }
         @keyframes authAlertIn { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform:none; } }
         .auth-alert-ico { font-size: 12px; line-height: 1.5; flex-shrink: 0; }
-        .auth-alert-error { color:#ff4757; background: rgba(255,71,87,0.07); border:1px solid rgba(255,71,87,0.28); }
-        .auth-alert-ok     { color:var(--green); background: rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.22); }
-        .auth-alert-warn   { color:#fbbf24; background: rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.3); }
+        .auth-alert-error { color: var(--red); background: color-mix(in srgb, var(--red) 8%, transparent); border: 1px solid color-mix(in srgb, var(--red) 30%, transparent); }
+        .auth-alert-ok     { color: var(--green); background: color-mix(in srgb, var(--green) 7%, transparent); border: 1px solid color-mix(in srgb, var(--green) 25%, transparent); }
+        .auth-alert-warn   { color: var(--orange); background: color-mix(in srgb, var(--orange) 8%, transparent); border: 1px solid color-mix(in srgb, var(--orange) 32%, transparent); }
 
         /* Submit button */
         .auth-submit { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 10px;
           font-family: var(--font-display); font-size: 14px; font-weight: 700; letter-spacing: .2px;
-          padding: 14px; min-height: 50px; border: none; border-radius: 12px; cursor: pointer; color: #000;
+          padding: 14px; min-height: 50px; border: none; border-radius: 12px; cursor: pointer; color: var(--text);
           background: linear-gradient(120deg, var(--green), var(--cyan), var(--green));
           background-size: 220% 100%; transition: background-position .4s ease, transform .15s ease, box-shadow .25s ease;
           box-shadow: 0 4px 24px color-mix(in srgb, var(--green) 35%, transparent); }
@@ -898,14 +1002,14 @@ export default function Login() {
 
         .auth-oauth-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .auth-oauth { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 6px;
-          font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; font-weight: 700; color: #fff;
-          border-radius: 10px; border: 1px solid transparent; cursor: pointer;
+          font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; font-weight: 700; color: var(--text);
+          border-radius: 10px; border: 1px solid var(--border2); cursor: pointer;
           transition: transform .15s ease, filter .2s ease, box-shadow .25s ease; }
-        .auth-oauth:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+        .auth-oauth:hover { transform: translateY(-2px); filter: brightness(1.15); box-shadow: var(--shadow-sm); }
         .auth-oauth:active { transform: translateY(0) scale(.98); }
-        .auth-oauth-discord { background: #5865F2; }
-        .auth-oauth-steam   { background: #1b2838; border-color: #2a475e; color: #e5f1ff; }
-        .auth-oauth-github  { background: #24292f; border-color: #30363d; }
+        .auth-oauth-discord { background: var(--purple); }
+        .auth-oauth-steam   { background: color-mix(in srgb, var(--bg3) 90%, transparent); }
+        .auth-oauth-github  { background: var(--bg2); }
 
         /* Links + misc */
         .auth-link { background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; transition: opacity .15s; }
@@ -919,6 +1023,11 @@ export default function Login() {
         .auth-state-ico { font-size: 44px; line-height: 1; }
         .auth-countdown { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-bottom: 6px; }
         .auth-countdown span { color: var(--cyan); }
+        .auth-progress { width: 100%; height: 4px; border-radius: 99px; overflow: hidden;
+          background: color-mix(in srgb, var(--green) 15%, transparent); }
+        .auth-progress-fill { height: 100%; border-radius: 99px;
+          background: linear-gradient(90deg, var(--green), var(--cyan));
+          transition: width .4s linear; }
         .auth-waiting { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px;
           font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; }
         .auth-waiting-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan);
@@ -942,7 +1051,7 @@ export default function Login() {
 
         /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {
-          .auth-blob, .auth-card, .auth-form, .auth-submit, .auth-tab-indicator { animation: none !important; transition: none !important; }
+          .auth-blob, .auth-submit, .auth-tab-indicator { animation: none !important; transition: none !important; }
         }
 
         /* Responsive */
@@ -953,14 +1062,14 @@ export default function Login() {
       `}</style>
 
       {/* Animated background */}
-      <div className="auth-bg" aria-hidden="true">
+      <div className="auth-bg" aria-hidden="true" ref={bgRef}>
         <div className="auth-blob auth-blob-1" />
         <div className="auth-blob auth-blob-2" />
         <div className="auth-blob auth-blob-3" />
       </div>
 
       <div className="page-container auth-page">
-        <div className="auth-card">
+        <div className="auth-card" ref={cardRef}>
 
           {/* Brand */}
           <div className="auth-brand">
@@ -995,8 +1104,8 @@ export default function Login() {
           </div>
 
           {/* Form */}
-          <div key={formKey}>
-            {twoFAChallenge                && <TwoFAStep     challenge={twoFAChallenge} onBack={() => setTwoFAChallenge(null)} />}
+          <div key={formKey} ref={formRef}>
+            {twoFAChallenge                && <TwoFAStep     challenge={twoFAChallenge} onBack={() => setTwoFAChallenge(null)} shake={shake2FA} />}
             {!twoFAChallenge && tab === 'signin'   && <SignIn   onSwitch={switchTab} onTwoFA={c => setTwoFAChallenge(c)} />}
             {!twoFAChallenge && tab === 'register' && <SignUp   onSwitch={switchTab} />}
             {!twoFAChallenge && tab === 'forgot'   && <ForgotPassword onSwitch={switchTab} />}

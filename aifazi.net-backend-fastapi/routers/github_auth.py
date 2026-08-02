@@ -38,7 +38,7 @@ from jwt_compat import JWTError
 from database import supabase
 from utils.oauth_state import make_oauth_state, verify_oauth_state, _safe_relative_path
 
-from routers.forum_auth import (
+from routers.auth import (
     make_forum_token,
     make_forum_2fa_token,
     _record_user_activity,

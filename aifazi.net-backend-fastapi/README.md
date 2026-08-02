@@ -88,7 +88,6 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
 │   ├── blog.py             # Blog posts CRUD
 │   ├── portfolio.py        # Portfolio items CRUD
 │   ├── forum.py            # Forum threads & replies
-│   ├── forum_auth.py       # Forum user registration, login, password reset
 │   ├── notifications.py    # Forum notifications
 │   ├── chat.py             # Chat rooms & messages (Supabase Realtime)
 │   ├── chat_ai.py          # OpenAI chat (public widget + authenticated)
@@ -204,8 +203,7 @@ docker run -p 8000:8000 --env-file .env aifazi-backend
 | Endpoint | Limit |
 |---|---|
 | `POST /api/auth/login` | 5 / min |
-| `POST /api/forum/auth/login` | 5 / min |
-| `POST /api/forum/auth/register` | 10 / min |
+| `POST /api/auth/register` | 10 / min |
 | `POST /api/auth/2fa/verify` | 10 / min |
 | `POST /api/chat/ai/public` | 10 / min |
 | All other endpoints | 100 / min |
@@ -288,7 +286,7 @@ Posts support **scheduled publishing**: set `publish_at` to a future ISO datetim
 
 ### Forum Auth
 
-**Prefix:** `/api/forum/auth`
+**Prefix:** `/api/auth` (unified — staff, forum users, and admin share one router)
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
@@ -299,7 +297,9 @@ Posts support **scheduled publishing**: set `publish_at` to a future ISO datetim
 | `POST` | `/forgot-password` | None | Send password reset email |
 | `POST` | `/reset-password` | None | Reset password via token |
 | `GET` | `/me` | JWT | Current forum user profile |
-| `PUT` | `/me` | JWT | Update profile |
+| `PUT` | `/profile` | JWT | Update profile |
+
+Discord OAuth for forum login/connect is served at `/api/auth/discord/*`; Steam and GitHub keep their dedicated routers at `/api/forum/auth/steam/*` and `/api/forum/auth/github/*`.
 
 ---
 

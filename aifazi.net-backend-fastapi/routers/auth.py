@@ -674,8 +674,9 @@ async def login(body: LoginBody, request: Request, response: Response):
         raise HTTPException(403, "Email not verified")
 
     # C3 — enforce 2FA for forum users too. The TOTP check was previously only
-    # in the staff branch (and in the parallel forum_auth.py), so a user who
-    # enabled 2FA could still log in with password-only via this endpoint —
+    # in the staff branch (and historically in the parallel forum_auth.py, since
+    # retired and folded into this router), so a user who enabled 2FA could
+    # still log in with password-only via this endpoint —
     # the primary login path used by the web app.
     if user.get("totp_enabled") and user.get("totp_secret"):
         _auth_log(user["username"], success=True, ip=client_ip, user_agent=user_agent,
@@ -693,6 +694,7 @@ async def login(body: LoginBody, request: Request, response: Response):
     _auth_log(user["username"], success=True, ip=client_ip, user_agent=user_agent,
               role=user.get("role", ""), reason="login_success")
     _record_user_activity(user["id"], user["username"], "login", f"IP: {client_ip}", client_ip)
+    _upsert_forum_session(user["id"], user["username"], client_ip, user_agent)
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
     refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
     # H4 — persist the refresh token so /refresh can validate + rotate it.
