@@ -7,17 +7,17 @@ import { authProviderLoginRoute, safeNextPath } from '@/lib/authRoutes'
 // ── Shared styles ──────────────────────────────────────────────────────────────
 const inputStyle = {
   width: '100%',
-  background: 'var(--bg3)',
-  border: '1px solid var(--border)',
+  background: 'transparent',
+  border: 'none',
   color: 'var(--text)',
   fontFamily: 'var(--font-display)',
   fontSize: 15,
-  padding: '13px 16px',
+  padding: '13px 4px',
   outline: 'none',
   transition: 'border-color 0.2s, box-shadow 0.2s',
   boxSizing: 'border-box',
   minHeight: 50,
-  borderRadius: 2,
+  borderRadius: 0,
 }
 
 const labelStyle = {
@@ -55,38 +55,36 @@ function apiErrorText(err, fallback) {
 const ErrorBox = ({ msg }) => {
   const text = errorText(msg)
   return text ? (
-    <div style={{
-      fontFamily: 'var(--font-mono)', fontSize: 12,
-      color: 'var(--red,#ff4757)', padding: '10px 14px',
-      background: 'rgba(255,71,87,0.07)', border: '1px solid rgba(255,71,87,0.25)',
-      marginBottom: 4, lineHeight: 1.6, borderRadius: 2,
-    }}>{text}</div>
+    <div className="auth-alert auth-alert-error" role="alert">
+      <span className="auth-alert-ico">✕</span>
+      <span>{text}</span>
+    </div>
   ) : null
 }
 
 const SuccessBox = ({ msg }) => msg ? (
-  <div style={{
-    fontFamily: 'var(--font-mono)', fontSize: 12,
-    color: 'var(--green)', padding: '12px 14px',
-    background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.2)',
-    marginBottom: 4, lineHeight: 1.7, borderRadius: 2,
-  }}>{msg}</div>
+  <div className="auth-alert auth-alert-ok" role="status">
+    <span className="auth-alert-ico">✓</span>
+    <span>{msg}</span>
+  </div>
 ) : null
 
-const FieldWrap = ({ label, htmlFor, children }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+const FieldWrap = ({ label, htmlFor, children, hint }) => (
+  <div className="auth-field-wrap">
     <label style={labelStyle} htmlFor={htmlFor}>{label}</label>
-    {children}
+    <div className="auth-field">
+      {children}
+      <span className="auth-field-line" aria-hidden="true" />
+    </div>
+    {hint}
   </div>
 )
 
 const focusGreen = (e) => {
-  e.target.style.borderColor = 'var(--green)'
-  e.target.style.boxShadow = '0 0 0 2px rgba(0,255,136,0.08)'
+  e.target.style.color = 'var(--text)'
 }
 const blurGreen = (e) => {
-  e.target.style.borderColor = 'var(--border)'
-  e.target.style.boxShadow = 'none'
+  e.target.style.color = 'var(--text)'
 }
 
 const ADMIN_ROLES = ['admin', 'moderator', 'editor', 'chat']
@@ -114,6 +112,116 @@ function clearFailures(id) {
   sessionStorage.setItem(_LOCKOUT_KEY, JSON.stringify(all))
 }
 function backoffMs(count) { return _BACKOFF[Math.min(count, _BACKOFF.length - 1)] }
+
+// ── Animated backdrop: constellation particle field ────────────────────────────
+function ParticleField() {
+  const ref = useRef(null)
+  useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    let w = 0, h = 0, raf = 0, particles = [], dpr = 1
+
+    const resize = () => {
+      dpr = window.devicePixelRatio || 1
+      w = window.innerWidth; h = window.innerHeight
+      canvas.width = w * dpr; canvas.height = h * dpr
+      canvas.style.width = w + 'px'; canvas.style.height = h + 'px'
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      const count = Math.min(110, Math.floor((w * h) / 15000))
+      particles = Array.from({ length: count }, (_, i) => ({
+        idx: i, x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.45, vy: (Math.random() - 0.5) * 0.45,
+        r: Math.random() * 1.7 + 0.6,
+      }))
+    }
+    resize()
+
+    const tick = () => {
+      const cs = getComputedStyle(document.documentElement)
+      const green = cs.getPropertyValue('--green').trim() || '#00ff88'
+      const cyan  = cs.getPropertyValue('--cyan').trim()  || '#00d4ff'
+      const isLight = document.documentElement.getAttribute('data-theme-mode') === 'light'
+      const dim = isLight ? 0.16 : 0.42
+      ctx.clearRect(0, 0, w, h)
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const a = particles[i], b = particles[j]
+          const dx = a.x - b.x, dy = a.y - b.y
+          const d2 = dx * dx + dy * dy
+          if (d2 < 150 * 150) {
+            const alpha = (1 - Math.sqrt(d2) / 150) * dim * 0.9
+            ctx.strokeStyle = green; ctx.globalAlpha = alpha; ctx.lineWidth = 0.5
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke()
+          }
+        }
+      }
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy
+        if (p.x < 0 || p.x > w) p.vx *= -1
+        if (p.y < 0 || p.y > h) p.vy *= -1
+        ctx.fillStyle = p.idx % 2 ? cyan : green
+        ctx.globalAlpha = dim * 1.6
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill()
+      }
+      ctx.globalAlpha = 1
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+
+    const onVisibility = () => { cancelAnimationFrame(raf); if (!document.hidden) raf = requestAnimationFrame(tick) }
+    window.addEventListener('resize', resize)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', resize)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [])
+  return <canvas ref={ref} className="auth-canvas" aria-hidden="true" />
+}
+
+// ── Left visual panel: neural core + system readout ────────────────────────────
+const STATUS_LINES = [
+  { label: 'SESSION HANDSHAKE',  value: 'ESTABLISHED', ok: true  },
+  { label: 'ENCRYPTION LAYER',   value: 'AES-256-GCM', ok: true  },
+  { label: 'NODE MESH LATENCY',  value: '12ms',        ok: true  },
+  { label: 'IDENTITY TOKEN',     value: 'PENDING',     ok: false },
+]
+
+function NeuralCore() {
+  return (
+    <div className="auth-core" aria-hidden="true">
+      <div className="auth-core-ring auth-ring-1" />
+      <div className="auth-core-ring auth-ring-2" />
+      <div className="auth-core-ring auth-ring-3" />
+      <div className="auth-core-orbit auth-orbit-1"><span className="auth-orbit-dot" /></div>
+      <div className="auth-core-orbit auth-orbit-2"><span className="auth-orbit-dot" /></div>
+      <div className="auth-core-hub">
+        <div className="auth-hub-pulse" />
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="13.5" cy="6.5" r=".5" fill="var(--green)"/>
+          <circle cx="17.5" cy="10.5" r=".5" fill="var(--green)"/>
+          <circle cx="8.5" cy="7.5" r=".5" fill="var(--green)"/>
+          <circle cx="6.5" cy="12.5" r=".5" fill="var(--green)"/>
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+        </svg>
+      </div>
+      <div className="auth-core-hud">
+        {STATUS_LINES.map((s, i) => (
+          <div key={s.label} className="auth-hud-row" style={{ animationDelay: `${0.15 + i * 0.12}s` }}>
+            <span className="auth-hud-label">{s.label}</span>
+            <span className="auth-hud-val" data-ok={s.ok}>{s.value}</span>
+          </div>
+        ))}
+        <div className="auth-hud-blink">
+          <span className="auth-hud-blink-dot" /> AWAITING AUTHENTICATION
+        </div>
+      </div>
+      <div className="auth-core-note">SIGNAL.LOCK</div>
+    </div>
+  )
+}
 
 // ── Sign In ────────────────────────────────────────────────────────────────────
 // Supports both forum users (email) and admin/staff (username)
@@ -199,17 +307,14 @@ function SignIn({ onSwitch, onTwoFA }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }} noValidate>
+    <form onSubmit={handleSubmit} className="auth-form" noValidate>
       <ErrorBox msg={error} />
 
       {/* #3 — lockout countdown banner */}
       {countdown > 0 && (
-        <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 11, padding: '10px 14px',
-          background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.3)',
-          color: '#fbbf24', lineHeight: 1.6, borderRadius: 2,
-        }}>
-          ⏳ Too many failed attempts. Try again in <strong>{countdown}s</strong>.
+        <div className="auth-alert auth-alert-warn" role="alert">
+          <span className="auth-alert-ico">⏳</span>
+          <span>Too many failed attempts. Try again in <strong>{countdown}s</strong>.</span>
         </div>
       )}
 
@@ -229,7 +334,7 @@ function SignIn({ onSwitch, onTwoFA }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>Password</span>
           <button type="button" onClick={() => onSwitch('forgot')}
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1, padding: 0 }}>
+            className="auth-link auth-link-cyan">
             FORGOT?
           </button>
         </div>
@@ -245,87 +350,44 @@ function SignIn({ onSwitch, onTwoFA }) {
         />
       </FieldWrap>
 
-      <button type="submit" disabled={loading || countdown > 0} style={{
-        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
-        padding: '15px', background: (loading || countdown > 0) ? 'var(--bg3)' : 'var(--green)',
-        color: (loading || countdown > 0) ? 'var(--muted)' : '#000',
-        border: (loading || countdown > 0) ? '1px solid var(--border)' : 'none',
-        cursor: (loading || countdown > 0) ? 'not-allowed' : 'pointer',
-        opacity: (loading || countdown > 0) ? 0.7 : 1, width: '100%', minHeight: 50,
-        transition: 'all 0.2s', textTransform: 'uppercase', borderRadius: 2,
-      }}>
-        {loading ? 'SIGNING IN...' : countdown > 0 ? `WAIT ${countdown}s` : 'SIGN IN →'}
+      <button type="submit" className="auth-submit" disabled={loading || countdown > 0}>
+        <span className="auth-submit-shine" aria-hidden="true" />
+        {loading ? 'SIGNING IN...' : countdown > 0 ? `WAIT ${countdown}s` : 'SIGN IN'}
+        <span className="auth-submit-arrow" aria-hidden="true">→</span>
       </button>
 
       {/* ── Discord OAuth divider + button ─────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0' }}>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2 }}>OR</span>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+      <div className="auth-divider"><span>OR CONTINUE WITH</span></div>
+      <div className="auth-oauth-row">
+        <button type="button" className="auth-oauth auth-oauth-discord"
+          onClick={() => { window.location.href = authProviderLoginRoute('discord', nextPath || '/profile') }}
+          title="Sign in with Discord">
+          <svg width="18" height="18" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.44077 45.4204 0.52529C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.52529C25.5141 0.44359 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z" fill="currentColor"/>
+          </svg>
+          <span>DISCORD</span>
+        </button>
+        <button type="button" className="auth-oauth auth-oauth-steam"
+          onClick={() => { window.location.href = authProviderLoginRoute('steam', nextPath || '/profile') }}
+          title="Sign in with Steam">
+          <svg width="18" height="18" viewBox="0 0 233 233" fill="none">
+            <path fill="currentColor" d="M116.5 18C62.7 18 18.8 60.9 18 114.5l52.7 21.8a29.6 29.6 0 0 1 16.6-5c.6 0 1.2 0 1.8.1L112 99.8v-.5c0-21.8 17.7-39.5 39.5-39.5S191 77.5 191 99.3s-17.7 39.5-39.5 39.5l-31.6 23.1c0 .5.1 1 .1 1.5 0 16.4-13.3 29.7-29.7 29.7-14.4 0-26.4-10.3-29.2-23.9L4.4 148.6C14.7 195.8 56.5 231 106.5 231c2.6 0 5.2-.1 7.8-.2C175 227.4 223 176.5 223 115c0-53.7-43.8-97-106.5-97zm-26 152.2c-8.5 3.4-18.1-.7-21.4-9.2s.7-18.1 9.2-21.5l9.2-3.7a21.8 21.8 0 1 0 3 34.4zM151.5 127a27.7 27.7 0 1 1 0-55.4 27.7 27.7 0 0 1 0 55.4zm0-11.1a16.6 16.6 0 1 0 0-33.2 16.6 16.6 0 0 0 0 33.2z"/>
+          </svg>
+          <span>STEAM</span>
+        </button>
+        <button type="button" className="auth-oauth auth-oauth-github"
+          onClick={() => { window.location.href = authProviderLoginRoute('github', nextPath || '/profile') }}
+          title="Sign in with GitHub">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          <span>GITHUB</span>
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={() => { window.location.href = authProviderLoginRoute('discord', nextPath || '/profile') }}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
-          padding: '14px', background: '#5865F2', color: '#fff',
-          border: 'none', cursor: 'pointer', width: '100%', minHeight: 50,
-          transition: 'opacity 0.2s', textTransform: 'uppercase', borderRadius: 2,
-        }}
-        onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
-        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-      >
-        <svg width="20" height="20" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.44077 45.4204 0.52529C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.52529C25.5141 0.44359 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z" fill="white"/>
-        </svg>
-        CONTINUE WITH DISCORD
-      </button>
 
-      {/* ── Steam login button ──────────────────────────────────────── */}
-      <button
-        type="button"
-        onClick={() => { window.location.href = authProviderLoginRoute('steam', nextPath || '/profile') }}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
-          padding: '14px', background: '#1b2838', color: '#fff',
-          border: '1px solid #2a475e', cursor: 'pointer', width: '100%', minHeight: 50,
-          transition: 'opacity 0.2s', textTransform: 'uppercase', borderRadius: 2,
-        }}
-        onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-      >
-        <svg width="20" height="20" viewBox="0 0 233 233" fill="none">
-          <path fill="#00b4ff" d="M116.5 18C62.7 18 18.8 60.9 18 114.5l52.7 21.8a29.6 29.6 0 0 1 16.6-5c.6 0 1.2 0 1.8.1L112 99.8v-.5c0-21.8 17.7-39.5 39.5-39.5S191 77.5 191 99.3s-17.7 39.5-39.5 39.5l-31.6 23.1c0 .5.1 1 .1 1.5 0 16.4-13.3 29.7-29.7 29.7-14.4 0-26.4-10.3-29.2-23.9L4.4 148.6C14.7 195.8 56.5 231 106.5 231c2.6 0 5.2-.1 7.8-.2C175 227.4 223 176.5 223 115c0-53.7-43.8-97-106.5-97zm-26 152.2c-8.5 3.4-18.1-.7-21.4-9.2s.7-18.1 9.2-21.5l9.2-3.7a21.8 21.8 0 1 0 3 34.4zM151.5 127a27.7 27.7 0 1 1 0-55.4 27.7 27.7 0 0 1 0 55.4zm0-11.1a16.6 16.6 0 1 0 0-33.2 16.6 16.6 0 0 0 0 33.2z"/>
-        </svg>
-        SIGN IN WITH STEAM
-      </button>
-
-      {/* ── GitHub login button ─────────────────────────────────────── */}
-      <button
-        type="button"
-        onClick={() => { window.location.href = authProviderLoginRoute('github', nextPath || '/profile') }}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
-          padding: '14px', background: '#24292f', color: '#fff',
-          border: '1px solid #30363d', cursor: 'pointer', width: '100%', minHeight: 50,
-          transition: 'opacity 0.2s', textTransform: 'uppercase', borderRadius: 2,
-        }}
-        onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-      >
-        <svg width="20" height="20" viewBox="0 0 16 16" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-        </svg>
-        SIGN IN WITH GITHUB
-      </button>
-
-      <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', margin: 0 }}>
+      <p className="auth-switch-line">
         No account?{' '}
-        <button type="button" onClick={() => onSwitch('register')}
-          style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
+        <button type="button" onClick={() => onSwitch('register')} className="auth-link auth-link-green">
           Create one free
         </button>
       </p>
@@ -376,22 +438,11 @@ function VerifyWaiting({ email, onSwitch }) {
   }, [email, onSwitch])
 
   if (activated) return (
-    <div style={{ textAlign: 'center', padding: '8px 0' }}>
-      <div style={{ fontSize: 52, marginBottom: 16, animation: 'authBounce 0.5s ease' }}>✅</div>
-      <div style={{
-        fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--green)',
-        padding: '14px 18px', background: 'rgba(0,255,136,0.07)',
-        border: '1px solid rgba(0,255,136,0.3)', borderRadius: 4, marginBottom: 20, lineHeight: 1.7,
-      }}>
-        Account activated! You can now sign in.
-      </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16 }}>
-        Redirecting in <span style={{ color: 'var(--cyan)' }}>{countdown}</span>s…
-      </div>
-      <button type="button" onClick={() => onSwitch('signin')}
-        style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', background: 'none',
-          border: '1px solid rgba(0,255,136,0.35)', cursor: 'pointer', padding: '10px 24px',
-          letterSpacing: 2, borderRadius: 2 }}>
+    <div className="auth-state" style={{ textAlign: 'center', padding: '8px 0' }}>
+      <div className="auth-state-ico" style={{ animation: 'authBounce 0.5s ease' }}>✅</div>
+      <SuccessBox msg="Account activated! You can now sign in." />
+      <div className="auth-countdown">Redirecting in <span>{countdown}</span>s…</div>
+      <button type="button" className="auth-ghost-btn" onClick={() => onSwitch('signin')}>
         SIGN IN NOW →
       </button>
       <style>{`@keyframes authBounce{0%{transform:scale(0.4);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}`}</style>
@@ -399,27 +450,19 @@ function VerifyWaiting({ email, onSwitch }) {
   )
 
   return (
-    <div style={{ textAlign: 'center', padding: '8px 0' }}>
-      <div style={{ fontSize: 52, marginBottom: 16 }}>📬</div>
+    <div className="auth-state" style={{ textAlign: 'center', padding: '8px 0' }}>
+      <div className="auth-state-ico" style={{ animation: 'authFloatY 2.4s ease-in-out infinite' }}>📬</div>
       <SuccessBox msg={`Check ${email} for a verification link to activate your account.`} />
       {/* Live polling indicator */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        marginTop: 16, marginBottom: 4, fontFamily: 'var(--font-mono)', fontSize: 9,
-        color: 'var(--muted)', letterSpacing: 2 }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cyan)',
-          display: 'inline-block', animation: 'authPulse 1.5s ease-in-out infinite' }} />
+      <div className="auth-waiting">
+        <span className="auth-waiting-dot" />
         WAITING FOR VERIFICATION…
       </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', opacity: 0.6, marginBottom: 20 }}>
-        This page will update automatically once you click the link
-      </div>
-      <button type="button" onClick={() => onSwitch('signin')}
-        style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', background: 'none',
-          border: '1px solid rgba(0,255,136,0.35)', cursor: 'pointer', padding: '10px 24px',
-          letterSpacing: 2, borderRadius: 2 }}>
+      <div className="auth-waiting-note">This page will update automatically once you click the link</div>
+      <button type="button" className="auth-ghost-btn" onClick={() => onSwitch('signin')}>
         ← BACK TO SIGN IN
       </button>
-      <style>{`@keyframes authPulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}`}</style>
+      <style>{`@keyframes authFloatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}`}</style>
     </div>
   )
 }
@@ -499,27 +542,26 @@ function SignUp({ onSwitch }) {
   // Username status badge
   const UnStatus = () => {
     if (!form.username || form.username.length < 3) return null
-    if (unCheck === 'checking') return <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 5, letterSpacing: 1, display: 'block' }}>⏳ Checking…</span>
-    if (unCheck === 'available') return <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', marginTop: 5, letterSpacing: 1, display: 'block' }}>✓ Available</span>
+    if (unCheck === 'checking') return <span className="auth-field-status">⏳ Checking…</span>
+    if (unCheck === 'available') return <span className="auth-field-status auth-field-status-ok">✓ Available</span>
     if (unCheck === 'taken') return (
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff4757', marginTop: 5, letterSpacing: 1, display: 'block' }}>
-        ✗ Taken{unSuggest && <> — try <button type="button" onClick={() => set('username', unSuggest)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 10, padding: 0, textDecoration: 'underline' }}>{unSuggest}</button></>}
+      <span className="auth-field-status auth-field-status-bad">
+        ✗ Taken{unSuggest && <> — try <button type="button" onClick={() => set('username', unSuggest)} className="auth-link auth-link-cyan" style={{ fontSize: 10, textDecoration: 'underline' }}>{unSuggest}</button></>}
       </span>
     )
     return null
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }} noValidate>
+    <form onSubmit={handleSubmit} className="auth-form" noValidate>
       <ErrorBox msg={error} />
 
-      <FieldWrap label="Username" htmlFor="su-user">
+      <FieldWrap label="Username" htmlFor="su-user" hint={<UnStatus />}>
         <input id="su-user" type="text" placeholder="CoolUsername"
           value={form.username} onChange={e => set('username', e.target.value)}
           required minLength={3} maxLength={30} autoComplete="username"
-          style={{ ...inputStyle, borderColor: unCheck === 'taken' ? 'rgba(255,71,87,0.6)' : unCheck === 'available' ? 'rgba(0,255,136,0.5)' : 'var(--border)' }}
+          style={inputStyle}
           onFocus={focusGreen} onBlur={blurGreen} />
-        <UnStatus />
       </FieldWrap>
 
       <FieldWrap label="Email" htmlFor="su-email">
@@ -529,109 +571,63 @@ function SignUp({ onSwitch }) {
           style={inputStyle} onFocus={focusGreen} onBlur={blurGreen} />
       </FieldWrap>
 
-      <FieldWrap label="Password" htmlFor="su-pass">
+      <FieldWrap label="Password" htmlFor="su-pass" hint={
+        form.password.length > 0 && form.password.length < 8 && (
+          <span className="auth-field-status auth-field-status-warn">{8 - form.password.length} more character{8 - form.password.length !== 1 ? 's' : ''} needed</span>
+        )
+      }>
         <input id="su-pass" type="password" placeholder="Min 8 characters"
           value={form.password} onChange={e => set('password', e.target.value)}
           required minLength={8} autoComplete="new-password"
           style={inputStyle} onFocus={focusGreen} onBlur={blurGreen} />
-        {form.password.length > 0 && form.password.length < 8 && (
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff9800', marginTop: 5, letterSpacing: 1, display: 'block' }}>
-            {8 - form.password.length} more character{8 - form.password.length !== 1 ? 's' : ''} needed
-          </span>
-        )}
       </FieldWrap>
 
-      <FieldWrap label="Confirm Password" htmlFor="su-conf">
+      <FieldWrap label="Confirm Password" htmlFor="su-conf" hint={pwMatch && <span className="auth-field-status auth-field-status-bad">Passwords don't match</span>}>
         <input id="su-conf" type="password" placeholder="Repeat password"
           value={form.confirm} onChange={e => set('confirm', e.target.value)}
           required autoComplete="new-password"
-          style={{ ...inputStyle, borderColor: pwMatch ? 'rgba(255,71,87,0.6)' : 'var(--border)' }}
-          onFocus={e => { e.target.style.borderColor = pwMatch ? 'rgba(255,71,87,0.6)' : 'var(--green)'; e.target.style.boxShadow = '0 0 0 2px rgba(0,255,136,0.08)' }}
-          onBlur={e =>  { e.target.style.borderColor = pwMatch ? 'rgba(255,71,87,0.6)' : 'var(--border)'; e.target.style.boxShadow = 'none' }} />
-        {pwMatch && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff4757', marginTop: 5, letterSpacing: 1 }}>Passwords don't match</span>}
+          style={{ ...inputStyle }}
+          onFocus={focusGreen} onBlur={blurGreen} />
       </FieldWrap>
 
-      <button type="submit" disabled={!canSubmit} style={{
-        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
-        padding: '15px', background: !canSubmit ? 'var(--bg3)' : loading ? 'var(--bg3)' : 'var(--cyan)',
-        color: !canSubmit ? 'var(--muted)' : loading ? 'var(--muted)' : '#000',
-        border: !canSubmit ? '1px solid var(--border)' : loading ? '1px solid var(--border)' : 'none',
-        cursor: !canSubmit ? 'not-allowed' : loading ? 'not-allowed' : 'pointer',
-        opacity: !canSubmit ? 0.5 : loading ? 0.7 : 1, width: '100%', minHeight: 50,
-        transition: 'all 0.2s', textTransform: 'uppercase', borderRadius: 2,
-      }}>
-        {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT →'}
+      <button type="submit" className="auth-submit" disabled={!canSubmit}>
+        <span className="auth-submit-shine" aria-hidden="true" />
+        {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+        <span className="auth-submit-arrow" aria-hidden="true">→</span>
       </button>
 
       {/* ── Discord OAuth divider + button ─────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0' }}>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2 }}>OR</span>
-        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+      <div className="auth-divider"><span>OR CONTINUE WITH</span></div>
+      <div className="auth-oauth-row">
+        <button type="button" className="auth-oauth auth-oauth-discord"
+          onClick={() => { window.location.href = authProviderLoginRoute('discord', '/profile') }}
+          title="Sign up with Discord">
+          <svg width="18" height="18" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.44077 45.4204 0.52529C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.52529C25.5141 0.44359 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z" fill="currentColor"/>
+          </svg>
+          <span>DISCORD</span>
+        </button>
+        <button type="button" className="auth-oauth auth-oauth-steam"
+          onClick={() => { window.location.href = authProviderLoginRoute('steam', '/profile') }}
+          title="Sign up with Steam">
+          <svg width="18" height="18" viewBox="0 0 233 233" fill="none">
+            <path fill="currentColor" d="M116.5 18C62.7 18 18.8 60.9 18 114.5l52.7 21.8a29.6 29.6 0 0 1 16.6-5c.6 0 1.2 0 1.8.1L112 99.8v-.5c0-21.8 17.7-39.5 39.5-39.5S191 77.5 191 99.3s-17.7 39.5-39.5 39.5l-31.6 23.1c0 .5.1 1 .1 1.5 0 16.4-13.3 29.7-29.7 29.7-14.4 0-26.4-10.3-29.2-23.9L4.4 148.6C14.7 195.8 56.5 231 106.5 231c2.6 0 5.2-.1 7.8-.2C175 227.4 223 176.5 223 115c0-53.7-43.8-97-106.5-97zm-26 152.2c-8.5 3.4-18.1-.7-21.4-9.2s.7-18.1 9.2-21.5l9.2-3.7a21.8 21.8 0 1 0 3 34.4zM151.5 127a27.7 27.7 0 1 1 0-55.4 27.7 27.7 0 0 1 0 55.4zm0-11.1a16.6 16.6 0 1 0 0-33.2 16.6 16.6 0 0 0 0 33.2z"/>
+          </svg>
+          <span>STEAM</span>
+        </button>
+        <button type="button" className="auth-oauth auth-oauth-github"
+          onClick={() => { window.location.href = authProviderLoginRoute('github', '/profile') }}
+          title="Sign up with GitHub">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          <span>GITHUB</span>
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={() => { window.location.href = authProviderLoginRoute('discord', '/profile') }}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
-          padding: '14px', background: '#5865F2', color: '#fff',
-          border: 'none', cursor: 'pointer', width: '100%', minHeight: 50,
-          transition: 'opacity 0.2s', textTransform: 'uppercase', borderRadius: 2,
-        }}
-        onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
-        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-      >
-        <svg width="20" height="20" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.44077 45.4204 0.52529C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.52529C25.5141 0.44359 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z" fill="white"/>
-        </svg>
-        SIGN UP WITH DISCORD
-      </button>
 
-      {/* ── Steam sign-up button ─────────────────────────────── */}
-      <button
-        type="button"
-        onClick={() => { window.location.href = authProviderLoginRoute('steam', '/profile') }}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
-          padding: '14px', background: '#1b2838', color: '#fff',
-          border: '1px solid #2a475e', cursor: 'pointer', width: '100%', minHeight: 50,
-          transition: 'opacity 0.2s', textTransform: 'uppercase', borderRadius: 2,
-        }}
-        onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-      >
-        <svg width="20" height="20" viewBox="0 0 233 233" fill="none">
-          <path fill="#00b4ff" d="M116.5 18C62.7 18 18.8 60.9 18 114.5l52.7 21.8a29.6 29.6 0 0 1 16.6-5c.6 0 1.2 0 1.8.1L112 99.8v-.5c0-21.8 17.7-39.5 39.5-39.5S191 77.5 191 99.3s-17.7 39.5-39.5 39.5l-31.6 23.1c0 .5.1 1 .1 1.5 0 16.4-13.3 29.7-29.7 29.7-14.4 0-26.4-10.3-29.2-23.9L4.4 148.6C14.7 195.8 56.5 231 106.5 231c2.6 0 5.2-.1 7.8-.2C175 227.4 223 176.5 223 115c0-53.7-43.8-97-106.5-97zm-26 152.2c-8.5 3.4-18.1-.7-21.4-9.2s.7-18.1 9.2-21.5l9.2-3.7a21.8 21.8 0 1 0 3 34.4zM151.5 127a27.7 27.7 0 1 1 0-55.4 27.7 27.7 0 0 1 0 55.4zm0-11.1a16.6 16.6 0 1 0 0-33.2 16.6 16.6 0 0 0 0 33.2z"/>
-        </svg>
-        SIGN UP WITH STEAM
-      </button>
-
-      {/* ── GitHub sign-up button ─────────────────────────────── */}
-      <button
-        type="button"
-        onClick={() => { window.location.href = authProviderLoginRoute('github', '/profile') }}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
-          padding: '14px', background: '#24292f', color: '#fff',
-          border: '1px solid #30363d', cursor: 'pointer', width: '100%', minHeight: 50,
-          transition: 'opacity 0.2s', textTransform: 'uppercase', borderRadius: 2,
-        }}
-        onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-      >
-        <svg width="20" height="20" viewBox="0 0 16 16" fill="#fff" xmlns="http://www.w3.org/2000/svg">
-          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-        </svg>
-        SIGN UP WITH GITHUB
-      </button>
-
-      <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)', textAlign: 'center', margin: 0 }}>
+      <p className="auth-switch-line">
         Already have an account?{' '}
-        <button type="button" onClick={() => onSwitch('signin')}
-          style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--green)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
+        <button type="button" onClick={() => onSwitch('signin')} className="auth-link auth-link-green">
           Sign in
         </button>
       </p>
@@ -658,19 +654,18 @@ function ForgotPassword({ onSwitch }) {
   }
 
   if (sent) return (
-    <div style={{ textAlign: 'center', padding: '8px 0' }}>
-      <div style={{ fontSize: 52, marginBottom: 16 }}>📬</div>
+    <div className="auth-state" style={{ textAlign: 'center', padding: '8px 0' }}>
+      <div className="auth-state-ico" style={{ animation: 'authFloatY 2.4s ease-in-out infinite' }}>📬</div>
       <SuccessBox msg={`Reset link sent to ${email}. Check your inbox and spam folder. Link expires in 1 hour.`} />
-      <button type="button" onClick={() => onSwitch('signin')}
-        style={{ marginTop: 20, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', background: 'none', border: '1px solid rgba(0,255,136,0.35)', cursor: 'pointer', padding: '10px 24px', letterSpacing: 2, borderRadius: 2 }}>
+      <button type="button" className="auth-ghost-btn" style={{ marginTop: 20 }} onClick={() => onSwitch('signin')}>
         ← BACK TO SIGN IN
       </button>
     </div>
   )
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }} noValidate>
-      <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
+    <form onSubmit={handleSubmit} className="auth-form" noValidate>
+      <p className="auth-intro">
         Enter your email address and we'll send you a link to reset your password.
       </p>
       <ErrorBox msg={error} />
@@ -680,20 +675,13 @@ function ForgotPassword({ onSwitch }) {
           required autoComplete="email"
           style={inputStyle} onFocus={focusGreen} onBlur={blurGreen} />
       </FieldWrap>
-      <button type="submit" disabled={loading} style={{
-        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
-        padding: '15px', background: loading ? 'var(--bg3)' : 'var(--green)',
-        color: loading ? 'var(--muted)' : '#000',
-        border: loading ? '1px solid var(--border)' : 'none',
-        cursor: loading ? 'not-allowed' : 'pointer',
-        opacity: loading ? 0.7 : 1, width: '100%', minHeight: 50,
-        transition: 'all 0.2s', textTransform: 'uppercase', borderRadius: 2,
-      }}>
-        {loading ? 'SENDING...' : 'SEND RESET LINK →'}
+      <button type="submit" className="auth-submit" disabled={loading}>
+        <span className="auth-submit-shine" aria-hidden="true" />
+        {loading ? 'SENDING...' : 'SEND RESET LINK'}
+        <span className="auth-submit-arrow" aria-hidden="true">→</span>
       </button>
       <p style={{ textAlign: 'center', margin: 0 }}>
-        <button type="button" onClick={() => onSwitch('signin')}
-          style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+        <button type="button" onClick={() => onSwitch('signin')} className="auth-link auth-link-muted">
           ← Back to Sign In
         </button>
       </p>
@@ -752,14 +740,12 @@ function TwoFAStep({ challenge, onBack }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }} noValidate>
+    <form onSubmit={handleSubmit} className="auth-form" noValidate>
       {/* Icon + title */}
       <div style={{ textAlign: 'center', paddingBottom: 4 }}>
-        <div style={{ fontSize: 38, marginBottom: 10 }}>{expired ? '⏳' : '🔐'}</div>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-          Two-Factor Verification
-        </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7 }}>
+        <div className="auth-state-ico" style={{ animation: 'authSpinSlow 6s linear infinite', display: 'inline-flex' }}>{expired ? '⏳' : '🔐'}</div>
+        <div className="auth-2fa-title">Two-Factor Verification</div>
+        <div className="auth-2fa-sub">
           Signed in as <span style={{ color: 'var(--cyan)' }}>{challenge.username}</span>.<br />
           Enter the 6-digit code from your authenticator app.
         </div>
@@ -767,38 +753,13 @@ function TwoFAStep({ challenge, onBack }) {
 
       {/* Session expired banner */}
       {expired && (
-        <div style={{
-          background: 'rgba(251,191,36,0.08)',
-          border: '1px solid rgba(251,191,36,0.35)',
-          borderRadius: 4,
-          padding: '14px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          textAlign: 'center',
-        }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#fbbf24', letterSpacing: 1 }}>
-            ⚠ SESSION EXPIRED
-          </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7 }}>
+        <div className="auth-alert auth-alert-warn">
+          <span className="auth-alert-ico">⚠</span>
+          <span style={{ flex: 1 }}>
+            <strong style={{ letterSpacing: 1 }}>SESSION EXPIRED</strong><br />
             Your sign-in session timed out. Please sign in again.
-          </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#fbbf24' }}>
-            Redirecting in {countdown}s…
-          </div>
-          <button
-            type="button"
-            onClick={onBack}
-            style={{
-              marginTop: 4,
-              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700,
-              padding: '10px', background: 'rgba(251,191,36,0.12)',
-              color: '#fbbf24', border: '1px solid rgba(251,191,36,0.4)',
-              cursor: 'pointer', borderRadius: 2,
-            }}
-          >
-            ← BACK TO SIGN IN NOW
-          </button>
+            <span style={{ color: '#fbbf24' }}> Redirecting in {countdown}s…</span>
+          </span>
         </div>
       )}
 
@@ -822,21 +783,14 @@ function TwoFAStep({ challenge, onBack }) {
         />
       </FieldWrap>
 
-      <button type="submit" disabled={loading || expired} style={{
-        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
-        padding: '15px', background: (loading || expired) ? 'var(--bg3)' : 'var(--green)',
-        color: (loading || expired) ? 'var(--muted)' : '#000',
-        border: (loading || expired) ? '1px solid var(--border)' : 'none',
-        cursor: (loading || expired) ? 'not-allowed' : 'pointer',
-        opacity: (loading || expired) ? 0.7 : 1, width: '100%', minHeight: 50,
-        transition: 'all 0.2s', textTransform: 'uppercase', borderRadius: 2,
-      }}>
-        {loading ? 'VERIFYING...' : 'VERIFY CODE →'}
+      <button type="submit" className="auth-submit" disabled={loading || expired}>
+        <span className="auth-submit-shine" aria-hidden="true" />
+        {loading ? 'VERIFYING...' : 'VERIFY CODE'}
+        <span className="auth-submit-arrow" aria-hidden="true">→</span>
       </button>
 
       <p style={{ textAlign: 'center', margin: 0 }}>
-        <button type="button" onClick={onBack}
-          style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+        <button type="button" onClick={onBack} className="auth-link auth-link-muted">
           ← Back to Sign In
         </button>
       </p>
@@ -933,80 +887,290 @@ export default function Login() {
     }
   }
 
+  const tabIndex = TABS.findIndex(t => t.key === tab)
+  const formKey = twoFAChallenge ? '2fa' : tab
+
   return (
     <>
       <style>{`
-        .auth-input:focus {
-          border-color: var(--green) !important;
-          box-shadow: 0 0 0 3px rgba(0,255,136,0.08) !important;
+        /* ══ AUTH PAGE — NEURAL GATEWAY ═══════════════════════════ */
+        .auth-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+        .auth-page { display: flex; align-items: center; justify-content: center; padding-top: 96px; padding-bottom: 60px; }
+        .auth-stage {
+          position: relative; z-index: 1; width: 100%; max-width: 980px;
+          display: grid; grid-template-columns: 1.05fr 1fr; min-height: 560px;
+          border-radius: 18px; overflow: hidden;
+          border: 1px solid var(--border);
+          background: color-mix(in srgb, var(--bg2) 92%, transparent);
+          box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 60px var(--border2, rgba(0,212,255,0.06));
+          animation: authStageIn .6s cubic-bezier(0.16,1,0.3,1) both;
         }
-        .auth-tab-btn:hover { color: var(--text) !important; }
+        @keyframes authStageIn { from { opacity:0; transform: translateY(28px) scale(.985); } to { opacity:1; transform:none; } }
+
+        /* Corner brackets */
+        .auth-stage::before, .auth-stage::after,
+        .auth-visual::before, .auth-visual::after {
+          content:''; position:absolute; width:22px; height:22px; z-index:3; pointer-events:none;
+          border-color: var(--green); border-style:solid; border-width:0;
+          opacity:.85; filter: drop-shadow(0 0 6px var(--green));
+        }
+        .auth-stage::before { top:10px; left:10px; border-top-width:2px; border-left-width:2px; }
+        .auth-stage::after  { bottom:10px; right:10px; border-bottom-width:2px; border-right-width:2px; }
+        .auth-visual::before { bottom:10px; left:10px; border-bottom-width:2px; border-left-width:2px; opacity:.4; }
+        .auth-visual::after  { top:10px; right:10px; border-top-width:2px; border-right-width:2px; opacity:.4; }
+
+        /* Left visual panel */
+        .auth-visual {
+          position: relative; overflow: hidden; display: flex; flex-direction: column;
+          align-items: center; justify-content: center; gap: 22px;
+          background:
+            radial-gradient(ellipse at 20% 0%, var(--green) 0%, transparent 55%),
+            radial-gradient(ellipse at 90% 100%, var(--cyan) 0%, transparent 50%),
+            linear-gradient(180deg, color-mix(in srgb, var(--bg) 88%, transparent), var(--bg2));
+          border-right: 1px solid var(--border);
+        }
+        .auth-visual::after {
+          content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+          background-image:
+            linear-gradient(var(--grid-line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+          background-size: 44px 44px;
+          mask-image: radial-gradient(ellipse at center, rgba(0,0,0,.9), transparent 75%);
+          -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,.9), transparent 75%);
+        }
+        .auth-visual > * { position: relative; z-index: 2; }
+
+        /* Neural core */
+        .auth-core { position: relative; width: 230px; height: 230px; display:flex; align-items:center; justify-content:center; }
+        .auth-core-ring { position:absolute; border-radius:50%; border:1px solid var(--border); }
+        .auth-ring-1 { width:120px; height:120px; border-color: rgba(0,255,136,0.25); animation: authSpinSlow 14s linear infinite; border-top-color: var(--green); }
+        .auth-ring-2 { width:170px; height:170px; border-color: rgba(0,212,255,0.18); animation: authSpinRev 20s linear infinite; border-bottom-color: var(--cyan); }
+        .auth-ring-3 { width:220px; height:220px; border:1px dashed rgba(255,255,255,0.06); animation: authSpinSlow 34s linear infinite; }
+        @keyframes authSpinSlow { to { transform: rotate(360deg); } }
+        @keyframes authSpinRev  { to { transform: rotate(-360deg); } }
+
+        .auth-core-orbit { position:absolute; border-radius:50%; }
+        .auth-orbit-1 { width:170px; height:60px; animation: authTilt 6s ease-in-out infinite; }
+        .auth-orbit-2 { width:60px; height:170px; animation: authTilt 6s ease-in-out infinite reverse; }
+        @keyframes authTilt { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(180deg); } }
+        .auth-orbit-dot { position:absolute; top:50%; left:50%; width:7px; height:7px; border-radius:50%;
+          background: var(--green); box-shadow: 0 0 12px var(--green); }
+        .auth-orbit-1 .auth-orbit-dot { transform: translate(-50%,-50%); animation: authOrbitMove 6s linear infinite; }
+        .auth-orbit-2 .auth-orbit-dot { background: var(--cyan); box-shadow: 0 0 12px var(--cyan); animation: authOrbitMove 6s linear infinite reverse; }
+        @keyframes authOrbitMove { 0% { margin-top:-3px; margin-left:55px; } 50% { margin-top:3px; margin-left:-55px; } 100% { margin-top:-3px; margin-left:55px; } }
+
+        .auth-core-hub { position:relative; width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+          background: color-mix(in srgb, var(--bg3) 80%, transparent);
+          border:1px solid rgba(0,255,136,0.35); animation: authHubPulse 3s ease-in-out infinite; }
+        .auth-hub-pulse { position:absolute; inset:-8px; border-radius:50%; border:1px solid rgba(0,255,136,0.2); animation: authHubPulse 3s ease-in-out infinite; }
+        @keyframes authHubPulse { 0%,100% { box-shadow: 0 0 18px rgba(0,255,136,0.18); } 50% { box-shadow: 0 0 34px rgba(0,255,136,0.42); } }
+
+        /* HUD readout */
+        .auth-core-hud { position:absolute; top: calc(100% + 14px); left:50%; transform:translateX(-50%);
+          width: 260px; display:flex; flex-direction:column; gap:7px; }
+        .auth-hud-row { display:flex; align-items:center; justify-content:space-between; gap:10px;
+          font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 1.5px;
+          color: var(--muted); opacity:0; animation: authHudIn .4s ease forwards; }
+        .auth-hud-label { opacity:.7; }
+        .auth-hud-val { color: var(--green); }
+        .auth-hud-val[data-ok="false"] { color: #ffb020; }
+        .auth-hud-blink { display:flex; align-items:center; gap:6px; margin-top:4px;
+          font-family: var(--font-mono); font-size: 8px; letter-spacing: 2px; color: var(--green); }
+        .auth-hud-blink-dot { width:5px; height:5px; border-radius:50%; background:var(--green);
+          box-shadow:0 0 8px var(--green); animation: authBlink 1.2s steps(1) infinite; }
+        @keyframes authHudIn { to { opacity:1; } }
+        @keyframes authBlink { 0%,100% { opacity:1; } 50% { opacity:0.1; } }
+        .auth-core-note { position:absolute; bottom:-44px; font-family: var(--font-mono); font-size:8px;
+          letter-spacing:4px; color: var(--muted); opacity:.4; }
+
+        /* Right form panel */
+        .auth-panel { position:relative; padding: 30px clamp(24px, 4vw, 40px) 28px; display:flex; flex-direction:column; }
+
+        .auth-head { text-align:left; margin-bottom: 22px; }
+        .auth-pill { display:inline-flex; align-items:center; gap:8px; margin-bottom: 14px;
+          padding: 5px 14px; background: color-mix(in srgb, var(--green) 8%, transparent);
+          border:1px solid color-mix(in srgb, var(--green) 30%, transparent); border-radius: 999px; }
+        .auth-pill-dot { width:6px; height:6px; border-radius:50%; background:var(--green);
+          box-shadow:0 0 6px var(--green); animation: authBlink 1.6s ease-in-out infinite; }
+        .auth-pill span { font-family: var(--font-mono); font-size:9px; letter-spacing:3px; color:var(--green); }
+        .auth-title { font-family: var(--font-display); font-size: clamp(22px, 4.5vw, 30px); font-weight:800;
+          color: var(--text); margin:0 0 6px; letter-spacing:-0.5px; line-height:1.1; }
+        .auth-sub { font-family: var(--font-display); font-size:13.5px; color: var(--muted); margin:0; }
+
+        /* Tabs with sliding indicator */
+        .auth-tabs { position:relative; display:flex; border-bottom:1px solid var(--border); margin-bottom: 22px; }
+        .auth-tab-indicator { position:absolute; bottom:-1px; left:0; height:2px; width:33.333%;
+          background: linear-gradient(90deg, var(--green), var(--cyan));
+          box-shadow: 0 0 12px var(--green); transition: transform .34s cubic-bezier(0.16,1,0.3,1); }
+        .auth-tab { flex:1; padding: 12px 8px; background:transparent; border:none; cursor:pointer;
+          font-family: var(--font-mono); font-size:10px; letter-spacing:2px; text-transform:uppercase;
+          color: var(--muted); transition: color .18s, background .18s; position:relative; }
+        .auth-tab:hover { color: var(--text); }
+        .auth-tab.is-active { color: var(--green); }
+
+        /* Form */
+        .auth-form { display:flex; flex-direction:column; gap: 18px; animation: authFormIn .4s ease both; }
+        @keyframes authFormIn { from { opacity:0; transform: translateX(14px); } to { opacity:1; transform:none; } }
+
+        .auth-field-wrap { display:flex; flex-direction:column; }
+        .auth-field { position:relative; }
+        .auth-field input { background:transparent; border:none; }
+        .auth-field-line { position:absolute; left:0; right:0; bottom:0; height:1px;
+          background: var(--border); transition: all .25s ease; }
+        .auth-field-line::after { content:''; position:absolute; left:0; bottom:0; height:2px; width:100%;
+          background: linear-gradient(90deg, var(--green), var(--cyan));
+          transform: scaleX(0); transform-origin:left; transition: transform .3s cubic-bezier(0.16,1,0.3,1);
+          box-shadow: 0 0 10px var(--green); }
+        .auth-field:focus-within .auth-field-line::after { transform: scaleX(1); }
+        .auth-field:focus-within .auth-field-line { background: transparent; }
+        .auth-field-status { font-family: var(--font-mono); font-size:10px; color: var(--muted);
+          margin-top:6px; letter-spacing:1px; display:block; }
+        .auth-field-status-ok   { color: var(--green); }
+        .auth-field-status-bad  { color: #ff4757; }
+        .auth-field-status-warn { color: #ff9800; }
+
+        /* Alerts */
+        .auth-alert { display:flex; align-items:flex-start; gap:10px; padding: 11px 14px; border-radius:8px;
+          font-family: var(--font-mono); font-size:11.5px; line-height:1.65; animation: authAlertIn .3s ease both; }
+        @keyframes authAlertIn { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform:none; } }
+        .auth-alert-ico { font-size:12px; line-height:1.5; flex-shrink:0; }
+        .auth-alert-error { color:#ff4757; background: rgba(255,71,87,0.07); border:1px solid rgba(255,71,87,0.28); }
+        .auth-alert-ok     { color:var(--green); background: rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.22); }
+        .auth-alert-warn   { color:#fbbf24; background: rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.3); }
+
+        /* Submit button */
+        .auth-submit { position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; gap:10px;
+          font-family: var(--font-mono); font-size:11px; letter-spacing:3px; font-weight:700; text-transform:uppercase;
+          padding:15px; min-height:52px; border:none; border-radius:8px; cursor:pointer; color:#000;
+          background: linear-gradient(120deg, var(--green), var(--cyan), var(--green));
+          background-size: 220% 100%; transition: background-position .4s ease, transform .15s ease, box-shadow .25s ease;
+          box-shadow: 0 4px 24px color-mix(in srgb, var(--green) 35%, transparent); }
+        .auth-submit:hover:not(:disabled) { background-position: 100% 0; transform: translateY(-1px);
+          box-shadow: 0 8px 32px color-mix(in srgb, var(--green) 45%, transparent); }
+        .auth-submit:active:not(:disabled) { transform: translateY(0) scale(.99); }
+        .auth-submit:disabled { cursor:not-allowed; opacity:.45; background: var(--bg3); color: var(--muted); box-shadow:none; }
+        .auth-submit-shine { position:absolute; top:0; bottom:0; left:0; width:40%;
+          background: linear-gradient(105deg, transparent, rgba(255,255,255,0.55), transparent);
+          transform: translateX(-160%) skewX(-18deg); animation: authShine 3.2s ease-in-out infinite; pointer-events:none; }
+        @keyframes authShine { 0%,60% { transform: translateX(-160%) skewX(-18deg); } 90%,100% { transform: translateX(420%) skewX(-18deg); } }
+        .auth-submit-arrow { font-size:15px; transition: transform .2s ease; }
+        .auth-submit:hover:not(:disabled) .auth-submit-arrow { transform: translateX(4px); }
+
+        /* Divider + OAuth */
+        .auth-divider { display:flex; align-items:center; gap:12px; margin:2px 0; }
+        .auth-divider::before, .auth-divider::after { content:''; flex:1; height:1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
+        .auth-divider span { font-family: var(--font-mono); font-size:8px; letter-spacing:2px; color: var(--muted); white-space:nowrap; }
+
+        .auth-oauth-row { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; }
+        .auth-oauth { display:flex; align-items:center; justify-content:center; gap:8px; padding:12px 6px;
+          font-family: var(--font-mono); font-size:9px; letter-spacing:1.5px; font-weight:700; color:#fff;
+          border-radius:8px; border:1px solid transparent; cursor:pointer; transition: transform .15s ease, filter .2s ease, box-shadow .25s ease; }
+        .auth-oauth:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
+        .auth-oauth:active { transform: translateY(0) scale(.98); }
+        .auth-oauth-discord { background:#5865F2; }
+        .auth-oauth-steam   { background:#1b2838; border-color:#2a475e; color:#e5f1ff; }
+        .auth-oauth-github  { background:#24292f; border-color:#30363d; }
+
+        /* Links + misc */
+        .auth-link { background:none; border:none; cursor:pointer; padding:0; font-weight:600; transition: opacity .15s; }
+        .auth-link:hover { opacity:.75; }
+        .auth-link-green { font-family: var(--font-display); font-size:13px; color: var(--green); }
+        .auth-link-cyan  { font-family: var(--font-mono); font-size:9px; color: var(--cyan); letter-spacing:1px; }
+        .auth-link-muted { font-family: var(--font-display); font-size:13px; color: var(--muted); }
+        .auth-switch-line { font-family: var(--font-display); font-size:13px; color: var(--muted); text-align:center; margin:0; }
+
+        .auth-state { display:flex; flex-direction:column; gap:16px; }
+        .auth-state-ico { font-size:44px; line-height:1; }
+        .auth-countdown { font-family: var(--font-mono); font-size:10px; color: var(--muted); margin-bottom: 6px; }
+        .auth-countdown span { color: var(--cyan); }
+        .auth-waiting { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px;
+          font-family: var(--font-mono); font-size:9px; color: var(--muted); letter-spacing:2px; }
+        .auth-waiting-dot { width:6px; height:6px; border-radius:50%; background: var(--cyan);
+          display:inline-block; animation: authBlink 1.5s ease-in-out infinite; }
+        .auth-waiting-note { font-family: var(--font-mono); font-size:8px; color: var(--muted); opacity:.6; margin-bottom:14px; }
+        .auth-ghost-btn { font-family: var(--font-mono); font-size:10px; color: var(--green); background:none;
+          border:1px solid color-mix(in srgb, var(--green) 40%, transparent); cursor:pointer; padding:10px 24px;
+          letter-spacing:2px; border-radius:8px; transition: background .2s, transform .15s; align-self:center; }
+        .auth-ghost-btn:hover { background: color-mix(in srgb, var(--green) 10%, transparent); transform: translateY(-1px); }
+        .auth-intro { font-family: var(--font-display); font-size:14px; color: var(--muted); line-height:1.7; margin:0; }
+        .auth-2fa-title { font-family: var(--font-display); font-size:15px; font-weight:700; color: var(--text); margin:10px 0 6px; }
+        .auth-2fa-sub { font-family: var(--font-mono); font-size:10px; color: var(--muted); line-height:1.7; margin-bottom: 6px; }
+
+        /* Footer link */
+        .auth-foot { margin-top: 22px; text-align:center; }
+        .auth-foot a { font-family: var(--font-mono); font-size:9px; color: var(--muted); text-decoration:none;
+          letter-spacing:3px; opacity:.7; transition: opacity .2s, color .2s; }
+        .auth-foot a:hover { opacity:1; color: var(--green); }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .auth-canvas, .auth-core-ring, .auth-core-orbit, .auth-core-hub, .auth-hub-pulse,
+          .auth-submit-shine, .auth-pill-dot, .auth-hud-blink-dot { animation: none !important; }
+          .auth-stage { animation: none; }
+        }
+
+        /* Responsive */
+        @media (max-width: 860px) {
+          .auth-stage { grid-template-columns: 1fr; max-width: 460px; min-height: 0; }
+          .auth-visual { display:none; }
+          .auth-tabs { margin-bottom: 18px; }
+        }
         @media (max-width: 480px) {
-          .auth-card-inner { padding: 20px 16px !important; }
-          .auth-tab-btn { font-size: 9px !important; padding: 12px 4px !important; }
+          .auth-panel { padding: 22px 16px 20px; }
+          .auth-oauth-row { grid-template-columns: 1fr; }
         }
       `}</style>
 
-      <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-        <div style={{ width: '100%', maxWidth: 460 }}>
+      <ParticleField />
 
-          {/* Header */}
-          <div style={{ marginBottom: 28, textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 14,
-              padding: '4px 14px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: 20 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', boxShadow: '0 0 6px var(--green)' }} />
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--green)' }}>
-                {meta.tag}
-              </span>
-            </div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 7vw, 34px)', fontWeight: 800, color: 'var(--text)', margin: '0 0 8px', letterSpacing: -0.5, lineHeight: 1.1 }}>
-              {meta.title}
-            </h1>
-            <p style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--muted)', margin: 0, fontWeight: 400 }}>
-              {meta.sub}
-            </p>
+      <div className="page-container auth-page">
+        <div className="auth-stage">
+
+          {/* Left visual panel */}
+          <div className="auth-visual">
+            <NeuralCore />
           </div>
 
-          {/* Card */}
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', position: 'relative', boxSizing: 'border-box', borderRadius: 4, overflow: 'hidden' }}>
-            {/* Top gradient bar */}
-            <div style={{ height: 3, background: 'linear-gradient(90deg, var(--green), var(--cyan), var(--green))', backgroundSize: '200% 100%' }} />
+          {/* Right form panel */}
+          <div className="auth-panel">
+
+            {/* Header */}
+            <div className="auth-head">
+              <div className="auth-pill">
+                <span className="auth-pill-dot" />
+                <span>{meta.tag}</span>
+              </div>
+              <h1 className="auth-title">{meta.title}</h1>
+              <p className="auth-sub">{meta.sub}</p>
+            </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+            <div className="auth-tabs">
+              <div className="auth-tab-indicator" style={{ transform: `translateX(${Math.max(tabIndex, 0) * 300}%)` }} />
               {TABS.map(t => (
-                <button key={t.key} type="button" className="auth-tab-btn"
-                  onClick={() => switchTab(t.key)}
-                  style={{
-                    flex: 1, padding: '14px 8px',
-                    fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
-                    textTransform: 'uppercase', cursor: 'pointer', border: 'none',
-                    background: tab === t.key ? 'rgba(0,255,136,0.05)' : 'transparent',
-                    color: tab === t.key ? 'var(--green)' : 'var(--muted)',
-                    borderBottom: tab === t.key ? '2px solid var(--green)' : '2px solid transparent',
-                    transition: 'all 0.18s',
-                  }}>
+                <button key={t.key} type="button"
+                  className={`auth-tab${tab === t.key ? ' is-active' : ''}`}
+                  onClick={() => switchTab(t.key)}>
                   {t.label}
                 </button>
               ))}
             </div>
 
             {/* Form */}
-            <div className="auth-card-inner" style={{ padding: 'clamp(20px, 5vw, 32px)' }}>
+            <div key={formKey}>
               {twoFAChallenge                && <TwoFAStep     challenge={twoFAChallenge} onBack={() => setTwoFAChallenge(null)} />}
               {!twoFAChallenge && tab === 'signin'   && <SignIn   onSwitch={switchTab} onTwoFA={c => setTwoFAChallenge(c)} />}
               {!twoFAChallenge && tab === 'register' && <SignUp   onSwitch={switchTab} />}
               {!twoFAChallenge && tab === 'forgot'   && <ForgotPassword onSwitch={switchTab} />}
             </div>
-          </div>
 
-          {/* Footer */}
-          <div style={{ marginTop: 22, textAlign: 'center' }}>
-            <a href="/" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 3, opacity: 0.7 }}>
-              ← BACK TO HOME
-            </a>
-          </div>
+            {/* Footer */}
+            <div className="auth-foot">
+              <a href="/">← BACK TO HOME</a>
+            </div>
 
+          </div>
         </div>
       </div>
     </>
