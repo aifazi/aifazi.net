@@ -552,10 +552,29 @@ export default function Footer() {
   const isFiveM = location.pathname.startsWith('/fivem') || isFiveMHostState
 
   useEffect(() => {
-    getSiteSettings().then(s => { if (s.footerStyle) setFooterStyle(s.footerStyle) }).catch(() => {})
-    const onUpdate = (e) => { if (e.detail?.footerStyle) setFooterStyle(e.detail.footerStyle) }
+    const pkgOverride = () => {
+      try {
+        const raw = localStorage.getItem('user-package')
+        if (raw) {
+          const pkg = JSON.parse(raw)
+          if (pkg?.settings?.footerStyle) return pkg.settings.footerStyle
+        }
+      } catch {}
+      return null
+    }
+    getSiteSettings().then(s => { if (s.footerStyle) setFooterStyle(pkgOverride() || s.footerStyle) }).catch(() => {})
+    const onUpdate = (e) => {
+      if (e.detail?.footerStyle) setFooterStyle(pkgOverride() || e.detail.footerStyle)
+    }
+    const onUserPkg = (e) => {
+      if (e.detail?.settings?.footerStyle) setFooterStyle(e.detail.settings.footerStyle)
+    }
     window.addEventListener('site-settings-updated', onUpdate)
-    return () => window.removeEventListener('site-settings-updated', onUpdate)
+    window.addEventListener('user-package-updated', onUserPkg)
+    return () => {
+      window.removeEventListener('site-settings-updated', onUpdate)
+      window.removeEventListener('user-package-updated', onUserPkg)
+    }
   }, [])
 
   useEffect(() => {

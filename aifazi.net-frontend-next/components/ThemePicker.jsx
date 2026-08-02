@@ -4,6 +4,7 @@ import { useTheme } from '@/app/providers'
 import api from '@/lib/api'
 import { clearSiteSettingsCache } from '@/lib/siteSettings'
 import { HEADER_PRESETS, FOOTER_PRESETS, HeaderPreviewSVG, FooterPreviewSVG } from '../pages-src/admin/SiteSettings'
+import { THEME_PACKAGES } from '../core/framework-styles.js'
 import { notify } from '../core/notify.jsx'
 
 // ── All themes (one card per family — toggle switches dark↔light within family) ─
@@ -136,7 +137,25 @@ const THEMES = [
     bg: '#050d1a', bg2: '#08142a', bg3: '#0c1c38', primary: '#64ffda', secondary: '#ff6fd8',
     text: '#cce8ff', muted: '#5a8099', border: 'rgba(100,255,218,0.2)',
   },
+  // ── THEME PACKAGES ────────────────────────────────────────────────────────
+  {
+    id: 'pkg:holo-deck', name: 'Holo Deck', tag: 'STYLE', type: 'package', style: 'holo',
+    desc: 'Holographic command surface — layered cyan glow, corner dialogs, holo boot.',
+    bg: '#08121c', bg2: '#0c1a28', bg3: '#112236', primary: '#00e5ff', secondary: '#7b61ff',
+    text: '#d0e8ff', muted: '#5a7898', border: 'rgba(0,229,255,0.22)',
+    packageId: 'holo-deck',
+  },
+  {
+    id: 'pkg:phosphor-terminal', name: 'Phosphor CRT', tag: 'STYLE', type: 'package', style: 'crt',
+    desc: 'Green phosphor mainframe — CRT scanlines, matrix menus, blink-cursor boot.',
+    bg: '#020604', bg2: '#04100a', bg3: '#071a0e', primary: '#33ff33', secondary: '#ccff00',
+    text: '#c8ffc8', muted: '#2f7a3a', border: 'rgba(51,255,51,0.25)',
+    packageId: 'phosphor-terminal',
+  },
 ]
+
+// ── Package lookup (settings sourced from THEME_PACKAGES registry) ────────────
+const PACKAGE_LOOKUP = Object.fromEntries(THEME_PACKAGES.map(p => [p.id, p]))
 
 const CATEGORIES = [
   { id: 'overview',      icon: '⊞', label: 'OVERVIEW' },
@@ -164,13 +183,15 @@ function flags(t) {
     isWin95:    t.style === 'win95',
     isAurora:   t.style === 'aurora',
     isCyber:    t.style === 'cyber',
+    isHolo:     t.style === 'holo',
+    isCrt:      t.style === 'crt',
   }
 }
 
 function radius(t) {
   const f = flags(t)
-  if (f.isBrut || f.isTerm || f.isWin95) return '0px'
-  if (f.isGlass || f.isNeumorph || f.isPastel) return '14px'
+  if (f.isBrut || f.isTerm || f.isWin95 || f.isCrt) return '0px'
+  if (f.isGlass || f.isNeumorph || f.isPastel || f.isHolo) return '14px'
   if (f.isMacos) return '10px'
   if (f.isAurora) return '12px'
   return '6px'
@@ -229,6 +250,8 @@ function getCardStyle(t, override = {}) {
   if (f.isPastel)   { base.background = t.bg2; base.border = `1px solid rgba(192,132,252,0.3)`; base.boxShadow = '0 4px 20px rgba(192,132,252,0.1)' }
   if (f.isAurora)   { base.boxShadow = `0 4px 24px rgba(100,255,218,0.08)` }
   if (f.isTerm)     { base.background = '#0f0f0f'; base.border = `1px solid #33ff3333`; base.boxShadow = 'none' }
+  if (f.isCrt)      { base.background = '#020604'; base.border = `1px solid #33ff3333`; base.boxShadow = '0 0 0 1px #33ff3322' }
+  if (f.isHolo)     { base.background = 'rgba(8,18,32,0.72)'; base.border = `1px solid rgba(0,229,255,0.3)`; base.backdropFilter = 'blur(12px)'; base.WebkitBackdropFilter = 'blur(12px)'; base.boxShadow = '0 0 14px rgba(0,229,255,0.12)' }
   return base
 }
 
@@ -1006,7 +1029,7 @@ function ThemeCard({ t, isActive, isSelected, onSelect }) {
     ? t.secondary
     : 'rgba(255,255,255,0.07)'
 
-  const cardBg = f.isGlass ? 'rgba(10,18,32,0.5)' : t.bg
+  const cardBg = f.isGlass ? 'rgba(10,18,32,0.5)' : f.isHolo ? 'rgba(8,18,32,0.72)' : f.isCrt ? '#020604' : t.bg
   const cardShadow = isSelected
     ? `0 0 16px ${t.primary}55, 0 4px 24px rgba(0,0,0,0.5)`
     : f.isBrut || f.isWin95
@@ -1090,7 +1113,7 @@ function ThemeCard({ t, isActive, isSelected, onSelect }) {
 
 // ── Main ThemePicker Drawer ───────────────────────────────────────────────────
 export default function ThemePicker({ open, onClose }) {
-  const { theme, setTheme, siteConfig, refreshSiteConfig, isAdmin } = useTheme()
+  const { theme, setTheme, siteConfig, refreshSiteConfig, isAdmin, userPackage, applyUserPackage, clearUserPackage } = useTheme()
   const isThemeLocked = !!(siteConfig?.lockTheme && siteConfig?.globalTheme)
   const [mounted, setMounted] = useState(false)
   const [pending, setPending] = useState(null)
@@ -1169,23 +1192,41 @@ export default function ThemePicker({ open, onClose }) {
 
   if (!mounted) return null
 
-  const activeTheme  = THEMES.find(t => t.id === theme) || THEMES[0]
+  const activeTheme  = userPackage
+    ? (THEMES.find(t => t.type === 'package' && t.packageId === userPackage.id) || THEMES.find(t => t.id === theme) || THEMES[0])
+    : (THEMES.find(t => t.id === theme) || THEMES[0])
   const pendingTheme = THEMES.find(t => t.id === pending)
   const previewTheme = pendingTheme || activeTheme
 
   const colorThemes  = THEMES.filter(t => t.type === 'color')
   const designThemes = THEMES.filter(t => t.type === 'design')
+  const packageThemes = THEMES.filter(t => t.type === 'package')
 
   const filteredThemes = THEMES.filter(t => {
-    if (styleFilter === 'COLOR')  return t.type === 'color'
-    if (styleFilter === 'DESIGN') return t.type === 'design'
+    if (styleFilter === 'COLOR')   return t.type === 'color'
+    if (styleFilter === 'DESIGN')  return t.type === 'design'
+    if (styleFilter === 'PACKAGES') return t.type === 'package'
     if (filter === 'DARK')  return t.tag === 'DARK'
     if (filter === 'LIGHT') return t.tag === 'LIGHT'
     return true
   })
 
   const handleSelect = id => setPending(prev => prev === id ? null : id)
-  const handleApply  = () => { if (pending) { setTheme(pending); setPending(null) } }
+  const handleApply  = () => {
+    if (!pending) return
+    const item = THEMES.find(t => t.id === pending)
+    if (item?.type === 'package') {
+      const pkg = PACKAGE_LOOKUP[item.packageId]
+      if (pkg) {
+        applyUserPackage({ id: pkg.id, settings: pkg.settings })
+        notify.success(`${pkg.name} applied for this browser. Admin global settings are untouched.`, { title: 'Theme Package' })
+      }
+    } else {
+      if (userPackage) clearUserPackage()
+      setTheme(pending)
+    }
+    setPending(null)
+  }
   const handleCancel = () => setPending(null)
 
   return (
@@ -1244,7 +1285,7 @@ export default function ThemePicker({ open, onClose }) {
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: 'var(--green)' }}>THEME LIBRARY</span>
             </div>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)', margin: 0 }}>
-              {isThemeLocked ? '🔒 THEME LOCKED BY ADMIN' : `${THEMES.length} THEMES — SELECT THEN APPLY`}
+              {isThemeLocked ? '🔒 THEME LOCKED BY ADMIN' : `${THEMES.filter(t => t.type !== 'package').length} THEMES + ${packageThemes.length} PACKAGES — SELECT THEN APPLY`}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -1311,9 +1352,9 @@ export default function ThemePicker({ open, onClose }) {
           <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)',
               display: 'flex', alignItems: 'center', marginRight: 2 }}>TYPE:</div>
-            {['ALL', 'COLOR', 'DESIGN'].map(f => {
+            {['ALL', 'COLOR', 'DESIGN', 'PACKAGES'].map(f => {
               const active = styleFilter === f
-              const countMap = { ALL: THEMES.length, COLOR: colorThemes.length, DESIGN: designThemes.length }
+              const countMap = { ALL: THEMES.length, COLOR: colorThemes.length, DESIGN: designThemes.length, PACKAGES: packageThemes.length }
               return (
                 <button key={f} className={active ? '' : 'tp-filter-btn'}
                   onClick={() => { setStyleFilter(f); setFilter('ALL') }}
@@ -1329,8 +1370,8 @@ export default function ThemePicker({ open, onClose }) {
               )
             })}
           </div>
-          {/* Tag filter (hide in DESIGN mode since all designs span all tags) */}
-          {styleFilter !== 'DESIGN' && (
+          {/* Tag filter (hide in DESIGN / PACKAGES mode since those span all tags) */}
+          {styleFilter !== 'DESIGN' && styleFilter !== 'PACKAGES' && (
             <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)',
                 display: 'flex', alignItems: 'center', marginRight: 2 }}>TAG:</div>
@@ -1356,7 +1397,9 @@ export default function ThemePicker({ open, onClose }) {
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, alignContent: 'start' }}>
           {filteredThemes.map(t => (
             <ThemeCard key={t.id} t={t}
-              isActive={getThemeFamily(theme) === getThemeFamily(t.id)}
+              isActive={t.type === 'package'
+                ? userPackage?.id === t.packageId
+                : getThemeFamily(theme) === getThemeFamily(t.id)}
               isSelected={pending === t.id}
               onSelect={handleSelect}
             />
@@ -1476,7 +1519,7 @@ export default function ThemePicker({ open, onClose }) {
               <Section label="🎨 GLOBAL THEME" desc="Force a theme for all users visiting the site">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
                   <AdminThemeBtn id="" label="User's Choice" active={globalDraft.globalTheme === ''} onClick={() => setGlobalDraft(d => ({ ...d, globalTheme: '' }))} color="var(--muted)" />
-                  {THEMES.map(t => (
+                  {THEMES.filter(t => t.type !== 'package').map(t => (
                     <AdminThemeBtn key={t.id} id={t.id} label={t.name} active={globalDraft.globalTheme === t.id} onClick={() => setGlobalDraft(d => ({ ...d, globalTheme: t.id }))} color={t.primary} bg={t.bg2} />
                   ))}
                 </div>

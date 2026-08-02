@@ -18,6 +18,7 @@ import SiteBanner from '@/components/SiteBanner'
 import FunDragLayer from '@/components/FunDragLayer'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { getSiteSettings } from '@/lib/siteSettings'
+import { getUserPackage, setUserPackage } from '@/lib/userPackage'
 import { getSupabase } from '@/lib/supabase'
 import { MenuProvider } from '@/core/menu'
 import { NotifyProvider } from '@/core/notify'
@@ -38,9 +39,13 @@ export const ThemeContext = createContext<{
   refreshSiteConfig: () => Promise<void>
   isAdmin: boolean
   siteConfigReady: boolean
+  userPackage: { id: string; settings: Record<string, any> } | null
+  applyUserPackage: (pkg: { id: string; settings: Record<string, any> }) => void
+  clearUserPackage: () => void
 }>({
   theme: 'cyber-dark', setTheme: () => {}, toggleTheme: () => {},
   siteConfig: {}, refreshSiteConfig: async () => {}, isAdmin: false, siteConfigReady: false,
+  userPackage: null, applyUserPackage: () => {}, clearUserPackage: () => {},
 })
 
 export const useTheme = () => useContext(ThemeContext)
@@ -138,6 +143,25 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [userIsAdmin, setUserIsAdmin] = useState(false)
 
   const [theme, setThemeState] = useState(initTheme)
+
+  const [userPackage, setUserPackageState] = useState<{ id: string; settings: Record<string, any> } | null>(null)
+
+  // Restore the user's applied package (per-user override) from localStorage
+  useEffect(() => {
+    const pkg = getUserPackage()
+    if (pkg?.id && pkg.settings) setUserPackageState(pkg)
+  }, [])
+
+  // Cross-tab sync for the user package override
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== 'user-package') return
+      const pkg = getUserPackage()
+      setUserPackageState(pkg?.id && pkg.settings ? pkg : null)
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   // Restore browser-only state after hydration (prevents SSR mismatch)
   useEffect(() => {
@@ -243,6 +267,28 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Per-user theme package — applies the package's globalTheme + framework styles
+  // locally (localStorage) so non-admin users can adopt a preset without touching
+  // the site-wide admin settings.
+  const applyUserPackage = (pkg: { id: string; settings: Record<string, any> }) => {
+    if (!pkg?.id || !pkg?.settings) return
+    const s = pkg.settings
+    if (s.globalTheme && VALID_THEMES.includes(s.globalTheme) && !siteConfig.lockTheme) {
+      setTheme(s.globalTheme)
+    }
+    const stored = { id: pkg.id, settings: s }
+    setUserPackage(stored)
+    setUserPackageState(stored)
+    window.dispatchEvent(new CustomEvent('user-package-updated', { detail: { id: pkg.id, settings: s } }))
+  }
+
+  const clearUserPackage = () => {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem('user-package')
+    setUserPackageState(null)
+    window.dispatchEvent(new CustomEvent('user-package-updated', { detail: { id: '', settings: {} } }))
+  }
+
   useEffect(() => {
     if (theme === 'cyber-dark') document.documentElement.removeAttribute('data-theme')
     else document.documentElement.setAttribute('data-theme', theme)
@@ -252,41 +298,61 @@ export function Providers({ children }: { children: React.ReactNode }) {
     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme, mode: LIGHT_THEMES.includes(theme) ? 'light' : 'dark' } }))
   }, [theme])
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-animation', siteConfig.animationPreset || 'smooth')
-  }, [siteConfig.animationPreset])
+  // Effective framework config = site-wide admin settings, layered with the
+  // user's locally-applied package (per-user override wins for this browser).
+  const pkgSettings = userPackage?.settings || {}
+  const eff = {
+    ...siteConfig,
+    inputStyle:          pkgSettings.inputStyle          || siteConfig.inputStyle,
+    surfaceStyle:        pkgSettings.surfaceStyle        || siteConfig.surfaceStyle,
+    bgAnimation:         pkgSettings.bgAnimation         || siteConfig.bgAnimation,
+    gridPattern:         pkgSettings.gridPattern         || siteConfig.gridPattern,
+    backgroundPattern:   pkgSettings.backgroundPattern   || siteConfig.backgroundPattern,
+    animationPreset:     pkgSettings.animationPreset     || siteConfig.animationPreset,
+    loadingScreenStyle:  pkgSettings.loadingScreenStyle  || siteConfig.loadingScreenStyle,
+    menuStyle:           pkgSettings.menuStyle           || siteConfig.menuStyle,
+    notifyStyle:         pkgSettings.notifyStyle         || siteConfig.notifyStyle,
+    notifyPosition:      pkgSettings.notifyPosition      || siteConfig.notifyPosition,
+    dialogStyle:         pkgSettings.dialogStyle         || siteConfig.dialogStyle,
+    headerStyle:         pkgSettings.headerStyle         || siteConfig.headerStyle,
+    footerStyle:         pkgSettings.footerStyle         || siteConfig.footerStyle,
+  }
 
   useEffect(() => {
-    const inputStyle = siteConfig.inputStyle || ''
+    document.documentElement.setAttribute('data-animation', eff.animationPreset || 'smooth')
+  }, [eff.animationPreset])
+
+  useEffect(() => {
+    const inputStyle = eff.inputStyle || ''
     if (inputStyle) document.documentElement.setAttribute('data-input-style', inputStyle)
     else document.documentElement.removeAttribute('data-input-style')
-  }, [siteConfig.inputStyle])
+  }, [eff.inputStyle])
 
   useEffect(() => {
-    const surfaceStyle = siteConfig.surfaceStyle || ''
+    const surfaceStyle = eff.surfaceStyle || ''
     if (surfaceStyle) document.documentElement.setAttribute('data-surface-style', surfaceStyle)
     else document.documentElement.removeAttribute('data-surface-style')
-  }, [siteConfig.surfaceStyle])
+  }, [eff.surfaceStyle])
 
   // Apply background animation (body::before)
   useEffect(() => {
-    const anim = siteConfig.bgAnimation || 'none'
+    const anim = eff.bgAnimation || 'none'
     if (anim && anim !== 'none' && anim !== 'clean') {
       document.documentElement.setAttribute('data-bg-animation', anim)
     } else {
       document.documentElement.removeAttribute('data-bg-animation')
     }
-  }, [siteConfig.bgAnimation])
+  }, [eff.bgAnimation])
 
   // Apply grid overlay (body::after) — falls back to legacy backgroundPattern
   useEffect(() => {
-    const grid = siteConfig.gridPattern || siteConfig.backgroundPattern || 'grid'
+    const grid = eff.gridPattern || eff.backgroundPattern || 'grid'
     if (grid && grid !== 'none' && grid !== 'clean') {
       document.documentElement.setAttribute('data-bg-grid', grid)
     } else {
       document.documentElement.removeAttribute('data-bg-grid')
     }
-  }, [siteConfig.gridPattern, siteConfig.backgroundPattern])
+  }, [eff.gridPattern, eff.backgroundPattern])
 
   const refreshSiteConfig = useCallback(async () => {
     try {
@@ -466,16 +532,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, siteConfig, refreshSiteConfig, isAdmin: userIsAdmin, siteConfigReady }}>
-      <NotifyProvider notifyStyle={siteConfig.notifyStyle || 'cyber'} position={siteConfig.notifyPosition || 'bottom-right'}>
-      <DialogProvider dialogStyle={siteConfig.dialogStyle || 'cyber'}>
-      <MenuProvider menuStyle={siteConfig.menuStyle || 'cyber'}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, siteConfig, refreshSiteConfig, isAdmin: userIsAdmin, siteConfigReady, userPackage, applyUserPackage, clearUserPackage }}>
+      <NotifyProvider notifyStyle={eff.notifyStyle || 'cyber'} position={eff.notifyPosition || 'bottom-right'}>
+      <DialogProvider dialogStyle={eff.dialogStyle || 'cyber'}>
+      <MenuProvider menuStyle={eff.menuStyle || 'cyber'}>
       <EditProvider>
         <ErrorBoundary>
         <ForumProvider>
           {!showMaintenance && loading && (
             <Suspense fallback={null}>
-              <LoadingScreen onComplete={onLoadComplete} style={siteConfig.loadingScreenStyle} />
+              <LoadingScreen onComplete={onLoadComplete} style={eff.loadingScreenStyle} />
             </Suspense>
           )}
           {showMaintenance && (

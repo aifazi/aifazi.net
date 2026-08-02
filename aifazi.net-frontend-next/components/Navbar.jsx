@@ -179,12 +179,31 @@ export default function Navbar() {
     : '/login?tab=register'
   const profileRoute        = isFiveM ? fiveMProfileRoute : '/profile'
 
-  // Load header style from site settings
+  // Load header style from site settings (user package override wins for this browser)
   useEffect(() => {
-    getSiteSettings().then(s => { if (s.headerStyle) setHeaderStyle(s.headerStyle) }).catch(() => {})
-    const onUpdate = (e) => { if (e.detail?.headerStyle) setHeaderStyle(e.detail.headerStyle) }
+    const pkgOverride = () => {
+      try {
+        const raw = localStorage.getItem('user-package')
+        if (raw) {
+          const pkg = JSON.parse(raw)
+          if (pkg?.settings?.headerStyle) return pkg.settings.headerStyle
+        }
+      } catch {}
+      return null
+    }
+    getSiteSettings().then(s => { if (s.headerStyle) setHeaderStyle(pkgOverride() || s.headerStyle) }).catch(() => {})
+    const onUpdate = (e) => {
+      if (e.detail?.headerStyle) setHeaderStyle(pkgOverride() || e.detail.headerStyle)
+    }
+    const onUserPkg = (e) => {
+      if (e.detail?.settings?.headerStyle) setHeaderStyle(e.detail.settings.headerStyle)
+    }
     window.addEventListener('site-settings-updated', onUpdate)
-    return () => window.removeEventListener('site-settings-updated', onUpdate)
+    window.addEventListener('user-package-updated', onUserPkg)
+    return () => {
+      window.removeEventListener('site-settings-updated', onUpdate)
+      window.removeEventListener('user-package-updated', onUserPkg)
+    }
   }, [])
 
   useEffect(() => {
