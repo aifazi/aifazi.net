@@ -1,5 +1,5 @@
 ﻿'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import gsap from 'gsap'
 import api, { saveTokens, clearAuthTokens, getAuthToken } from '@/lib/api'
@@ -45,6 +45,80 @@ function AuthCheck({ size = 72 }) {
   )
 }
 
+// Password visibility toggle — positioned inside the field.
+function PassToggle({ show, onToggle }) {
+  return (
+    <button
+      type="button"
+      className="auth-eye"
+      onClick={onToggle}
+      aria-label={show ? 'Hide password' : 'Show password'}
+      aria-pressed={show}
+      title={show ? 'Hide password' : 'Show password'}
+    >
+      {show ? (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+          <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </svg>
+      ) : (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )}
+    </button>
+  )
+}
+
+// Live password-strength meter (5 segments) + rule checklist.
+function PasswordStrength({ password }) {
+  const checks = {
+    len:   password.length >= 8,
+    upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
+    num:   /\d/.test(password),
+    spec:  /[^A-Za-z0-9]/.test(password),
+  }
+  const score = Object.values(checks).filter(Boolean).length
+  const label = score <= 1 ? 'Weak' : score <= 3 ? 'Medium' : score === 4 ? 'Good' : 'Strong'
+  const cls = score <= 1 ? 'weak' : score <= 3 ? 'medium' : score === 4 ? 'good' : 'strong'
+  const active = password.length > 0
+
+  const items = [
+    { key: 'len',   label: '8+ characters' },
+    { key: 'upper', label: 'Uppercase' },
+    { key: 'lower', label: 'Lowercase' },
+    { key: 'num',   label: 'Number' },
+    { key: 'spec',  label: 'Special character' },
+  ]
+
+  return (
+    <div className="auth-strength">
+      <div className="auth-strength-bars" aria-hidden="true">
+        {[0, 1, 2, 3, 4].map(i => (
+          <span key={i} className={`auth-strength-bar ${active && i < score ? `is-on ${cls}` : ''}`} />
+        ))}
+      </div>
+      <span className={`auth-strength-label ${active ? `is-${cls}` : ''}`} aria-live="polite">
+        {active ? `${label} password` : 'Password strength'}
+      </span>
+      {active && (
+        <ul className="auth-checklist">
+          {items.map((it, i) => (
+            <li key={it.key} className={checks[it.key] ? 'is-pass' : 'is-pending'} style={{ transitionDelay: `${i * 30}ms` }}>
+              <span className="auth-checklist-ico" aria-hidden="true">{checks[it.key] ? '✓' : '•'}</span>
+              {it.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 // ── Shared styles ──────────────────────────────────────────────────────────────
 const inputStyle = {
   width: '100%',
@@ -53,10 +127,10 @@ const inputStyle = {
   color: 'var(--text)',
   fontFamily: 'var(--font-display)',
   fontSize: 15,
-  padding: '0 4px',
+  padding: '0 44px 0 16px',
   outline: 'none',
   boxSizing: 'border-box',
-  minHeight: 46,
+  minHeight: 52,
   borderRadius: 0,
 }
 
@@ -109,10 +183,10 @@ const SuccessBox = ({ msg }) => msg ? (
   </div>
 ) : null
 
-const FieldWrap = ({ label, htmlFor, children, hint }) => (
+const FieldWrap = ({ label, htmlFor, children, hint, noPad }) => (
   <div className="auth-field-wrap">
     <label style={labelStyle} htmlFor={htmlFor}>{label}</label>
-    <div className="auth-field">
+    <div className={`auth-field${noPad ? ' no-pad' : ''}`}>
       {children}
       <span className="auth-field-line" aria-hidden="true" />
     </div>
@@ -155,7 +229,7 @@ function backoffMs(count) { return _BACKOFF[Math.min(count, _BACKOFF.length - 1)
 
 // ── Sign In ────────────────────────────────────────────────────────────────────
 // Supports both forum users (email) and admin/staff (username)
-function SignIn({ onSwitch, onTwoFA }) {
+function SignIn({ onSwitch, onTwoFA, shake }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = safeNextPath(searchParams?.get('next'))
@@ -165,8 +239,10 @@ function SignIn({ onSwitch, onTwoFA }) {
   }, [])
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword]     = useState('')
+  const [showPass, setShowPass]     = useState(false)
   const [error, setError]           = useState('')
   const [loading, setLoading]       = useState(false)
+  const formRef = useRef(null)
   // #3 — rate limiting
   const [lockoutUntil, setLockoutUntil] = useState(0)
   const [countdown, setCountdown]       = useState(0)
@@ -196,7 +272,7 @@ function SignIn({ onSwitch, onTwoFA }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!identifier.trim() || !password) { setError('Please enter your email/username and password.'); return }
+    if (!identifier.trim() || !password) { setError('Please enter your email/username and password.'); shake?.(formRef.current); return }
     if (Date.now() < lockoutUntil) return
     setLoading(true); setError('')
 
@@ -220,6 +296,7 @@ function SignIn({ onSwitch, onTwoFA }) {
         router.push(nextPath || (role === 'chat' ? '/chat' : ADMIN_ROLES.includes(role) ? '/admin' : '/profile'))
       } else {
         setError('Login failed — no token received.')
+        shake?.(formRef.current)
       }
     } catch (err) {
       const detail = err?.response?.data?.detail
@@ -228,6 +305,7 @@ function SignIn({ onSwitch, onTwoFA }) {
       } else {
         setError(detail || 'Invalid credentials. Please try again.')
       }
+      shake?.(formRef.current)
       const fails = recordFailure(identifier)
       const wait  = backoffMs(fails)
       if (wait > 0) { setLockoutUntil(Date.now() + wait) }
@@ -237,7 +315,7 @@ function SignIn({ onSwitch, onTwoFA }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="auth-form" noValidate>
+    <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
       <ErrorBox msg={error} />
 
       {/* #3 — lockout countdown banner */}
@@ -270,19 +348,22 @@ function SignIn({ onSwitch, onTwoFA }) {
         </div>
       } htmlFor="si-pass">
         <input
-          id="si-pass" type="password"
+          id="si-pass" type={showPass ? 'text' : 'password'}
           placeholder="••••••••"
           value={password}
           onChange={e => setPassword(e.target.value)}
-          required autoComplete="current-password"
-          style={inputStyle}
+          required autoComplete={showPass ? 'off' : 'current-password'}
+          style={{ ...inputStyle, paddingRight: 44 }}
           onFocus={focusGreen} onBlur={blurGreen}
         />
+        <PassToggle show={showPass} onToggle={() => setShowPass(s => !s)} />
       </FieldWrap>
 
       <button type="submit" className="auth-submit" disabled={loading || countdown > 0}>
-        {loading ? 'SIGNING IN...' : countdown > 0 ? `WAIT ${countdown}s` : 'Sign in'}
-        <span className="auth-submit-arrow" aria-hidden="true">→</span>
+        {loading ? (
+          <span className="auth-spinner" aria-hidden="true" />
+        ) : countdown > 0 ? `WAIT ${countdown}s` : 'Sign in'}
+        {!loading && countdown <= 0 && <span className="auth-submit-arrow" aria-hidden="true">→</span>}
       </button>
 
       {/* ── Discord OAuth divider + button ─────────────────────────────── */}
@@ -368,6 +449,9 @@ function VerifyWaiting({ email, onSwitch }) {
 
   if (activated) return (
     <div className="auth-state" style={{ textAlign: 'center', padding: '8px 0' }}>
+      <div className="auth-burst" aria-hidden="true">
+        <span /><span /><span /><span /><span /><span /><span /><span />
+      </div>
       <AuthCheck />
       <SuccessBox msg="Account activated! You can now sign in." />
       <div className="auth-countdown">Redirecting in <span>{countdown}</span>s…</div>
@@ -401,11 +485,14 @@ function VerifyWaiting({ email, onSwitch }) {
 }
 
 // ── Sign Up ────────────────────────────────────────────────────────────────────
-function SignUp({ onSwitch }) {
+function SignUp({ onSwitch, shake }) {
   const [form, setForm]     = useState({ username: '', email: '', password: '', confirm: '' })
+  const [showPass, setShowPass]     = useState(false)
+  const [showConf, setShowConf]     = useState(false)
   const [error, setError]   = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+  const formRef = useRef(null)
 
   // Username availability check
   const [unCheck,   setUnCheck]   = useState('idle') // 'idle'|'checking'|'available'|'taken'
@@ -453,10 +540,10 @@ function SignUp({ onSwitch }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!form.username.trim()) { setError('Username is required'); return }
-    if (!form.email.trim())    { setError('Email is required');    return }
-    if (form.password.length < 8) { setError('Password must be at least 8 characters'); return }
-    if (form.password !== form.confirm) { setError('Passwords do not match'); return }
+    if (!form.username.trim()) { setError('Username is required'); shake?.(formRef.current); return }
+    if (!form.email.trim())    { setError('Email is required');    shake?.(formRef.current); return }
+    if (form.password.length < 8) { setError('Password must be at least 8 characters'); shake?.(formRef.current); return }
+    if (form.password !== form.confirm) { setError('Passwords do not match'); shake?.(formRef.current); return }
     setLoading(true); setError('')
     try {
       await api.post('/auth/register', {
@@ -465,6 +552,7 @@ function SignUp({ onSwitch }) {
       setSuccess(`Check ${form.email} for a verification link to activate your account.`)
     } catch (err) {
       setError(extractError(err))
+      shake?.(formRef.current)
     } finally { setLoading(false) }
   }
 
@@ -486,7 +574,7 @@ function SignUp({ onSwitch }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="auth-form" noValidate>
+    <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
       <ErrorBox msg={error} />
 
       <FieldWrap label="Username" htmlFor="su-user" hint={<UnStatus />}>
@@ -505,27 +593,30 @@ function SignUp({ onSwitch }) {
       </FieldWrap>
 
       <FieldWrap label="Password" htmlFor="su-pass" hint={
-        form.password.length > 0 && form.password.length < 8 && (
-          <span className="auth-field-status auth-field-status-warn">{8 - form.password.length} more character{8 - form.password.length !== 1 ? 's' : ''} needed</span>
-        )
+        <PasswordStrength password={form.password} />
       }>
-        <input id="su-pass" type="password" placeholder="Min 8 characters"
+        <input id="su-pass" type={showPass ? 'text' : 'password'} placeholder="Min 8 characters"
           value={form.password} onChange={e => set('password', e.target.value)}
-          required minLength={8} autoComplete="new-password"
-          style={inputStyle} onFocus={focusGreen} onBlur={blurGreen} />
+          required minLength={8} autoComplete={showPass ? 'off' : 'new-password'}
+          style={{ ...inputStyle, paddingRight: 44 }}
+          onFocus={focusGreen} onBlur={blurGreen} />
+        <PassToggle show={showPass} onToggle={() => setShowPass(s => !s)} />
       </FieldWrap>
 
       <FieldWrap label="Confirm Password" htmlFor="su-conf" hint={pwMatch && <span className="auth-field-status auth-field-status-bad">Passwords don't match</span>}>
-        <input id="su-conf" type="password" placeholder="Repeat password"
+        <input id="su-conf" type={showConf ? 'text' : 'password'} placeholder="Repeat password"
           value={form.confirm} onChange={e => set('confirm', e.target.value)}
-          required autoComplete="new-password"
-          style={{ ...inputStyle }}
+          required autoComplete={showConf ? 'off' : 'new-password'}
+          style={{ ...inputStyle, paddingRight: 44 }}
           onFocus={focusGreen} onBlur={blurGreen} />
+        <PassToggle show={showConf} onToggle={() => setShowConf(s => !s)} />
       </FieldWrap>
 
       <button type="submit" className="auth-submit" disabled={!canSubmit}>
-        {loading ? 'CREATING ACCOUNT...' : 'Create account'}
-        <span className="auth-submit-arrow" aria-hidden="true">→</span>
+        {loading ? (
+          <span className="auth-spinner" aria-hidden="true" />
+        ) : 'Create account'}
+        {!loading && <span className="auth-submit-arrow" aria-hidden="true">→</span>}
       </button>
 
       {/* ── Discord OAuth divider + button ─────────────────────────────── */}
@@ -568,11 +659,12 @@ function SignUp({ onSwitch }) {
 }
 
 // ── Forgot Password ────────────────────────────────────────────────────────────
-function ForgotPassword({ onSwitch }) {
+function ForgotPassword({ onSwitch, shake }) {
   const [email, setEmail]   = useState('')
   const [error, setError]   = useState('')
   const [sent, setSent]     = useState(false)
   const [loading, setLoading] = useState(false)
+  const formRef = useRef(null)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -582,21 +674,28 @@ function ForgotPassword({ onSwitch }) {
       setSent(true)
     } catch (err) {
       setError(err?.response?.data?.detail || 'Could not send reset email. Try again.')
+      shake?.(formRef.current)
     } finally { setLoading(false) }
   }
 
   if (sent) return (
     <div className="auth-state" style={{ textAlign: 'center', padding: '8px 0' }}>
-      <div className="auth-state-ico" style={{ animation: 'authFloatY 2.4s ease-in-out infinite' }}>📬</div>
+      <div className="auth-plane" aria-hidden="true">
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 2 11 13" />
+          <path d="M22 2 15 22l-4-9-9-4Z" />
+        </svg>
+      </div>
       <SuccessBox msg={`Reset link sent to ${email}. Check your inbox and spam folder. Link expires in 1 hour.`} />
       <button type="button" className="auth-ghost-btn" style={{ marginTop: 20 }} onClick={() => onSwitch('signin')}>
         ← BACK TO SIGN IN
       </button>
+      <style>{`@keyframes authPlane{0%{transform:translateY(0) rotate(0)}30%{transform:translateY(-18px) rotate(-8deg)}60%{transform:translateY(4px) rotate(4deg)}100%{transform:translateY(0) rotate(0)}}`}</style>
     </div>
   )
 
   return (
-    <form onSubmit={handleSubmit} className="auth-form" noValidate>
+    <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
       <p className="auth-intro">
         Enter your email address and we'll send you a link to reset your password.
       </p>
@@ -608,8 +707,8 @@ function ForgotPassword({ onSwitch }) {
           style={inputStyle} onFocus={focusGreen} onBlur={blurGreen} />
       </FieldWrap>
       <button type="submit" className="auth-submit" disabled={loading}>
-        {loading ? 'SENDING...' : 'Send reset link'}
-        <span className="auth-submit-arrow" aria-hidden="true">→</span>
+        {loading ? <span className="auth-spinner" aria-hidden="true" /> : 'Send reset link'}
+        {!loading && <span className="auth-submit-arrow" aria-hidden="true">→</span>}
       </button>
       <p style={{ textAlign: 'center', margin: 0 }}>
         <button type="button" onClick={() => onSwitch('signin')} className="auth-link auth-link-muted">
@@ -679,9 +778,20 @@ function TwoFAStep({ challenge, onBack, shake }) {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
-      {/* Icon + title */}
+      {/* Shield + title */}
       <div style={{ textAlign: 'center', paddingBottom: 4 }}>
-        <div className="auth-state-ico" style={{ animation: 'authSpinSlow 6s linear infinite', display: 'inline-flex' }}>{expired ? '⏳' : '🔐'}</div>
+        <div className="auth-shield-ico" aria-hidden="true">
+          <svg width="46" height="52" viewBox="0 0 120 140" fill="none">
+            <defs>
+              <linearGradient id="shieldGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="var(--green)" />
+                <stop offset="100%" stopColor="var(--cyan)" />
+              </linearGradient>
+            </defs>
+            <path d="M60 6 110 28v42c0 32-22 52-50 64-28-12-50-32-50-64V28L60 6Z" stroke="url(#shieldGrad)" strokeWidth="4" fill="color-mix(in srgb, var(--green) 8%, transparent)" />
+            <path d="M48 68l9 9 16-18" stroke="url(#shieldGrad)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
         <div className="auth-2fa-title">Two-Factor Verification</div>
         <div className="auth-2fa-sub">
           Signed in as <span style={{ color: 'var(--cyan)' }}>{challenge.username}</span>.<br />
@@ -722,8 +832,8 @@ function TwoFAStep({ challenge, onBack, shake }) {
       </FieldWrap>
 
       <button type="submit" className="auth-submit" disabled={loading || expired}>
-        {loading ? 'VERIFYING...' : 'Verify code'}
-        <span className="auth-submit-arrow" aria-hidden="true">→</span>
+        {loading ? <span className="auth-spinner" aria-hidden="true" /> : 'Verify code'}
+        {!loading && <span className="auth-submit-arrow" aria-hidden="true">→</span>}
       </button>
 
       <p style={{ textAlign: 'center', margin: 0 }}>
@@ -746,6 +856,45 @@ const TAB_META = {
   register: { tag: 'NEW ACCOUNT',      title: 'Create your account', sub: 'Join the community — it takes a minute' },
   forgot:   { tag: 'ACCOUNT RECOVERY', title: 'Reset password',     sub: "We'll email you a reset link" },
 }
+
+const FEATURES = [
+  {
+    title: 'Secure Authentication',
+    sub: 'Protected by hardened session tokens',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 2 3 7v10l9 5 9-5V7l-9-5Z" />
+        <path d="M9 12l2 2 4-4" />
+      </svg>
+    ),
+  },
+  {
+    title: 'End-to-End Encryption',
+    sub: 'Every connection is protected',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="4" y="11" width="16" height="9" rx="2.5" />
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Multi-factor Authentication',
+    sub: 'Protect your account with 2FA',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 10a4 4 0 0 0-4 4c0 2.5.5 4.5 2 6" />
+        <path d="M12 6a8 8 0 0 1 8 8c0 1-.1 2-.3 3" />
+        <path d="M12 6a8 8 0 0 0-8 8c0 1 .1 2 .3 3" />
+        <path d="M12 18a3 3 0 0 1-3-3" />
+        <path d="M15 12a3 3 0 0 1 3 3" />
+        <path d="M12 18a3 3 0 0 0 3-3" />
+        <path d="M17 9a6 6 0 0 0-10 0" />
+        <path d="M12 22a4 4 0 0 0 4-4" />
+      </svg>
+    ),
+  },
+]
 
 export default function Login() {
   const searchParams = useSearchParams()
@@ -839,24 +988,106 @@ export default function Login() {
   const tabIndex = TABS.findIndex(t => t.key === tab)
   const formKey = twoFAChallenge ? '2fa' : tab
 
-  // ── GSAP: background blob drift ──────────────────────────────────────────────
+  // ── Ambient particles (SSR-safe; only rendered client-side) ────────────────
+  const particles = useMemo(
+    () => (typeof window === 'undefined' ? [] : Array.from({ length: 22 }, () => ({
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      size: 1.5 + Math.random() * 3.5,
+      dur: 11 + Math.random() * 14,
+      delay: Math.random() * 8,
+      alpha: 0.15 + Math.random() * 0.35,
+    }))),
+    []
+  )
+
+  // ── GSAP: background layers ──────────────────────────────────────────────────
   const bgRef = useRef(null)
   useEffect(() => {
     if (reducedMotion() || !bgRef.current) return
-    const blobs = bgRef.current.querySelectorAll('.auth-blob')
-    if (!blobs.length) return
-    const tweens = Array.from(blobs).map((b, i) =>
-      gsap.to(b, {
-        x: i === 0 ? 70 : i === 1 ? -60 : 40,
-        y: i === 0 ? 50 : i === 1 ? -40 : -60,
-        scale: i === 0 ? 1.15 : i === 1 ? 1.1 : 1.2,
-        duration: i === 0 ? 16 : i === 1 ? 18 : 20,
-        ease: 'sine.inOut',
-        repeat: -1,
-        yoyo: true,
+    const ctx = gsap.context(() => {
+      // Aurora blob drift
+      gsap.to('.auth-blob-1', { x: 80, y: 55, scale: 1.15, duration: 16, ease: 'sine.inOut', repeat: -1, yoyo: true })
+      gsap.to('.auth-blob-2', { x: -70, y: -45, scale: 1.1, duration: 18, ease: 'sine.inOut', repeat: -1, yoyo: true })
+      gsap.to('.auth-blob-3', { x: 45, y: -65, scale: 1.2, duration: 20, ease: 'sine.inOut', repeat: -1, yoyo: true })
+      // Slow ambient light rays rotation
+      gsap.to('.auth-rays', { rotation: 360, duration: 120, ease: 'none', repeat: -1 })
+      // Floating particles drift
+      gsap.utils.toArray('.auth-particle').forEach((p, i) => {
+        gsap.to(p, {
+          y: `random(-70, 70)`,
+          x: `random(-40, 40)`,
+          opacity: `random(0.1, 0.5)`,
+          duration: 2 + (i % 6),
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+          delay: i * 0.4,
+        })
       })
-    )
-    return () => tweens.forEach(t => t.kill())
+    }, bgRef)
+    return () => ctx.revert()
+  }, [])
+
+  // ── GSAP: illustration (orbit + float + parallax) ───────────────────────────
+  const illusRef = useRef(null)
+  useEffect(() => {
+    if (reducedMotion() || !illusRef.current) return
+    const ctx = gsap.context(() => {
+      // Orbiting rings — constant slow rotation
+      gsap.to('.auth-orbit-1', { rotation: 360, duration: 46, ease: 'none', repeat: -1 })
+      gsap.to('.auth-orbit-2', { rotation: -360, duration: 70, ease: 'none', repeat: -1 })
+      // Shield breathing + lock float
+      gsap.to('.auth-shield-svg', { y: -10, scale: 1.04, duration: 3.2, ease: 'sine.inOut', repeat: -1, yoyo: true })
+      gsap.to('.auth-lock-svg', { y: 12, duration: 2.6, ease: 'sine.inOut', repeat: -1, yoyo: true })
+      // Glow pulse
+      gsap.to('.auth-illus-glow', { opacity: 0.55, scale: 1.12, duration: 3.6, ease: 'sine.inOut', repeat: -1, yoyo: true })
+    }, illusRef)
+    return () => ctx.revert()
+  }, [])
+
+  // ── GSAP: mouse parallax on the illustration ─────────────────────────────────
+  useEffect(() => {
+    if (reducedMotion() || typeof window === 'undefined') return
+    const hero = document.querySelector('.auth-hero')
+    if (!hero) return
+    const layers = hero.querySelectorAll('.auth-illus-inner, .auth-hero-title, .auth-hero-sub')
+    if (!layers.length) return
+    const to = Array.from(layers).map(el => ({
+      el,
+      x: gsap.quickTo(el, 'x', { duration: 0.9, ease: 'power3.out' }),
+      y: gsap.quickTo(el, 'y', { duration: 0.9, ease: 'power3.out' }),
+    }))
+    const onMove = (e) => {
+      const r = hero.getBoundingClientRect()
+      const dx = (e.clientX - r.left) / r.width - 0.5
+      const dy = (e.clientY - r.top) / r.height - 0.5
+      to.forEach((t, i) => {
+        const depth = (i + 1) * 12
+        t.x(dx * depth)
+        t.y(dy * depth)
+      })
+    }
+    window.addEventListener('mousemove', onMove, { passive: true })
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+
+  // ── GSAP: cursor spotlight following the mouse over the card ───────────────
+  const glowRef = useRef(null)
+  useEffect(() => {
+    if (reducedMotion() || typeof window === 'undefined' || !glowRef.current) return
+    const xTo = gsap.quickTo(glowRef.current, 'x', { duration: 0.7, ease: 'power3.out' })
+    const yTo = gsap.quickTo(glowRef.current, 'y', { duration: 0.7, ease: 'power3.out' })
+    const onMove = (e) => {
+      const card = document.querySelector('.auth-shell')
+      if (!card) return
+      const r = card.getBoundingClientRect()
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return
+      xTo(e.clientX)
+      yTo(e.clientY)
+    }
+    window.addEventListener('mousemove', onMove, { passive: true })
+    return () => window.removeEventListener('mousemove', onMove)
   }, [])
 
   // ── GSAP: card + header entrance timeline ───────────────────────────────────
@@ -865,11 +1096,22 @@ export default function Login() {
     if (reducedMotion() || !cardRef.current) return
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
     tl.fromTo(cardRef.current,
-        { opacity: 0, y: 26, scale: 0.97 },
+        { opacity: 0, y: 30, scale: 0.96 },
         { opacity: 1, y: 0, scale: 1, duration: 0.6 })
-      .fromTo(cardRef.current.querySelectorAll('.auth-brand, .auth-head, .auth-tabs'),
+      .fromTo(cardRef.current.querySelectorAll('.auth-head, .auth-tabs, .auth-brand-mobile'),
         { opacity: 0, y: 14 },
         { opacity: 1, y: 0, duration: 0.45, stagger: 0.09 }, '-=0.25')
+    return () => tl.kill()
+  }, [])
+
+  // ── GSAP: hero entrance ──────────────────────────────────────────────────────
+  const heroRef = useRef(null)
+  useEffect(() => {
+    if (reducedMotion() || !heroRef.current) return
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+    tl.fromTo(heroRef.current.querySelectorAll('.auth-hero-brand, .auth-hero-title, .auth-hero-sub, .auth-illus, .auth-feature'),
+      { opacity: 0, y: 24 },
+      { opacity: 1, y: 0, duration: 0.55, stagger: 0.08 })
     return () => tl.kill()
   }, [])
 
@@ -883,11 +1125,11 @@ export default function Login() {
     if (!els.length) return
     gsap.fromTo(els,
       { opacity: 0, y: 16 },
-      { opacity: 1, y: 0, duration: 0.5, stagger: 0.07, ease: 'power2.out' })
+      { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power2.out' })
   }, [formKey])
 
-  // ── GSAP: 2FA invalid-code shake ─────────────────────────────────────────────
-  const shake2FA = (el) => {
+  // ── GSAP: form shake on invalid submission ──────────────────────────────────
+  const shakeForm = (el) => {
     if (reducedMotion() || !el) return
     gsap.fromTo(el,
       { x: 0 },
@@ -901,57 +1143,197 @@ export default function Login() {
   return (
     <>
       <style>{`
-        /* ══ AUTH PAGE — MINIMAL ═══════════════════════════════ */
+        /* ══ AUTH PAGE — PREMIUM ═══════════════════════════════
+           All colors are theme tokens (var(--green/--cyan/--purple/--bg…))
+           so the design adapts to every theme package. */
 
-        /* Animated gradient blobs — position/motion driven by GSAP.
-           Colors are theme tokens only: green/cyan under the dark theme,
-           purple/pink under midnight, etc. */
+        /* ── Ambient background ───────────────────────────────────── */
         .auth-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+
+        /* Subtle grid */
+        .auth-grid {
+          position: absolute; inset: 0;
+          background-image:
+            linear-gradient(color-mix(in srgb, var(--text) 3%, transparent) 1px, transparent 1px),
+            linear-gradient(90deg, color-mix(in srgb, var(--text) 3%, transparent) 1px, transparent 1px);
+          background-size: 46px 46px;
+          mask-image: radial-gradient(ellipse at 50% 40%, black 20%, transparent 75%);
+          -webkit-mask-image: radial-gradient(ellipse at 50% 40%, black 20%, transparent 75%);
+        }
+
+        /* Slow light rays */
+        .auth-rays {
+          position: absolute; left: -35%; right: -35%; top: -45%; bottom: -45%;
+          background: conic-gradient(from 0deg at 50% 50%,
+            transparent 0deg, color-mix(in srgb, var(--green) 4%, transparent) 18deg,
+            transparent 36deg, color-mix(in srgb, var(--cyan) 3%, transparent) 54deg,
+            transparent 72deg, color-mix(in srgb, var(--purple) 4%, transparent) 90deg,
+            transparent 108deg, color-mix(in srgb, var(--green) 3%, transparent) 126deg,
+            transparent 144deg, color-mix(in srgb, var(--cyan) 4%, transparent) 162deg,
+            transparent 180deg, color-mix(in srgb, var(--green) 4%, transparent) 198deg,
+            transparent 216deg, color-mix(in srgb, var(--purple) 3%, transparent) 234deg,
+            transparent 252deg, color-mix(in srgb, var(--cyan) 4%, transparent) 270deg,
+            transparent 288deg, color-mix(in srgb, var(--green) 3%, transparent) 306deg,
+            transparent 324deg, color-mix(in srgb, var(--purple) 4%, transparent) 342deg,
+            transparent 360deg);
+          opacity: .5; will-change: transform;
+        }
+
+        /* Film grain */
+        .auth-noise {
+          position: absolute; inset: 0; opacity: .05; mix-blend-mode: overlay;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+        }
+
+        /* Aurora blobs */
         .auth-blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .5; will-change: transform; }
         .auth-blob-1 { width: 480px; height: 480px; top: -140px; left: -120px;
           background: radial-gradient(circle at 30% 30%, var(--green), transparent 70%); }
         .auth-blob-2 { width: 420px; height: 420px; bottom: -140px; right: -120px;
           background: radial-gradient(circle at 70% 70%, var(--cyan), transparent 70%); }
-        .auth-blob-3 { width: 340px; height: 340px; top: 45%; left: 42%;
-          background: radial-gradient(circle at 50% 50%, var(--purple), transparent 70%); opacity: .32; }
+        .auth-blob-3 { width: 340px; height: 340px; top: 42%; left: 46%;
+          background: radial-gradient(circle at 50% 50%, var(--purple), transparent 70%); opacity: .3; }
 
-        .auth-page { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center;
-          min-height: calc(100vh - 170px); padding: 44px 16px 40px; }
-
-        .auth-card {
-          width: 100%; max-width: 400px; padding: 34px 32px 28px; border-radius: 18px;
-          background: color-mix(in srgb, var(--bg2) 82%, transparent);
-          border: 1px solid var(--border);
-          box-shadow: var(--shadow-card), 0 0 0 1px color-mix(in srgb, var(--text) 3%, transparent) inset;
-          backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        /* Floating particles */
+        .auth-particles { position: absolute; inset: 0; }
+        .auth-particle {
+          position: absolute; border-radius: 50%;
+          background: var(--text); will-change: transform, opacity;
         }
 
-        /* Brand row */
-        .auth-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-        .auth-brand-mark { width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+        /* Cursor spotlight over the card */
+        .auth-cursor-glow {
+          position: fixed; z-index: 2; width: 420px; height: 420px; border-radius: 50%;
+          pointer-events: none; opacity: 0; left: -210px; top: -210px;
+          background: radial-gradient(circle, color-mix(in srgb, var(--green) 7%, transparent) 0%, transparent 60%);
+          transition: opacity .4s ease;
+        }
+        .auth-shell:hover ~ .auth-cursor-glow { opacity: 1; }
+
+        /* ── Page shell ───────────────────────────────────────────── */
+        .auth-page {
+          position: relative; z-index: 1;
+          display: grid; grid-template-columns: 44fr 56fr; gap: 64px;
+          align-items: center; min-height: calc(100vh - 170px);
+          max-width: 1180px; margin: 0 auto; padding: 44px 24px 40px;
+        }
+
+        /* ── Left: hero / illustration ────────────────────────────── */
+        .auth-hero { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+
+        .auth-hero-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+        .auth-brand-mark { width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
           background: linear-gradient(135deg, var(--green), var(--cyan));
-          color: var(--text); box-shadow: 0 6px 22px color-mix(in srgb, var(--green) 40%, transparent); }
+          color: var(--text); box-shadow: 0 8px 26px color-mix(in srgb, var(--green) 40%, transparent); }
         .auth-brand-text { display: flex; flex-direction: column; }
-        .auth-brand-name { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--text); letter-spacing: -.2px; }
-        .auth-brand-tag { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 2.5px; color: var(--muted); }
+        .auth-brand-name { font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--text); letter-spacing: -.2px; }
+        .auth-brand-tag { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 3px; color: var(--muted); margin-top: 2px; }
+
+        .auth-hero-title {
+          font-family: var(--font-display); font-size: clamp(30px, 4vw, 44px); font-weight: 800;
+          letter-spacing: -.8px; line-height: 1.05; margin: 0 0 12px;
+          background: linear-gradient(120deg, var(--text) 20%, color-mix(in srgb, var(--cyan) 70%, var(--text)) 55%, var(--green));
+          -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .auth-hero-sub { font-family: var(--font-display); font-size: 15.5px; color: var(--muted); margin: 0 0 28px; }
+
+        /* Illustration */
+        .auth-illus { position: relative; width: 340px; height: 300px; margin: 0 auto 34px; }
+        .auth-illus-inner { position: relative; width: 100%; height: 100%; will-change: transform; }
+        .auth-illus-glow {
+          position: absolute; left: 50%; top: 50%; width: 230px; height: 230px;
+          transform: translate(-50%, -50%); border-radius: 50%;
+          background: radial-gradient(circle, color-mix(in srgb, var(--green) 16%, transparent), transparent 65%);
+          filter: blur(10px);
+        }
+        .auth-orbit { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); will-change: transform; }
+        .auth-orbit circle.ring { fill: none; stroke: color-mix(in srgb, var(--cyan) 30%, transparent); stroke-width: 1; stroke-dasharray: 3 7; }
+        .auth-orbit circle.ring2 { fill: none; stroke: color-mix(in srgb, var(--green) 25%, transparent); stroke-width: 1; stroke-dasharray: 1 8; }
+        .auth-orbit circle.node { fill: var(--green); }
+        .auth-orbit circle.node2 { fill: var(--cyan); }
+        .auth-shield-svg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%); will-change: transform; filter: drop-shadow(0 10px 26px color-mix(in srgb, var(--green) 30%, transparent)); }
+        .auth-lock-svg { position: absolute; left: 78%; top: 22%; will-change: transform; filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--cyan) 35%, transparent)); }
+
+        /* Feature cards */
+        .auth-features { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .auth-feature {
+          display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+          border-radius: 16px; border: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+          background: color-mix(in srgb, var(--bg2) 55%, transparent);
+          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+          transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s, background .25s, box-shadow .25s;
+        }
+        .auth-feature:hover {
+          transform: translateX(6px);
+          border-color: color-mix(in srgb, var(--green) 45%, transparent);
+          background: color-mix(in srgb, var(--bg2) 85%, transparent);
+          box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--green) 35%, transparent);
+        }
+        .auth-feature-ico {
+          width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          color: var(--green);
+          background: color-mix(in srgb, var(--green) 12%, transparent);
+          border: 1px solid color-mix(in srgb, var(--green) 22%, transparent);
+          transition: transform .3s cubic-bezier(.34,1.56,.64,1), color .3s, background .3s;
+        }
+        .auth-feature:hover .auth-feature-ico {
+          transform: scale(1.12) rotate(-6deg);
+          color: var(--text);
+          background: linear-gradient(135deg, var(--green), var(--cyan));
+        }
+        .auth-feature-text { min-width: 0; }
+        .auth-feature-title { font-family: var(--font-display); font-size: 13.5px; font-weight: 700; color: var(--text); letter-spacing: -.1px; }
+        .auth-feature-sub { font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: .5px; margin-top: 3px; }
+
+        /* ── Right: glass card ────────────────────────────────────── */
+        .auth-side { min-width: 0; }
+
+        /* Animated gradient border shell */
+        .auth-shell {
+          position: relative; border-radius: 26px; padding: 1px;
+          background: linear-gradient(150deg,
+            color-mix(in srgb, var(--green) 55%, transparent),
+            color-mix(in srgb, var(--text) 10%, transparent) 35%,
+            color-mix(in srgb, var(--purple) 45%, transparent) 70%,
+            color-mix(in srgb, var(--cyan) 55%, transparent));
+          background-size: 220% 220%; animation: authBorderFlow 8s ease infinite;
+          box-shadow: 0 30px 80px -24px color-mix(in srgb, var(--bg) 80%, transparent),
+                      0 0 60px -20px color-mix(in srgb, var(--green) 18%, transparent);
+        }
+        @keyframes authBorderFlow {
+          0%   { background-position: 0% 0%; }
+          50%  { background-position: 100% 100%; }
+          100% { background-position: 0% 0%; }
+        }
+
+        .auth-card {
+          border-radius: 25px; padding: 36px 36px 30px;
+          background: color-mix(in srgb, var(--bg2) 82%, transparent);
+          backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+          overflow: hidden;
+        }
+
+        /* Mobile-only brand (hero hidden on small screens) */
+        .auth-brand-mobile { display: none; }
 
         /* Head */
         .auth-head { margin-bottom: 22px; }
-        .auth-title { font-family: var(--font-display); font-size: clamp(22px, 4vw, 26px); font-weight: 800;
+        .auth-title { font-family: var(--font-display); font-size: clamp(22px, 3vw, 27px); font-weight: 800;
           color: var(--text); margin: 0 0 6px; letter-spacing: -.5px; line-height: 1.1; }
-        .auth-sub { font-family: var(--font-display); font-size: 13px; color: var(--muted); margin: 0; }
+        .auth-sub { font-family: var(--font-display); font-size: 13.5px; color: var(--muted); margin: 0; }
 
         /* Tabs with sliding pill */
-        .auth-tabs { position: relative; display: flex; background: color-mix(in srgb, var(--bg3) 55%, transparent);
-          border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 24px; }
-        .auth-tab-indicator { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 12px) / 3);
-          background: linear-gradient(120deg, var(--green), var(--cyan)); border-radius: 9px;
-          box-shadow: 0 2px 14px color-mix(in srgb, var(--green) 45%, transparent);
-          transition: transform .32s cubic-bezier(.16,1,.3,1); }
-        .auth-tab { flex: 1; position: relative; z-index: 1; padding: 10px 6px; background: transparent; border: none; cursor: pointer;
+        .auth-tabs { position: relative; display: flex; background: color-mix(in srgb, var(--bg3) 60%, transparent);
+          border: 1px solid color-mix(in srgb, var(--text) 8%, transparent); border-radius: 14px; padding: 5px; margin-bottom: 24px; }
+        .auth-tab-indicator { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 3);
+          background: linear-gradient(120deg, var(--green), var(--cyan)); border-radius: 10px;
+          box-shadow: 0 4px 20px color-mix(in srgb, var(--green) 40%, transparent);
+          transition: transform .35s cubic-bezier(.16,1,.3,1); }
+        .auth-tab { flex: 1; position: relative; z-index: 1; padding: 11px 6px; background: transparent; border: none; cursor: pointer;
           font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 2px; text-transform: uppercase;
-          color: var(--muted); transition: color .18s; border-radius: 9px; }
+          color: var(--muted); transition: color .18s; border-radius: 10px; }
         .auth-tab:hover { color: var(--text); }
         .auth-tab.is-active { color: var(--text); font-weight: 800; }
 
@@ -960,20 +1342,70 @@ export default function Login() {
 
         .auth-field-wrap { display: flex; flex-direction: column; }
         .auth-field { position: relative; }
-        .auth-field input { background: transparent; border: none; }
-        .auth-field-line { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--border); transition: all .25s ease; }
+        .auth-field input {
+          background: color-mix(in srgb, var(--bg3) 45%, transparent);
+          border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+          border-radius: 12px;
+          transition: border-color .25s ease, box-shadow .25s ease, background .25s ease;
+        }
+        .auth-field input:focus {
+          border-color: color-mix(in srgb, var(--green) 60%, transparent);
+          background: color-mix(in srgb, var(--bg3) 60%, transparent);
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 14%, transparent),
+                      0 6px 24px -12px color-mix(in srgb, var(--green) 45%, transparent);
+        }
+        .auth-field-line { position: absolute; left: 16px; right: 16px; bottom: 7px; height: 1px; background: transparent; }
         .auth-field-line::after { content:''; position:absolute; left:0; bottom:0; height:2px; width:100%;
           background: linear-gradient(90deg, var(--green), var(--cyan));
           transform: scaleX(0); transform-origin: left; transition: transform .3s cubic-bezier(.16,1,.3,1); }
         .auth-field:focus-within .auth-field-line::after { transform: scaleX(1); }
-        .auth-field:focus-within .auth-field-line { background: transparent; }
+
+        /* Password toggle */
+        .auth-eye {
+          position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+          width: 36px; height: 36px; border: none; background: transparent; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; color: var(--muted);
+          border-radius: 9px; transition: color .2s, background .2s;
+        }
+        .auth-eye:hover { color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); }
+        .auth-eye:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
+
         .auth-field-status { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 6px; letter-spacing: 1px; display: block; }
         .auth-field-status-ok   { color: var(--green); }
         .auth-field-status-bad  { color: var(--red); }
         .auth-field-status-warn { color: var(--orange); }
 
+        /* Password strength meter */
+        .auth-strength { margin-top: 8px; }
+        .auth-strength-bars { display: flex; gap: 4px; margin-bottom: 6px; }
+        .auth-strength-bar { flex: 1; height: 4px; border-radius: 99px; background: color-mix(in srgb, var(--text) 9%, transparent); transition: background .3s ease; }
+        .auth-strength-bar.is-on.weak   { background: var(--red); }
+        .auth-strength-bar.is-on.medium { background: var(--orange); }
+        .auth-strength-bar.is-on.good   { background: var(--cyan); }
+        .auth-strength-bar.is-on.strong { background: var(--green); }
+        .auth-strength-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+        .auth-strength-label.is-weak   { color: var(--red); }
+        .auth-strength-label.is-medium { color: var(--orange); }
+        .auth-strength-label.is-good   { color: var(--cyan); }
+        .auth-strength-label.is-strong { color: var(--green); }
+        .auth-checklist { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 14px; }
+        .auth-checklist li {
+          display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 9px;
+          letter-spacing: .5px; color: var(--muted);
+          animation: authCheckIn .3s ease both;
+        }
+        .auth-checklist li.is-pass { color: var(--green); }
+        .auth-checklist-ico {
+          width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0;
+          display: inline-flex; align-items: center; justify-content: center; font-size: 9px;
+          background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--muted);
+          transition: background .25s, color .25s;
+        }
+        .auth-checklist li.is-pass .auth-checklist-ico { background: var(--green); color: var(--text); }
+        @keyframes authCheckIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
         /* Alerts */
-        .auth-alert { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; border-radius: 10px;
+        .auth-alert { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; border-radius: 12px;
           font-family: var(--font-mono); font-size: 11.5px; line-height: 1.6; animation: authAlertIn .3s ease both; }
         @keyframes authAlertIn { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform:none; } }
         .auth-alert-ico { font-size: 12px; line-height: 1.5; flex-shrink: 0; }
@@ -983,33 +1415,50 @@ export default function Login() {
 
         /* Submit button */
         .auth-submit { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 10px;
-          font-family: var(--font-display); font-size: 14px; font-weight: 700; letter-spacing: .2px;
-          padding: 14px; min-height: 50px; border: none; border-radius: 12px; cursor: pointer; color: var(--text);
+          font-family: var(--font-display); font-size: 14.5px; font-weight: 700; letter-spacing: .2px;
+          padding: 15px; min-height: 54px; border: none; border-radius: 14px; cursor: pointer; color: var(--text);
           background: linear-gradient(120deg, var(--green), var(--cyan), var(--green));
           background-size: 220% 100%; transition: background-position .4s ease, transform .15s ease, box-shadow .25s ease;
-          box-shadow: 0 4px 24px color-mix(in srgb, var(--green) 35%, transparent); }
-        .auth-submit:hover:not(:disabled) { background-position: 100% 0; transform: translateY(-1px);
-          box-shadow: 0 8px 30px color-mix(in srgb, var(--green) 45%, transparent); }
-        .auth-submit:active:not(:disabled) { transform: translateY(0) scale(.99); }
+          box-shadow: 0 6px 28px color-mix(in srgb, var(--green) 35%, transparent); }
+        .auth-submit:hover:not(:disabled) { background-position: 100% 0; transform: translateY(-2px);
+          box-shadow: 0 10px 36px color-mix(in srgb, var(--green) 45%, transparent); }
+        .auth-submit:active:not(:disabled) { transform: translateY(0) scale(.98); }
         .auth-submit:disabled { cursor: not-allowed; opacity: .45; background: var(--bg3); color: var(--muted); box-shadow: none; }
         .auth-submit-arrow { font-size: 16px; transition: transform .2s ease; }
         .auth-submit:hover:not(:disabled) .auth-submit-arrow { transform: translateX(4px); }
 
+        /* Loading spinner */
+        .auth-spinner {
+          width: 18px; height: 18px; border-radius: 50%;
+          border: 2px solid color-mix(in srgb, var(--text) 30%, transparent);
+          border-top-color: var(--text); animation: authSpin .7s linear infinite;
+        }
+        @keyframes authSpin { to { transform: rotate(360deg); } }
+
         /* Divider + OAuth */
-        .auth-divider { display: flex; align-items: center; gap: 12px; margin: 2px 0; }
+        .auth-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
         .auth-divider::before, .auth-divider::after { content:''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
         .auth-divider span { font-family: var(--font-mono); font-size: 8px; letter-spacing: 2px; color: var(--muted); white-space: nowrap; }
 
-        .auth-oauth-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .auth-oauth { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 6px;
+        .auth-oauth-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .auth-oauth { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 6px;
           font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; font-weight: 700; color: var(--text);
-          border-radius: 10px; border: 1px solid var(--border2); cursor: pointer;
-          transition: transform .15s ease, filter .2s ease, box-shadow .25s ease; }
-        .auth-oauth:hover { transform: translateY(-2px); filter: brightness(1.15); box-shadow: var(--shadow-sm); }
+          border-radius: 12px; border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); cursor: pointer;
+          background: color-mix(in srgb, var(--bg3) 50%, transparent);
+          transition: transform .18s ease, box-shadow .25s ease, border-color .2s, background .2s; }
+        .auth-oauth::after { content:''; position: absolute; inset: 0; border-radius: inherit; opacity: 0;
+          background: linear-gradient(120deg, color-mix(in srgb, var(--green) 14%, transparent), color-mix(in srgb, var(--cyan) 14%, transparent));
+          transition: opacity .25s ease; pointer-events: none; }
+        .auth-oauth:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--green) 40%, transparent);
+          box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--green) 35%, transparent); }
+        .auth-oauth:hover::after { opacity: 1; }
         .auth-oauth:active { transform: translateY(0) scale(.98); }
-        .auth-oauth-discord { background: var(--purple); }
-        .auth-oauth-steam   { background: color-mix(in srgb, var(--bg3) 90%, transparent); }
-        .auth-oauth-github  { background: var(--bg2); }
+        .auth-oauth svg { position: relative; z-index: 1; transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+        .auth-oauth:hover svg { transform: scale(1.18) rotate(-5deg); }
+        .auth-oauth span { position: relative; z-index: 1; }
+        .auth-oauth-discord { color: #fff; background: #5865F2; }
+        .auth-oauth-steam   { color: #e5f1ff; background: #1b2838; }
+        .auth-oauth-github  { color: var(--text); background: color-mix(in srgb, var(--bg3) 70%, transparent); }
 
         /* Links + misc */
         .auth-link { background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; transition: opacity .15s; }
@@ -1041,6 +1490,44 @@ export default function Login() {
         .auth-2fa-title { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--text); margin: 10px 0 6px; }
         .auth-2fa-sub { font-family: var(--font-mono); font-size: 10px; color: var(--muted); line-height: 1.7; margin-bottom: 6px; }
 
+        /* 2FA shield icon */
+        .auth-shield-ico { display: inline-flex; filter: drop-shadow(0 8px 20px color-mix(in srgb, var(--green) 30%, transparent)); }
+        .auth-shield-ico svg { animation: authShieldGlow 2.6s ease-in-out infinite; }
+        @keyframes authShieldGlow {
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--green) 25%, transparent)); }
+          50% { transform: scale(1.06); filter: drop-shadow(0 8px 26px color-mix(in srgb, var(--green) 45%, transparent)); }
+        }
+
+        /* Sent-plane animation (forgot password success) */
+        .auth-plane { display: inline-flex; animation: authPlane 1.1s ease; }
+
+        /* Success burst particles */
+        .auth-burst { position: relative; width: 0; height: 0; margin: 0 auto; }
+        .auth-burst span {
+          position: absolute; width: 6px; height: 6px; border-radius: 50%;
+          background: var(--green); opacity: 0; animation: authBurst 0.9s ease forwards;
+        }
+        .auth-burst span:nth-child(1) { left: 0; top: 0; animation-delay: .45s; }
+        .auth-burst span:nth-child(2) { left: 0; top: 0; animation-delay: .5s; background: var(--cyan); }
+        .auth-burst span:nth-child(3) { left: 0; top: 0; animation-delay: .55s; }
+        .auth-burst span:nth-child(4) { left: 0; top: 0; animation-delay: .6s; background: var(--purple); }
+        .auth-burst span:nth-child(5) { left: 0; top: 0; animation-delay: .65s; }
+        .auth-burst span:nth-child(6) { left: 0; top: 0; animation-delay: .7s; background: var(--cyan); }
+        .auth-burst span:nth-child(7) { left: 0; top: 0; animation-delay: .75s; }
+        .auth-burst span:nth-child(8) { left: 0; top: 0; animation-delay: .8s; background: var(--purple); }
+        @keyframes authBurst {
+          0% { transform: translate(0, 0) scale(1); opacity: 1; }
+          100% { transform: translate(var(--bx, 0), var(--by, 0)) scale(0); opacity: 0; }
+        }
+        .auth-burst span:nth-child(1) { --bx: -42px; --by: -34px; }
+        .auth-burst span:nth-child(2) { --bx: 40px;  --by: -38px; }
+        .auth-burst span:nth-child(3) { --bx: 46px;  --by: 22px; }
+        .auth-burst span:nth-child(4) { --bx: -38px; --by: 30px; }
+        .auth-burst span:nth-child(5) { --bx: -22px; --by: -52px; }
+        .auth-burst span:nth-child(6) { --bx: 24px;  --by: 50px; }
+        .auth-burst span:nth-child(7) { --bx: 56px;  --by: -8px; }
+        .auth-burst span:nth-child(8) { --bx: -56px; --by: -6px; }
+
         /* Footer link */
         .auth-foot { margin-top: 22px; text-align: center; }
         .auth-foot a { font-family: var(--font-mono); font-size: 9px; color: var(--muted); text-decoration: none;
@@ -1049,30 +1536,64 @@ export default function Login() {
 
         @keyframes authBlink { 0%,100% { opacity:1; } 50% { opacity:.2; } }
 
-        /* Reduced motion */
-        @media (prefers-reduced-motion: reduce) {
-          .auth-blob, .auth-submit, .auth-tab-indicator { animation: none !important; transition: none !important; }
+        /* Focus-visible rings */
+        :where(.auth-tab, .auth-link, .auth-oauth, .auth-submit, .auth-ghost-btn, .auth-eye):focus-visible {
+          outline: 2px solid var(--green); outline-offset: 2px;
         }
 
-        /* Responsive */
+        /* ── Responsive ───────────────────────────────────────────── */
+        @media (max-width: 1024px) {
+          .auth-page { gap: 40px; padding: 40px 20px; }
+          .auth-illus { width: 280px; height: 250px; }
+        }
+
+        @media (max-width: 860px) {
+          .auth-page { grid-template-columns: 1fr; gap: 28px; min-height: 0; padding-top: 36px; }
+          .auth-hero { align-items: center; text-align: center; }
+          .auth-hero-title, .auth-hero-sub { text-align: center; }
+          .auth-illus { width: 260px; height: 230px; margin-bottom: 26px; }
+          .auth-features { max-width: 420px; width: 100%; }
+          .auth-hero-brand { display: none; }
+          .auth-brand-mobile { display: flex; margin-bottom: 20px; justify-content: center; }
+        }
+
         @media (max-width: 480px) {
-          .auth-card { padding: 26px 20px 22px; }
+          .auth-card { padding: 26px 20px 24px; }
           .auth-oauth-row { grid-template-columns: 1fr; }
+          .auth-checklist { grid-template-columns: 1fr; }
+          .auth-illus { width: 220px; height: 200px; }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .auth-blob, .auth-rays, .auth-particle, .auth-submit, .auth-tab-indicator,
+          .auth-illus-glow, .auth-orbit, .auth-shield-svg, .auth-lock-svg { animation: none !important; transition: none !important; }
         }
       `}</style>
 
-      {/* Animated background */}
+      {/* Ambient background */}
       <div className="auth-bg" aria-hidden="true" ref={bgRef}>
+        <div className="auth-grid" />
+        <div className="auth-rays" />
+        <div className="auth-noise" />
         <div className="auth-blob auth-blob-1" />
         <div className="auth-blob auth-blob-2" />
         <div className="auth-blob auth-blob-3" />
+        <div className="auth-particles">
+          {particles.map((p, i) => (
+            <span key={i} className="auth-particle"
+              style={{ left: `${p.left}%`, top: `${p.top}%`, width: p.size, height: p.size, opacity: p.alpha, animationDuration: `${p.dur}s`, animationDelay: `${p.delay}s` }} />
+          ))}
+        </div>
       </div>
 
-      <div className="page-container auth-page">
-        <div className="auth-card" ref={cardRef}>
+      {/* Cursor spotlight (chases the pointer over the card) */}
+      <div className="auth-cursor-glow" ref={glowRef} aria-hidden="true" />
 
-          {/* Brand */}
-          <div className="auth-brand">
+      <div className="page-container auth-page">
+        {/* ── Left: hero / illustration ──────────────────────────── */}
+        <aside className="auth-hero" ref={heroRef}>
+          <div className="auth-hero-brand">
             <div className="auth-brand-mark">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2 3 7v10l9 5 9-5V7l-9-5z" />
@@ -1081,42 +1602,118 @@ export default function Login() {
             </div>
             <div className="auth-brand-text">
               <span className="auth-brand-name">AIFAZI</span>
-              <span className="auth-brand-tag">AUTH GATEWAY</span>
+              <span className="auth-brand-tag">SECURE GATEWAY</span>
             </div>
           </div>
 
-          {/* Header */}
-          <div className="auth-head">
-            <h1 className="auth-title">{meta.title}</h1>
-            <p className="auth-sub">{meta.sub}</p>
+          <h1 className="auth-hero-title">Welcome back</h1>
+          <p className="auth-hero-sub">Your secure workspace awaits.</p>
+
+          {/* Animated shield illustration */}
+          <div className="auth-illus" ref={illusRef}>
+            <div className="auth-illus-inner">
+              <div className="auth-illus-glow" />
+              <svg className="auth-orbit auth-orbit-1" width="300" height="300" viewBox="0 0 200 200" aria-hidden="true">
+                <circle cx="100" cy="100" r="92" className="ring" />
+                <circle cx="100" cy="100" r="66" className="ring2" />
+                <circle cx="100" cy="8" r="3.2" className="node" />
+                <circle cx="100" cy="192" r="2.6" className="node2" />
+                <circle cx="8" cy="100" r="2.6" className="node2" />
+                <circle cx="192" cy="100" r="3.2" className="node" />
+              </svg>
+              <svg className="auth-orbit auth-orbit-2" width="300" height="300" viewBox="0 0 200 200" aria-hidden="true">
+                <circle cx="100" cy="100" r="79" className="ring" />
+                <circle cx="179" cy="100" r="2.2" className="node2" />
+                <circle cx="21" cy="100" r="2.2" className="node" />
+                <circle cx="100" cy="179" r="2.2" className="node" />
+              </svg>
+              <svg className="auth-shield-svg" width="150" height="168" viewBox="0 0 120 140" aria-hidden="true">
+                <defs>
+                  <linearGradient id="heroShieldGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="var(--green)" />
+                    <stop offset="100%" stopColor="var(--cyan)" />
+                  </linearGradient>
+                </defs>
+                <path d="M60 6 110 28v42c0 32-22 52-50 64-28-12-50-32-50-64V28L60 6Z"
+                  stroke="url(#heroShieldGrad)" strokeWidth="3"
+                  fill="color-mix(in srgb, var(--green) 10%, transparent)" />
+                <path d="M48 68l9 9 16-18" stroke="url(#heroShieldGrad)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <svg className="auth-lock-svg" width="46" height="46" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="11" fill="color-mix(in srgb, var(--bg2) 92%, transparent)" stroke="var(--cyan)" strokeWidth="1.2" />
+                <rect x="6" y="11" width="12" height="7" rx="2" stroke="var(--cyan)" strokeWidth="1.6" />
+                <path d="M9 11V8.5a3 3 0 0 1 6 0V11" stroke="var(--cyan)" strokeWidth="1.6" />
+              </svg>
+            </div>
           </div>
 
-          {/* Tabs */}
-          <div className="auth-tabs">
-            <div className="auth-tab-indicator" style={{ transform: `translateX(${Math.max(tabIndex, 0) * 300}%)` }} />
-            {TABS.map(t => (
-              <button key={t.key} type="button"
-                className={`auth-tab${tab === t.key ? ' is-active' : ''}`}
-                onClick={() => switchTab(t.key)}>
-                {t.label}
-              </button>
+          {/* Feature cards */}
+          <div className="auth-features">
+            {FEATURES.map(f => (
+              <div className="auth-feature" key={f.title}>
+                <div className="auth-feature-ico">{f.icon}</div>
+                <div className="auth-feature-text">
+                  <div className="auth-feature-title">{f.title}</div>
+                  <div className="auth-feature-sub">{f.sub}</div>
+                </div>
+              </div>
             ))}
           </div>
+        </aside>
 
-          {/* Form */}
-          <div key={formKey} ref={formRef}>
-            {twoFAChallenge                && <TwoFAStep     challenge={twoFAChallenge} onBack={() => setTwoFAChallenge(null)} shake={shake2FA} />}
-            {!twoFAChallenge && tab === 'signin'   && <SignIn   onSwitch={switchTab} onTwoFA={c => setTwoFAChallenge(c)} />}
-            {!twoFAChallenge && tab === 'register' && <SignUp   onSwitch={switchTab} />}
-            {!twoFAChallenge && tab === 'forgot'   && <ForgotPassword onSwitch={switchTab} />}
+        {/* ── Right: glass card ───────────────────────────────────── */}
+        <section className="auth-side">
+          <div className="auth-shell">
+            <div className="auth-card" ref={cardRef}>
+
+              {/* Mobile brand */}
+              <div className="auth-brand auth-brand-mobile">
+                <div className="auth-brand-mark">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2 3 7v10l9 5 9-5V7l-9-5z" />
+                    <path d="M9 12l2 2 4-4" />
+                  </svg>
+                </div>
+                <div className="auth-brand-text">
+                  <span className="auth-brand-name">AIFAZI</span>
+                  <span className="auth-brand-tag">SECURE GATEWAY</span>
+                </div>
+              </div>
+
+              {/* Header */}
+              <div className="auth-head">
+                <h1 className="auth-title">{meta.title}</h1>
+                <p className="auth-sub">{meta.sub}</p>
+              </div>
+
+              {/* Tabs */}
+              <div className="auth-tabs">
+                <div className="auth-tab-indicator" style={{ transform: `translateX(${Math.max(tabIndex, 0) * 100}%)` }} />
+                {TABS.map(t => (
+                  <button key={t.key} type="button"
+                    className={`auth-tab${tab === t.key ? ' is-active' : ''}`}
+                    onClick={() => switchTab(t.key)}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Form */}
+              <div key={formKey} ref={formRef}>
+                {twoFAChallenge                && <TwoFAStep     challenge={twoFAChallenge} onBack={() => setTwoFAChallenge(null)} shake={shakeForm} />}
+                {!twoFAChallenge && tab === 'signin'   && <SignIn   onSwitch={switchTab} onTwoFA={c => setTwoFAChallenge(c)} shake={shakeForm} />}
+                {!twoFAChallenge && tab === 'register' && <SignUp   onSwitch={switchTab} shake={shakeForm} />}
+                {!twoFAChallenge && tab === 'forgot'   && <ForgotPassword onSwitch={switchTab} shake={shakeForm} />}
+              </div>
+
+              {/* Footer */}
+              <div className="auth-foot">
+                <a href="/">← BACK TO HOME</a>
+              </div>
+
+            </div>
           </div>
-
-          {/* Footer */}
-          <div className="auth-foot">
-            <a href="/">← BACK TO HOME</a>
-          </div>
-
-        </div>
+        </section>
       </div>
     </>
   )
