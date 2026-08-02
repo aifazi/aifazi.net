@@ -4,6 +4,7 @@ FIX #5: Added None guards in pin_thread / lock_thread before accessing thread fi
 """
 import os
 import uuid
+import math
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -162,24 +163,62 @@ async def list_threads(
     page: int = Query(1, ge=1),
     limit: int = Query(20, le=50),
     search: str | None = None,
+    sort: str = "new",
 ):
+    """List threads with sorting + pagination metadata.
+
+    sort: new (created_at desc), top (most likes), hot (recent activity),
+    old (created_at asc). Pinned threads always float to the top.
+    """
+    if sort not in ("new", "top", "hot", "old"):
+        sort = "new"
     q = supabase.table("forum_threads").select(
-        "id,title,category_id,author_id,author_name,tags,pinned,locked,views,reply_count,last_reply_at,created_at"
+        "id,title,category_id,author_id,author_name,tags,pinned,locked,views,reply_count,likes,last_reply_at,created_at"
     )
+    count_q = supabase.table("forum_threads").select("id", count="exact")
     if category_id:
         q = q.eq("category_id", category_id)
+        count_q = count_q.eq("category_id", category_id)
     if search:
         q = q.ilike("title", f"%{search}%")
+        count_q = count_q.ilike("title", f"%{search}%")
     offset = (page - 1) * limit
-    res = q.order("pinned", desc=True).order("last_reply_at", desc=True).range(offset, offset + limit - 1).execute()
+
+    if sort == "top":
+        q = q.order("pinned", desc=True).order("likes", desc=True).order("created_at", desc=True)
+    elif sort == "old":
+        q = q.order("pinned", desc=True).order("created_at")
+    elif sort == "hot":
+        q = q.order("pinned", desc=True).order("last_reply_at", desc=True)
+    else:
+        q = q.order("pinned", desc=True).order("created_at", desc=True)
+
+    count_res = count_q.execute()
+    total = count_res.count if hasattr(count_res, "count") else 0
+    res = q.range(offset, offset + limit - 1).execute()
     rows = res.data or []
-    # Fetch category names
+    # Fetch category names/colors/icons/slugs
     cat_ids = list({r["category_id"] for r in rows if r.get("category_id")})
-    cat_names = {}
+    cat_map = {}
     if cat_ids:
-        c = supabase.table("forum_categories").select("id,name").in_("id", cat_ids).execute()
-        cat_names = {row["id"]: row["name"] for row in (c.data or [])}
-    return [
+        c = supabase.table("forum_categories").select("id,name,icon,color,slug").in_("id", cat_ids).execute()
+        cat_map = {
+            row["id"]: {
+                "_id": row["id"], "name": row.get("name","Unknown"),
+                "icon": row.get("icon","💬"), "color": row.get("color","var(--cyan)"),
+                "slug": row.get("slug",""),
+            } for row in (c.data or [])
+        }
+    # Fetch author avatars/usernames for a richer row
+    author_ids = list({r["author_id"] for r in rows if r.get("author_id")})
+    author_map = {}
+    if author_ids:
+        a = supabase.table("users").select("id,username,avatar,role").in_("id", author_ids).execute()
+        author_map = {
+            u["id"]: {"username": u.get("username","Unknown"), "avatar": u.get("avatar",""), "role": u.get("role","user")}
+            for u in (a.data or [])
+        }
+    threads = [
         {
             "_id": r["id"], "id": r["id"],
             "title": r.get("title",""),
@@ -187,12 +226,15 @@ async def list_threads(
             "locked": r.get("locked",False),
             "views": r.get("views",0),
             "replyCount": r.get("reply_count",0),
+            "likes": (r.get("likes") or []).__len__(),
             "createdAt": r.get("created_at",""),
-            "author": { "username": r.get("author_name","Unknown") },
-            "category": { "_id": r.get("category_id"), "name": cat_names.get(r.get("category_id",""), "Unknown") },
+            "lastReplyAt": r.get("last_reply_at",""),
+            "author": author_map.get(r.get("author_id"), {"username": r.get("author_name","Unknown"), "avatar": "", "role": "user"}),
+            "category": cat_map.get(r.get("category_id"), {"_id": r.get("category_id"), "name": "Unknown", "icon": "💬", "color": "var(--cyan)", "slug": ""}),
         }
         for r in rows
     ]
+    return {"threads": threads, "total": total, "pages": max(1, math.ceil(total / limit)) if total else 1, "page": page}
 
 @router.get("/threads/{thread_id}")
 async def get_thread(thread_id: str):
@@ -713,3 +755,27 @@ async def like_reply(reply_id: str, user: dict = Depends(require_forum_user)):
         likes.append(uid)
     supabase.table("forum_replies").update({"likes": likes}).eq("id", reply_id).execute()
     return {"likes": len(likes), "liked": uid in likes}
+
+@router.post("/replies/{reply_id}/react")
+async def react_reply(reply_id: str, body: ReactBody, user: dict = Depends(require_forum_user)):
+    """Emoji reactions on replies — mirrors the thread reaction behaviour."""
+    uid = _require_user_id(user)
+    if not body.emoji or len(body.emoji) > 8:
+        raise HTTPException(400, "Invalid emoji")
+    r = supabase.table("forum_replies").select("reactions").eq("id", reply_id).single().execute().data
+    if not r:
+        raise HTTPException(404, "Reply not found")
+    reactions = r.get("reactions") or {}
+    users = reactions.get(body.emoji, [])
+    if uid in users:
+        users.remove(uid)
+    else:
+        users.append(uid)
+    if not users:
+        reactions.pop(body.emoji, None)
+    else:
+        reactions[body.emoji] = users
+    supabase.table("forum_replies").update({"reactions": reactions}).eq("id", reply_id).execute()
+    summary = {e: len(v) for e, v in reactions.items()}
+    my_reactions = [e for e, v in reactions.items() if uid in v]
+    return {"reactions": summary, "myReactions": my_reactions}

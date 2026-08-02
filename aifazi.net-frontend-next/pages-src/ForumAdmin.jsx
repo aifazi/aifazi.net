@@ -10,7 +10,8 @@ const S = {
   input: {
     width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
     color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14,
-    padding: '10px 14px', outline: 'none',
+    padding: '10px 14px', outline: 'none', borderRadius: 10,
+    transition: 'border-color 0.15s, box-shadow 0.15s',
   },
   label: {
     fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2,
@@ -19,17 +20,23 @@ const S = {
   btn: (bg = 'var(--green)', color = '#000') => ({
     fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
     padding: '8px 16px', background: bg, color, border: 'none', cursor: 'pointer',
-    transition: 'opacity 0.2s',
+    borderRadius: 10,
+    boxShadow: bg === 'var(--green)' ? '0 0 14px rgba(0,255,136,0.18)' : undefined,
+    transition: 'opacity 0.2s, box-shadow 0.2s',
   }),
-  card: { background: 'var(--bg2)', border: '1px solid var(--border)', padding: 20, marginBottom: 2 },
+  card: { background: 'var(--bg2)', border: '1px solid var(--border)', padding: 20, marginBottom: 2, borderRadius: 14 },
   modal: {
     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
     zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
   },
   modalBox: (accentColor = 'var(--green)') => ({
     width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto',
-    background: 'var(--bg)', border: `1px solid ${accentColor}`,
-    boxShadow: `0 0 40px rgba(0,0,0,0.6)`, padding: 32,
+    background:
+      'radial-gradient(120% 140% at 12% 0%, rgba(0,255,136,0.06), transparent 50%),' +
+      'radial-gradient(120% 140% at 88% 100%, rgba(0,212,255,0.05), transparent 52%),' +
+      'var(--bg)',
+    border: `1px solid ${accentColor}`,
+    boxShadow: `0 0 40px rgba(0,0,0,0.6)`, padding: 32, borderRadius: 16,
   }),
 }
 
@@ -44,7 +51,7 @@ const timeAgo = (date) => {
 
 function StatCard({ label, value, color }) {
   return (
-    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '20px 24px', textAlign: 'center' }}>
+    <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '20px 24px', textAlign: 'center', borderRadius: 14 }}>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 700, color: color || 'var(--green)' }}>{value ?? '—'}</div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>{label}</div>
     </div>
@@ -64,6 +71,7 @@ function useNotify() {
       border: `1px solid ${msg.ok ? 'rgba(0,255,136,0.5)' : 'rgba(255,71,87,0.5)'}`,
       color: msg.ok ? 'var(--green)' : 'var(--red)',
       fontFamily: 'var(--font-mono)', fontSize: 12, padding: '12px 20px', letterSpacing: 1,
+      borderRadius: 10,
     }}>{msg.text}</div>
   ) : null
   return { notify, Toast }
@@ -823,16 +831,16 @@ export default function ForumAdmin({ embedded = false }) {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700 }}>Forum Management</h1>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link to="/admin" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px' }}>← SITE ADMIN</Link>
-          <Link to="/forum" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px' }}>VIEW FORUM →</Link>
+          <Link to="/admin" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 10 }}>← SITE ADMIN</Link>
+          <Link to="/forum" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 10 }}>VIEW FORUM →</Link>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 32, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 32, flexWrap: 'wrap' }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: tab === t.key ? 'rgba(0,255,136,0.1)' : 'var(--bg2)', border: `1px solid ${tab === t.key ? 'rgba(0,255,136,0.4)' : 'var(--border)'}`, color: tab === t.key ? 'var(--green)' : 'var(--muted)', cursor: 'pointer' }}>
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: tab === t.key ? 'rgba(0,255,136,0.1)' : 'var(--bg2)', border: `1px solid ${tab === t.key ? 'rgba(0,255,136,0.4)' : 'var(--border)'}`, color: tab === t.key ? 'var(--green)' : 'var(--muted)', cursor: 'pointer', borderRadius: 999 }}>
             {t.label}
           </button>
         ))}
@@ -841,7 +849,7 @@ export default function ForumAdmin({ embedded = false }) {
       {/* ── OVERVIEW ── */}
       {tab === 'overview' && stats && (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 2, marginBottom: 40 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12, marginBottom: 40 }}>
             <StatCard label="TOTAL USERS"  value={stats.users}      color="var(--green)" />
             <StatCard label="THREADS"      value={stats.threads}    color="var(--cyan)" />
             <StatCard label="REPLIES"      value={stats.replies}    color="var(--orange)" />

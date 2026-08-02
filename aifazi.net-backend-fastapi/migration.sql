@@ -1371,6 +1371,50 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_bans; EXCE
 DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_members; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ─────────────────────────────────────────────────────────────
+-- 14b. BLOG COMMENTS + REACTION COLUMNS
+-- ─────────────────────────────────────────────────────────────
+
+-- Forum replies: emoji reactions map (mirrors forum_threads.reactions)
+DO $$
+BEGIN
+  ALTER TABLE IF EXISTS public.forum_replies
+    ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}'::jsonb;
+END $$;
+
+-- Posts: emoji reactions map (server-persisted, per-user)
+DO $$
+BEGIN
+  ALTER TABLE IF EXISTS public.posts
+    ADD COLUMN IF NOT EXISTS reactions JSONB DEFAULT '{}'::jsonb;
+END $$;
+
+-- Blog comments table
+CREATE TABLE IF NOT EXISTS public.blog_comments (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id     UUID NOT NULL,
+  author_id   UUID,
+  author_name TEXT NOT NULL DEFAULT 'Anonymous',
+  content     TEXT NOT NULL,
+  created_at  TIMESTAMPTZ DEFAULT now(),
+  edited      BOOLEAN DEFAULT FALSE,
+  edited_at   TIMESTAMPTZ
+);
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'blog_comments' AND column_name = 'post_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_blog_comments_post ON public.blog_comments(post_id, created_at);
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.blog_comments;
+EXCEPTION WHEN duplicate_object THEN NULL;
+  WHEN undefined_table THEN NULL;
+END $$;
+
+-- ─────────────────────────────────────────────────────────────
 -- 15. DATA MIGRATIONS (run once, safe to re-run)
 -- ─────────────────────────────────────────────────────────────
 

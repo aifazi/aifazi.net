@@ -7,6 +7,8 @@ import DOMPurify from 'dompurify'
 import PageMeta from '../components/PageMeta'
 import { Slider } from '../core/ui.jsx'
 import { getSupabase } from '@/lib/supabase'
+import { useForum } from '../context/ForumContext'
+import { Card, NeonButton, Badge, Avatar, RoleBadge, EmptyState } from '../components/community'
 
 // ── Smart Video Player ────────────────────────────────────────────────────────
 function VideoPlayer({ src, title = '' }) {
@@ -193,7 +195,6 @@ function VideoPlayer({ src, title = '' }) {
 
 // ── Extract video URL from post content or field ──────────────────────────────
 function extractVideoUrl(content = '') {
-  // Match YouTube, Vimeo, or direct video src in content
   const ytMatch = content.match(/(?:https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11}))/)
   const vimeoMatch = content.match(/(?:https?:\/\/(?:www\.)?vimeo\.com\/(\d+))/)
   const directMatch = content.match(/src=["']([^"']+\.(?:mp4|webm|ogg)(?:\?[^"']*)?)['"]/i)
@@ -238,49 +239,91 @@ function CoverHero({ src, title }) {
   )
 }
 
-function PostReactions({ postId }) {
-  const storageKey = `reactions_${postId}`
-  const [counts, setCounts] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(storageKey)) || {} } catch { return {} }
-  })
-  const [myReaction, setMyReaction] = useState(null)
-
-  useEffect(() => {
-    try { setMyReaction(localStorage.getItem(`my_reaction_${postId}`) || null) } catch {}
-    try { setCounts(JSON.parse(localStorage.getItem(storageKey)) || {}) } catch {}
-  }, [])
+// ── Server-persisted reactions ────────────────────────────────────────────────
+function PostReactions({ slug, postId, initialReactions }) {
+  const { user } = useForum()
+  const [counts, setCounts] = useState({})
+  const [myReactions, setMyReactions] = useState([])
+  const [busy, setBusy] = useState(false)
+  const [needLogin, setNeedLogin] = useState(false)
   const [burst, setBurst] = useState(null)
 
-  const react = (emoji) => {
-    const isUndo = myReaction === emoji
-    const newCounts = { ...counts }
-
-    if (myReaction) newCounts[myReaction] = Math.max(0, (newCounts[myReaction] || 1) - 1)
-    if (!isUndo) { newCounts[emoji] = (newCounts[emoji] || 0) + 1; setBurst(emoji) }
-
-    setCounts(newCounts)
-    localStorage.setItem(storageKey, JSON.stringify(newCounts))
-    const newMine = isUndo ? null : emoji
-    setMyReaction(newMine)
-    if (newMine) localStorage.setItem(`my_reaction_${postId}`, newMine)
-    else localStorage.removeItem(`my_reaction_${postId}`)
-    if (!isUndo) setTimeout(() => setBurst(null), 500)
+  const applySummary = (summary, mine) => {
+    setCounts(summary || {})
+    setMyReactions(mine || [])
   }
+
+  useEffect(() => {
+    const r = initialReactions
+    if (r && typeof r === 'object' && !Array.isArray(r)) {
+      const hasIds = Object.values(r).some(v => Array.isArray(v))
+      if (hasIds) {
+        const summary = {}
+        const mine = []
+        const uid = user?._id || user?.id
+        for (const [emoji, arr] of Object.entries(r)) {
+          summary[emoji] = Array.isArray(arr) ? arr.length : arr
+          if (uid && Array.isArray(arr) && arr.includes(uid)) mine.push(emoji)
+        }
+        applySummary(summary, mine)
+        return
+      }
+      applySummary(r, [])
+    } else {
+      applySummary({}, [])
+    }
+  }, [initialReactions, user?._id])
+
+  const react = async (emoji) => {
+    if (!user) { setNeedLogin(true); return }
+    setBusy(true)
+    try {
+      const res = await api.post(`/blog/${slug}/react`, { emoji })
+      applySummary(res.data.reactions, res.data.myReactions)
+      setBurst(emoji)
+      setTimeout(() => setBurst(null), 500)
+    } catch (err) {
+      if (err.response?.status === 401) setNeedLogin(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const total = Object.values(counts).reduce((a, b) => a + (b || 0), 0)
 
   return (
     <div style={{ marginTop: 48, paddingTop: 32, borderTop: '1px solid var(--border)' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 16 }}>
-        REACTIONS
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>
+          REACTIONS
+        </span>
+        {total > 0 && (
+          <span className="community-badge community-badge-green">{total} total</span>
+        )}
       </div>
+
+      {needLogin && (
+        <Card style={{ marginBottom: 20, textAlign: 'center', padding: 24 }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 14 }}>
+            Log in to react to this post
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+            <NeonButton to="/login" variant="primary" size="sm">Login</NeonButton>
+            <NeonButton to="/forum/register" variant="ghost" size="sm">Register</NeonButton>
+          </div>
+        </Card>
+      )}
+
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {REACTIONS.map(({ emoji, label }) => {
           const count = counts[emoji] || 0
-          const active = myReaction === emoji
+          const active = myReactions.includes(emoji)
           const popping = burst === emoji
           return (
             <button
               key={emoji}
               onClick={() => react(emoji)}
+              disabled={busy}
               title={label}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -289,7 +332,8 @@ function PostReactions({ postId }) {
                 background: active ? 'rgba(0,255,136,0.08)' : 'var(--bg2)',
                 color: active ? 'var(--green)' : 'var(--muted)',
                 fontFamily: 'var(--font-mono)', fontSize: 12,
-                cursor: 'pointer', transition: 'all 0.2s',
+                cursor: busy ? 'wait' : 'pointer', transition: 'all 0.2s',
+                borderRadius: 10,
                 transform: popping ? 'scale(1.25)' : 'scale(1)',
               }}
             >
@@ -299,6 +343,204 @@ function PostReactions({ postId }) {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ── Comments ──────────────────────────────────────────────────────────────────
+function Comments({ slug, postId }) {
+  const { user } = useForum()
+  const [comments, setComments] = useState(null)
+  const [text, setText] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [authPrompt, setAuthPrompt] = useState(false)
+
+  const load = async () => {
+    try {
+      const res = await api.get(`/blog/comments/${slug}`)
+      setComments(res.data || [])
+    } catch {
+      setComments([])
+    }
+  }
+
+  useEffect(() => { load() }, [slug])
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!user) { setAuthPrompt(true); return }
+    if (!text.trim()) return
+    setSubmitting(true)
+    setError('')
+    try {
+      const res = await api.post(`/blog/comments/${slug}`, { content: text })
+      setComments([...(comments || []), res.data])
+      setText('')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to post comment.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const remove = async (comment) => {
+    const isOwner = user && (comment.author?._id === (user._id || user.id))
+    const isStaff = user && ['admin', 'moderator'].includes(user.role)
+    if (!isOwner && !isStaff) return
+    if (!window.confirm('Delete this comment?')) return
+    try {
+      await api.delete(`/blog/comments/${comment._id}`)
+      setComments((comments || []).filter(c => c._id !== comment._id))
+    } catch (err) {
+      if (err.response?.status === 401) setAuthPrompt(true)
+    }
+  }
+
+  const formatDate = d => {
+    if (!d) return ''
+    const dt = new Date(d)
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  return (
+    <div style={{ marginTop: 56, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>COMMENTS</span>
+        {comments && comments.length > 0 && (
+          <span className="community-badge community-badge-cyan">{comments.length}</span>
+        )}
+      </div>
+
+      {authPrompt && (
+        <Card style={{ marginBottom: 20, textAlign: 'center', padding: 24 }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 14 }}>
+            Log in to join the discussion
+          </p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+            <NeonButton to="/login" variant="primary" size="sm">Login</NeonButton>
+            <NeonButton to="/forum/register" variant="ghost" size="sm">Register</NeonButton>
+          </div>
+        </Card>
+      )}
+
+      {/* Composer */}
+      <form onSubmit={submit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder={user ? 'Share your thoughts...' : 'Log in to comment'}
+            rows={3}
+            maxLength={4000}
+            style={{
+              width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
+              borderRadius: 12, color: 'var(--text)', fontFamily: 'var(--font-display)',
+              fontSize: 15, padding: '14px 16px', resize: 'vertical', outline: 'none'
+            }}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+              {text.length}/4000
+            </span>
+            <NeonButton type="submit" variant="primary" size="sm" disabled={submitting || !text.trim()}>
+              {submitting ? 'Posting...' : 'Post Comment'}
+            </NeonButton>
+          </div>
+          {error && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)' }}>{error}</div>}
+        </div>
+      </form>
+
+      {/* List */}
+      <div style={{ marginTop: 28 }}>
+        {comments === null ? (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Loading comments...</div>
+        ) : comments.length === 0 ? (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+            No comments yet — be the first to share your thoughts.
+          </div>
+        ) : (
+          comments.map(comment => {
+            const isOwner = user && (comment.author?._id === (user._id || user.id))
+            const isStaff = user && ['admin', 'moderator'].includes(user.role)
+            const canDelete = isOwner || isStaff
+            return (
+              <div key={comment._id} style={{
+                border: '1px solid var(--border)', borderRadius: 14,
+                background: 'rgba(255,255,255,0.015)', padding: 18, marginBottom: 14
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <Avatar user={comment.author} size={36} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600 }}>
+                        {comment.author?.username || 'Unknown'}
+                      </span>
+                      {comment.author?.role && <RoleBadge role={comment.author.role} />}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>
+                      {formatDate(comment.createdAt)}
+                    </div>
+                  </div>
+                  {canDelete && (
+                    <button onClick={() => remove(comment)} style={{
+                      background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 8,
+                      color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 9,
+                      letterSpacing: 1, padding: '6px 10px', cursor: 'pointer'
+                    }}>DELETE</button>
+                  )}
+                </div>
+                <p style={{ color: 'var(--text)', fontSize: 15, lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {comment.content}
+                </p>
+              </div>
+            )
+          })
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Related posts ─────────────────────────────────────────────────────────────
+function RelatedPosts({ slug, currentId }) {
+  const [related, setRelated] = useState(null)
+  useEffect(() => {
+    api.get(`/blog/${slug}/related?limit=3`).then(res => setRelated(res.data || [])).catch(() => setRelated([]))
+  }, [slug])
+
+  if (related === null) return null
+  if (!related.length) return null
+  const formatDate = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+  return (
+    <div style={{ marginTop: 64, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 20 }}>
+        CONTINUE READING
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+        {related.map(p => (
+          <Link key={p.id} to={`/blog/${p.slug}`} style={{ textDecoration: 'none' }}>
+            <Card hover style={{ height: '100%', padding: 20, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
+                <Badge tone="cyan">{p.category}</Badge>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{formatDate(p.created_at)}</span>
+              </div>
+              <div style={{ color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, lineHeight: 1.4, marginBottom: 10 }}>
+                {p.title}
+              </div>
+              <div style={{ color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, marginTop: 'auto' }}>
+                READ →
+              </div>
+            </Card>
+          </Link>
+        ))}
+      </div>
+      <style>{`
+        @media (max-width: 767px) {
+          .related-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
     </div>
   )
 }
@@ -397,7 +639,7 @@ export default function BlogPost({ initialPost }) {
     <div className="page-container" style={{ textAlign: 'center', padding: '160px 60px', position: 'relative', zIndex: 1 }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
       <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--red)', marginBottom: 24 }}>{error}</div>
-      <Link to="/blog" className="btn-outline">← Back to Blog</Link>
+      <NeonButton to="/blog" variant="ghost">← Back to Blog</NeonButton>
     </div>
   )
 
@@ -452,11 +694,7 @@ export default function BlogPost({ initialPost }) {
 
         {/* Meta */}
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', marginBottom: 24 }}>
-          <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2,
-            padding: '5px 12px', background: 'rgba(0,212,255,0.08)',
-            border: '1px solid rgba(0,212,255,0.2)', color: 'var(--cyan)'
-          }}>{post.category}</span>
+          <Badge tone="cyan">{post.category}</Badge>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
             {formatDate(post.created_at)}
           </span>
@@ -464,7 +702,7 @@ export default function BlogPost({ initialPost }) {
             ⏱ {readingTime(post.content, post.excerpt)}
           </span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-            {post.views} views
+            👁 {post.views} views
           </span>
         </div>
 
@@ -519,12 +757,18 @@ export default function BlogPost({ initialPost }) {
           </div>
         )}
 
-        {/* Reactions */}
-        <PostReactions postId={post._id || post.id || slug} />
+        {/* Reactions (server-persisted) */}
+        <PostReactions slug={post.slug} postId={post._id || post.id} initialReactions={post.reactions} />
+
+        {/* Comments */}
+        <Comments slug={post.slug} postId={post._id || post.id} />
+
+        {/* Related posts */}
+        <RelatedPosts slug={post.slug} currentId={post.id} />
 
         {/* Back to blog */}
         <div style={{ marginTop: 60 }}>
-          <Link to="/blog" className="btn-outline">← Back to All Posts</Link>
+          <NeonButton to="/blog" variant="ghost">← Back to All Posts</NeonButton>
         </div>
         </article>
       </div>
@@ -554,6 +798,7 @@ export default function BlogPost({ initialPost }) {
           font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px;
           padding: 8px 12px; border: 1px solid var(--border); background: var(--bg2);
           color: var(--muted); text-decoration: none; cursor: pointer;
+          border-radius: 8px;
         }
         .blog-actions button:hover, .blog-actions a:hover { color: var(--green); border-color: rgba(0,255,136,0.35); }
         .post-content { line-height: 1.8; font-size: 17px; }
@@ -568,11 +813,11 @@ export default function BlogPost({ initialPost }) {
         .post-content code {
           font-family: var(--font-mono); font-size: 13px;
           background: var(--bg3); border: 1px solid var(--border);
-          padding: 2px 8px; border-radius: 2px; color: var(--cyan);
+          padding: 2px 8px; border-radius: 4px; color: var(--cyan);
         }
         .post-content pre {
           background: var(--bg3); border: 1px solid var(--border);
-          padding: 24px; overflow-x: auto; margin: 1.5em 0; border-radius: 4px;
+          padding: 24px; overflow-x: auto; margin: 1.5em 0; border-radius: 12px;
         }
         .post-content pre code {
           background: none; border: none; padding: 0; font-size: 14px; line-height: 1.6;

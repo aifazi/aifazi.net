@@ -4,12 +4,11 @@ import { useNavigate, useSearchParams, Link } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { Select } from '../core/ui.jsx'
+import { Card, NeonButton } from '../components/community'
 
 export default function ForumNewThread() {
   const { user } = useForum()
   const navigate = useNavigate()
-  // Next.js useSearchParams() can be null before Suspense hydration completes —
-  // always use optional chaining to avoid "Cannot read properties of null (reading 'get')"
   const searchParams = useSearchParams()
   const catFromUrl = searchParams?.get('cat') ?? ''
 
@@ -64,95 +63,97 @@ export default function ForumNewThread() {
     finally { setSubmitting(false) }
   }
 
+  const field = { fontFamily: 'var(--font-display)', fontSize: 15, width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', padding: '12px 16px', outline: 'none' }
+  const label = { fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }
+
   return (
-    <div className="page-container" style={{ position: 'relative', zIndex: 1 }}>
-      <div style={{ maxWidth: 800, margin: '0 auto', paddingBottom: 80 }}>
+    <div className="page-container community-page" style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ maxWidth: 820, margin: '0 auto', paddingBottom: 80 }}>
 
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 28 }}>
           <Link to="/forum" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO FORUM</Link>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px,4vw,40px)', fontWeight: 700, marginTop: 16 }}>New Thread</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px,4vw,40px)', fontWeight: 700, margin: '14px 0 0', color: 'var(--text)' }}>New Thread</h1>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Category */}
-          <div>
-            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>CATEGORY *</label>
-            {catsLoading ? (
-              <div style={{ padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Loading categories...</div>
-            ) : catsError ? (
-              <div style={{ padding: '12px 16px', background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.2)', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)' }}>Failed to load categories. Please refresh.</div>
-            ) : cats.filter(c => !c.locked).length === 0 ? (
-              <div style={{ padding: '14px 16px', background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.3)', fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff6b35', lineHeight: 1.7 }}>
-                ⚠️ No categories exist yet.{' '}
-                <a href="/admin" style={{ color: 'var(--green)', textDecoration: 'none' }}>Go to Admin Panel → Forum Admin</a>
-                {' '}to create forum categories first.
-              </div>
-            ) : (
-              <Select value={form.category} onChange={v => setForm(f => ({ ...f, category: v }))}
-                placeholder="Select a category..."
-                style={{ background: 'var(--bg2)', fontSize: 15 }}
-                options={[['', 'Select a category...'], ...cats.filter(c => !c.locked).map(c => [c.id || c._id, `${c.icon} ${c.name}`])]} />
-            )}
-          </div>
-
-          {/* Title */}
-          <div>
-            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>TITLE *</label>
-            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              placeholder="Give your thread a clear title..."
-              maxLength={200}
-              style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 18, padding: '12px 16px', outline: 'none' }} />
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{form.title.length}/200</div>
-          </div>
-
-          {/* Content */}
-          <div>
-            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>CONTENT *</label>
-            <textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-              placeholder="Write your post... Be clear and descriptive."
-              rows={10}
-              style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 15, padding: '14px 16px', outline: 'none', resize: 'vertical', lineHeight: 1.8 }} />
-          </div>
-
-          {/* Attachments */}
-          <div>
-            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>ATTACHMENTS</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-              {attachments.map((f, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>
-                  {f.mimetype?.startsWith('image/') ? '🖼' : f.mimetype?.startsWith('video/') ? '🎬' : '📎'} {f.original_name}
-                  <button onClick={() => removeAttachment(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 13, padding: 0 }}>✕</button>
+        <Card style={{ padding: 'clamp(20px, 3vw, 32px)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+            {/* Category */}
+            <div>
+              <label style={label}>CATEGORY *</label>
+              {catsLoading ? (
+                <div style={{ padding: '12px 16px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Loading categories...</div>
+              ) : catsError ? (
+                <div style={{ padding: '12px 16px', background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.2)', borderRadius: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)' }}>Failed to load categories. Please refresh.</div>
+              ) : cats.filter(c => !c.locked).length === 0 ? (
+                <div style={{ padding: '14px 16px', background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.3)', borderRadius: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff6b35', lineHeight: 1.7 }}>
+                  ⚠️ No categories exist yet.{' '}
+                  <a href="/admin" style={{ color: 'var(--green)', textDecoration: 'none' }}>Go to Admin Panel → Forum Admin</a>
+                  {' '}to create forum categories first.
                 </div>
-              ))}
+              ) : (
+                <Select value={form.category} onChange={v => setForm(f => ({ ...f, category: v }))}
+                  placeholder="Select a category..."
+                  style={{ background: 'var(--bg3)', fontSize: 15, borderRadius: 10 }}
+                  options={[['', 'Select a category...'], ...cats.filter(c => !c.locked).map(c => [c.id || c._id, `${c.icon} ${c.name}`])]} />
+              )}
             </div>
-            <button type="button" onClick={() => fileInputRef.current.click()} disabled={uploading}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 18px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}>
-              {uploading ? '⏳ UPLOADING...' : '📎 ATTACH FILES (Images, Videos, Docs)'}
-            </button>
-            <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} />
-          </div>
 
-          {/* Tags */}
-          <div>
-            <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>TAGS <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(comma-separated, optional)</span></label>
-            <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
-              placeholder="networking, cisco, vpn"
-              style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 15, padding: '10px 16px', outline: 'none' }} />
-          </div>
+            {/* Title */}
+            <div>
+              <label style={label}>TITLE *</label>
+              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="Give your thread a clear title..."
+                maxLength={200}
+                style={{ ...field, fontSize: 18 }} />
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{form.title.length}/200</div>
+            </div>
 
-          {error && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)', padding: '10px 16px', background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.2)' }}>{error}</div>}
+            {/* Content */}
+            <div>
+              <label style={label}>CONTENT *</label>
+              <textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+                placeholder="Write your post... Be clear and descriptive."
+                rows={10}
+                style={{ ...field, resize: 'vertical', lineHeight: 1.8 }} />
+            </div>
 
-          <div style={{ display: 'flex', gap: 12, paddingTop: 8, flexWrap: 'wrap' }} className="forum-submit-row">
-            <button onClick={handleSubmit} disabled={submitting}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '12px 28px', background: 'var(--green)', color: '#000', border: 'none', cursor: 'pointer', opacity: submitting ? 0.7 : 1, fontWeight: 700 }}>
-              {submitting ? 'POSTING...' : '🚀 POST THREAD'}
-            </button>
-            <button onClick={() => navigate(-1)}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '12px 20px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}>
-              CANCEL
-            </button>
+            {/* Attachments */}
+            <div>
+              <label style={label}>ATTACHMENTS</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                {attachments.map((f, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>
+                    {f.mimetype?.startsWith('image/') ? '🖼' : f.mimetype?.startsWith('video/') ? '🎬' : '📎'} {f.original_name}
+                    <button onClick={() => removeAttachment(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 13, padding: 0 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+              <NeonButton variant="ghost" size="sm" onClick={() => fileInputRef.current.click()} disabled={uploading}>
+                {uploading ? '⏳ Uploading...' : '📎 Attach Files (Images, Videos, Docs)'}
+              </NeonButton>
+              <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} />
+            </div>
+
+            {/* Tags */}
+            <div>
+              <label style={label}>TAGS <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(comma-separated, optional)</span></label>
+              <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+                placeholder="networking, cisco, vpn"
+                style={field} />
+            </div>
+
+            {error && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)', padding: '10px 16px', background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.2)', borderRadius: 10 }}>{error}</div>}
+
+            <div style={{ display: 'flex', gap: 12, paddingTop: 8, flexWrap: 'wrap' }} className="forum-submit-row">
+              <NeonButton variant="primary" size="lg" onClick={handleSubmit} disabled={submitting}>
+                {submitting ? 'Posting...' : '🚀 Post Thread'}
+              </NeonButton>
+              <NeonButton variant="ghost" size="lg" onClick={() => navigate(-1)}>
+                Cancel
+              </NeonButton>
+            </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   )

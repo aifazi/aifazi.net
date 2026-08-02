@@ -1,8 +1,9 @@
 """
-routers/blog.py — Blog posts CRUD
+routers/blog.py — Blog posts CRUD + comments + reactions + related posts
 FIX #2: Moved /meta/categories and /admin/all ABOVE /{slug} wildcard.
 FIX #6: Pagination count now respects published filter.
 """
+import math
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from database import supabase
@@ -10,6 +11,25 @@ from dependencies import require_staff, get_current_user
 from datetime import datetime, timezone
 
 router = APIRouter()
+
+
+def _resolve_post_id(post_id_or_slug: str) -> str | None:
+    """Resolve a post id or slug to the post's id (uuid)."""
+    if not post_id_or_slug:
+        return None
+    if len(post_id_or_slug) == 36 and "-" in post_id_or_slug:
+        try:
+            import uuid as _uuid
+            _uuid.UUID(post_id_or_slug)
+            res = supabase.table("posts").select("id").eq("id", post_id_or_slug).limit(1).execute()
+            if res.data:
+                return res.data[0]["id"]
+        except ValueError:
+            pass
+    res = supabase.table("posts").select("id").eq("slug", post_id_or_slug).limit(1).execute()
+    if res.data:
+        return res.data[0]["id"]
+    return None
 
 class PostBody(BaseModel):
     title: str
@@ -38,6 +58,122 @@ async def admin_all_posts(_: dict = Depends(require_staff)):
         "id,title,slug,excerpt,cover_image,category,tags,published,views,created_at,author_name"
     ).order("created_at", desc=True).limit(1000).execute()
     return res.data or []
+
+# ── Comments (public read; auth write) ─────────────────────────────────────────
+class CommentBody(BaseModel):
+    content: str
+    author_name: str = ""
+
+@router.get("/comments/{post_id_or_slug}")
+async def list_comments(post_id_or_slug: str):
+    post_id = _resolve_post_id(post_id_or_slug)
+    if not post_id:
+        raise HTTPException(404, "Post not found")
+    res = supabase.table("blog_comments") \
+        .select("id,content,author_name,author_id,created_at") \
+        .eq("post_id", post_id).order("created_at").limit(500).execute()
+    author_ids = list({c["author_id"] for c in (res.data or []) if c.get("author_id")})
+    profiles = {}
+    if author_ids:
+        p = supabase.table("users").select("id,username,avatar,role").in_("id", author_ids).execute()
+        profiles = {
+            u["id"]: {"_id": u["id"], "username": u.get("username","Unknown"), "avatar": u.get("avatar",""), "role": u.get("role","user")}
+            for u in (p.data or [])
+        }
+    return [
+        {
+            "_id": c["id"], "id": c["id"],
+            "content": c.get("content",""),
+            "createdAt": c.get("created_at",""),
+            "author": profiles.get(c.get("author_id")) or {"username": c.get("author_name","Anonymous"), "avatar": "", "role": "user", "_id": None},
+        }
+        for c in (res.data or [])
+    ]
+
+@router.post("/comments/{post_id_or_slug}")
+async def create_comment(post_id_or_slug: str, body: CommentBody, user: dict = Depends(get_current_user)):
+    if not body.content or not body.content.strip():
+        raise HTTPException(400, "Comment cannot be empty")
+    if len(body.content) > 4000:
+        raise HTTPException(400, "Comment is too long (max 4000 chars)")
+    post_id = _resolve_post_id(post_id_or_slug)
+    if not post_id:
+        raise HTTPException(404, "Post not found")
+    uid = user.get("id") or user.get("sub")
+    now = datetime.now(timezone.utc).isoformat()
+    res = supabase.table("blog_comments").insert({
+        "post_id": post_id,
+        "author_id": uid,
+        "author_name": body.author_name or user.get("username", "Anonymous"),
+        "content": body.content.strip(),
+        "created_at": now,
+    }).execute()
+    row = res.data[0]
+    return {
+        "_id": row["id"], "id": row["id"],
+        "content": row["content"],
+        "createdAt": row.get("created_at",""),
+        "author": {"_id": uid, "username": row.get("author_name","Anonymous"), "avatar": user.get("avatar",""), "role": user.get("role","user")},
+    }
+
+@router.delete("/comments/{comment_id}")
+async def delete_comment(comment_id: str, user: dict = Depends(get_current_user)):
+    c = supabase.table("blog_comments").select("id,author_id").eq("id", comment_id).single().execute().data
+    if not c:
+        raise HTTPException(404, "Comment not found")
+    uid = user.get("id") or user.get("sub")
+    if c["author_id"] != uid and user.get("role") not in ("admin", "moderator"):
+        raise HTTPException(403, "Not your comment")
+    supabase.table("blog_comments").delete().eq("id", comment_id).execute()
+    return {"message": "Deleted"}
+
+# ── Reactions (server-persisted) ────────────────────────────────────────────────
+class ReactBody(BaseModel):
+    emoji: str
+
+@router.post("/{slug}/react")
+async def react_post(slug: str, body: ReactBody, user: dict = Depends(get_current_user)):
+    if not body.emoji or len(body.emoji) > 8:
+        raise HTTPException(400, "Invalid emoji")
+    res = supabase.table("posts").select("id,reactions").eq("slug", slug).single().execute()
+    if not res.data:
+        raise HTTPException(404, "Post not found")
+    uid = user.get("id") or user.get("sub")
+    post = res.data
+    reactions = post.get("reactions") or {}
+    users = reactions.get(body.emoji, [])
+    if uid in users:
+        users.remove(uid)
+    else:
+        users.append(uid)
+    if not users:
+        reactions.pop(body.emoji, None)
+    else:
+        reactions[body.emoji] = users
+    supabase.table("posts").update({"reactions": reactions}).eq("id", post["id"]).execute()
+    summary = {e: len(v) for e, v in reactions.items()}
+    my_reactions = [e for e, v in reactions.items() if uid in v]
+    return {"reactions": summary, "myReactions": my_reactions}
+
+# ── Related posts (same category, newest first) ────────────────────────────────
+@router.get("/{slug}/related")
+async def related_posts(slug: str, limit: int = 3):
+    res = supabase.table("posts").select("id,title,slug,excerpt,cover_image,category,created_at").eq("slug", slug).single().execute()
+    if not res.data:
+        raise HTTPException(404, "Post not found")
+    post = res.data
+    related = supabase.table("posts") \
+        .select("id,title,slug,excerpt,cover_image,category,created_at,views") \
+        .eq("category", post.get("category","")).eq("published", True).neq("id", post["id"]) \
+        .order("created_at", desc=True).limit(limit).execute()
+    rows = related.data or []
+    if len(rows) < limit:
+        extra = supabase.table("posts") \
+            .select("id,title,slug,excerpt,cover_image,category,created_at,views") \
+            .eq("published", True).neq("id", post["id"]).not_.in_("id", [r["id"] for r in rows] or ["00000000-0000-0000-0000-000000000000"]) \
+            .order("created_at", desc=True).limit(limit - len(rows)).execute()
+        rows = rows + (extra.data or [])
+    return rows
 
 # ── List posts (public: published only; staff: all) ────────────────────────────
 @router.get("")

@@ -10,7 +10,8 @@ const inputStyle = {
   width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
   color: 'var(--text)', fontFamily: 'var(--font-display)',
   fontSize: 15, padding: '12px 16px', outline: 'none',
-  transition: 'border-color 0.2s',
+  borderRadius: 10,
+  transition: 'border-color 0.2s, box-shadow 0.2s',
 }
 
 const labelStyle = {
@@ -23,25 +24,37 @@ const btnStyle = (bg = 'var(--green)', disabled = false) => ({
   padding: '14px', background: bg, color: bg === 'var(--green)' || bg === 'var(--cyan)' ? '#000' : '#e2e8f0',
   border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
   opacity: disabled ? 0.6 : 1, fontWeight: 700, width: '100%',
-  transition: 'opacity 0.2s',
+  borderRadius: 10,
+  boxShadow: bg === 'var(--green)' ? '0 0 18px rgba(0,255,136,0.22)' : bg === 'var(--cyan)' ? '0 0 18px rgba(0,212,255,0.2)' : undefined,
+  transition: 'opacity 0.2s, box-shadow 0.2s, transform 0.2s',
 })
 
 const ErrorBox = ({ msg }) => msg ? (
-  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)', padding: '10px 16px', background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.2)' }}>
+  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)', padding: '10px 16px', background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.2)', borderRadius: 10 }}>
     {msg}
   </div>
 ) : null
 
 const SuccessBox = ({ msg }) => msg ? (
-  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', padding: '12px 16px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.2)', lineHeight: 1.6 }}>
+  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', padding: '12px 16px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: 10, lineHeight: 1.6 }}>
     {msg}
   </div>
 ) : null
 
 const PageWrap = ({ children }) => (
-  <div className="page-container" style={{ zIndex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '40px 24px' }}>
-    <div style={{ width: '100%', maxWidth: 420 }}>
-      {children}
+  <div className="page-container community-page" style={{ zIndex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '40px 24px' }}>
+    <div style={{ width: '100%', maxWidth: 440 }}>
+      <div style={{
+        border: '1px solid var(--border)', borderRadius: 18,
+        padding: 'clamp(28px, 5vw, 44px)',
+        background:
+          'radial-gradient(120% 140% at 12% 0%, rgba(0,255,136,0.07), transparent 50%),' +
+          'radial-gradient(120% 140% at 88% 100%, rgba(0,212,255,0.06), transparent 52%),' +
+          'color-mix(in srgb, var(--bg2) 90%, var(--bg) 10%)',
+        boxShadow: 'var(--shadow-card)',
+      }}>
+        {children}
+      </div>
     </div>
   </div>
 )

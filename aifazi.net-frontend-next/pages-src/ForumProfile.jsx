@@ -45,8 +45,9 @@ function AdminPortalLink({ compact = false }) {
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
       padding: compact ? '8px 12px' : '10px 16px',
       color: '#000', background: 'var(--green)', border: '1px solid var(--green)',
-      borderRadius: 7, textDecoration: 'none', whiteSpace: 'nowrap',
-      boxShadow: '0 0 18px rgba(0,255,136,0.16)',
+      borderRadius: 10, textDecoration: 'none', whiteSpace: 'nowrap',
+      boxShadow: '0 0 18px rgba(0,255,136,0.22)',
+      transition: 'box-shadow 0.2s, transform 0.2s',
     }}>
       ADMIN PORTAL
     </Link>
@@ -56,9 +57,10 @@ function AdminPortalLink({ compact = false }) {
 /* ─── Shared micro-components ────────────────────────────────────────────── */
 function Badge({ label, color = CLRS.cyan, icon }) {
   return (
-    <span style={{ ...M, fontSize: 8, letterSpacing: 2, padding: '3px 9px',
+    <span style={{ ...M, fontSize: 8, letterSpacing: 2, padding: '4px 10px',
       color, background: color + '18', border: `1px solid ${color}40`,
-      borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 4,
+      whiteSpace: 'nowrap' }}>
       {icon && <span>{icon}</span>}{label}
     </span>
   )
@@ -66,7 +68,13 @@ function Badge({ label, color = CLRS.cyan, icon }) {
 
 function SectionCard({ title, tag, children, action, noPad }) {
   return (
-    <div data-fun-drag style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+    <div style={{
+      background:
+        'radial-gradient(120% 140% at 12% 0%, rgba(0,255,136,0.04), transparent 50%),' +
+        'color-mix(in srgb, var(--bg2) 92%, var(--bg) 8%)',
+      border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden',
+      marginBottom: 16, boxShadow: 'var(--shadow-card)',
+    }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.015)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -85,10 +93,10 @@ function Inp({ label, id, ...props }) {
     <div>
       {label && <label htmlFor={id} style={{ ...M, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{label}</label>}
       <input id={id} {...props} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
-        color: 'var(--text)', ...M, fontSize: 12, padding: '10px 13px', borderRadius: 6,
-        outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s', ...props.style }}
-        onFocus={e => e.target.style.borderColor = 'var(--cyan)'}
-        onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+        color: 'var(--text)', ...M, fontSize: 12, padding: '10px 13px', borderRadius: 10,
+        outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s', ...props.style }}
+        onFocus={e => { e.target.style.borderColor = 'var(--cyan)'; e.target.style.boxShadow = '0 0 0 3px rgba(0,212,255,0.12)' }}
+        onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.boxShadow = 'none' }} />
     </div>
   )
 }
@@ -98,10 +106,11 @@ function Btn({ children, color = CLRS.green, ghost, onClick, disabled, small, ty
   return (
     <button type={type} onClick={onClick} disabled={disabled} style={{
       ...M, fontSize: small ? 9 : 10, letterSpacing: 2, fontWeight: 700,
-      padding: small ? '7px 14px' : '10px 22px', borderRadius: 6, cursor: disabled ? 'not-allowed' : 'pointer',
+      padding: small ? '7px 14px' : '10px 22px', borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer',
       background: disabled ? 'var(--bg3)' : ghost ? 'transparent' : c + '18',
       border: `1px solid ${disabled ? 'var(--border)' : c}`,
       color: disabled ? 'var(--muted)' : c, transition: 'all 0.15s', opacity: disabled ? 0.6 : 1,
+      boxShadow: !disabled && !ghost && c === CLRS.green ? '0 0 14px rgba(0,255,136,0.14)' : undefined,
     }}>{children}</button>
   )
 }
@@ -110,7 +119,7 @@ function StatusMsg({ msg, type = 'success' }) {
   if (!msg) return null
   const ok = type === 'success'
   return (
-    <div style={{ ...M, fontSize: 11, padding: '9px 13px', borderRadius: 6, marginTop: 10,
+    <div style={{ ...M, fontSize: 11, padding: '9px 13px', borderRadius: 10, marginTop: 10,
       color: ok ? CLRS.green : CLRS.red,
       background: ok ? 'rgba(0,255,136,0.06)' : 'rgba(255,71,87,0.06)',
       border: `1px solid ${ok ? 'rgba(0,255,136,0.25)' : 'rgba(255,71,87,0.25)'}` }}>
