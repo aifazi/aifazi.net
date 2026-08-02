@@ -19,7 +19,11 @@ export default function Home() {
   const location = useLocation()
 
   useEffect(() => {
-    const scrollTo = location.state?.scrollTo || 'about'
+    if (!location.state?.scrollTo) {
+      window.scrollTo(0, 0)
+      return
+    }
+    const scrollTo = location.state.scrollTo
     let attempts = 0
     const tryScroll = () => {
       const el = document.getElementById(scrollTo)
