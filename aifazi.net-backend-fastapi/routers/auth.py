@@ -348,7 +348,7 @@ def _get_forum_user(creds: HTTPAuthorizationCredentials | None) -> dict | None:
         return None
     try:
         payload = jwt.decode(creds.credentials, SECRET, algorithms=[ALGO])
-        if payload.get("purpose") or payload.get("tfa_pending"):
+        if payload.get("purpose") not in (None, "auth") or payload.get("tfa_pending"):
             return None
         return payload
     except JWTError:
@@ -722,7 +722,7 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
         payload = jwt.decode(token_str, SECRET, algorithms=[ALGO])
     except Exception:
         raise HTTPException(401, "Invalid refresh token")
-    if payload.get("purpose") or payload.get("tfa_pending"):
+    if payload.get("purpose") not in (None, "auth") or payload.get("tfa_pending"):
         raise HTTPException(401, "Invalid refresh token")
 
     user_id = payload.get("id")
