@@ -99,7 +99,7 @@ export default function Blog({ initialPosts }) {
   const rest = featured ? posts.slice(1) : posts
 
   return (
-    <div className="page-container community-page" style={{ padding: '0 0 80px', position: 'relative', zIndex: 1 }}>
+    <div className="page-container community-page" style={{ position: 'relative', zIndex: 1 }}>
       <PageMeta
         title="Blog"
         description="Networking deep-dives, security guides, infrastructure walkthroughs and lessons from the field."
@@ -108,7 +108,7 @@ export default function Blog({ initialPosts }) {
 
       <div className="community-shell">
         {/* Banner */}
-        <div className="community-banner" style={{ marginBottom: 0, borderRadius: '0 0 18px 18px' }}>
+        <div className="community-banner">
           <div className="community-banner-eyebrow">// BLOG</div>
           <h1 className="community-banner-title">Field Notes &<br /><em>Tech Insights</em></h1>
           <p className="community-banner-text">
@@ -191,7 +191,7 @@ export default function Blog({ initialPosts }) {
             {/* Featured post */}
             {featured && (
               <Link to={`/blog/${featured.slug}`} style={{ textDecoration: 'none' }}>
-                <Card hover style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)', overflow: 'hidden', marginBottom: 26 }}>
+                <Card hover className="blog-featured" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)', overflow: 'hidden', marginBottom: 26 }}>
                   <div className="blog-cover-wrapper" style={{ height: '100%', minHeight: 280 }}>
                     <NextImage
                       src={mediaUrl(featured.cover_image || '')}
@@ -265,6 +265,8 @@ export default function Blog({ initialPosts }) {
         @media (max-width: 1023px) {
           .blog-posts-grid { grid-template-columns: repeat(2, 1fr); }
           .blog-cover-wrapper { height: 200px; }
+          .blog-featured { grid-template-columns: 1fr !important; }
+          .blog-featured .blog-cover-wrapper { min-height: 240px !important; }
         }
         @media (max-width: 767px) {
           .blog-posts-grid { grid-template-columns: 1fr; }
@@ -272,6 +274,7 @@ export default function Blog({ initialPosts }) {
         }
         @media (max-width: 480px) {
           .blog-cover-wrapper { height: 170px; }
+          .blog-featured .blog-cover-wrapper { min-height: 190px !important; }
         }
       `}</style>
     </div>

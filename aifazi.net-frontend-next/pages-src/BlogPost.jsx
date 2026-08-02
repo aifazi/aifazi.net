@@ -518,7 +518,7 @@ function RelatedPosts({ slug, currentId }) {
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 20 }}>
         CONTINUE READING
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+      <div className="related-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
         {related.map(p => (
           <Link key={p.id} to={`/blog/${p.slug}`} style={{ textDecoration: 'none' }}>
             <Card hover style={{ height: '100%', padding: 20, display: 'flex', flexDirection: 'column' }}>
@@ -537,9 +537,8 @@ function RelatedPosts({ slug, currentId }) {
         ))}
       </div>
       <style>{`
-        @media (max-width: 767px) {
-          .related-grid { grid-template-columns: 1fr; }
-        }
+        .related-grid { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 1023px) { .related-grid { grid-template-columns: 1fr !important; } }
       `}</style>
     </div>
   )
