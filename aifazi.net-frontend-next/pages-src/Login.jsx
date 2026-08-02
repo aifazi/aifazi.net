@@ -1227,7 +1227,7 @@ export default function Login() {
           position: relative; z-index: 1;
           display: grid; grid-template-columns: 44fr 56fr; gap: 64px;
           align-items: center; min-height: calc(100vh - 170px);
-          max-width: 1180px; margin: 0 auto; padding: 44px 24px 40px;
+          max-width: 1180px; margin: 0 auto; padding: 96px 24px 40px;
         }
 
         /* ── Left: hero / illustration ────────────────────────────── */
@@ -1555,12 +1555,12 @@ export default function Login() {
 
         /* ── Responsive ───────────────────────────────────────────── */
         @media (max-width: 1024px) {
-          .auth-page { gap: 40px; padding: 40px 20px; }
+          .auth-page { gap: 40px; padding: 96px 20px 40px; }
           .auth-illus { width: 280px; height: 250px; }
         }
 
         @media (max-width: 860px) {
-          .auth-page { grid-template-columns: 1fr; gap: 28px; min-height: 0; padding-top: 36px; }
+          .auth-page { grid-template-columns: 1fr; gap: 28px; min-height: 0; padding-top: 96px; }
           .auth-hero { align-items: center; text-align: center; }
           .auth-hero-title, .auth-hero-sub { text-align: center; }
           .auth-illus { width: 260px; height: 230px; margin-bottom: 26px; }
