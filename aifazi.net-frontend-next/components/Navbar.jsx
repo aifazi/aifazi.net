@@ -196,7 +196,12 @@ export default function Navbar() {
       if (e.detail?.headerStyle) setHeaderStyle(pkgOverride() || e.detail.headerStyle)
     }
     const onUserPkg = (e) => {
-      if (e.detail?.settings?.headerStyle) setHeaderStyle(e.detail.settings.headerStyle)
+      // Re-read localStorage so a cleared package (empty settings event)
+      // reverts to the site default instead of staying stuck on the package style.
+      const fromPkg = pkgOverride()
+      const fromEvent = e.detail?.settings?.headerStyle
+      if (fromPkg || fromEvent) { setHeaderStyle(fromPkg || fromEvent); return }
+      getSiteSettings().then(s => { if (s.headerStyle) setHeaderStyle(s.headerStyle) }).catch(() => {})
     }
     window.addEventListener('site-settings-updated', onUpdate)
     window.addEventListener('user-package-updated', onUserPkg)

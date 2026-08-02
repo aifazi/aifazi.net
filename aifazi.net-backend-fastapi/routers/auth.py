@@ -673,6 +673,23 @@ async def login(body: LoginBody, request: Request, response: Response):
     if not user.get("email_verified"):
         raise HTTPException(403, "Email not verified")
 
+    # C3 — enforce 2FA for forum users too. The TOTP check was previously only
+    # in the staff branch (and in the parallel forum_auth.py), so a user who
+    # enabled 2FA could still log in with password-only via this endpoint —
+    # the primary login path used by the web app.
+    if user.get("totp_enabled") and user.get("totp_secret"):
+        _auth_log(user["username"], success=True, ip=client_ip, user_agent=user_agent,
+                  role=user.get("role", ""), reason="2fa_required")
+        return {
+            "requires_2fa": True,
+            "partial_token": make_token({
+                "username": user["username"], "role": user.get("role", "user"),
+                "id": user["id"], "tfa_pending": True,
+            }, 5),
+            "verify_path": "/auth/2fa/verify",
+            "user_type": "forum",
+        }
+
     _auth_log(user["username"], success=True, ip=client_ip, user_agent=user_agent,
               role=user.get("role", ""), reason="login_success")
     _record_user_activity(user["id"], user["username"], "login", f"IP: {client_ip}", client_ip)
@@ -1252,6 +1269,16 @@ async def resend_verification(body: ResendBody):
     await _queue_activation_email(user["email"], verify_url, user.get("username") or "")
     return {"message": "Verification email sent"}
 
+# ── Verify status (used by the "waiting for activation" screen on /login) ──────
+@router.get("/verify-status")
+async def verify_status(email: str):
+    """Return whether the account for this email has been verified yet.
+    The /login VerifyWaiting screen polls this every 3s after registration and
+    auto-advances once the user clicks the email link."""
+    res = supabase.table("users").select("email_verified").ilike("email", email.strip()).limit(1).execute()
+    verified = bool(res.data and res.data[0].get("email_verified"))
+    return {"verified": verified, "found": bool(res.data)}
+
 @router.post("/register")
 async def register(body: RegisterBody):
     pw = body.password
@@ -1329,7 +1356,12 @@ async def reset(body: ResetBody):
     if expires < datetime.now(timezone.utc):
         raise HTTPException(400, "Token expired")
     hashed = _hash(body.password)
-    supabase.table("users").update({"password_hash": hashed, "reset_token": None, "reset_expires": None}).eq("id", user["id"]).execute()
+    # C3 — revoke any previously-issued refresh token on password change so a
+    # stolen/old refresh cookie can't silently re-login after a reset.
+    supabase.table("users").update({
+        "password_hash": hashed, "reset_token": None, "reset_expires": None,
+        "refresh_token": None,
+    }).eq("id", user["id"]).execute()
     return {"message": "Password reset successfully"}
 
 @router.get("/me")

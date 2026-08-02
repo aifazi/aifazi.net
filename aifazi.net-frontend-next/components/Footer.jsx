@@ -567,7 +567,12 @@ export default function Footer() {
       if (e.detail?.footerStyle) setFooterStyle(pkgOverride() || e.detail.footerStyle)
     }
     const onUserPkg = (e) => {
-      if (e.detail?.settings?.footerStyle) setFooterStyle(e.detail.settings.footerStyle)
+      // Re-read localStorage so a cleared package (empty settings event)
+      // reverts to the site default instead of staying stuck on the package style.
+      const fromPkg = pkgOverride()
+      const fromEvent = e.detail?.settings?.footerStyle
+      if (fromPkg || fromEvent) { setFooterStyle(fromPkg || fromEvent); return }
+      getSiteSettings().then(s => { if (s.footerStyle) setFooterStyle(s.footerStyle) }).catch(() => {})
     }
     window.addEventListener('site-settings-updated', onUpdate)
     window.addEventListener('user-package-updated', onUserPkg)

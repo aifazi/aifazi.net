@@ -745,22 +745,34 @@ export default function Login() {
   useEffect(() => {
     const token = getAuthToken()
     const nextPath = safeNextPath(searchParams?.get('next'))
-    if (!token) return
-    // Decode role from JWT payload (no verification needed — just for routing)
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      const role = payload?.role || ''
-
+    const go = (role) => {
       if (nextPath) { router.replace(nextPath); return }
       if (ADMIN_ROLES.includes(role)) {
         router.replace('/admin')
       } else {
         router.replace('/profile')
       }
-    } catch {
-      // Malformed token — clear it and stay on login
-      clearAuthTokens()
     }
+    // Fast path: in-memory access token (same-tab session after login).
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        go(payload?.role || '')
+        return
+      } catch {
+        // Malformed token — clear it and stay on login
+        clearAuthTokens()
+      }
+    }
+    // Cookie session path: after a reload _memToken is null, but the HttpOnly
+    // auth_token/refresh_token cookies may still authenticate the visitor.
+    // Probe /auth/me so a logged-in user isn't shown the login form.
+    api.get('/auth/me')
+      .then(r => {
+        const u = r.data?.user || r.data
+        if (u?.username) go(u?.role || '')
+      })
+      .catch(() => { /* genuinely signed out — stay on login */ })
   }, [])
 
   const switchTab = (t) => {

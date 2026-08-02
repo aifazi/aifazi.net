@@ -272,8 +272,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   // the site-wide admin settings.
   const applyUserPackage = (pkg: { id: string; settings: Record<string, any> }) => {
     if (!pkg?.id || !pkg?.settings) return
+    // When the admin has locked theming, ignore per-user packages entirely —
+    // both the global theme AND the framework-style overrides — so users can't
+    // bypass a locked design.
+    if (siteConfig.lockTheme) return
     const s = pkg.settings
-    if (s.globalTheme && VALID_THEMES.includes(s.globalTheme) && !siteConfig.lockTheme) {
+    if (s.globalTheme && VALID_THEMES.includes(s.globalTheme)) {
       setTheme(s.globalTheme)
     }
     const stored = { id: pkg.id, settings: s }

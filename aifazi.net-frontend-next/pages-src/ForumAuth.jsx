@@ -687,7 +687,6 @@ export function ForgotPassword() {
 
 // ─── ResetPassword ────────────────────────────────────────────────────────────
 export function ResetPassword() {
-  const { login }    = useForum()
   const navigate     = useNavigate()
   const [password,   setPassword]  = useState('')
   const [confirm,    setConfirm]   = useState('')
@@ -705,10 +704,11 @@ export function ResetPassword() {
     if (password !== confirm) { setError('Passwords do not match'); return }
     setLoading(true); setError('')
     try {
-      const res = await api.post(`/auth/reset-password/${token}`, { password })
-      login(res.data.token, res.data.user)
+      await api.post(`/auth/reset-password/${token}`, { password })
+      // C3 — the backend returns {message} only (no token/user); reset revokes
+      // old sessions, so take the user to the login page to sign in fresh.
       setSuccess(true)
-      setTimeout(() => navigate('/'), 2000)
+      setTimeout(() => navigate('/login?tab=signin'), 2000)
     } catch (err) {
       setError(err.response?.data?.error || 'Reset failed. Link may have expired.')
     } finally { setLoading(false) }

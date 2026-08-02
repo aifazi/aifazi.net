@@ -141,7 +141,10 @@ export default function AdminChat({ embedded=false }) {
 
   // ── Global presence via Supabase Realtime ─────────────────────────────────
   useEffect(() => {
-    if (!mounted || !supabase || !me) return
+    // Only track presence for an actually-authenticated user. When auth fails
+    // (authState === 'no'), tear the channel down so a signed-out/session-expired
+    // user is not left showing as online in presence or receiving channel events.
+    if (!mounted || !supabase || !me || authState !== 'ok') return
 
     const payload = parseJwt(getToken() || '')
     const presenceKey = String(payload?.id || payload?.staff_id || me)
@@ -183,7 +186,7 @@ export default function AdminChat({ embedded=false }) {
     })
 
     return () => { supabase.removeChannel(channel) }
-  }, [mounted, me, role, profile.username, profile.role, profile.avatar, callRoom?.id, callRoom?.name])
+  }, [mounted, authState, me, role, profile.username, profile.role, profile.avatar, callRoom?.id, callRoom?.name])
 
   // ── Global unread tracking ───────────────────────────────────────────────
   useEffect(() => {
@@ -205,7 +208,7 @@ export default function AdminChat({ embedded=false }) {
 
   // ── Realtime staff sync ──────────────────────────────────────────────────
   useEffect(() => {
-    if (!mounted || !supabase || !me) return
+    if (!mounted || !supabase || !me || authState !== 'ok') return
     let cancelled = false
     const channel = supabase.channel('chat_staff_sync')
       .on('postgres_changes',
@@ -231,7 +234,7 @@ export default function AdminChat({ embedded=false }) {
 
   // ── Periodic role poll (fallback) ───────────────────────────────────────
   useEffect(() => {
-    if (!mounted || !me) return
+    if (!mounted || !me || authState !== 'ok') return
     let cancelled = false
     const intervalId = setInterval(() => {
       api.get('/auth/me')
@@ -290,7 +293,7 @@ export default function AdminChat({ embedded=false }) {
 
   // ── Room members + typing indicator + live moderation ─────────────────────
   useEffect(() => {
-    if (!room || !supabase || !me) return
+    if (!room || !supabase || !me || authState !== 'ok') return
 
     const loadMembers = () =>
       api.get(`/chat/rooms/${room.id}/members`).then(r => setRoomMembers(Array.isArray(r.data) ? r.data : [])).catch(() => {})

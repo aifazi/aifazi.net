@@ -195,12 +195,11 @@ export function ForumProvider({ children }) {
   }
 
   const refreshUser = async () => {
-    const token = getStoredToken()
     setProfileLoading(true)
     try {
       const r = await api.get('/auth/me')
       setUser(r.data)
-      if (token) writeCachedUser(token, r.data)
+      writeCachedUser(r.data)
     } catch (err) {
       if ([401, 403].includes(err?.response?.status)) logout()
     } finally {
