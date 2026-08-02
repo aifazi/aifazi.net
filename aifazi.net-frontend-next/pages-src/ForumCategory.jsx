@@ -105,66 +105,124 @@ export default function ForumCategory() {
           </div>
         )}
 
-        {/* Toolbar: search + sort */}
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 22 }}>
-          <SearchBox value={search} onChange={setSearch} placeholder="Search threads..." style={{ flex: 1, minWidth: 220 }} />
-          <SortTabs options={[
-            { value: 'new', label: 'New' },
-            { value: 'hot', label: 'Hot' },
-            { value: 'top', label: 'Top' },
-          ]} value={sort} onChange={setSort} />
-        </div>
+        {/* Body: sidebar + thread list */}
+        <div className="forum-cat-grid" style={{ display: 'grid', gridTemplateColumns: '280px minmax(0,1fr)', gap: 26, alignItems: 'start' }}>
+          <aside className="forum-cat-sidebar" style={{ position: 'sticky', top: 96, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* All categories */}
+            {cats.length > 1 && (
+              <Card style={{ padding: 22 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>ALL CATEGORIES</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {cats.map(c => (
+                    <Link key={c.id || c._id} to={`/forum/category/${c.slug || c.id}`}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px',
+                        borderRadius: 10, textDecoration: 'none',
+                        color: c.slug === slug ? 'var(--text)' : 'var(--muted)',
+                        background: c.slug === slug ? 'rgba(0,212,255,0.07)' : 'transparent',
+                        borderLeft: c.slug === slug ? `2px solid ${c.color || 'var(--cyan)'}` : '2px solid transparent',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,255,136,0.05)'}
+                      onMouseLeave={e => e.currentTarget.style.background = c.slug === slug ? 'rgba(0,212,255,0.07)' : 'transparent'}
+                    >
+                      <span style={{ fontSize: 20, flexShrink: 0 }}>{c.icon || '💬'}</span>
+                      <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)',
+                        background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.18)',
+                        borderRadius: 999, padding: '2px 8px', flexShrink: 0,
+                      }}>{c.threadCount || 0}</span>
+                    </Link>
+                  ))}
+                </div>
+              </Card>
+            )}
 
-        {/* Threads */}
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {Array.from({ length: 6 }).map((_, i) => <ThreadRowSkeleton key={i} />)}
+            {/* Back to forum */}
+            <Card accent style={{ padding: 22 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>↩ Back to Forum</div>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: '0 0 16px' }}>
+                Browse all categories and recent activity across the community.
+              </p>
+              <NeonButton to="/forum" variant="ghost" size="sm" style={{ width: '100%' }}>All Categories</NeonButton>
+            </Card>
+          </aside>
+
+          {/* Main column: threads */}
+          <div className="forum-cat-main" style={{ minWidth: 0 }}>
+            {/* Toolbar: search + sort */}
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 22 }}>
+              <SearchBox value={search} onChange={setSearch} placeholder="Search threads..." style={{ flex: 1, minWidth: 220 }} />
+              <SortTabs options={[
+                { value: 'new', label: 'New' },
+                { value: 'hot', label: 'Hot' },
+                { value: 'top', label: 'Top' },
+              ]} value={sort} onChange={setSort} />
+            </div>
+
+            {/* Threads */}
+            {loading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {Array.from({ length: 6 }).map((_, i) => <ThreadRowSkeleton key={i} />)}
+              </div>
+            ) : (
+              <>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 12, letterSpacing: 1.5 }}>
+                  {total} THREAD{total !== 1 ? 'S' : ''}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {threads.map(t => (
+                    <Card key={t.id || t._id} hover style={{ padding: '16px 20px', background: t.pinned ? 'color-mix(in srgb, var(--green) 4%, var(--bg2))' : undefined }}>
+                      <Link to={`/forum/thread/${t.id || t._id}`} style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', textDecoration: 'none', color: 'inherit' }}>
+                        <Avatar user={t.author} size={38} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                            {t.pinned && <Badge tone="green" glow>📌</Badge>}
+                            {t.locked && <Badge tone="red">🔒</Badge>}
+                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--text)', wordBreak: 'break-word' }}>{t.title}</span>
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                            <span style={{ color: 'var(--text)' }}>{t.author?.username || t.author_name}</span>
+                            <span>·</span>
+                            <span>{timeAgo(t.createdAt || t.created_at)}</span>
+                            {t.lastReplyAt && (t.replyCount || 0) > 0 && <span>· last reply {timeAgo(t.lastReplyAt)}</span>}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+                          <Stat small label="Replies" value={t.reply_count ?? t.replyCount ?? 0} color="var(--cyan)" />
+                          <Stat small label="Views" value={t.views ?? 0} color="var(--muted)" />
+                          {(t.likes || 0) > 0 && <Stat small label="Likes" value={t.likes} color="var(--green)" />}
+                        </div>
+                      </Link>
+                    </Card>
+                  ))}
+                  {threads.length === 0 && (
+                    <EmptyState
+                      icon="🔎"
+                      title={debouncedSearch ? 'No matches' : 'No threads yet'}
+                      text={debouncedSearch ? 'Try a different search.' : (user && !cat?.locked ? 'Be the first to post here.' : 'No threads in this category yet.')}
+                      action={user && !cat?.locked && !debouncedSearch ? '+ New Thread' : undefined}
+                      actionTo={user && !cat?.locked ? `/forum/new?cat=${cat?.id || cat?._id}` : undefined}
+                    />
+                  )}
+                </div>
+                <Pagination page={page} pages={pages} onChange={setPage} total={total} />
+              </>
+            )}
           </div>
-        ) : (
-          <>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 12, letterSpacing: 1.5 }}>
-              {total} THREAD{total !== 1 ? 'S' : ''}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {threads.map(t => (
-                <Card key={t.id || t._id} hover style={{ padding: '16px 20px', background: t.pinned ? 'color-mix(in srgb, var(--green) 4%, var(--bg2))' : undefined }}>
-                  <Link to={`/forum/thread/${t.id || t._id}`} style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', textDecoration: 'none', color: 'inherit' }}>
-                    <Avatar user={t.author} size={38} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                        {t.pinned && <Badge tone="green" glow>📌</Badge>}
-                        {t.locked && <Badge tone="red">🔒</Badge>}
-                        <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--text)', wordBreak: 'break-word' }}>{t.title}</span>
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <span style={{ color: 'var(--text)' }}>{t.author?.username || t.author_name}</span>
-                        <span>·</span>
-                        <span>{timeAgo(t.createdAt || t.created_at)}</span>
-                        {t.lastReplyAt && (t.replyCount || 0) > 0 && <span>· last reply {timeAgo(t.lastReplyAt)}</span>}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-                      <Stat small label="Replies" value={t.reply_count ?? t.replyCount ?? 0} color="var(--cyan)" />
-                      <Stat small label="Views" value={t.views ?? 0} color="var(--muted)" />
-                      {(t.likes || 0) > 0 && <Stat small label="Likes" value={t.likes} color="var(--green)" />}
-                    </div>
-                  </Link>
-                </Card>
-              ))}
-              {threads.length === 0 && (
-                <EmptyState
-                  icon="🔎"
-                  title={debouncedSearch ? 'No matches' : 'No threads yet'}
-                  text={debouncedSearch ? 'Try a different search.' : (user && !cat?.locked ? 'Be the first to post here.' : 'No threads in this category yet.')}
-                  action={user && !cat?.locked && !debouncedSearch ? '+ New Thread' : undefined}
-                  actionTo={user && !cat?.locked ? `/forum/new?cat=${cat?.id || cat?._id}` : undefined}
-                />
-              )}
-            </div>
-            <Pagination page={page} pages={pages} onChange={setPage} total={total} />
-          </>
-        )}
+        </div>
       </div>
+
+      <style>{`
+        @media (max-width: 920px) {
+          .forum-cat-grid { grid-template-columns: 1fr !important; }
+          .forum-cat-sidebar { position: static !important; order: 2; }
+          .forum-cat-main { order: 1; }
+        }
+      `}</style>
     </div>
   )
 }

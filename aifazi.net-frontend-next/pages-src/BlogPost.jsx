@@ -9,6 +9,7 @@ import { Slider } from '../core/ui.jsx'
 import { getSupabase } from '@/lib/supabase'
 import { useForum } from '../context/ForumContext'
 import { Card, NeonButton, Badge, Avatar, RoleBadge, EmptyState } from '../components/community'
+import { MediaAttachment } from '../components/MediaPreview'
 
 // ── Smart Video Player ────────────────────────────────────────────────────────
 function VideoPlayer({ src, title = '' }) {
@@ -544,6 +545,43 @@ function RelatedPosts({ slug, currentId }) {
   )
 }
 
+// ── Inline document/media previews ────────────────────────────────────────────
+// Scans the article HTML for links to files (pdf/word/excel/code/archives) and
+// renders them as rich preview cards below the content.
+function ContentMediaPreviews({ html }) {
+  const [files, setFiles] = useState([])
+
+  useEffect(() => {
+    if (!html) { setFiles([]); return }
+    const docExts = /\.(pdf|docx?|xlsx?|csv|pptx?|rtf|odt|ods|zip|rar|7z|tar|gz|js|jsx|ts|tsx|py|sh|bash|html?|css|json|yaml|yml|go|rs|java|c|cpp|h|cs|php|rb|swift|kt|sql|xml|toml|ini|md)(?:$|[?#])/i
+    const seen = new Set()
+    const found = []
+    const links = Array.from(new DOMParser().parseFromString(html, 'text/html').querySelectorAll('a[href]'))
+    for (const a of links) {
+      const href = a.getAttribute('href') || ''
+      const text = a.textContent?.trim() || href.split('/').pop() || 'file'
+      if (!docExts.test(href)) continue
+      const key = href
+      if (seen.has(key)) continue
+      seen.add(key)
+      found.push({ url: href, original_name: text })
+    }
+    setFiles(found)
+  }, [html])
+
+  if (!files.length) return null
+  return (
+    <div style={{ marginTop: 48, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 18 }}>
+        FILES &amp; DOWNLOADS
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
+        {files.map((f, i) => <MediaAttachment key={i} file={f} />)}
+      </div>
+    </div>
+  )
+}
+
 export default function BlogPost({ initialPost }) {
   const { slug } = useParams()
   // ISR: when the server renders the page it passes the cached post body, so the
@@ -744,6 +782,9 @@ export default function BlogPost({ initialPost }) {
           className="post-content"
         />
 
+        {/* Files & downloads extracted from content */}
+        <ContentMediaPreviews html={post.content} />
+
         {/* Tags */}
         {tags.length > 0 && (
           <div style={{ marginTop: 60, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
@@ -809,6 +850,15 @@ export default function BlogPost({ initialPost }) {
         .post-content h3 { font-size: 22px; }
         .post-content p { margin-bottom: 1.5em; color: var(--text); }
         .post-content a { color: var(--green); }
+        .post-content .blog-media-doc a {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 10px 16px; border: 1px solid rgba(0,212,255,0.3);
+          border-radius: 10px; background: rgba(0,212,255,0.06);
+          color: var(--cyan); text-decoration: none; font-family: var(--font-mono);
+          font-size: 12px;
+        }
+        .post-content .blog-media-doc a::before { content: "📎 "; }
+        .post-content .blog-media-doc a:hover { border-color: var(--green); color: var(--green); }
         .post-content code {
           font-family: var(--font-mono); font-size: 13px;
           background: var(--bg3); border: 1px solid var(--border);

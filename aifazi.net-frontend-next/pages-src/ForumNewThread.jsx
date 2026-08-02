@@ -5,6 +5,7 @@ import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { Select } from '../core/ui.jsx'
 import { Card, NeonButton } from '../components/community'
+import { MediaUploader } from '../components/MediaPreview'
 
 export default function ForumNewThread() {
   const { user } = useForum()
@@ -17,10 +18,8 @@ export default function ForumNewThread() {
   const [catsError, setCatsError] = useState(false)
   const [form, setForm]       = useState({ title: '', content: '', category: catFromUrl, tags: '' })
   const [attachments, setAttachments] = useState([])
-  const [uploading, setUploading]     = useState(false)
   const [submitting, setSubmitting]   = useState(false)
   const [error, setError]             = useState('')
-  const fileInputRef = useRef()
 
   useEffect(() => {
     if (!user) { navigate('/login?next=/forum/new'); return }
@@ -29,21 +28,6 @@ export default function ForumNewThread() {
       .catch(() => setCatsError(true))
       .finally(() => setCatsLoading(false))
   }, [user])
-
-  const handleUpload = async (e) => {
-    const files = Array.from(e.target.files)
-    if (!files.length) return
-    setUploading(true)
-    const formData = new FormData()
-    files.forEach(f => formData.append('files', f))
-    try {
-      const res = await api.post('/upload/multiple', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-      setAttachments(a => [...a, ...res.data])
-    } catch { setError('Upload failed') }
-    finally { setUploading(false) }
-  }
-
-  const removeAttachment = (i) => setAttachments(a => a.filter((_, idx) => idx !== i))
 
   const handleSubmit = async () => {
     if (!form.title.trim() || !form.content.trim() || !form.category) {
@@ -119,19 +103,8 @@ export default function ForumNewThread() {
 
             {/* Attachments */}
             <div>
-              <label style={label}>ATTACHMENTS</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-                {attachments.map((f, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>
-                    {f.mimetype?.startsWith('image/') ? '🖼' : f.mimetype?.startsWith('video/') ? '🎬' : '📎'} {f.original_name}
-                    <button onClick={() => removeAttachment(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 13, padding: 0 }}>✕</button>
-                  </div>
-                ))}
-              </div>
-              <NeonButton variant="ghost" size="sm" onClick={() => fileInputRef.current.click()} disabled={uploading}>
-                {uploading ? '⏳ Uploading...' : '📎 Attach Files (Images, Videos, Docs)'}
-              </NeonButton>
-              <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} />
+              <label style={label}>ATTACHMENTS <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(images, videos, code, docs)</span></label>
+              <MediaUploader onUploaded={setAttachments} />
             </div>
 
             {/* Tags */}

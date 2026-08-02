@@ -5,7 +5,7 @@ import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import {
   Card, SectionHeader, NeonButton, Badge, Stat, ThreadRowSkeleton,
-  EmptyState, timeAgo, SortTabs, CLR,
+  EmptyState, timeAgo, SortTabs,
 } from '../components/community'
 
 export default function ForumHome() {
@@ -19,7 +19,7 @@ export default function ForumHome() {
   useEffect(() => {
     Promise.all([
       api.get('/forum/categories'),
-      api.get('/forum/threads?limit=5&sort=hot')
+      api.get('/forum/threads?limit=8&sort=hot')
     ]).then(([c, t]) => {
       setCats(Array.isArray(c.data) ? c.data : [])
       const data = Array.isArray(t.data) ? t.data : (t.data?.threads || [])
@@ -31,7 +31,7 @@ export default function ForumHome() {
   const fetchRecent = async (s) => {
     setLoading(true)
     try {
-      const r = await api.get(`/forum/threads?limit=5&sort=${s}`)
+      const r = await api.get(`/forum/threads?limit=8&sort=${s}`)
       setRecent(Array.isArray(r.data) ? r.data : (r.data?.threads || []))
     } catch { setError(true) }
     finally { setLoading(false) }
@@ -43,6 +43,7 @@ export default function ForumHome() {
   }
 
   const totalThreads = cats.reduce((sum, c) => sum + (c.threadCount || 0), 0)
+  const activeCats = cats.filter(c => (c.threadCount || 0) > 0)
 
   return (
     <div className="page-container community-page" style={{ position: 'relative', zIndex: 1 }}>
@@ -66,13 +67,6 @@ export default function ForumHome() {
           </div>
         </div>
 
-        {/* Stats strip */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 44 }}>
-          <Stat label="Categories" value={cats.length} color="var(--green)" icon="🗂" />
-          <Stat label="Threads" value={totalThreads} color="var(--cyan)" icon="🧵" />
-          <Stat label="Members" value={user ? '—' : 'Join us'} color="var(--muted)" icon="👥" />
-        </div>
-
         {loading && !error ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {Array.from({ length: 6 }).map((_, i) => <ThreadRowSkeleton key={i} />)}
@@ -84,32 +78,63 @@ export default function ForumHome() {
             <NeonButton variant="ghost" onClick={() => { setError(false); setLoading(true); window.location.reload() }}>RETRY</NeonButton>
           </Card>
         ) : (
-          <>
-            {/* Categories */}
-            <div style={{ marginBottom: 52 }}>
-              <SectionHeader eyebrow="Browse" title="Categories" />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
-                {cats.map(cat => (
-                  <Card key={cat.id || cat._id} hover accent style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '22px 24px', textDecoration: 'none' }}>
-                    <Link to={`/forum/category/${cat.slug || cat.id}`} style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0, textDecoration: 'none', color: 'inherit' }}>
-                      <div style={{ fontSize: 30, flexShrink: 0 }}>{cat.icon || '💬'}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{cat.name}</div>
-                        {cat.description && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.description}</div>}
-                      </div>
-                      <div style={{ flexShrink: 0, textAlign: 'right' }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: cat.color || 'var(--cyan)' }}>{cat.threadCount || 0}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1.5 }}>THREADS</div>
-                      </div>
-                    </Link>
-                    {cat.locked && <Badge tone="red" style={{ flexShrink: 0 }}>🔒 Locked</Badge>}
-                  </Card>
-                ))}
-              </div>
-            </div>
+          <div className="forum-home-grid" style={{ display: 'grid', gridTemplateColumns: '280px minmax(0,1fr)', gap: 26, alignItems: 'start' }}>
+            {/* ── Left sidebar: categories ── */}
+            <aside className="forum-home-sidebar" style={{ position: 'sticky', top: 96, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Stats */}
+              <Card style={{ padding: 22 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>STATS</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <Stat small label="Categories" value={cats.length} color="var(--green)" icon="🗂" />
+                  <Stat small label="Threads" value={totalThreads} color="var(--cyan)" icon="🧵" />
+                  <Stat small label="Members" value={user ? '—' : 'Join us'} color="var(--muted)" icon="👥" />
+                </div>
+              </Card>
 
-            {/* Recent activity */}
-            <div>
+              {/* Categories */}
+              <Card style={{ padding: 22 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>CATEGORIES</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)' }}>{cats.length}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {cats.length === 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '8px 0' }}>No categories yet.</div>}
+                  {cats.map(cat => (
+                    <Link key={cat.id || cat._id} to={`/forum/category/${cat.slug || cat.id}`}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px',
+                        borderRadius: 10, textDecoration: 'none', color: 'var(--text)',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,255,136,0.05)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontSize: 20, flexShrink: 0 }}>{cat.icon || '💬'}</span>
+                      <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
+                      {cat.locked && <span style={{ fontSize: 11, opacity: 0.5 }}>🔒</span>}
+                      <span style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)',
+                        background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.18)',
+                        borderRadius: 999, padding: '2px 8px', flexShrink: 0,
+                      }}>{cat.threadCount || 0}</span>
+                    </Link>
+                  ))}
+                </div>
+              </Card>
+
+              {/* CTA */}
+              <Card accent style={{ padding: 22 }}>
+                <div style={{ fontSize: 26, marginBottom: 10 }}>🧭</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Start a discussion</div>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: '0 0 16px' }}>
+                  {activeCats.length} active categor{activeCats.length !== 1 ? 'ies' : 'y'} with {totalThreads} thread{totalThreads !== 1 ? 's' : ''}.
+                </p>
+                <NeonButton to="/forum/new" variant="primary" size="sm" style={{ width: '100%' }}>+ New Thread</NeonButton>
+              </Card>
+            </aside>
+
+            {/* ── Main column: recent activity ── */}
+            <div className="forum-home-main">
               <SectionHeader
                 eyebrow="Latest"
                 title="Recent Activity"
@@ -121,13 +146,13 @@ export default function ForumHome() {
               />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {recent.map(t => (
-                  <Card key={t.id || t._id} hover style={{ padding: '16px 20px' }}>
+                  <Card key={t.id || t._id} hover style={{ padding: '18px 22px', background: t.pinned ? 'color-mix(in srgb, var(--green) 4%, var(--bg2))' : undefined }}>
                     <Link to={`/forum/thread/${t.id || t._id}`} style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', textDecoration: 'none', color: 'inherit' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 7 }}>
                           {t.pinned && <Badge tone="green" glow>📌 Pinned</Badge>}
                           {t.locked && <Badge tone="red">🔒 Locked</Badge>}
-                          <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</span>
+                          <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: 'var(--text)', wordBreak: 'break-word' }}>{t.title}</span>
                         </div>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
                           <span style={{ color: t.category?.color || 'var(--cyan)' }}>{t.category?.icon} {t.category?.name || ''}</span>
@@ -136,7 +161,7 @@ export default function ForumHome() {
                           {t.likes > 0 && <span style={{ color: 'var(--red)' }}>♥ {t.likes}</span>}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
+                      <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
                         <Stat small label="Replies" value={t.reply_count ?? t.replyCount ?? 0} color="var(--cyan)" />
                         <Stat small label="Views" value={t.views ?? 0} color="var(--muted)" />
                       </div>
@@ -154,9 +179,17 @@ export default function ForumHome() {
                 )}
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
+
+      <style>{`
+        @media (max-width: 920px) {
+          .forum-home-grid { grid-template-columns: 1fr !important; }
+          .forum-home-sidebar { position: static !important; order: 2; }
+          .forum-home-main { order: 1; }
+        }
+      `}</style>
     </div>
   )
 }

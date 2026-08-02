@@ -1081,6 +1081,201 @@ input.terminal-command-input:focus-visible {
   border-top: 1px solid var(--border2);
 }
 
+/* ── Media / document previews (shared by forum + blog) ─────────────────── */
+.media-image-frame {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  cursor: zoom-in;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+.media-image {
+  display: block;
+  width: min(700px, 100%);
+  max-height: 520px;
+  object-fit: contain;
+}
+.media-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  background: rgba(3, 6, 10, 0.92);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  cursor: zoom-out;
+  animation: mediaFade 0.15s ease;
+}
+.media-lightbox-inner {
+  position: relative;
+  max-width: min(1400px, 94vw);
+}
+.media-lightbox-close {
+  position: absolute;
+  top: -46px;
+  right: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text);
+  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  font-size: 15px;
+  cursor: pointer;
+}
+@keyframes mediaFade { from { opacity: 0; } to { opacity: 1; } }
+
+.media-video {
+  display: block;
+  width: min(700px, 100%);
+  max-height: 520px;
+  border: 1px solid rgba(0, 212, 255, 0.18);
+  border-radius: 10px;
+  background: #000;
+}
+
+.media-file-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 12px 16px;
+  background:
+    linear-gradient(135deg, rgba(0, 212, 255, 0.06), transparent 55%),
+    var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.media-file-card:hover {
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow: 0 0 18px rgba(0, 212, 255, 0.1);
+}
+.media-file-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.media-file-meta {
+  min-width: 0;
+}
+.media-file-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 360px;
+}
+.media-file-sub {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-top: 3px;
+  text-transform: uppercase;
+}
+.media-file-download {
+  margin-left: 6px;
+  font-size: 14px;
+  color: var(--green);
+}
+
+.media-code-card {
+  width: min(700px, 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg3);
+}
+.media-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg2) 80%, var(--bg) 20%);
+}
+.media-code-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.media-code-lang {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  flex-shrink: 0;
+}
+.media-code-body {
+  margin: 0;
+  padding: 14px 18px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #d7e3ee;
+  overflow: auto;
+  max-height: 360px;
+  white-space: pre;
+}
+.media-code-toggle {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  background: color-mix(in srgb, var(--bg2) 80%, var(--bg) 20%);
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+.media-code-fail {
+  padding: 14px 18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.media-office {
+  width: min(700px, 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg3);
+}
+.media-office-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg2) 80%, var(--bg) 20%);
+}
+.media-office-iframe {
+  display: block;
+  width: 100%;
+  height: 420px;
+  border: none;
+  background: var(--bg);
+}
+
 .forum-reply-actions {
   margin-top: 14px;
   padding-top: 12px;
@@ -1116,7 +1311,9 @@ input.terminal-command-input:focus-visible {
     padding: 18px 16px;
   }
 
-  .forum-post-actions {
+.forum-post-actions {
+
+
     gap: 8px !important;
   }
 

@@ -6,69 +6,12 @@ import { useForum } from '../context/ForumContext'
 import { dialog } from '../core/dialog.jsx'
 import { notify } from '../core/notify.jsx'
 import { Card, Badge, NeonButton, Avatar, RoleBadge, timeAgo } from '../components/community'
+import { MediaAttachment, MediaUploader } from '../components/MediaPreview'
 
 const EMOJIS = ['👍', '❤️', '🔥', '😂', '😮']
 
 function Attachment({ file }) {
-  const isImg = file.mimetype?.startsWith('image/')
-  const isVid = file.mimetype?.startsWith('video/')
-  if (isImg) return (
-    <a href={file.url} target="_blank" rel="noopener noreferrer" className="forum-attachment-link">
-      <img src={file.url} alt={file.original_name} loading="lazy" className="forum-attachment-image" />
-    </a>
-  )
-  if (isVid) return (
-    <video controls src={file.url} className="forum-attachment-video" />
-  )
-  return (
-    <a href={file.url} target="_blank" rel="noopener noreferrer" className="forum-file-attachment">
-      📎 {file.original_name} <span style={{ color: 'var(--muted)', fontSize: 9 }}>({((file.size || 0) / 1024).toFixed(0)}KB)</span>
-    </a>
-  )
-}
-
-function AttachUploader({ onUploaded }) {
-  const [uploading, setUploading] = useState(false)
-  const [attachments, setAttachments] = useState([])
-  const inputRef = useRef()
-
-  const handleUpload = async (e) => {
-    const files = Array.from(e.target.files)
-    if (!files.length) return
-    setUploading(true)
-    const formData = new FormData()
-    files.forEach(f => formData.append('files', f))
-    try {
-      const res = await api.post('/upload/multiple', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-      const newAttachments = [...attachments, ...res.data]
-      setAttachments(newAttachments)
-      onUploaded(newAttachments)
-    } catch { notify.error('Upload failed') }
-    finally { setUploading(false) }
-  }
-
-  const remove = (i) => {
-    const next = attachments.filter((_, idx) => idx !== i)
-    setAttachments(next)
-    onUploaded(next)
-  }
-
-  return (
-    <div style={{ marginTop: 12 }}>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-        {attachments.map((f, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>
-            {f.mimetype?.startsWith('image/') ? '🖼' : f.mimetype?.startsWith('video/') ? '🎬' : '📎'} {f.original_name}
-            <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>✕</button>
-          </div>
-        ))}
-      </div>
-      <NeonButton variant="ghost" size="sm" onClick={() => inputRef.current.click()} disabled={uploading}>
-        {uploading ? '⏳ Uploading...' : '📎 Attach Files'}
-      </NeonButton>
-      <input ref={inputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} />
-    </div>
-  )
+  return <MediaAttachment file={file} />
 }
 
 function Reactions({ reactions, myReactions, onReact, disabled, size = 'md' }) {
@@ -451,7 +394,7 @@ export default function ForumThread() {
               placeholder="Write your reply..."
               rows={5} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 15, padding: '12px 16px', outline: 'none', resize: 'vertical' }}
             />
-            <AttachUploader onUploaded={setReplyAttach} />
+            <MediaUploader onUploaded={setReplyAttach} />
             <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
               <NeonButton variant="primary" size="md" onClick={handleReply} disabled={submitting || !replyText.trim()}>
                 {submitting ? 'Posting...' : 'Post Reply'}

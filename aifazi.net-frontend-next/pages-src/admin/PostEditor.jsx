@@ -247,6 +247,7 @@ function RichEditor({ value, onChange }) {
     { label: 'UL',  title: 'Bullet List',     action: () => exec('insertUnorderedList') },
     { label: 'OL',  title: 'Numbered List',   action: () => exec('insertOrderedList') },
     { label: '',  title: 'Code',            action: () => insert('<code>code</code>') },
+    { label: '{}', title: 'Code Block',      action: () => insert('<pre><code>your code here</code></pre>') },
     { label: '',   title: 'Divider',         action: () => insert('<hr/>') },
     { label: '"',   title: 'Blockquote',      action: () => exec('formatBlock', '<blockquote>') },
     { label: '○',  title: 'Link',            action: async () => { const url = await dialog.prompt({ title: 'Insert Link', placeholder: 'https://', variant: 'info', confirmLabel: 'INSERT' }); if (url) exec('createLink', url) } },
@@ -351,7 +352,7 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
             <button onClick={onClose} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '8px 12px' }}>?</button>
           )}
         </div>
-        <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,application/pdf" onChange={handleUpload} style={{ display: 'none' }} />
+        <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.zip,.js,.py,.sh,.html,.css,.json,.md,.txt" onChange={handleUpload} style={{ display: 'none' }} />
       </div>
       <div style={{ overflowY: 'auto', padding: isMobile ? 12 : 24, flex: 1,
         border: dragOver ? '2px dashed var(--green)' : '2px dashed transparent',
@@ -498,9 +499,13 @@ function PostEditor({ post, onSave, onCancel }) {
     } else if (mediaTarget === 'video') {
       set('video_url', file.url || file.path)
     } else if (mediaTarget === 'content') {
-      const tag = file.mimetype.startsWith('video/')
-        ? `<video controls src="${file.url || file.path}" style="width:100%;margin:16px 0;"></video>`
-        : `<img src="${file.url || file.path}" alt="${file.original_name}" style="width:100%;margin:16px 0;" />`
+      const url = file.url || file.path
+      const isDoc = !file.mimetype?.startsWith('image/') && !file.mimetype?.startsWith('video/')
+      const tag = isDoc
+        ? `<p class="blog-media-doc"><a href="${url}" target="_blank" rel="noopener noreferrer">${file.original_name}</a></p>`
+        : file.mimetype?.startsWith('video/')
+        ? `<video controls src="${url}" style="width:100%;margin:16px 0;"></video>`
+        : `<img src="${url}" alt="${file.original_name}" style="width:100%;margin:16px 0;" />`
       const editor = document.querySelector('[contenteditable]')
       if (editor) { editor.focus(); document.execCommand('insertHTML', false, tag) }
     }
