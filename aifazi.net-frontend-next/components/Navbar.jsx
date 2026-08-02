@@ -659,7 +659,7 @@ export default function Navbar() {
                     style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--green)', objectFit: 'cover' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
-                <button onClick={() => { forumLogout(); navigate(loginRoute, { state: { signedOut: true } }) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
+                <button onClick={async () => { await forumLogout(); navigate(loginRoute, { state: { signedOut: true } }) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
               </div>
             ) : (
               <Link to={loginRoute} style={{
@@ -772,7 +772,7 @@ export default function Navbar() {
                   <img src={forumUser.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${forumUser.username}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`} alt={forumUser.username} loading="lazy" style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--green)', objectFit: 'cover' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
-                <button onClick={() => { forumLogout(); navigate(loginRoute, { state: { signedOut: true } }); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>
+                <button onClick={async () => { await forumLogout(); navigate(loginRoute, { state: { signedOut: true } }); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 10, margin: '8px 24px 12px' }}>

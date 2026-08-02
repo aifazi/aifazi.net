@@ -1069,7 +1069,7 @@ function SecurityTab({ user }) {
               <div style={{ ...M, fontSize: 11, color: 'var(--text)', fontWeight: 700 }}>Sign Out</div>
               <div style={{ ...M, fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>Sign out of your account on this device</div>
             </div>
-            <Btn color={CLRS.orange} ghost onClick={() => { logout?.(); navigate('/login') }} small>SIGN OUT</Btn>
+            <Btn color={CLRS.orange} ghost onClick={async () => { await logout?.(); navigate('/login') }} small>SIGN OUT</Btn>
           </div>
         </div>
       </SectionCard>
@@ -1311,7 +1311,7 @@ function FiveMTab({ user }) {
     setActionStatus(null)
     try {
       await api.delete('/auth/account')
-      logout?.()
+      await logout?.()
       navigate('/login?account_deleted=1')
     } catch (err) {
       setActionStatus({ type: 'error', msg: err?.response?.data?.detail || 'Could not delete account.' })

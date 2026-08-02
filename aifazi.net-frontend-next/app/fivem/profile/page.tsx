@@ -45,8 +45,8 @@ export default function FiveMProfile() {
     return () => { cancelled = true }
   }, [authLoading, user, loginHref, router])
 
-  function handleLogout() {
-    logout()
+  async function handleLogout() {
+    await logout()
     router.push(homeHref)
   }
 

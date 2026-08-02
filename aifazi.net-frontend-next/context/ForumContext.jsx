@@ -1,6 +1,6 @@
 ﻿'use client'
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
-import api, { getAuthToken, setAccessToken, clearLegacyTokens, setEffectiveAccess } from '@/lib/api'
+import api, { getAuthToken, setAccessToken, clearAuthTokens, clearLegacyTokens, setEffectiveAccess } from '@/lib/api'
 
 const ForumContext = createContext({
   user: null,
@@ -179,19 +179,15 @@ export function ForumProvider({ children }) {
     window.dispatchEvent(new Event('auth-change'))
   }
 
-  const logout = () => {
+  const logout = async () => {
     setAccessToken(null)
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('forum_token')
-    localStorage.removeItem('admin_token')
-    localStorage.removeItem('staff_token')
-    localStorage.removeItem('refresh_token')
-    sessionStorage.removeItem('forum_token')
-    sessionStorage.removeItem('admin_token')
-    sessionStorage.removeItem('staff_token')
-    localStorage.removeItem('aifazi_effective_role')
-    localStorage.removeItem('aifazi_permissions')
     clearCachedUser()
+    // M8 — clear the HttpOnly auth cookies FIRST (await the backend logout so the
+    // Set-Cookie deletes land before we dispatch auth-change / re-hydrate).
+    // Without this the refresh_token/auth_token cookies survive logout and a
+    // reload silently logs the user back in via /auth/me.
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }) } catch {}
+    clearAuthTokens()
     window.dispatchEvent(new Event('auth-change'))
     setUser(null)
     setLoading(false)
