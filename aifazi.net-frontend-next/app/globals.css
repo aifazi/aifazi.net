@@ -4821,8 +4821,15 @@ img, video, svg { max-width: 100%; height: auto; }
 .forum-ticket-card { transition: border-color 0.15s; }
 .forum-ticket-card:hover { border-color: var(--cyan); }
 
-.forum-stat-tile { transition: border-color 0.15s; cursor: pointer; }
+.forum-stat-tile {
+  transition: border-color 0.15s;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
 .forum-stat-tile:hover { border-color: var(--cyan); }
+
+.forum-activity-link { transition: opacity 0.15s; }
+.forum-activity-link:hover { opacity: 0.7; }
 
 .forum-thread-loading { padding: 24px clamp(16px, 3vw, 48px); max-width: 900px; margin: 0 auto; }
 

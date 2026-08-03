@@ -563,9 +563,7 @@ function ActivityTab({ user }) {
           <div style={{ textAlign: 'center', padding: '20px 0', ...M, fontSize: 10, color: 'var(--muted)' }}>No threads yet</div>
         ) : threads.map(t => (
           <Link key={t.id || t._id} to={`/forum/thread/${t.id || t._id}`} style={{ textDecoration: 'none', display: 'block' }}>
-            <div style={{ padding: '10px 0', borderBottom: '1px solid var(--border)', transition: 'opacity 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+            <div className="forum-activity-link" style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
               <div style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>{ago(t.created_at || t.createdAt)}</div>
             </div>
@@ -1991,9 +1989,7 @@ export default function ForumProfile() {
                 { label: 'TICKETS', value: tickets.length, color: CLRS.cyan   },
                 { label: 'OPEN',    value: tickets.filter(t => t.status === 'open').length, color: CLRS.orange },
               ].map(s => (
-                <div key={s.label} onClick={() => openTicket(null)} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 16px', textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = s.color}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
+                <div key={s.label} onClick={() => openTicket(null)} className="forum-stat-tile" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 16px', textAlign: 'center' }}>
                   <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
                   <div style={{ ...M, fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
                 </div>
