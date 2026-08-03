@@ -357,6 +357,7 @@ export async function proxy(request: NextRequest) {
       STORE_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
     ) {
       const { headers } = secureRequest(request)
+      headers.set('x-store-domain', 'true')
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
         headers.set('X-Internal-Token', INTERNAL_API_SECRET)
       }
@@ -366,6 +367,7 @@ export async function proxy(request: NextRequest) {
       const rewriteUrl = request.nextUrl.clone()
       rewriteUrl.pathname = '/store'
       const { headers } = secureRequest(request)
+      headers.set('x-store-domain', 'true')
       return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
     }
     if (pathname.startsWith('/store')) {
@@ -376,6 +378,7 @@ export async function proxy(request: NextRequest) {
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/store${pathname}`
     const { headers } = secureRequest(request)
+    headers.set('x-store-domain', 'true')
     return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
   }
 

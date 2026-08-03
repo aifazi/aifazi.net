@@ -122,7 +122,7 @@ function loadFontForTheme(themeId: string) {
   document.head.appendChild(link)
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, isStoreDomain = false }: { children: React.ReactNode; isStoreDomain?: boolean }) {
   const pathname = usePathname()
 
   const [loading, setLoading] = useState(false)
@@ -547,7 +547,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   //   return () => { socket.off('settings-update', handleSettings); socket.off('banners-update', handleBanners) }
   // }, [])
 
-  const isFullScreen = /^\/(admin|chat|users\/chat|store)/.test(pathname || '') || isStoreSubdomain
+  const isFullScreen = /^\/(admin|chat|users\/chat|store)/.test(pathname || '') || isStoreSubdomain || isStoreDomain
   const showMaintenance = siteConfig.maintenanceMode && !userIsAdmin
 
   const onLoadComplete = useCallback(() => {

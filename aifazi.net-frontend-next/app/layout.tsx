@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 
 import { Providers } from './providers'
 import { getSiteConfigServer } from '@/lib/siteSettingsServer'
@@ -31,7 +32,7 @@ function escapeJsonForInline(value: unknown): string {
 function buildFoucScript(config: Record<string, any>): string {
   const cfgJson = escapeJsonForInline(config)
   const lightsJson = escapeJsonForInline(LIGHT_THEME_LIST)
-  return `(function(){try{var cfg=${cfgJson};var LIGHTS=${lightsJson};var c=null;try{var _c=localStorage.getItem('site-config-cache');if(_c)c=JSON.parse(_c)}catch(e){}var conf=cfg||c;var u=!!localStorage.getItem('site-theme-user-set');var s=localStorage.getItem('site-theme');var t='cyber-dark';if(conf&&conf.lockTheme&&conf.globalTheme)t=conf.globalTheme;else if(u&&s)t=s;else if(conf&&conf.globalTheme)t=conf.globalTheme;else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:light)').matches)t='cyber-light';if(t!=='cyber-dark')document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-theme-mode',LIGHTS.indexOf(t)>=0?'light':'dark');var ba=(conf&&conf.bgAnimation)||'none';if(ba&&ba!=='none'&&ba!=='clean')document.documentElement.setAttribute('data-bg-animation',ba);var bg=(conf&&(conf.gridPattern||conf.backgroundPattern))||'grid';if(bg&&bg!=='none'&&bg!=='clean')document.documentElement.setAttribute('data-bg-grid',bg);try{var h=window.location.hostname;if(h==='store.aifazi.net')document.documentElement.setAttribute('data-store','true')}catch(e2){}}catch(e){}})();`
+  return `(function(){try{var cfg=${cfgJson};var LIGHTS=${lightsJson};var c=null;try{var _c=localStorage.getItem('site-config-cache');if(_c)c=JSON.parse(_c)}catch(e){}var conf=cfg||c;var u=!!localStorage.getItem('site-theme-user-set');var s=localStorage.getItem('site-theme');var t='cyber-dark';if(conf&&conf.lockTheme&&conf.globalTheme)t=conf.globalTheme;else if(u&&s)t=s;else if(conf&&conf.globalTheme)t=conf.globalTheme;else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:light)').matches)t='cyber-light';if(t!=='cyber-dark')document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-theme-mode',LIGHTS.indexOf(t)>=0?'light':'dark');var ba=(conf&&conf.bgAnimation)||'none';if(ba&&ba!=='none'&&ba!=='clean')document.documentElement.setAttribute('data-bg-animation',ba);var bg=(conf&&(conf.gridPattern||conf.backgroundPattern))||'grid';if(bg&&bg!=='none'&&bg!=='clean')document.documentElement.setAttribute('data-bg-grid',bg)}catch(e){}})();`
 }
 
 export const metadata: Metadata = {
@@ -59,6 +60,9 @@ export const viewport = {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersList = await headers()
+  const isStoreDomain = headersList.get('x-store-domain') === 'true'
+
   // Server-side global config (cached 30s) — injected into every page so
   // visitors see the admin's settings on first paint, not the default theme.
   const siteConfig = await getSiteConfigServer()
@@ -82,6 +86,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   if (serverBgGrid && serverBgGrid !== 'none' && serverBgGrid !== 'clean') {
     htmlAttrs['data-bg-grid'] = serverBgGrid
   }
+  if (isStoreDomain) htmlAttrs['data-store'] = 'true'
 
   return (
     <html lang="en" suppressHydrationWarning {...htmlAttrs}>
@@ -108,7 +113,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body suppressHydrationWarning>
         <div className="scanline" />
-        <Providers>{children}</Providers>
+        <Providers isStoreDomain={isStoreDomain}>{children}</Providers>
       </body>
     </html>
   )
