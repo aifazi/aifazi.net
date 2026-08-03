@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS delivery_agents (
   UNIQUE (user_id)
 );
 
-CREATE INDEX idx_delivery_agents_user  ON delivery_agents(user_id);
-CREATE INDEX idx_delivery_agents_status ON delivery_agents(status);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_delivery_agents_user  ON delivery_agents(user_id);
+CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_delivery_agents_status ON delivery_agents(status);
 
 -- ── Delivery Assignments ──────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS delivery_assignments (
@@ -38,9 +38,9 @@ CREATE TABLE IF NOT EXISTS delivery_assignments (
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_delivery_assignments_order  ON delivery_assignments(order_id);
-CREATE INDEX idx_delivery_assignments_agent  ON delivery_assignments(agent_id);
-CREATE INDEX idx_delivery_assignments_status ON delivery_assignments(status);
+CREATE INDEX IF NOT EXISTS idx_delivery_assignments_order  ON delivery_assignments(order_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_assignments_agent  ON delivery_assignments(agent_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_assignments_status ON delivery_assignments(status);
 
 -- ── Delivery Scan Events ──────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS delivery_scan_events (
@@ -55,8 +55,8 @@ CREATE TABLE IF NOT EXISTS delivery_scan_events (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_delivery_scans_assignment ON delivery_scan_events(assignment_id);
-CREATE INDEX idx_delivery_scans_agent      ON delivery_scan_events(agent_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_scans_assignment ON delivery_scan_events(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_scans_agent      ON delivery_scan_events(agent_id);
 
 -- ── RLS: delivery_agents ──────────────────────────────────────────────────────
 ALTER TABLE delivery_agents ENABLE ROW LEVEL SECURITY;
