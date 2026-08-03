@@ -4812,6 +4812,65 @@ img, video, svg { max-width: 100%; height: auto; }
 .forum-cat-link:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
 .forum-cat-link-active { background: color-mix(in srgb, var(--green) 6%, transparent); border-left: 3px solid var(--green); }
 
+/* ════════════ STORE DESIGN — REUSABLE COMPONENT CLASSES ═══════════ */
+.store-tab-bar { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border2); }
+
+.store-tab-pill {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; font-weight: 700;
+  padding: 10px 22px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: var(--muted);
+  transition: all 0.2s ease;
+}
+.store-tab-pill:hover { color: var(--text); border-color: color-mix(in srgb, var(--green) 25%, var(--border)); }
+.store-tab-pill.active {
+  border-color: color-mix(in srgb, var(--green) 33%, var(--border));
+  background: color-mix(in srgb, var(--green) 8%, transparent);
+  color: var(--green);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--green) 9%, transparent);
+}
+
+.store-filter-pill {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px;
+  padding: 7px 14px; border-radius: 20px; cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: var(--muted);
+  transition: all 0.2s;
+}
+.store-filter-pill:hover { color: var(--text); border-color: var(--muted); }
+.store-filter-pill.active {
+  background: color-mix(in srgb, var(--green) 10%, transparent);
+  color: var(--green); border-color: color-mix(in srgb, var(--green) 31%, transparent);
+}
+
+.store-plan-card {
+  position: relative; display: flex; flex-direction: column;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  border-color: color-mix(in srgb, var(--plan-color, var(--border)) 22%, var(--border));
+}
+.store-plan-card:hover { transform: translateY(-4px); border-color: var(--plan-color, var(--cyan)); box-shadow: 0 14px 40px color-mix(in srgb, var(--plan-color, var(--cyan)) 14%, transparent); }
+.store-plan-featured { transform: scale(1.02); border-color: var(--plan-color, var(--green)); box-shadow: var(--plan-feat); }
+.store-plan-featured:hover { transform: scale(1.04); }
+
+.store-product-card {
+  position: relative;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.store-product-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--hover-color, var(--cyan));
+  box-shadow: 0 14px 40px color-mix(in srgb, var(--hover-color, var(--cyan)) 12%, transparent);
+}
+
+.store-order-card {
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.store-order-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--hover-color, var(--cyan));
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--hover-color, var(--cyan)) 10%, transparent);
+}
+
+.store-hero-title { max-width: 400px; }
+
 .forum-thread-row { transition: border-color 0.15s, background 0.15s, transform 0.15s; }
 .forum-thread-row:hover { border-color: color-mix(in srgb, var(--cyan) 28%, var(--border)); background: color-mix(in srgb, var(--cyan) 3%, var(--bg2)); }
 .forum-thread-row-pinned { border-color: color-mix(in srgb, var(--green) 22%, var(--border)); background: color-mix(in srgb, var(--green) 4%, var(--bg2)); }
