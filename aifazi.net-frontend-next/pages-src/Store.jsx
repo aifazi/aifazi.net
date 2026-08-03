@@ -325,11 +325,10 @@ export default function StorePage({ fivem = false }) {
                     className={`store-card ${featured ? 'store-card-featured' : ''}`}
                     style={{
                       '--hover-color': color,
+                      '--card-border': featured ? `${color}66` : undefined,
+                      '--feat-shadow': featured ? `0 12px 40px ${color}18` : undefined,
                       position: 'relative', display: 'flex', flexDirection: 'column', padding: 28, borderRadius: 16,
                       background: featured ? `linear-gradient(160deg, ${color}14, color-mix(in srgb, var(--text) 2%, transparent))` : 'color-mix(in srgb, var(--text) 2%, transparent)',
-                      border: featured ? `1px solid ${color}66` : '1px solid var(--border)',
-                      transform: featured ? 'scale(1.02)' : 'none',
-                      boxShadow: featured ? `0 12px 40px ${color}18` : 'none',
                     }}
                   >
                     {featured && (
@@ -473,7 +472,7 @@ export default function StorePage({ fivem = false }) {
                   {filteredProducts.map(p => {
                     const color = p.on_sale ? R : C
                     return (
-                      <div key={p.id} className="store-card" style={{ '--hover-color': color, position: 'relative', padding: 20, borderRadius: 14, border: '1px solid var(--border)',
+                      <div key={p.id} className="store-card" style={{ '--hover-color': color, position: 'relative', padding: 20, borderRadius: 14,
                         background: 'color-mix(in srgb, var(--text) 2%, transparent)', display: 'flex', flexDirection: 'column' }}>
                         {p.image_url ? (
                           <img src={p.image_url} alt={p.name} style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 10, marginBottom: 12, background: 'var(--bg3)' }} />
@@ -591,7 +590,7 @@ export default function StorePage({ fivem = false }) {
                 const st = (o.status || 'pending').toUpperCase()
                 const stColor = statusColor(o.status)
                 return (
-                  <div key={o.id} className="store-card" style={{ '--hover-color': stColor, padding: 18, borderRadius: 14, border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--text) 2%, transparent)', cursor: 'pointer' }} onClick={() => openOrder(o)}>
+                  <div key={o.id} className="store-card" style={{ '--hover-color': stColor, padding: 18, borderRadius: 14, background: 'color-mix(in srgb, var(--text) 2%, transparent)', cursor: 'pointer' }} onClick={() => openOrder(o)}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                       <span style={{ fontFamily: MONO, fontSize: 12, color: C, fontWeight: 700 }}>{o.order_number}</span>
                       <span style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(o.created_at).toLocaleDateString()}</span>
