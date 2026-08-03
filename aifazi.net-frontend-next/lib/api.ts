@@ -81,7 +81,10 @@ api.interceptors.response.use(
         original.headers.Authorization = `Bearer ${data.token}`
         return api(original)
       } catch {
-        clearAuthTokens()
+        // Soft clear: keep the HttpOnly cookies + server session so a transient
+        // refresh failure (network blip, cross-tab rotation race) self-heals on
+        // the next hydrate instead of permanently logging the user out.
+        clearAuthTokens({ revoke: false })
         if (!_expiredDispatched) {
           _expiredDispatched = true
           window.dispatchEvent(new CustomEvent('auth:expired'))
@@ -242,7 +245,7 @@ export async function ensureAdminGate(): Promise<boolean> {
   }
 }
 
-export function clearAuthTokens() {
+export function clearAuthTokens(opts?: { revoke?: boolean }) {
   if (typeof window === 'undefined') return
   _memToken = null
   localStorage.removeItem('auth_token')
@@ -255,7 +258,14 @@ export function clearAuthTokens() {
   sessionStorage.removeItem('staff_token')
   localStorage.removeItem('aifazi_effective_role')
   localStorage.removeItem('aifazi_permissions')
-  void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {})
+  // revoke (default) also calls /auth/logout, which deletes the HttpOnly cookies
+  // AND nulls the server-side refresh token. For a failed background refresh this
+  // is destructive: a transient failure (network blip, cross-tab rotation race)
+  // would permanently kill a still-valid session. Pass { revoke: false } there so
+  // the cookies survive and the next hydrate self-heals via /auth/me.
+  if (opts?.revoke !== false) {
+    void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {})
+  }
   window.dispatchEvent(new Event('auth-change'))
 }
 

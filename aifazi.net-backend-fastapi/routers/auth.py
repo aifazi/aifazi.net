@@ -733,10 +733,21 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
             raise HTTPException(401, "Invalid refresh token")
     else:
         row = supabase.table("users").select("refresh_token").eq("id", user_id).execute()
-        # H4 — timing-safe compare; the token must match the one we persisted at login.
         stored = (row.data[0].get("refresh_token") if row.data else None) or ""
-        if not stored or not _hmac.compare_digest(stored, token_str):
+        # Explicit revocation (logout / password reset) sets the stored token to
+        # NULL — the session must stay dead.
+        if not stored:
             raise HTTPException(401, "Refresh token revoked or invalid")
+        # H4 — timing-safe compare against the current token. When the compare
+        # fails but the presented token is cryptographically valid (it decoded
+        # above), this is a rotation race: two tabs refreshed concurrently and
+        # the first rotated the DB token, orphaning the other tab's token.
+        # Hard-401'ing here turned a benign race into a permanent logout (the
+        # frontend cleared the session on refresh failure). Accept the
+        # stale-but-valid token so the race is harmless; a genuinely revoked
+        # session is still rejected above.
+        if not _hmac.compare_digest(stored, token_str):
+            log.info("auth refresh: accepting stale-but-valid token (rotation race) for user=%s", user_id)
 
     new_access = make_token({k: v for k, v in payload.items() if k != "exp"})
     new_refresh = make_token({k: v for k, v in payload.items() if k != "exp"}, 60 * 24 * 7)

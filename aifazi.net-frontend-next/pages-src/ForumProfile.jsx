@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
-import api, { ensureAdminGate, getAuthToken } from '@/lib/api'
+import api, { ensureAdminGate } from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { Select, useDialog } from '../core/ui.jsx'
 import { useToast } from '../components/Toast'
@@ -1184,12 +1184,8 @@ function FiveMTab({ user }) {
   const [formsLoading, setFormsLoading] = useState(false)
 
   useEffect(() => {
-    const token = getAuthToken()
-    if (!token) { setLoading(false); return }
     setFormsLoading(true)
-    api.get('/auth/discord/whitelist-status', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    api.get('/auth/discord/whitelist-status')
       .then(r => setStatus(r.data))
       .catch(err => {
         const code = err?.response?.status
@@ -1200,9 +1196,7 @@ function FiveMTab({ user }) {
         }
       })
       .finally(() => setLoading(false))
-    api.get('/forms/my-submissions', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    api.get('/forms/my-submissions')
       .then(r => setFormSubmissions(Array.isArray(r.data) ? r.data : (r.data?.submissions || [])))
       .catch(() => setFormSubmissions([]))
       .finally(() => setFormsLoading(false))
@@ -1266,11 +1260,7 @@ function FiveMTab({ user }) {
 
   const refreshIdentities = async () => {
     await refreshUser?.()
-    const token = getAuthToken()
-    if (!token) return
-    const r = await api.get('/auth/discord/whitelist-status', {
-      headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => null)
+    const r = await api.get('/auth/discord/whitelist-status').catch(() => null)
     if (r?.data) setStatus(r.data)
   }
 
