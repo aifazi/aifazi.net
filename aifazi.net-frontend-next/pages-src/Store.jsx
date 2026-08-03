@@ -45,9 +45,10 @@ export default function StorePage({ fivem = false }) {
   const [cartLoading, setCartLoading] = useState(false)
   const [checkoutCartLoading, setCheckoutCartLoading] = useState(false)
   const homeHref = useFiveMRoute('/')
+  const storeHref = typeof window !== 'undefined' && window.location.hostname === 'store.aifazi.net' ? '/' : '/store'
   const loginHref = fivem
     ? `/login?next=${encodeURIComponent('/fivem/store')}`
-    : '/login?next=%2Fstore'
+    : `/login?next=${encodeURIComponent(storeHref)}`
 
   useEffect(() => {
     Promise.all([

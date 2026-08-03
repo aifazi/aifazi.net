@@ -3,8 +3,9 @@
  *
  * 1. cdn.aifazi.net — CDN subdomain → /api/cdn proxy
  * 2. fivem.aifazi.net — FiveM subdomain → /fivem/* routes
- * 3. Admin route protection — validates admin_session cookie (PASETO v4 / JWT).
- * 4. Internal token injection for /api/* requests.
+ * 3. store.aifazi.net — Store subdomain → /store/* routes
+ * 4. Admin route protection — validates admin_session cookie (PASETO v4 / JWT).
+ * 5. Internal token injection for /api/* requests.
  *
  * Supports both PASETO v4 tokens (XChaCha20-Poly1305 or HMAC-SHA256 fallback)
  * and legacy JWT tokens for backward compatibility during migration.
@@ -14,9 +15,12 @@ import { xchacha20poly1305 } from '@noble/ciphers/chacha'
 
 const CDN_HOSTNAME        = 'cdn.aifazi.net'
 const FIVEM_HOSTNAME      = 'fivem.aifazi.net'
+const STORE_HOSTNAME      = 'store.aifazi.net'
 const ROOT_HOSTNAMES      = new Set(['aifazi.net', 'www.aifazi.net'])
 const FIVEM_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/forms', '/chat']
 const FIVEM_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml'])
+const STORE_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/login', '/forms']
+const STORE_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico'])
 const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET   || ''
 const PASETO_SECRET       = process.env.PASETO_SECRET || process.env.JWT_SECRET || ''
 const JWT_SECRET          = process.env.JWT_SECRET || ''
@@ -336,7 +340,46 @@ export async function proxy(request: NextRequest) {
     return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
   }
 
-  // ── 4. Admin route protection ─────────────────────────────────────────────
+  // ── 4. Store — canonicalize root /store to store.aifazi.net ──────────────
+  if (ROOT_HOSTNAMES.has(hostname)) {
+    if (pathname === '/store' || pathname.startsWith('/store/')) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.hostname = STORE_HOSTNAME
+      redirectUrl.pathname = pathname === '/store' ? '/' : pathname.replace(/^\/store/, '')
+      return NextResponse.redirect(redirectUrl, { status: 308 })
+    }
+  }
+
+  // ── 5. store.aifazi.net → /store/* routes ────────────────────────────────
+  if (hostname === STORE_HOSTNAME) {
+    if (
+      STORE_SHARED_PATHS.has(pathname) ||
+      STORE_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
+    ) {
+      const { headers } = secureRequest(request)
+      if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
+        headers.set('X-Internal-Token', INTERNAL_API_SECRET)
+      }
+      return withCsp(NextResponse.next({ request: { headers } }))
+    }
+    if (pathname === '/' || pathname === '') {
+      const rewriteUrl = request.nextUrl.clone()
+      rewriteUrl.pathname = '/store'
+      const { headers } = secureRequest(request)
+      return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
+    }
+    if (pathname.startsWith('/store')) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = pathname.replace(/^\/store/, '') || '/'
+      return NextResponse.redirect(redirectUrl, { status: 308 })
+    }
+    const rewriteUrl = request.nextUrl.clone()
+    rewriteUrl.pathname = `/store${pathname}`
+    const { headers } = secureRequest(request)
+    return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
+  }
+
+  // ── 6. Admin route protection ─────────────────────────────────────────────
   if (pathname.toLowerCase().startsWith('/admin')) {
     const sessionCookie = request.cookies.get('admin_session')?.value
     if (!sessionCookie || !(await isAdminSessionValid(sessionCookie, hostname))) {

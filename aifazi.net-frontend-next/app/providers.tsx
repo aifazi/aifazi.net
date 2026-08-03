@@ -543,7 +543,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   //   return () => { socket.off('settings-update', handleSettings); socket.off('banners-update', handleBanners) }
   // }, [])
 
-  const isFullScreen = /^\/(admin|chat|users\/chat)/.test(pathname || '')
+  const isFullScreen = /^\/(admin|chat|users\/chat|store)/.test(pathname || '')
   const showMaintenance = siteConfig.maintenanceMode && !userIsAdmin
 
   const onLoadComplete = useCallback(() => {
