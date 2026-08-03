@@ -549,14 +549,13 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
 
   const isFullScreen = /^\/(admin|chat|users\/chat|store)/.test(pathname || '') || isStoreSubdomain || isStoreDomain
   const showMaintenance = (() => {
-    if (!siteConfig.maintenanceMode && !siteConfig.subdomainMaintenance) return false
     if (userIsAdmin) return false
     // Check subdomain-specific maintenance first
     const subMaint = siteConfig.subdomainMaintenance || {}
     if (isStoreDomain && subMaint.store?.maintenanceMode) return true
     if (isFiveMDomain && subMaint.fivem?.maintenanceMode) return true
     // Fall back to global maintenance
-    return siteConfig.maintenanceMode && !userIsAdmin
+    return !!siteConfig.maintenanceMode
   })()
 
   const onLoadComplete = useCallback(() => {
