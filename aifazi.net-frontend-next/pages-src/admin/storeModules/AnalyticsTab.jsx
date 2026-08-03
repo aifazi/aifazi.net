@@ -58,7 +58,7 @@ export default function AnalyticsTab() {
               const isLast = i === d.revenue_by_day.length - 1
               return (
                 <div key={x.date} title={`${fmt(x.date)}: ${money(x.revenue_cents)}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                  <div style={{ width: '100%', height, background: isLast ? G : 'rgba(0,255,136,.35)', borderRadius: '3px 3px 0 0', minHeight: 3, boxShadow: isLast ? `0 0 12px ${G}55` : 'none' }} />
+                  <div style={{ width: '100%', height: h, background: isLast ? G : 'rgba(0,255,136,.35)', borderRadius: '3px 3px 0 0', minHeight: 3, boxShadow: isLast ? `0 0 12px ${G}55` : 'none' }} />
                   {isLast && <span style={{ fontFamily: MONO, fontSize: 7, color: 'var(--muted)', transform: 'rotate(-40deg)' }}>{money(x.revenue_cents)}</span>}
                 </div>
               )
