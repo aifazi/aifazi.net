@@ -61,9 +61,11 @@ CREATE INDEX IF NOT EXISTS idx_delivery_scans_agent      ON delivery_scan_events
 -- ── RLS: delivery_agents ──────────────────────────────────────────────────────
 ALTER TABLE delivery_agents ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS delivery_agents_read ON delivery_agents;
 CREATE POLICY delivery_agents_read ON delivery_agents
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS delivery_agents_admin ON delivery_agents;
 CREATE POLICY delivery_agents_admin ON delivery_agents
   FOR ALL TO authenticated
   USING (EXISTS (
@@ -73,6 +75,7 @@ CREATE POLICY delivery_agents_admin ON delivery_agents
 -- ── RLS: delivery_assignments ─────────────────────────────────────────────────
 ALTER TABLE delivery_assignments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS delivery_assignments_agent ON delivery_assignments;
 CREATE POLICY delivery_assignments_agent ON delivery_assignments
   FOR SELECT TO authenticated
   USING (EXISTS (
@@ -80,6 +83,7 @@ CREATE POLICY delivery_assignments_agent ON delivery_assignments
     WHERE id = delivery_assignments.agent_id AND user_id = auth.uid()
   ));
 
+DROP POLICY IF EXISTS delivery_assignments_agent_update ON delivery_assignments;
 CREATE POLICY delivery_assignments_agent_update ON delivery_assignments
   FOR UPDATE TO authenticated
   USING (EXISTS (
@@ -91,6 +95,7 @@ CREATE POLICY delivery_assignments_agent_update ON delivery_assignments
     WHERE id = delivery_assignments.agent_id AND user_id = auth.uid()
   ));
 
+DROP POLICY IF EXISTS delivery_assignments_admin ON delivery_assignments;
 CREATE POLICY delivery_assignments_admin ON delivery_assignments
   FOR ALL TO authenticated
   USING (EXISTS (
@@ -100,6 +105,7 @@ CREATE POLICY delivery_assignments_admin ON delivery_assignments
 -- ── RLS: delivery_scan_events ─────────────────────────────────────────────────
 ALTER TABLE delivery_scan_events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS delivery_scans_agent ON delivery_scan_events;
 CREATE POLICY delivery_scans_agent ON delivery_scan_events
   FOR SELECT TO authenticated
   USING (EXISTS (
@@ -107,6 +113,7 @@ CREATE POLICY delivery_scans_agent ON delivery_scan_events
     WHERE id = delivery_scan_events.agent_id AND user_id = auth.uid()
   ));
 
+DROP POLICY IF EXISTS delivery_scans_insert_agent ON delivery_scan_events;
 CREATE POLICY delivery_scans_insert_agent ON delivery_scan_events
   FOR INSERT TO authenticated
   WITH CHECK (EXISTS (
@@ -114,6 +121,7 @@ CREATE POLICY delivery_scans_insert_agent ON delivery_scan_events
     WHERE id = agent_id AND user_id = auth.uid()
   ));
 
+DROP POLICY IF EXISTS delivery_scans_admin ON delivery_scan_events;
 CREATE POLICY delivery_scans_admin ON delivery_scan_events
   FOR ALL TO authenticated
   USING (EXISTS (
