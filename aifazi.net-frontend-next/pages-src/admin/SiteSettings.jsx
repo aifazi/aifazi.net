@@ -409,6 +409,7 @@ function SiteSettings() {
     maintenanceProgress: 0,
     maintenanceShowSocial: true,
     maintenanceBgStyle: 'grid',
+    subdomainMaintenance: {},
     headerStyle: 'cyber',
     footerStyle: 'cyber',
     globalTheme: '',
@@ -570,6 +571,51 @@ function SiteSettings() {
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: cfg.maintenanceMode ? '#ff4757' : 'var(--text)' }}>Maintenance Mode {cfg.maintenanceMode ? 'ON' : 'OFF'}</div>
             <div style={T.sub}>When ON, visitors see the maintenance page instead of the site. Admins bypass it.</div>
+          </div>
+        </div>
+
+        {/* Subdomain maintenance toggles */}
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          <div style={{ ...T.sub, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>PER-SUBDOMAIN MAINTENANCE</div>
+          <div style={{ display: 'grid', gap: 12 }}>
+            {[
+              ['store', 'store.aifazi.net', cfg.subdomainMaintenance?.store?.maintenanceMode, cfg.subdomainMaintenance?.store?.maintenanceMessage || ''],
+              ['fivem', 'fivem.aifazi.net', cfg.subdomainMaintenance?.fivem?.maintenanceMode, cfg.subdomainMaintenance?.fivem?.maintenanceMessage || ''],
+            ].map(([key, label, active, message]) => (
+              <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 14px', background: 'var(--bg3)', borderRadius: 10, border: `1px solid ${active ? 'rgba(255,71,87,0.3)' : 'var(--border)'}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Toggle
+                    on={!!active}
+                    onChange={() => {
+                      const current = cfg.subdomainMaintenance || {}
+                      const sd = { ...current }
+                      sd[key] = { ...sd[key], maintenanceMode: !active, maintenanceMessage: sd[key]?.maintenanceMessage || '' }
+                      setNow('subdomainMaintenance', JSON.parse(JSON.stringify(sd)))
+                    }}
+                    color="#ff4757"
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: active ? '#ff4757' : 'var(--text)' }}>
+                      {label} {active ? '— MAINTENANCE ON' : '— Normal'}
+                    </div>
+                  </div>
+                  {active && <span style={{ padding: '2px 8px', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', fontSize: 8, letterSpacing: 2 }}>ACTIVE</span>}
+                </div>
+                {active && (
+                  <input
+                    value={message}
+                    onChange={e => {
+                      const current = cfg.subdomainMaintenance || {}
+                      const sd = JSON.parse(JSON.stringify(current))
+                      sd[key] = { ...sd[key], maintenanceMessage: e.target.value }
+                      set('subdomainMaintenance', sd)
+                    }}
+                    placeholder={`Message for ${label}...`}
+                    style={{ ...T.inp, fontFamily: 'var(--font-mono)', fontSize: 10 }}
+                  />
+                )}
+              </div>
+            ))}
           </div>
         </div>
 

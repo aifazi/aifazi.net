@@ -122,7 +122,7 @@ function loadFontForTheme(themeId: string) {
   document.head.appendChild(link)
 }
 
-export function Providers({ children, isStoreDomain = false }: { children: React.ReactNode; isStoreDomain?: boolean }) {
+export function Providers({ children, isStoreDomain = false, isFiveMDomain = false }: { children: React.ReactNode; isStoreDomain?: boolean; isFiveMDomain?: boolean }) {
   const pathname = usePathname()
 
   const [loading, setLoading] = useState(false)
@@ -548,7 +548,16 @@ export function Providers({ children, isStoreDomain = false }: { children: React
   // }, [])
 
   const isFullScreen = /^\/(admin|chat|users\/chat|store)/.test(pathname || '') || isStoreSubdomain || isStoreDomain
-  const showMaintenance = siteConfig.maintenanceMode && !userIsAdmin
+  const showMaintenance = (() => {
+    if (!siteConfig.maintenanceMode && !siteConfig.subdomainMaintenance) return false
+    if (userIsAdmin) return false
+    // Check subdomain-specific maintenance first
+    const subMaint = siteConfig.subdomainMaintenance || {}
+    if (isStoreDomain && subMaint.store?.maintenanceMode) return true
+    if (isFiveMDomain && subMaint.fivem?.maintenanceMode) return true
+    // Fall back to global maintenance
+    return siteConfig.maintenanceMode && !userIsAdmin
+  })()
 
   const onLoadComplete = useCallback(() => {
     setLoading(false)
@@ -573,7 +582,7 @@ export function Providers({ children, isStoreDomain = false }: { children: React
             <Suspense fallback={null}>
               <MaintenanceScreen
                 style={siteConfig.maintenanceStyle || 'terminal'}
-                message={siteConfig.maintenanceMessage || "We're performing scheduled upgrades. We'll be back online shortly."}
+                message={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceMessage) || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceMessage) || siteConfig.maintenanceMessage || "We're performing scheduled upgrades. We'll be back online shortly."}
                 status={siteConfig.maintenanceStatus || 'MAINTENANCE'}
                 icon={siteConfig.maintenanceIcon || '⚙️'}
                 returnTime={siteConfig.maintenanceReturnTime || ''}
