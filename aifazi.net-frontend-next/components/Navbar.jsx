@@ -159,8 +159,10 @@ export default function Navbar() {
   // Active on /fivem/* routes and the fivem.aifazi.net host — swaps the
   // portfolio nav links / branding for FiveM-specific ones while keeping the
   // shared header shell, theme, and auth controls.
-  const [isFiveMHostState, setIsFiveMHostState] = useState(false)
-  useEffect(() => setIsFiveMHostState(isFiveMHost()), [])
+  const [isFiveMHostState, setIsFiveMHostState] = useState(() => {
+    if (typeof document !== 'undefined') return document.documentElement.dataset.fivem === 'true' || isFiveMHost()
+    return false
+  })
   const isFiveM = location.pathname.startsWith('/fivem') || isFiveMHostState
 
   // Host-aware FiveM routes (bare path on fivem.aifazi.net, /fivem/x otherwise)

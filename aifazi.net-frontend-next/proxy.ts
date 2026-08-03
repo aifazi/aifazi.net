@@ -318,6 +318,7 @@ export async function proxy(request: NextRequest) {
       FIVEM_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
     ) {
       const { headers } = secureRequest(request)
+      headers.set('x-fivem-domain', 'true')
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
         headers.set('X-Internal-Token', INTERNAL_API_SECRET)
       }
@@ -327,6 +328,7 @@ export async function proxy(request: NextRequest) {
       const rewriteUrl = request.nextUrl.clone()
       rewriteUrl.pathname = '/fivem'
       const { headers } = secureRequest(request)
+      headers.set('x-fivem-domain', 'true')
       return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
     }
     if (pathname.startsWith('/fivem')) {
@@ -337,6 +339,7 @@ export async function proxy(request: NextRequest) {
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/fivem${pathname}`
     const { headers } = secureRequest(request)
+    headers.set('x-fivem-domain', 'true')
     return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
   }
 

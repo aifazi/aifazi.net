@@ -62,6 +62,7 @@ export const viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers()
   const isStoreDomain = headersList.get('x-store-domain') === 'true'
+  const isFiveMDomain = headersList.get('x-fivem-domain') === 'true'
 
   // Server-side global config (cached 30s) — injected into every page so
   // visitors see the admin's settings on first paint, not the default theme.
@@ -87,6 +88,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     htmlAttrs['data-bg-grid'] = serverBgGrid
   }
   if (isStoreDomain) htmlAttrs['data-store'] = 'true'
+  if (isFiveMDomain) htmlAttrs['data-fivem'] = 'true'
 
   return (
     <html lang="en" suppressHydrationWarning {...htmlAttrs}>
