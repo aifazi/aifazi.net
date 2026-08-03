@@ -5,7 +5,7 @@ import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import {
   Card, SectionHeader, NeonButton, Badge, Stat, ThreadRowSkeleton,
-  EmptyState, timeAgo, SortTabs,
+  EmptyState, timeAgo, SortTabs, Avatar,
 } from '../components/community'
 
 export default function ForumHome() {
@@ -44,6 +44,17 @@ export default function ForumHome() {
 
   const totalThreads = cats.reduce((sum, c) => sum + (c.threadCount || 0), 0)
   const activeCats = cats.filter(c => (c.threadCount || 0) > 0)
+
+  const topContributors = (() => {
+    const count = {}
+    recent.forEach(t => {
+      const name = t.author?.username || t.author_name
+      if (name) count[name] = (count[name] || 0) + (t.reply_count ?? t.replyCount ?? 0) + 1
+    })
+    return Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 4)
+  })()
+
+  const trending = [...recent].filter(t => (t.reply_count ?? t.replyCount ?? 0) > 0).sort((a, b) => (b.reply_count ?? b.replyCount ?? 0) - (a.reply_count ?? a.replyCount ?? 0)).slice(0, 3)
 
   return (
     <div className="page-container community-page" style={{ position: 'relative', zIndex: 1 }}>
@@ -128,10 +139,62 @@ export default function ForumHome() {
                 </p>
                 <NeonButton to="/forum/new" variant="primary" size="sm" style={{ width: '100%' }}>+ New Thread</NeonButton>
               </Card>
+
+              {/* Active Contributors */}
+              {topContributors.length > 0 && (
+                <Card style={{ padding: 22 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>TOP VOICES</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)' }}>{topContributors.length}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {topContributors.map(([name, score], i) => (
+                      <div key={name} style={{
+                        display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
+                        borderRadius: 10, background: 'rgba(255,255,255,0.015)',
+                      }}>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 10, color: i === 0 ? 'var(--green)' : i === 1 ? 'var(--cyan)' : 'var(--muted)',
+                          fontWeight: 700, width: 18, textAlign: 'center', flexShrink: 0,
+                        }}>#{i + 1}</span>
+                        <Avatar user={{ username: name, avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=00ff88,00d4ff&fontSize=36` }} size={28} />
+                        <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', flexShrink: 0 }}>{score} pts</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
             </aside>
 
-            {/* ── Main column: recent activity ── */}
+            {/* ── Main column: trending + recent ── */}
             <div className="forum-home-main">
+              {/* Trending */}
+              {trending.length > 0 && (
+                <div style={{ marginBottom: 32 }}>
+                  <SectionHeader eyebrow="Hot Right Now" title="🔥 Trending" />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {trending.map(t => (
+                      <Card key={t.id || t._id} hover style={{ padding: '14px 20px', borderColor: 'rgba(0,212,255,0.18)' }}>
+                        <Link to={`/forum/thread/${t.id || t._id}`} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: 'inherit' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: 'var(--text)', wordBreak: 'break-word' }}>{t.title}</span>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
+                              <span style={{ color: t.category?.color || 'var(--cyan)' }}>{t.category?.icon} {t.category?.name || ''}</span>
+                              <span>by <span style={{ color: 'var(--text)' }}>{t.author?.username || t.author_name}</span></span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                            <Stat small label="Replies" value={t.reply_count ?? t.replyCount ?? 0} color="var(--cyan)" />
+                            <Stat small label="Views" value={t.views ?? 0} color="var(--muted)" />
+                          </div>
+                        </Link>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <SectionHeader
                 eyebrow="Latest"
                 title="Recent Activity"

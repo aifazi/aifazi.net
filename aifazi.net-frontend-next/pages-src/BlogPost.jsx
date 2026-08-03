@@ -10,6 +10,8 @@ import { getSupabase } from '@/lib/supabase'
 import { useForum } from '../context/ForumContext'
 import { Card, NeonButton, Badge, Avatar, RoleBadge, EmptyState } from '../components/community'
 import { MediaAttachment } from '../components/MediaPreview'
+import AuthorCard from '../components/AuthorCard'
+import NewsletterCTA from '../components/NewsletterCTA'
 
 // ── Smart Video Player ────────────────────────────────────────────────────────
 function VideoPlayer({ src, title = '' }) {
@@ -791,6 +793,9 @@ export default function BlogPost({ initialPost }) {
           </div>
         )}
 
+        {/* Author card */}
+        <AuthorCard authorName={post.author_name} category={post.category} />
+
         {/* Reactions (server-persisted) */}
         <PostReactions slug={post.slug} postId={post._id || post.id} initialReactions={post.reactions} />
 
@@ -799,6 +804,9 @@ export default function BlogPost({ initialPost }) {
 
         {/* Related posts */}
         <RelatedPosts slug={post.slug} currentId={post.id} />
+
+        {/* Newsletter CTA */}
+        <NewsletterCTA />
 
         {/* Back to blog */}
         <div style={{ marginTop: 60 }}>
