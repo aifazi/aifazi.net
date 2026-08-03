@@ -81,7 +81,7 @@ export default function StorePage({ fivem = false }) {
     dispatchCartUpdate()
   }
 
-  constaddToCart = async (product) => {
+  const addToCart = async (product) => {
     if (!user) { window.location.href = loginHref; return }
     setCartLoading(true)
     try {
