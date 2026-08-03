@@ -4937,3 +4937,301 @@ img, video, svg { max-width: 100%; height: auto; }
   section { padding: 20pt 0 !important; break-inside: avoid; }
   h1, h2, h3 { break-after: avoid; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PROFESSIONAL ECOMMERCE DESIGN SYSTEM
+   ══════════════════════════════════════════════════════════════ */
+
+/* Store product card — premium with image zoom */
+.ec-product-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+}
+.ec-product-card:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--cyan) 30%, var(--border));
+  box-shadow: 0 20px 50px rgba(0,0,0,0.35), 0 0 30px rgba(0,212,255,0.06);
+}
+.ec-product-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--bg3);
+}
+.ec-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+.ec-product-card:hover .ec-product-image img {
+  transform: scale(1.08);
+}
+.ec-product-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  opacity: 0.3;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--cyan) 8%, var(--bg3)), var(--bg3));
+}
+.ec-product-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+}
+.ec-product-card:hover .ec-product-overlay { opacity: 1; }
+.ec-quick-add {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--green);
+  color: #000;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.ec-quick-add:hover { background: color-mix(in srgb, var(--green) 85%, var(--cyan)); transform: scale(1.02); }
+.ec-quick-add:disabled { background: var(--bg3); color: var(--muted); cursor: not-allowed; }
+
+.ec-product-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 2;
+}
+.ec-product-body {
+  padding: 14px 16px 16px;
+}
+.ec-product-cat {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ec-product-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ec-product-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.ec-product-price-current {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 800;
+}
+.ec-product-price-compare {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* Store category card */
+.ec-cat-card {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg2) 60%, var(--bg));
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.ec-cat-card:hover {
+  border-color: color-mix(in srgb, var(--green) 35%, var(--border));
+  background: color-mix(in srgb, var(--green) 5%, var(--bg2));
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+}
+.ec-cat-icon { font-size: 36px; transition: transform 0.25s; }
+.ec-cat-card:hover .ec-cat-icon { transform: scale(1.15); }
+.ec-cat-name { font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--text); }
+.ec-cat-count { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+
+/* Store hero banner */
+.ec-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: clamp(32px, 5vw, 56px);
+  background:
+    radial-gradient(120% 180% at 10% 0%, color-mix(in srgb, var(--green) 10%, transparent), transparent 50%),
+    radial-gradient(120% 180% at 90% 100%, color-mix(in srgb, var(--cyan) 8%, transparent), transparent 50%),
+    var(--bg2);
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+
+/* Cart drawer */
+.ec-cart-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(420px, 100vw);
+  height: 100vh;
+  z-index: 500;
+  background: var(--bg2);
+  border-left: 1px solid var(--border);
+  box-shadow: -20px 0 60px rgba(0,0,0,0.4);
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ec-cart-drawer.open { transform: translateX(0); }
+.ec-cart-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 499;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.ec-cart-backdrop.open { opacity: 1; pointer-events: auto; }
+.ec-cart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ec-cart-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+.ec-cart-footer {
+  padding: 20px 24px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ec-cart-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ec-cart-item-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--bg3);
+}
+.ec-cart-item-info { flex: 1; min-width: 0; }
+.ec-cart-item-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ec-cart-item-price { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-top: 2px; }
+.ec-cart-qty { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.ec-cart-qty-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--bg3);
+  color: var(--muted); cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.ec-cart-qty-btn:hover { background: var(--bg); color: var(--text); }
+.ec-cart-item-total { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; align-self: center; }
+
+/* Store section title */
+.ec-section-title {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.ec-section-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+/* Store trust badges */
+.ec-trust-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ec-trust-badge span:first-child { font-size: 16px; }
+
+/* Store product grid */
+.ec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+@media (max-width: 480px) {
+  .ec-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+}
+
+/* Plan card premium */
+.ec-plan-card {
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), border-color 0.3s, box-shadow 0.3s;
+}
+.ec-plan-card:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--plan-color, var(--green)) 35%, var(--border));
+  box-shadow: 0 20px 50px color-mix(in srgb, var(--plan-color, var(--green)) 12%, transparent);
+}
+.ec-plan-featured {
+  transform: scale(1.02);
+  border-color: var(--plan-color, var(--green));
+  box-shadow: 0 12px 40px color-mix(in srgb, var(--plan-color, var(--green)) 15%, transparent);
+}
+.ec-plan-featured:hover { transform: scale(1.04); }

@@ -127,7 +127,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const [loading, setLoading] = useState(false)
   const [hydrated, setHydrated] = useState(false)
-  const [isStoreSubdomain, setIsStoreSubdomain] = useState(false)
+  const [isStoreSubdomain, setIsStoreSubdomain] = useState(() => {
+    if (typeof document !== 'undefined') return document.documentElement.dataset.store === 'true'
+    return false
+  })
   const firstThemeSync = useRef(true)
 
   // Synchronous initializer — always return server-safe defaults to avoid hydration mismatch
@@ -164,13 +167,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [])
-
-  // Detect store subdomain for full-screen layout (hides main nav/footer)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hostname === 'store.aifazi.net') {
-      setIsStoreSubdomain(true)
-    }
   }, [])
 
   // Restore browser-only state after hydration (prevents SSR mismatch)

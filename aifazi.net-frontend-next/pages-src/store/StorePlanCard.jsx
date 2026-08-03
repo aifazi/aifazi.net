@@ -1,5 +1,4 @@
 'use client'
-import { Link } from '@/lib/router-compat'
 import { Card, NeonButton, Badge } from '../../components/community'
 
 const TIER_COLORS = ['var(--muted)', 'var(--green)', 'var(--cyan)', 'var(--purple)', 'var(--orange)', 'var(--red)']
@@ -11,23 +10,24 @@ export default function StorePlanCard({ plan, index, featuredIndex, currentLevel
   const featured = index === featuredIndex
 
   return (
-    <Card className={`store-plan-card ${featured ? 'store-plan-featured' : ''}`} style={{
-      padding: 28, display: 'flex', flexDirection: 'column',
-      '--plan-color': color,
-      '--plan-feat': featured ? `0 12px 40px ${color}18` : undefined,
-      background: featured ? `linear-gradient(160deg, color-mix(in srgb, ${color} 10%, transparent), var(--bg2))` : undefined,
-    }}>
-      {featured && <Badge tone="green" glow style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)' }}>POPULAR</Badge>}
-      {current && <Badge tone="green" glow style={{ position: 'absolute', top: -8, right: 14 }}>ACTIVE</Badge>}
+    <div
+      className={`ec-plan-card ${featured ? 'ec-plan-featured' : ''}`}
+      style={{ '--plan-color': color }}
+    >
+      {featured && <div style={{ position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)', padding: '4px 16px', borderRadius: '0 0 10px 10px', background: color, color: '#000', fontSize: 9, fontWeight: 900, letterSpacing: 2 }}>POPULAR</div>}
+      {current && <div style={{ position: 'absolute', top: 10, right: 10 }}><Badge tone="green" glow>ACTIVE</Badge></div>}
 
-      <div style={{ fontSize: 11, color, letterSpacing: 2, fontWeight: 800 }}>LEVEL {plan.level}</div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, marginTop: 8 }}>{plan.name}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color, letterSpacing: 2, fontWeight: 800 }}>LEVEL {plan.level}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, marginTop: 8, color: 'var(--text)' }}>{plan.name}</div>
       {plan.headline && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, minHeight: 14 }}>{plan.headline}</div>}
+
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 18 }}>
-        <span style={{ fontSize: 34, fontWeight: 800, color }}>${plan.price.toFixed(2)}</span>
+        <span style={{ fontSize: 34, fontWeight: 800, color, fontFamily: 'var(--font-mono)' }}>${plan.price.toFixed(2)}</span>
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>/ {plan.interval || 'month'}</span>
       </div>
+
       <div style={{ margin: '18px 0 6px', height: 1, background: 'var(--border)', opacity: 0.5 }} />
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9, flex: 1 }}>
         {(plan.features || []).map((f, fi) => (
           <div key={fi} style={{ display: 'flex', gap: 9, fontSize: 12, color: 'var(--text)', lineHeight: 1.4 }}>
@@ -37,10 +37,12 @@ export default function StorePlanCard({ plan, index, featuredIndex, currentLevel
         ))}
         {(!plan.features || plan.features.length === 0) && Object.entries(plan.perks || {}).map(([k, v]) => (
           <div key={k} style={{ display: 'flex', gap: 9, fontSize: 12, color: 'var(--muted)' }}>
-            <span style={{ color: C }}>◆</span><span>{k}: {String(v)}</span>
+            <span style={{ color: C }}>◆</span>
+            <span>{k}: {String(v)}</span>
           </div>
         ))}
       </div>
+
       <div style={{ marginTop: 20 }}>
         {user ? (
           <NeonButton
@@ -50,7 +52,7 @@ export default function StorePlanCard({ plan, index, featuredIndex, currentLevel
             onClick={() => handleSubscribe(plan)}
             disabled={!!checkoutLoading}
           >
-            {checkoutLoading === plan.slug ? 'Redirecting...' : current ? 'Current Plan' : `Subscribe — $${plan.price.toFixed(2)}/mo`}
+            {checkoutLoading === plan.slug ? 'Redirecting...' : current ? '✓ Current Plan' : `Subscribe — $${plan.price.toFixed(2)}/mo`}
           </NeonButton>
         ) : (
           <NeonButton to={loginHref} variant="primary" size="md" style={{ width: '100%' }}>
@@ -58,6 +60,6 @@ export default function StorePlanCard({ plan, index, featuredIndex, currentLevel
           </NeonButton>
         )}
       </div>
-    </Card>
+    </div>
   )
 }

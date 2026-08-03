@@ -1,43 +1,48 @@
 'use client'
 import { Link } from '@/lib/router-compat'
-import { Card, NeonButton, Badge } from '../../components/community'
+import { Badge } from '../../components/community'
+
+const C = 'var(--cyan)'
 
 export default function StoreProductCard({ product, cartLoading, addToCart }) {
-  const color = product.on_sale ? 'var(--red)' : 'var(--cyan)'
   const detailUrl = `/store/product/${product.slug || product.id}`
+  const color = product.on_sale ? 'var(--red)' : C
 
   return (
-    <Card className="store-product-card" style={{ '--hover-color': color, padding: 20, display: 'flex', flexDirection: 'column' }}>
-      <Link to={detailUrl} style={{ textDecoration: 'none', color: 'inherit', display: 'contents' }}>
-        {product.image_url ? (
-          <img src={product.image_url} alt={product.name} style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 10, marginBottom: 12, background: 'var(--bg3)' }} />
-        ) : (
-          <div style={{ width: '100%', height: 110, borderRadius: 10, marginBottom: 12, background: 'linear-gradient(160deg, var(--cyan)12, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34 }}>🛒</div>
-        )}
-      </Link>
-      {product.on_sale && (
-        <div style={{ position: 'absolute', top: 14, right: 14 }}>
-          <Badge tone="red">SALE</Badge>
+    <Link to={detailUrl} className="ec-product-card" style={{ textDecoration: 'none', color: 'inherit' }}>
+      {/* Image */}
+      <div className="ec-product-image">
+        <div className="ec-product-badge">
+          {product.on_sale && <Badge tone="red" glow>SALE</Badge>}
         </div>
-      )}
-      <Link to={detailUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
-        <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>{product.category || 'Store'}</div>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, marginBottom: 6, flex: 1 }}>{product.name}</div>
-      </Link>
-      {product.description && <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</div>}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
-        <span style={{ fontSize: 22, fontWeight: 800, color }}>${product.price.toFixed(2)}</span>
-        {product.compare_at > 0 && <span style={{ fontSize: 11, color: 'var(--muted)', textDecoration: 'line-through' }}>${product.compare_at.toFixed(2)}</span>}
+        {product.image_url ? (
+          <img src={product.image_url} alt={product.name} loading="lazy" />
+        ) : (
+          <div className="ec-product-image-placeholder">🛒</div>
+        )}
+        {/* Quick add overlay */}
+        <div className="ec-product-overlay">
+          <button
+            className="ec-quick-add"
+            onClick={(e) => { e.preventDefault(); addToCart(product) }}
+            disabled={cartLoading || !product.in_stock}
+          >
+            {!product.in_stock ? 'OUT OF STOCK' : cartLoading ? 'ADDING...' : '+ QUICK ADD'}
+          </button>
+        </div>
       </div>
-      <NeonButton
-        variant={product.in_stock ? 'cyan' : 'ghost'}
-        size="sm"
-        style={{ width: '100%' }}
-        onClick={() => addToCart(product)}
-        disabled={cartLoading || !product.in_stock}
-      >
-        {!product.in_stock ? 'Out of Stock' : 'Add to Cart'}
-      </NeonButton>
-    </Card>
+
+      {/* Body */}
+      <div className="ec-product-body">
+        <div className="ec-product-cat">{product.category || 'Store'}</div>
+        <div className="ec-product-name">{product.name}</div>
+        <div className="ec-product-price">
+          <span className="ec-product-price-current" style={{ color }}>${product.price.toFixed(2)}</span>
+          {product.compare_at > 0 && (
+            <span className="ec-product-price-compare">${product.compare_at.toFixed(2)}</span>
+          )}
+        </div>
+      </div>
+    </Link>
   )
 }
