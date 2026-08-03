@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS delivery_agents (
   UNIQUE (user_id)
 );
 
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_delivery_agents_user  ON delivery_agents(user_id);
-CREATE INDEX IF NOT EXISTS IF NOT EXISTS idx_delivery_agents_status ON delivery_agents(status);
+CREATE INDEX IF NOT EXISTS idx_delivery_agents_user  ON delivery_agents(user_id);
+CREATE INDEX IF NOT EXISTS idx_delivery_agents_status ON delivery_agents(status);
 
 -- ── Delivery Assignments ──────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS delivery_assignments (
