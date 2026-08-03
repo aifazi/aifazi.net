@@ -522,6 +522,7 @@ from routers import (
     store_marketing_admin,
     store_inventory_admin,
     store_terminal_admin,
+    store_delivery,
     documents,
     txadmin_webhook,
     webhooks,
@@ -574,6 +575,7 @@ app.include_router(store_crm_admin.router,      prefix="/api/store/admin")
 app.include_router(store_marketing_admin.router, prefix="/api/store/admin")
 app.include_router(store_inventory_admin.router, prefix="/api/store/admin")
 app.include_router(store_terminal_admin.router,  prefix="/api/store/admin")
+app.include_router(store_delivery.router,        prefix="/api/store/delivery")
 app.include_router(documents.router,       prefix="/api/documents")
 app.include_router(forms.router,          prefix="/api/forms")
 app.include_router(txadmin_webhook.router, prefix="/api/txadmin")

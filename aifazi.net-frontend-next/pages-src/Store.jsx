@@ -11,6 +11,7 @@ import StoreProductCard from './store/StoreProductCard'
 import CartSidebar from './store/CartSidebar'
 import StoreFAQ from './store/StoreFAQ'
 import AccountDashboard from './store/AccountDashboard'
+import DeliveryAgentPortal from './store/DeliveryAgentPortal'
 
 function useMobile(bp = 900) {
   const [m, setM] = useState(false)
@@ -191,7 +192,9 @@ export default function StorePage({ fivem = false }) {
         isMobile={isMobile}
       />
 
-      <StoreTabSwitcher tab={tab} setTab={v => { setTab(v); setError(''); setNotice('') }} cartCount={cart.count} />
+      <StoreTabSwitcher tab={tab} setTab={v => { setTab(v); setError(''); setNotice('') }} cartCount={cart.count}
+        extraTabs={user ? [['delivery', '🚚 DELIVERY']] : []}
+      />
 
       {/* ── VIP TAB ──────────────────────────────────────────── */}
       {tab === 'vip' && (
@@ -304,6 +307,13 @@ export default function StorePage({ fivem = false }) {
       {tab === 'orders' && (
         <div style={{ maxWidth: 860, margin: '0 auto', padding: isMobile ? '28px 16px 0' : '40px 24px 0' }}>
           <AccountDashboard loginHref={loginHref} />
+        </div>
+      )}
+
+      {/* ── DELIVERY TAB ───────────────────────────────────────── */}
+      {tab === 'delivery' && (
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: isMobile ? '28px 16px 0' : '40px 24px 0' }}>
+          <DeliveryAgentPortal />
         </div>
       )}
 

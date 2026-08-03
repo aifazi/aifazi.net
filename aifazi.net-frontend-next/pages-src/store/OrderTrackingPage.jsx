@@ -19,13 +19,18 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [delivery, setDelivery] = useState(null)
 
   useEffect(() => {
     if (!orderNumber) return
-    api.get(`/store/track/${orderNumber}`)
-      .then(r => setOrder(r.data || null))
-      .catch(() => setError('Order not found or tracking is not available.'))
-      .finally(() => setLoading(false))
+    Promise.all([
+      api.get(`/store/track/${orderNumber}`),
+      api.get(`/store/delivery/tracking/${orderNumber}`).catch(() => null),
+    ]).then(([r, d]) => {
+      setOrder(r.data || null)
+      setDelivery(d?.data || null)
+    }).catch(() => setError('Order not found or tracking is not available.'))
+    .finally(() => setLoading(false))
   }, [orderNumber])
 
   if (loading) return (
@@ -123,6 +128,34 @@ export default function OrderTrackingPage() {
                     TRACK WITH CARRIER ↗
                   </a>
                 )}
+              </div>
+            </Card>
+          )}
+
+          {/* Delivery Agent */}
+          {delivery?.agent && (
+            <Card style={{ padding: 24, marginBottom: 24 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: C, marginBottom: 14 }}>DELIVERY AGENT</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: `linear-gradient(135deg, ${C}, ${G})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#000', flexShrink: 0 }}>
+                  {(delivery.agent.display_name || 'A')[0].toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{delivery.agent.display_name}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
+                    {delivery.agent.vehicle && <span>{delivery.agent.vehicle} · </span>}
+                    {delivery.agent.phone && <span>📱 {delivery.agent.phone} · </span>}
+                    <Badge tone={delivery.agent.status === 'available' ? 'green' : delivery.agent.status === 'busy' ? 'orange' : 'red'}>
+                      {delivery.agent.status.toUpperCase()}
+                    </Badge>
+                  </div>
+                  {delivery.assignment && (
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
+                      {delivery.assignment.picked_up_at && <>Picked up {new Date(delivery.assignment.picked_up_at).toLocaleString()} · </>}
+                      Status: {delivery.assignment.status.toUpperCase().replace('_', ' ')}
+                    </div>
+                  )}
+                </div>
               </div>
             </Card>
           )}
