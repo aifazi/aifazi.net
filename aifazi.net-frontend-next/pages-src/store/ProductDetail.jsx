@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from '@/lib/router-compat'
+import { useParams, Link } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useForum } from '../../context/ForumContext'
 import { Card, NeonButton, Badge, EmptyState } from '../../components/community'
@@ -11,7 +11,6 @@ const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
 export default function ProductDetail() {
   const { user } = useForum()
   const { slug } = useParams()
-  const navigate = useNavigate()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
@@ -48,7 +47,11 @@ export default function ProductDetail() {
   }
 
   const addToCart = async () => {
-    if (!user) { navigate('/login?next=' + encodeURIComponent(window.location.pathname)); return }
+    if (!user) {
+      const storeHref = typeof window !== 'undefined' && window.location.hostname === 'store.aifazi.net' ? '/' : '/store'
+      window.location.href = `/login?next=${encodeURIComponent(storeHref)}`
+      return
+    }
     setAdding(true)
     try {
       await api.post('/store/cart', { product_id: product.id, quantity })
