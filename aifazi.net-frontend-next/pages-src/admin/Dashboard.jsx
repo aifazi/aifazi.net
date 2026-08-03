@@ -10,7 +10,7 @@ import AdminChat from '../chat/AdminChat'
 import DBMonitor from './DBMonitor'
 import Sidebar from './Sidebar'
 import { PostEditor, MediaLibrary } from './PostEditor'
-import { S, useIsMobile, PageHeader, PanelErrorBoundary } from './shared'
+import { S, useIsMobile, PageHeader, PanelErrorBoundary, SkeletonGrid } from './shared'
 import AdminHeader from './AdminHeader'
 import { Icon, NAV_ICONS } from './icons'
 import Mail from './Mail'
@@ -30,18 +30,14 @@ function StatsGrid({ dashStats, isMobile, setView }) {
     { label: 'MESSAGES',    value: dashStats.contacts, navKey: 'communications', color: '#ff6b35', sub: 'in inbox', action: () => setView('communications') },
     { label: 'STAFF',       value: dashStats.staff,    navKey: 'staff', color: '#ffd700', sub: 'members',  action: () => setView('staff') },
   ]
-  return (
+      return (
     <div ref={ref} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
       {cards.map(card => (
-        <div key={card.label} className="stat-card" onClick={card.action} style={{
+        <div key={card.label} className="stat-card admin-card" onClick={card.action} style={{
           background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14,
           padding: isMobile ? '14px' : '18px 20px', cursor: card.action ? 'pointer' : 'default',
-          transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s',
           position: 'relative', overflow: 'hidden',
-        }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = card.color; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 4px 20px ${card.color}18` }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
-        >
+        }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${card.color}, transparent)`, borderRadius: '14px 14px 0 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--muted)' }}>{card.label}</div>
@@ -470,6 +466,27 @@ function Dashboard({ onLogout }) {
         </div>
       )}
 
+      <style>{`
+        /* ── Skeleton shimmer ── */
+        @keyframes skShimmer { 0% { opacity: 0.4; } 50% { opacity: 0.8; } 100% { opacity: 0.4; } }
+        .sk-block { background: var(--bg3); border-radius: 6px; animation: skShimmer 1.6s ease-in-out infinite; }
+
+        /* ── Stat card hover ── */
+        .admin-card { transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s; }
+        .admin-card:hover { transform: translateY(-2px); }
+
+        /* ── Quick-action cards ── */
+        .admin-quick-action { transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
+        .admin-quick-action:hover { border-color: var(--cyan) !important; background: rgba(0,212,255,0.06) !important; box-shadow: 0 4px 16px rgba(0,212,255,0.08); }
+
+        /* ── View-transition fade ── */
+        @keyframes adminViewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .admin-view { animation: adminViewIn 0.25s ease; }
+
+        /* ── Post-list card hover ── */
+        .admin-post-row:hover { border-color: var(--cyan) !important; background: rgba(0,212,255,0.04) !important; }
+        .admin-post-row { transition: border-color 0.15s, background 0.15s; }
+      `}</style>
       <div style={{ display: 'flex', flex: 1, height: '100%', position: 'relative', zIndex: 1, minHeight: 0, overflow: 'hidden' }}>
 
         {/* Sidebar — always visible on desktop, drawer on mobile */}
@@ -489,7 +506,7 @@ function Dashboard({ onLogout }) {
         {/* Main content — hidden when full-screen panel active */}
         <main style={{ flex: 1, padding: fullScreen ? 0 : (isMobile ? '10px' : '16px'), overflowY: fullScreen ? 'hidden' : 'auto', display: fullScreen ? 'none' : 'flex', flexDirection: 'column' }}>
           {/*  Page content wrapper — bordered, fills available height  */}
-          <div style={{
+          <div key={view} className="admin-view" style={{
             flex: 1,
             border: '1px solid var(--border)',
             background: 'var(--bg)',
@@ -524,7 +541,7 @@ function Dashboard({ onLogout }) {
               />
 
               {!dashStats ? (
-                <div className="loader" />
+                <SkeletonGrid cols={isMobile ? 2 : 4} />
               ) : (
                 <>
                   <StatsGrid dashStats={dashStats} isMobile={isMobile} setView={setView} />
@@ -564,15 +581,12 @@ function Dashboard({ onLogout }) {
                           { label: '[E] Mail & CDN', action: () => setView('delivery'), color: '#ff6b35' },
                           { label: '[~] CDN', action: () => setView('cdn'), color: '#00d4ff' },
                         ].map(btn => (
-                          <button key={btn.label} onClick={btn.action} style={{
+                          <button key={btn.label} onClick={btn.action} className="admin-quick-action" style={{
                             fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
                             padding: '10px 12px', background: 'var(--bg3)',
                             border: '1px solid var(--border)', color: 'var(--text)',
-                            cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left',
-                          }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = btn.color; e.currentTarget.style.color = btn.color; e.currentTarget.style.background = `${btn.color}10` }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.background = 'var(--bg3)' }}
-                          >{btn.label}</button>
+                            cursor: 'pointer', textAlign: 'left', borderRadius: 8,
+                          }}>{btn.label}</button>
                         ))}
                       </div>
                     </div>
@@ -718,9 +732,7 @@ function Dashboard({ onLogout }) {
                   )}
                 </div>
               ) : filteredPosts.map(post => (
-                <div key={post.id} style={{ ...S.card, transition: 'border-color 0.2s', borderColor: selectedPosts.has(post.id) ? 'rgba(0,255,136,0.4)' : undefined }}
-                  onMouseEnter={e => { if (!selectedPosts.has(post.id)) e.currentTarget.style.borderColor = 'rgba(0,255,136,0.2)' }}
-                  onMouseLeave={e => { if (!selectedPosts.has(post.id)) e.currentTarget.style.borderColor = 'var(--border)' }}
+                <div key={post.id} className="admin-post-row" style={{ ...S.card, borderColor: selectedPosts.has(post.id) ? 'rgba(0,255,136,0.4)' : undefined }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                     <Checkbox
@@ -888,11 +900,9 @@ function Dashboard({ onLogout }) {
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>QUICK TEMPLATES</div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {REPLY_TEMPLATES.map(tpl => (
-                      <button key={tpl.label} onClick={() => applyTemplate(tpl, replyModal !== 'bulk' ? replyModal : null)}
-                        style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '5px 12px', cursor: 'pointer', transition: 'all 0.15s',
-                          background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--cyan)', borderRadius: 4 }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.5)'; e.currentTarget.style.background = 'rgba(0,212,255,0.08)' }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg3)' }}>
+                      <button key={tpl.label} onClick={() => applyTemplate(tpl, replyModal !== 'bulk' ? replyModal : null)} className="admin-quick-action"
+                        style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '5px 12px', cursor: 'pointer',
+                          background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--cyan)', borderRadius: 4 }}>
                         {tpl.label}
                       </button>
                     ))}

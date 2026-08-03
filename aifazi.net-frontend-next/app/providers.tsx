@@ -5,7 +5,7 @@
  */
 'use client'
 
-import { useState, useEffect, useCallback, createContext, useContext, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, createContext, useContext, lazy, Suspense } from 'react'
 import { ForumProvider } from '@/context/ForumContext'
 // DiscordProvider removed — Discord is now integrated into the unified ForumContext/forum_auth system
 import { EditProvider } from '@/context/EditContext'
@@ -126,6 +126,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   const [loading, setLoading] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
+  const firstThemeSync = useRef(true)
 
   // Synchronous initializer — always return server-safe defaults to avoid hydration mismatch
   // Client-side values are restored in the useEffect below
@@ -166,6 +168,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   // Restore browser-only state after hydration (prevents SSR mismatch)
   useEffect(() => {
     const BUILD_ID = process.env.BUILD_ID || 'dev'
+
+    // Mark hydration complete BEFORE we read the config or check the
+    // loading state so the SSR-visible content never flashes before the
+    // loading screen (if one is needed) can render.
+    setHydrated(true)
 
     // FIX: Load the server-injected global config (#site-config-data, embedded in
     // the HTML by the root layout on every request) FIRST so the loading screen
@@ -294,6 +301,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    // The server/FOUC script already stamped data-theme correctly on <html>
+    // before React hydrated. Skip the first sync so we don't remove (or
+    // replace) the correct attribute before the init effect in the mount block
+    // above has had a chance to call setThemeState with the admin's global
+    // default. Subsequent theme changes (user picks a different theme) sync
+    // normally.
+    if (firstThemeSync.current) {
+      firstThemeSync.current = false
+      return
+    }
     if (theme === 'cyber-dark') document.documentElement.removeAttribute('data-theme')
     else document.documentElement.setAttribute('data-theme', theme)
     document.documentElement.setAttribute('data-theme-mode', LIGHT_THEMES.includes(theme) ? 'light' : 'dark')
@@ -564,7 +581,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               />
             </Suspense>
           )}
-          <div style={{ opacity: loading && !showMaintenance ? 0 : 1, transition: 'opacity 0.5s ease', pointerEvents: (loading && !showMaintenance) || showMaintenance ? 'none' : 'auto' }}>
+          <div style={{ opacity: !hydrated || (loading && !showMaintenance) ? 0 : 1, transition: 'opacity 0.5s ease', pointerEvents: (!hydrated || (loading && !showMaintenance) || showMaintenance) ? 'none' : 'auto' }}>
             <Cursor />
             <ContextMenu />
             {!isFullScreen && <Navbar />}

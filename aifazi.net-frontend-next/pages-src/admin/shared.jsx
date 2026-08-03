@@ -97,7 +97,7 @@ const S = {
   },
   // -- Reusable page section header --
   sectionHead: (label) => (
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 14 }}>{label}</div>
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 14 }}>{label}</div>
   ),
   // -- Inline stat row for cards --
   statRow: (label, value, color = 'var(--green)') => (
@@ -106,6 +106,30 @@ const S = {
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color, fontWeight: 700 }}>{value}</span>
     </div>
   ),
+}
+
+// ── Skeleton loaders — shimmer placeholders for loading states ────────────────
+function SkeletonBlock({ width = '100%', height = 16, style = {} }) {
+  return (
+    <div className="sk-block" style={{ width, height, ...style }} />
+  )
+}
+
+function SkeletonGrid({ cols = 4, rows = 1, gap = 12 }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap, marginBottom: 20 }}>
+      {Array.from({ length: cols * rows }).map((_, i) => (
+        <div key={i} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <SkeletonBlock width="45%" height={10} />
+            <SkeletonBlock width={32} height={32} style={{ borderRadius: 10 }} />
+          </div>
+          <SkeletonBlock width="55%" height={26} style={{ marginBottom: 8 }} />
+          <SkeletonBlock width="35%" height={10} />
+        </div>
+      ))}
+    </div>
+  )
 }
 
 // --- Page header component ----------------------------------------------------
@@ -165,4 +189,4 @@ const SLASH_COMMANDS = [
 ]
 
 
-export { useIsMobile, S, SLASH_COMMANDS, PageHeader, PanelErrorBoundary }
+export { useIsMobile, S, SLASH_COMMANDS, PageHeader, PanelErrorBoundary, SkeletonBlock, SkeletonGrid }
