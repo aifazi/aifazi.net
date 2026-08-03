@@ -4,7 +4,7 @@ import { Badge } from '../../components/community'
 const TABS = [
   ['vip', '👑 VIP SUBSCRIPTIONS'],
   ['shop', '🛒 PRODUCTS'],
-  ['orders', '🧾 MY ORDERS'],
+  ['orders', '🧾 MY ACCOUNT'],
 ]
 const G = 'var(--green)'
 

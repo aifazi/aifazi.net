@@ -730,6 +730,34 @@ async def order_detail(order_no: str, user: dict = Depends(get_current_user)):
     }
 
 
+# ── Public order tracking (no auth) ────────────────────────────────────────────
+@router.get("/track/{order_no}")
+async def track_order(order_no: str):
+    res = (supabase.table("store_orders").select("id,order_number,status,total_cents,created_at,carrier,tracking_number,tracking_url").eq("order_number", order_no).limit(1).execute())
+    if not res.data:
+        raise HTTPException(404, "Order not found")
+    o = res.data[0]
+    items = (supabase.table("store_order_items")
+             .select("product_name,quantity,line_total_cents").eq("order_id", o["id"]).order("created_at").execute())
+    events = (supabase.table("store_order_events")
+              .select("status,note,created_at").eq("order_id", o["id"]).order("created_at").execute())
+    downloads = (supabase.table("store_downloads")
+                 .select("id,product_name,filename,token,downloads_allowed,downloads_used,created_at")
+                 .eq("order_id", o["id"]).order("created_at").execute())
+    return {
+        "order_number": o.get("order_number"),
+        "status": o.get("status"),
+        "total_cents": o.get("total_cents"),
+        "created_at": o.get("created_at"),
+        "carrier": o.get("carrier"),
+        "tracking_number": o.get("tracking_number"),
+        "tracking_url": o.get("tracking_url"),
+        "items": items.data or [],
+        "events": events.data or [],
+        "downloads": downloads.data or [],
+    }
+
+
 # ── Digital downloads ──────────────────────────────────────────────────────────
 def _download_token() -> str:
     return secrets.token_urlsafe(24)

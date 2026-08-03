@@ -9,9 +9,8 @@ import StoreTabSwitcher from './store/StoreTabSwitcher'
 import StorePlanCard from './store/StorePlanCard'
 import StoreProductCard from './store/StoreProductCard'
 import CartSidebar from './store/CartSidebar'
-import OrdersList from './store/OrdersList'
-import OrderDetailModal from './store/OrderDetailModal'
 import StoreFAQ from './store/StoreFAQ'
+import AccountDashboard from './store/AccountDashboard'
 
 function useMobile(bp = 900) {
   const [m, setM] = useState(false)
@@ -44,9 +43,6 @@ export default function StorePage({ fivem = false }) {
   const [cart, setCart] = useState({ items: [], subtotal: 0, count: 0 })
   const [cartLoading, setCartLoading] = useState(false)
   const [checkoutCartLoading, setCheckoutCartLoading] = useState(false)
-  const [orders, setOrders] = useState([])
-  const [ordersLoading, setOrdersLoading] = useState(false)
-  const [orderDetail, setOrderDetail] = useState(null)
   const homeHref = useFiveMRoute('/')
   const loginHref = fivem
     ? `/login?next=${encodeURIComponent('/fivem/store')}`
@@ -74,22 +70,8 @@ export default function StorePage({ fivem = false }) {
     if (!user) { setCart({ items: [], subtotal: 0, count: 0 }); return }
     api.get('/store/cart').then(r => setCart(r.data || { items: [], subtotal: 0, count: 0 })).catch(() => {})
   }
-  const loadOrders = () => {
-    if (!user) { setOrders([]); return }
-    setOrdersLoading(true)
-    api.get('/store/orders').then(r => setOrders(r.data || [])).catch(() => setOrders([]))
-      .finally(() => setOrdersLoading(false))
-  }
-  const openOrder = async (o) => {
-    try {
-      const r = await api.get(`/store/orders/${o.order_number}`)
-      setOrderDetail(r.data || o)
-    } catch { setOrderDetail(o) }
-  }
-
   useEffect(() => {
     if (tab === 'shop') { loadProducts(); loadCart() }
-    if (tab === 'orders') loadOrders()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, user])
 
@@ -318,18 +300,12 @@ export default function StorePage({ fivem = false }) {
         </div>
       )}
 
-      {/* ── ORDERS TAB ───────────────────────────────────────── */}
+      {/* ── ACCOUNT TAB ───────────────────────────────────────── */}
       {tab === 'orders' && (
         <div style={{ maxWidth: 860, margin: '0 auto', padding: isMobile ? '28px 16px 0' : '40px 24px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 8 }}>
-            <h2 style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: C, margin: 0 }}>ORDER TRACKER</h2>
-            <NeonButton variant="ghost" size="sm" onClick={loadOrders}>↻ Refresh</NeonButton>
-          </div>
-          <OrdersList orders={orders} loading={ordersLoading} user={!!user} loginHref={loginHref} loadOrders={loadOrders} openOrder={openOrder} />
+          <AccountDashboard loginHref={loginHref} />
         </div>
       )}
-
-      <OrderDetailModal order={orderDetail} onClose={() => setOrderDetail(null)} />
 
       <div className="store-footer" style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px 0', textAlign: 'center', fontSize: 10, color: 'var(--muted)', lineHeight: 1.8 }}>
         Payments are processed securely by <span style={{ color: '#635bff' }}>Stripe</span>. By subscribing you agree to the server rules.
