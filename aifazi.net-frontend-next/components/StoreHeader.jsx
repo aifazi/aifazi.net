@@ -67,9 +67,9 @@ export default function StoreHeader() {
         <nav className="store-nav-links" style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
           {[
             ['/', 'Home'],
-            ['/?tab=vip', 'VIP'],
             ['/?tab=shop', 'Shop'],
-            ['/?tab=orders', 'Account'],
+            ['/?tab=vip', 'VIP'],
+            ['/?tab=orders', 'My Account'],
           ].map(([to, label]) => (
             <Link key={label} to={to} style={{
               fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)',

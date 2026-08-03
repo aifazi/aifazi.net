@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { Link } from '@/lib/router-compat'
+import { Link, useSearchParams } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
@@ -32,6 +32,7 @@ const CAT_ICONS = { digital: '💻', merch: '👕', service: '🔧', vip: '👑'
 
 export default function StorePage({ fivem = false }) {
   const { user } = useForum()
+  const searchParams = useSearchParams()
   const isMobile = useMobile()
   const [plans, setPlans] = useState([])
   const [categories, setCategories] = useState([])
@@ -40,7 +41,17 @@ export default function StorePage({ fivem = false }) {
   const [checkoutLoading, setCheckoutLoading] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const [tab, setTab] = useState('home')
+  const [tab, setTab] = useState(() => searchParams?.get('tab') || 'home')
+  // Sync tab changes to URL
+  const setTabAndUrl = (newTab) => {
+    setTab(newTab)
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      if (newTab === 'home') url.searchParams.delete('tab')
+      else url.searchParams.set('tab', newTab)
+      window.history.replaceState({}, '', url.toString())
+    }
+  }
   const [products, setProducts] = useState([])
   const [productsLoading, setProductsLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('')
@@ -206,8 +217,8 @@ export default function StorePage({ fivem = false }) {
                   The official AIFAZI marketplace. Browse VIP subscriptions, digital products, merchandise, and more — all delivered instantly.
                 </p>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <NeonButton variant="primary" size="lg" onClick={() => setTab('shop')}>Browse Shop</NeonButton>
-                  <NeonButton variant="ghost" size="lg" onClick={() => setTab('vip')}>View Plans</NeonButton>
+                  <NeonButton variant="primary" size="lg" onClick={() => setTabAndUrl('shop')}>Browse Shop</NeonButton>
+                  <NeonButton variant="ghost" size="lg" onClick={() => setTabAndUrl('vip')}>View Plans</NeonButton>
                 </div>
               </div>
 
@@ -260,13 +271,13 @@ export default function StorePage({ fivem = false }) {
               <div style={{ marginBottom: isMobile ? 36 : 48 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                   <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 700, color: 'var(--text)', margin: 0 }}>Shop by Category</h2>
-                  <button onClick={() => setTab('shop')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: C, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
+                  <button onClick={() => setTabAndUrl('shop')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: C, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
                     VIEW ALL →
                   </button>
                 </div>
                 <div className="store-cat-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(categories.length, isMobile ? 3 : 6)}, 1fr)`, gap: 12 }}>
                   {categories.map(c => (
-                    <button key={c.id} onClick={() => { setTab('shop'); setActiveCategory(c.slug || c.name) }}
+                    <button key={c.id} onClick={() => { setTabAndUrl('shop'); setActiveCategory(c.slug || c.name) }}
                       className="store-cat-card" style={{
                         padding: isMobile ? '20px 12px' : '28px 16px', borderRadius: 14, border: '1px solid var(--border)',
                         background: mix(G, 2), cursor: 'pointer', textAlign: 'center',
@@ -288,7 +299,7 @@ export default function StorePage({ fivem = false }) {
               <div style={{ marginBottom: isMobile ? 36 : 48 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                   <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: 700, color: 'var(--text)', margin: 0 }}>Featured Products</h2>
-                  <button onClick={() => setTab('shop')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: C, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
+                  <button onClick={() => setTabAndUrl('shop')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: C, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
                     VIEW ALL →
                   </button>
                 </div>
@@ -302,14 +313,14 @@ export default function StorePage({ fivem = false }) {
 
             {/* Quick Links Promo */}
             <div className="store-promo-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
-              <Card accent style={{ padding: 'clamp(20px, 3vw, 28px)', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }} onClick={() => setTab('vip')}>
+              <Card accent style={{ padding: 'clamp(20px, 3vw, 28px)', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }} onClick={() => setTabAndUrl('vip')}>
                 <div style={{ fontSize: 40, flexShrink: 0 }}>👑</div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>VIP Subscriptions</div>
                   <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>Unlock in-game perks, priority access, and exclusive content.</div>
                 </div>
               </Card>
-              <Card accent data-accent="cyan" style={{ padding: 'clamp(20px, 3vw, 28px)', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }} onClick={() => setTab('orders')}>
+              <Card accent data-accent="cyan" style={{ padding: 'clamp(20px, 3vw, 28px)', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer' }} onClick={() => setTabAndUrl('orders')}>
                 <div style={{ fontSize: 40, flexShrink: 0 }}>📋</div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Track Your Order</div>
@@ -325,7 +336,7 @@ export default function StorePage({ fivem = false }) {
       <div style={{ position: 'sticky', top: 64, zIndex: 50, background: 'color-mix(in srgb, var(--bg) 92%, transparent)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', marginBottom: 0 }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 8, padding: '10px 20px', flexWrap: 'wrap' }}>
           {TABS.map(([k, label]) => (
-            <button key={k} onClick={() => { setTab(k); setError(''); setNotice('') }}
+            <button key={k} onClick={() => { setTabAndUrl(k); setError(''); setNotice('') }}
               className={`store-tab-pill ${tab === k ? 'active' : ''}`}>
               {label}
             </button>

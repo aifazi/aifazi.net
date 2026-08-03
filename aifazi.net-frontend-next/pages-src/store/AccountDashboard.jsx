@@ -1,232 +1,15 @@
 'use client'
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
-import { Link } from '@/lib/router-compat'
 import { useForum } from '../../context/ForumContext'
 import { Card, NeonButton, Badge, EmptyState } from '../../components/community'
 
 const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
-const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)', Y = 'var(--orange)', P = 'var(--purple)'
-
-function DashboardOverview({ sub, orders, downloads }) {
-  const activeSub = sub?.subscription
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 32 }}>
-      <Card style={{ padding: 20, textAlign: 'center' }}>
-        <div style={{ fontSize: 28, marginBottom: 8 }}>📦</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: G }}>{orders.length}</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>ORDERS</div>
-      </Card>
-      <Card style={{ padding: 20, textAlign: 'center' }}>
-        <div style={{ fontSize: 28, marginBottom: 8 }}>⬇</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: C }}>{downloads.length}</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>DOWNLOADS</div>
-      </Card>
-      <Card style={{ padding: 20, textAlign: 'center' }}>
-        <div style={{ fontSize: 28, marginBottom: 8 }}>👑</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: activeSub ? G : 'var(--muted)' }}>{activeSub ? 'Active' : 'None'}</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>SUBSCRIPTION</div>
-      </Card>
-      <Card style={{ padding: 20, textAlign: 'center' }}>
-        <div style={{ fontSize: 28, marginBottom: 8 }}>💰</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: Y }}>
-          ${orders.reduce((sum, o) => sum + ((o.total_cents || 0) / 100), 0).toFixed(2)}
-        </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>TOTAL SPENT</div>
-      </Card>
-    </div>
-  )
-}
-
-function SubscriptionCard({ sub, handleManage, handleCancel }) {
-  const s = sub?.subscription
-  if (!s) return (
-    <Card style={{ padding: 24 }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>ACTIVE SUBSCRIPTION</div>
-      <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 16 }}>
-        You don't have an active VIP subscription.
-      </div>
-      <NeonButton to="/store" variant="primary" size="sm">View Plans</NeonButton>
-    </Card>
-  )
-
-  const status = s.status
-  const statusColor = status === 'active' || status === 'trialing' ? G : status === 'past_due' ? R : Y
-
-  return (
-    <Card style={{ padding: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-        <div>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>ACTIVE SUBSCRIPTION</span>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text)', marginTop: 6 }}>{s.plan_name} — Level {s.plan_level || 0}</div>
-        </div>
-        <Badge tone={status === 'active' ? 'green' : status === 'past_due' ? 'red' : 'orange'}>{status.toUpperCase()}</Badge>
-      </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7 }}>
-        {s.current_period_end && <div>Renews: {new Date(s.current_period_end).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>}
-        {s.cancel_at_period_end && <div style={{ color: R }}>⚠ Cancels at end of billing period</div>}
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-        <NeonButton variant="cyan" size="sm" onClick={handleManage}>Manage Billing</NeonButton>
-        {!s.cancel_at_period_end && (
-          <NeonButton variant="danger" size="sm" onClick={handleCancel}>Cancel</NeonButton>
-        )}
-      </div>
-    </Card>
-  )
-}
+const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)', Y = 'var(--orange)'
 
 const statusBadge = s => {
   const map = { delivered: 'green', paid: 'green', completed: 'green', cancelled: 'red', refunded: 'red', shipped: 'purple', processing: 'cyan' }
   return map[s] || 'orange'
-}
-
-function OrderHistory({ orders, openOrder }) {
-  if (!orders.length) return (
-    <EmptyState icon="📋" title="No orders yet" text="Your orders will appear here." />
-  )
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {orders.map(o => {
-        const total = (o.total_cents || 0) / 100
-        const st = (o.status || 'pending').toUpperCase()
-        return (
-          <Card key={o.id} hover style={{ padding: '16px 20px', cursor: 'pointer' }} onClick={() => openOrder(o)}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: C }}>#{o.order_number}</span>
-                  <Badge tone={statusBadge(o.status)}>{st}</Badge>
-                </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
-                  {new Date(o.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  {(o.items || []).length > 0 && <> · {o.items.length} item{o.items.length !== 1 ? 's' : ''}</>}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>${total.toFixed(2)}</div>
-                {o.tracking_number && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>📦 Trackable</div>}
-              </div>
-            </div>
-          </Card>
-        )
-      })}
-    </div>
-  )
-}
-
-function DownloadsLibrary({ downloads }) {
-  if (!downloads.length) return (
-    <EmptyState icon="⬇" title="No downloads yet" text="Digital purchases will appear here." />
-  )
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {downloads.map(d => (
-        <Card key={d.id} hover style={{ padding: '16px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 24 }}>⬇</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{d.filename || d.product_name || 'Download'}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
-                {d.downloads_used || 0} / {d.downloads_allowed || 5} downloads used
-                {d.last_downloaded_at && <> · Last: {new Date(d.last_downloaded_at).toLocaleDateString()}</>}
-              </div>
-            </div>
-            <a href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer"
-              style={{ textDecoration: 'none' }}>
-              <NeonButton variant="primary" size="sm">Download</NeonButton>
-            </a>
-          </div>
-        </Card>
-      ))}
-    </div>
-  )
-}
-
-function OrderTracking({ order }) {
-  if (!order) return null
-  const total = (order.total_cents || 0) / 100
-  const st = (order.status || 'pending')
-  const STEPS = ['pending', 'paid', 'processing', 'shipped', 'delivered']
-  const currentStep = STEPS.indexOf(st)
-  const progress = st === 'cancelled' || st === 'refunded' ? 0 : currentStep >= 0 ? ((currentStep + 1) / STEPS.length) * 100 : 50
-
-  return (
-    <Card style={{ padding: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: C }}>
-          ORDER #{order.order_number}
-        </span>
-        <Badge tone={statusBadge(st)} glow>{(st).toUpperCase()}</Badge>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ height: 6, background: 'var(--bg3)', borderRadius: 3, overflow: 'hidden', marginBottom: 12 }}>
-          <div style={{ height: '100%', width: `${progress}%`, background: st === 'cancelled' || st === 'refunded' ? R : `linear-gradient(90deg, ${G}, ${C})`, borderRadius: 3, transition: 'width 0.5s ease' }} />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          {STEPS.map((step, i) => (
-            <div key={step} style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', margin: '0 auto 4px',
-                background: i <= currentStep && currentStep >= 0 ? G : 'var(--bg3)',
-                border: `2px solid ${i <= currentStep && currentStep >= 0 ? G : 'var(--border)'}` }} />
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 1, color: i <= currentStep && currentStep >= 0 ? G : 'var(--muted)', textTransform: 'uppercase' }}>{step}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Timeline */}
-      {(order.events || []).length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 10 }}>TIMELINE</div>
-          {order.events.map((ev, i) => (
-            <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8, fontSize: 12 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 4, background: G, flexShrink: 0 }} />
-              <div>
-                <span style={{ color: 'var(--text)', fontWeight: 600 }}>{(ev.status || '').toUpperCase()}</span>
-                {ev.note && <span style={{ color: 'var(--muted)', marginLeft: 8 }}>{ev.note}</span>}
-                <div style={{ color: 'var(--muted)', fontSize: 10 }}>{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Tracking info */}
-      {(order.carrier || order.tracking_number) && (
-        <div style={{ padding: '12px 16px', background: 'rgba(0,255,136,0.04)', border: `1px solid ${mix(G, 18)}`, borderRadius: 10, marginBottom: 16 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: G, marginBottom: 4 }}>TRACKING</div>
-          <div style={{ fontSize: 13, color: 'var(--text)' }}>
-            {order.carrier || 'Carrier'}: {order.tracking_number}
-            {order.tracking_url && <a href={order.tracking_url} target="_blank" rel="noreferrer" style={{ color: C, marginLeft: 8, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1 }}>TRACK ↗</a>}
-          </div>
-        </div>
-      )}
-
-      {/* Items */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 10 }}>ITEMS</div>
-        {(order.items || []).map((it, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', borderBottom: i < (order.items || []).length - 1 ? '1px solid var(--border)' : 'none' }}>
-            <span>{it.product_name} × {it.quantity}</span>
-            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>${((it.line_total_cents || 0) / 100).toFixed(2)}</span>
-          </div>
-        ))}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, fontWeight: 700, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-          <span>Total</span>
-          <span style={{ fontFamily: 'var(--font-mono)', color: G }}>${total.toFixed(2)}</span>
-        </div>
-      </div>
-
-      <NeonButton variant="ghost" size="sm" onClick={() => window.open(`/store/track/${order.order_number}`, '_blank')}>
-        Share Tracking Link ↗
-      </NeonButton>
-    </Card>
-  )
 }
 
 export default function AccountDashboard({ loginHref }) {
@@ -235,9 +18,8 @@ export default function AccountDashboard({ loginHref }) {
   const [orders, setOrders] = useState([])
   const [downloads, setDownloads] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeView, setActiveView] = useState('overview')
-  const [detailOrder, setDetailOrder] = useState(null)
   const [error, setError] = useState('')
+  const [section, setSection] = useState('overview')
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
@@ -268,19 +50,11 @@ export default function AccountDashboard({ loginHref }) {
     } catch { setError('Cancel failed.') }
   }
 
-  const openOrderDetail = async (o) => {
-    try {
-      const r = await api.get(`/store/orders/${o.order_number}`)
-      setDetailOrder(r.data || o)
-    } catch { setDetailOrder(o) }
-    setActiveView('tracking')
-  }
-
   if (!user) return (
     <div style={{ textAlign: 'center', padding: '60px 24px' }}>
       <div style={{ fontSize: 40, marginBottom: 12 }}>🔐</div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 16 }}>
-        Sign in to access your account dashboard.
+        Sign in to access your account.
       </div>
       <NeonButton to={loginHref} variant="primary" size="md">Sign In</NeonButton>
     </div>
@@ -298,12 +72,16 @@ export default function AccountDashboard({ loginHref }) {
     </div>
   )
 
-  const VIEWS = [
+  const totalSpent = orders.reduce((sum, o) => sum + ((o.total_cents || 0) / 100), 0)
+  const activeSub = sub?.subscription
+  const SECTIONS = [
     ['overview', '📊 Overview'],
     ['orders', '📦 Orders'],
     ['downloads', '⬇ Downloads'],
     ['subscription', '👑 Subscription'],
   ]
+
+  const avatarSeed = user?.username || user?.email || 'User'
 
   return (
     <div>
@@ -314,39 +92,241 @@ export default function AccountDashboard({ loginHref }) {
         </div>
       )}
 
-      {/* Navigation pills */}
+      {/* Profile Header */}
+      <Card accent style={{ padding: 'clamp(22px, 3vw, 32px)', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+        <img
+          src={user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(avatarSeed)}&backgroundColor=00ff88,00d4ff,a855f7&fontSize=40`}
+          alt={user?.username || 'User'}
+          style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid var(--green)', flexShrink: 0 }}
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
+              {user?.username || 'User'}
+            </span>
+            {user?.role && ['admin', 'moderator', 'staff'].includes(user.role) && (
+              <Badge tone={user.role === 'admin' ? 'orange' : 'cyan'}>{user.role.toUpperCase()}</Badge>
+            )}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 8 }}>
+            {user?.email || ''}
+            {activeSub && <span style={{ marginLeft: 12, color: G, fontWeight: 700 }}>🎖 {activeSub.plan_name} — Level {activeSub.plan_level}</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 16, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', flexWrap: 'wrap' }}>
+            <span>🛒 {orders.length} order{orders.length !== 1 ? 's' : ''}</span>
+            <span>⬇ {downloads.length} download{downloads.length !== 1 ? 's' : ''}</span>
+            <span style={{ color: Y }}>💰 ${totalSpent.toFixed(2)} spent</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Section nav */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
-        {VIEWS.map(([k, label]) => (
-          <button key={k} onClick={() => { setActiveView(k); setDetailOrder(null) }}
-            className={`store-filter-pill ${activeView === k ? 'active' : ''}`}>
+        {SECTIONS.map(([k, label]) => (
+          <button key={k} onClick={() => setSection(k)} className={`store-filter-pill ${section === k ? 'active' : ''}`}>
             {label}
           </button>
         ))}
       </div>
 
-      {/* Views */}
-      {activeView === 'overview' && <DashboardOverview sub={sub} orders={orders} downloads={downloads} />}
+      {/* ── OVERVIEW ────────────────────────────────────────────── */}
+      {section === 'overview' && (
+        <>
+          {/* Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 32 }}>
+            <Card style={{ padding: 22, textAlign: 'center' }}>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>📦</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: G }}>{orders.length}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>ORDERS</div>
+            </Card>
+            <Card style={{ padding: 22, textAlign: 'center' }}>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>⬇</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: C }}>{downloads.length}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>DOWNLOADS</div>
+            </Card>
+            <Card style={{ padding: 22, textAlign: 'center' }}>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>💰</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: Y }}>${totalSpent.toFixed(2)}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>TOTAL SPENT</div>
+            </Card>
+            <Card style={{ padding: 22, textAlign: 'center' }}>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>👑</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: activeSub ? G : 'var(--muted)' }}>
+                {activeSub ? 'Active' : 'None'}
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>SUBSCRIPTION</div>
+            </Card>
+          </div>
 
-      {activeView === 'subscription' && (
-        <SubscriptionCard sub={sub} handleManage={handleManage} handleCancel={handleCancel} />
+          {/* Recent Orders */}
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: C }}>RECENT ORDERS</span>
+              {orders.length > 6 && <button onClick={() => setSection('orders')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: G, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL →</button>}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {orders.slice(0, 3).map(o => {
+                const total = (o.total_cents || 0) / 100
+                return (
+                  <Card key={o.id} hover style={{ padding: '14px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: C }}>#{o.order_number}</span>
+                          <Badge tone={statusBadge(o.status)}>{(o.status || '').toUpperCase()}</Badge>
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
+                          {new Date(o.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          {(o.items || []).length > 0 && <> · {o.items.length} item{o.items.length !== 1 ? 's' : ''}</>}
+                        </div>
+                      </div>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>${total.toFixed(2)}</span>
+                    </div>
+                  </Card>
+                )
+              })}
+              {orders.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 12, padding: '16px 0' }}>No orders yet.</div>}
+            </div>
+          </div>
+
+          {/* Downloads */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: C }}>DIGITAL DOWNLOADS</span>
+              {downloads.length > 6 && <button onClick={() => setSection('downloads')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: G, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL →</button>}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {downloads.slice(0, 3).map(d => (
+                <Card key={d.id} hover style={{ padding: '14px 18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ fontSize: 22 }}>⬇</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{d.filename || d.product_name}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
+                        {d.downloads_used || 0} / {d.downloads_allowed || 5} downloads
+                      </div>
+                    </div>
+                    <a href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                      <NeonButton variant="primary" size="sm">Download</NeonButton>
+                    </a>
+                  </div>
+                </Card>
+              ))}
+              {downloads.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 12, padding: '16px 0' }}>No downloads yet.</div>}
+            </div>
+          </div>
+        </>
       )}
 
-      {activeView === 'orders' && (
-        <OrderHistory orders={orders} openOrder={openOrderDetail} />
-      )}
-
-      {activeView === 'downloads' && (
-        <DownloadsLibrary downloads={downloads} />
-      )}
-
-      {activeView === 'tracking' && detailOrder && (
-        <div>
-          <button onClick={() => { setActiveView('orders'); setDetailOrder(null) }}
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1, marginBottom: 16 }}>
-            ← Back to Orders
-          </button>
-          <OrderTracking order={detailOrder} />
+      {/* ── ORDERS ───────────────────────────────────────────────── */}
+      {section === 'orders' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {orders.map(o => {
+            const total = (o.total_cents || 0) / 100
+            return (
+              <Card key={o.id} hover style={{ padding: '16px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: C }}>#{o.order_number}</span>
+                      <Badge tone={statusBadge(o.status)}>{(o.status || '').toUpperCase()}</Badge>
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+                      {new Date(o.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      {(o.items || []).length > 0 && <> · {o.items.length} item{o.items.length !== 1 ? 's' : ''}</>}
+                      {o.tracking_number && <> · 📦 Trackable</>}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>${total.toFixed(2)}</span>
+                  </div>
+                </div>
+                {(o.items || []).length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                    {o.items.map((it, i) => (
+                      <span key={i} style={{ fontSize: 11, color: 'var(--text)', background: 'rgba(255,255,255,0.03)', padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)' }}>
+                        {it.product_name} × {it.quantity}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {(o.downloads || []).length > 0 && (
+                  <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {o.downloads.map(d => (
+                      <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 10, color: G, textDecoration: 'none', padding: '4px 10px', border: `1px solid ${mix(G, 22)}`, borderRadius: 6, fontFamily: 'var(--font-mono)' }}>
+                        ⬇ {d.filename || d.product_name}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )
+          })}
+          {orders.length === 0 && <EmptyState icon="📦" title="No orders yet" text="Your orders will appear here." />}
         </div>
+      )}
+
+      {/* ── DOWNLOADS ──────────────────────────────────────────────── */}
+      {section === 'downloads' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {downloads.map(d => (
+            <Card key={d.id} hover style={{ padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 24 }}>⬇</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{d.filename || d.product_name || 'Download'}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
+                    {d.downloads_used || 0} / {d.downloads_allowed || 5} downloads used
+                    {d.last_downloaded_at && <> · Last: {new Date(d.last_downloaded_at).toLocaleDateString()}</>}
+                  </div>
+                </div>
+                <a href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+                  <NeonButton variant="primary" size="sm">Download</NeonButton>
+                </a>
+              </div>
+            </Card>
+          ))}
+          {downloads.length === 0 && <EmptyState icon="⬇" title="No downloads yet" text="Digital purchases will appear here." />}
+        </div>
+      )}
+
+      {/* ── SUBSCRIPTION ───────────────────────────────────────────── */}
+      {section === 'subscription' && (
+        <Card accent style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>SUBSCRIPTION</span>
+              {activeSub ? (
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text)', marginTop: 6 }}>
+                  {activeSub.plan_name} — Level {activeSub.plan_level || 0}
+                </div>
+              ) : (
+                <div style={{ color: 'var(--muted)', fontSize: 14, marginTop: 6 }}>You don't have an active VIP subscription.</div>
+              )}
+            </div>
+            {activeSub && <Badge tone={activeSub.status === 'active' ? 'green' : activeSub.status === 'past_due' ? 'red' : 'orange'}>{activeSub.status?.toUpperCase()}</Badge>}
+          </div>
+          {activeSub && (
+            <>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7 }}>
+                {activeSub.current_period_end && <div>Renews: {new Date(activeSub.current_period_end).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>}
+                {activeSub.cancel_at_period_end && <div style={{ color: R }}>⚠ Cancels at end of billing period</div>}
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+                <NeonButton variant="cyan" size="sm" onClick={handleManage}>Manage Billing</NeonButton>
+                {!activeSub.cancel_at_period_end && (
+                  <NeonButton variant="danger" size="sm" onClick={handleCancel}>Cancel</NeonButton>
+                )}
+              </div>
+            </>
+          )}
+          {!activeSub && (
+            <div style={{ marginTop: 8 }}>
+              <NeonButton to="/?tab=vip" variant="primary" size="sm">View Plans</NeonButton>
+            </div>
+          )}
+        </Card>
       )}
     </div>
   )
