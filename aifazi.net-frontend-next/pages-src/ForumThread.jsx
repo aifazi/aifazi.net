@@ -218,8 +218,26 @@ export default function ForumThread() {
     } catch (err) { notify.error(err.response?.data?.error || 'Failed to edit thread') }
   }
 
-  if (loading) return <div className="page-container community-page" style={{ zIndex: 1, position: 'relative' }}><div className="loader" /></div>
-  if (!thread) return null
+  if (loading) return <div className="page-container community-page" style={{ zIndex: 1, position: 'relative' }}>
+    <div className="forum-thread-loading">
+      <div className="store-skeleton" style={{ width: '60%', height: 32, marginBottom: 16 }} />
+      <div className="store-skeleton" style={{ width: '40%', height: 14, marginBottom: 32 }} />
+      <div className="store-skeleton" style={{ width: '100%', height: 80, marginBottom: 14 }} />
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div className="store-skeleton" key={i} style={{ width: '100%', height: 44, marginBottom: 10 }} />
+      ))}
+    </div>
+  </div>
+  if (!thread) return (
+    <div className="page-container community-page" style={{ zIndex: 1, position: 'relative' }}>
+      <div className="forum-thread-empty">
+        <div className="forum-thread-empty-icon">🔍</div>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--text)', margin: '0 0 8px' }}>Thread not found</h2>
+        <p style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'var(--font-mono)', marginBottom: 20 }}>It may have been deleted or moved.</p>
+        <Link to="/forum" style={{ display: 'inline-block', padding: '10px 22px', background: 'var(--green)', color: 'var(--bg)', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2 }}>← BACK TO FORUM</Link>
+      </div>
+    </div>
+  )
 
   const isAuthor = userId === (thread.author?._id || thread.author?.id)
   const isAdmin  = user?.role === 'admin' || user?.role === 'moderator'
@@ -312,7 +330,7 @@ export default function ForumThread() {
 
             {user && (
               <NeonButton variant="ghost" size="sm" onClick={handleSubscribe} style={{ color: subscribed ? 'var(--cyan)' : undefined, borderColor: subscribed ? 'rgba(0,212,255,0.4)' : undefined }}>
-                {subscribed ? '🔔 Subscribed' : '🔕 Subscribe'}
+                {subscribed ? '🔔 Subscribed' : '🔔 Subscribe'}
               </NeonButton>
             )}
             <div style={{ flex: 1 }} />

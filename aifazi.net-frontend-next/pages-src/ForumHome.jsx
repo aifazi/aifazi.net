@@ -100,14 +100,11 @@ export default function ForumHome() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {cats.length === 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '8px 0' }}>No categories yet.</div>}
                   {cats.map(cat => (
-                    <Link key={cat.id || cat._id} to={`/forum/category/${cat.slug || cat.id}`}
+                    <Link key={cat.id || cat._id} to={`/forum/category/${cat.slug || cat.id}`} className="forum-cat-link"
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px',
                         borderRadius: 10, textDecoration: 'none', color: 'var(--text)',
-                        transition: 'background 0.15s',
                       }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,255,136,0.05)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       <span style={{ fontSize: 20, flexShrink: 0 }}>{cat.icon || '💬'}</span>
                       <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>

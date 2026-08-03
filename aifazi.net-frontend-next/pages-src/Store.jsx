@@ -7,13 +7,13 @@ import { Link } from '@/lib/router-compat'
 
 const G = 'var(--green)'
 const C = 'var(--cyan)'
-const Y = '#ffd700'
+const Y = 'var(--orange)'
 const R = 'var(--red)'
 const O = 'var(--orange)'
 const P = 'var(--purple)'
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 
-const TIER_COLORS = ['#8a9bb0', 'var(--green)', 'var(--cyan)', 'var(--purple)', '#ffd700', '#ff6b6b']
+const TIER_COLORS = ['var(--muted)', 'var(--green)', 'var(--cyan)', 'var(--purple)', 'var(--orange)', 'var(--red)']
 // alpha helper for CSS-var colors → valid color-mix value
 const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
 
@@ -219,7 +219,7 @@ export default function StorePage({ fivem = false }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', color: 'var(--text)', fontFamily: MONO, paddingBottom: 60 }}>
+    <div style={{ minHeight: '100vh', color: 'var(--text)', fontFamily: 'var(--font-display)', paddingBottom: 60 }}>
       {/* ── Hero ─────────────────────────────────────────────── */}
       <div style={{ position: 'relative', overflow: 'hidden', borderBottom: '1px solid var(--border)' }}>
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% -20%, ${Y}22 0%, transparent 55%), radial-gradient(ellipse at 20% 120%, ${mix(G, 5)} 0%, transparent 50%), radial-gradient(ellipse at 80% 120%, ${mix(C, 5)} 0%, transparent 50%)` }} />
@@ -280,11 +280,12 @@ export default function StorePage({ fivem = false }) {
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 8, padding: '14px 20px', flexWrap: 'wrap' }}>
           {TABS.map(([k, label]) => (
             <button key={k} onClick={() => { setTab(k); setError(''); setNotice('') }}
+              className={`store-tab ${tab === k ? 'store-tab-active' : ''}`}
               style={{
                 fontFamily: MONO, fontSize: 11, letterSpacing: 2, fontWeight: 700,
                 padding: '11px 22px', borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === k ? mix(G, 33) : 'var(--border)'}`,
                 background: tab === k ? mix(G, 10) : 'transparent',
-                color: tab === k ? G : 'var(--muted)', transition: 'all 0.15s', boxShadow: tab === k ? `0 0 20px ${mix(G, 9)}` : 'none',
+                color: tab === k ? G : 'var(--muted)', boxShadow: tab === k ? `0 0 20px ${mix(G, 9)}` : 'none',
               }}>
               {label}
               {k === 'shop' && cart.count > 0 && <span style={{ marginLeft: 8, background: G, color: '#000', borderRadius: 20, padding: '1px 8px', fontSize: 10, fontWeight: 900 }}>{cart.count}</span>}
@@ -300,16 +301,19 @@ export default function StorePage({ fivem = false }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} style={{ ...panel, padding: 28 }}>
-                  <div style={{ width: '60%', height: 14, background: 'var(--border)', borderRadius: 4, marginBottom: 16 }} />
-                  <div style={{ width: '40%', height: 24, background: 'var(--border)', borderRadius: 4, marginBottom: 16 }} />
-                  <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, marginBottom: 8 }} />
-                  <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, marginBottom: 8 }} />
-                  <div style={{ width: '80%', height: 8, background: 'var(--border)', borderRadius: 4 }} />
+                  <div className="store-skeleton" style={{ width: '60%', height: 14, marginBottom: 16 }} />
+                  <div className="store-skeleton" style={{ width: '40%', height: 24, marginBottom: 16 }} />
+                  <div className="store-skeleton" style={{ width: '100%', height: 8, marginBottom: 8 }} />
+                  <div className="store-skeleton" style={{ width: '100%', height: 8, marginBottom: 8 }} />
+                  <div className="store-skeleton" style={{ width: '80%', height: 8 }} />
                 </div>
               ))}
             </div>
           ) : sortedPlans.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)', fontSize: 13 }}>No plans available right now.</div>
+            <div className="store-empty">
+              <div className="store-empty-icon">📦</div>
+              <p style={{ color: 'var(--muted)', fontSize: 13, fontFamily: MONO }}>No plans available right now.</p>
+            </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, alignItems: 'stretch' }}>
               {sortedPlans.map((plan, i) => {
@@ -318,22 +322,21 @@ export default function StorePage({ fivem = false }) {
                 const featured = i === featuredIndex
                 return (
                   <div key={plan.id || plan.slug}
+                    className={`store-card ${featured ? 'store-card-featured' : ''}`}
                     style={{
+                      '--hover-color': color,
                       position: 'relative', display: 'flex', flexDirection: 'column', padding: 28, borderRadius: 16,
                       background: featured ? `linear-gradient(160deg, ${color}14, color-mix(in srgb, var(--text) 2%, transparent))` : 'color-mix(in srgb, var(--text) 2%, transparent)',
                       border: featured ? `1px solid ${color}66` : '1px solid var(--border)',
                       transform: featured ? 'scale(1.02)' : 'none',
-                      transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s',
                       boxShadow: featured ? `0 12px 40px ${color}18` : 'none',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = featured ? 'scale(1.03)' : 'translateY(-4px)'; e.currentTarget.style.borderColor = `${color}66`; e.currentTarget.style.boxShadow = `0 14px 44px ${color}1c` }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = featured ? 'scale(1.02)' : 'none'; e.currentTarget.style.borderColor = featured ? `${color}66` : 'var(--border)'; e.currentTarget.style.boxShadow = featured ? `0 12px 40px ${color}18` : 'none' }}
                   >
                     {featured && (
-                      <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', padding: '3px 14px', borderRadius: 12, background: color, color: '#000', fontSize: 9, fontWeight: 900, letterSpacing: 2 }}>POPULAR</div>
+                      <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', padding: '3px 14px', borderRadius: 12, background: color, color: 'var(--bg)', fontSize: 9, fontWeight: 900, letterSpacing: 2 }}>POPULAR</div>
                     )}
                     {current && (
-                      <div style={{ position: 'absolute', top: -10, right: 14, padding: '3px 12px', borderRadius: 12, background: G, color: '#000', fontSize: 9, fontWeight: 900, letterSpacing: 2 }}>ACTIVE</div>
+                      <div style={{ position: 'absolute', top: -10, right: 14, padding: '3px 12px', borderRadius: 12, background: G, color: 'var(--bg)', fontSize: 9, fontWeight: 900, letterSpacing: 2 }}>ACTIVE</div>
                     )}
                     <div style={{ fontSize: 11, color, letterSpacing: 2, fontWeight: 800 }}>LEVEL {plan.level}</div>
                     <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, marginTop: 8 }}>{plan.name}</div>
@@ -437,8 +440,8 @@ export default function StorePage({ fivem = false }) {
             </div>
             <div style={{ position: 'relative', minWidth: isMobile ? '100%' : 240 }}>
               <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--muted)' }}>⌕</span>
-              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search products…"
-                style={{ width: '100%', boxSizing: 'border-box', background: 'color-mix(in srgb, var(--text) 3%, transparent)', border: '1px solid var(--border)', borderRadius: 20, color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '9px 14px 9px 34px', outline: 'none' }} />
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search products..." className="store-search-input"
+                style={{ width: '100%', boxSizing: 'border-box', background: 'color-mix(in srgb, var(--text) 3%, transparent)', border: '1px solid var(--border)', borderRadius: 20, color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '9px 14px 9px 34px' }} />
             </div>
           </div>
 
@@ -449,33 +452,36 @@ export default function StorePage({ fivem = false }) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div key={i} style={{ ...panel, padding: 20 }}>
-                      <div style={{ width: '100%', height: 80, background: 'var(--border)', borderRadius: 8, marginBottom: 12 }} />
-                      <div style={{ width: '60%', height: 12, background: 'var(--border)', borderRadius: 4, marginBottom: 8 }} />
-                      <div style={{ width: '40%', height: 20, background: 'var(--border)', borderRadius: 4 }} />
+                      <div className="store-skeleton" style={{ width: '100%', height: 110, marginBottom: 12, borderRadius: 10 }} />
+                      <div className="store-skeleton" style={{ width: '60%', height: 12, marginBottom: 8 }} />
+                      <div className="store-skeleton" style={{ width: '40%', height: 20 }} />
                     </div>
                   ))}
                 </div>
               ) : filteredProducts.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)', fontSize: 13 }}>
-                  {searchQuery || activeCategory ? 'No products match your search.' : 'No products here right now. Check back soon.'}
+                <div className="store-empty">
+                  <div className="store-empty-icon">🛍️</div>
+                  <p style={{ color: 'var(--muted)', fontSize: 13, fontFamily: MONO }}>
+                    {searchQuery || activeCategory ? `No products match "${searchQuery || activeCategory}"` : 'No products here right now. Check back soon.'}
+                  </p>
+                  {(searchQuery || activeCategory) && (
+                    <button onClick={() => { setSearchQuery(''); setActiveCategory('') }} style={{ marginTop: 12, fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '8px 18px', background: 'var(--green)', color: 'var(--bg)', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}>CLEAR FILTERS</button>
+                  )}
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
                   {filteredProducts.map(p => {
-                    const color = p.on_sale ? '#ff6b6b' : C
+                    const color = p.on_sale ? R : C
                     return (
-                      <div key={p.id} style={{ position: 'relative', padding: 20, borderRadius: 14, border: '1px solid var(--border)',
-                        background: 'color-mix(in srgb, var(--text) 2%, transparent)', display: 'flex', flexDirection: 'column',
-                        transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s' }}
-                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = `${color}55`; e.currentTarget.style.boxShadow = `0 14px 40px ${color}14` }}
-                        onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}>
+                      <div key={p.id} className="store-card" style={{ '--hover-color': color, position: 'relative', padding: 20, borderRadius: 14, border: '1px solid var(--border)',
+                        background: 'color-mix(in srgb, var(--text) 2%, transparent)', display: 'flex', flexDirection: 'column' }}>
                         {p.image_url ? (
                           <img src={p.image_url} alt={p.name} style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 10, marginBottom: 12, background: 'var(--bg3)' }} />
                         ) : (
                           <div style={{ width: '100%', height: 110, borderRadius: 10, marginBottom: 12, background: 'linear-gradient(160deg, var(--cyan)12, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34 }}>🛒</div>
                         )}
                         {p.on_sale && (
-                          <div style={{ position: 'absolute', top: 14, right: 14, padding: '3px 10px', borderRadius: 12, background: '#ff6b6b', color: '#000', fontSize: 9, fontWeight: 900, letterSpacing: 1 }}>SALE</div>
+                          <div style={{ position: 'absolute', top: 14, right: 14, padding: '3px 10px', borderRadius: 12, background: R, color: 'var(--bg)', fontSize: 9, fontWeight: 900, letterSpacing: 1 }}>SALE</div>
                         )}
                         <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>{p.category || 'Store'}</div>
                         <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, marginBottom: 6, flex: 1 }}>{p.name}</div>
@@ -523,9 +529,9 @@ export default function StorePage({ fivem = false }) {
                             <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>${item.product.price.toFixed(2)} each</div>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <button onClick={() => updateCartQty(item, item.quantity - 1)} style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: 12 }}>−</button>
+                            <button onClick={() => updateCartQty(item, item.quantity - 1)} className="store-qty-btn" style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
                             <span style={{ fontFamily: MONO, fontSize: 12, color: 'var(--text)', minWidth: 20, textAlign: 'center' }}>{item.quantity}</span>
-                            <button onClick={() => updateCartQty(item, item.quantity + 1)} style={{ width: 24, height: 24, borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: 12 }}>+</button>
+                            <button onClick={() => updateCartQty(item, item.quantity + 1)} className="store-qty-btn" style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                           </div>
                           <div style={{ fontFamily: MONO, fontSize: 12, color: 'var(--text)', fontWeight: 700, minWidth: 62, textAlign: 'right' }}>${item.line_total.toFixed(2)}</div>
                           <button onClick={() => removeCartItem(item)} title="Remove" style={{ background: 'none', border: 'none', color: R, cursor: 'pointer', fontSize: 12 }}>✕</button>
@@ -559,22 +565,33 @@ export default function StorePage({ fivem = false }) {
           </div>
 
           {!user ? (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)', fontSize: 13 }}>
-              Sign in to track your orders.
-              <div style={{ marginTop: 14 }}><Link to={loginHref} style={{ display: 'inline-block', padding: '9px 20px', borderRadius: 10, background: `linear-gradient(135deg, var(--green), var(--cyan))`, color: '#000', fontWeight: 700, fontSize: 10, letterSpacing: 2, textDecoration: 'none' }}>SIGN IN</Link></div>
+            <div className="store-empty">
+              <div className="store-empty-icon">🧾</div>
+              <p style={{ color: 'var(--muted)', fontSize: 13, fontFamily: MONO }}>Sign in to track your orders.</p>
+              <div style={{ marginTop: 14 }}><Link to={loginHref} style={{ display: 'inline-block', padding: '9px 20px', borderRadius: 10, background: `linear-gradient(135deg, var(--green), var(--cyan))`, color: 'var(--bg)', fontWeight: 700, fontSize: 10, letterSpacing: 2, textDecoration: 'none' }}>SIGN IN</Link></div>
             </div>
           ) : ordersLoading ? (
-            <div className="loader" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} style={{ ...panel, padding: 20 }}>
+                  <div className="store-skeleton" style={{ width: '30%', height: 16, marginBottom: 12 }} />
+                  <div className="store-skeleton" style={{ width: '100%', height: 10, marginBottom: 6 }} />
+                  <div className="store-skeleton" style={{ width: '60%', height: 10 }} />
+                </div>
+              ))}
+            </div>
           ) : orders.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)', fontSize: 13 }}>No orders yet. Head to PRODUCTS to place your first one.</div>
+            <div className="store-empty">
+              <div className="store-empty-icon">📋</div>
+              <p style={{ color: 'var(--muted)', fontSize: 13, fontFamily: MONO }}>No orders yet. Head to Products to place your first one.</p>
+            </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {orders.map(o => {
                 const st = (o.status || 'pending').toUpperCase()
                 const stColor = statusColor(o.status)
                 return (
-                  <div key={o.id} style={{ padding: 18, borderRadius: 14, border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--text) 2%, transparent)', cursor: 'pointer', transition: 'border-color 0.2s' }} onClick={() => openOrder(o)}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = `${stColor}55` }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}>
+                  <div key={o.id} className="store-card" style={{ '--hover-color': stColor, padding: 18, borderRadius: 14, border: '1px solid var(--border)', background: 'color-mix(in srgb, var(--text) 2%, transparent)', cursor: 'pointer' }} onClick={() => openOrder(o)}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                       <span style={{ fontFamily: MONO, fontSize: 12, color: C, fontWeight: 700 }}>{o.order_number}</span>
                       <span style={{ fontSize: 10, color: 'var(--muted)' }}>{new Date(o.created_at).toLocaleDateString()}</span>

@@ -88,7 +88,7 @@ export default function ForumCategory() {
 
         {/* Category pills */}
         {cats.length > 1 && (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+          <div className="forum-cat-pills" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
             {cats.map(c => (
               <Link key={c.id || c._id} to={`/forum/category/${c.slug || c.id}`}
                 style={{

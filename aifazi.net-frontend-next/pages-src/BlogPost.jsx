@@ -126,10 +126,7 @@ function VideoPlayer({ src, title = '' }) {
       {/* Big play button overlay */}
       {!isPlaying && (
         <div onClick={togglePlay} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(0,0,0,0.35)' }}>
-          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(0,255,136,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 40px rgba(0,255,136,0.4)', transition: 'transform 0.15s' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-          >
+          <div className="blog-video-btn" style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(0,255,136,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 40px rgba(0,255,136,0.4)' }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="#000" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
           </div>
         </div>
@@ -719,14 +716,11 @@ export default function BlogPost({ initialPost }) {
 
         <article className="blog-post-main">
         {/* Back link */}
-        <Link to="/blog" style={{
+        <Link to="/blog" className="blog-back-link" style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
           letterSpacing: 2, marginBottom: 40, textDecoration: 'none',
-          transition: 'color 0.2s'
         }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--green)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
         >← BACK TO BLOG</Link>
 
         {/* Meta */}
