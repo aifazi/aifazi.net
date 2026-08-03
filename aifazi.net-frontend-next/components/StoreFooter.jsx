@@ -9,26 +9,25 @@ const FOOTER_LINKS = [
     links: [
       ['/?tab=shop', 'All Products'],
       ['/?tab=vip', 'VIP Subscriptions'],
-      ['/?tab=shop&cat=digital', 'Digital Goods'],
-      ['/?tab=shop&cat=merch', 'Merchandise'],
+      ['/?tab=shop', 'Digital Goods'],
+      ['/?tab=shop', 'Merchandise'],
     ],
   },
   {
     title: 'Support',
     links: [
-      ['/contact', 'Contact Us'],
       ['/?tab=orders', 'Order Tracking'],
       ['/?tab=orders', 'Downloads'],
+      ['/?tab=orders', 'My Account'],
       ['/?tab=orders', 'Returns'],
     ],
   },
   {
     title: 'Company',
     links: [
-      ['https://aifazi.net', 'Main Site'],
-      ['https://discord.aifazi.net', 'Discord'],
-      ['https://aifazi.net/blog', 'Blog'],
-      ['/privacy', 'Privacy Policy'],
+      ['https://aifazi.net', 'Main Site', true],
+      ['https://aifazi.net/blog', 'Blog', true],
+      ['https://discord.aifazi.net', 'Discord', true],
     ],
   },
 ]
@@ -63,13 +62,22 @@ export default function StoreFooter() {
             <div key={col.title}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: S, marginBottom: 14, textTransform: 'uppercase' }}>{col.title}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {col.links.map(([to, label]) => (
-                  <Link key={label} to={to}
-                    style={{ fontSize: 13, color: MUTED, textDecoration: 'none', transition: 'color 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-                    onMouseLeave={e => e.currentTarget.style.color = MUTED}>
-                    {label}
-                  </Link>
+                {col.links.map(([to, label, external]) => (
+                  external ? (
+                    <a key={label} href={to} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: 13, color: MUTED, textDecoration: 'none', transition: 'color 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+                      onMouseLeave={e => e.currentTarget.style.color = MUTED}>
+                      {label}
+                    </a>
+                  ) : (
+                    <Link key={label} to={to}
+                      style={{ fontSize: 13, color: MUTED, textDecoration: 'none', transition: 'color 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+                      onMouseLeave={e => e.currentTarget.style.color = MUTED}>
+                      {label}
+                    </Link>
+                  )
                 ))}
               </div>
             </div>
@@ -103,11 +111,12 @@ export default function StoreFooter() {
             © {new Date().getFullYear()} AIFAZI. All rights reserved.
           </span>
           <div style={{ display: 'flex', gap: 16 }}>
-            {['Terms', 'Privacy', 'Cookies'].map(t => (
-              <Link key={t} to="/" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: MUTED, textDecoration: 'none' }}
-                onMouseEnter={e => e.currentTarget.style.color = S}
-                onMouseLeave={e => e.currentTarget.style.color = MUTED}>{t}</Link>
-            ))}
+            <a href="https://aifazi.net/privacy" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: MUTED, textDecoration: 'none' }}
+              onMouseEnter={e => e.currentTarget.style.color = S}
+              onMouseLeave={e => e.currentTarget.style.color = MUTED}>Privacy</a>
+            <a href="https://aifazi.net/contact" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: MUTED, textDecoration: 'none' }}
+              onMouseEnter={e => e.currentTarget.style.color = S}
+              onMouseLeave={e => e.currentTarget.style.color = MUTED}>Contact</a>
           </div>
         </div>
       </div>
