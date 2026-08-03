@@ -418,6 +418,7 @@ function SiteSettings() {
     animationPreset: 'smooth',
   }
   const [cfg, setCfg]           = useState(DEFAULTS)
+  const [maintScope, setMaintScope] = useState('global')
   const [loading, setLoading]   = useState(true)
   const [saveStatus, setSaveStatus] = useState('idle') // idle | saving | saved | error
   const toast    = useToast()
@@ -559,86 +560,82 @@ function SiteSettings() {
       </div>
 
       {/* -- Maintenance ---------------------------------------------------- */}
-      <div style={{ ...T.card, border: `1px solid ${cfg.maintenanceMode ? 'rgba(255,71,87,0.4)' : 'var(--border)'}` }}>
-        <div style={{ ...T.sec, color: cfg.maintenanceMode ? '#ff4757' : 'var(--muted)', borderColor: cfg.maintenanceMode ? 'rgba(255,71,87,0.2)' : 'var(--border)' }}>
+      {(() => {
+        const SCOPE = (() => {
+          if (maintScope === 'store') return cfg.subdomainMaintenance?.store || {}
+          if (maintScope === 'fivem') return cfg.subdomainMaintenance?.fivem || {}
+          return cfg
+        })()
+        const scopedActive = maintScope === 'global'
+        const isActive = maintScope === 'global' ? cfg.maintenanceMode : !!SCOPE.maintenanceMode
+        const sget = (key) => SCOPE[key]
+        const sset = (key, val) => {
+          if (maintScope === 'global') { setNow(key, val); return }
+          const sm = { ...(cfg.subdomainMaintenance || {}) }
+          sm[maintScope] = { ...(sm[maintScope] || {}), [key]: val }
+          setNow('subdomainMaintenance', JSON.parse(JSON.stringify(sm)))
+        }
+        const accentColor = STATUS_ACCENT[sget('maintenanceStatus') || 'MAINTENANCE'] || '#f59e0b'
+
+        return (
+      <div style={{ ...T.card, border: `1px solid ${isActive ? 'rgba(255,71,87,0.4)' : 'var(--border)'}` }}>
+        <div style={{ ...T.sec, color: isActive ? '#ff4757' : 'var(--muted)', borderColor: isActive ? 'rgba(255,71,87,0.2)' : 'var(--border)' }}>
           MAINTENANCE PAGE
-          {cfg.maintenanceMode && <span style={{ marginLeft: 10, padding: '2px 8px', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', fontSize: 8, letterSpacing: 2 }}>ACTIVE</span>}
+          {isActive && <span style={{ marginLeft: 10, padding: '2px 8px', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', fontSize: 8, letterSpacing: 2 }}>ACTIVE</span>}
+        </div>
+
+        {/* Scope selector */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
+          {[
+            ['global', '🌐 Global'],
+            ['store', '🛒 store.aifazi.net'],
+            ['fivem', '🎮 fivem.aifazi.net'],
+          ].map(([key, label]) => (
+            <button key={key} onClick={() => setMaintScope(key)}
+              style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, fontWeight: 700,
+                padding: '8px 14px', borderRadius: 999, cursor: 'pointer',
+                border: `1px solid ${maintScope === key ? 'var(--green)' : 'var(--border)'}`,
+                background: maintScope === key ? 'rgba(0,255,136,0.1)' : 'transparent',
+                color: maintScope === key ? 'var(--green)' : 'var(--muted)',
+              }}>{label}</button>
+          ))}
         </div>
 
         {/* Master toggle */}
         <div style={T.row}>
-          <Toggle on={cfg.maintenanceMode} onChange={() => setNow('maintenanceMode', !cfg.maintenanceMode)} color="#ff4757" />
+          <Toggle on={isActive} onChange={() => {
+            if (maintScope === 'global') setNow('maintenanceMode', !cfg.maintenanceMode)
+            else { const sm = { ...(cfg.subdomainMaintenance || {}) }; sm[maintScope] = { ...(sm[maintScope] || {}), maintenanceMode: !isActive }; setNow('subdomainMaintenance', JSON.parse(JSON.stringify(sm))) }
+          }} color="#ff4757" />
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: cfg.maintenanceMode ? '#ff4757' : 'var(--text)' }}>Maintenance Mode {cfg.maintenanceMode ? 'ON' : 'OFF'}</div>
-            <div style={T.sub}>When ON, visitors see the maintenance page instead of the site. Admins bypass it.</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: isActive ? '#ff4757' : 'var(--text)' }}>
+              {maintScope === 'global' ? 'Maintenance Mode' : maintScope + ' Maintenance'} {isActive ? 'ON' : 'OFF'}
+            </div>
+            <div style={T.sub}>When ON, visitors see the maintenance page. Admins bypass it.</div>
           </div>
         </div>
 
-        {/* Subdomain maintenance toggles */}
-        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-          <div style={{ ...T.sub, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>PER-SUBDOMAIN MAINTENANCE</div>
-          <div style={{ display: 'grid', gap: 12 }}>
-            {[
-              ['store', 'store.aifazi.net', cfg.subdomainMaintenance?.store?.maintenanceMode, cfg.subdomainMaintenance?.store?.maintenanceMessage || ''],
-              ['fivem', 'fivem.aifazi.net', cfg.subdomainMaintenance?.fivem?.maintenanceMode, cfg.subdomainMaintenance?.fivem?.maintenanceMessage || ''],
-            ].map(([key, label, active, message]) => (
-              <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 14px', background: 'var(--bg3)', borderRadius: 10, border: `1px solid ${active ? 'rgba(255,71,87,0.3)' : 'var(--border)'}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Toggle
-                    on={!!active}
-                    onChange={() => {
-                      const current = cfg.subdomainMaintenance || {}
-                      const sd = { ...current }
-                      sd[key] = { ...sd[key], maintenanceMode: !active, maintenanceMessage: sd[key]?.maintenanceMessage || '' }
-                      setNow('subdomainMaintenance', JSON.parse(JSON.stringify(sd)))
-                    }}
-                    color="#ff4757"
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: active ? '#ff4757' : 'var(--text)' }}>
-                      {label} {active ? '— MAINTENANCE ON' : '— Normal'}
-                    </div>
-                  </div>
-                  {active && <span style={{ padding: '2px 8px', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', fontSize: 8, letterSpacing: 2 }}>ACTIVE</span>}
-                </div>
-                {active && (
-                  <input
-                    value={message}
-                    onChange={e => {
-                      const current = cfg.subdomainMaintenance || {}
-                      const sd = JSON.parse(JSON.stringify(current))
-                      sd[key] = { ...sd[key], maintenanceMessage: e.target.value }
-                      set('subdomainMaintenance', sd)
-                    }}
-                    placeholder={`Message for ${label}...`}
-                    style={{ ...T.inp, fontFamily: 'var(--font-mono)', fontSize: 10 }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Design fields  always visible so admin can pre-configure */}
+        {/* Design fields */}
         <div style={{ display: 'grid', gap: 20, marginTop: 8, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
 
           {/* Message */}
           <div>
             <label style={T.label}>MESSAGE</label>
-            <textarea value={cfg.maintenanceMessage || ''} onChange={e => set('maintenanceMessage', e.target.value)} rows={2} placeholder="We're performing scheduled upgrades. We'll be back online shortly." style={{ ...T.inp, resize: 'vertical', lineHeight: 1.6 }} />
+            <textarea value={sget('maintenanceMessage') || ''} onChange={e => sset('maintenanceMessage', e.target.value)} rows={2} placeholder="We're performing scheduled upgrades. We'll be back online shortly." style={{ ...T.inp, resize: 'vertical', lineHeight: 1.6 }} />
           </div>
 
           {/* Style + Status side-by-side */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
             <div>
               <label style={T.label}>VISUAL STYLE</label>
-              <PillPicker options={MAINT_STYLES} value={cfg.maintenanceStyle || 'terminal'} onChange={v => setNow('maintenanceStyle', v)} />
+              <PillPicker options={MAINT_STYLES} value={sget('maintenanceStyle') || 'terminal'} onChange={v => sset('maintenanceStyle', v)} />
               <div style={T.sub}>Layout used for the maintenance page</div>
             </div>
             <div>
               <label style={T.label}>STATUS BADGE</label>
-              <PillPicker options={MAINT_STATUSES} value={cfg.maintenanceStatus || 'MAINTENANCE'} onChange={v => setNow('maintenanceStatus', v)} accentFn={s => STATUS_ACCENT[s] || '#f59e0b'} />
-              <div style={T.sub}>Controls heading colour  <span style={{ color: accentColor }}>{cfg.maintenanceStatus}</span></div>
+              <PillPicker options={MAINT_STATUSES} value={sget('maintenanceStatus') || 'MAINTENANCE'} onChange={v => sset('maintenanceStatus', v)} accentFn={s => STATUS_ACCENT[s] || '#f59e0b'} />
+              <div style={T.sub}>Controls heading colour  <span style={{ color: accentColor }}>{sget('maintenanceStatus')}</span></div>
             </div>
           </div>
 
@@ -646,11 +643,11 @@ function SiteSettings() {
           <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 16 }}>
             <div>
               <label style={T.label}>ICON / EMOJI</label>
-              <input value={cfg.maintenanceIcon || '○'} onChange={e => set('maintenanceIcon', e.target.value)} placeholder="🚧" style={{ ...T.inp, fontSize: 20, textAlign: 'center' }} />
+              <input value={sget('maintenanceIcon') || '○'} onChange={e => sset('maintenanceIcon', e.target.value)} placeholder="🚧" style={{ ...T.inp, fontSize: 20, textAlign: 'center' }} />
             </div>
             <div>
               <label style={T.label}>ESTIMATED RETURN TIME</label>
-              <input value={cfg.maintenanceReturnTime || ''} onChange={e => set('maintenanceReturnTime', e.target.value)} placeholder="e.g.  ~15 MIN  or  3:00 PM UTC" style={T.inp} />
+              <input value={sget('maintenanceReturnTime') || ''} onChange={e => sset('maintenanceReturnTime', e.target.value)} placeholder="e.g.  ~15 MIN  or  3:00 PM UTC" style={T.inp} />
               <div style={T.sub}>Shown on the page. Leave blank to hide.</div>
             </div>
           </div>
@@ -659,17 +656,17 @@ function SiteSettings() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
             <div>
               <label style={T.label}>BACKGROUND PATTERN</label>
-              <PillPicker options={MAINT_BG_STYLES} value={cfg.maintenanceBgStyle || 'grid'} onChange={v => setNow('maintenanceBgStyle', v)} />
+              <PillPicker options={MAINT_BG_STYLES} value={sget('maintenanceBgStyle') || 'grid'} onChange={v => sset('maintenanceBgStyle', v)} />
             </div>
             <div>
               <label style={T.label}>OPTIONS</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                  <Toggle on={!!cfg.maintenanceShowSocial} onChange={() => setNow('maintenanceShowSocial', !cfg.maintenanceShowSocial)} />
+                  <Toggle on={!!sget('maintenanceShowSocial')} onChange={() => sset('maintenanceShowSocial', !sget('maintenanceShowSocial'))} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>Show social links</span>
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                  <Toggle on={!!cfg.maintenanceShowProgress} onChange={() => setNow('maintenanceShowProgress', !cfg.maintenanceShowProgress)} />
+                  <Toggle on={!!sget('maintenanceShowProgress')} onChange={() => sset('maintenanceShowProgress', !sget('maintenanceShowProgress'))} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>Show progress bar</span>
                 </label>
               </div>
@@ -677,13 +674,13 @@ function SiteSettings() {
           </div>
 
           {/* Progress bar value */}
-          {cfg.maintenanceShowProgress && (
+          {sget('maintenanceShowProgress') && (
             <div>
-              <label style={T.label}>PROGRESS  {cfg.maintenanceProgress ?? 0}%</label>
+              <label style={T.label}>PROGRESS  {sget('maintenanceProgress') ?? 0}%</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Slider min={0} max={100} step={1} value={cfg.maintenanceProgress ?? 0} onChange={v => setNow('maintenanceProgress', v)} style={{ flex: 1 }} />
+                <Slider min={0} max={100} step={1} value={sget('maintenanceProgress') ?? 0} onChange={v => sset('maintenanceProgress', v)} style={{ flex: 1 }} />
                 <div style={{ width: 120, height: 6, background: 'var(--bg3)', borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
-                  <div style={{ height: '100%', width: `${cfg.maintenanceProgress ?? 0}%`, background: accentColor, borderRadius: 3, transition: 'width 0.3s' }} />
+                  <div style={{ height: '100%', width: `${sget('maintenanceProgress') ?? 0}%`, background: accentColor, borderRadius: 3, transition: 'width 0.3s' }} />
                 </div>
               </div>
             </div>
@@ -691,20 +688,22 @@ function SiteSettings() {
 
           {/* Live mini-preview chip */}
           <div style={{ padding: '10px 14px', background: 'var(--bg)', border: `1px solid ${accentColor}33`, borderRadius: 6, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 18 }}>{cfg.maintenanceIcon || '○'}</span>
+            <span style={{ fontSize: 18 }}>{sget('maintenanceIcon') || '○'}</span>
             <div style={{ flex: 1, minWidth: 160 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: accentColor }}>{cfg.maintenanceStatus || 'MAINTENANCE'}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', marginTop: 2 }}>{cfg.maintenanceMessage?.slice(0, 60) || 'No message set'}{cfg.maintenanceMessage?.length > 60 ? '' : ''}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: accentColor }}>{sget('maintenanceStatus') || 'MAINTENANCE'}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', marginTop: 2 }}>{(sget('maintenanceMessage') || 'No message set').slice(0, 60)}</div>
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textAlign: 'right' }}>
-              <div>Style: <span style={{ color: 'var(--cyan)' }}>{cfg.maintenanceStyle || 'terminal'}</span></div>
-              <div>BG: <span style={{ color: 'var(--cyan)' }}>{cfg.maintenanceBgStyle || 'grid'}</span></div>
-              {cfg.maintenanceReturnTime && <div>ETA: <span style={{ color: accentColor }}>{cfg.maintenanceReturnTime}</span></div>}
+              <div>Style: <span style={{ color: 'var(--cyan)' }}>{sget('maintenanceStyle') || 'terminal'}</span></div>
+              <div>BG: <span style={{ color: 'var(--cyan)' }}>{sget('maintenanceBgStyle') || 'grid'}</span></div>
+              {sget('maintenanceReturnTime') && <div>ETA: <span style={{ color: accentColor }}>{sget('maintenanceReturnTime')}</span></div>}
             </div>
           </div>
 
         </div>
       </div>
+        )
+      })()}
 
       {/* -- Header Style --------------------------------------------------- */}
       <div style={T.card}>

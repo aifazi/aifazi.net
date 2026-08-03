@@ -581,15 +581,33 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
           {showMaintenance && (
             <Suspense fallback={null}>
               <MaintenanceScreen
-                style={siteConfig.maintenanceStyle || 'terminal'}
-                message={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceMessage) || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceMessage) || siteConfig.maintenanceMessage || "We're performing scheduled upgrades. We'll be back online shortly."}
-                status={siteConfig.maintenanceStatus || 'MAINTENANCE'}
-                icon={siteConfig.maintenanceIcon || '⚙️'}
-                returnTime={siteConfig.maintenanceReturnTime || ''}
-                showProgress={!!siteConfig.maintenanceShowProgress}
-                progress={siteConfig.maintenanceProgress ?? 0}
-                showSocial={siteConfig.maintenanceShowSocial !== false}
-                bgStyle={siteConfig.maintenanceBgStyle || 'grid'}
+                style={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceStyle)
+                    || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceStyle)
+                    || siteConfig.maintenanceStyle || 'terminal'}
+                message={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceMessage)
+                      || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceMessage)
+                      || siteConfig.maintenanceMessage || "We're performing scheduled upgrades. We'll be back online shortly."}
+                status={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceStatus)
+                     || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceStatus)
+                     || siteConfig.maintenanceStatus || 'MAINTENANCE'}
+                icon={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceIcon)
+                   || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceIcon)
+                   || siteConfig.maintenanceIcon || '⚙️'}
+                returnTime={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceReturnTime)
+                        || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceReturnTime)
+                        || siteConfig.maintenanceReturnTime || ''}
+                showProgress={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceShowProgress)
+                           || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceShowProgress)
+                           || !!siteConfig.maintenanceShowProgress}
+                progress={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceProgress)
+                       || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceProgress)
+                       || siteConfig.maintenanceProgress || 0}
+                showSocial={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceShowSocial)
+                        || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceShowSocial)
+                        || (siteConfig.maintenanceShowSocial !== false)}
+                bgStyle={(isStoreDomain && siteConfig.subdomainMaintenance?.store?.maintenanceBgStyle)
+                      || (isFiveMDomain && siteConfig.subdomainMaintenance?.fivem?.maintenanceBgStyle)
+                      || siteConfig.maintenanceBgStyle || 'grid'}
                 siteConfig={siteConfig}
               />
             </Suspense>
