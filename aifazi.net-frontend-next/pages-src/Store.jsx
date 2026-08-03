@@ -176,8 +176,17 @@ export default function StorePage({ fivem = false }) {
     ['vip', '👑 VIP'],
     ['shop', '🛒 Shop'],
     ['orders', '📋 Account'],
+    ['profile', '👤 Profile'],
   ]
   if (user) TABS.push(['delivery', '🚚 Delivery'])
+
+  const handleTabClick = (k) => {
+    if (k === 'profile') {
+      if (typeof window !== 'undefined') window.location.href = '/profile'
+      return
+    }
+    setTabAndUrl(k)
+  }
 
   return (
     <div style={{ background: 'var(--bg)', minHeight: '100vh' }}>
@@ -336,7 +345,7 @@ export default function StorePage({ fivem = false }) {
       <div style={{ position: 'sticky', top: 64, zIndex: 50, background: 'color-mix(in srgb, var(--bg) 92%, transparent)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', marginBottom: 0 }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 8, padding: '10px 20px', flexWrap: 'wrap' }}>
           {TABS.map(([k, label]) => (
-            <button key={k} onClick={() => { setTabAndUrl(k); setError(''); setNotice('') }}
+            <button key={k} onClick={() => { handleTabClick(k); setError(''); setNotice('') }}
               className={`store-tab-pill ${tab === k ? 'active' : ''}`}>
               {label}
             </button>

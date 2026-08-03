@@ -69,7 +69,7 @@ export default function StoreHeader() {
             ['/', 'Home'],
             ['/?tab=shop', 'Shop'],
             ['/?tab=vip', 'VIP'],
-            ['/?tab=orders', 'My Account'],
+            ['/profile', 'My Account'],
           ].map(([to, label]) => (
             <Link key={label} to={to} style={{
               fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)',
@@ -121,8 +121,21 @@ export default function StoreHeader() {
 
         {/* Account */}
         {user ? (
-          <Link to="/?tab=orders" style={{ fontSize: 20, textDecoration: 'none' }} title="Account">
-            👤
+          <Link to="/profile" style={{
+            display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
+            padding: '4px 12px 4px 4px', borderRadius: 999, border: '1px solid var(--border)',
+            transition: 'border-color 0.2s', background: 'rgba(255,255,255,0.01)',
+          }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = S}
+          onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
+            <img
+              src={user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.username || 'U')}&backgroundColor=00ff88,00d4ff&fontSize=36`}
+              alt=""
+              style={{ width: 28, height: 28, borderRadius: '50%', border: `1px solid ${S}` }}
+            />
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.username || 'Account'}
+            </span>
           </Link>
         ) : (
           <Link to="/login" style={{

@@ -1,12 +1,12 @@
 export const metadata = {
   title: 'My Profile — AIFAZI RP',
-  description: 'View your whitelist application status and player profile on AIFAZI RP.',
+  description: 'Unified profile: whitelist, orders, activity, and account settings.',
 }
 
 export const dynamic = 'force-dynamic'
 
-import ForumProfileClient from '@/pages-src/ForumProfile'
+import UnifiedProfile from '@/pages-src/UnifiedProfile'
 
 export default function ProfilePage() {
-  return <ForumProfileClient />
+  return <UnifiedProfile />
 }
