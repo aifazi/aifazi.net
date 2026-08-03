@@ -16,6 +16,7 @@ import StockLedgerTab from './StockLedgerTab'
 import DealsTab from './DealsTab'
 import ReviewsTab from './ReviewsTab'
 import InventoryTab from './InventoryTab'
+import DeliveryTab from './DeliveryTab'
 import TerminalTab from './TerminalTab'
 import StoreOverview from './StoreOverview'
 
@@ -66,6 +67,11 @@ const GROUPS = [
     label: 'PAYMENTS', items: [
       { key: 'payments', label: 'Payments', icon: '💳', perm: 'store.payments' },
       { key: 'terminal', label: 'Terminal', icon: '📲', perm: 'store.payments' },
+    ],
+  },
+  {
+    label: 'LOGISTICS', items: [
+      { key: 'delivery', label: 'Delivery', icon: '🚚', perm: 'store.delivery' },
     ],
   },
 ]
@@ -204,6 +210,7 @@ export default function StoreCenter() {
             {tab === 'quotes' && <QuotesTab />}
             {tab === 'plans' && <PlansTab categories={categories} />}
             {tab === 'subscriptions' && <SubscriptionsTab />}
+            {tab === 'delivery' && <DeliveryTab />}
           </PanelErrorBoundary>
         </div>
       </div>

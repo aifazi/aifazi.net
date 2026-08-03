@@ -41,6 +41,8 @@ MODULES = {
     "store.coupons": "Store coupons",
     "store.deals": "Store deals",
     "store.reviews": "Store reviews",
+    "store.inventory": "Store inventory",
+    "store.delivery": "Store delivery",
     "store.settings": "Store settings",
     "fivem.status": "FiveM status",
     "fivem.whitelist": "FiveM whitelist",
