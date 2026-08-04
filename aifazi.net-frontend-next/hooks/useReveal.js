@@ -21,11 +21,21 @@ export function useReveal(threshold = 0.1) {
     el.style.transition = 'none'
 
     let ctx
+    let cancelled = false
+    const fallback = setTimeout(() => {
+      if (el && !cancelled) {
+        el.style.opacity = '1'
+        el.style.transform = 'none'
+        el.style.transition = 'opacity 0.3s, transform 0.3s'
+      }
+    }, 2000)
 
     Promise.all([
       import('gsap').then(m => m.gsap),
       import('gsap/ScrollTrigger').then(m => m.ScrollTrigger),
     ]).then(([gsap, ScrollTrigger]) => {
+      if (cancelled) return
+      clearTimeout(fallback)
       gsap.registerPlugin(ScrollTrigger)
       ctx = gsap.context(() => {
         gsap.fromTo(el,
@@ -44,10 +54,11 @@ export function useReveal(threshold = 0.1) {
         )
       })
     }).catch(() => {
+      cancelled = true
       if (el) { el.style.opacity = '1'; el.style.transform = 'none' }
     })
 
-    return () => { try { ctx?.revert() } catch {} }
+    return () => { cancelled = true; clearTimeout(fallback); try { ctx?.revert() } catch {} }
   }, [threshold])
 
   return ref

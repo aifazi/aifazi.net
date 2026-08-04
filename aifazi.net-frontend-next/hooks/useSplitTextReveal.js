@@ -39,11 +39,19 @@ export function useSplitTextReveal(opts = {}) {
     if (!chars.length) return
 
     let ctx
+    let cancelled = false
+    const fallback = setTimeout(() => {
+      if (!cancelled) {
+        chars.forEach(c => { c.style.opacity = '1'; c.style.transform = 'none' })
+      }
+    }, 2000)
 
     Promise.all([
       import('gsap').then(m => m.gsap),
       import('gsap/ScrollTrigger').then(m => m.ScrollTrigger),
     ]).then(([gsap, ScrollTrigger]) => {
+      if (cancelled) return
+      clearTimeout(fallback)
       gsap.registerPlugin(ScrollTrigger)
       ctx = gsap.context(() => {
         gsap.fromTo(chars,
@@ -63,10 +71,12 @@ export function useSplitTextReveal(opts = {}) {
         )
       })
     }).catch(() => {
+      cancelled = true
       chars.forEach(c => { c.style.opacity = '1'; c.style.transform = 'none' })
     })
 
     return () => {
+      cancelled = true; clearTimeout(fallback)
       try { ctx?.revert() } catch {}
       if (el) { el.innerHTML = originalHTML; el.removeAttribute('aria-label') }
     }
