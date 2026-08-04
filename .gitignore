@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.local.example
 !.env.docker.example
 
 # Python
@@ -18,6 +19,11 @@ build/
 node_modules/
 .next/
 out/
+
+# Docker
+docker-compose.override.yml
+supabase/pgdata/
+supabase/.branches/
 
 # Supabase
 supabase/.temp/

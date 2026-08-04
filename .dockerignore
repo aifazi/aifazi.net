@@ -1,0 +1,21 @@
+# ── Root .dockerignore ─────────────────────────────────────────────────────────
+# Prevents sending unnecessary files to the Docker build context.
+# Both Dockerfiles use the repo root as context.
+
+**/node_modules
+**/.next
+**/__pycache__
+**/*.pyc
+**/.vercel
+**/venv
+**/.venv
+**/.env
+**/.env.*
+!.env.local.example
+.git
+.gitignore
+*.md
+docs/
+.vscode/
+.idea/
+.claude/
