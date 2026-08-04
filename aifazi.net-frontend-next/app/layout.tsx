@@ -115,7 +115,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body suppressHydrationWarning>
         <div className="scanline" />
-        <Providers isStoreDomain={isStoreDomain} isFiveMDomain={isFiveMDomain}>{children}</Providers>
+        <Providers
+          isStoreDomain={isStoreDomain}
+          isFiveMDomain={isFiveMDomain}
+          serverMaintenance={!!siteConfig.maintenanceMode}
+          serverSubdomainMaintenance={siteConfig.subdomainMaintenance || {}}
+        >{children}</Providers>
       </body>
     </html>
   )

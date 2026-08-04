@@ -122,7 +122,13 @@ function loadFontForTheme(themeId: string) {
   document.head.appendChild(link)
 }
 
-export function Providers({ children, isStoreDomain = false, isFiveMDomain = false }: { children: React.ReactNode; isStoreDomain?: boolean; isFiveMDomain?: boolean }) {
+export function Providers({ children, isStoreDomain = false, isFiveMDomain = false, serverMaintenance = false, serverSubdomainMaintenance = {} }: {
+  children: React.ReactNode;
+  isStoreDomain?: boolean;
+  isFiveMDomain?: boolean;
+  serverMaintenance?: boolean;
+  serverSubdomainMaintenance?: Record<string, any>;
+}) {
   const pathname = usePathname()
 
   const [loading, setLoading] = useState(false)
@@ -548,12 +554,12 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   // }, [])
 
   const isFullScreen = /^\/(admin|chat|users\/chat|store)/.test(pathname || '') || isStoreSubdomain || isStoreDomain
-  const showMaintenance = siteConfigReady && (() => {
+  const showMaintenance = (() => {
     if (userIsAdmin) return false
-    const subMaint = siteConfig.subdomainMaintenance || {}
-    if (isStoreDomain && subMaint.store?.maintenanceMode) return true
-    if (isFiveMDomain && subMaint.fivem?.maintenanceMode) return true
-    return !!siteConfig.maintenanceMode
+    const subMaint = siteConfig.subdomainMaintenance || serverSubdomainMaintenance || {}
+    if (isStoreDomain && (subMaint.store?.maintenanceMode || false)) return true
+    if (isFiveMDomain && (subMaint.fivem?.maintenanceMode || false)) return true
+    return siteConfig.maintenanceMode ?? serverMaintenance
   })()
 
   const onLoadComplete = useCallback(() => {
