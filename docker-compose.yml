@@ -1,178 +1,81 @@
-# ── aifazi.net — local development docker-compose ──────────────────────────────
-# Start:   docker compose up -d
-# Stop:    docker compose down
-# Logs:    docker compose logs -f
-# Rebuild: docker compose up -d --build
+# ══════════════════════════════════════════════════════════════
+# aifazi.net — Full Stack Docker Dev Environment
+#
+# Start:  docker compose up -d
+# Logs:   docker compose logs -f
+# Stop:   docker compose down
+# ══════════════════════════════════════════════════════════════
 
 services:
-  # ════════════════ APPLICATION SERVICES ════════════════
-
-  backend:
-    build:
-      context: .
-      dockerfile: docker/backend/Dockerfile
-    container_name: aifazi-backend
-    ports:
-      - '127.0.0.1:8000:8000'
-    volumes:
-      - ./aifazi.net-backend-fastapi:/app
-      - /app/__pycache__
-    env_file:
-      - .env.local
-    depends_on:
-      supabase-db:
-        condition: service_healthy
-    networks:
-      - aifazi-net
-    restart: unless-stopped
-
+  # ── Frontend (Next.js) ─────────────────────────────────────
   frontend:
     build:
-      context: .
-      dockerfile: docker/frontend/Dockerfile
-    container_name: aifazi-frontend
+      context: ./aifazi.net-frontend-next
+      dockerfile: Dockerfile.dev
+    container_name: aifazi-web-frontend
     ports:
-      - '127.0.0.1:3000:3000'
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-dev-secret-change-me}
+      - PASETO_SECRET=${PASETO_SECRET:-dev-paseto-secret-change-me}
+      - ADMIN_GATE_SECRET=${ADMIN_GATE_SECRET:-}
     volumes:
       - ./aifazi.net-frontend-next:/app
       - /app/node_modules
       - /app/.next
-    env_file:
-      - .env.local
     depends_on:
       - backend
-    networks:
-      - aifazi-net
     restart: unless-stopped
 
-  # ════════════════ SUPABASE LOCAL STACK ════════════════
-
-  supabase-db:
-    image: supabase/postgres:15.8.1.077
-    container_name: aifazi-supabase-db
+  # ── Backend (FastAPI) ──────────────────────────────────────
+  backend:
+    build:
+      context: ./aifazi.net-backend-fastapi
+      dockerfile: Dockerfile.dev
+    container_name: aifazi-web-backend
     ports:
-      - '127.0.0.1:54322:5432'
+      - "8000:8000"
     environment:
-      POSTGRES_HOST: /var/run/postgresql
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: postgres
+      - ENV=development
+      - FRONTEND_URL=http://localhost:3000
+      - PASETO_SECRET=${PASETO_SECRET:-dev-paseto-secret-change-me}
+      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-me}
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-dev-secret-change-me}
+      - ADMIN_GATE_SECRET=${ADMIN_GATE_SECRET:-}
+      - CRON_SECRET=${CRON_SECRET:-dev-cron-secret}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - MAIL_WEBHOOK_SECRET=${MAIL_WEBHOOK_SECRET:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - CLOUDFLARE_R2_ACCESS_KEY=${CLOUDFLARE_R2_ACCESS_KEY:-}
+      - CLOUDFLARE_R2_SECRET_KEY=${CLOUDFLARE_R2_SECRET_KEY:-}
+      - CLOUDFLARE_R2_ENDPOINT=${CLOUDFLARE_R2_ENDPOINT:-}
+      - CLOUDFLARE_R2_BUCKET=${CLOUDFLARE_R2_BUCKET:-}
+      - CLOUDINARY_URL=${CLOUDINARY_URL:-}
     volumes:
-      - supabase-pgdata:/var/lib/postgresql/data
-      - ./supabase/init:/docker-entrypoint-initdb.d
-    command:
-      - postgres
-      - -c
-      - config_file=/etc/postgresql/postgresql.conf
-      - -c
-      - log_min_messages=fatal
-    healthcheck:
-      test: ['CMD', 'pg_isready', '-U', 'postgres']
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - aifazi-net
+      - ./aifazi.net-backend-fastapi:/app
     restart: unless-stopped
 
-  supabase-rest:
-    image: postgrest/postgrest:v14.1
-    container_name: aifazi-supabase-rest
-    ports:
-      - '127.0.0.1:54321:3000'
-    environment:
-      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD:-postgres}@supabase-db:5432/postgres
-      PGRST_DB_SCHEMAS: public,storage
-      PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
-      PGRST_DB_USE_LEGACY_GUCS: 'false'
-    depends_on:
-      supabase-db:
-        condition: service_healthy
-    networks:
-      - aifazi-net
-    restart: unless-stopped
-
-  supabase-studio:
-    image: supabase/studio:latest
-    container_name: aifazi-supabase-studio
-    ports:
-      - '127.0.0.1:54323:3000'
-    environment:
-      STUDIO_PG_META_URL: http://supabase-meta:8080
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      DEFAULT_ORGANIZATION_NAME: aifazi-local
-      DEFAULT_PROJECT_NAME: aifazi
-      SUPABASE_URL: http://supabase-rest:3000
-      SUPABASE_PUBLIC_URL: http://localhost:54321
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvY2FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MjIxNDI4MDAsImV4cCI6NDc3NzgxNjQwMH0.9T6MVZNE54IZ7RsRF29-TPPQq8YbmMnZp1ZgpIVN_yk}
-      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvY2FsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTYyMjE0MjgwMCwiZXhwIjo0Nzc3ODE2NDAwfQ.J8ZN8hHwRxVGuEnAs0Y9hAQSHAU9OOJ0U3E6O-R2qLs}
-    depends_on:
-      supabase-db:
-        condition: service_healthy
-    networks:
-      - aifazi-net
-    restart: unless-stopped
-
-  supabase-meta:
-    image: supabase/postgres-meta:v0.84.2
-    container_name: aifazi-supabase-meta
-    environment:
-      PG_META_PORT: 8080
-      PG_META_DB_HOST: supabase-db
-      PG_META_DB_PORT: 5432
-      PG_META_DB_NAME: postgres
-      PG_META_DB_USER: postgres
-      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    depends_on:
-      supabase-db:
-        condition: service_healthy
-    networks:
-      - aifazi-net
-    restart: unless-stopped
-
-  supabase-auth:
-    image: supabase/gotrue:v2.169.0
-    container_name: aifazi-supabase-auth
-    environment:
-      GOTRUE_API_HOST: 0.0.0.0
-      GOTRUE_API_PORT: 9999
-      GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-postgres}@supabase-db:5432/postgres
-      GOTRUE_SITE_URL: http://localhost:3000
-      GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
-      GOTRUE_JWT_EXP: 3600
-      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
-      GOTRUE_DISABLE_SIGNUP: 'false'
-      GOTRUE_EXTERNAL_EMAIL_ENABLED: 'false'
-      GOTRUE_MAILER_AUTOCONFIRM: 'true'
-      GOTRUE_SMTP_ADMIN_EMAIL: admin@aifazi.local
-      GOTRUE_SMTP_HOST: mailpit
-      GOTRUE_SMTP_PORT: '1025'
-      GOTRUE_SMTP_USER: ''
-      GOTRUE_SMTP_PASS: ''
-      GOTRUE_SMTP_SENDER_NAME: aifazi-local
-      GOTRUE_LOG_LEVEL: error
-      API_EXTERNAL_URL: http://localhost:9999
-    depends_on:
-      supabase-db:
-        condition: service_healthy
-    networks:
-      - aifazi-net
-    restart: unless-stopped
-
-  mailpit:
-    image: axllent/mailpit:v1.21
-    container_name: aifazi-mailpit
-    ports:
-      - '127.0.0.1:54324:8025'
-    networks:
-      - aifazi-net
-    restart: unless-stopped
-
-networks:
-  aifazi-net:
-    driver: bridge
-
-volumes:
-  supabase-pgdata:
-    driver: local
+  # ── Supabase Local (optional — remove if using remote Supabase) ──
+  # Uncomment to use a local PostgreSQL instead of remote Supabase.
+  # db:
+  #   image: postgres:17-alpine
+  #   container_name: aifazi-db
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: aifazi
+  #   ports:
+  #     - "54322:5432"
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #
+  #volumes:
+  #  pgdata:
