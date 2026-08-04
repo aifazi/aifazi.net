@@ -47,3 +47,11 @@ node_modules/.cache/
 
 # Agent session notes
 .claude/
+
+# Dev scripts and test files
+*dump*.sh
+*dump*.sql
+*prod-data*
+*prod-full*
+test-*.mjs
+test-*.js
