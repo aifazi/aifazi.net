@@ -15,6 +15,8 @@ services:
       - "/mnt/e/aifazi Neon city/aifazi.net/aifazi.net-frontend-next:/app"
     working_dir: /app
     entrypoint: ["/bin/sh", "-c", "npm install && exec npx next dev -p 3000"]
+    depends_on:
+      - backend
     restart: unless-stopped
 
   backend:
@@ -34,4 +36,32 @@ services:
       - "/mnt/e/aifazi Neon city/aifazi.net/aifazi.net-backend-fastapi:/app"
     working_dir: /app
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+
+  # ── Local PostgreSQL (for migrations, seed, direct queries) ──
+  # The app backend still talks to production Supabase.
+  # Use this for: running migrations, testing SQL, local data exploration.
+  postgres:
+    image: postgres:17-alpine
+    container_name: aifazi-local-db
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: aifazi
+    volumes:
+      - supabase_db:/var/lib/postgresql/data
+      - "/mnt/e/aifazi Neon city/aifazi.net/aifazi.net-backend-fastapi/migrations:/migrations:ro"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  supabase_db:
