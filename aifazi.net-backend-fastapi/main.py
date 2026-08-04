@@ -78,13 +78,10 @@ if not INTERNAL_API_SECRET:
             "the middleware gate would fail open. Set it in Vercel Environment "
             "Variables (Settings → Environment Variables) and redeploy."
         )
-    elif os.getenv("BYPASS_INTERNAL_API") == "1":
-        log.info("INTERNAL_API_SECRET not set, but BYPASS_INTERNAL_API=1 — local dev mode, skipping gate.")
-    else:
-        log.warning(
-            "INTERNAL_API_SECRET is not set. Protected API endpoints will return 503 "
-            "until the secret is configured."
-        )
+    log.warning(
+        "INTERNAL_API_SECRET is not set. Protected API endpoints will return 503 "
+        "until the secret is configured."
+    )
 
 # Paths that are freely accessible without the internal token
 _OPEN_EXACT: set[str] = {
@@ -436,23 +433,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             (method == "GET" and any(path.startswith(p) for p in _OPEN_GET_PREFIXES))
         )
         if not is_open:
-            # In local development (ENV=development + BYPASS_INTERNAL_API=1),
-            # skip the internal-token gate so the frontend dev server can
-            # reach the backend directly without the proxy injecting the header.
-            if os.getenv("ENV") == "development" and os.getenv("BYPASS_INTERNAL_API") == "1":
-                pass  # allow all requests in local dev
-            elif not INTERNAL_API_SECRET:
+            if not INTERNAL_API_SECRET:
                 return JSONResponse(
                     status_code=503,
                     content={"error": "Internal API gate is not configured."},
                 )
-            else:
-                submitted = request.headers.get("X-Internal-Token", "")
-                if not hmac.compare_digest(submitted, INTERNAL_API_SECRET):
-                    return JSONResponse(
-                        status_code=403,
-                        content={"error": "Direct API access is not permitted."},
-                    )
+            submitted = request.headers.get("X-Internal-Token", "")
+            if not hmac.compare_digest(submitted, INTERNAL_API_SECRET):
+                return JSONResponse(
+                    status_code=403,
+                    content={"error": "Direct API access is not permitted."},
+                )
 
         # ── 4. Call next + attach headers ─────────────────────────────────────
         response = await call_next(request)
