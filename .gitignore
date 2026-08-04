@@ -32,6 +32,8 @@ supabase/.temp/
 # OS files
 .DS_Store
 Thumbs.db
+core.*
+node_modules/.cache/
 
 # Archives
 *.rar
