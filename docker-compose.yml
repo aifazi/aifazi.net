@@ -4,8 +4,6 @@
 # Logs:    docker compose logs -f
 # Rebuild: docker compose up -d --build
 
-version: '3.8'
-
 services:
   # ════════════════ APPLICATION SERVICES ════════════════
 
@@ -95,7 +93,7 @@ services:
     restart: unless-stopped
 
   supabase-studio:
-    image: supabase/studio:2025.07.14-sha-31ebfcc
+    image: supabase/studio:latest
     container_name: aifazi-supabase-studio
     ports:
       - '127.0.0.1:54323:3000'
