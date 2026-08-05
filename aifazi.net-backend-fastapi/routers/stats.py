@@ -4,6 +4,7 @@ Structured to match frontend DatabaseGUI shape.
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from html import escape
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from database import supabase
@@ -115,7 +116,7 @@ async def live_visitors():
 
 
 @router.get("")
-async def stats(_: dict = Depends(require_staff)):
+def stats(_: dict = Depends(require_staff)):
     # ── Counts via DB aggregation ─────────────────────────────────────────────
     posts_count         = supabase.table("posts").select("id", count="exact").execute()
     published_count     = supabase.table("posts").select("id", count="exact").eq("published", True).execute()
@@ -233,6 +234,15 @@ async def collection_browse(
     if not table:
         raise HTTPException(status_code=400, detail=f"Unknown collection: {coll}")
     offset = (page - 1) * limit
+    # NOTE: kept async-only wrapper for back-compat; body is sync (see stats).
+    return await asyncio.to_thread(_collection_browse_sync, coll, page, limit, search)
+
+
+def _collection_browse_sync(coll: str, page: int, limit: int, search: str) -> dict:
+    table = COLL_TABLE.get(coll)
+    if not table:
+        raise HTTPException(status_code=400, detail=f"Unknown collection: {coll}")
+    offset = (page - 1) * limit
     try:
         q = supabase.table(table).select("*", count="exact")
         if search:
@@ -255,7 +265,7 @@ async def collection_browse(
 
 # ── DB Health ─────────────────────────────────────────────────────────────────
 @router.get("/db-health")
-async def db_health(_: dict = Depends(require_staff)):
+def db_health(_: dict = Depends(require_staff)):
     tables = list(COLL_TABLE.values())
     sizes = {}
     for alias, tbl in COLL_TABLE.items():

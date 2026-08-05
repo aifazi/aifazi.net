@@ -2858,20 +2858,26 @@ async def check_connect_session(body: ConnectSessionRequest, request: Request):
         .execute()
     )
 
-    for token_row in recent_tokens.data or []:
+    # Batch-fetch the owning users ONCE instead of one query per token (N+1).
+    tokens_data = recent_tokens.data or []
+    user_ids = [t.get("user_id") for t in tokens_data if t.get("user_id")]
+    user_by_id: dict = {}
+    if user_ids:
+        users_res = (
+            supabase.table("users")
+            .select("id,username,role,discord_id,steam_id")
+            .in_("id", user_ids)
+            .execute()
+        )
+        user_by_id = {u["id"]: u for u in (users_res.data or []) if u.get("id")}
+
+    for token_row in tokens_data:
         user_id = token_row.get("user_id")
         if not user_id:
             continue
-        user_res = (
-            supabase.table("users")
-            .select("id,username,role,discord_id,steam_id")
-            .eq("id", user_id)
-            .limit(1)
-            .execute()
-        )
-        if not user_res.data:
+        forum_user = user_by_id.get(user_id)
+        if not forum_user:
             continue
-        forum_user = user_res.data[0]
         role = forum_user.get("role") or "member"
 
         matched_whitelist = whitelist_row
