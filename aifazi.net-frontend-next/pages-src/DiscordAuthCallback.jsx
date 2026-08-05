@@ -37,6 +37,7 @@ export default function DiscordAuthCallback() {
         'db':     'Database error. Please try again.',
         'banned': 'Your account has been banned.',
         'cfg':    'Discord OAuth is not configured on the server.',
+        'email_unverified': 'An account with this email already exists but is not verified yet. Log in, verify your email, then link Discord.',
       }
       setError(msgs[err] || 'Discord login failed. Please try again.')
       setStatus('')

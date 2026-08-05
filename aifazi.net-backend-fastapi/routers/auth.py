@@ -43,6 +43,10 @@ async def _verify_async(pw: str, hashed: str) -> bool:
 
 SECRET = os.environ.get("PASETO_SECRET", os.environ.get("JWT_SECRET", ""))
 ALGO   = "HS256"
+# 020 — how long (seconds) a rotated-out previous-generation refresh token is
+# still accepted, to tolerate a two-tab concurrent-refresh race. Replay of a
+# stolen token is bounded to this window instead of its full 7-day lifetime.
+_REFRESH_ROTATION_GRACE = 30
 # Admin gate secret — must be explicitly set. Never falls back to INTERNAL_API_SECRET
 # (which would let any internal service forge admin gate tokens).
 ADMIN_GATE_SECRET = os.getenv("ADMIN_GATE_SECRET") or ""
@@ -645,7 +649,7 @@ async def login(body: LoginBody, request: Request, response: Response):
             refresh = make_token({"username": staff["username"], "role": staff["role"], "id": staff["id"], "permissions": perms}, 60 * 24 * 7)
 
             supabase.table("users").update({
-                "refresh_token": refresh, "last_seen": datetime.now(timezone.utc).isoformat()
+                "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
             }).eq("id", staff["id"]).execute()
             _audit(staff["username"], "staff_login", target="admin_panel",
                    details={"role": staff["role"]}, ip=client_ip)
@@ -708,7 +712,7 @@ async def login(body: LoginBody, request: Request, response: Response):
     refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
     # H4 — persist the refresh token so /refresh can validate + rotate it.
     supabase.table("users").update({
-        "refresh_token": refresh, "last_seen": datetime.now(timezone.utc).isoformat()
+        "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
     }).eq("id", user["id"]).execute()
     _set_auth_cookies(response, token, refresh)
     return {
@@ -741,28 +745,46 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
         if username != ADMIN_USERNAME:
             raise HTTPException(401, "Invalid refresh token")
     else:
-        row = supabase.table("users").select("refresh_token").eq("id", user_id).execute()
+        row = supabase.table("users").select("refresh_token,previous_refresh_token,refresh_rotated_at").eq("id", user_id).execute()
         stored = (row.data[0].get("refresh_token") if row.data else None) or ""
+        previous = (row.data[0].get("previous_refresh_token") if row.data else None) or ""
+        rotated_at = (row.data[0].get("refresh_rotated_at") if row.data else None) or None
         # Explicit revocation (logout / password reset) sets the stored token to
         # NULL — the session must stay dead.
         if not stored:
             raise HTTPException(401, "Refresh token revoked or invalid")
-        # H4 — timing-safe compare against the current token. When the compare
-        # fails but the presented token is cryptographically valid (it decoded
-        # above), this is a rotation race: two tabs refreshed concurrently and
-        # the first rotated the DB token, orphaning the other tab's token.
-        # Hard-401'ing here turned a benign race into a permanent logout (the
-        # frontend cleared the session on refresh failure). Accept the
-        # stale-but-valid token so the race is harmless; a genuinely revoked
-        # session is still rejected above.
-        if not _hmac.compare_digest(stored, token_str):
-            log.info("auth refresh: accepting stale-but-valid token (rotation race) for user=%s", user_id)
+        # H4/020 — timing-safe compare against the CURRENT token. A matching
+        # current token rotates normally (current -> previous, issue fresh).
+        # A token matching the PREVIOUS generation is accepted ONLY within a
+        # short grace window after the rotation — this keeps the two-tab
+        # concurrent-refresh race working while bounding replay of a stolen,
+        # rotated-out token to seconds instead of its full 7-day lifetime.
+        refresh_accepted = _hmac.compare_digest(stored, token_str)
+        if not refresh_accepted and previous:
+            refresh_accepted = _hmac.compare_digest(previous, token_str)
+            age_s = _REFRESH_ROTATION_GRACE + 1
+            if rotated_at:
+                try:
+                    age_s = (datetime.now(timezone.utc) - datetime.fromisoformat(str(rotated_at))).total_seconds()
+                except Exception:
+                    age_s = _REFRESH_ROTATION_GRACE + 1
+            if age_s > _REFRESH_ROTATION_GRACE:
+                log.warning("auth refresh: rejecting rotated-out refresh token for user=%s (age=%.0fs)", user_id, age_s)
+                refresh_accepted = False
+            else:
+                log.info("auth refresh: accepting previous-generation token within grace window (rotation race) for user=%s", user_id)
+        if not refresh_accepted:
+            raise HTTPException(401, "Invalid refresh token")
 
     new_access = make_token({k: v for k, v in payload.items() if k != "exp"})
     new_refresh = make_token({k: v for k, v in payload.items() if k != "exp"}, 60 * 24 * 7)
-    # H4 — rotate server-side so a leaked/stolen token is invalid after one use.
+    # H4/020 — rotate server-side so a leaked/stolen token is invalid after one use.
     if user_id:
-        supabase.table("users").update({"refresh_token": new_refresh}).eq("id", user_id).execute()
+        supabase.table("users").update({
+            "previous_refresh_token": token_str,
+            "refresh_token": new_refresh,
+            "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", user_id).execute()
     _set_auth_cookies(response, new_access, new_refresh)  # rotate both cookies
     return {"token": new_access}
 
@@ -822,7 +844,7 @@ async def session_migrate(request: Request, response: Response, creds: HTTPAutho
     refresh = make_token({"id": user_id, "username": payload.get("username") or "", "role": payload.get("role") or "user"}, 60 * 24 * 7)
     try:
         supabase.table("users").update({
-            "refresh_token": refresh, "last_seen": datetime.now(timezone.utc).isoformat()
+            "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
         }).eq("id", user_id).execute()
     except Exception:
         pass
@@ -1214,7 +1236,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
         token   = make_token({"username": s["username"], "role": s["role"], "id": s["id"]})
         refresh = make_token({"username": s["username"], "role": s["role"], "id": s["id"]}, 60 * 24 * 7)
         supabase.table("users").update({
-            "refresh_token": refresh, "last_seen": datetime.now(timezone.utc).isoformat()
+            "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
         }).eq("id", s["id"]).execute()
         _audit(username, "staff_login_2fa", target="admin_panel", ip=ip)
         _set_auth_cookies(response, token, refresh)  # #1 #2
@@ -1799,6 +1821,14 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
                 user = None
                 if discord_email:
                     user = _find_user_by_ci("email", discord_email, "*")
+                    if user and not user.get("email_verified"):
+                        # Do NOT auto-link to an account whose email is unverified:
+                        # a Discord account using that (unclaimed/bouncing) address
+                        # could otherwise hijack the victim's forum account.
+                        log.warning("discord callback: refusing email-match link to unverified account for %s", discord_email)
+                        safe_dest = dest if str(dest).startswith("/") else "/profile"
+                        sep = "&" if "?" in safe_dest else "?"
+                        return _Redir(f"{front}{safe_dest}{sep}discord_error=email_unverified")
                     if user:
                         _ensure_identity_available("discord_id", discord_id, user["id"], "Discord account")
                         supabase.table("users").update({
@@ -1846,7 +1876,7 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
     try:
         supabase.table("users").update({
-            "refresh_token": refresh, "last_seen": datetime.now(timezone.utc).isoformat()
+            "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
         }).eq("id", user["id"]).execute()
     except Exception:
         pass

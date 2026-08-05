@@ -22,12 +22,15 @@ Vercel env vars needed:
 """
 
 import os
+import logging
 import urllib.parse as _urlparse
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials
+
+log = logging.getLogger("github_auth")
 
 try:
     import httpx as _httpx
@@ -274,6 +277,14 @@ async def github_callback(code: str = None, state: str = None, error: str = None
                 # b) Match by email -> link existing account, case-insensitively.
                 if github_email:
                     user = _find_user_by_ci("email", github_email, "*")
+                    if user and not user.get("email_verified"):
+                        # Do NOT auto-link to an account whose email is unverified:
+                        # a GitHub account using that (unclaimed/bouncing) address
+                        # could otherwise hijack the victim's forum account.
+                        log.info("github callback: refusing email-match link to unverified account for %s", github_email)
+                        safe_dest = dest if str(dest).startswith("/") else "/profile"
+                        sep = "&" if "?" in safe_dest else "?"
+                        return RedirectResponse(f"{front}{safe_dest}{sep}github_error=email_unverified")
                     if user:
                         _ensure_identity_available("github_id", github_id, user["id"], "GitHub account")
                         supabase.table("users").update({
@@ -323,7 +334,7 @@ async def github_callback(code: str = None, state: str = None, error: str = None
         refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
         try:
             supabase.table("users").update({
-                "refresh_token": refresh, "last_seen": now,
+                "refresh_token": refresh, "refresh_rotated_at": now, "last_seen": now,
             }).eq("id", user["id"]).execute()
         except Exception:
             pass

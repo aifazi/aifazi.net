@@ -395,7 +395,7 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
         refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
         try:
             supabase.table("users").update({
-                "refresh_token": refresh, "last_seen": now,
+                "refresh_token": refresh, "refresh_rotated_at": now, "last_seen": now,
             }).eq("id", user["id"]).execute()
         except Exception:
             pass

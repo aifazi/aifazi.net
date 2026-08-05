@@ -42,6 +42,7 @@ export default function GitHubAuthCallback() {
         'state':  'GitHub login session expired. Please try again.',
         'duplicate': 'This GitHub account is already linked to another user.',
         'identity_locked': 'Your player identity is active. Contact an admin to change your GitHub.',
+        'email_unverified': 'An account with this email already exists but is not verified yet. Log in, verify your email, then link GitHub.',
       }
       setError(msgs[githubErr] || 'GitHub login failed. Please try again.')
       setStatus('')
