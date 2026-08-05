@@ -5,6 +5,7 @@ import api from '@/lib/api'
 import { getUsername, getRole } from '@/lib/api'
 import { getSupabase } from '@/lib/supabase'
 import { Icon, NAV_ICONS } from './icons'
+import { usePausableInterval } from '../../hooks/usePausableInterval'
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Design tokens — CSS-variable-first with sensible dark fallbacks
@@ -33,7 +34,7 @@ const FONTS = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@
 /* ── Live clock ── */
 function LiveClock() {
   const [t, setT] = useState(new Date())
-  useEffect(() => { const id = setInterval(() => setT(new Date()), 1000); return () => clearInterval(id) }, [])
+  usePausableInterval(() => setT(new Date()), 1000)
   const p = n => String(n).padStart(2, '0')
   const blink = t.getSeconds() % 2 === 0
   return (
@@ -384,10 +385,9 @@ export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed,
 
     loadVisitors()
     loadGeneral()
-    const id1 = setInterval(loadVisitors, 15000)
-    const id2 = setInterval(loadGeneral,  30000)
-    return () => { clearInterval(id1); clearInterval(id2) }
   }, [])
+  usePausableInterval(loadVisitors, 15000)
+  usePausableInterval(loadGeneral, 30000)
 
   /* Supabase realtime — instant visitor count updates */
   useEffect(() => {

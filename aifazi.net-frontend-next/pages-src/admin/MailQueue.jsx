@@ -145,7 +145,6 @@ export default function MailQueue() {
   const [expandId, setExpandId]   = useState(null)
   const [msg, setMsg]             = useState(null)
   const [syncing, setSyncing]     = useState(false)
-  const pollRef = useRef(null)
   const PER_PAGE = 25
 
   const flash = (type, text) => { setMsg({ type, text }); setTimeout(() => setMsg(null), 6000) }
@@ -189,10 +188,7 @@ export default function MailQueue() {
 
   useEffect(() => { fetchQueue(); fetchStats() }, [fetchQueue, fetchStats])
 
-  useEffect(() => {
-    pollRef.current = setInterval(() => { fetchQueue(true); fetchStats() }, 15000)
-    return () => clearInterval(pollRef.current)
-  }, [fetchQueue, fetchStats])
+  usePausableInterval(() => { fetchQueue(true); fetchStats() }, 15000)
 
   const act = async (action, ids) => {
     const idArr = Array.isArray(ids) ? ids : [ids]

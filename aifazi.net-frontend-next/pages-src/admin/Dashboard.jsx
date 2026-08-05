@@ -6,6 +6,7 @@ import api, { isAdmin as checkIsAdmin, getRole, getUsername, hasPermission, getS
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { Checkbox, Select } from '../../core/ui.jsx'
+import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader, PanelErrorBoundary, SkeletonGrid } from './shared'
 import AdminHeader from './AdminHeader'
 import Sidebar from './Sidebar'
@@ -162,7 +163,6 @@ function Dashboard({ onLogout }) {
   const [staffUserQuery, setStaffUserQuery] = useState('')
   const [staffUserResults, setStaffUserResults] = useState([])
   const [staffUserLoading, setStaffUserLoading] = useState(false)
-  const autoRefreshRef = useRef(null)
   const [selectedPosts, setSelectedPosts] = useState(new Set())
   const [selectedContacts, setSelectedContacts] = useState(new Set())
   const [replyModal, setReplyModal] = useState(null)  // single contact | 'bulk'
@@ -205,9 +205,8 @@ function Dashboard({ onLogout }) {
       } catch {}
     }
     checkExpiry()
-    const interval = setInterval(checkExpiry, 30000) // check every 30s for tighter warning window
-    return () => clearInterval(interval)
   }, [])
+  usePausableInterval(checkExpiry, 30000)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -227,17 +226,10 @@ function Dashboard({ onLogout }) {
   }, [])
 
   useEffect(() => {
-    if (view === 'home') {
-      fetchDashStats()
-      clearInterval(autoRefreshRef.current)
-      autoRefreshRef.current = setInterval(fetchDashStats, 60000)
-    } else {
-      clearInterval(autoRefreshRef.current)
-    }
+    if (view === 'home') fetchDashStats()
     if (view === 'content' || view === 'posts') fetchPosts()
     if (view === 'communications' || view === 'contacts') fetchContacts()
     if (view === 'staff') fetchStaff()
-    return () => clearInterval(autoRefreshRef.current)
   }, [view])
 
   const fetchDashStats = async () => {
@@ -284,6 +276,9 @@ function Dashboard({ onLogout }) {
       }
     } catch {}
   }
+  // Home-view dashboard refresh: pauses when the tab is hidden and stops when
+  // the user navigates away from the dashboard.
+  usePausableInterval(fetchDashStats, view === 'home' ? 60000 : null)
 
   const fetchStaff    = async () => { setLoading(true); try { const r = await api.get('/auth/staff'); setStaff(r.data) } catch {} finally { setLoading(false) } }
   const searchStaffUsers = async q => {

@@ -148,11 +148,7 @@ export default function TerminalTab() {
     }
   }, [order, piInfo, toast])
 
-  useEffect(() => {
-    if (!order || !piInfo?.payment_intent_id) return
-    const t = setInterval(pollStatus, 2500)
-    return () => clearInterval(t)
-  }, [order, piInfo, pollStatus])
+  usePausableInterval(pollStatus, (order && piInfo?.payment_intent_id) ? 2500 : null)
 
   const voidOrder = async () => {
     if (!order) return

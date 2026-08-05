@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { useIsMobile, PageHeader } from './shared'
 import { DateTimePicker } from '../../core/ui.jsx'
+import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { PAGE_ANIMATIONS } from '../../core/pageMotion.jsx'
 
 const PAGE_CONFIG_KEYS = [
@@ -683,17 +684,16 @@ function AnnouncementsPanel() {
       )
       .subscribe()
 
-    // ── Polling fallback (15 s) ───────────────────────────────────────────
-    // Keeps the admin list fresh even if Realtime REPLICA IDENTITY isn't set.
-    const poll = setInterval(fetchAll, 15_000)
+    // ── Realtime keeps this panel fresh; polling fallback (15s) is pausable
+    // (see usePausableInterval below) and handles missing REPLICA IDENTITY.
     const clock = setInterval(() => setNowTick(Date.now()), 30_000)
 
     return () => {
       sb.removeChannel(channel)
-      clearInterval(poll)
       clearInterval(clock)
     }
   }, [])
+  usePausableInterval(fetchAll, 15000)
 
   const set   = (k, v) => setForm(p => ({ ...p, [k]: v }))
   const reset = () => {

@@ -516,10 +516,7 @@ export default function HelpDeskPanel() {
   }, [load])
 
   // Polling fallback (also use ref for page)
-  useEffect(() => {
-    const id = setInterval(() => { load(pageRef.current); loadStats() }, 15_000)
-    return () => clearInterval(id)
-  }, [load])
+  usePausableInterval(() => { load(pageRef.current); loadStats() }, 15000)
 
   const handleDelete = async (id, ticketId) => {
     const ok = await confirm({ title: `Delete Ticket ${ticketId}`,
