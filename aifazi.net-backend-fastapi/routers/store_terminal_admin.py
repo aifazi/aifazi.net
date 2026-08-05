@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 import os
+import asyncio
 import random
 from datetime import datetime, timezone
 
@@ -378,7 +379,7 @@ async def capture_pos_order(order_id: str, _: dict = Depends(POS)):
             raise _stripe_error(exc, "PaymentIntent capture")
     risk = _risk_from_intent(pi)
     if pi.get("status") in ("succeeded", "requires_capture"):
-        await _mark_order_paid(order_id, pid, **risk)
+        await asyncio.to_thread(_mark_order_paid, order_id, pid, **risk)
         return {"ok": True, "payment_intent_id": pid, "status": "paid",
                 "radar": risk.get("risk_level"), "risk_score": risk.get("risk_score")}
     raise HTTPException(400, f"Payment not ready to capture (status={pi.get('status')})")

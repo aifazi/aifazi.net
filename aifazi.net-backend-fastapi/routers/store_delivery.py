@@ -376,7 +376,7 @@ async def order_delivery_tracking(order_no: str):
 
     if o.get("delivery_agent_id"):
         agent = supabase.table("delivery_agents").select("id,display_name,phone,vehicle,status,current_area").eq("id", o["delivery_agent_id"]).single().execute()
-        agent_info = agent.data
+        agent_info = {k: v for k, v in (agent.data or {}).items() if k != "phone"}  # never leak agent phone on a public endpoint
 
         assignment = supabase.table("delivery_assignments").select("*").eq("order_id", o["id"]).limit(1).execute()
         if assignment.data:

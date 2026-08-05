@@ -5,7 +5,6 @@ import api from '@/lib/api'
 import { Card, Badge, NeonButton } from '../../components/community'
 
 const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)'
-const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
 
 const statusColor = s => {
   const map = { delivered: G, paid: G, completed: G, cancelled: R, refunded: R, shipped: 'var(--purple)', processing: C }
@@ -144,7 +143,6 @@ export default function OrderTrackingPage() {
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{delivery.agent.display_name}</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
                     {delivery.agent.vehicle && <span>{delivery.agent.vehicle} · </span>}
-                    {delivery.agent.phone && <span>📱 {delivery.agent.phone} · </span>}
                     <Badge tone={delivery.agent.status === 'available' ? 'green' : delivery.agent.status === 'busy' ? 'orange' : 'red'}>
                       {delivery.agent.status.toUpperCase()}
                     </Badge>
@@ -206,20 +204,9 @@ export default function OrderTrackingPage() {
           {(order.downloads || []).length > 0 && (
             <Card style={{ padding: 24, marginBottom: 24 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DIGITAL DOWNLOADS</div>
-              {order.downloads.map(d => (
-                <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer"
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', border: `1px solid ${mix(C, 22)}`, borderRadius: 10, textDecoration: 'none', marginBottom: 8, transition: 'border-color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = C}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = mix(C, 22)}>
-                  <span style={{ fontSize: 22 }}>⬇</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ color: C, fontWeight: 600, fontSize: 13 }}>{d.filename || d.product_name}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
-                      {d.downloads_used} / {d.downloads_allowed} downloads used
-                    </div>
-                  </div>
-                </a>
-              ))}
+              <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
+                Download links are only shown to the account owner. Sign in to your account and open this order to get your downloads.
+              </div>
             </Card>
           )}
 

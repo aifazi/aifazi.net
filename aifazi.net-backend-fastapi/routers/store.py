@@ -24,6 +24,7 @@ FiveM Lua bridge (X-FiveM-Token):
 from __future__ import annotations
 
 import os
+import asyncio
 import logging
 import hmac
 from datetime import datetime, timezone
@@ -367,7 +368,8 @@ async def stripe_webhook(request: Request):
     if event_type == "checkout.session.completed":
         meta = data.get("metadata") or {}
         if meta.get("kind") == "product_order" and meta.get("order_id"):
-            await _mark_order_paid(meta["order_id"], data.get("payment_intent"))
+            await asyncio.to_thread(_mark_order_paid, meta["order_id"], data.get("payment_intent"),
+                                    paid_amount_cents=int(data.get("amount_total") or 0))
         else:
             await _handle_checkout_completed(data)
     elif event_type == "payment_intent.succeeded":
@@ -375,7 +377,8 @@ async def stripe_webhook(request: Request):
         if pi_id:
             res = supabase.table("store_orders").select("id").eq("payment_intent_id", pi_id).limit(1).execute()
             if res.data:
-                await _mark_order_paid(res.data[0]["id"], pi_id)
+                await asyncio.to_thread(_mark_order_paid, res.data[0]["id"], pi_id,
+                                        paid_amount_cents=int(data.get("amount") or 0))
     elif event_type in ("customer.subscription.created", "customer.subscription.updated"):
         await _handle_subscription_upsert(data)
     elif event_type == "customer.subscription.deleted":

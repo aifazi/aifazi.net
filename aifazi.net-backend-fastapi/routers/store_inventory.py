@@ -74,14 +74,46 @@ def set_quant(product_id: str | None, variant_id: str | None, location_id: str, 
 def change_quant(product_id: str | None, variant_id: str | None, location_id: str, delta: int,
                  reason: str = "adjustment", actor: str = "system",
                  ref_type: str | None = None, ref_id: str | None = None, note: str = "") -> None:
-    """Add delta to on-hand at a location. delta < 0 clamps at 0. Writes ledger."""
+    """Add delta to on-hand at a location. delta < 0 clamps at 0. Writes ledger.
+
+    Negative deltas are applied atomically in the DB (UPDATE ... WHERE quantity
+    >= n) so concurrent sales can't oversell past 0 via read-then-write.
+    """
     if not product_id or not location_id or delta == 0:
         return
-    cur = get_quant(product_id, variant_id, location_id)
-    new = max(0, cur + delta)
-    set_quant(product_id, variant_id, location_id, new)
+    if delta < 0:
+        new = _atomic_decrement(product_id, variant_id, location_id, -delta)
+        if new is None:
+            log.warning("stock decrement skipped (insufficient on-hand) product=%s variant=%s qty=%s",
+                        product_id, variant_id, -delta)
+            return
+    else:
+        cur = get_quant(product_id, variant_id, location_id)
+        new = cur + delta
+        set_quant(product_id, variant_id, location_id, new)
     log_stock_change(product_id, delta, reason=reason, actor=actor, ref_type=ref_type,
                      ref_id=ref_id, variant_id=variant_id, note=note)
+
+
+def _atomic_decrement(product_id: str, variant_id: str | None, location_id: str, qty: int) -> int | None:
+    """Atomically decrement a quant row, never below 0. Returns new qty or None."""
+    try:
+        res = supabase.rpc("decrement_quant", {
+            "p_product_id": product_id,
+            "p_variant_id": variant_id,
+            "p_location_id": location_id,
+            "p_qty": qty,
+            "p_min": 0,
+        }).execute()
+        if res.data is None:
+            return None
+        return int(res.data)
+    except Exception as exc:
+        log.warning("atomic decrement failed (falling back to read-write): %s", exc)
+        cur = get_quant(product_id, variant_id, location_id)
+        new = max(0, cur - qty)
+        set_quant(product_id, variant_id, location_id, new)
+        return new
 
 
 def move_quant(product_id: str | None, variant_id: str | None, from_location_id: str,

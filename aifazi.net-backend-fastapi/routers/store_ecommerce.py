@@ -27,8 +27,6 @@ from __future__ import annotations
 import os
 import secrets
 import logging
-import random
-import string
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -88,9 +86,13 @@ def _user_email(user: dict) -> str:
 
 
 def _number(prefix: str) -> str:
-    """Human-friendly sequential-ish number e.g. AFA-102934."""
-    n = random.randint(100000, 999999)
-    return f"{prefix}-{n}"
+    """Human-friendly order number with enough entropy to prevent enumeration.
+
+    Uses 9 random digits (~30 bits) from a CSPRNG — the old 6-digit numbers
+    (~900k combos) let anyone enumerate orders and steal digital downloads.
+    """
+    n = secrets.randbelow(1_000_000_000)
+    return f"{prefix}-{n:09d}"
 
 
 def _product_payload(row: dict, variants=None, deal=None, rating=None) -> dict:
@@ -179,7 +181,7 @@ def _active_deal_for(product_id: str) -> dict | None:
     return None
 
 
-def _resolve_coupon(code: str, subtotal_cents: int, product_ids: list[str]) -> dict | None:
+def _resolve_coupon(code: str, subtotal_cents: int, product_ids: list[str], user_id: str | None = None) -> dict | None:
     """Validate a coupon code and compute the discount. Returns None if invalid."""
     if not code:
         return None
@@ -196,6 +198,18 @@ def _resolve_coupon(code: str, subtotal_cents: int, product_ids: list[str]) -> d
         return None
     if int(c.get("max_uses") or 0) > 0 and int(c.get("used_count") or 0) >= int(c["max_uses"]):
         return None
+    # per_user_limit was never enforced before — count the user's fulfilled
+    # (paid) orders that used this coupon.
+    per_user = int(c.get("per_user_limit") or 0)
+    if per_user > 0 and user_id:
+        cnt = (supabase.table("store_orders")
+               .select("id", count="exact")
+               .eq("coupon_id", c["id"])
+               .eq("user_id", user_id)
+               .in_("status", ["paid", "processing", "shipped", "delivered", "completed"])
+               .execute())
+        if (cnt.count or 0) >= per_user:
+            return None
     if subtotal_cents < int(c.get("min_subtotal_cents") or 0):
         return None
     restricted = [p for p in (c.get("product_ids") or []) if p]
@@ -375,9 +389,9 @@ async def submit_review(slug: str, body: ReviewBody, user: dict = Depends(get_cu
 
 # ── Coupon validation (customer-facing) ───────────────────────────────────────
 @router.get("/coupons/validate")
-async def validate_coupon(code: str, user: dict = Depends(get_current_user)):
-    cart = await get_cart(user)
-    coupon = _resolve_coupon(code, cart["subtotal_cents"], [i["product"]["id"] for i in cart["items"]])
+def validate_coupon(code: str, user: dict = Depends(get_current_user)):
+    cart = get_cart(user)
+    coupon = _resolve_coupon(code, cart["subtotal_cents"], [i["product"]["id"] for i in cart["items"]], user_id=_user_id(user))
     if not coupon:
         raise HTTPException(404, "Invalid or expired coupon code")
     return {
@@ -389,7 +403,7 @@ async def validate_coupon(code: str, user: dict = Depends(get_current_user)):
 
 # ── Cart ───────────────────────────────────────────────────────────────────────
 @router.get("/cart")
-async def get_cart(user: dict = Depends(get_current_user)):
+def get_cart(user: dict = Depends(get_current_user)):
     uid = _user_id(user)
     rows = (supabase.table("store_cart_items")
             .select("*,product_id,store_products(*)")
@@ -443,7 +457,7 @@ class CartItemBody(BaseModel):
 
 
 @router.post("/cart")
-async def add_to_cart(body: CartItemBody, user: dict = Depends(get_current_user)):
+def add_to_cart(body: CartItemBody, user: dict = Depends(get_current_user)):
     uid = _user_id(user)
     if body.quantity < 1:
         raise HTTPException(400, "Quantity must be at least 1")
@@ -481,7 +495,7 @@ async def add_to_cart(body: CartItemBody, user: dict = Depends(get_current_user)
             "user_id": uid, "product_id": body.product_id, "quantity": body.quantity,
             "variant_id": body.variant_id,
         }).execute()
-    return await get_cart(user)
+    return get_cart(user)
 
 
 class CartPatchBody(BaseModel):
@@ -489,7 +503,7 @@ class CartPatchBody(BaseModel):
 
 
 @router.patch("/cart/{item_id}")
-async def update_cart_item(item_id: str, body: CartPatchBody, user: dict = Depends(get_current_user)):
+def update_cart_item(item_id: str, body: CartPatchBody, user: dict = Depends(get_current_user)):
     uid = _user_id(user)
     if body.quantity < 1:
         raise HTTPException(400, "Quantity must be at least 1")
@@ -509,11 +523,11 @@ async def update_cart_item(item_id: str, body: CartPatchBody, user: dict = Depen
         if p.get("track_inventory", True) and body.quantity > int(p.get("stock_qty") or 0):
             raise HTTPException(400, f"Only {p.get('stock_qty')} in stock")
     supabase.table("store_cart_items").update({"quantity": body.quantity, "updated_at": _now()}).eq("id", item_id).execute()
-    return await get_cart(user)
+    return get_cart(user)
 
 
 @router.delete("/cart/{item_id}")
-async def remove_cart_item(item_id: str, user: dict = Depends(get_current_user)):
+def remove_cart_item(item_id: str, user: dict = Depends(get_current_user)):
     uid = _user_id(user)
     res = (supabase.table("store_cart_items")
            .select("id").eq("id", item_id).eq("user_id", uid).limit(1).execute())
@@ -524,7 +538,7 @@ async def remove_cart_item(item_id: str, user: dict = Depends(get_current_user))
 
 
 @router.post("/cart/clear")
-async def clear_cart(user: dict = Depends(get_current_user)):
+def clear_cart(user: dict = Depends(get_current_user)):
     uid = _user_id(user)
     supabase.table("store_cart_items").delete().eq("user_id", uid).execute()
     return {"ok": True}
@@ -543,9 +557,9 @@ class CheckoutBody(BaseModel):
 
 
 @router.post("/checkout/cart")
-async def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_user)):
+def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_user)):
     uid = _user_id(user)
-    cart = await get_cart(user)
+    cart = get_cart(user)
     if cart["count"] == 0:
         raise HTTPException(400, "Cart is empty")
     st = _stripe_client()
@@ -562,7 +576,7 @@ async def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_u
     email = body.customer_email or _user_email(user)
 
     # Coupon discount
-    coupon = _resolve_coupon(body.coupon_code, cart["subtotal_cents"], [i["product"]["id"] for i in cart["items"]])
+    coupon = _resolve_coupon(body.coupon_code, cart["subtotal_cents"], [i["product"]["id"] for i in cart["items"]], user_id=uid)
     discount = coupon["discount_cents"] if coupon else 0
 
     order_no = _number("AFA")
@@ -622,7 +636,10 @@ async def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_u
             metadata={"order_id": order_row["id"], "order_number": order_row["order_number"], "kind": "product_order"},
             success_url=success_url,
             cancel_url=cancel_url,
-            allow_promotion_codes=True,
+            # Discounts go through the in-app coupon system (store_coupons), so
+            # Stripe's checkout promo-code box stays disabled: allowing it lets
+            # customers pay less than the recorded order total.
+            allow_promotion_codes=False,
         )
     except Exception as exc:
         log.error("product checkout create failed: %s", exc)
@@ -741,9 +758,10 @@ async def track_order(order_no: str):
              .select("product_name,quantity,line_total_cents").eq("order_id", o["id"]).order("created_at").execute())
     events = (supabase.table("store_order_events")
               .select("status,note,created_at").eq("order_id", o["id"]).order("created_at").execute())
-    downloads = (supabase.table("store_downloads")
-                 .select("id,product_name,filename,token,downloads_allowed,downloads_used,created_at")
-                 .eq("order_id", o["id"]).order("created_at").execute())
+    # NOTE: download tokens are intentionally NOT returned here. They are only
+    # exposed to the owning user via the authenticated /orders/{order_no} and
+    # /downloads endpoints. Returning them on a public, unauthenticated endpoint
+    # (with guessable order numbers) let anyone steal paid digital goods.
     return {
         "order_number": o.get("order_number"),
         "status": o.get("status"),
@@ -754,7 +772,6 @@ async def track_order(order_no: str):
         "tracking_url": o.get("tracking_url"),
         "items": items.data or [],
         "events": events.data or [],
-        "downloads": downloads.data or [],
     }
 
 
@@ -918,7 +935,8 @@ async def product_order_webhook(request: Request):
         meta = session.get("metadata") or {}
         if meta.get("kind") == "product_order" and meta.get("order_id"):
             order_id = meta["order_id"]
-            await _mark_order_paid(order_id, session.get("payment_intent"))
+            await asyncio.to_thread(_mark_order_paid, order_id, session.get("payment_intent"),
+                                    paid_amount_cents=int(session.get("amount_total") or 0))
     elif event.get("type") == "payment_intent.succeeded":
         pi = event.get("data", {}).get("object", {})
         res = supabase.table("store_orders").select("id").eq("payment_intent_id", pi.get("id")).limit(1).execute()
@@ -926,22 +944,27 @@ async def product_order_webhook(request: Request):
             charges = (pi.get("charges") or {}).get("data") or []
             outcome = (charges[0].get("outcome") or {}) if charges else {}
             pm = (charges[0].get("payment_method_details") or {}).get("type") if charges else None
-            await _mark_order_paid(res.data[0]["id"], pi.get("id"),
-                                   payment_method=pm,
-                                   risk_level=outcome.get("risk_level"),
-                                   risk_score=outcome.get("risk_score"))
+            await asyncio.to_thread(_mark_order_paid, res.data[0]["id"], pi.get("id"),
+                                    payment_method=pm,
+                                    risk_level=outcome.get("risk_level"),
+                                    risk_score=outcome.get("risk_score"),
+                                    paid_amount_cents=int(pi.get("amount") or 0))
 
     return {"received": True}
 
 
-async def _mark_order_paid(order_id: str, payment_intent_id: str | None,
-                           payment_method: str | None = None,
-                           risk_level: str | None = None,
-                           risk_score: int | None = None) -> None:
+def _mark_order_paid(order_id: str, payment_intent_id: str | None,
+                     payment_method: str | None = None,
+                     risk_level: str | None = None,
+                     risk_score: int | None = None,
+                     paid_amount_cents: int | None = None) -> None:
+    """Fulfil a paid order. Pure synchronous work (many Supabase round-trips) —
+    callers should run it via ``asyncio.to_thread`` so webhook handlers don't
+    block the event loop on DB I/O."""
     now = _now()
     try:
         res = supabase.table("store_orders").select(
-            "id,status,total_cents,subtotal_cents,discount_cents,tax_cents,currency,user_id,order_number,customer_name,customer_email,billing_address"
+            "id,status,total_cents,subtotal_cents,discount_cents,tax_cents,currency,user_id,order_number,customer_name,customer_email,billing_address,coupon_id"
         ).eq("id", order_id).limit(1).execute()
     except APIError:
         return
@@ -949,6 +972,21 @@ async def _mark_order_paid(order_id: str, payment_intent_id: str | None,
         return
     order = res.data[0]
     if order.get("status") == "paid":
+        return
+    # Amount reconciliation: never fulfil an order for less than it recorded.
+    # With allow_promotion_codes disabled the charged amount should always equal
+    # total_cents; a mismatch means a price bug or an attacker-influenced charge.
+    if paid_amount_cents is not None and int(paid_amount_cents) != int(order.get("total_cents") or 0):
+        log.warning("order %s paid amount mismatch: charged=%s recorded=%s — NOT fulfilling",
+                    order.get("order_number"), paid_amount_cents, order.get("total_cents"))
+        try:
+            supabase.table("store_order_events").insert({
+                "order_id": order_id, "status": "paid",
+                "note": f"Payment amount mismatch (charged {paid_amount_cents} vs recorded {order.get('total_cents')}) — held for review",
+                "actor": "webhook",
+            }).execute()
+        except Exception:
+            pass
         return
     patch: dict = {
         "status": "paid", "paid_at": now, "payment_intent_id": payment_intent_id,
@@ -960,7 +998,13 @@ async def _mark_order_paid(order_id: str, payment_intent_id: str | None,
         patch["radar_risk_level"] = risk_level
     if risk_score is not None:
         patch["radar_risk_score"] = risk_score
-    supabase.table("store_orders").update(patch).eq("id", order_id).execute()
+    # Atomic claim: checkout.session.completed AND payment_intent.succeeded both
+    # fire, so this must be idempotent. Only the caller that flips pending->paid
+    # proceeds with downloads/inventory/transactions; the loser returns early.
+    claimed = supabase.table("store_orders").update(patch).eq("id", order_id).neq("status", "paid").execute()
+    if not claimed.data:
+        log.info("order %s already paid (concurrent webhook) — skipping fulfilment", order_id)
+        return
 
     # Status timeline
     try:
@@ -1016,19 +1060,16 @@ async def _mark_order_paid(order_id: str, payment_intent_id: str | None,
             except Exception as exc:
                 log.warning("digital download insert failed for %s: %s", pid, exc)
 
-    # Increment coupon usage
+    # Increment coupon usage — atomic RPC respects max_uses (read-then-write
+    # here let concurrent orders overshoot the limit).
     if order.get("coupon_id"):
         try:
-            cup = supabase.table("store_coupons").select("used_count").eq("id", order["coupon_id"]).limit(1).execute()
-            if cup.data:
-                supabase.table("store_coupons").update({
-                    "used_count": int((cup.data[0] or {}).get("used_count") or 0) + 1,
-                    "updated_at": now,
-                }).eq("id", order["coupon_id"]).execute()
+            supabase.rpc("increment_coupon_usage", {"p_coupon_id": order["coupon_id"]}).execute()
         except Exception as exc:
             log.warning("coupon usage increment failed: %s", exc)
 
-    # Record transaction
+    # Record transaction (idempotency: the atomic status flip above guarantees
+    # this runs once; the payment-intent guard is belt-and-suspenders).
     tx: dict = {
         "order_id": order_id,
         "user_id": order.get("user_id"),
@@ -1043,7 +1084,10 @@ async def _mark_order_paid(order_id: str, payment_intent_id: str | None,
         tx["risk_level"] = risk_level
     if risk_score is not None:
         tx["risk_score"] = risk_score
-    supabase.table("store_transactions").insert(tx).execute()
+    try:
+        supabase.table("store_transactions").insert(tx).execute()
+    except Exception as exc:
+        log.warning("transaction insert failed (possible duplicate): %s", exc)
 
     # Auto-create invoice for paid order
     existing = supabase.table("store_invoices").select("id").eq("order_id", order_id).limit(1).execute()
