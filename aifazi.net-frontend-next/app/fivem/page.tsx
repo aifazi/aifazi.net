@@ -6,7 +6,7 @@ import { useForum } from '@/context/ForumContext'
 
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', P = '#a855f7'
 
-function ServerIP({ ip }) {
+function ServerIP({ ip }: { ip?: string }) {
   const [copied, setCopied] = useState(false)
   const copy = useCallback(() => {
     if (!ip) return
@@ -30,7 +30,7 @@ function ServerIP({ ip }) {
   )
 }
 
-function StatBar({ label, value, max, color }) {
+function StatBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   const pct = Math.min(100, (value / max) * 100)
   return (
     <div>
@@ -47,7 +47,7 @@ function StatBar({ label, value, max, color }) {
 
 export default function FiveMLanding() {
   const { user } = useForum()
-  const [status, setStatus] = useState(null)
+  const [status, setStatus] = useState<Record<string, any> | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
