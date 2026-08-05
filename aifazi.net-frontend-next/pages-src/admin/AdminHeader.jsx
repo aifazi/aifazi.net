@@ -224,11 +224,12 @@ function NotifDropdown({ alerts, onDismiss, onClearAll }) {
 
 /* ── Breadcrumb ── */
 const PAGE_LABELS = {
-  home:'Dashboard', content:'Content Hub', posts:'Posts', editor:'New Post', media:'Media', themes:'Themes',
-  framework:'Framework', communications:'Communications', contacts:'Contacts', staff:'Staff', forum:'Forum',
+  home:'Dashboard', content:'Content Hub', posts:'Posts', editor:'New Post', media:'Media',
+  themes:'Theme Library', theme:'Theme Library', framework:'Theme Library',
+  communications:'Communications', contacts:'Contacts', staff:'Staff', forum:'Forum',
   chat:'Chat', newsletter:'Newsletter', db:'Database', delivery:'Mail & CDN', mail:'Mail',
   cdn:'CDN', backup:'Backup', audit:'Audit Log', settings:'Settings',
-  siteSettings:'Settings', announcements:'Announcements',   helpdesk:'Help Desk', themes:'Theme Library', theme:'Theme Library', framework:'Theme Library', announcements:'Theme Library', settings:'Theme Library', siteSettings:'Theme Library',
+  siteSettings:'Settings', announcements:'Announcements', helpdesk:'Help Desk',
   stats:'Analytics', changelog:'Changelog',
 }
 

@@ -92,7 +92,7 @@ function HeaderPreviewSVG({ id }) {
         <rect x="0" y="43" width="160" height="1" fill="#e8e8e8"/>
         <text x="12" y="26" fontFamily="monospace" fontSize="8" fill="#111" fontWeight="700" letterSpacing="2">TANVIR</text>
         {['About','Work','Blog','Contact'].map((l,i)=><text key={l} x={68+i*22} y="26" fontFamily="monospace" fontSize="5" fill="#888" letterSpacing="1">{l}</text>)}
-        <text x="150" y="26" fontFamily="monospace" fontSize="8" fill="#111">?</text>
+        <text x="150" y="26" fontFamily="monospace" fontSize="8" fill="#111">☰</text>
       </svg>
     ),
     'neon-band': (

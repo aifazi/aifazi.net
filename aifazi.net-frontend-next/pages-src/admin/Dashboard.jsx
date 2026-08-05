@@ -83,6 +83,7 @@ const NAV_PERMISSION = {
   contacts:'community.contacts', staff:'community.staff', forum:'community.forum', chat:'community.chat', newsletter:'community.newsletter',
   db:'system.db', delivery:['system.mail', 'system.cdn'], mail:'system.mail', cdn:'system.cdn',
   helpdesk:'support.helpdesk', store:'store', fivem:'fivem.status', changelog:'changelog',
+  stats:'system.db', audit:'system.audit', backup:'system.backup',
 }
 function canViewNavItem(item) {
   if (checkIsAdmin()) return true
@@ -399,7 +400,11 @@ function Dashboard({ onLogout }) {
     await api.delete(`/blog/${id}`); setPosts(p => p.filter(x => x.id !== id)); toast.success('Post deleted', { title: 'Deleted' })
   }
 
-  const handleDeleteContact = async id => { await api.delete(`/contact/${id}`); setContacts(c => c.filter(x => x.id !== id)) }
+  const handleDeleteContact = async id => {
+    const ok = await confirm({ title: 'Delete Message', message: 'This contact message will be permanently deleted.', variant: 'danger', confirmLabel: 'DELETE' })
+    if (!ok) return
+    await api.delete(`/contact/${id}`); setContacts(c => c.filter(x => x.id !== id)); toast.success('Message deleted', { title: 'Deleted' })
+  }
   const togglePublish = async post => { await api.put(`/blog/${post.id}`, { ...post, published: !post.published }); fetchPosts() }
   const formatDate = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
@@ -435,6 +440,9 @@ function Dashboard({ onLogout }) {
     { key: 'staff',        label: 'Staff',         group: 'COMMUNITY',  icon: '👥',  badge: null },
     { key: 'chat',         label: 'Chat',          group: 'COMMUNITY',  icon: '🗨️',  badge: null },
     { key: 'db',           label: 'DB Monitor',    group: 'SYSTEM',     icon: '🗄️',     badge: null },
+    { key: 'stats',        label: 'Analytics',     group: 'SYSTEM',     icon: '📈', badge: null },
+    { key: 'audit',        label: 'Audit Log',     group: 'SYSTEM',     icon: '🛡️', badge: null },
+    { key: 'backup',       label: 'Backup & Export', group: 'SYSTEM',   icon: '💾', badge: null },
     { key: 'delivery',      label: 'Mail & CDN',    group: 'SYSTEM',     icon: '📨',  badge: null, aliases: ['mail', 'cdn'] },
 
     { key: 'helpdesk',     label: 'Help Desk',     group: 'SUPPORT',    icon: '🎫', badge: null },
@@ -529,7 +537,7 @@ function Dashboard({ onLogout }) {
           {sessionWarning && (
             <div style={{ marginBottom: 16, padding: '10px 16px', background: '#ffd70010', border: '1px solid #ffd70033', borderLeft: '3px solid #ffd700', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ffd700' }}> Your session expires in less than 5 minutes. Save your work and re-login.</span>
-              <button onClick={() => setSessionWarning(false)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14 }}></button>
+              <button onClick={() => setSessionWarning(false)} aria-label="Dismiss session warning" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
           )}
 
@@ -602,7 +610,7 @@ function Dashboard({ onLogout }) {
                     <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px', borderRadius: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>SYSTEM STATUS</div>
-                        <button onClick={fetchDashStats} title="Refresh" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 12, padding: 0 }}></button>
+                        <button onClick={fetchDashStats} title="Refresh" aria-label="Refresh stats" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 12, padding: 0 }}>↻</button>
                       </div>
                       {Object.entries(
                         Object.keys(healthStatus).length > 0
@@ -697,7 +705,7 @@ function Dashboard({ onLogout }) {
                     style={{ ...S.input, fontSize: 12, padding: '9px 12px 9px 32px' }}
                   />
                   <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.4 }}>[S]</span>
-                  {postSearch && <button onClick={() => setPostSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}></button>}
+                  {postSearch && <button onClick={() => setPostSearch('')} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>✕</button>}
                 </div>
                 <div style={{ display: 'flex', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
                   {[['all','All'],['live','Live'],['draft','Draft']].map(([v, l]) => (
@@ -1134,7 +1142,9 @@ function Dashboard({ onLogout }) {
         </main>
 
         {/* Full-screen panels */}
-        {(view === 'db' || view === 'audit') && adminUser && <DBMonitor />}
+        {(view === 'db' || view === 'audit' || view === 'backup') && adminUser && (
+        <DBMonitor initialTab={view === 'backup' ? 'backup' : view === 'audit' ? 'audit' : 'overview'} />
+      )}
         {view === 'forum' && (
           <div style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
             <ForumAdmin embedded />
@@ -1161,7 +1171,7 @@ function Dashboard({ onLogout }) {
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 2 }}>KEYBOARD SHORTCUTS</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700 }}>Quick Navigation</div>
               </div>
-              <button onClick={() => setShowShortcuts(false)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18 }}></button>
+              <button onClick={() => setShowShortcuts(false)} aria-label="Close shortcuts" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18 }}>✕</button>
             </div>
             <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 24px' }}>
               {[

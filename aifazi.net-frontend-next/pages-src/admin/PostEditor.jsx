@@ -347,9 +347,9 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
           <button onClick={() => fileInputRef.current.click()} disabled={uploading} style={{ ...S.btn(), fontSize: 10, padding: '8px 14px' }}>
             {uploading ? 'UPLOADING...' : '+ UPLOAD'}
           </button>
-          {/* Only show ? close button in modal mode */}
+          {/* Only show ✕ close button in modal mode */}
           {!inline && onClose && (
-            <button onClick={onClose} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '8px 12px' }}>?</button>
+            <button onClick={onClose} aria-label="Close media library" style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '8px 12px' }}>✕</button>
           )}
         </div>
         <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.zip,.js,.py,.sh,.html,.css,.json,.md,.txt" onChange={handleUpload} style={{ display: 'none' }} />
@@ -382,7 +382,7 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.original_name}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{formatSize(file.size)}</span>
-                    <button onClick={e => { e.stopPropagation(); handleDelete(file.id) }} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>?</button>
+                    <button onClick={e => { e.stopPropagation(); handleDelete(file.id) }} aria-label={`Delete ${file.original_name}`} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>🗑</button>
                   </div>
                 </div>
               </div>

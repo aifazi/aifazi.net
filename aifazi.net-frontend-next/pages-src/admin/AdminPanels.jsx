@@ -1328,8 +1328,8 @@ function NewsletterPanel() {
                   {s.createdAt && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>Joined {new Date(s.createdAt).toLocaleDateString()}</div>}
                 </div>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, padding: '3px 8px', background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.2)', color: 'var(--green)', flexShrink: 0 }}>{(s.status || 'ACTIVE').toUpperCase()}</span>
-                <a href={`mailto:${s.email}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid rgba(0,212,255,0.3)', color: 'var(--cyan)', textDecoration: 'none', flexShrink: 0 }}>🗑️</a>
-                <button onClick={() => handleDelete(s.email)} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', cursor: 'pointer', flexShrink: 0 }}>🗑️</button>
+                <a href={`mailto:${s.email}`} title={`Email ${s.email}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid rgba(0,212,255,0.3)', color: 'var(--cyan)', textDecoration: 'none', flexShrink: 0 }}>✉️</a>
+                <button onClick={() => handleDelete(s.email)} aria-label={`Delete ${s.email}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', cursor: 'pointer', flexShrink: 0 }}>🗑️</button>
               </div>
             ))}
           </div>

@@ -226,6 +226,7 @@ function DbOverview() {
 function BackupTab() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [statsError, setStatsError] = useState('')
   const [downloading, setDownloading] = useState(false)
   const [downloadingJson, setDownloadingJson] = useState(false)
   const notify = useNotify()
@@ -236,9 +237,20 @@ function BackupTab() {
     data: false,
   })
 
-  useEffect(() => {
-    api.get('/admin/backup/stats').then(r => setStats(r.data)).catch(() => {}).finally(() => setLoading(false))
+  const loadStats = useCallback(async () => {
+    setLoading(true)
+    setStatsError('')
+    try {
+      const r = await api.get('/admin/backup/stats')
+      setStats(r.data)
+    } catch (e) {
+      setStatsError(e?.response?.data?.error || e?.message || 'Request failed')
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => { loadStats() }, [loadStats])
 
   const downloadSql = async () => {
     if (!options.schema && !options.data) {
@@ -311,7 +323,16 @@ function BackupTab() {
               </div>
             )}
           </>
-        ) : <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--muted)' }}>Could not load stats.</div>}
+        ) : <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--muted)', textAlign:'center', padding:16 }}>
+          {statsError ? (
+            <>
+              <div style={{ color:'var(--red,#ff4757)', marginBottom:12 }}>Could not load stats{statsError ? ` — ${statsError}` : ''}.</div>
+              <button onClick={loadStats} style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, letterSpacing:1, padding:'8px 18px', background:'var(--green)', color:'#000', border:'none', cursor:'pointer', fontWeight:700 }}>
+                ↻ RETRY
+              </button>
+            </>
+          ) : <div>Could not load stats.</div>}
+        </div>}
       </div>
 
       {/* SQL Export checklist */}
@@ -403,8 +424,8 @@ function BackupTab() {
   )
 }
 
-export default function DBMonitor() {
-  const [activeTab, setActiveTab] = useState('overview')
+export default function DBMonitor({ initialTab = 'overview' }) {
+  const [activeTab, setActiveTab] = useState(initialTab)
   const token = getToken()
   const notify = useNotify()
   const toast = { add: (msg, type) => { if (type === 'error') notify.error(msg); else notify.success(msg) }, toasts: [], dismiss: () => {} }

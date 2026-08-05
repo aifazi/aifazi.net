@@ -103,8 +103,7 @@ function VideoPlayer({ url }) {
       {/* Autoplay toggle */}
       <button onClick={() => setAutoplay(a => !a)}
         style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 10px', background: autoplay ? 'rgba(0,255,136,0.15)' : 'var(--bg3)', border: `1px solid ${autoplay ? 'rgba(0,255,136,0.4)' : 'var(--border)'}`, color: autoplay ? 'var(--green)' : 'var(--muted)', borderRadius: 5, cursor: 'pointer' }}>
-        ? AUTO {autoplay ? 'ON' : 'OFF'}
-      </button>
+        ▶ AUTO {autoplay ? 'ON' : 'OFF'}      </button>
       {/* Mute toggle (embed) */}
       {isEmbed && (
         <button onClick={() => setMuted(m => !m)}
@@ -157,7 +156,7 @@ function VideoPlayer({ url }) {
         {!playing && (
           <div onClick={togglePlay} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(0,0,0,0.35)' }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,255,136,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px rgba(0,255,136,0.5)' }}>
-              <span style={{ color: '#000', fontSize: 22, marginLeft: 4 }}>?</span>
+              <span role="img" aria-label="Play" style={{ color: '#000', fontSize: 22, marginLeft: 4 }}>▶</span>
             </div>
           </div>
         )}
@@ -173,11 +172,11 @@ function VideoPlayer({ url }) {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={togglePlay} style={{ ...btnStyle, width: 32, height: 32, fontSize: 13 }}>{playing ? '?' : '?'}</button>
-            <button onClick={() => skip(-10)} style={{ ...btnStyle, width: 28, height: 28, fontSize: 10 }} title="-10s">?</button>
-            <button onClick={() => skip(10)} style={{ ...btnStyle, width: 28, height: 28, fontSize: 10 }} title="+10s">?</button>
-            <button onClick={toggleMute} style={{ ...btnStyle, width: 28, height: 28, fontSize: 13 }}>
-              {muted || volume === 0 ? '○' : volume < 0.5 ? '○' : '○'}
+            <button onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'} style={{ ...btnStyle, width: 32, height: 32, fontSize: 13 }}>{playing ? '⏸' : '▶'}</button>
+            <button onClick={() => skip(-10)} aria-label="Rewind 10 seconds" style={{ ...btnStyle, width: 28, height: 28, fontSize: 10 }} title="-10s">⏪</button>
+            <button onClick={() => skip(10)} aria-label="Forward 10 seconds" style={{ ...btnStyle, width: 28, height: 28, fontSize: 10 }} title="+10s">⏩</button>
+            <button onClick={toggleMute} aria-label={muted || volume === 0 ? 'Unmute' : 'Mute'} style={{ ...btnStyle, width: 28, height: 28, fontSize: 13 }}>
+              {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
             </button>
             <Slider min={0} max={1} step={0.05} value={muted ? 0 : volume} onChange={onVolumeChange}
               style={{ width: 60 }} />
@@ -192,10 +191,10 @@ function VideoPlayer({ url }) {
             </div>
             <button onClick={() => setLoop(l => !l)} title={loop ? 'Loop: On' : 'Loop: Off'}
               style={{ ...btnStyle, width: 28, height: 28, fontSize: 12, opacity: loop ? 1 : 0.5 }}>🔁</button>
-            <a href={url} download target="_blank" rel="noreferrer"
-              style={{ ...btnStyle, width: 28, height: 28, fontSize: 12, textDecoration: 'none' }} title="Download">?</a>
-            <button onClick={toggleFullscreen} style={{ ...btnStyle, width: 28, height: 28, fontSize: 13 }}>
-              {isFullscreen ? '?' : '?'}
+            <a href={url} download target="_blank" rel="noreferrer" aria-label="Download video"
+              style={{ ...btnStyle, width: 28, height: 28, fontSize: 12, textDecoration: 'none' }} title="Download">⬇</a>
+            <button onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'} style={{ ...btnStyle, width: 28, height: 28, fontSize: 13 }}>
+              {isFullscreen ? '⤢' : '⛶'}
             </button>
           </div>
         </div>

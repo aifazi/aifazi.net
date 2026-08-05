@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
+import { useDialog } from '../../components/Dialog'
 import { PageHeader } from './shared'
 
 const G   = '#00FF88'
@@ -143,6 +144,7 @@ const EMPTY_PRODUCT = {
 
 export function ProductsTab({ categories, onOpenVariants }) {
   const toast = useToast()
+  const { confirm } = useDialog()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)      // null = modal closed
@@ -181,7 +183,7 @@ export function ProductsTab({ categories, onOpenVariants }) {
   }
 
   const remove = async (p) => {
-    if (!window.confirm(`Delete ${p.name}?`)) return
+    const ok = await confirm({ title: 'Delete Product', message: `Delete ${p.name}? This cannot be undone.`, variant: 'danger', confirmLabel: 'DELETE' }); if (!ok) return
     try { await api.delete(`/store/admin/products/${p.id}`); toast.success('Product deleted'); load() }
     catch (e) { toast.error(e.response?.data?.error || 'Delete failed', { title: 'Error' }) }
   }
@@ -359,6 +361,7 @@ const EMPTY_CAT = { slug: '', name: '', icon: '🛒', description: '', scope: 'a
 
 export function CategoriesTab() {
   const toast = useToast()
+  const { confirm } = useDialog()
   const [cats, setCats] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
@@ -385,7 +388,7 @@ export function CategoriesTab() {
   }
 
   const remove = async (c) => {
-    if (!window.confirm(`Delete ${c.name}? Products in it will lose their category.`)) return
+    const ok = await confirm({ title: 'Delete Category', message: `Delete ${c.name}? Products in it will lose their category.`, variant: 'danger', confirmLabel: 'DELETE' }); if (!ok) return
     try { await api.delete(`/store/admin/categories/${c.id}`); toast.success('Category deleted'); load() }
     catch (e) { toast.error(e.response?.data?.error || 'Delete failed', { title: 'Error' }) }
   }
@@ -587,6 +590,7 @@ export function OrdersTab() {
 // ── Invoices tab ───────────────────────────────────────────────────────────────
 export function InvoicesTab() {
   const toast = useToast()
+  const { confirm } = useDialog()
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -604,7 +608,7 @@ export function InvoicesTab() {
   }
 
   const remove = async (inv) => {
-    if (!window.confirm(`Delete invoice ${inv.invoice_number}?`)) return
+    const ok = await confirm({ title: 'Delete Invoice', message: `Delete invoice ${inv.invoice_number}?`, variant: 'danger', confirmLabel: 'DELETE' }); if (!ok) return
     try { await api.delete(`/store/admin/invoices/${inv.id}`); toast.success('Invoice deleted'); load() }
     catch (e) { toast.error(e.response?.data?.error || 'Delete failed', { title: 'Error' }) }
   }
@@ -696,6 +700,7 @@ const EMPTY_PLAN = {
 
 export function PlansTab({ categories }) {
   const toast = useToast()
+  const { confirm } = useDialog()
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
@@ -741,7 +746,7 @@ export function PlansTab({ categories }) {
   }
 
   const remove = async (p) => {
-    if (!window.confirm(`Delete plan ${p.name}?`)) return
+    const ok = await confirm({ title: 'Delete Plan', message: `Delete plan ${p.name}?`, variant: 'danger', confirmLabel: 'DELETE' }); if (!ok) return
     try { await api.delete(`/store/admin/plans/${p.id}`); toast.success('Plan deleted'); load() }
     catch (e) { toast.error(e.response?.data?.error || 'Delete failed', { title: 'Error' }) }
   }

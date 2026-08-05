@@ -1102,7 +1102,7 @@ function ThemeLibrary() {
                 onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
               <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.4 }}>⭐</span>
-              {themeSearch && <button onClick={() => setThemeSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>?</button>}
+              {themeSearch && <button onClick={() => setThemeSearch('')} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>✕</button>}
             </div>
             <button onClick={randomTheme} title="Pick a random theme" style={{
               fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '8px 14px',
@@ -1110,7 +1110,7 @@ function ThemeLibrary() {
               color: '#c084fc', cursor: 'pointer', borderRadius: 6, transition: 'all 0.15s', flexShrink: 0,
             }}>🎲 RANDOM</button>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1, flexShrink: 0 }}>
-              ? ? navigate  <kbd style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '1px 5px', borderRadius: 3 }}>?</kbd> apply
+              ⏎ navigate  <kbd style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '1px 5px', borderRadius: 3 }}>↵</kbd> apply
             </div>
           </div>
 

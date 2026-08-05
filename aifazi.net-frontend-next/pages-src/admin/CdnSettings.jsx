@@ -145,7 +145,7 @@ function CdnSettings() {
         {isMaskedVal ? (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div style={{ ...T.inp, flex: 1, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#00ff88', fontSize: 10 }}>?</span>
+              <span style={{ color: '#00ff88', fontSize: 10 }}>✓</span>
               <span style={{ letterSpacing: 2 }}>{val}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', marginLeft: 4 }}>SAVED</span>
             </div>
@@ -579,7 +579,7 @@ function CdnSettings() {
               </ol>
               <button onClick={() => { set('provider', key); setActiveSection('credentials') }}
                 style={{ ...T.btn('ghost'), marginTop: 16, fontSize: 9, padding: '8px 16px' }}>
-                {cfg.provider === key ? '✅ ACTIVE  GO TO CREDENTIALS' : `SELECT ${title.split(' ')[0].toUpperCase()} ?`}
+                {cfg.provider === key ? '✅ ACTIVE  GO TO CREDENTIALS' : `SELECT ${title.split(' ')[0].toUpperCase()} →`}
               </button>
             </div>
           ))}

@@ -2,51 +2,15 @@
 import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useNavigate } from '@/lib/router-compat'
-import api, { isAdmin as checkIsAdmin, getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess } from '@/lib/api'
-import { useIsMobile, PanelErrorBoundary } from './admin/shared'
+import api, { getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess } from '@/lib/api'
 
-// Lazy-load the moderator portal panels (ForumAdmin / AdminChat are large).
-const ForumAdmin = dynamic(() => import('./ForumAdmin').then(m => m.default || m), { ssr: false })
-const AdminChat = dynamic(() => import('./chat/AdminChat').then(m => m.default || m), { ssr: false })
 // The dashboard shell (and all its sub-panels) only loads once staff access is verified.
 const Dashboard = dynamic(() => import('./admin/Dashboard').then(m => m.default || m), { ssr: false })
-
-function ModeratorPortal({ onLogout }) {
-  const isMobile = useIsMobile()
-  const username = getUsername()
-  const [view, setView] = useState('forum')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  const navItems = [
-    { key: 'forum', label: '💬 Forum Admin' },
-    { key: 'chat',  label: '🗨️ Chat'        },
-  ]
-
-  return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', zIndex: 10 }}>
-      {isMobile && (
-        <div style={{ background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', height: 44, flexShrink: 0 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase' }}>
-            {navItems.find(n => n.key === view)?.label || 'MOD'}
-          </span>
-        </div>
-      )}
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {view === 'forum' && <div style={{ flex: 1, overflowY: 'auto' }}><ForumAdmin embedded /></div>}
-        {view === 'chat' && <div style={{ flex: 1, minWidth: 0, display: 'flex', minHeight: 0, overflow: 'hidden', alignItems: 'stretch', height: '100%' }}><PanelErrorBoundary label="Chat"><AdminChat embedded /></PanelErrorBoundary></div>}
-      </div>
-    </div>
-  )
-}
-
-
-// --- Mail Settings -------------------------------------------------------------
 
 export default function Admin() {
   const navigate  = useNavigate()
   const [authed,   setAuthed]   = useState(false)
   const [checking, setChecking] = useState(true)
-  const [accessDenied, setAccessDenied] = useState(false)
 
   useEffect(() => {
     const verify = async () => {
@@ -77,7 +41,7 @@ export default function Admin() {
   if (checking) return <div className="page-container"><div className="loader" /></div>
 
   // -- Unauthorized access page -----------------------------------------------
-  if (accessDenied || (!authed && !checking)) {
+  if (!authed && !checking) {
     const username = getUsername()
     const role = getRole()
     return (
@@ -96,7 +60,7 @@ export default function Admin() {
         </p>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
           <button onClick={() => navigate('/', { replace: true })} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '12px 24px', background: 'var(--green)', color: '#000', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
-            ? HOME
+            ← HOME
           </button>
           <button onClick={handleLogout} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '12px 24px', background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', cursor: 'pointer' }}>
             LOGOUT
