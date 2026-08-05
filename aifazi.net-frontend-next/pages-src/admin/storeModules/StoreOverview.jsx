@@ -3,8 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../../components/Toast'
 import { useIsMobile } from '../shared'
+import { StatCard, MONO } from '../ui'
 
-const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = 'var(--green)'
 const C = 'var(--cyan)'
 const R = 'var(--red)'
@@ -16,19 +16,6 @@ const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'sho
 const STATUS_COLORS = {
   pending: Y, paid: G, processing: C, shipped: 'var(--purple)',
   delivered: G, cancelled: R, refunded: O,
-}
-
-function Stat({ label, value, color = 'var(--text)', sub, onClick }) {
-  return (
-    <div onClick={onClick} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px', cursor: onClick ? 'pointer' : 'default', transition: 'border-color 0.2s, transform 0.15s', position: 'relative', overflow: 'hidden' }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.transform = 'translateY(-2px)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${color}, transparent)` }} />
-      <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2.5, color: 'var(--muted)', marginBottom: 8 }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, color, lineHeight: 1, marginBottom: 6 }}>{value}</div>
-      {sub && <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{sub}</div>}
-    </div>
-  )
 }
 
 export default function StoreOverview({ onNavigate }) {
@@ -53,10 +40,10 @@ export default function StoreOverview({ onNavigate }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Stat grid */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
-        <Stat label="NET REVENUE" value={money(d.net_revenue_cents)} color={G} sub={`${money(d.revenue_cents)} sales − ${money(d.refund_cents)} refunds`} />
-        <Stat label="PAID ORDERS" value={d.paid_orders_count} color={C} sub={`${d.orders_count} total placed`} />
-        <Stat label="PRODUCTS" value={d.products_count} color="var(--text)" sub={`${d.low_stock_count} low stock`} onClick={() => onNavigate?.('products')} />
-        <Stat label="PENDING QUOTES" value={d.pending_quotes_count} color={Y} sub="awaiting reply" onClick={() => onNavigate?.('quotes')} />
+        <StatCard label="NET REVENUE" value={money(d.net_revenue_cents)} color={G} sub={`${money(d.revenue_cents)} sales − ${money(d.refund_cents)} refunds`} />
+        <StatCard label="PAID ORDERS" value={d.paid_orders_count} color={C} sub={`${d.orders_count} total placed`} />
+        <StatCard label="PRODUCTS" value={d.products_count} color="var(--text)" sub={`${d.low_stock_count} low stock`} onClick={() => onNavigate?.('products')} />
+        <StatCard label="PENDING QUOTES" value={d.pending_quotes_count} color={Y} sub="awaiting reply" onClick={() => onNavigate?.('quotes')} />
       </div>
 
       {/* Revenue chart */}

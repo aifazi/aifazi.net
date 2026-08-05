@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import DOMPurify from 'isomorphic-dompurify'
 import api from '@/lib/api'
 import { Checkbox } from '../../core/ui.jsx'
+import { Btn as KitBtn, Badge as KitBadge } from './ui'
 
 // H25 — Sanitize every email HTML body before rendering via dangerouslySetInnerHTML.
 // The backend mail renderer interpolates user-controlled fields (ticket subject,
@@ -35,27 +36,11 @@ const STATUS_CFG = {
 
 function Badge({ status }) {
   const s = STATUS_CFG[status] || STATUS_CFG.pending
-  return (
-    <span style={{
-      fontFamily:C.mono, fontSize:9, letterSpacing:1.5, padding:'2px 8px',
-      background:s.bg, border:`1px solid ${s.border}`, color:s.color,
-      borderRadius:4, whiteSpace:'nowrap',
-    }}>{s.label}</span>
-  )
+  return <KitBadge color={s.color}>{s.label}</KitBadge>
 }
 
-function Btn({ label, color='#22d3ee', onClick, disabled, small }) {
-  return (
-    <button onClick={onClick} disabled={disabled} style={{
-      fontFamily:C.mono, fontSize:small?9:10, letterSpacing:1.5,
-      padding: small ? '4px 10px' : '8px 16px',
-      background: disabled ? 'rgba(255,255,255,0.03)' : `${color}18`,
-      border:`1px solid ${disabled ? C.border : color+'44'}`,
-      color: disabled ? C.muted : color,
-      cursor: disabled ? 'not-allowed' : 'pointer', borderRadius:4,
-      transition:'all 0.15s', whiteSpace:'nowrap',
-    }}>{label}</button>
-  )
+function Btn({ label, color='#22d3ee', onClick, disabled, small, ...rest }) {
+  return <KitBtn variant="outline" color={color} onClick={onClick} disabled={disabled} small={small} {...rest}>{label}</KitBtn>
 }
 
 function SkeletonRow() {

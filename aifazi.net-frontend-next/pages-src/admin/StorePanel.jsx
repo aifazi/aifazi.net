@@ -8,13 +8,13 @@ import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { PageHeader } from './shared'
+import { Btn as KitBtn, Badge as KitBadge, RelTime as KitRelTime, MONO } from './ui'
 
 const G   = '#00FF88'
 const C   = '#00D4FF'
 const R   = '#ff4757'
 const Y   = '#facc15'
 const O   = '#ff6b35'
-const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 
 const STATUS_COLORS = {
   pending: Y, paid: G, processing: C, shipped: '#a78bfa',
@@ -23,34 +23,21 @@ const STATUS_COLORS = {
   converted: '#a78bfa', expired: 'var(--muted)',
 }
 
-function Badge({ color, children }) {
-  return <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontFamily: MONO,
-    background: `${color}18`, border: `1px solid ${color}40`, color,
-    letterSpacing: .5, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{children}</span>
+function Badge({ color, children, style }) {
+  return <KitBadge color={color} style={{ textTransform: 'uppercase', letterSpacing: 0.5, ...(style || {}) }}>{children}</KitBadge>
 }
 
 function StatusBadge({ status }) {
   return <Badge color={STATUS_COLORS[status] || 'var(--muted)'}>{status}</Badge>
 }
 
-function Btn({ onClick, color = G, children, disabled, danger, full, small }) {
-  const c = danger ? R : color
-  return <button onClick={onClick} disabled={disabled}
-    style={{ background: 'transparent', border: `1px solid ${c}60`, color: c,
-      padding: small ? '4px 10px' : '7px 14px', borderRadius: 6,
-      fontSize: small ? 11 : 12, fontFamily: MONO, cursor: disabled ? 'not-allowed' : 'pointer',
-      opacity: disabled ? 0.5 : 1, transition: 'all 0.14s', whiteSpace: 'nowrap',
-      width: full ? '100%' : undefined }}>{children}</button>
+function Btn({ onClick, color = G, children, disabled, danger, full, small, ...rest }) {
+  return <KitBtn variant="outline" color={color} onClick={onClick} disabled={disabled} danger={danger} full={full} small={small} {...rest}>{children}</KitBtn>
 }
 
 function RelTime({ iso }) {
   if (!iso) return <span style={{ color: 'var(--muted)' }}>—</span>
-  const diff = Math.floor((Date.now() - new Date(iso)) / 1000)
-  const label = diff < 60 ? 'just now'
-    : diff < 3600 ? `${Math.floor(diff / 60)}m ago`
-    : diff < 86400 ? `${Math.floor(diff / 3600)}h ago`
-    : new Date(iso).toLocaleDateString()
-  return <span title={new Date(iso).toLocaleString()} style={{ color: 'var(--muted)', fontSize: 11 }}>{label}</span>
+  return <span title={new Date(iso).toLocaleString()} style={{ color: 'var(--muted)', fontSize: 11 }}><KitRelTime iso={iso} /></span>
 }
 
 function money(cents) { return `$${((cents || 0) / 100).toFixed(2)}` }

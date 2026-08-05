@@ -10,15 +10,25 @@ import React, { useEffect, useRef } from 'react'
 export const MONO = 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)'
 
 /* ── Button ─────────────────────────────────────────────────────────────── */
-export function Btn({ onClick, children, color = 'var(--green)', disabled, danger, small, ghost, style, type = 'button', ...rest }) {
+export function Btn({ onClick, children, color = 'var(--green)', disabled, danger, small, ghost, full, variant = 'solid', style, type = 'button', ...rest }) {
   const base = {
     fontFamily: MONO, fontSize: small ? 9 : 10, letterSpacing: 1.5, fontWeight: 700,
     padding: small ? '6px 12px' : '9px 16px', borderRadius: 6, cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.5 : 1, transition: 'all 0.15s', border: '1px solid transparent',
-    background: ghost ? 'transparent' : danger ? '#ff4757' : color,
-    color: ghost ? (danger ? '#ff4757' : 'var(--muted)') : '#000',
-    ...(ghost ? { borderColor: danger ? 'rgba(255,71,87,0.4)' : 'var(--border)' } : {}),
+    whiteSpace: 'nowrap', ...(full ? { width: '100%' } : {}),
     ...(style || {}),
+  }
+  if (variant === 'outline') {
+    base.background = disabled ? 'rgba(255,255,255,0.03)' : `${color}18`
+    base.borderColor = disabled ? 'var(--border)' : `${color}44`
+    base.color = danger ? '#ff4757' : color
+  } else if (ghost) {
+    base.background = 'transparent'
+    base.borderColor = danger ? 'rgba(255,71,87,0.4)' : 'var(--border)'
+    base.color = danger ? '#ff4757' : 'var(--muted)'
+  } else {
+    base.background = danger ? '#ff4757' : color
+    base.color = '#000'
   }
   return (
     <button type={type} onClick={onClick} disabled={disabled} style={base} {...rest}>{children}</button>
@@ -44,9 +54,14 @@ export function Badge({ children, color = 'var(--green)', tone, style }) {
 export function StatCard({ label, value, color = 'var(--green)', sub, onClick, style }) {
   return (
     <div onClick={onClick} style={{
-      background: 'var(--bg2)', border: `1px solid ${color}18`, borderRadius: 12,
-      padding: '16px 18px', ...(onClick ? { cursor: 'pointer' } : {}), ...(style || {}),
-    }}>
+      background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12,
+      padding: '16px 18px', cursor: onClick ? 'pointer' : 'default',
+      position: 'relative', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.15s',
+      ...(style || {}),
+    }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = color; if (onClick) e.currentTarget.style.transform = 'translateY(-2px)' }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${color}, transparent)` }} />
       <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>{label}</div>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
       {sub && <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>{sub}</div>}
