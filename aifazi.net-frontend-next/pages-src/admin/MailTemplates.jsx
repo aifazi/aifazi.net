@@ -214,9 +214,10 @@ function VarChip({ v, onClick }) {
 function TemplateEditor({ purpose, template, onSave, onReset }) {
   const [subject, setSubject] = useState(template?.subject || DEFAULT_TEMPLATES[purpose.id]?.subject || `[{{site_name}}] ${purpose.label}`)
   const [html,    setHtml]    = useState(template?.html    || DEFAULT_TEMPLATES[purpose.id]?.html    || `<p>Hello {{username}},</p>\n<p>...</p>\n<p>— {{site_name}}</p>`)
-  const [tab,     setTab]     = useState('editor')
-  const [saving,  setSaving]  = useState(false)
-  const [dirty,   setDirty]   = useState(false)
+const [tab,     setTab]     = useState('editor')
+const [saving,  setSaving]  = useState(false)
+const [dirty,   setDirty]   = useState(false)
+const [saveError, setSaveError] = useState('')
   const textareaRef = useRef(null)
 
   useEffect(() => {
@@ -235,14 +236,16 @@ function TemplateEditor({ purpose, template, onSave, onReset }) {
 
   const save = async () => {
     setSaving(true)
+    setSaveError('')
     try {
       await api.put(`/admin/mail/templates/${purpose.id}`, { subject, html })
       onSave({ subject, html })
       setDirty(false)
     } catch (e) {
-      // Persist locally even if backend not implemented
-      onSave({ subject, html })
-      setDirty(false)
+      // Do NOT report a failed save as success — keep the template dirty and
+      // surface the real error so the editor isn't silently lost.
+      setSaveError(e?.response?.data?.detail || e?.message || 'Failed to save template')
+      setDirty(true)
     } finally { setSaving(false) }
   }
 
@@ -393,6 +396,7 @@ function TemplateEditor({ purpose, template, onSave, onReset }) {
           cursor:'pointer', borderRadius:4,
         }}>↺ RESET DEFAULT</button>
         {dirty && <span style={{ fontFamily:C.mono, fontSize:9, color:C.yellow, letterSpacing:2 }}>UNSAVED CHANGES</span>}
+        {saveError && <span style={{ fontFamily:C.mono, fontSize:9, color:'#f87171', letterSpacing:1 }}>⚠ {saveError}</span>}
       </div>
     </div>
   )
