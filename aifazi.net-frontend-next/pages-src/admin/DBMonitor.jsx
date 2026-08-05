@@ -426,7 +426,7 @@ export default function DBMonitor() {
       <div style={{ borderBottom:'1px solid var(--border)', padding:'0 20px', overflowX:'auto', display:'flex', flexShrink:0, background:'var(--bg)' }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{ padding:'11px 16px', background:'transparent', color:activeTab===t.id?'var(--primary,var(--cyan,#00d4ff))':'var(--muted)', borderBottom:activeTab===t.id?'2px solid var(--primary,var(--cyan,#00d4ff))':'2px solid transparent', border:'none', cursor:'pointer', fontSize:9, letterSpacing:2, fontFamily:'var(--font-mono,monospace)', marginBottom:-1, whiteSpace:'nowrap' }}>
+            style={{ padding:'11px 16px', background:'transparent', color:activeTab===t.id?'var(--primary,var(--cyan,#00d4ff))':'var(--muted)', borderBottom:activeTab===t.id?'2px solid var(--primary,var(--cyan,#00d4ff))':'2px solid transparent', borderTop:'none', borderLeft:'none', borderRight:'none', cursor:'pointer', fontSize:9, letterSpacing:2, fontFamily:'var(--font-mono,monospace)', marginBottom:-1, whiteSpace:'nowrap' }}>
             <TabIcon text={t.icon} active={activeTab===t.id} />{t.label}
             {t.dev && <span style={{color:'var(--orange,#ff6b35)',fontSize:7,letterSpacing:1,marginLeft:4}}>DEV</span>}
           </button>
