@@ -2829,8 +2829,8 @@ async def generate_connect_token(user: dict = Depends(get_current_user)):
 @router.post("/connect/session-check")
 async def check_connect_session(body: ConnectSessionRequest, request: Request):
     """Validate that the joining player started from the website connect page."""
-    server_secret = request.headers.get("x-fivem-token", "") or request.headers.get("x-internal-token", "")
-    expected = os.environ.get("FIVEM_SERVER_SECRET") or os.environ.get("INTERNAL_API_SECRET", "")
+    server_secret = request.headers.get("x-fivem-token", "")
+    expected = os.environ.get("FIVEM_SERVER_SECRET", "")
     if not expected or not hmac.compare_digest(server_secret, expected):
         raise HTTPException(401, "Invalid server credentials")
 
@@ -2980,8 +2980,8 @@ async def check_connect_session(body: ConnectSessionRequest, request: Request):
 @router.post("/connect/verify")
 async def verify_connect_token(body: VerifyTokenRequest, request: Request):
     """Verify a connect token. Called by the FiveM Lua resource."""
-    server_secret = request.headers.get("x-fivem-token", "") or request.headers.get("x-internal-token", "")
-    expected = os.environ.get("FIVEM_SERVER_SECRET") or os.environ.get("INTERNAL_API_SECRET", "")
+    server_secret = request.headers.get("x-fivem-token", "")
+    expected = os.environ.get("FIVEM_SERVER_SECRET", "")
     if not expected or not hmac.compare_digest(server_secret, expected):
         raise HTTPException(401, "Invalid server credentials")
 

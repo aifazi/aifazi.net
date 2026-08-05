@@ -4,7 +4,7 @@
 # ═══════════════════════════════════════════════════════════════
 set -e
 
-ROOT="/mnt/c/FAZI/aifazi.net-main"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 B="$ROOT/aifazi.net-backend-fastapi/.env.vercel"
 F="$ROOT/aifazi.net-frontend-next/.env.vercel"
 OUT="$ROOT/.env.local"

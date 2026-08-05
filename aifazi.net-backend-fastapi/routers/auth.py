@@ -43,7 +43,9 @@ async def _verify_async(pw: str, hashed: str) -> bool:
 
 SECRET = os.environ.get("PASETO_SECRET", os.environ.get("JWT_SECRET", ""))
 ALGO   = "HS256"
-ADMIN_GATE_SECRET = os.getenv("ADMIN_GATE_SECRET") or os.getenv("INTERNAL_API_SECRET") or SECRET
+# Admin gate secret — must be explicitly set. Never falls back to INTERNAL_API_SECRET
+# (which would let any internal service forge admin gate tokens).
+ADMIN_GATE_SECRET = os.getenv("ADMIN_GATE_SECRET") or ""
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 SITE_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")

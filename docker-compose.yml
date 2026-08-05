@@ -24,6 +24,15 @@ services:
     networks:
       - aifazi-net
     restart: unless-stopped
+    mem_limit: 1g
+    mem_reservation: 512m
+    cpus: 2
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   frontend:
     build:
@@ -43,6 +52,15 @@ services:
     networks:
       - aifazi-net
     restart: unless-stopped
+    mem_limit: 2g
+    mem_reservation: 512m
+    cpus: 2
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '--quiet', 'http://localhost:3000']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 networks:
   aifazi-net:

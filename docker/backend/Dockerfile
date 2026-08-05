@@ -1,5 +1,5 @@
 # ── Backend Dev Dockerfile — hot-reload FastAPI server ────────────────────────
-FROM python:3.12-slim
+FROM python:3.12.9-slim
 
 WORKDIR /app
 
@@ -9,7 +9,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY aifazi.net-backend-fastapi/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y build-essential libffi-dev libjpeg-dev zlib1g-dev \
+    && apt-get autoremove -y
+
+# Create non-root user
+RUN addgroup --system app && adduser --system --group app
+USER app
 
 EXPOSE 8000
 
