@@ -121,7 +121,6 @@ export function MenuProvider({ children, menuStyle = 'cyber' }) {
       + PAD + (options.header !== false ? HEADER_H : 0)
     const x = Math.min(e.clientX, window.innerWidth  - 218)
     const y = Math.min(e.clientY, window.innerHeight - menuH - 8)
-    console.log('[MenuProvider] openContextMenu', { x, y, itemsCount: items.length, clientX: e.clientX, clientY: e.clientY })
     setCtxMenu({ x, y, items, options })
   }, [])
 

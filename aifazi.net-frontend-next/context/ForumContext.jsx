@@ -2,7 +2,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import api, { getAuthToken, setAccessToken, clearAuthTokens, clearLegacyTokens, setEffectiveAccess } from '@/lib/api'
 
+/** @typedef {{ id?: string, _id?: string, username?: string, role?: string, email?: string, avatar?: string, banned?: boolean } | null} ForumUser */
+
 const ForumContext = createContext({
+  /** @type {ForumUser} */
   user: null,
   loading: true,
   profileLoading: false,
@@ -187,7 +190,9 @@ export function ForumProvider({ children }) {
     // Without this the refresh_token/auth_token cookies survive logout and a
     // reload silently logs the user back in via /auth/me.
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }) } catch {}
-    clearAuthTokens()
+    // revoke:false — the backend logout above already nulled the server-side
+    // refresh token; don't fire a second /auth/logout.
+    clearAuthTokens({ revoke: false })
     window.dispatchEvent(new Event('auth-change'))
     setUser(null)
     setLoading(false)

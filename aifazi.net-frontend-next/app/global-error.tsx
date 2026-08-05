@@ -5,7 +5,9 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   const [stack, setStack] = useState('')
   useEffect(() => {
     console.error('GlobalError caught:', error)
-    setStack(error.stack || '')
+    // Only show the stack trace to developers — it can leak internal
+    // component paths / env details to end users.
+    if (process.env.NODE_ENV !== 'production') setStack(error.stack || '')
   }, [error])
 
   return (

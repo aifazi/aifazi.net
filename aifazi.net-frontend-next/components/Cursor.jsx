@@ -63,9 +63,13 @@ export default function Cursor() {
     document.addEventListener('mousemove', onMove, { passive: true })
     rafId = requestAnimationFrame(animate)
 
-    // Magnetic hover — scale dot up & switch colour
+    // Magnetic hover — scale dot up & switch colour.
+    // Event delegation on document (instead of attaching to every a/button):
+    // no per-element listeners to leak on unmount, and it stays correct across
+    // route changes / re-renders without re-scanning the DOM.
+    const isTarget = el => el && (el.tagName === 'A' || el.tagName === 'BUTTON' || el.hasAttribute?.('data-hover'))
     const onEnter = e => {
-      const el = e.currentTarget
+      if (!isTarget(e.target)) return
       if (dotRef.current) {
         dotRef.current.style.transform  = 'translate(-50%,-50%) scale(2.5)'
         dotRef.current.style.background = 'var(--cyan)'
@@ -73,7 +77,8 @@ export default function Cursor() {
       }
       if (ringRef.current) ringRef.current.style.opacity = '0.3'
     }
-    const onLeave = () => {
+    const onLeave = e => {
+      if (!isTarget(e.target)) return
       if (dotRef.current) {
         dotRef.current.style.transform    = 'translate(-50%,-50%) scale(1)'
         dotRef.current.style.background   = 'var(--green)'
@@ -81,15 +86,13 @@ export default function Cursor() {
       }
       if (ringRef.current) ringRef.current.style.opacity = '1'
     }
-
-    const targets = document.querySelectorAll('a, button, [data-hover]')
-    targets.forEach(el => {
-      el.addEventListener('mouseenter', onEnter)
-      el.addEventListener('mouseleave', onLeave)
-    })
+    document.addEventListener('mouseover', onEnter, { passive: true })
+    document.addEventListener('mouseout', onLeave, { passive: true })
 
     return () => {
       document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseover', onEnter)
+      document.removeEventListener('mouseout', onLeave)
       cancelAnimationFrame(rafId)
     }
   }, [])
