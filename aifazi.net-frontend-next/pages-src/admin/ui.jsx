@@ -104,6 +104,20 @@ export function RelTime({ iso, now }) {
   return d < 7 ? `${d}d ago` : new Date(iso).toLocaleDateString()
 }
 
+/* ── Pagination ─────────────────────────────────────────────────────────── */
+export function Pagination({ page, total, pageSize = 50, onChange, label }) {
+  const pages = Math.max(1, Math.ceil((total || 0) / pageSize))
+  if (pages <= 1) return null
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', padding: '10px 4px', flexWrap: 'wrap' }}>
+      {label && <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginRight: 'auto' }}>{label}</span>}
+      <Btn variant="outline" small disabled={page <= 1} onClick={() => onChange(page - 1)}>← PREV</Btn>
+      <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{page} / {pages}</span>
+      <Btn variant="outline" small disabled={page >= pages} onClick={() => onChange(page + 1)}>NEXT →</Btn>
+    </div>
+  )
+}
+
 /* ── Accessible Modal ───────────────────────────────────────────────────── */
 const ESC = 27
 let modalStack = 0

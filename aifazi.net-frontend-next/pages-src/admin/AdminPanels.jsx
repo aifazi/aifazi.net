@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, Fragment } from 'react'
+import React, { useState, useEffect, useCallback, Fragment } from 'react'
 import api, { getRole, getUsername } from '@/lib/api'
 import { getSupabase } from '@/lib/supabase'
 import { useToast } from '../../components/Toast'
@@ -7,7 +7,7 @@ import { useDialog } from '../../components/Dialog'
 import { useIsMobile, PageHeader } from './shared'
 import { DateTimePicker } from '../../core/ui.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
-import { EmptyState } from './ui'
+import { EmptyState, Pagination } from './ui'
 import { PAGE_ANIMATIONS } from '../../core/pageMotion.jsx'
 
 const PAGE_CONFIG_KEYS = [
@@ -1186,6 +1186,8 @@ function AnnouncementsPanel() {
 
 function NewsletterPanel() {
   const [subs, setSubs]               = useState([])
+  const [subsTotal, setSubsTotal]     = useState(0)
+  const [subsPage, setSubsPage]       = useState(1)
   const [loading, setLoading]         = useState(true)
   const [search, setSearch]           = useState('')
   const [broadcastOpen, setBroadcast] = useState(false)
@@ -1196,9 +1198,15 @@ function NewsletterPanel() {
   const toast    = useToast()
   const { confirm } = useDialog()
 
-  useEffect(() => {
-    api.get('/newsletter/subscribers').then(r => setSubs(r.data || [])).catch(() => setSubs([])).finally(() => setLoading(false))
+  const loadSubs = useCallback((page = 1) => {
+    setLoading(true)
+    api.get(`/newsletter/subscribers?page=${page}&page_size=50`)
+      .then(r => { const d = r.data; const items = Array.isArray(d) ? d : (d?.items || []); setSubs(items); setSubsTotal(Array.isArray(d) ? items.length : (d?.total ?? items.length)); setSubsPage(page) })
+      .catch(() => setSubs([]))
+      .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => { loadSubs() }, [loadSubs])
 
   const handleDelete = async email => {
     const ok = await confirm({ title: 'Remove Subscriber', message: `Remove ${email} from the newsletter?`, variant: 'danger', confirmLabel: 'REMOVE' })
@@ -1335,6 +1343,8 @@ function NewsletterPanel() {
             ))}
           </div>
         )}
+        <Pagination page={subsPage} total={subsTotal} pageSize={50}
+          label={`${subsTotal} subscribers`} onChange={p => loadSubs(p)} />
       </div>
     </div>
   )

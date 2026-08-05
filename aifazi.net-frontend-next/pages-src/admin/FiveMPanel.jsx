@@ -9,6 +9,7 @@ import { useDialog } from '../../components/Dialog'
 import { Checkbox, DateTimePicker, Input, Select, TextArea } from '../../core/ui.jsx'
 import { PageHeader } from './shared'
 import { Btn as KitBtn, Badge as KitBadge, RelTime as KitRelTime, MONO } from './ui'
+import { Pagination } from './ui'
 
 const G    = '#00FF88'
 const C    = '#00D4FF'
@@ -233,6 +234,7 @@ function WhitelistPanel() {
   const [apps, setApps]         = useState([])
   const [activeBans, setActiveBans] = useState([])
   const [total, setTotal]       = useState(0)
+  const [page, setPage]         = useState(1)
   const [filter, setFilter]     = useState('pending')
   const [search, setSearch]     = useState('')
   const [loading, setLoading]   = useState(true)
@@ -251,9 +253,10 @@ function WhitelistPanel() {
     setLoading(true)
     const q = search.trim()
     const statusParam = filter ? `status=${encodeURIComponent(filter)}&` : ''
+    const offset = (page - 1) * 50
     const endpoint = q
-      ? `/fivem/whitelist/search?${statusParam}limit=50&q=${encodeURIComponent(q)}`
-      : `/fivem/whitelist?${statusParam}limit=50`
+      ? `/fivem/whitelist/search?${statusParam}limit=50&offset=${offset}&q=${encodeURIComponent(q)}`
+      : `/fivem/whitelist?${statusParam}limit=50&offset=${offset}`
     const [appsRes, bansRes] = await Promise.allSettled([
       api.get(endpoint),
       api.get('/fivem/bans?active=true&limit=200'),
@@ -266,10 +269,11 @@ function WhitelistPanel() {
       setActiveBans(bansRes.value.data.bans||[])
     }
     setLoading(false)
-  }, [filter, search])
+  }, [filter, search, page])
 
   useEffect(() => { load() }, [load])
   usePausableInterval(load, 15000)
+  useEffect(() => { setPage(1) }, [filter, search])
   useEffect(() => {
     if (!selected) return
     setPriorityForm({
@@ -600,9 +604,11 @@ function WhitelistPanel() {
               </div>
             </div>
           )}
-        </div>
+          </div>
         )
       })}
+      <Pagination page={page} total={total} pageSize={50}
+        label={`${total} applications`} onChange={p => { setPage(p); }} />
     </div>
   )
 }
@@ -905,6 +911,8 @@ function BansPanel() {
   const toast  = useToast()
   const dialog = useDialog()
   const [bans, setBans]           = useState([])
+  const [bansTotal, setBansTotal] = useState(0)
+  const [bansPage, setBansPage]   = useState(1)
   const [loading, setLoading]     = useState(true)
   const [filterActive, setFilter] = useState(true)
   const [showAdd, setShowAdd]     = useState(false)
@@ -926,11 +934,12 @@ function BansPanel() {
   const loadBans = useCallback(async () => {
     setLoading(true)
     try {
-      const r = await api.get(`/fivem/bans?active=${filterActive}&limit=50`)
+      const r = await api.get(`/fivem/bans?active=${filterActive}&limit=50&offset=${(bansPage - 1) * 50}`)
       setBans(r.data.bans||[])
+      setBansTotal(r.data.total||0)
     } catch {}
     setLoading(false)
-  }, [filterActive])
+  }, [filterActive, bansPage])
 
   const loadWhitelistPlayers = useCallback(async () => {
     setPlayersLoading(true)
@@ -1186,6 +1195,8 @@ function BansPanel() {
           )}
         </div>
       ))}
+      <Pagination page={bansPage} total={bansTotal} pageSize={50}
+        label={`${bansTotal} bans`} onChange={p => setBansPage(p)} />
     </div>
   )
 }

@@ -6,7 +6,7 @@ Frontend NewsletterPanel calls:
   POST   /newsletter/unsubscribe     { email }  (legacy)
   POST   /newsletter/send            { subject, html, text }
 """
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, EmailStr
 from database import supabase
 from dependencies import require_staff
@@ -47,15 +47,15 @@ async def unsubscribe_delete(request: Request, _: dict = Depends(require_staff))
 
 # Frontend calls /newsletter/subscribers (admin list)
 @router.get("/subscribers")
-async def list_subs_admin(_: dict = Depends(require_staff)):
-    res = supabase.table("newsletter_subs").select("*").order("created_at", desc=True).limit(1000).execute()
-    return res.data or []
+async def list_subs_admin(page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200), _: dict = Depends(require_staff)):
+    res = supabase.table("newsletter_subs").select("*", count="exact").order("created_at", desc=True).range((page - 1) * page_size, page * page_size - 1).execute()
+    return {"items": res.data or [], "total": res.count or 0, "page": page, "page_size": page_size}
 
 # Public endpoint alias
 @router.get("")
-async def list_subs_public(_: dict = Depends(require_staff)):
-    res = supabase.table("newsletter_subs").select("*").order("created_at", desc=True).limit(1000).execute()
-    return res.data or []
+async def list_subs_public(page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200), _: dict = Depends(require_staff)):
+    res = supabase.table("newsletter_subs").select("*", count="exact").order("created_at", desc=True).range((page - 1) * page_size, page * page_size - 1).execute()
+    return {"items": res.data or [], "total": res.count or 0, "page": page, "page_size": page_size}
 
 @router.post("/send")
 async def send_campaign(body: CampaignBody, _: dict = Depends(require_staff)):

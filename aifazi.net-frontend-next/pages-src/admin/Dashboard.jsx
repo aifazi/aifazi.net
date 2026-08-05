@@ -8,7 +8,7 @@ import { useDialog } from '../../components/Dialog'
 import { Checkbox, Select } from '../../core/ui.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader, PanelErrorBoundary, SkeletonGrid } from './shared'
-import { Modal, EmptyState } from './ui'
+import { Modal, EmptyState, Pagination } from './ui'
 import AdminHeader from './AdminHeader'
 import Sidebar from './Sidebar'
 import { Icon, NAV_ICONS } from './icons'
@@ -149,6 +149,8 @@ function Dashboard({ onLogout }) {
   const [sessionWarning, setSessionWarning] = useState(false)
   const [posts, setPosts] = useState([])
   const [contacts, setContacts] = useState([])
+  const [contactsTotal, setContactsTotal] = useState(0)
+  const [contactsPage, setContactsPage] = useState(1)
   const [staff, setStaff] = useState([])
   const [dashStats, setDashStats] = useState(null)
   const [activityFeed, setActivityFeed] = useState([])
@@ -242,7 +244,7 @@ function Dashboard({ onLogout }) {
       // /blog/admin/all returns a flat array; guard against paginated shape just in case
       const raw  = postsR.status === 'fulfilled' ? postsR.value.data : []
       const p    = Array.isArray(raw) ? raw : (raw?.posts || [])
-      const c    = contactsR.status === 'fulfilled' ? contactsR.value.data : []
+      const c    = contactsR.status === 'fulfilled' ? (contactsR.value.data?.items ?? contactsR.value.data ?? []) : []
       const s    = staffR.status === 'fulfilled' ? staffR.value.data : []
       const health = healthR.status === 'fulfilled' ? healthR.value.data : null
       const auditLogs = auditR.status === 'fulfilled' ? (auditR.value.data?.logs || []) : []
@@ -252,7 +254,7 @@ function Dashboard({ onLogout }) {
         publishedPosts: p.filter(x => x.published).length,
         draftPosts: p.filter(x => !x.published).length,
         totalViews: p.reduce((a, x) => a + (x.views || 0), 0),
-        contacts: c.length,
+        contacts: (contactsR.status === 'fulfilled' ? (contactsR.value.data?.total ?? c.length) : 0),
         staff: s.length,
         recentPosts: p.slice(0, 5),
         recentContacts: c.slice(0, 3),
@@ -295,14 +297,16 @@ function Dashboard({ onLogout }) {
     setStaffUserResults([]); setStaffUserQuery(`${u.username} · ${u.email || ''}`)
   }
   const fetchPosts    = async () => { setLoading(true); try { const r = await api.get('/blog/admin/all'); const d = r.data; setPosts(Array.isArray(d) ? d : (d?.posts || [])) } catch {} finally { setLoading(false) } }
-  const fetchContacts = async () => {
+  const fetchContacts = async (page = 1) => {
     setContactsLoading(true)
     try {
-      const r = await api.get('/contact')
-      // backend may return array directly OR { contacts: [...], total: N }
+      const r = await api.get(`/contact?page=${page}&page_size=50`)
       const raw = r.data
-      setContacts(Array.isArray(raw) ? raw : (raw?.contacts || raw?.messages || raw?.data || []))
-    } catch { setContacts([]) }
+      const items = Array.isArray(raw) ? raw : (raw?.items || raw?.contacts || raw?.messages || raw?.data || [])
+      setContacts(items)
+      setContactsTotal(Array.isArray(raw) ? items.length : (raw?.total ?? items.length))
+      setContactsPage(page)
+    } catch { setContacts([]); setContactsTotal(0) }
     finally { setContactsLoading(false) }
   }
 
@@ -876,6 +880,8 @@ function Dashboard({ onLogout }) {
                   <p style={{ color: 'var(--text)', lineHeight: 1.7, margin: 0 }}>{c.message}</p>
                 </div>
               ))}
+              <Pagination page={contactsPage} total={contactsTotal} pageSize={50}
+                label={`${contactsTotal} messages`} onChange={p => fetchContacts(p)} />
             </div>
           )}
 

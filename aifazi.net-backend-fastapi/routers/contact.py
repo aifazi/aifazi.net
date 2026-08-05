@@ -1,5 +1,5 @@
 """routers/contact.py"""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, EmailStr
 from database import supabase
 from dependencies import require_staff
@@ -46,9 +46,9 @@ async def submit(body: ContactBody):
 
 
 @router.get("")
-async def list_contacts(_: dict = Depends(require_staff)):
-    res = supabase.table("contacts").select("*").order("created_at", desc=True).limit(1000).execute()
-    return res.data or []
+async def list_contacts(page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200), _: dict = Depends(require_staff)):
+    res = supabase.table("contacts").select("*", count="exact").order("created_at", desc=True).range((page - 1) * page_size, page * page_size - 1).execute()
+    return {"items": res.data or [], "total": res.count or 0, "page": page, "page_size": page_size}
 
 
 @router.post("/{contact_id}/reply")
