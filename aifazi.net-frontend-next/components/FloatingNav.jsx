@@ -33,7 +33,7 @@ function NavItem({ item, expanded, onHover, onLeave, delay }) {
   const labelArea = expanded ? (
     <div style={{ paddingRight: 14, display: 'flex', flexDirection: 'column', animation: 'floatNavFadeIn 0.2s ease-out' }}>
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)', letterSpacing: 1 }}>{label}</span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1 }}>{desc}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>{desc}</span>
     </div>
   ) : null
   const inner = <><span style={iconStyle}>{icon}</span>{labelArea}</>
@@ -121,7 +121,7 @@ export default function FloatingNav() {
             {hoveredIdx === 998 && (
               <div style={{ paddingRight: 14, animation: 'floatNavFadeIn 0.2s ease-out' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)', letterSpacing: 1 }}>Themes</span>
-                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1 }}>Theme library</span>
+                <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>Theme library</span>
               </div>
             )}
           </button>
@@ -148,7 +148,7 @@ export default function FloatingNav() {
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: editCtx?.editingEnabled ? 'var(--green)' : 'var(--text)', letterSpacing: 1 }}>
                     {editCtx?.editingEnabled ? `Done${Object.keys(editCtx.pendingChanges||{}).length > 0 ? ` (${Object.keys(editCtx.pendingChanges).length})` : ''}` : 'Edit Site'}
                   </span>
-                  <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1 }}>
+                  <span style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>
                     {editCtx?.editingEnabled ? 'Save changes' : 'Admin edit mode'}
                   </span>
                 </div>

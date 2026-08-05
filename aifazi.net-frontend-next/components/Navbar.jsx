@@ -497,7 +497,7 @@ export default function Navbar() {
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700,
                     letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>AIFAZI</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 4,
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 4,
                     color: hs.accent, marginTop: 3, opacity: 0.75 }}>NEON OPS</span>
                 </div>
               </>
@@ -543,7 +543,7 @@ export default function Navbar() {
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700,
                     letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>TANVIR</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 4,
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 4,
                     color: hs.accent, marginTop: 3, opacity: 0.75 }}>.DEV</span>
                 </div>
               </>
@@ -768,7 +768,7 @@ export default function Navbar() {
                   </div>
                   <div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: ADMIN_ROLE_COLORS[adminAuth.role], letterSpacing: 1 }}>{adminAuth.username}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2 }}>{adminAuth.role.toUpperCase()}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>{adminAuth.role.toUpperCase()}</div>
                   </div>
                 </Link>
                 <button onClick={() => { handleAdminLogout(); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>

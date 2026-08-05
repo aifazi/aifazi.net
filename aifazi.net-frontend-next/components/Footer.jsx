@@ -26,7 +26,7 @@ function SystemStatus() {
       background: 'rgba(0,255,136,0.03)', border: '1px solid rgba(0,255,136,0.1)',
       borderRadius: 8, padding: '14px 16px',
     }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 10 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 10 }}>
         ◈ SYSTEM STATUS
       </div>
       {services.map(s => (
@@ -56,7 +56,7 @@ function SystemStatus() {
 function TechBadge({ label, color }) {
   return (
     <span style={{
-      fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1,
+      fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
       padding: '2px 8px', borderRadius: 3,
       background: `${color}10`, border: `1px solid ${color}30`, color,
     }}>{label}</span>
@@ -205,7 +205,7 @@ function FooterMagazine({ siteConfig, sectionLinks, platformLinks, socialLinks, 
             )}
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>NAVIGATE</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>NAVIGATE</div>
             {sectionLinks.map(({ label, hash }) => (
               <a key={hash} href={`/#${hash}`} onClick={e => handleHashLink(e, hash)}
                 style={{ display: 'block', fontFamily: 'Georgia, serif', fontSize: 13, color: 'var(--muted)', textDecoration: 'none', lineHeight: 2.4, transition: 'color 0.2s' }}
@@ -215,7 +215,7 @@ function FooterMagazine({ siteConfig, sectionLinks, platformLinks, socialLinks, 
             ))}
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>PLATFORM</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>PLATFORM</div>
             {platformLinks.map(({ label, to }) => (
               <Link key={to} to={to}
                 style={{ display: 'block', fontFamily: 'Georgia, serif', fontSize: 13, color: 'var(--muted)', textDecoration: 'none', lineHeight: 2.4, transition: 'color 0.2s' }}
@@ -272,7 +272,7 @@ function FooterGlass({ siteConfig, sectionLinks, platformLinks, socialLinks, has
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>NAVIGATE</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>NAVIGATE</div>
             {sectionLinks.map(({ label, hash }) => (
               <a key={hash} href={`/#${hash}`} onClick={e => handleHashLink(e, hash)}
                 style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', lineHeight: 2.4, letterSpacing: 1, transition: 'color 0.2s' }}
@@ -282,7 +282,7 @@ function FooterGlass({ siteConfig, sectionLinks, platformLinks, socialLinks, has
             ))}
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>PLATFORM</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>PLATFORM</div>
             {platformLinks.map(({ label, to }) => (
               <Link key={to} to={to}
                 style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', lineHeight: 2.4, letterSpacing: 1, transition: 'color 0.2s' }}
@@ -331,7 +331,7 @@ function FooterSynthwave({ siteConfig, sectionLinks, platformLinks, socialLinks,
             )}
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>NAVIGATE</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>NAVIGATE</div>
             {sectionLinks.map(({ label, hash }) => (
               <a key={hash} href={`/#${hash}`} onClick={e => handleHashLink(e, hash)}
                 style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', lineHeight: 2.4, letterSpacing: 1, transition: 'color 0.2s' }}
@@ -341,7 +341,7 @@ function FooterSynthwave({ siteConfig, sectionLinks, platformLinks, socialLinks,
             ))}
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>PLATFORM</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>PLATFORM</div>
             {platformLinks.map(({ label, to }) => (
               <Link key={to} to={to}
                 style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', lineHeight: 2.4, letterSpacing: 1, transition: 'color 0.2s' }}
@@ -488,7 +488,7 @@ function FooterFiveM({ socialLinks, year }) {
 
         {/* Play */}
         <div>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)', display: 'block' }}>PLAY</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)', display: 'block' }}>PLAY</span>
           {navLinks.map(({ label, to }) => (
             <Link key={label} to={to} style={monoLink} onMouseEnter={onEnter} onMouseLeave={onLeave}>{label}</Link>
           ))}
@@ -496,7 +496,7 @@ function FooterFiveM({ socialLinks, year }) {
 
         {/* Community */}
         <div>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)', display: 'block' }}>COMMUNITY</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)', display: 'block' }}>COMMUNITY</span>
           <Link to={homeRoute} style={monoLink} onMouseEnter={onEnter} onMouseLeave={onLeave}>Home</Link>
           <a href="https://discord.gg/aifazi" target="_blank" rel="noopener noreferrer" style={monoLink} onMouseEnter={onEnter} onMouseLeave={onLeave}>Discord</a>
           <Link to="/forms" style={monoLink} onMouseEnter={onEnter} onMouseLeave={onLeave}>Forms</Link>
@@ -505,7 +505,7 @@ function FooterFiveM({ socialLinks, year }) {
 
         {/* Server status */}
         <div>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)', display: 'block' }}>SERVER</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)', display: 'block' }}>SERVER</span>
           <div style={{ background: 'rgba(0,255,136,0.03)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: 8, padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>STATUS</span>
@@ -674,7 +674,7 @@ export default function Footer() {
   }
 
   const colHead = {
-    fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3,
+    fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3,
     color: fs.sub, marginBottom: 14, paddingBottom: 8,
     borderBottom: `1px solid ${fs.border}`, display: 'block',
   }
