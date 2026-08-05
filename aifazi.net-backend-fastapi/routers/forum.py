@@ -595,8 +595,10 @@ async def update_forum_user(user_id: str, body: dict, user: dict = Depends(requi
     target_role = target.get("role") or "user"
     my_role = user.get("role") or "user"
 
-    # C2 — only admins may change roles, and no self-demotion/self-promotion
-    allowed_fields = {"username","email","bio","avatar","banned","banReason","newPassword"}
+    # C2 — only admins may change roles, and no self-demotion/self-promotion.
+    # Password resets are admin-only: a moderator resetting a member's password
+    # silently lets them log in as that member (account takeover).
+    allowed_fields = {"username","email","bio","avatar","banned","banReason"}
     if my_role != "admin":
         if "role" in body:
             raise HTTPException(403, "Only admins can change roles")
@@ -612,6 +614,8 @@ async def update_forum_user(user_id: str, body: dict, user: dict = Depends(requi
         if target_role == "admin" and my_role != "admin":
             raise HTTPException(403, "Only admins can modify other admins")
         allowed_fields.add("role")
+    if my_role == "admin":
+        allowed_fields.add("newPassword")
 
     update = {}
     for k in allowed_fields:

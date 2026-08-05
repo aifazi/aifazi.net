@@ -18,7 +18,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from jose import jwt
+import jwt  # PyJWT — LiveKit access tokens are standard HS256 JWTs
 from database import supabase
 from dependencies import get_current_user, require_staff, require_admin
 from routers.chat import _ensure_room_access
@@ -31,8 +31,10 @@ LIVEKIT_KEY    = os.getenv("LIVEKIT_API_KEY", "")
 LIVEKIT_SECRET = os.getenv("LIVEKIT_API_SECRET", "")
 
 # ── Room encryption key management ──────────────────────────────────────────
-# Each chat room gets a persistent AES-256 key for E2EE.
-# Voice/video uses it via LiveKit E2EE; text messages use it client-side.
+# Each chat room gets a persistent AES-256 key used to encrypt messages at rest
+# and LiveKit media. NOTE: this is SERVER-SIDE encryption, not true end-to-end
+# encryption — the key is stored on and served by the server, so a compromised
+# server (or client) can decrypt everything.
 
 def _get_or_create_room_key(room_id: str) -> str:
     """Fetch existing room key or generate a new one. Returns base64-encoded 256-bit key."""
@@ -108,34 +110,37 @@ async def get_livekit_token(
     role = user.get("role", "user")
 
     # Single query for all room data (was 3 separate queries)
+    # Fail CLOSED: if the room can't be loaded (missing/deleted/DB error) we
+    # reject the token request. The old `r = {}` fallback skipped every access
+    # check and minted a publishing token for any room_id.
     try:
         room = supabase.table("chat_rooms").select(
             "id,name,is_private,allowed_users,allowed_roles,speak_roles,screen_share_roles,encryption_key"
-        ).eq("id", room_id).single().execute()
-        r = room.data
+        ).eq("id", room_id).limit(1).execute()
+        r = (room.data or [None])[0]
     except Exception:
-        r = {}
+        r = None
+    if not r:
+        raise HTTPException(404, "Room not found")
 
-    if r:
-        if r.get("is_private"):
-            allowed = r.get("allowed_users") or []
-            if username not in allowed and role not in ("admin", "moderator"):
-                raise HTTPException(403, "You do not have access to this channel")
+    if r.get("is_private"):
+        allowed = r.get("allowed_users") or []
+        if username not in allowed and role not in ("admin", "moderator"):
+            raise HTTPException(403, "You do not have access to this channel")
 
-        allowed_roles = r.get("allowed_roles") or []
-        if allowed_roles and role not in allowed_roles and role not in ("admin", "moderator"):
-            raise HTTPException(403, f"Only {', '.join(allowed_roles)} can join this voice channel")
+    allowed_roles = r.get("allowed_roles") or []
+    if allowed_roles and role not in allowed_roles and role not in ("admin", "moderator"):
+        raise HTTPException(403, f"Only {', '.join(allowed_roles)} can join this voice channel")
 
     can_publish = True
     can_screen_share = role in ("admin", "moderator")
 
-    if r:
-        speak_roles = r.get("speak_roles") or []
-        screen_roles = r.get("screen_share_roles") or []
-        if speak_roles and role not in speak_roles and role not in ("admin", "moderator"):
-            can_publish = False
-        if screen_roles and role not in screen_roles and role not in ("admin", "moderator"):
-            can_screen_share = False
+    speak_roles = r.get("speak_roles") or []
+    screen_roles = r.get("screen_share_roles") or []
+    if speak_roles and role not in speak_roles and role not in ("admin", "moderator"):
+        can_publish = False
+    if screen_roles and role not in screen_roles and role not in ("admin", "moderator"):
+        can_screen_share = False
 
     metadata = json.dumps({
         "username": username,
@@ -143,7 +148,7 @@ async def get_livekit_token(
     })
 
     # Use encryption_key from the single query, or create if missing
-    encryption_key = (r or {}).get("encryption_key") or ""
+    encryption_key = r.get("encryption_key") or ""
     if not encryption_key:
         encryption_key = _get_or_create_room_key(room_id)
 

@@ -11,6 +11,7 @@ Migrated from JWT (HS256) to PASETO v4 local (XChaCha20-Poly1305):
 - Random nonces prevent replay attacks
 """
 import os
+import asyncio
 import logging
 import time
 from fastapi import Depends, HTTPException, status, Request
@@ -112,6 +113,22 @@ def get_current_user(
     payload = decode_token(creds.credentials)
     return _enrich_user(payload)
 
+
+async def get_current_user_async(
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+) -> dict:
+    """Async variant: offloads the per-request DB enrichment off the event loop.
+
+    FastAPI resolves a plain (non-async) dependency in the threadpool already,
+    so existing routes keep working unchanged; routes that declare
+    `user: dict = Depends(get_current_user_async)` get the extra benefit of not
+    blocking the event loop during the Supabase round-trip.
+    """
+    if not creds:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    payload = decode_token(creds.credentials)
+    return await asyncio.to_thread(_enrich_user, payload)
+
 def require_admin(user: dict = Depends(get_current_user)) -> dict:
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
@@ -124,6 +141,7 @@ def _request_permission(path: str, method: str) -> tuple[str, str] | None:
         p = p.replace("/admin", "", 1)
     action = {"GET": "view", "POST": "create", "PUT": "edit", "PATCH": "edit", "DELETE": "delete"}.get(method.upper(), "view")
     rules = [
+        ("/collection", "system.db"),
         ("/forms/admin/definitions", "fivem.forms"),
         ("/forms/admin/submissions", "fivem.forms"),
         ("/stats/actions", "system.db"),
