@@ -1,12 +1,15 @@
 ﻿'use client'
 import React, { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { useNavigate } from '@/lib/router-compat'
 import api, { isAdmin as checkIsAdmin, getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess } from '@/lib/api'
-import ForumAdmin from './ForumAdmin'
-import AdminChat from './chat/AdminChat'
-import Sidebar from './admin/Sidebar'
-import Dashboard from './admin/Dashboard'
 import { useIsMobile, PanelErrorBoundary } from './admin/shared'
+
+// Lazy-load the moderator portal panels (ForumAdmin / AdminChat are large).
+const ForumAdmin = dynamic(() => import('./ForumAdmin').then(m => m.default || m), { ssr: false })
+const AdminChat = dynamic(() => import('./chat/AdminChat').then(m => m.default || m), { ssr: false })
+// The dashboard shell (and all its sub-panels) only loads once staff access is verified.
+const Dashboard = dynamic(() => import('./admin/Dashboard').then(m => m.default || m), { ssr: false })
 
 function ModeratorPortal({ onLogout }) {
   const isMobile = useIsMobile()

@@ -223,7 +223,9 @@ function TicketDetailView({ ticketId, user, onBack }) {
     const refresh = () => loadTicket(true)
     const interval = setInterval(refresh, 10_000)
     const sb = getSupabase()
-    if (!sb || !ticketId) return () => clearInterval(interval)
+    // Realtime on helpdesk rows is denied to anon by RLS — only subscribe for an
+    // authenticated user (defense in depth + fewer sockets).
+    if (!sb || !ticketId || !user) return () => clearInterval(interval)
 
     const channel = sb.channel(`profile-helpdesk:${ticketId}`)
       .on('postgres_changes',

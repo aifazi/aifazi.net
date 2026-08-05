@@ -1,26 +1,33 @@
 ﻿'use client'
 import React, { useState, useEffect, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { useNavigate } from '@/lib/router-compat'
 import api, { isAdmin as checkIsAdmin, getRole, getUsername, hasPermission, getStoredPermissions, setEffectiveAccess, getAuthToken } from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { Checkbox, Select } from '../../core/ui.jsx'
-import ForumAdmin from '../ForumAdmin'
-import AdminChat from '../chat/AdminChat'
-import DBMonitor from './DBMonitor'
-import Sidebar from './Sidebar'
-import { PostEditor, MediaLibrary } from './PostEditor'
 import { S, useIsMobile, PageHeader, PanelErrorBoundary, SkeletonGrid } from './shared'
 import AdminHeader from './AdminHeader'
+import Sidebar from './Sidebar'
 import { Icon, NAV_ICONS } from './icons'
-import Mail from './Mail'
-import ThemeHub from './ThemeHub'
-import { NewsletterPanel, StatsPanel, PageContentPanel } from './AdminPanels'
-import HelpDeskPanel from './HelpDeskPanel'
-import Changelog from './Changelog'
-import FiveMPanel from './FiveMPanel'
-import StoreCenter from './storeModules/StoreCenter'
 import { useFadeUp, useStaggerIn } from '@/lib/animate'
+
+// Heavy admin panels are lazy-loaded so the initial admin bundle stays small —
+// each loads only when its tab is opened.
+const ForumAdmin = dynamic(() => import('../ForumAdmin').then(m => m.default || m), { ssr: false })
+const AdminChat = dynamic(() => import('../chat/AdminChat').then(m => m.default || m), { ssr: false })
+const DBMonitor = dynamic(() => import('./DBMonitor').then(m => m.default || m), { ssr: false })
+const PostEditor = dynamic(() => import('./PostEditor').then(m => m.PostEditor), { ssr: false })
+const MediaLibrary = dynamic(() => import('./PostEditor').then(m => m.MediaLibrary), { ssr: false })
+const Mail = dynamic(() => import('./Mail').then(m => m.default || m), { ssr: false })
+const ThemeHub = dynamic(() => import('./ThemeHub').then(m => m.default || m), { ssr: false })
+const NewsletterPanel = dynamic(() => import('./AdminPanels').then(m => m.NewsletterPanel), { ssr: false })
+const StatsPanel = dynamic(() => import('./AdminPanels').then(m => m.StatsPanel), { ssr: false })
+const PageContentPanel = dynamic(() => import('./AdminPanels').then(m => m.PageContentPanel), { ssr: false })
+const HelpDeskPanel = dynamic(() => import('./HelpDeskPanel').then(m => m.default || m), { ssr: false })
+const Changelog = dynamic(() => import('./Changelog').then(m => m.default || m), { ssr: false })
+const FiveMPanel = dynamic(() => import('./FiveMPanel').then(m => m.default || m), { ssr: false })
+const StoreCenter = dynamic(() => import('./storeModules/StoreCenter').then(m => m.default || m), { ssr: false })
 
 function StatsGrid({ dashStats, isMobile, setView }) {
   const ref = useStaggerIn('.stat-card', { stagger: 80, distance: 16, duration: 480 })

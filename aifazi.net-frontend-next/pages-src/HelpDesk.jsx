@@ -128,8 +128,10 @@ function TicketDetail({ ticketId, onBack, accessEmail = '' }) {
   }, [fetchTicket, ticket])
 
   // Supabase Realtime for ticket messages/status, with polling above as local fallback.
+  // Only subscribed for an authenticated user — anon Realtime on helpdesk rows is
+  // denied by RLS anyway, so gate it here too (defense in depth + fewer sockets).
   useEffect(() => {
-    if (!mounted || !ticketId) return
+    if (!mounted || !ticketId || !user) return
     const sb = getSupabase()
     if (!sb) return
     const channel = sb.channel(`helpdesk:${ticketId}`)

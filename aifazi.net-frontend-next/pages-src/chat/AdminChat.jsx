@@ -190,7 +190,9 @@ export default function AdminChat({ embedded=false }) {
 
   // ── Global unread tracking ───────────────────────────────────────────────
   useEffect(() => {
-    if (!mounted || !supabase) return
+    // Only subscribed for signed-in users — with the anon key a signed-out
+    // visitor must not stream every chat_messages INSERT.
+    if (!mounted || !supabase || !me || authState !== 'ok') return
 
     const channel = supabase.channel('chat_unread')
       .on('postgres_changes',
@@ -204,7 +206,7 @@ export default function AdminChat({ embedded=false }) {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [mounted])
+  }, [mounted, me, authState])
 
   // ── Realtime staff sync ──────────────────────────────────────────────────
   useEffect(() => {
@@ -710,7 +712,7 @@ export default function AdminChat({ embedded=false }) {
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:5 }}>
                       <span style={{ fontWeight:700, fontSize:13, color:T.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{room.name}</span>
-                      {roomKey && <span title="End-to-end encrypted" style={{ color:T.accent, fontSize:11, flexShrink:0 }}>🔒</span>}
+                      {roomKey && <span title="Messages encrypted at rest (server holds the key — not true end-to-end encryption)" style={{ color:T.accent, fontSize:11, flexShrink:0 }}>🔒</span>}
                     </div>
                     {room.description && <div style={{ fontSize:10, color:T.muted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{room.description}</div>}
                   </div>
