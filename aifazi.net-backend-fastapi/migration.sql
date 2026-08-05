@@ -513,30 +513,61 @@ CREATE INDEX IF NOT EXISTS fivem_connect_tokens_user_idx ON public.fivem_connect
 -- 9. DB CONSOLE — exec_sql function
 -- ─────────────────────────────────────────────────────────────
 
--- exec_sql: executes arbitrary SQL via DB Monitor SQL Console
--- SECURITY DEFINER so staff can run SELECT / DML / DDL
--- Returns JSONB: SELECT queries return rows, DML returns {"ok":true}
+-- exec_sql: executes a single SELECT query via DB Monitor SQL Console.
+-- SECURITY DEFINER so staff can run SELECT against any table.
+-- HARDENED: blocks every `;` and dangerous keyword at the DB level, only
+-- accepts single SELECT/WITH (read-only) statements, and EXECUTE is revoked
+-- from PUBLIC/anon/authenticated (service_role only) — see migrations
+-- 005/008/022. The old base build executed arbitrary SQL with zero filtering
+-- and no REVOKE, which let anyone with the anon key call
+-- supabase.rpc('exec_sql', {sql_text:'DROP TABLE users'}) on a fresh DB.
 CREATE OR REPLACE FUNCTION exec_sql(sql_text text)
-RETURNS JSONB
+RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
-  result JSONB;
+  _normalized text;
+  _result jsonb;
 BEGIN
-  BEGIN
-    EXECUTE format('SELECT COALESCE(json_agg(row_to_json(t)), ''[]''::json) FROM (%s) t', sql_text) INTO result;
-    RETURN result;
-  EXCEPTION WHEN OTHERS THEN
-    BEGIN
-      EXECUTE sql_text;
-      RETURN json_build_object('ok', true)::jsonb;
-    EXCEPTION WHEN OTHERS THEN
-      RETURN json_build_object('error', SQLERRM)::jsonb;
-    END;
-  END;
+  IF position(';' in sql_text) > 0 THEN
+    RAISE EXCEPTION 'exec_sql: semicolons are not allowed (single-statement SELECT only)';
+  END IF;
+
+  _normalized := regexp_replace(lower(trim(sql_text)), '\s+', ' ', 'g');
+
+  IF _normalized ~ ANY(ARRAY[
+    '^\s*(drop|alter|create|truncate|insert|update|delete|grant|revoke|vacuum|reindex|cluster|copy|call|do)\b',
+    'exec_sql\s*\(',
+    'pg_execute', 'pg_read_file', 'pg_write_file',
+    'lo_import', 'lo_export', 'dblink',
+    'pg_read_binary_file', 'pg_write_binary_file',
+    'copy\s+.*\s+from\s+', 'copy\s+.*\s+to\s+',
+    'security\s+definer', 'set\s+role', 'reset\s+role',
+    'set\s+session\s+authorization', 'create\s+or\s+replace\s+function'
+  ]) THEN
+    RAISE EXCEPTION 'exec_sql: blocked dangerous operation. Only single SELECT queries are allowed.';
+  END IF;
+
+  IF _normalized ~ '^\s*with\b' AND _normalized ~ '\b(delete|insert|update)\b' THEN
+    RAISE EXCEPTION 'exec_sql: blocked CTE with write operation. Only SELECT queries are allowed.';
+  END IF;
+
+  IF NOT (_normalized ~ '^\s*select\b' OR _normalized ~ '^\s*with\b') THEN
+    RAISE EXCEPTION 'exec_sql: only SELECT queries are allowed. Got: %', left(sql_text, 100);
+  END IF;
+
+  EXECUTE format('SELECT COALESCE(jsonb_agg(row_to_json(__q)), ''[]''::jsonb) FROM (%s) __q', sql_text) INTO _result;
+  RETURN _result;
 END;
 $$;
+
+-- Only the backend's service_role may call exec_sql. The anon/authenticated
+-- roles must NEVER reach it over the REST surface.
+REVOKE EXECUTE ON FUNCTION exec_sql(text) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION exec_sql(text) FROM authenticated;
+GRANT EXECUTE ON FUNCTION exec_sql(text) TO service_role;
 
 -- ─────────────────────────────────────────────────────────────
 -- 10. EMAIL SYSTEM — mail_queue, mail_templates, seeds
