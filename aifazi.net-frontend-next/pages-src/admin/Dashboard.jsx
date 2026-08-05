@@ -196,19 +196,17 @@ function Dashboard({ onLogout }) {
   const [showShortcuts, setShowShortcuts] = useState(false)
 
   // Session expiry warning — checks JWT exp, warns 5 min before
-  useEffect(() => {
-    const checkExpiry = () => {
-      const token = getAuthToken()
-      if (!token) return
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        const expiresIn = (payload.exp * 1000) - Date.now()
-        if (expiresIn < 5 * 60 * 1000 && expiresIn > 0) setSessionWarning(true)
-        else setSessionWarning(false)
-      } catch {}
-    }
-    checkExpiry()
-  }, [])
+  const checkExpiry = () => {
+    const token = getAuthToken()
+    if (!token) return
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const expiresIn = (payload.exp * 1000) - Date.now()
+      if (expiresIn < 5 * 60 * 1000 && expiresIn > 0) setSessionWarning(true)
+      else setSessionWarning(false)
+    } catch {}
+  }
+  useEffect(() => { checkExpiry() }, [])
   usePausableInterval(checkExpiry, 30000)
 
   // Keyboard shortcuts
