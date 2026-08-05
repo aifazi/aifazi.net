@@ -438,6 +438,7 @@ export function OrdersTab() {
   const [detail, setDetail] = useState(null)
   const [expanded, setExpanded] = useState({})
   const [trackForm, setTrackForm] = useState({})
+  const { confirm } = useDialog()
 
   const load = useCallback(() => {
     setLoading(true)
@@ -450,9 +451,17 @@ export function OrdersTab() {
 
   const setStatus = async (o, status) => {
     try {
-      await api.patch(`/store/admin/orders/${o.id}/status`, { status })
+      if (status === 'refunded') {
+        // Refunds go through the dedicated endpoint: reverses the Stripe
+        // payment, records the refund, restocks items and voids the invoice.
+        const ok = await confirm({ title: 'Refund Order', message: `Refund ${o.order_number} for ${money(o.total_cents)}? The payment will be reversed, stock restocked, and the invoice voided.`, variant: 'danger', confirmLabel: 'REFUND' })
+        if (!ok) return
+        await api.post(`/store/admin/orders/${o.id}/refund`)
+      } else {
+        await api.patch(`/store/admin/orders/${o.id}/status`, { status })
+      }
       toast.success(`${o.order_number} → ${status}`, { title: 'Order updated' }); load()
-    } catch (e) { toast.error(e.response?.data?.error || 'Update failed', { title: 'Error' }) }
+    } catch (e) { toast.error(e.response?.data?.detail || e.response?.data?.error || 'Update failed', { title: 'Error' }) }
   }
 
   const saveTracking = async (o) => {

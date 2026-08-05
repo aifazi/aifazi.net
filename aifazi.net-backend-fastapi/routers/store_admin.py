@@ -345,8 +345,16 @@ class OrderStatusBody(BaseModel):
     tracking_url: str = ""
 
 
+# Statuses staff may set directly. "paid" is only ever set by the Stripe webhook
+# (fulfilment), and "refunded" must go through the refund endpoint (which reverses
+# the payment at Stripe, records the refund, restocks items and voids the invoice).
+ALLOWED_MANUAL_STATUSES = {"pending", "processing", "shipped", "delivered", "cancelled", "completed"}
+
+
 @router.patch("/orders/{order_id}/status")
 async def update_order_status(order_id: str, body: OrderStatusBody, staff: dict = Depends(ORDERS)):
+    if body.status not in ALLOWED_MANUAL_STATUSES:
+        raise HTTPException(400, f"Status '{body.status}' cannot be set directly. Use the refund action for refunds.")
     res = supabase.table("store_orders").select("status").eq("id", order_id).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Order not found")
