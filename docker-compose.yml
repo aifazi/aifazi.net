@@ -1,81 +1,49 @@
-# ══════════════════════════════════════════════════════════════
-# aifazi.net — Full Stack Docker Dev Environment
+# ── aifazi.net — local development docker-compose ──────────────────────────────
+# Start:   docker compose up -d --build
+# Stop:    docker compose down
+# Logs:    docker compose logs -f
+# Rebuild: docker compose up -d --build
 #
-# Start:  docker compose up -d
-# Logs:   docker compose logs -f
-# Stop:   docker compose down
-# ══════════════════════════════════════════════════════════════
+# Uses PRODUCTION Supabase — no local Supabase services.
+# The browser connects to the production Supabase URL directly.
+# The backend connects to production Supabase via its service role key.
 
 services:
-  # ── Frontend (Next.js) ─────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: aifazi-backend
+    ports:
+      - '127.0.0.1:8000:8000'
+    volumes:
+      - ./aifazi.net-backend-fastapi:/app
+      - /app/__pycache__
+    env_file:
+      - .env.local
+    networks:
+      - aifazi-net
+    restart: unless-stopped
+
   frontend:
     build:
-      context: ./aifazi.net-frontend-next
-      dockerfile: Dockerfile.dev
-    container_name: aifazi-web-frontend
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    container_name: aifazi-frontend
     ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://backend:8000
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-dev-secret-change-me}
-      - PASETO_SECRET=${PASETO_SECRET:-dev-paseto-secret-change-me}
-      - ADMIN_GATE_SECRET=${ADMIN_GATE_SECRET:-}
+      - '127.0.0.1:3000:3000'
     volumes:
       - ./aifazi.net-frontend-next:/app
       - /app/node_modules
       - /app/.next
+    env_file:
+      - .env.local
     depends_on:
       - backend
+    networks:
+      - aifazi-net
     restart: unless-stopped
 
-  # ── Backend (FastAPI) ──────────────────────────────────────
-  backend:
-    build:
-      context: ./aifazi.net-backend-fastapi
-      dockerfile: Dockerfile.dev
-    container_name: aifazi-web-backend
-    ports:
-      - "8000:8000"
-    environment:
-      - ENV=development
-      - FRONTEND_URL=http://localhost:3000
-      - PASETO_SECRET=${PASETO_SECRET:-dev-paseto-secret-change-me}
-      - JWT_SECRET=${JWT_SECRET:-dev-jwt-secret-change-me}
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-dev-secret-change-me}
-      - ADMIN_GATE_SECRET=${ADMIN_GATE_SECRET:-}
-      - CRON_SECRET=${CRON_SECRET:-dev-cron-secret}
-      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-      - MAIL_WEBHOOK_SECRET=${MAIL_WEBHOOK_SECRET:-}
-      - SENTRY_DSN=${SENTRY_DSN:-}
-      - CLOUDFLARE_R2_ACCESS_KEY=${CLOUDFLARE_R2_ACCESS_KEY:-}
-      - CLOUDFLARE_R2_SECRET_KEY=${CLOUDFLARE_R2_SECRET_KEY:-}
-      - CLOUDFLARE_R2_ENDPOINT=${CLOUDFLARE_R2_ENDPOINT:-}
-      - CLOUDFLARE_R2_BUCKET=${CLOUDFLARE_R2_BUCKET:-}
-      - CLOUDINARY_URL=${CLOUDINARY_URL:-}
-    volumes:
-      - ./aifazi.net-backend-fastapi:/app
-    restart: unless-stopped
-
-  # ── Supabase Local (optional — remove if using remote Supabase) ──
-  # Uncomment to use a local PostgreSQL instead of remote Supabase.
-  # db:
-  #   image: postgres:17-alpine
-  #   container_name: aifazi-db
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: postgres
-  #     POSTGRES_DB: aifazi
-  #   ports:
-  #     - "54322:5432"
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   restart: unless-stopped
-  #
-  #volumes:
-  #  pgdata:
+networks:
+  aifazi-net:
+    driver: bridge

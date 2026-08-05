@@ -8,3 +8,4 @@ dist
 *.tsbuildinfo
 .vercel
 standalone.log
+.env*

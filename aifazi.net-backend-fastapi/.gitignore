@@ -39,3 +39,4 @@ now
 audit-report-*.html
 .vercel
 .env*.local
+.env*
