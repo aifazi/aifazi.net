@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from database import supabase
 from dependencies import require_staff
-from utils.email import send_email, render_template
+from utils.email import send_email, render_template, _esc
 from utils.email_queue import queue_email
 from datetime import datetime, timezone
 router = APIRouter()
@@ -21,9 +21,9 @@ class ReplyBody(BaseModel):
         return self.reply or self.body
 
 def _html(text: str) -> str:
-    """Convert plain-text with newlines to HTML paragraphs."""
+    """Convert plain-text with newlines to HTML paragraphs (escaped)."""
     paras = [p.strip() for p in text.split('\n') if p.strip()]
-    return "".join(f"<p style='margin:0 0 12px;line-height:1.7;'>{p}</p>" for p in paras)
+    return "".join(f"<p style='margin:0 0 12px;line-height:1.7;'>{_esc(p)}</p>" for p in paras)
 
 @router.post("")
 async def submit(body: ContactBody):
@@ -40,7 +40,7 @@ async def submit(body: ContactBody):
     })
     await queue_email(body.email,
                       subject or f"Re: {body.subject or 'Your message'}",
-                      html or f"<p>Thanks {body.name}, we received your message and will get back to you shortly.</p>",
+                      html or f"<p>Thanks {_esc(body.name)}, we received your message and will get back to you shortly.</p>",
                       purpose="contact_confirm")
     return {"message": "Message sent", "id": res.data[0]["id"]}
 

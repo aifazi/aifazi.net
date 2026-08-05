@@ -3,11 +3,20 @@ utils/email.py — Email sender with queue logging and template support.
 Every send attempt is recorded in mail_queue with status sent/failed.
 Templates are fetched from mail_templates by purpose key.
 """
-import httpx, logging, re, os
+import httpx, logging, re, os, html as _html_mod
 from datetime import datetime, timezone
 from database import supabase
 
 logger = logging.getLogger(__name__)
+
+
+def _esc(value) -> str:
+    """HTML-escape a template value before it is embedded in email markup.
+
+    Prevents stored-XSS/phishing via user-controlled values (usernames,
+    chat messages, form answers, ticket text) that land in email HTML.
+    """
+    return "" if value is None else _html_mod.escape(str(value), quote=True)
 
 
 def _c(cfg: dict, *keys: str, default: str = "") -> str:
@@ -126,10 +135,10 @@ def _email_shell(palette: dict, title: str, body_html: str,
     btn = ""
     if button_label and button_url:
         btn = (f'<div style="text-align:center;margin:28px 0 8px">'
-               f'<a href="{button_url}" style="display:inline-block;background:{palette["primary"]};'
+               f'<a href="{_esc(button_url)}" style="display:inline-block;background:{palette["primary"]};'
                f'color:{_button_text_color(palette["primary"])};font-family:Inter,Segoe UI,sans-serif;'
                f'font-size:14px;font-weight:700;letter-spacing:1.5px;text-decoration:none;'
-               f'padding:14px 34px;border-radius:8px;">{button_label}</a></div>'
+               f'padding:14px 34px;border-radius:8px;">{_esc(button_label)}</a></div>'
                f'<p style="color:{palette["muted"]};font-size:11px;text-align:center;margin:12px 0 0;">'
                f'If the button doesn\'t work, open the link directly from your browser.</p>')
     body = (f'<div style="background:{palette["bg"]};padding:32px 16px;font-family:Inter,Segoe UI,sans-serif;">'
@@ -139,17 +148,17 @@ def _email_shell(palette: dict, title: str, body_html: str,
             f'<div style="padding:36px 38px;">'
             f'<div style="text-align:center;margin-bottom:24px;">'
             f'<span style="font-family:Outfit,Inter,sans-serif;font-size:13px;font-weight:800;'
-            f'letter-spacing:4px;color:{palette["primary"]};">{site_name.upper()}</span>'
+            f'letter-spacing:4px;color:{palette["primary"]};">{_esc(site_name).upper()}</span>'
             f'</div>'
             f'<h1 style="color:{palette["text"]};font-family:Outfit,Inter,sans-serif;font-size:24px;'
-            f'font-weight:700;margin:0 0 18px;text-align:center;">{icon} {title}</h1>'
+            f'font-weight:700;margin:0 0 18px;text-align:center;">{_esc(icon)} {_esc(title)}</h1>'
             f'{body_html}'
             f'{btn}'
             f'</div>'
             f'<div style="padding:16px 38px;background:{palette["bg3"]};border-top:1px solid {palette["border"]};'
             f'text-align:center;">'
             f'<span style="color:{palette["muted"]};font-size:11px;line-height:1.7;">'
-            f'{footnote or f"You are receiving this email because you have an account at {site_name}."}'
+            f'{footnote or _esc(f"You are receiving this email because you have an account at {site_name}.")}'
             f'</span></div></div></div>')
     return body
 
@@ -166,8 +175,15 @@ _VAR_ALIASES = {
 }
 
 def _render_html(html: str, context: dict) -> str:
+    """Substitute {{key}} placeholders, HTML-escaping every value by default.
+
+    A template that genuinely needs raw HTML can opt out per-variable with the
+    explicit {{key|safe}} form (e.g. app-generated {{answers_table|safe}}).
+    """
     for k, v in context.items():
-        html = html.replace(f"{{{{{k}}}}}", str(v))
+        s = "" if v is None else str(v)
+        html = html.replace(f"{{{{{k}}}|safe}}", s)
+        html = html.replace(f"{{{{{k}}}}}", _esc(s))
     return html
 
 def render_template(purpose: str, variables: dict) -> tuple[str, str]:
@@ -212,117 +228,117 @@ def _reviewer_note_html(p: dict, note: str) -> str:
     if not note:
         return ""
     return (f'<div style="color:{p["muted"]};margin-top:6px;">'
-            f'Note: {note}</div>')
+            f'Note: {_esc(note)}</div>')
 
 
 def _default_template(purpose: str, v: dict, p: dict) -> tuple[str, str]:
     """Built-in theme-matched templates used when no DB row exists."""
     body_text = ""
-    body = f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi {v.get("username") or v.get("name") or "there"},</p>'
+    body = f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi {_esc(v.get("username") or v.get("name") or "there")},</p>'
     subject = f"[{v.get('site_name', 'aifazi.net')}] Notification"
 
     if purpose == "account_activation":
         subject = f"Verify your email — {v.get('site_name', 'aifazi.net')}"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'Hi {v.get("username") or "there"}, welcome to <strong>{v.get("site_name", "aifazi.net")}</strong>. '
+                f'Hi {_esc(v.get("username") or "there")}, welcome to <strong>{_esc(v.get("site_name", "aifazi.net"))}</strong>. '
                 f'Please confirm your email address to activate your account.</p>')
-        return subject, _email_shell(p, "Verify your email", body, "VERIFY EMAIL", v.get("activation_link") or v.get("link") or "#", f"This link expires in {v.get('expires_in', '24 hours')}. If you didn't create this account, you can safely ignore this email.", icon="✅")
+        return subject, _email_shell(p, "Verify your email", body, "VERIFY EMAIL", v.get("activation_link") or v.get("link") or "#", f"This link expires in {_esc(v.get('expires_in', '24 hours'))}. If you didn't create this account, you can safely ignore this email.", icon="✅")
 
     if purpose == "password_reset":
         subject = f"Reset your password — {v.get('site_name', 'aifazi.net')}"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'Hi {v.get("username") or "there"}, we received a request to reset your password for '
-                f'<strong>{v.get("site_name", "aifazi.net")}</strong>. Click below to choose a new one.</p>')
-        return subject, _email_shell(p, "Reset your password", body, "RESET PASSWORD", v.get("reset_link") or v.get("link") or "#", f"This link expires in {v.get('expires_in', '1 hour')}. If you didn't request this, you can safely ignore this email.", icon="🔑")
+                f'Hi {_esc(v.get("username") or "there")}, we received a request to reset your password for '
+                f'<strong>{_esc(v.get("site_name", "aifazi.net"))}</strong>. Click below to choose a new one.</p>')
+        return subject, _email_shell(p, "Reset your password", body, "RESET PASSWORD", v.get("reset_link") or v.get("link") or "#", f"This link expires in {_esc(v.get('expires_in', '1 hour'))}. If you didn't request this, you can safely ignore this email.", icon="🔑")
 
     if purpose == "discord_welcome":
         subject = f"Welcome to {v.get('site_name', 'aifazi.net')} 🎉"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'Your Discord account <strong>{v.get("discord_username", "")}</strong> is linked and your account '
-                f'<strong>{v.get("username", "")}</strong> is ready. Head to your profile to continue.</p>')
+                f'Your Discord account <strong>{_esc(v.get("discord_username", ""))}</strong> is linked and your account '
+                f'<strong>{_esc(v.get("username", ""))}</strong> is ready. Head to your profile to continue.</p>')
         return subject, _email_shell(p, "You're all set!", body, "GO TO PROFILE", v.get("profile_url") or v.get("frontend_url") or "#", icon="🎮")
 
     if purpose == "contact_confirm":
         subject = f"Thanks for contacting {v.get('site_name', 'aifazi.net')}"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'Hi {v.get("name") or "there"}, we received your message:</p>'
-                f'<blockquote style="margin:0 0 16px;padding:14px 18px;background:{p["bg3"]};border-left:3px solid {p["primary"]};color:{p["text"]};font-size:13px;line-height:1.7;">{v.get("message", "")}</blockquote>'
+                f'Hi {_esc(v.get("name") or "there")}, we received your message:</p>'
+                f'<blockquote style="margin:0 0 16px;padding:14px 18px;background:{p["bg3"]};border-left:3px solid {p["primary"]};color:{p["text"]};font-size:13px;line-height:1.7;">{_esc(v.get("message", ""))}</blockquote>'
                 f'<p style="color:{p["muted"]};font-size:13px;">We\'ll get back to you as soon as possible.</p>')
         return subject, _email_shell(p, "Message received", body, icon="📩")
 
     if purpose == "contact_reply":
-        subject = f"Re: {v.get('subject', '')} — {v.get('site_name', 'aifazi.net')}"
-        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi {v.get("name") or "there"},</p>'
-                f'<blockquote style="margin:0 0 16px;padding:14px 18px;background:{p["bg3"]};border-left:3px solid {p["primary"]};color:{p["text"]};font-size:13px;line-height:1.7;">{v.get("reply_message", "")}</blockquote>'
+        subject = f"Re: {_esc(v.get('subject', ''))} — {v.get('site_name', 'aifazi.net')}"
+        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi {_esc(v.get("name") or "there")},</p>'
+                f'<blockquote style="margin:0 0 16px;padding:14px 18px;background:{p["bg3"]};border-left:3px solid {p["primary"]};color:{p["text"]};font-size:13px;line-height:1.7;">{_esc(v.get("reply_message", ""))}</blockquote>'
                 f'<p style="color:{p["muted"]};font-size:13px;">— The {v.get("site_name", "aifazi.net")} team</p>')
         return subject, _email_shell(p, "A reply from our team", body, icon="💬")
 
     if purpose == "chat_message":
-        subject = f"New message in {v.get('room_name', 'chat')} — {v.get('site_name', 'aifazi.net')}"
+        subject = f"New message in {_esc(v.get('room_name', 'chat'))} — {v.get('site_name', 'aifazi.net')}"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'<strong>{v.get("sender_name", "")}</strong> sent a message in <strong>{v.get("room_name", "")}</strong>:</p>'
-                f'<blockquote style="margin:0 0 16px;padding:14px 18px;background:{p["bg3"]};border-left:3px solid {p["primary"]};color:{p["text"]};font-size:13px;line-height:1.7;">{v.get("message_preview", "")}</blockquote>')
+                f'<strong>{_esc(v.get("sender_name", ""))}</strong> sent a message in <strong>{_esc(v.get("room_name", ""))}</strong>:</p>'
+                f'<blockquote style="margin:0 0 16px;padding:14px 18px;background:{p["bg3"]};border-left:3px solid {p["primary"]};color:{p["text"]};font-size:13px;line-height:1.7;">{_esc(v.get("message_preview", ""))}</blockquote>')
         return subject, _email_shell(p, "New chat message", body, "OPEN CHAT", v.get("chat_url") or "#", icon="💬")
 
     if purpose == "chat_invite":
-        subject = f"You've been invited to {v.get('room_name', 'a room')} — {v.get('site_name', 'aifazi.net')}"
+        subject = f"You've been invited to {_esc(v.get('room_name', 'a room'))} — {v.get('site_name', 'aifazi.net')}"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'Hi {v.get("username") or "there"}, <strong>{v.get("sender_name", "")}</strong> invited you to join '
-                f'<strong>{v.get("room_name", "")}</strong>.</p>')
+                f'Hi {_esc(v.get("username") or "there")}, <strong>{_esc(v.get("sender_name", ""))}</strong> invited you to join '
+                f'<strong>{_esc(v.get("room_name", ""))}</strong>.</p>')
         return subject, _email_shell(p, "You're invited", body, "JOIN THE CHAT", v.get("chat_url") or "#", icon="➕")
 
     if purpose == "mail_test":
         subject = f"Test email — {v.get('site_name', 'aifazi.net')}"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'This is a test email to <strong>{v.get("email", "")}</strong>. Your email provider is configured and working correctly. 🎉</p>')
+                f'This is a test email to <strong>{_esc(v.get("email", ""))}</strong>. Your email provider is configured and working correctly. 🎉</p>')
         return subject, _email_shell(p, "Mail test", body, icon="🧪")
 
     if purpose == "helpdesk_account_created":
         subject = f"Your support account is ready — {v.get('site_name', 'aifazi.net')}"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'Hi {v.get("username") or "there"}, we created an account so you can track your support ticket. '
+                f'Hi {_esc(v.get("username") or "there")}, we created an account so you can track your support ticket. '
                 f'Please verify your email to get started.</p>')
-        return subject, _email_shell(p, "Verify your support account", body, "VERIFY EMAIL", v.get("verify_url") or "#", f"Your username: {v.get('username', '')}", icon="🎫")
+        return subject, _email_shell(p, "Verify your support account", body, "VERIFY EMAIL", v.get("verify_url") or "#", f"Your username: {_esc(v.get('username', ''))}", icon="🎫")
 
     if purpose == "ticket_confirmation":
-        subject = f"[{v.get('site_name', 'aifazi.net')}] Ticket #{v.get('ticket_id', '')} received"
+        subject = f"[{v.get('site_name', 'aifazi.net')}] Ticket #{_esc(v.get('ticket_id', ''))} received"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'Hi {v.get("name") or "there"}, your support request has been logged and our team will get back to you shortly.</p>'
+                f'Hi {_esc(v.get("name") or "there")}, your support request has been logged and our team will get back to you shortly.</p>'
                 f'<div style="background:{p["bg3"]};border:1px solid {p["border"]};border-radius:8px;padding:16px 18px;margin:0 0 16px;font-size:13px;">'
                 f'<div style="color:{p["muted"]};font-size:11px;letter-spacing:2px;margin-bottom:8px;">TICKET DETAILS</div>'
-                f'<div style="color:{p["text"]};margin:2px 0;"><strong>#</strong>{v.get("ticket_id", "")} — {v.get("subject", "")}</div>'
-                f'<div style="color:{p["text"]};margin:2px 0;">Category: {v.get("category", "")} · Priority: {v.get("priority", "")}</div>'
-                f'<div style="color:{p["muted"]};margin:6px 0 0;">{v.get("description", "")}</div></div>')
+                f'<div style="color:{p["text"]};margin:2px 0;"><strong>#</strong>{_esc(v.get("ticket_id", ""))} — {_esc(v.get("subject", ""))}</div>'
+                f'<div style="color:{p["text"]};margin:2px 0;">Category: {_esc(v.get("category", ""))} · Priority: {_esc(v.get("priority", ""))}</div>'
+                f'<div style="color:{p["muted"]};margin:6px 0 0;">{_esc(v.get("description", ""))}</div></div>')
         return subject, _email_shell(p, "Ticket received", body, "TRACK YOUR TICKET", v.get("track_url") or "#", icon="🎫")
 
     if purpose == "ticket_reply":
-        subject = f"[{v.get('site_name', 'aifazi.net')}] New reply on ticket #{v.get('ticket_id', '')}"
+        subject = f"[{v.get('site_name', 'aifazi.net')}] New reply on ticket #{_esc(v.get('ticket_id', ''))}"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'<strong>{v.get("staff_name", "Staff")}</strong> replied to <strong>#{v.get("ticket_id", "")}</strong> — {v.get("subject", "")}:</p>'
-                f'<blockquote style="margin:0 0 16px;padding:14px 18px;background:{p["bg3"]};border-left:3px solid {p["primary"]};color:{p["text"]};font-size:13px;line-height:1.7;">{v.get("reply_message", "")}</blockquote>')
+                f'<strong>{_esc(v.get("staff_name", "Staff"))}</strong> replied to <strong>#{_esc(v.get("ticket_id", ""))}</strong> — {_esc(v.get("subject", ""))}:</p>'
+                f'<blockquote style="margin:0 0 16px;padding:14px 18px;background:{p["bg3"]};border-left:3px solid {p["primary"]};color:{p["text"]};font-size:13px;line-height:1.7;">{_esc(v.get("reply_message", ""))}</blockquote>')
         return subject, _email_shell(p, "New reply on your ticket", body, "VIEW TICKET", v.get("track_url") or "#", icon="↩️")
 
     if purpose == "newsletter_broadcast":
-        subject = v.get("subject") or f"News from {v.get('site_name', 'aifazi.net')}"
+        subject = _esc(v.get("subject") or f"News from {v.get('site_name', 'aifazi.net')}")
         body = f'<div style="color:{p["text"]};font-size:14px;line-height:1.8;">{v.get("body", "")}</div>'
-        return subject, _email_shell(p, "Latest update", body, footnote=f'You are receiving this because you subscribed. <a href="{v.get("unsubscribe_link", "#")}" style="color:{p["secondary"]};">Unsubscribe</a>.', icon="📬")
+        return subject, _email_shell(p, "Latest update", body, footnote=f'You are receiving this because you subscribed. <a href="{_esc(v.get("unsubscribe_link", "#"))}" style="color:{p["secondary"]};">Unsubscribe</a>.', icon="📬")
 
     if purpose == "newsletter_post":
-        subject = f"New post: {v.get('post_title', '')} — {v.get('site_name', 'aifazi.net')}"
-        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">{v.get("excerpt", "")}</p>')
-        return subject, _email_shell(p, v.get("post_title", "New post"), body, "READ THE POST", v.get("post_url") or "#", footnote=f'You are receiving this because you subscribed. <a href="{v.get("unsubscribe_link", "#")}" style="color:{p["secondary"]};">Unsubscribe</a>.', icon="📰")
+        subject = f"New post: {_esc(v.get('post_title', ''))} — {v.get('site_name', 'aifazi.net')}"
+        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">{_esc(v.get("excerpt", ""))}</p>')
+        return subject, _email_shell(p, _esc(v.get("post_title", "New post")), body, "READ THE POST", v.get("post_url") or "#", footnote=f'You are receiving this because you subscribed. <a href="{_esc(v.get("unsubscribe_link", "#"))}" style="color:{p["secondary"]};">Unsubscribe</a>.', icon="📰")
 
     if purpose == "password_reset_admin":
         subject = f"Password reset requested — {v.get('site_name', 'aifazi.net')}"
         body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'Hi {v.get("username") or "there"}, an administrator started a password reset for your account. '
+                f'Hi {_esc(v.get("username") or "there")}, an administrator started a password reset for your account. '
                 f'Open the login page and use <strong>Forgot Password</strong> to complete it.</p>')
         return subject, _email_shell(p, "Password reset requested", body, "OPEN LOGIN", v.get("login_url") or "#", icon="🔑")
 
     if purpose == "admin_user_message":
-        subject = v.get("subject") or f"Message from {v.get('site_name', 'aifazi.net')}"
+        subject = _esc(v.get("subject") or f"Message from {v.get('site_name', 'aifazi.net')}")
         body = f'<div style="color:{p["text"]};font-size:14px;line-height:1.8;">{v.get("message", "")}</div>'
-        return subject, _email_shell(p, v.get("subject") or "Message from the team", body, icon="📨")
+        return subject, _email_shell(p, _esc(v.get("subject") or "Message from the team"), body, icon="📨")
 
     if purpose.startswith("fivem_"):
         status_map = {
@@ -335,9 +351,9 @@ def _default_template(purpose: str, v: dict, p: dict) -> tuple[str, str]:
             "fivem_reset":    ("Application reset", "your whitelist application has been reset.", "🔄"),
         }
         title, blurb, icon = status_map.get(purpose, ("Status update", "there's an update on your whitelist application.", "📋"))
-        extra = f'<p style="color:{p["muted"]};font-size:13px;line-height:1.7;">{v.get("note", "")}</p>' if v.get("note") else ""
-        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi {v.get("name") or "there"}, {blurb}</p>'
-                f'<p style="color:{p["text"]};font-size:13px;line-height:1.7;margin:0 0 16px;">Character: <strong>{v.get("character_name", "")}</strong></p>{extra}')
+        extra = f'<p style="color:{p["muted"]};font-size:13px;line-height:1.7;">{_esc(v.get("note", ""))}</p>' if v.get("note") else ""
+        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi {_esc(v.get("name") or "there")}, {blurb}</p>'
+                f'<p style="color:{p["text"]};font-size:13px;line-height:1.7;margin:0 0 16px;">Character: <strong>{_esc(v.get("character_name", ""))}</strong></p>{extra}')
         return subject, _email_shell(p, title, body, "CHECK STATUS", v.get("status_url") or "#", icon=icon)
 
     if purpose.startswith("application_"):
@@ -349,16 +365,16 @@ def _default_template(purpose: str, v: dict, p: dict) -> tuple[str, str]:
             "application_archived":  ("Application archived", "your application has been archived.", "🗄️"),
         }
         title, blurb, icon = status_map.get(purpose, ("Application update", "there's an update on your application.", "📋"))
-        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi {v.get("username") or v.get("name") or "there"}, {blurb}</p>'
+        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi {_esc(v.get("username") or v.get("name") or "there")}, {blurb}</p>'
                 f'<div style="background:{p["bg3"]};border:1px solid {p["border"]};border-radius:8px;padding:14px 18px;margin:0 0 16px;font-size:13px;color:{p["text"]};">'
-                f'<div style="color:{p["muted"]};font-size:11px;letter-spacing:2px;margin-bottom:6px;">{v.get("form_title", "APPLICATION")}</div>'
-                f'<div>Status: {v.get("status", "")} · #{v.get("submission_id", "")}</div>'
+                f'<div style="color:{p["muted"]};font-size:11px;letter-spacing:2px;margin-bottom:6px;">{_esc(v.get("form_title", "APPLICATION"))}</div>'
+                f'<div>Status: {_esc(v.get("status", ""))} · #{_esc(v.get("submission_id", ""))}</div>'
                 f'{_reviewer_note_html(p, v.get("reviewer_note", ""))}'
                 f'</div>{v.get("answers_table", "")}')
         return subject, _email_shell(p, title, body, icon=icon)
 
     subject = f"[{v.get('site_name', 'aifazi.net')}] {purpose.replace('_', ' ').title()}"
-    body = f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0;">Hi {v.get("username") or v.get("name") or "there"}, you have an update from {v.get("site_name", "aifazi.net")}.</p>'
+    body = f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0;">Hi {_esc(v.get("username") or v.get("name") or "there")}, you have an update from {_esc(v.get("site_name", "aifazi.net"))}.</p>'
     return subject, _email_shell(p, "Update from the team", body, icon="📬")
 
 

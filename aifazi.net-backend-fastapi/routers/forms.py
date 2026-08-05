@@ -233,15 +233,16 @@ def _validate_answers(form: dict, answers: dict[str, Any]) -> None:
 
 
 def _render_template(purpose: str, variables: dict[str, str], fallback_subject: str, fallback_html: str) -> tuple[str, str]:
-    from utils.email import render_template
+    from utils.email import render_template, _esc
     try:
         return render_template(purpose, variables)
     except Exception:
         subject, html = fallback_subject, fallback_html
         for key, value in variables.items():
             token = "{{" + key + "}}"
-            subject = subject.replace(token, value)
-            html = html.replace(token, value)
+            raw = "{{" + key + "|safe}}"
+            subject = subject.replace(raw, value).replace(token, _esc(value))
+            html = html.replace(raw, value).replace(token, _esc(value))
         return subject, html
 
 
@@ -283,7 +284,7 @@ async def _send_submission_email(form: dict, submission: dict, user: dict, answe
   <div style="padding:28px">
     <h2 style="color:#00ff88;margin:0 0 8px">{{form_title}} received</h2>
     <p style="color:#94a3b8;line-height:1.7">Hi {{username}}, your application was submitted and is waiting for staff review.</p>
-    {{answers_table}}
+    {{answers_table|safe}}
   </div>
   <div style="background:#111827;padding:14px;text-align:center;font-size:11px;color:#64748b">AIFAZI RP · aifazi.net</div>
 </div>"""
@@ -328,7 +329,7 @@ async def _send_review_email(submission: dict, status: str) -> None:
     <h2 style="color:#00d4ff;margin:0 0 8px">{{form_title}} application {{status}}</h2>
     <p style="color:#94a3b8;line-height:1.7">Hi {{username}}, staff updated your application.</p>
     <p style="color:#e5e7eb;line-height:1.7">{{reviewer_note}}</p>
-    {{answers_table}}
+    {{answers_table|safe}}
   </div>
   <div style="background:#111827;padding:14px;text-align:center;font-size:11px;color:#64748b">AIFAZI RP · aifazi.net</div>
 </div>"""
@@ -518,8 +519,18 @@ async def review_submission(submission_id: str, body: SubmissionReviewBody, staf
             patch["action_synced_at"] = now
         website_role = action.get("website_role")
         if website_role and current.get("user_id"):
+            # Only allow promotion to a REAL role. Staff may grant member/user/
+            # chat/editor; moderator/admin/staff promotions require an admin —
+            # otherwise a staff member could promote applicants to admin.
+            normalized_role = str(website_role).strip().lower()
+            admin_only = {"admin", "moderator", "staff"}
+            staff_grantable = {"member", "user", "chat", "editor"}
+            if normalized_role in admin_only and staff.get("role") != "admin":
+                raise HTTPException(403, "Only admins can promote applicants to this role")
+            if normalized_role not in admin_only and normalized_role not in staff_grantable:
+                raise HTTPException(400, f"Invalid website_role: {website_role}")
             try:
-                supabase.table("users").update({"role": website_role}).eq("id", current.get("user_id")).execute()
+                supabase.table("users").update({"role": normalized_role}).eq("id", current.get("user_id")).execute()
             except Exception:
                 patch["action_sync_error"] = "Website role update failed"
     elif body.status in ("denied", "archived"):
