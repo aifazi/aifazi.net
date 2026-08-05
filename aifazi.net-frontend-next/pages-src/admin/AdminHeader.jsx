@@ -352,37 +352,37 @@ export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed,
   const accent = ROLE_ACCENT[role] || C.accent
 
   /* Stats polling */
+  const loadVisitors = async () => {
+    try {
+      const v = await api.get('/admin/stats/visitors/live')
+      if (typeof v?.data?.count === 'number') {
+        setStats(p => ({ ...p, visitors: v.data.count }))
+        return
+      }
+    } catch {}
+    // Supabase fallback: count sessions active in last 5 min
+    try {
+      const sb = getSupabase()
+      if (!sb) return
+      const since = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      const { count: c } = await sb.from('visitor_sessions')
+        .select('*', { count: 'exact', head: true }).gte('last_seen', since)
+      if (typeof c === 'number') setStats(p => ({ ...p, visitors: c }))
+    } catch {}
+  }
+
+  const loadGeneral = async () => {
+    try {
+      const s = await api.get('/admin/stats')
+      if (s?.data) setStats(p => ({
+        ...p,
+        posts: s.data.counts?.posts?.total   ?? '—',
+        msgs:  s.data.counts?.contacts        ?? '—',
+      }))
+    } catch {}
+  }
+
   useEffect(() => {
-    const sb = getSupabase()
-    const loadVisitors = async () => {
-      try {
-        const v = await api.get('/admin/stats/visitors/live')
-        if (typeof v?.data?.count === 'number') {
-          setStats(p => ({ ...p, visitors: v.data.count }))
-          return
-        }
-      } catch {}
-      // Supabase fallback: count sessions active in last 5 min
-      try {
-        if (!sb) return
-        const since = new Date(Date.now() - 5 * 60 * 1000).toISOString()
-        const { count: c } = await sb.from('visitor_sessions')
-          .select('*', { count: 'exact', head: true }).gte('last_seen', since)
-        if (typeof c === 'number') setStats(p => ({ ...p, visitors: c }))
-      } catch {}
-    }
-
-    const loadGeneral = async () => {
-      try {
-        const s = await api.get('/admin/stats')
-        if (s?.data) setStats(p => ({
-          ...p,
-          posts: s.data.counts?.posts?.total   ?? '—',
-          msgs:  s.data.counts?.contacts        ?? '—',
-        }))
-      } catch {}
-    }
-
     loadVisitors()
     loadGeneral()
   }, [])
