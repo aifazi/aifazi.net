@@ -14,7 +14,7 @@
        the token requirement is enforced only when Config.RequireConnectSession=true
 
     server.cfg:
-        set fivem_api_secret "mOlVcBjLEzA6kDrFEgKPwt2EM7NakQ3tCp84h0vRhoe"
+        set fivem_api_secret "REPLACE_WITH_YOUR_FIVEM_SERVER_SECRET"
         set txadmin_port "40120"   (default txAdmin port)
 ]]
 
