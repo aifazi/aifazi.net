@@ -40,6 +40,7 @@ function ExperienceItem({ job, i }) {
           delay: i * 0.1,
           ease: 'expo.out',
           scrollTrigger: { trigger: el, start: 'top bottom', once: true },
+          immediateRender: false,
         })
       })
     }).catch(() => {
