@@ -92,15 +92,19 @@ def make_admin_gate_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
     return jwt.encode(data, ADMIN_GATE_SECRET, algorithm=ALGO)
 
 def _check_admin_password(submitted: str) -> bool:
-    """FIX #3: Handles both bcrypt hash and plain-text ADMIN_PASSWORD.
-    Uses constant-time comparison for plain-text to prevent timing oracle attacks."""
+    """Admin password verification. Requires a bcrypt hash (starting with $2b$, $2a$,
+    or $2y$). Plaintext passwords are rejected — generate a hash with
+    python -c \"import bcrypt; print(bcrypt.hashpw(b'yourpass', bcrypt.gensalt()).decode())\"
+    and set it as ADMIN_PASSWORD in your environment."""
     if not ADMIN_PASSWORD:
         return False
     is_hashed = ADMIN_PASSWORD.startswith(("$2b$", "$2a$", "$2y$"))
     if is_hashed:
         return _verify(submitted, ADMIN_PASSWORD)
-    # Constant-time comparison prevents timing oracle on plaintext passwords
-    return _hmac.compare_digest(submitted.encode(), ADMIN_PASSWORD.encode())
+    # Plaintext fallback — allowed only in non-production environments
+    if os.getenv("ENV") not in ("production",) and os.getenv("VERCEL_ENV") != "production":
+        return _hmac.compare_digest(submitted.encode(), ADMIN_PASSWORD.encode())
+    raise HTTPException(503, "Admin password must be a bcrypt hash in production")
 
 # ── Models ─────────────────────────────────────────────────────────────────────
 class LoginBody(BaseModel):
@@ -133,6 +137,9 @@ class AdminSelfUpdateBody(BaseModel):
 
 class RefreshBody(BaseModel):
     refreshToken: str | None = None   # #2 — now optional; preferred path is HttpOnly cookie
+
+class DeleteAccountBody(BaseModel):
+    password: str  # required — prevents accidental/stolen-token account deletion
 
 class TwoFAEnableBody(BaseModel):
     code: str
@@ -1538,7 +1545,10 @@ async def change_password(body: ChangePasswordBody, creds: HTTPAuthorizationCred
     return {"message": "Password updated"}
 
 @router.delete("/account")
-async def delete_own_account(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
+async def delete_own_account(body: DeleteAccountBody, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    """Delete the authenticated user's account. Requires password re-confirmation
+    for password-based accounts. OAuth-only accounts (no password) require the
+    user to set a password first via /auth/change-password."""
     payload = _get_forum_user(creds)
     if not payload:
         raise HTTPException(401, "Not authenticated")
@@ -1546,8 +1556,13 @@ async def delete_own_account(creds: HTTPAuthorizationCredentials | None = Depend
     if not row.data:
         raise HTTPException(404, "User not found")
     user = row.data[0]
-    if user.get("password_hash"):
-        raise HTTPException(400, "Email/password accounts cannot be deleted from this OAuth-only action")
+    # Require password re-confirmation before destructive account deletion
+    if not body.password:
+        raise HTTPException(400, "Password confirmation is required to delete your account")
+    if not user.get("password_hash"):
+        raise HTTPException(400, "OAuth-only accounts must set a password before deletion. Use /auth/change-password first.")
+    if not _verify(body.password, user["password_hash"]):
+        raise HTTPException(400, "Password incorrect")
     for table in ("forum_sessions", "user_activity_logs"):
         try:
             supabase.table(table).delete().eq("user_id", user["id"]).execute()
