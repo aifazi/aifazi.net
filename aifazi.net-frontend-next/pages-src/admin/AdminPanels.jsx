@@ -7,6 +7,7 @@ import { useDialog } from '../../components/Dialog'
 import { useIsMobile, PageHeader } from './shared'
 import { DateTimePicker } from '../../core/ui.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
+import { EmptyState } from './ui'
 import { PAGE_ANIMATIONS } from '../../core/pageMotion.jsx'
 
 const PAGE_CONFIG_KEYS = [
@@ -1422,7 +1423,9 @@ function StatsPanel() {
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 24 }}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>TOP POSTS BY VIEWS</div>
-            {(data.topPosts || []).map((p, i) => (
+            {(data.topPosts || []).length === 0
+              ? <EmptyState icon="📝" title="No posts yet" hint="Publish your first post to see it here." />
+              : (data.topPosts || []).map((p, i) => (
               <div key={p._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', width: 16, textAlign: 'center', flexShrink: 0 }}>#{i+1}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
@@ -1432,7 +1435,9 @@ function StatsPanel() {
           </div>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>RECENT USERS</div>
-            {(data.recent?.users || []).map(u => (
+            {(data.recent?.users || []).length === 0
+              ? <EmptyState icon="👤" title="No users yet" hint="New registrations will appear here." />
+              : (data.recent?.users || []).map(u => (
               <div key={u._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', flexShrink: 0 }}>{u.username?.[0]?.toUpperCase()}</div>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', flex: 1 }}>{u.username}</span>

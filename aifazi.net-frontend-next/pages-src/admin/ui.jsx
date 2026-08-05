@@ -1,0 +1,176 @@
+'use client'
+import React, { useEffect, useRef } from 'react'
+
+/**
+ * admin/ui.jsx — shared admin design kit.
+ * One set of primitives so panels stop redefining Btn/Badge/Stat/Modal/MONO
+ * with subtly different styles. Migrate panels to import from here.
+ */
+
+export const MONO = 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)'
+
+/* ── Button ─────────────────────────────────────────────────────────────── */
+export function Btn({ onClick, children, color = 'var(--green)', disabled, danger, small, ghost, style, type = 'button', ...rest }) {
+  const base = {
+    fontFamily: MONO, fontSize: small ? 9 : 10, letterSpacing: 1.5, fontWeight: 700,
+    padding: small ? '6px 12px' : '9px 16px', borderRadius: 6, cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.5 : 1, transition: 'all 0.15s', border: '1px solid transparent',
+    background: ghost ? 'transparent' : danger ? '#ff4757' : color,
+    color: ghost ? (danger ? '#ff4757' : 'var(--muted)') : '#000',
+    ...(ghost ? { borderColor: danger ? 'rgba(255,71,87,0.4)' : 'var(--border)' } : {}),
+    ...(style || {}),
+  }
+  return (
+    <button type={type} onClick={onClick} disabled={disabled} style={base} {...rest}>{children}</button>
+  )
+}
+
+/* ── Badge / pill ───────────────────────────────────────────────────────── */
+export function Badge({ children, color = 'var(--green)', tone, style }) {
+  const map = {
+    green: 'var(--green)', red: '#ff4757', yellow: '#facc15', cyan: 'var(--cyan)',
+    orange: '#ff6b35', purple: '#a855f7', muted: 'var(--muted)',
+  }
+  const c = map[tone] || color
+  return (
+    <span style={{
+      fontFamily: MONO, fontSize: 8, letterSpacing: 1.5, padding: '3px 9px', borderRadius: 999,
+      background: `${c}14`, border: `1px solid ${c}40`, color: c, whiteSpace: 'nowrap', ...(style || {}),
+    }}>{children}</span>
+  )
+}
+
+/* ── Stat card ──────────────────────────────────────────────────────────── */
+export function StatCard({ label, value, color = 'var(--green)', sub, onClick, style }) {
+  return (
+    <div onClick={onClick} style={{
+      background: 'var(--bg2)', border: `1px solid ${color}18`, borderRadius: 12,
+      padding: '16px 18px', ...(onClick ? { cursor: 'pointer' } : {}), ...(style || {}),
+    }}>
+      <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>{sub}</div>}
+    </div>
+  )
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+export function EmptyState({ icon = '📭', title = 'Nothing here yet', hint }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--muted)', fontFamily: MONO }}>
+      <div style={{ fontSize: 34, marginBottom: 12 }}>{icon}</div>
+      <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{title}</div>
+      {hint && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 8, opacity: 0.8 }}>{hint}</div>}
+    </div>
+  )
+}
+
+/* ── Skeleton block ─────────────────────────────────────────────────────── */
+export function Skeleton({ width = '100%', height = 12, style }) {
+  return (
+    <div style={{
+      width, height, borderRadius: 4, flexShrink: 0,
+      background: 'linear-gradient(90deg, var(--bg3) 25%, var(--border) 50%, var(--bg3) 75%)',
+      backgroundSize: '200% 100%', animation: 'adminSkel 1.4s ease infinite', ...(style || {}),
+    }} />
+  )
+}
+
+/* ── Relative time ──────────────────────────────────────────────────────── */
+export function RelTime({ iso, now }) {
+  if (!iso) return '—'
+  const ms = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(ms / 60000)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  const d = Math.floor(h / 24)
+  return d < 7 ? `${d}d ago` : new Date(iso).toLocaleDateString()
+}
+
+/* ── Accessible Modal ───────────────────────────────────────────────────── */
+const ESC = 27
+let modalStack = 0
+
+/**
+ * Accessible modal overlay: role="dialog", aria-modal, focus trap, Escape to
+ * close, backdrop click to close, focus restored to the opener on close, and
+ * body scroll locked while open. Wrap your panel content in <Modal>…</Modal>.
+ *
+ * props:
+ *   open          boolean  — whether the modal is shown
+ *   onClose       fn       — required; called on Escape/backdrop/close
+ *   title         string   — used for aria-labelledby
+ *   width         number|string — max-width of the panel (default 560)
+ *   noBackdropClose bool   — require an explicit close (no click-outside)
+ *   children      node     — panel content
+ */
+export function Modal({ open, onClose, title, width = 560, noBackdropClose, children }) {
+  const panelRef = useRef(null)
+  const restoreRef = useRef(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose // keep latest without re-running the effect
+
+  useEffect(() => {
+    if (!open) return
+    const doc = document
+    restoreRef.current = doc.activeElement
+    const prevOverflow = doc.body.style.overflow
+    doc.body.style.overflow = 'hidden'
+    modalStack += 1
+
+    const onKey = e => {
+      if (e.keyCode === ESC || e.key === 'Escape') { e.stopPropagation(); onCloseRef.current(); return }
+      if (e.key !== 'Tab') return
+      // Focus trap
+      const panel = panelRef.current
+      if (!panel) return
+      const focusables = panel.querySelectorAll('a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])')
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (e.shiftKey) {
+        if (doc.activeElement === first || !panel.contains(doc.activeElement)) { e.preventDefault(); last.focus() }
+      } else if (doc.activeElement === last || !panel.contains(doc.activeElement)) {
+        e.preventDefault(); first.focus()
+      }
+    }
+    doc.addEventListener('keydown', onKey, true)
+    // Focus the panel once paint settles
+    const raf = requestAnimationFrame(() => panelRef.current?.focus?.())
+
+    return () => {
+      modalStack = Math.max(0, modalStack - 1)
+      doc.body.style.overflow = modalStack > 0 ? 'hidden' : prevOverflow
+      doc.removeEventListener('keydown', onKey, true)
+      cancelAnimationFrame(raf)
+      // Restore focus to the element that opened the modal
+      if (restoreRef.current && typeof restoreRef.current.focus === 'function') restoreRef.current.focus()
+    }
+  }, [open])
+
+  if (!open) return null
+  const titleId = typeof title === 'string' ? `modal-${title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}` : undefined
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby={titleId}
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div onClick={noBackdropClose ? undefined : onClose} aria-hidden="true"
+        style={{ position: 'absolute', inset: 0, background: 'rgba(3,8,14,0.72)', backdropFilter: 'blur(3px)' }} />
+      <div ref={panelRef} tabIndex={-1} style={{
+        position: 'relative', width: '100%', maxWidth: width, maxHeight: '88vh', overflowY: 'auto',
+        background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14,
+        boxShadow: '0 24px 60px rgba(0,0,0,0.55)', outline: 'none',
+      }}>
+        {(typeof title === 'string' && title) && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+            <div id={titleId} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: 'var(--green)', textTransform: 'uppercase' }}>{title}</div>
+            <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>✕</button>
+          </div>
+        )}
+        {children}
+      </div>
+    </div>
+  )
+}

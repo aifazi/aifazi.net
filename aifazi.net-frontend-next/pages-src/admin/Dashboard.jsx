@@ -8,6 +8,7 @@ import { useDialog } from '../../components/Dialog'
 import { Checkbox, Select } from '../../core/ui.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader, PanelErrorBoundary, SkeletonGrid } from './shared'
+import { Modal, EmptyState } from './ui'
 import AdminHeader from './AdminHeader'
 import Sidebar from './Sidebar'
 import { Icon, NAV_ICONS } from './icons'
@@ -546,7 +547,7 @@ function Dashboard({ onLogout }) {
                 actions={<>
                   <button onClick={fetchDashStats} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> REFRESH</button>
                   <button onClick={() => setView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.3)', color: 'var(--green)', cursor: 'pointer', borderRadius: 6 }}> DB MONITOR</button>
-                  <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> ?</button>
+                  <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> ⌨</button>
                 </>}
               />
 
@@ -880,10 +881,7 @@ function Dashboard({ onLogout }) {
 
           {/*  REPLY MODAL — single contact OR bulk  */}
           {replyModal && (
-            <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-              onClick={e => e.target === e.currentTarget && setReplyModal(null)}>
-              <div style={{ background: 'var(--bg)', border: '1px solid rgba(0,212,255,0.2)', width: '100%', maxWidth: 580, boxShadow: '0 0 60px rgba(0,212,255,0.06)' }}>
-
+            <Modal open onClose={() => setReplyModal(null)} width={580}>
                 {/* Header */}
                 <div style={{ padding: '16px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
@@ -982,8 +980,7 @@ function Dashboard({ onLogout }) {
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
+            </Modal>
           )}
 
           {/* STAFF */}
@@ -1006,7 +1003,9 @@ function Dashboard({ onLogout }) {
                 ))}
               </div>
 
-              {loading ? <div className="loader" /> : staff.map(s => (
+              {loading ? <div className="loader" />
+                : staff.length === 0 ? <EmptyState icon="👥" title="No staff yet" hint="Add your first moderator or editor to grant panel access." />
+                : staff.map(s => (
                 <div key={s._id} style={{ ...S.card, display: 'flex', alignItems: 'center', gap: 12, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
                   <div style={{ width: 36, height: 36, borderRadius: '50%', background: ROLE_COLORS[s.role]?.bg, border: `1px solid ${ROLE_COLORS[s.role]?.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
                     {s.role === 'moderator' ? '' : s.role === 'chat' ? '' : ''}
@@ -1080,8 +1079,8 @@ function Dashboard({ onLogout }) {
 
               {/* Edit staff modal */}
               {editingStaff && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
-                  <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: isMobile ? 20 : 32, width: '100%', maxWidth: 760, maxHeight: '92vh', overflowY: 'auto' }}>
+                <Modal open onClose={() => setEditingStaff(null)} width={760}>
+                  <div style={{ padding: isMobile ? 20 : 32 }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 20 }}> EDIT STAFF — {editingStaff.username}</div>
                     <form onSubmit={handleUpdateStaff} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                       <div>
@@ -1104,7 +1103,7 @@ function Dashboard({ onLogout }) {
                       </div>
                     </form>
                   </div>
-                </div>
+                </Modal>
               )}
             </div>
           )}
@@ -1156,10 +1155,7 @@ function Dashboard({ onLogout }) {
 
       {/*  Keyboard Shortcuts Modal  */}
       {showShortcuts && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          onClick={() => setShowShortcuts(false)}>
-          <div style={{ background: 'var(--bg2)', border: '1px solid rgba(0,255,136,0.2)', width: '100%', maxWidth: 500, borderRadius: 10, overflow: 'hidden', boxShadow: '0 0 60px rgba(0,255,136,0.06)' }}
-            onClick={e => e.stopPropagation()}>
+        <Modal open onClose={() => setShowShortcuts(false)} width={500}>
             <div style={{ height: 2, background: 'linear-gradient(90deg, var(--green), var(--cyan))' }} />
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -1184,8 +1180,7 @@ function Dashboard({ onLogout }) {
             <div style={{ padding: '10px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>Shortcuts are disabled when typing in input fields.</span>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )
