@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import DOMPurify from 'isomorphic-dompurify'
 import api from '@/lib/api'
 import { Checkbox } from '../../core/ui.jsx'
+import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { Btn as KitBtn, Badge as KitBadge } from './ui'
 
 // H25 — Sanitize every email HTML body before rendering via dangerouslySetInnerHTML.

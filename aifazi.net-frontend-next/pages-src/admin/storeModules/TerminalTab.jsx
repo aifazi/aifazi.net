@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
+import { usePausableInterval } from '../../../hooks/usePausableInterval'
 import ScanCam from './ScanCam'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"

@@ -5,6 +5,7 @@ import { getSupabase } from '@/lib/supabase'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { Select } from '../../core/ui.jsx'
+import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader } from './shared'
 
 const STATUS_MAP = {
