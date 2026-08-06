@@ -365,7 +365,7 @@ function PresetPicker({ presets, value, onChange, renderPreview, cols = 3 }) {
   )
 }
 
-const MAINT_STYLES   = ['terminal','minimal','cyber','glitch','coming-soon','retro']
+const MAINT_STYLES   = ['terminal','minimal','cyber','glitch','coming-soon','retro','holo','grid-pulse','orbit']
 const MAINT_STATUSES = ['MAINTENANCE','UPDATING','COMING SOON','OFFLINE','UPGRADING']
 const MAINT_BG_STYLES = ['grid','dots','radial','matrix','clean']
 const STATUS_ACCENT  = { MAINTENANCE:'#f59e0b', UPDATING:'#00d4ff', 'COMING SOON':'#a855f7', OFFLINE:'#ef4444', UPGRADING:'#00ff88' }

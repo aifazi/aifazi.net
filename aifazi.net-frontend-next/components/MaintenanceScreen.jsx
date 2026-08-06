@@ -225,6 +225,86 @@ function StyleRetro({ message, status, icon, returnTime, showProgress, progress,
   )
 }
 
+// ── New styles (v2): holo / grid-pulse / orbit ────────────────────────────────
+function StyleHolo({ message, status, icon, returnTime, showProgress, progress, accentColor }) {
+  return (
+    <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '24px', width: '100%', maxWidth: 620 }}>
+      {/* Aurora blobs */}
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', width: 480, height: 480, borderRadius: '50%', filter: 'blur(60px)', opacity: 0.35,
+          background: 'linear-gradient(135deg, color-mix(in srgb, var(--green) 40%, transparent), color-mix(in srgb, var(--cyan) 40%, transparent))',
+          top: '-20%', left: '-15%', animation: 'maint-drift 14s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', width: 420, height: 420, borderRadius: '50%', filter: 'blur(60px)', opacity: 0.3,
+          background: 'linear-gradient(135deg, color-mix(in srgb, var(--purple) 40%, transparent), color-mix(in srgb, var(--orange) 30%, transparent))',
+          bottom: '-20%', right: '-15%', animation: 'maint-drift 18s ease-in-out infinite reverse' }} />
+      </div>
+      <div style={{ position: 'relative', background: 'rgba(255,255,255,0.03)', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 20, padding: '36px 28px', backdropFilter: 'blur(16px)', boxShadow: '0 24px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+        <div style={{ fontSize: 44, marginBottom: 18 }}>{icon}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 5, color: accentColor, marginBottom: 10, textTransform: 'uppercase' }}>{status}</div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(30px,5vw,50px)', fontWeight: 800, margin: '0 0 12px', lineHeight: 1.1,
+          background: 'linear-gradient(90deg, var(--green), var(--cyan) 45%, var(--purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          Back Soon
+        </h1>
+        <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--muted)', maxWidth: 440, margin: '0 auto 24px' }}>{message}</p>
+        {showProgress && <div style={{ maxWidth: 320, margin: '0 auto 20px' }}><ProgressBar label="PROGRESS" value={progress} color={accentColor} /></div>}
+        {returnTime && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)' }}>
+            EXPECTED RETURN <span style={{ color: accentColor }}>{returnTime}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function StyleGridPulse({ message, status, icon, returnTime, showProgress, progress, accentColor }) {
+  return (
+    <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '24px', width: '100%', maxWidth: 620 }}>
+      {/* Scanning beam */}
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', left: 0, right: 0, height: 120, background: 'linear-gradient(to bottom, transparent, color-mix(in srgb, var(--green) 8%, transparent), transparent)', animation: 'maint-scan 4s linear infinite' }} />
+      </div>
+      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 18, border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', borderRadius: 16, padding: '34px 40px', background: 'linear-gradient(160deg, color-mix(in srgb, var(--green) 6%, transparent), transparent 60%)' }}>
+        <div style={{ width: 76, height: 76, borderRadius: '50%', border: `2px solid ${accentColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, position: 'relative', boxShadow: `0 0 30px color-mix(in srgb, ${accentColor} 30%, transparent)`, animation: 'maint-pulse 2s ease-in-out infinite' }}>
+          {icon}
+          <div style={{ position: 'absolute', inset: -10, borderRadius: '50%', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)', animation: 'maint-spin 6s linear infinite', borderTopColor: 'transparent' }} />
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 4, color: accentColor }}>{status}</div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,5vw,46px)', fontWeight: 800, margin: 0, color: 'var(--text)', lineHeight: 1.1 }}>
+          <span style={{ color: accentColor }}>SYSTEM</span> OFFLINE
+        </h1>
+        <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--muted)', maxWidth: 420, margin: 0 }}>{message}</p>
+        {showProgress && <div style={{ width: '100%', maxWidth: 320 }}><ProgressBar label="PROGRESS" value={progress} color={accentColor} /></div>}
+        {returnTime && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)' }}>ETA <span style={{ color: accentColor }}>{returnTime}</span></div>}
+      </div>
+    </div>
+  )
+}
+
+function StyleOrbit({ message, status, icon, returnTime, showProgress, progress, accentColor }) {
+  const rings = [150, 215, 280]
+  return (
+    <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '24px', width: '100%', maxWidth: 620 }}>
+      {/* Orbit system */}
+      <div style={{ position: 'relative', width: 300, height: 300, margin: '0 auto 28px' }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: `radial-gradient(circle at 30% 30%, color-mix(in srgb, ${accentColor} 60%, transparent), color-mix(in srgb, ${accentColor} 20%, transparent))`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, boxShadow: `0 0 40px color-mix(in srgb, ${accentColor} 45%, transparent)` }}>{icon}</div>
+        </div>
+        {rings.map((size, i) => (
+          <div key={size} style={{ position: 'absolute', inset: (300 - size) / 2, borderRadius: '50%', border: `1px solid color-mix(in srgb, ${accentColor} ${20 + i * 8}%, transparent)` }}>
+            <div style={{ position: 'absolute', top: -3, left: size / 2 - 3, width: 6, height: 6, borderRadius: '50%', background: i === 0 ? 'var(--green)' : i === 1 ? 'var(--cyan)' : 'var(--purple)', boxShadow: '0 0 8px currentColor', animation: `maint-spin ${8 + i * 4}s linear infinite`, transformOrigin: `${-size / 2 + 3}px ${size / 2}px` }} />
+          </div>
+        ))}
+      </div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 5, color: accentColor, marginBottom: 8 }}>{status}</div>
+      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,5vw,46px)', fontWeight: 800, margin: '0 0 12px', color: 'var(--text)', lineHeight: 1.1 }}>Offline</h1>
+      <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--muted)', maxWidth: 440, margin: '0 auto 22px' }}>{message}</p>
+      {showProgress && <div style={{ maxWidth: 320, margin: '0 auto 18px' }}><ProgressBar label="PROGRESS" value={progress} color={accentColor} /></div>}
+      {returnTime && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)' }}>RETURNING <span style={{ color: accentColor }}>{returnTime}</span></div>}
+    </div>
+  )
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function MaintenanceScreen({
   message        = "We're performing scheduled upgrades to improve your experience. We'll be back online shortly.",
@@ -289,7 +369,10 @@ export default function MaintenanceScreen({
       {style === 'glitch'      && <StyleGlitch       {...sharedProps} />}
       {style === 'coming-soon' && <StyleComingSoon   {...sharedProps} />}
       {style === 'retro'       && <StyleRetro        {...sharedProps} />}
-      {(style === 'terminal' || !['minimal','cyber','glitch','coming-soon','retro'].includes(style)) && <StyleTerminal {...sharedProps} />}
+      {style === 'holo'        && <StyleHolo         {...sharedProps} />}
+      {style === 'grid-pulse'  && <StyleGridPulse    {...sharedProps} />}
+      {style === 'orbit'       && <StyleOrbit        {...sharedProps} />}
+      {(style === 'terminal' || !['minimal','cyber','glitch','coming-soon','retro','holo','grid-pulse','orbit'].includes(style)) && <StyleTerminal {...sharedProps} />}
 
       {/* Social links (optional) */}
       {showSocial && (siteConfig.twitter || siteConfig.github || siteConfig.linkedin) && (
@@ -310,6 +393,7 @@ export default function MaintenanceScreen({
         @keyframes maint-glitch     { 0%,90%,100%{transform:none} 91%{transform:skewX(5deg)} 93%{transform:skewX(-5deg) translateX(4px)} 95%{transform:none} }
         @keyframes maint-glitch-text{ 0%,88%,100%{text-shadow:2px 0 currentColor,-2px 0 #ff0088} 89%{text-shadow:-4px 0 #ff0088,4px 0 currentColor} 91%{text-shadow:2px 0 currentColor,-2px 0 #ff0088} }
         @keyframes maint-matrix-fall{ 0%{opacity:0;transform:translateY(-100%)} 50%{opacity:1} 100%{opacity:0;transform:translateY(100%)} }
+        @keyframes maint-scan        { 0%{top:-15%} 100%{top:110%} }
       `}</style>
     </div>
   )

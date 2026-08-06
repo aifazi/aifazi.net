@@ -420,6 +420,70 @@ function TickerBanner({ banner, cfg, onDismiss, leaving, index }) {
   )
 }
 
+/* ── NEON style (glowing strip) ─────────────────────────────────────────── */
+function NeonBanner({ banner, cfg, onDismiss, leaving, index }) {
+  const expiry = useExpiryCountdown(banner.expires_at)
+  return (
+    <div style={{ padding:'10px 16px', background: SOLID,
+      boxShadow:`inset 0 0 22px color-mix(in srgb, ${cfg.accent} 12%, transparent)`,
+      animation: leaving ? 'bnrSlideOut .34s forwards' : `bnrSlideIn .38s cubic-bezier(.16,1,.3,1) ${index*0.07}s both` }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12, maxWidth:1180, margin:'0 auto',
+        padding:'10px 16px', borderRadius:12, background:`linear-gradient(90deg,color-mix(in srgb, ${cfg.accent} 14%, transparent), rgba(0,0,0,0.2))`,
+        border:`1px solid color-mix(in srgb, ${cfg.accent} 55%, transparent)`,
+        boxShadow:`0 0 22px color-mix(in srgb, ${cfg.accent} 22%, transparent), inset 0 0 14px color-mix(in srgb, ${cfg.accent} 8%, transparent)` }}>
+        <span style={{ color:cfg.accent, filter:`drop-shadow(0 0 6px color-mix(in srgb, ${cfg.accent} 60%, transparent))`, display:'flex', flexShrink:0 }}>{cfg.icon}</span>
+        <span style={{ fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2, fontWeight:700, color:cfg.accent,
+          textShadow:`0 0 10px color-mix(in srgb, ${cfg.accent} 60%, transparent)`, whiteSpace:'nowrap', flexShrink:0 }}>{cfg.label}</span>
+        <span style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'#eef2f9', flex:1, minWidth:0,
+          overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.message}</span>
+        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}dd`, whiteSpace:'nowrap', flexShrink:0 }}>⏱ {expiry}</span>}
+        <LinkBtn banner={banner} cfg={cfg} />
+        <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
+      </div>
+    </div>
+  )
+}
+
+/* ── TERMINAL style (command rail) ──────────────────────────────────────── */
+function TerminalBanner({ banner, cfg, onDismiss, leaving, index }) {
+  const expiry = useExpiryCountdown(banner.expires_at)
+  return (
+    <div style={{ padding:'8px 16px', background:'#0a0e14', borderBottom:`1px solid color-mix(in srgb, ${cfg.accent} 35%, transparent)`,
+      animation: leaving ? 'bnrSlideOut .34s forwards' : `bnrSlideIn .38s cubic-bezier(.16,1,.3,1) ${index*0.07}s both` }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10, maxWidth:1180, margin:'0 auto',
+        fontFamily:'var(--font-mono)', fontSize:11 }}>
+        <span style={{ color:'var(--green)' }}>$</span>
+        <span style={{ color:cfg.accent, letterSpacing:1 }}>{cfg.label.toLowerCase()}</span>
+        <span style={{ color:'#8b98a8', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.message}</span>
+        {expiry && <span style={{ color:`${cfg.accent}bb`, fontSize:9, whiteSpace:'nowrap', flexShrink:0 }}># eta {expiry}</span>}
+        <LinkBtn banner={banner} cfg={cfg} />
+        <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
+      </div>
+    </div>
+  )
+}
+
+/* ── GRADIENT style (bold color bar) ────────────────────────────────────── */
+function GradientBanner({ banner, cfg, onDismiss, leaving, index }) {
+  const expiry = useExpiryCountdown(banner.expires_at)
+  const grad = `linear-gradient(90deg, ${cfg.accent}, color-mix(in srgb, ${cfg.accent} 55%, var(--cyan)), ${cfg.accent})`
+  return (
+    <div style={{ padding:'0', background: SOLID,
+      animation: leaving ? 'bnrSlideOut .34s forwards' : `bnrSlideIn .38s cubic-bezier(.16,1,.3,1) ${index*0.07}s both` }}>
+      <div style={{ height:3, background:grad, boxShadow:`0 0 14px color-mix(in srgb, ${cfg.accent} 60%, transparent)` }} />
+      <div style={{ display:'flex', alignItems:'center', gap:12, maxWidth:1180, margin:'0 auto', padding:'11px 16px' }}>
+        <span style={{ color:cfg.accent, display:'flex', flexShrink:0 }}>{cfg.icon}</span>
+        <span style={{ fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2, fontWeight:700, color:cfg.accent, whiteSpace:'nowrap', flexShrink:0 }}>{cfg.label}</span>
+        <span style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'#f2f5fa', flex:1, minWidth:0,
+          overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.message}</span>
+        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}dd`, whiteSpace:'nowrap', flexShrink:0 }}>⏱ {expiry}</span>}
+        <LinkBtn banner={banner} cfg={cfg} />
+        <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
+      </div>
+    </div>
+  )
+}
+
 /* ── Route to correct style component ────────────────────────────────────── */
 function BannerBar({ banner, onClose, index }) {
   const cfg = TYPE_CFG[banner.type] || TYPE_CFG.info
@@ -436,6 +500,9 @@ function BannerBar({ banner, onClose, index }) {
   if (style === 'glass')    return <GlassBanner    {...props} />
   if (style === 'outline')  return <OutlineBanner  {...props} />
   if (style === 'ticker')   return <TickerBanner   {...props} />
+  if (style === 'neon')     return <NeonBanner     {...props} />
+  if (style === 'terminal') return <TerminalBanner {...props} />
+  if (style === 'gradient') return <GradientBanner {...props} />
   return <StripBanner {...props} />        // 'banner' (default strip)
 }
 

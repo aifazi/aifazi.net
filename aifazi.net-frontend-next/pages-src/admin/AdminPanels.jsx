@@ -533,6 +533,9 @@ const BANNER_STYLES = [
   { id: 'glass',    label: 'Glass',    icon: '◇', desc: 'Frost panel' },
   { id: 'outline',  label: 'Outline',  icon: '▣', desc: 'Fine frame' },
   { id: 'ticker',   label: 'Ticker',   icon: '▰', desc: 'News rail' },
+  { id: 'neon',     label: 'Neon',     icon: '✦', desc: 'Glowing strip' },
+  { id: 'terminal', label: 'Terminal', icon: '$', desc: 'Command rail' },
+  { id: 'gradient', label: 'Gradient', icon: '◮', desc: 'Bold color bar' },
 ]
 
 const bannerDateMs = value => {
@@ -1351,7 +1354,6 @@ function NewsletterPanel() {
 }
 
 // --- Site Settings Panel ------------------------------------------------------
-const MAINT_STYLES  = ['terminal','minimal','cyber','glitch','coming-soon','retro']
 const MAINT_STATUSES = ['MAINTENANCE','UPDATING','COMING SOON','OFFLINE','UPGRADING']
 const MAINT_BG_STYLES = ['grid','dots','radial','matrix','clean']
 const STATUS_ACCENT = { MAINTENANCE:'#f59e0b', UPDATING:'#00d4ff', 'COMING SOON':'#a855f7', OFFLINE:'#ef4444', UPGRADING:'#00ff88' }
