@@ -4792,6 +4792,111 @@ img, video, svg { max-width: 100%; height: auto; }
   --grid-line: rgba(201,168,0,0.04); color-scheme: light;
 }
 
+/* ════════════ GAME THEME COMPONENT STYLES (beyond color) ════════════ */
+
+/* ── Mario: rounded, bold, coin-gold hover ── */
+[data-theme="mario"] .btn-primary,
+[data-theme="mario"] .btn-outline,
+[data-theme="mario"] button[style*="border-radius"] {
+  border-radius: 12px !important;
+  font-family: 'Press Start 2P', monospace;
+  letter-spacing: 1px;
+}
+[data-theme="mario"] .btn-primary {
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.35), 0 4px 12px rgba(229,37,33,0.35);
+}
+[data-theme="mario"] .btn-primary:hover {
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.35), 0 6px 20px rgba(255,215,0,0.4);
+  background: linear-gradient(180deg, #ff3b36, #c8102e) !important;
+}
+[data-theme="mario"] .btn-primary:active {
+  transform: translateY(2px) !important;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.35);
+}
+[data-theme="mario"] .card, [data-theme="mario"] [class*="Card"] {
+  border-radius: 14px;
+}
+[data-theme="mario"] .section-tag {
+  background: #ffd70022;
+  border: 1px solid #ffd70055;
+  border-radius: 999px;
+}
+
+/* ── Minecraft: hard blocks, no radius, chunky inset shadows ── */
+[data-theme="minecraft"] .btn-primary,
+[data-theme="minecraft"] .btn-outline,
+[data-theme="minecraft"] button[style*="border-radius"] {
+  border-radius: 0 !important;
+  font-family: 'Press Start 2P', monospace;
+  letter-spacing: 0.5px;
+  box-shadow: inset -3px -3px 0 rgba(0,0,0,0.4), inset 3px 3px 0 rgba(255,255,255,0.18);
+}
+[data-theme="minecraft"] .btn-primary:active,
+[data-theme="minecraft"] .btn-outline:active {
+  transform: translateY(2px) !important;
+  box-shadow: inset 3px 3px 0 rgba(0,0,0,0.4), inset -3px -3px 0 rgba(255,255,255,0.18);
+}
+[data-theme="minecraft"] .card, [data-theme="minecraft"] [class*="Card"] {
+  border-radius: 0;
+  border: 3px solid #2f2a1f;
+  box-shadow: inset 0 0 0 2px rgba(90,212,39,0.06), 0 4px 0 #000;
+}
+[data-theme="minecraft"] .form-group input,
+[data-theme="minecraft"] .form-group textarea {
+  border-radius: 0;
+  border: 2px solid #3a3528;
+}
+[data-theme="minecraft"] ::-webkit-scrollbar { width: 14px; height: 14px; }
+[data-theme="minecraft"] ::-webkit-scrollbar-thumb { background: #3a3528; border: 3px solid #141210; border-radius: 0; }
+
+/* ── Sonic: angular speed-cut buttons, bold, quick ── */
+[data-theme="sonic"] .btn-primary,
+[data-theme="sonic"] .btn-outline,
+[data-theme="sonic"] button[style*="border-radius"] {
+  border-radius: 0 !important;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  letter-spacing: 2px;
+}
+[data-theme="sonic"] .btn-primary {
+  background: linear-gradient(135deg, #1e6fd9, #0c3a8a) !important;
+}
+[data-theme="sonic"] .btn-primary:hover {
+  background: linear-gradient(135deg, #f5d200, #e0b800) !important;
+  transform: translateX(2px) !important;
+}
+[data-theme="sonic"] .section-title {
+  text-shadow: 3px 3px 0 rgba(245,210,0,0.4);
+}
+[data-theme="sonic"] .section-line {
+  background: linear-gradient(90deg, #00bfff, transparent);
+}
+
+/* ── Pac-Man: arcade pill buttons, maze glow ── */
+[data-theme="pacman"] .btn-primary,
+[data-theme="pacman"] .btn-outline,
+[data-theme="pacman"] button[style*="border-radius"] {
+  border-radius: 999px !important;
+  font-family: 'Press Start 2P', monospace;
+  letter-spacing: 1px;
+}
+[data-theme="pacman"] .btn-primary {
+  box-shadow: 0 0 16px rgba(255,224,0,0.45), inset 0 -3px 0 rgba(0,0,0,0.25);
+}
+[data-theme="pacman"] .btn-primary:hover {
+  box-shadow: 0 0 28px rgba(0,207,255,0.6), inset 0 -3px 0 rgba(0,0,0,0.25);
+  background: linear-gradient(180deg, #ffe44d, #e0c000) !important;
+}
+[data-theme="pacman"] .card, [data-theme="pacman"] [class*="Card"] {
+  border-radius: 18px;
+  box-shadow: 0 0 24px rgba(255,224,0,0.08), 0 6px 24px rgba(0,0,0,0.5);
+}
+[data-theme="pacman"] .section-tag {
+  border-radius: 999px;
+  border: 1px dashed rgba(0,207,255,0.5);
+}
+
 /* ════════════ KEYFRAMES (shared by store/admin skeletons) ════════════ */
 @keyframes skShimmer {
   0% { opacity: 0.35; }
