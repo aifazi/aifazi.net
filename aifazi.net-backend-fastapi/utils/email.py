@@ -373,6 +373,21 @@ def _default_template(purpose: str, v: dict, p: dict) -> tuple[str, str]:
                 f'</div>{v.get("answers_table", "")}')
         return subject, _email_shell(p, title, body, icon=icon)
 
+    if purpose == "monitor_alert":
+        subject = f"[{v.get('site_name', 'aifazi.net')}] ⚠ Service down: {_esc(v.get('service', ''))}"
+        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
+                f'A monitored service is reporting <strong style="color:#ff4757;">DOWN</strong>.</p>'
+                f'<div style="background:{p["bg3"]};border:1px solid {p["border"]};border-radius:8px;padding:16px 20px;margin:0 0 16px;">'
+                f'<div style="color:{p["muted"]};font-size:11px;letter-spacing:2px;margin-bottom:8px;">SERVICE</div>'
+                f'<div style="font-size:16px;font-weight:700;color:{p["text"]};margin-bottom:8px;">{_esc(v.get("service", ""))}</div>'
+                f'<div style="color:{p["muted"]};font-size:11px;letter-spacing:2px;margin-bottom:4px;">DETAIL</div>'
+                f'<div style="font-size:13px;color:{p["text"]};">{_esc(v.get("detail", ""))}</div>'
+                f'<div style="color:{p["muted"]};font-size:11px;letter-spacing:2px;margin:12px 0 4px;">CHECKED AT</div>'
+                f'<div style="font-size:12px;color:{p["muted"]};">{_esc(v.get("checked_at", ""))}</div>'
+                f'</div>')
+        return subject, _email_shell(p, "Service down", body, "CHECK STATUS PAGE", v.get("status_url") or "#",
+                                     f"Automated alert from {v.get('site_name', 'aifazi.net')} monitoring.", icon="🚨")
+
     subject = f"[{v.get('site_name', 'aifazi.net')}] {purpose.replace('_', ' ').title()}"
     body = f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0;">Hi {_esc(v.get("username") or v.get("name") or "there")}, you have an update from {_esc(v.get("site_name", "aifazi.net"))}.</p>'
     return subject, _email_shell(p, "Update from the team", body, icon="📬")

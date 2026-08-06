@@ -154,6 +154,8 @@ _OPEN_EXACT: set[str] = {
     # C1: Vercel cron cleanup (daily) — auth via Authorization: Bearer CRON_SECRET inside cron.py.
     # Without this entry the middleware 403s the cron before cron.py's hmac check runs.
     "/api/cron/cleanup",
+    "/api/cron/monitor",
+    "/api/monitor/status",
     # Store: Stripe webhook (signature verified inside route) + Lua subscription sync
     "/api/store/webhook",
     "/api/store/stripe/webhook",
@@ -530,6 +532,7 @@ from routers import (
     steam_auth,
     github_auth,
     db_console,
+    monitor,
 )
 
 app.include_router(auth.router,           prefix="/api/auth")
@@ -562,6 +565,7 @@ app.include_router(helpdesk.router,       prefix="/api/helpdesk")
 app.include_router(seo_proxy.router,      prefix="/api/seo-proxy")
 app.include_router(sitemap.router,        prefix="")
 app.include_router(cron.router,           prefix="")
+app.include_router(monitor.router,        prefix="")
 app.include_router(network.router,        prefix="/api/network")
 app.include_router(pdf_editor.router,     prefix="/api/pdf-editor")
 app.include_router(file_tools.router,     prefix="/api/file-tools")

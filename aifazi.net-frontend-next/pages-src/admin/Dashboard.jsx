@@ -30,6 +30,7 @@ const HelpDeskPanel = dynamic(() => import('./HelpDeskPanel').then(m => m.defaul
 const Changelog = dynamic(() => import('./Changelog').then(m => m.default || m), { ssr: false })
 const FiveMPanel = dynamic(() => import('./FiveMPanel').then(m => m.default || m), { ssr: false })
 const StoreCenter = dynamic(() => import('./storeModules/StoreCenter').then(m => m.default || m), { ssr: false })
+const MonitoringPanel = dynamic(() => import('./MonitoringPanel').then(m => m.default || m), { ssr: false })
 
 function StatsGrid({ dashStats, isMobile, setView }) {
   const ref = useStaggerIn('.stat-card', { stagger: 80, distance: 16, duration: 480 })
@@ -85,6 +86,7 @@ const NAV_PERMISSION = {
   contacts:'community.contacts', staff:'community.staff', forum:'community.forum', chat:'community.chat', newsletter:'community.newsletter',
   db:'system.db', delivery:['system.mail', 'system.cdn'], mail:'system.mail', cdn:'system.cdn',
   helpdesk:'support.helpdesk', store:'store', fivem:'fivem.status', changelog:'changelog',
+  monitoring:'system.monitor',
   stats:'system.db', audit:'system.audit', backup:'system.backup',
 }
 function canViewNavItem(item) {
@@ -447,6 +449,7 @@ function Dashboard({ onLogout }) {
     { key: 'store',        label: 'Store',         group: 'BUSINESS',   icon: '🛒', badge: null },
     { key: 'fivem',        label: 'FiveM Server',  group: 'FIVEM',      icon: '🎮', badge: null },
     { key: 'changelog',    label: 'Changelog',     group: 'MANAGE',     icon: '📋',   badge: 'NEW' },
+    { key: 'monitoring',   label: 'Monitoring',    group: 'SYSTEM',     icon: '📡',   badge: null },
   ]
 
   const ROLE_COLORS = {
@@ -1130,6 +1133,7 @@ function Dashboard({ onLogout }) {
           {view === 'helpdesk' && adminUser && <PanelErrorBoundary label="Help Desk"><HelpDeskPanel /></PanelErrorBoundary>}
           {view === 'store' && adminUser && <PanelErrorBoundary label="Store"><StoreCenter /></PanelErrorBoundary>}
           {view === 'changelog' && <PanelErrorBoundary label="Changelog"><Changelog /></PanelErrorBoundary>}
+          {view === 'monitoring' && adminUser && <PanelErrorBoundary label="Monitoring"><MonitoringPanel /></PanelErrorBoundary>}
           {view === 'fivem' && adminUser && (
             <PanelErrorBoundary label="FiveM Server">
               <FiveMPanel defaultSection="status" />
