@@ -7,7 +7,7 @@ from html import escape
 import asyncio
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from database import supabase
+from database import supabase, call_with_retry
 from dependencies import require_staff, require_admin
 from utils.email import send_email, render_template
 from utils.email_queue import queue_email
@@ -115,8 +115,7 @@ async def live_visitors():
     return {"online": count, "ts": datetime.now(timezone.utc).isoformat()}
 
 
-@router.get("")
-def stats(_: dict = Depends(require_staff)):
+def _stats_impl():
     # ── Counts via DB aggregation ─────────────────────────────────────────────
     posts_count         = supabase.table("posts").select("id", count="exact").execute()
     published_count     = supabase.table("posts").select("id", count="exact").eq("published", True).execute()
@@ -219,6 +218,15 @@ def stats(_: dict = Depends(require_staff)):
         },
         "categories": [],
     }
+
+
+@router.get("")
+def stats(_: dict = Depends(require_staff)):
+    # Retry once after resetting the client: a stale keep-alive connection on a
+    # warm serverless invocation surfaces as "RemoteProtocolError: Server
+    # disconnected". A fresh client clears it without re-running this heavy
+    # dashboard query dozens of times.
+    return call_with_retry(_stats_impl)
 
 
 # ── Collection browser ────────────────────────────────────────────────────────

@@ -9,7 +9,7 @@ Migration (run once in Supabase SQL editor):
         ON CONFLICT (key) DO NOTHING;
 """
 from fastapi import APIRouter, Depends, HTTPException, Request
-from database import supabase
+from database import supabase, call_with_retry
 from dependencies import require_staff
 import httpx
 router = APIRouter()
@@ -42,7 +42,7 @@ async def update(body: dict, _: dict = Depends(require_staff)):
 @router.get("/proxy-config")
 async def proxy_config():
     """Public endpoint — returns only the info the CDN proxy needs (no secrets)."""
-    row = _get_row()
+    row = call_with_retry(_get_row)
     cfg = (row.get("settings") or {}) if row else {}
     return {
         "provider":            cfg.get("provider", ""),
