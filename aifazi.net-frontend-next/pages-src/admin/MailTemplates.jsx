@@ -49,6 +49,9 @@ const PURPOSES = [
   { id:'fivem_unbanned',     label:'FiveM Unban Notice', icon:'✅', group:'FiveM', desc:'Sent when a FiveM ban is lifted.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{status_url}}'] },
   { id:'fivem_reset',        label:'FiveM Application Reset', icon:'🔄', group:'FiveM', desc:'Sent when a FiveM application/status is reset.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{status_url}}'] },
   { id:'broadcast',          label:'Newsletter Broadcast',   icon:'📢', group:'Marketing',desc:'Manual broadcast template — used for newsletters sent from the admin panel.', vars:['{{site_name}}','{{subject}}','{{body}}','{{unsubscribe_link}}'] },
+  { id:'monitor_alert',      label:'Service Down Alert',    icon:'⚠️', group:'Monitoring', desc:'Sent when a monitored service (frontend/API/DB/email/FiveM) is reported down.', vars:['{{site_name}}','{{service}}','{{detail}}','{{checked_at}}','{{status_url}}'] },
+  { id:'error_alert',        label:'Error Alert',           icon:'🚨', group:'Monitoring', desc:'Sent immediately when a new backend/frontend error is first captured.', vars:['{{site_name}}','{{error_type}}','{{message}}','{{source}}','{{endpoint}}'] },
+  { id:'error_digest',       label:'Error Digest',          icon:'📋', group:'Monitoring', desc:'Daily summary of all errors captured in the last 24 hours.', vars:['{{site_name}}','{{error_count}}','{{errors_html}}'] },
 ]
 
 const GROUPS = [...new Set(PURPOSES.map(p => p.group))]

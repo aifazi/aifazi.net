@@ -67,7 +67,7 @@ function StatsGrid({ dashStats, isMobile, setView }) {
 const PERMISSION_MODULES = [
   ['home','Dashboard'], ['content.posts','Posts'], ['content.editor','Post editor'], ['content.media','Media'], ['content.pages','Pages'], ['content.themes','Theme library'],
   ['community.contacts','Contacts'], ['community.staff','Staff'], ['community.forum','Forum'], ['community.chat','Chat'], ['community.newsletter','Newsletter'],
-  ['system.db','DB monitor'], ['system.db.console','DB SQL Console'], ['system.mail','Mail'], ['system.cdn','CDN'], ['system.backup','Backup'],
+  ['system.db','DB monitor'], ['system.db.console','DB SQL Console'], ['system.mail','Mail'], ['system.cdn','CDN'], ['system.backup','Backup'], ['system.monitor','Monitoring'],
   ['support.helpdesk','Help desk'], ['store','Store'],
   ['store.analytics','Store analytics'], ['store.customers','Store customers (CRM)'], ['store.payments','Store payments'], ['store.products','Store catalog & stock'], ['store.coupons','Store coupons'], ['store.deals','Store flash deals'], ['store.reviews','Store reviews'], ['store.orders','Store orders'], ['store.inventory','Store inventory'], ['store.delivery','Store delivery'], ['store.settings','Store settings'],
   ['fivem.status','FiveM status'], ['fivem.whitelist','FiveM whitelist'], ['fivem.forms','FiveM forms'], ['fivem.approval_log','FiveM approval log'], ['fivem.bans','FiveM bans'],

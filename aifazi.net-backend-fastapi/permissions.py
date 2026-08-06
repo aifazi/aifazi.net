@@ -27,6 +27,7 @@ MODULES = {
     "system.mail": "Mail",
     "system.cdn": "CDN",
     "system.backup": "Backup",
+    "system.monitor": "Monitoring",
     "system.audit": "Audit log",
     "system.announcements": "Announcements",
     "system.settings": "Settings",
@@ -65,6 +66,7 @@ ROLE_PERMISSION_PRESETS: dict[str, dict[str, list[str]]] = {
         "store": ["view", "edit", "manage"],
         "fivem.status": ["view"], "fivem.whitelist": ["view", "approve", "sync"],
         "fivem.forms": ["view", "approve"], "fivem.approval_log": ["view"], "fivem.bans": ["view", "create", "edit"],
+        "system.monitor": ["view"],
         "profile": ["view", "edit"], "changelog": ["view"],
     },
     "editor": {
