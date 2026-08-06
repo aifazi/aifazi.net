@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
 
-const G = '#00FF88'
-const C = '#00D4FF'
+const G = 'var(--green)'
+const C = 'var(--cyan)'
 
 export default function FiveMStatus() {
   const [status, setStatus] = useState<any>(null)
@@ -37,9 +37,9 @@ export default function FiveMStatus() {
         </h1>
 
         {/* Status badge */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 16, padding: '10px 20px', borderRadius: 10, background: online ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'color-mix(in srgb, #ff4757 10%, transparent)', border: `1px solid ${online ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,71,87,0.3)'}` }}>
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: online ? G : '#ff4757', display: 'inline-block', animation: online ? 'pulse 2s infinite' : 'none' }} />
-          <span style={{ fontSize: 13, color: online ? G : '#ff4757', letterSpacing: 1, fontWeight: 700 }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 16, padding: '10px 20px', borderRadius: 10, background: online ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'color-mix(in srgb, var(--red) 10%, transparent)', border: `1px solid ${online ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'color-mix(in srgb, var(--red) 30%, transparent)'}` }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: online ? G : 'var(--red)', display: 'inline-block', animation: online ? 'pulse 2s infinite' : 'none' }} />
+          <span style={{ fontSize: 13, color: online ? G : 'var(--red)', letterSpacing: 1, fontWeight: 700 }}>
             {loading ? 'LOADING...' : online ? `ONLINE` : 'OFFLINE'}
           </span>
         </div>

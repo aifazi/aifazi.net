@@ -7,8 +7,8 @@ import { useForum } from '@/context/ForumContext'
 import { authProviderLoginRoute } from '@/lib/authRoutes'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
 
-const G = '#00FF88'
-const C = '#00D4FF'
+const G = 'var(--green)'
+const C = 'var(--cyan)'
 
 function safeNext(value: string | null, fallback: string): string {
   if (!value) return fallback
@@ -70,7 +70,7 @@ export default function FiveMLogin() {
         <div style={{ background: 'color-mix(in srgb, var(--text) 3%, transparent)', border: '1px solid var(--border)', borderRadius: 12, padding: 28 }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {error && (
-              <div style={{ fontSize: 12, color: '#ff4757', padding: '10px 14px', background: 'rgba(255,71,87,0.07)', border: '1px solid rgba(255,71,87,0.25)', borderRadius: 6 }}>{error}</div>
+              <div style={{ fontSize: 12, color: 'var(--red)', padding: '10px 14px', background: 'color-mix(in srgb, var(--red) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 25%, transparent)', borderRadius: 6 }}>{error}</div>
             )}
 
             <div>

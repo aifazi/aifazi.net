@@ -12,7 +12,7 @@ export default function StoreSuccess() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text)', fontFamily: 'var(--font-mono)', textAlign: 'center', padding: 24 }}>
       <div>
         <div style={{ fontSize: 56 }}>✅</div>
-        <h1 style={{ fontSize: 24, letterSpacing: 2, margin: '12px 0 8px', color: '#00FF88' }}>SUBSCRIPTION ACTIVE</h1>
+        <h1 style={{ fontSize: 24, letterSpacing: 2, margin: '12px 0 8px', color: 'var(--green)' }}>SUBSCRIPTION ACTIVE</h1>
         <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.7, maxWidth: 420, margin: '0 auto' }}>
           Thanks for supporting AIFAZI RP! Your perks are being applied to your account and will sync to the server automatically within 30 seconds.
         </p>

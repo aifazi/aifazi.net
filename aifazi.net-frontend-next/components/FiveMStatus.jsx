@@ -16,11 +16,11 @@ import { useToast } from './Toast'
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  online:      { color: '#00ff88', label: 'ONLINE',      pulse: true,  glow: 'color-mix(in srgb, var(--green) 35%, transparent)' },
-  degraded:    { color: '#ff6b35', label: 'DEGRADED',    pulse: true,  glow: 'rgba(255,107,53,0.35)' },
-  offline:     { color: '#ff4757', label: 'OFFLINE',     pulse: false, glow: 'rgba(255,71,87,0.2)'  },
-  maintenance: { color: '#00d4ff', label: 'MAINTENANCE', pulse: false, glow: 'color-mix(in srgb, var(--cyan) 30%, transparent)'  },
-  loading:     { color: '#4a6070', label: 'LOADING…',    pulse: true,  glow: 'transparent'           },
+  online:      { color: 'var(--green)',  label: 'ONLINE',      pulse: true,  glow: 'color-mix(in srgb, var(--green) 35%, transparent)' },
+  degraded:    { color: 'var(--orange)', label: 'DEGRADED',    pulse: true,  glow: 'color-mix(in srgb, var(--orange) 35%, transparent)' },
+  offline:     { color: 'var(--red)',    label: 'OFFLINE',     pulse: false, glow: 'color-mix(in srgb, var(--red) 20%, transparent)' },
+  maintenance: { color: 'var(--cyan)',   label: 'MAINTENANCE', pulse: false, glow: 'color-mix(in srgb, var(--cyan) 30%, transparent)' },
+  loading:     { color: 'var(--muted)',  label: 'LOADING…',    pulse: true,  glow: 'transparent'           },
 }
 
 const POLL_INTERVAL_MS = 30000   // re-fetch every 30 s
@@ -89,10 +89,10 @@ export default function FiveMStatus({ expanded = false, adminMode = false }) {
 
   // ── Bar colour ─────────────────────────────────────────────────────────────
   const barGradient =
-    status === 'online'      ? 'linear-gradient(90deg, #00ff88, #00d4ff)' :
-    status === 'degraded'    ? 'linear-gradient(90deg, #ff6b35, #ffaa55)' :
-    status === 'maintenance' ? 'linear-gradient(90deg, #00d4ff, #7b5cff)' :
-                               'linear-gradient(90deg, #ff4757, #ff2333)'
+    status === 'online'      ? 'linear-gradient(90deg, var(--green), var(--cyan))' :
+    status === 'degraded'    ? 'linear-gradient(90deg, var(--orange), color-mix(in srgb, var(--orange) 60%, white))' :
+    status === 'maintenance' ? 'linear-gradient(90deg, var(--cyan), var(--purple))' :
+                               'linear-gradient(90deg, var(--red), color-mix(in srgb, var(--red) 60%, black))'
 
   return (
     <div style={{

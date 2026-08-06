@@ -4,7 +4,7 @@ import api from '@/lib/api'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
 import { useForum } from '@/context/ForumContext'
 
-const G = '#00FF88', C = '#00D4FF', R = '#ff4757', P = '#a855f7'
+const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)', P = 'var(--purple)'
 
 function ServerIP({ ip }: { ip?: string }) {
   const [copied, setCopied] = useState(false)
@@ -79,7 +79,7 @@ export default function FiveMLanding() {
       {/* ─── HERO ─────────────────────────────────────────── */}
       <section style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(60px, 10vw, 120px) 24px clamp(40px, 6vw, 60px)' }}>
         {/* Grid overlay */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(0,212,255,0.04) 1px, transparent 1px)', backgroundSize: '32px 32px', maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)', WebkitMaskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)' }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(color-mix(in srgb, var(--cyan) 4%, transparent) 1px, transparent 1px)', backgroundSize: '32px 32px', maskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)', WebkitMaskImage: 'radial-gradient(ellipse at 50% 0%, black 0%, transparent 70%)' }} />
 
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
           {/* Badge */}

@@ -4,9 +4,9 @@ import api from '@/lib/api'
 import { useForum } from '@/context/ForumContext'
 import { useFiveMLoginRoute, useFiveMRoute } from '@/lib/fivemRoutes'
 
-const G = '#00FF88'
-const C = '#00D4FF'
-const R = '#ff4757'
+const G = 'var(--green)'
+const C = 'var(--cyan)'
+const R = 'var(--red)'
 
 export default function FiveMConnect() {
   const { user } = useForum()
@@ -139,7 +139,7 @@ export default function FiveMConnect() {
               LOGIN TO CONNECT
             </a>
           ) : !isWhitelisted ? (
-            <a href={whitelistHref} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', background: 'rgba(255,159,67,0.15)', color: '#ff9f43', fontWeight: 700, fontSize: 13, letterSpacing: 2, textDecoration: 'none', borderRadius: 8, border: '1px solid rgba(255,159,67,0.3)' }}>
+            <a href={whitelistHref} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', background: 'color-mix(in srgb, var(--orange) 15%, transparent)', color: 'var(--orange)', fontWeight: 700, fontSize: 13, letterSpacing: 2, textDecoration: 'none', borderRadius: 8, border: '1px solid color-mix(in srgb, var(--orange) 30%, transparent)' }}>
               APPLY FOR WHITELIST
             </a>
           ) : (

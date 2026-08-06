@@ -1,10 +1,10 @@
 'use client'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
 
-const G = '#00FF88'
-const C = '#00D4FF'
-const R = '#ff4757'
-const Y = '#ffd700'
+const G = 'var(--green)'
+const C = 'var(--cyan)'
+const R = 'var(--red)'
+const Y = 'var(--orange)'
 
 export default function FiveMRules() {
   const homeHref = useFiveMRoute('/')
