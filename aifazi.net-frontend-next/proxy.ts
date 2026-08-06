@@ -265,16 +265,24 @@ function withCsp(response: NextResponse): NextResponse {
   return response
 }
 
-// Cross-subdomain CORS for redirects (aifazi.net ⇄ store/fivem subdomains).
-// RSC navigation fetches from aifazi.net to a redirected store.aifazi.net URL
-// are cross-origin — the 308 must carry ACAO or the browser blocks it.
+// Cross-subdomain CORS for redirects + responses (aifazi.net ⇄ store/fivem
+// subdomains). Next.js RSC navigation fetches from aifazi.net to a redirected
+// store.aifazi.net URL are cross-origin: the 308 AND the final response must
+// carry ACAO, otherwise the browser blocks the fetch ("no 'Access-Control-
+// Allow-Origin' header"). RSC sends non-simple headers (RSC: 1,
+// Next-Router-State-Tree, Next-Url, ...), so a preflight is fired and those
+// headers must also be allowed.
 function withCors(response: NextResponse, origin: string): NextResponse {
-  const allow = origin && /^https:\/\/[a-z0-9-]*\.?aifazi\.net$/.test(origin)
+  // Allow https://aifazi.net and https://*.aifazi.net only. The optional
+  // subdomain MUST be dot-separated, so lookalikes like `evil-aifazi.net`
+  // never match.
+  const allow = origin && /^https:\/\/([a-z0-9-]+\.)?aifazi\.net$/.test(origin)
   if (allow) {
     response.headers.set('Access-Control-Allow-Origin', origin)
     response.headers.set('Access-Control-Allow-Credentials', 'true')
     response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type,Authorization,RSC,Next-Router-State-Tree,Next-Url,Next-Router-Prefetch')
+    response.headers.set('Access-Control-Expose-Headers', 'RSC,Next-Router-State-Tree,Next-Url,Next-Router-Prefetch')
   }
   return response
 }
@@ -330,6 +338,7 @@ export async function proxy(request: NextRequest) {
 
   // ── 3. fivem.aifazi.net → /fivem/* routes ──────────────────────────────
   if (hostname === FIVEM_HOSTNAME) {
+    const origin = request.headers.get('origin') || ''
     if (
       FIVEM_SHARED_PATHS.has(pathname) ||
       FIVEM_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
@@ -339,25 +348,25 @@ export async function proxy(request: NextRequest) {
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
         headers.set('X-Internal-Token', INTERNAL_API_SECRET)
       }
-      return withCsp(NextResponse.next({ request: { headers } }))
+      return withCors(withCsp(NextResponse.next({ request: { headers } })), origin)
     }
     if (pathname === '/' || pathname === '') {
       const rewriteUrl = request.nextUrl.clone()
       rewriteUrl.pathname = '/fivem'
       const { headers } = secureRequest(request)
       headers.set('x-fivem-domain', 'true')
-      return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
+      return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
     }
     if (pathname.startsWith('/fivem')) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = pathname.replace(/^\/fivem/, '') || '/'
-      return NextResponse.redirect(redirectUrl, { status: 308 })
+      return withCors(NextResponse.redirect(redirectUrl, { status: 308 }), origin)
     }
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/fivem${pathname}`
     const { headers } = secureRequest(request)
     headers.set('x-fivem-domain', 'true')
-    return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
+    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
   }
 
   // ── 4. Store — canonicalize root /store to store.aifazi.net ──────────────
@@ -373,6 +382,7 @@ export async function proxy(request: NextRequest) {
 
   // ── 5. store.aifazi.net → /store/* routes ────────────────────────────────
   if (hostname === STORE_HOSTNAME) {
+    const origin = request.headers.get('origin') || ''
     if (
       STORE_SHARED_PATHS.has(pathname) ||
       STORE_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
@@ -382,25 +392,25 @@ export async function proxy(request: NextRequest) {
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
         headers.set('X-Internal-Token', INTERNAL_API_SECRET)
       }
-      return withCsp(NextResponse.next({ request: { headers } }))
+      return withCors(withCsp(NextResponse.next({ request: { headers } })), origin)
     }
     if (pathname === '/' || pathname === '') {
       const rewriteUrl = request.nextUrl.clone()
       rewriteUrl.pathname = '/store'
       const { headers } = secureRequest(request)
       headers.set('x-store-domain', 'true')
-      return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
+      return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
     }
     if (pathname.startsWith('/store')) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = pathname.replace(/^\/store/, '') || '/'
-      return NextResponse.redirect(redirectUrl, { status: 308 })
+      return withCors(NextResponse.redirect(redirectUrl, { status: 308 }), origin)
     }
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/store${pathname}`
     const { headers } = secureRequest(request)
     headers.set('x-store-domain', 'true')
-    return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
+    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
   }
 
   // ── 6. Admin route protection ─────────────────────────────────────────────

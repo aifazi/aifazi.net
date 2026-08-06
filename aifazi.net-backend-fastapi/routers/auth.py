@@ -619,6 +619,15 @@ async def login(body: LoginBody, request: Request, response: Response):
             forum_id = fu2.data[0]["id"] if fu2.data else None
         token = make_token({"username": ADMIN_USERNAME, "role": "admin", "id": forum_id})
         refresh = make_token({"username": ADMIN_USERNAME, "role": "admin", "id": forum_id}, 60 * 24 * 7)
+        # H4 — persist the admin refresh token so /refresh can validate + rotate it.
+        # (The admin token carries id=forum_id, so without this the refresh check
+        # hits the users row, finds no stored token, and 401s after 24h.)
+        if forum_id:
+            supabase.table("users").update({
+                "refresh_token": refresh,
+                "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
+                "last_seen": datetime.now(timezone.utc).isoformat(),
+            }).eq("id", forum_id).execute()
         _audit(ADMIN_USERNAME, "admin_login", target="admin_panel",
                details={"role": "admin"}, ip=client_ip)
         _auth_log(ADMIN_USERNAME, success=True, ip=client_ip, user_agent=user_agent, role="admin")
