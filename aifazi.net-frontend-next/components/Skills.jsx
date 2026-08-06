@@ -9,44 +9,44 @@ import api from '@/lib/api'
 
 const DEFAULT_SKILLS = [
   {
-    icon: 'ðŸŒ', title: 'Networking & Infrastructure', tagline: 'Router, switch, server, and wireless deployment across enterprise environments',
+    icon: '🌐', title: 'Networking & Infrastructure', tagline: 'Router, switch, server, and wireless deployment across enterprise environments',
     items: [
       { name: 'Router / Switch / Server Config', pct: 90 },
       { name: 'Wireless AP & Controller', pct: 85 },
       { name: 'NAS Storage Management', pct: 82 },
       { name: 'Network Fault Diagnosis', pct: 88 },
     ],
-    proven: 'Multi-site deployments Â· Wireless controller setups Â· NAS configuration',
+    proven: 'Multi-site deployments · Wireless controller setups · NAS configuration',
   },
   {
-    icon: 'ðŸ§ ', title: 'Systems & Hardware', tagline: 'End-to-end hardware troubleshooting, OS deployment, and server administration',
+    icon: '🧠', title: 'Systems & Hardware', tagline: 'End-to-end hardware troubleshooting, OS deployment, and server administration',
     items: [
       { name: 'Hardware Troubleshooting', pct: 92 },
       { name: 'OS & Application Install', pct: 90 },
       { name: 'Server Backup & Restore', pct: 85 },
       { name: 'System Failure Recovery', pct: 86 },
     ],
-    proven: 'Server backup/restore Â· Desktop/Laptop setup Â· OS deployments',
+    proven: 'Server backup/restore · Desktop/Laptop setup · OS deployments',
   },
   {
-    icon: 'ðŸ”’', title: 'Security & User Management', tagline: 'Account provisioning, access control, and endpoint security enforcement',
+    icon: '🔒', title: 'Security & User Management', tagline: 'Account provisioning, access control, and endpoint security enforcement',
     items: [
       { name: 'Antivirus / Anti-Malware', pct: 88 },
       { name: 'User Account Management', pct: 90 },
       { name: 'Password Management', pct: 88 },
       { name: 'Etisalat Account Admin', pct: 85 },
     ],
-    proven: 'Etisalat accounts Â· Role-based provisioning Â· Security enforcement',
+    proven: 'Etisalat accounts · Role-based provisioning · Security enforcement',
   },
   {
-    icon: 'ðŸ› ï¸', title: 'IT Support & Operations', tagline: '24Ã—7 helpdesk, service request management, and end-user support',
+    icon: '🛠️', title: 'IT Support & Operations', tagline: '24×7 helpdesk, service request management, and end-user support',
     items: [
-      { name: '24Ã—7 Helpdesk Support', pct: 90 },
+      { name: '24×7 Helpdesk Support', pct: 90 },
       { name: 'Service Request Management', pct: 88 },
       { name: 'End-User Training', pct: 82 },
       { name: 'Vendor Communication', pct: 80 },
     ],
-    proven: '24/7 incident response Â· Store & office setups Â· Supplier coordination',
+    proven: '24/7 incident response · Store & office setups · Supplier coordination',
   },
 ]
 
@@ -55,7 +55,7 @@ const SKILL_FIELDS = [
   { key: 'pct', label: 'Proficiency %', type: 'number' },
 ]
 
-// â”€â”€ Animated skill bar â€” triggers on intersection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Animated skill bar — triggers on intersection ────────────────────────────
 function SkillBar({ pct }) {
   const barRef = useRef()
   const [active, setActive] = useState(false)
@@ -115,7 +115,7 @@ function SkillBar({ pct }) {
   )
 }
 
-// â”€â”€ Per-skill row (name + bar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Per-skill row (name + bar) ────────────────────────────────────────────────
 function SkillItem({ skill, catIdx, skillIdx }) {
   const { value: livePct } = useInlineEdit(`skills.cat.${catIdx}.item.${skillIdx}.pct`, skill.pct)
   const pct = Number(livePct) || skill.pct
@@ -134,7 +134,7 @@ function SkillItem({ skill, catIdx, skillIdx }) {
   )
 }
 
-// â”€â”€ Skills list inside a category card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Skills list inside a category card ───────────────────────────────────────
 function SkillList({ catIdx, items, isAdmin, onUpdate }) {
   const [editIdx, setEditIdx] = useState(null)
   const [draft, setDraft]     = useState({})
@@ -155,9 +155,9 @@ function SkillList({ catIdx, items, isAdmin, onUpdate }) {
           <SkillItem skill={skill} catIdx={catIdx} skillIdx={si} />
           {isAdmin && (
             <div className="sk-item-toolbar" style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: 3, opacity: 0, transition: 'opacity 0.2s', zIndex: 5 }}>
-              {['â†‘','â†“'].map((a, di) => <button key={a} onClick={() => moveItem(si, di === 0 ? -1 : 1)} style={toolBtn}>{a}</button>)}
-              <button onClick={() => openEdit(si)} style={{ ...toolBtn, color: 'var(--cyan)' }}>âœŽ</button>
-              <button onClick={() => deleteItem(si)} style={{ ...toolBtn, color: 'var(--red)' }}>âœ•</button>
+              {['↑','↓'].map((a, di) => <button key={a} onClick={() => moveItem(si, di === 0 ? -1 : 1)} style={toolBtn}>{a}</button>)}
+              <button onClick={() => openEdit(si)} style={{ ...toolBtn, color: 'var(--cyan)' }}>✎</button>
+              <button onClick={() => deleteItem(si)} style={{ ...toolBtn, color: 'var(--red)' }}>✕</button>
             </div>
           )}
         </div>
@@ -174,7 +174,7 @@ function SkillList({ catIdx, items, isAdmin, onUpdate }) {
         <>
           <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} />
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px color-mix(in srgb, var(--green) 15%, transparent)', padding: 32, width: '100%', maxWidth: 420, zIndex: 99996 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD SKILL' : 'âœŽ EDIT SKILL'}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD SKILL' : '✎ EDIT SKILL'}</div>
             {SKILL_FIELDS.map(f => (
               <div key={f.key} style={{ marginBottom: 16 }}>
                 <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{f.label}</label>
@@ -193,7 +193,7 @@ function SkillList({ catIdx, items, isAdmin, onUpdate }) {
   )
 }
 
-// â”€â”€ Category card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Category card ─────────────────────────────────────────────────────────────
 function SkillCategory({ cat, i, isAdmin, cats, onCatsChange }) {
   const ref     = useReveal()
   const cardRef = useRef(null)
@@ -244,17 +244,17 @@ function SkillCategory({ cat, i, isAdmin, cats, onCatsChange }) {
           <span className="sk-corner sk-corner--tl" />
           <span className="sk-corner sk-corner--br" />
 
-          {/* Icon â€” editable via EditableIcon or IconPickerModal in CatEditModal */}
+          {/* Icon — editable via EditableIcon or IconPickerModal in CatEditModal */}
           <div style={{ fontSize: 28, marginBottom: 16, position: 'relative', zIndex: 1 }}>
             <IconDisplay value={cat.icon} size={28} />
           </div>
 
-          {/* Category title â€” admin-editable inline */}
+          {/* Category title — admin-editable inline */}
           <div style={{ fontFamily: 'var(--font-code)', fontSize: 12, letterSpacing: 3, color: 'var(--cyan)', textTransform: 'uppercase', marginBottom: 8, position: 'relative', zIndex: 1 }}>
             <EditableText contentKey={`skills.cat.${i}.title`} defaultValue={cat.title} />
           </div>
 
-          {/* Tagline â€” admin-editable inline */}
+          {/* Tagline — admin-editable inline */}
           {cat.tagline !== undefined && (
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 24, opacity: 0.8, position: 'relative', zIndex: 1 }}>
               <EditableText contentKey={`skills.cat.${i}.tagline`} defaultValue={cat.tagline} />
@@ -266,10 +266,10 @@ function SkillCategory({ cat, i, isAdmin, cats, onCatsChange }) {
             <SkillList catIdx={i} items={cat.items || []} isAdmin={isAdmin} onUpdate={updateItems} />
           </div>
 
-          {/* Proof tags â€” each tag is individually editable */}
+          {/* Proof tags — each tag is individually editable */}
           {cat.proven && (
             <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexWrap: 'wrap', gap: 6, position: 'relative', zIndex: 1 }}>
-              {cat.proven.split('Â·').map(p => p.trim()).filter(Boolean).map((p, pi) => (
+              {cat.proven.split('·').map(p => p.trim()).filter(Boolean).map((p, pi) => (
                 <span key={pi} className="sk-tag">
                   <EditableText contentKey={`skills.cat.${i}.tag.${pi}`} defaultValue={p} />
                 </span>
@@ -282,15 +282,15 @@ function SkillCategory({ cat, i, isAdmin, cats, onCatsChange }) {
   )
 }
 
-// â”€â”€ Category editor modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Category editor modal ─────────────────────────────────────────────────────
 function CatEditModal({ cat, onSave, onClose }) {
-  const [draft, setDraft]   = useState(cat ? { ...cat } : { icon: 'ðŸŒ', title: '', tagline: '', proven: '' })
+  const [draft, setDraft]   = useState(cat ? { ...cat } : { icon: '🌐', title: '', tagline: '', proven: '' })
   const [iconOpen, setIconOpen] = useState(false)
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} />
       <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px color-mix(in srgb, var(--green) 15%, transparent)', padding: 32, width: '100%', maxWidth: 520, zIndex: 99996, maxHeight: '85vh', overflowY: 'auto' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{cat ? 'âœŽ EDIT CATEGORY' : '+ ADD CATEGORY'}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{cat ? '✎ EDIT CATEGORY' : '+ ADD CATEGORY'}</div>
 
         {/* Icon */}
         <div style={{ marginBottom: 16 }}>
@@ -307,7 +307,7 @@ function CatEditModal({ cat, onSave, onClose }) {
         {[
           { key: 'title',   label: 'CATEGORY TITLE' },
           { key: 'tagline', label: 'SHORT DESCRIPTION' },
-          { key: 'proven',  label: 'PROOF POINTS (Â· separated)' },
+          { key: 'proven',  label: 'PROOF POINTS (· separated)' },
         ].map(f => (
           <div key={f.key} style={{ marginBottom: 16 }}>
             <label style={labelStyle}>{f.label}</label>
@@ -325,7 +325,7 @@ function CatEditModal({ cat, onSave, onClose }) {
   )
 }
 
-// â”€â”€ Main Skills section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main Skills section ───────────────────────────────────────────────────────
 export default function Skills() {
   const headerRef = useReveal()
   const titleRef  = useSplitTextReveal({ staggerMs: 40, fromY: 28 })
@@ -368,7 +368,7 @@ export default function Skills() {
   return (
     <section id="skills" style={{ padding: '120px 60px', position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)' }} className="skills-section">
 
-      {/* Section header â€” AnimatableWrapper lets admin pick entrance animation */}
+      {/* Section header — AnimatableWrapper lets admin pick entrance animation */}
       <AnimatableWrapper animKey="skills.header" label="Skills Section Header" currentAnim="fadeUp 0.8s both">
         <div ref={headerRef} className="fade-up section-header">
           <span className="section-tag">03 /</span>
@@ -389,15 +389,15 @@ export default function Skills() {
             <SkillCategory cat={cat} i={i} isAdmin={isAdmin} cats={cats} onCatsChange={handleCatsChange} />
             {isAdmin && (
               <div className="sk-cat-toolbar" style={{ position: 'absolute', top: 8, right: 8, zIndex: 20, display: 'flex', gap: 4, opacity: 0, transition: 'opacity 0.2s' }}>
-                {['â†‘','â†“'].map((a, di) => <button key={a} onClick={() => moveCat(i, di === 0 ? -1 : 1)} style={toolBtn}>{a}</button>)}
-                <button onClick={() => openEditCat(i)} style={{ ...toolBtn, color: 'var(--cyan)' }}>âœŽ</button>
-                <button onClick={() => deleteCat(i)}   style={{ ...toolBtn, color: 'var(--red)' }}>âœ•</button>
+                {['↑','↓'].map((a, di) => <button key={a} onClick={() => moveCat(i, di === 0 ? -1 : 1)} style={toolBtn}>{a}</button>)}
+                <button onClick={() => openEditCat(i)} style={{ ...toolBtn, color: 'var(--cyan)' }}>✎</button>
+                <button onClick={() => deleteCat(i)}   style={{ ...toolBtn, color: 'var(--red)' }}>✕</button>
               </div>
             )}
           </div>
         ))}
 
-        {/* Add Category â€” sits in the grid as an extra cell, auto-positioned */}
+        {/* Add Category — sits in the grid as an extra cell, auto-positioned */}
         {isAdmin && (
           <div className="sk-add-cell">
             <button onClick={openAddCat} className="sk-add-btn">
@@ -417,10 +417,10 @@ export default function Skills() {
       )}
 
       <style>{`
-        /* â”€â”€ Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        /* ── Grid ──────────────────────────────────────────────────────────────
            auto-fill + minmax: cards wrap automatically when new ones are added.
-           No fixed column count â€” works for 1 card or 20 cards.
-        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+           No fixed column count — works for 1 card or 20 cards.
+        ────────────────────────────────────────────────────────────────────── */
         .skills-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 340px));

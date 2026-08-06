@@ -9,30 +9,30 @@ const COLORS = ['#000000','#ffffff','#ef4444','#f97316','#eab308',
 const TOOL_GROUPS = [
   {
     label: 'NAVIGATE', tools: [
-      { id:'hand',   icon:'âœ‹', label:'Hand Tool' },
-      { id:'select', icon:'â†–',  label:'Select'    },
+      { id:'hand',   icon:'✋', label:'Hand Tool' },
+      { id:'select', icon:'↖',  label:'Select'    },
     ]
   },
   {
     label: 'INSERT', tools: [
       { id:'text',  icon:'T',  label:'Add Text'  },
-      { id:'image', icon:'ðŸ–¼', label:'Add Image' },
-      { id:'note',  icon:'ðŸ“Œ', label:'Note'      },
+      { id:'image', icon:'🖼', label:'Add Image' },
+      { id:'note',  icon:'📌', label:'Note'      },
     ]
   },
   {
     label: 'ANNOTATE', tools: [
-      { id:'highlight',    icon:'â–¬',  label:'Highlight'     },
-      { id:'underline',    icon:'UÌ²',  label:'Underline'     },
-      { id:'strikethrough',icon:'SÌ¶', label:'Strikethrough' },
+      { id:'highlight',    icon:'▬',  label:'Highlight'     },
+      { id:'underline',    icon:'U̲',  label:'Underline'     },
+      { id:'strikethrough',icon:'S̶', label:'Strikethrough' },
     ]
   },
   {
     label: 'DRAW', tools: [
-      { id:'freehand', icon:'âœ', label:'Draw'      },
-      { id:'rect',     icon:'â–­',  label:'Rectangle', hasMenu: true },
-      { id:'line',     icon:'â•±',  label:'Line'      },
-      { id:'arrow',    icon:'â†—',  label:'Arrow'     },
+      { id:'freehand', icon:'✏', label:'Draw'      },
+      { id:'rect',     icon:'▭',  label:'Rectangle', hasMenu: true },
+      { id:'line',     icon:'╱',  label:'Line'      },
+      { id:'arrow',    icon:'↗',  label:'Arrow'     },
     ]
   },
 ]
@@ -41,10 +41,10 @@ const TOOLS = TOOL_GROUPS.flatMap(g => g.tools)
 
 // Shape submenu options (only shapes with full draw+export support)
 const SHAPE_TOOLS = [
-  { id:'rect',     icon:'â–­', label:'Rectangle' },
-  { id:'circle',   icon:'â—‹', label:'Ellipse'   },
-  { id:'line',     icon:'â•±', label:'Line'      },
-  { id:'arrow',    icon:'â†—', label:'Arrow'     },
+  { id:'rect',     icon:'▭', label:'Rectangle' },
+  { id:'circle',   icon:'○', label:'Ellipse'   },
+  { id:'line',     icon:'╱', label:'Line'      },
+  { id:'arrow',    icon:'↗', label:'Arrow'     },
 ]
 const C = { bg:'#0d0d1a', bg2:'#131328', bg3:'#1a1a35',
   border:'rgba(255,255,255,0.08)', text:'#e4e4f0', muted:'#6060a0',
@@ -55,20 +55,20 @@ const toRgba = (hex='#000000', a=1) => {
   return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`
 }
 
-/* â”€â”€ Upload phase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Upload phase ───────────────────────────────────────────────── */
 function UploadPhase({ onFile, loading, error }) {
   const [over, setOver] = useState(false)
   const inp = useRef()
   const handle = f => { if (f && f.type === 'application/pdf') onFile(f) }
   const FEATURES = [
     { icon:'T',   label:'Add Text',       desc:'Place text anywhere on any page' },
-    { icon:'âœ',   label:'Draw',           desc:'Freehand pen, shapes, arrows' },
-    { icon:'â–¬',   label:'Highlight',      desc:'Highlight, underline, strikethrough' },
-    { icon:'ðŸ“Œ',  label:'Sticky Notes',   desc:'Anchored comments on any page' },
-    { icon:'ðŸ–¼',  label:'Insert Images',  desc:'Drop images onto any page' },
-    { icon:'ðŸ”—',  label:'Links',          desc:'Web links and internal anchors' },
-    { icon:'ðŸ”',  label:'Search',         desc:'Find & replace text in PDF' },
-    { icon:'ðŸ“¤',  label:'Export PDF',     desc:'Download edited PDF instantly' },
+    { icon:'✏',   label:'Draw',           desc:'Freehand pen, shapes, arrows' },
+    { icon:'▬',   label:'Highlight',      desc:'Highlight, underline, strikethrough' },
+    { icon:'📌',  label:'Sticky Notes',   desc:'Anchored comments on any page' },
+    { icon:'🖼',  label:'Insert Images',  desc:'Drop images onto any page' },
+    { icon:'🔗',  label:'Links',          desc:'Web links and internal anchors' },
+    { icon:'🔍',  label:'Search',         desc:'Find & replace text in PDF' },
+    { icon:'📤',  label:'Export PDF',     desc:'Download edited PDF instantly' },
   ]
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
@@ -80,13 +80,13 @@ function UploadPhase({ onFile, loading, error }) {
           display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
           <span style={{ display:'inline-block', width:6, height:6, background:C.green, borderRadius:'50%',
             boxShadow:`0 0 8px ${C.green}` }} />
-          PDF EDITOR â€” FULL CANVAS
+          PDF EDITOR — FULL CANVAS
         </div>
         <h2 style={{ fontFamily:C.mono, fontSize:32, fontWeight:800, color:C.text, margin:'0 0 8px', letterSpacing:-1 }}>
           Open a PDF to Edit
         </h2>
         <p style={{ fontFamily:C.mono, fontSize:11, color:C.muted, margin:0 }}>
-          Annotate, draw, add text, insert images and export â€” all in your browser.
+          Annotate, draw, add text, insert images and export — all in your browser.
         </p>
       </div>
 
@@ -108,13 +108,13 @@ function UploadPhase({ onFile, loading, error }) {
         <input ref={inp} type="file" accept=".pdf" style={{display:'none'}}
           onChange={e=>handle(e.target.files[0])} />
         <div style={{ fontSize:52, marginBottom:16, filter:over?'drop-shadow(0 0 12px #00ff88)':undefined,
-          transition:'filter .2s' }}>{loading ? 'â³' : over ? 'ðŸ“‚' : 'ðŸ“„'}</div>
+          transition:'filter .2s' }}>{loading ? '⏳' : over ? '📂' : '📄'}</div>
         <div style={{ fontFamily:C.mono, fontSize:14, fontWeight:700,
           color:over?C.green:loading?C.cyan:C.text, marginBottom:6, transition:'color .2s' }}>
-          {loading ? 'Opening PDFâ€¦' : over ? 'Release to open' : 'Drop PDF here'}
+          {loading ? 'Opening PDF…' : over ? 'Release to open' : 'Drop PDF here'}
         </div>
         <div style={{ fontFamily:C.mono, fontSize:10, color:C.muted }}>
-          {loading ? 'Rendering pagesâ€¦' : 'or click to browse Â· .pdf files only'}
+          {loading ? 'Rendering pages…' : 'or click to browse · .pdf files only'}
         </div>
         {loading && (
           <div style={{ marginTop:16, height:2, background:C.bg3, borderRadius:2, overflow:'hidden', maxWidth:200, margin:'16px auto 0' }}>
@@ -128,7 +128,7 @@ function UploadPhase({ onFile, loading, error }) {
         <div style={{ fontFamily:C.mono, fontSize:11, color:C.red, padding:'10px 18px',
           background:'rgba(248,113,113,0.08)', border:`1px solid ${C.red}55`, borderRadius:8,
           display:'flex', alignItems:'center', gap:8 }}>
-          <span>âš </span> {error}
+          <span>⚠</span> {error}
         </div>
       )}
 
@@ -153,7 +153,7 @@ function UploadPhase({ onFile, loading, error }) {
   )
 }
 
-/* â”€â”€ Toolbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Toolbar ────────────────────────────────────────────────────── */
 function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
   lineWidth, setLineWidth, fontSize, setFontSize,
   onUndo, canUndo, onRedo, canRedo, zoomIdx, setZoomIdx,
@@ -180,7 +180,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
 
   return (
     <div style={{ background: C.bg2, borderBottom: `1px solid ${C.border}`, userSelect: 'none' }}>
-      {/* â”€â”€ Group row â”€â”€ */}
+      {/* ── Group row ── */}
       <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, overflowX: 'auto',
         padding: '6px 10px', flexWrap: 'nowrap' }}>
 
@@ -204,12 +204,12 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
                           background: SHAPE_TOOLS.some(s=>s.id===tool) ? C.accent+'33' : 'transparent',
                           color: SHAPE_TOOLS.some(s=>s.id===tool) ? C.accent : C.muted, fontSize: 13,
                           display:'flex', alignItems:'center', gap:3 }}>
-                        <span>{SHAPE_TOOLS.find(s=>s.id===tool)?.icon || 'â–­'}</span>
+                        <span>{SHAPE_TOOLS.find(s=>s.id===tool)?.icon || '▭'}</span>
                         <span style={{ fontFamily:C.mono, fontSize:7 }}>{SHAPE_TOOLS.find(s=>s.id===tool)?.label.toUpperCase() || 'SHAPES'}</span>
                       </button>
                       <button onClick={() => setShapeMenuOpen(v=>!v)}
                         style={{ width:16, border:'none', borderLeft:`1px solid ${C.border}`, background:'transparent',
-                          color:C.muted, cursor:'pointer', fontSize:8, padding:0 }}>â–¾</button>
+                          color:C.muted, cursor:'pointer', fontSize:8, padding:0 }}>▾</button>
                     </div>
                     {shapeMenuOpen && (
                       <div style={{ position:'absolute', top:'100%', left:0, zIndex:999, marginTop:2,
@@ -235,7 +235,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
           </div>
         ))}
 
-        {/* â”€â”€ Right: options + actions â”€â”€ */}
+        {/* ── Right: options + actions ── */}
         <div style={{ marginLeft:'auto', display:'flex', gap:6, alignItems:'flex-end', flexShrink:0, paddingBottom:2 }}>
           {/* Contextual options */}
           <div style={{ display:'flex', gap:6, alignItems:'center' }}>
@@ -283,16 +283,16 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
           {/* Undo/Redo */}
           <button onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)"
             style={{ padding:'5px 10px', fontFamily:C.mono, fontSize:9, background:C.bg3,
-              border:`1px solid ${C.border}`, color:canUndo?C.text:C.muted, cursor:canUndo?'pointer':'not-allowed', borderRadius:6 }}>â†© UNDO</button>
+              border:`1px solid ${C.border}`, color:canUndo?C.text:C.muted, cursor:canUndo?'pointer':'not-allowed', borderRadius:6 }}>↩ UNDO</button>
           <button onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Y)"
             style={{ padding:'5px 10px', fontFamily:C.mono, fontSize:9, background:C.bg3,
-              border:`1px solid ${C.border}`, color:canRedo?C.text:C.muted, cursor:canRedo?'pointer':'not-allowed', borderRadius:6 }}>â†ª REDO</button>
+              border:`1px solid ${C.border}`, color:canRedo?C.text:C.muted, cursor:canRedo?'pointer':'not-allowed', borderRadius:6 }}>↪ REDO</button>
 
           {/* Zoom */}
           <div style={{ display:'flex', alignItems:'center', gap:2, background:C.bg3,
             border:`1px solid ${C.border}`, borderRadius:6, padding:'2px' }}>
             <button onClick={()=>setZoomIdx(i=>Math.max(0,i-1))} disabled={zoomIdx===0}
-              style={{ width:24, height:24, border:'none', background:'none', color:C.text, cursor:'pointer', fontSize:14 }}>âˆ’</button>
+              style={{ width:24, height:24, border:'none', background:'none', color:C.text, cursor:'pointer', fontSize:14 }}>−</button>
             <span style={{ fontFamily:C.mono, fontSize:9, color:C.cyan, minWidth:38, textAlign:'center' }}>
               {Math.round(ZOOM_STEPS[zoomIdx]*100)}%
             </span>
@@ -306,18 +306,18 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
               background:exporting?C.bg3:'color-mix(in srgb, var(--green) 12%, transparent)', border:`1px solid ${exporting?C.border:'color-mix(in srgb, var(--green) 50%, transparent)'}`,
               color:exporting?C.muted:C.green, cursor:exporting?'not-allowed':'pointer', borderRadius:6,
               display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
-            {exporting ? 'â³ SAVINGâ€¦' : `ðŸ“¤ EXPORT PDF${opsCount?' ('+opsCount+')':''}`}
+            {exporting ? '⏳ SAVING…' : `📤 EXPORT PDF${opsCount?' ('+opsCount+')':''}`}
           </button>
           <button onClick={onClose} title="Close"
             style={{ padding:'6px 10px', fontFamily:C.mono, fontSize:10, background:'transparent',
-              border:`1px solid ${C.border}`, color:C.muted, cursor:'pointer', borderRadius:6 }}>âœ•</button>
+              border:`1px solid ${C.border}`, color:C.muted, cursor:'pointer', borderRadius:6 }}>✕</button>
         </div>
       </div>
     </div>
   )
 }
 
-/* â”€â”€ Page sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Page sidebar ───────────────────────────────────────────────── */
 function PageSidebar({ session, currentPage, setCurrentPage, onDelete, onRotate }) {
   return (
     <div style={{ width:130, flexShrink:0, background:C.bg2, borderRight:`1px solid ${C.border}`,
@@ -338,13 +338,13 @@ function PageSidebar({ session, currentPage, setCurrentPage, onDelete, onRotate 
           </div>
           {i===currentPage && (
             <div style={{ position:'absolute', top:3, right:3, display:'flex', flexDirection:'column', gap:2 }}>
-              <button onClick={e=>{e.stopPropagation();onRotate(i)}} title="Rotate 90Â°"
+              <button onClick={e=>{e.stopPropagation();onRotate(i)}} title="Rotate 90°"
                 style={{ width:20, height:20, border:'none', borderRadius:3, background:'rgba(34,211,238,0.8)',
-                  color:'#000', cursor:'pointer', fontSize:10, display:'flex', alignItems:'center', justifyContent:'center' }}>â†»</button>
+                  color:'#000', cursor:'pointer', fontSize:10, display:'flex', alignItems:'center', justifyContent:'center' }}>↻</button>
               {session.page_count > 1 && (
                 <button onClick={e=>{e.stopPropagation();onDelete(i)}} title="Delete page"
                   style={{ width:20, height:20, border:'none', borderRadius:3, background:'rgba(248,113,113,0.8)',
-                    color:'#fff', cursor:'pointer', fontSize:12, display:'flex', alignItems:'center', justifyContent:'center' }}>Ã—</button>
+                    color:'#fff', cursor:'pointer', fontSize:12, display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
               )}
             </div>
           )}
@@ -354,7 +354,7 @@ function PageSidebar({ session, currentPage, setCurrentPage, onDelete, onRotate 
   )
 }
 
-/* â”€â”€ Search & Replace panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Search & Replace panel ─────────────────────────────────────── */
 function SearchPanel({ onClose, onSearch, onReplace, onReplaceAll, results, current }) {
   const [find, setFind]         = useState('')
   const [replace, setReplace]   = useState('')
@@ -366,14 +366,14 @@ function SearchPanel({ onClose, onSearch, onReplace, onReplaceAll, results, curr
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
         padding:'10px 14px', borderBottom:`1px solid ${C.border}`, background:C.bg3 }}>
         <span style={{ fontFamily:C.mono, fontSize:9, letterSpacing:3, color:C.cyan }}>SEARCH & REPLACE</span>
-        <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, cursor:'pointer', fontSize:14 }}>âœ•</button>
+        <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, cursor:'pointer', fontSize:14 }}>✕</button>
       </div>
       <div style={{ padding:14, display:'flex', flexDirection:'column', gap:10 }}>
         <div>
           <label style={{ fontFamily:C.mono, fontSize:8, letterSpacing:2, color:C.muted, display:'block', marginBottom:5 }}>FIND</label>
           <div style={{ display:'flex', gap:6 }}>
             <input value={find} onChange={e=>setFind(e.target.value)}
-              placeholder="Search textâ€¦"
+              placeholder="Search text…"
               onKeyDown={e=>e.key==='Enter'&&onSearch(find,matchCase)}
               style={{ flex:1, background:C.bg3, border:`1px solid ${C.border}`, color:C.text,
                 fontFamily:C.mono, fontSize:11, padding:'7px 10px', borderRadius:5, outline:'none' }} />
@@ -385,7 +385,7 @@ function SearchPanel({ onClose, onSearch, onReplace, onReplaceAll, results, curr
         <div>
           <label style={{ fontFamily:C.mono, fontSize:8, letterSpacing:2, color:C.muted, display:'block', marginBottom:5 }}>REPLACE WITH</label>
           <input value={replace} onChange={e=>setReplace(e.target.value)}
-            placeholder="Replacement textâ€¦"
+            placeholder="Replacement text…"
             style={{ width:'100%', boxSizing:'border-box', background:C.bg3, border:`1px solid ${C.border}`, color:C.text,
               fontFamily:C.mono, fontSize:11, padding:'7px 10px', borderRadius:5, outline:'none' }} />
         </div>
@@ -409,7 +409,7 @@ function SearchPanel({ onClose, onSearch, onReplace, onReplaceAll, results, curr
   )
 }
 
-/* â”€â”€ Link dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Link dialog ────────────────────────────────────────────────── */
 function LinkDialog({ pos, onConfirm, onClose }) {
   const [url, setUrl]     = useState('https://')
   const [label, setLabel] = useState('')
@@ -440,61 +440,61 @@ function LinkDialog({ pos, onConfirm, onClose }) {
   )
 }
 
-/* â”€â”€ Attachment dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Attachment dialog ──────────────────────────────────────────── */
 function AttachmentMarker({ op, zoom, RS }) {
   const x = op.x * RS * zoom, y = op.y * RS * zoom
   return (
     <div title={op.filename || 'Attachment'} style={{ position:'absolute', left:x-10, top:y-10,
       width:20, height:20, background:'color-mix(in srgb, var(--cyan) 15%, transparent)', border:`1px solid ${C.cyan}`,
       borderRadius:4, display:'flex', alignItems:'center', justifyContent:'center',
-      fontSize:12, cursor:'pointer', zIndex:10 }}>ðŸ“Ž</div>
+      fontSize:12, cursor:'pointer', zIndex:10 }}>📎</div>
   )
 }
 
-/* â”€â”€ Main PDFEditor component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Main PDFEditor component ───────────────────────────────────── */
 export default function PDFEditor() {
-  // â”€â”€ Phase / session â”€â”€
+  // ── Phase / session ──
   const [phase, setPhase]       = useState('upload') // upload | editor
   const [session, setSession]   = useState(null)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
-  // â”€â”€ Page / zoom â”€â”€
+  // ── Page / zoom ──
   const [currentPage, setCurrentPageRaw] = useState(0)
   const [zoomIdx, setZoomIdx]   = useState(2) // index into ZOOM_STEPS (default 1.0)
-  // â”€â”€ Tools / style â”€â”€
+  // ── Tools / style ──
   const [tool, setTool]         = useState('select')
   const [color, setColor]       = useState('#000000')
   const [opacity, setOpacity]   = useState(0.45)
   const [lineWidth, setLineWidth] = useState(2)
   const [fontSize, setFontSize] = useState(16)
-  // â”€â”€ Link dialog (web links) â”€â”€
+  // ── Link dialog (web links) ──
   const [linkPos, setLinkPos]   = useState(null)
   const [linkPdf, setLinkPdf]   = useState(null)
-  // â”€â”€ Pan (hand tool) â”€â”€
+  // ── Pan (hand tool) ──
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart]   = useState(null)
   const canvasWrapRef = useRef()
-  // â”€â”€ Operations (undo/redo) â”€â”€
+  // ── Operations (undo/redo) ──
   const [ops, setOps]           = useState([])    // committed
   const [redoStack, setRedoStack] = useState([])
-  // â”€â”€ Drawing state â”€â”€
+  // ── Drawing state ──
   const [isDrawing, setIsDrawing] = useState(false)
   const [drawStart, setDrawStart] = useState(null)   // canvas px {x,y}
   const [livePoints, setLivePoints] = useState([])   // freehand points
-  // â”€â”€ Text input overlay â”€â”€
+  // ── Text input overlay ──
   const [textPos, setTextPos]   = useState(null)   // {canvasX, canvasY, pdfX, pdfY}
   const [pendingText, setPendingText] = useState('')
-  // â”€â”€ Export / status â”€â”€
+  // ── Export / status ──
   const [exporting, setExporting] = useState(false)
   const [status, setStatus]     = useState('')
-  // â”€â”€ Refs â”€â”€
+  // ── Refs ──
   const canvasRef  = useRef()
   const imgRef     = useRef()
   const imgInputRef = useRef()  // for image tool
   const zoom = ZOOM_STEPS[zoomIdx]
   const page = session?.pages?.[currentPage] || {width:612, height:792}
 
-  // â”€â”€ Derived â”€â”€
+  // ── Derived ──
   const canvasW = Math.round(page.width  * RS)
   const canvasH = Math.round(page.height * RS)
 
@@ -504,9 +504,9 @@ export default function PDFEditor() {
     setPendingText('')
   }, [])
 
-  // Convert canvas-internal pixels â†’ PDF points
+  // Convert canvas-internal pixels → PDF points
   const toPdf = (cx, cy) => ({ x: cx / RS, y: cy / RS })
-  // Convert PDF points â†’ canvas-internal pixels
+  // Convert PDF points → canvas-internal pixels
   const toCanvas = (px, py) => ({ x: px * RS, y: py * RS })
 
   // Get canvas-internal coords from mouse event
@@ -544,7 +544,7 @@ export default function PDFEditor() {
     return () => window.removeEventListener('keydown', handler)
   }, [undo, redo])
 
-  /* â”€â”€ Canvas draw / redraw â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ── Canvas draw / redraw ─────────────────────────────────────── */
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -617,9 +617,9 @@ export default function PDFEditor() {
         ctx.setLineDash([])
         ctx.fillStyle = 'rgba(59,130,246,0.08)'; ctx.fillRect(cx, cy, cw, ch)
         ctx.fillStyle = '#3b82f6'; ctx.font = `${9 * RS * 0.5}px monospace`
-        ctx.fillText('ðŸ”— ' + (op.url || '').slice(0, 24), cx + 2, cy + ch - 4)
+        ctx.fillText('🔗 ' + (op.url || '').slice(0, 24), cx + 2, cy + ch - 4)
         ctx.font = `bold ${18 * RS * 0.5}px sans-serif`
-        ctx.fillText('ðŸ“Œ', cx, cy)
+        ctx.fillText('📌', cx, cy)
         if (op.content) {
           ctx.font = `${11 * RS * 0.5}px sans-serif`
           ctx.fillStyle = '#fff'
@@ -639,7 +639,7 @@ export default function PDFEditor() {
     redrawCanvas()
   }, [canvasW, canvasH, redrawCanvas])
 
-  /* â”€â”€ Mouse event handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ── Mouse event handlers ─────────────────────────────────────── */
   const toRgba2 = (hex,a) => toRgba(hex,a) // alias
   const onMouseDown = useCallback(e => {
     if (e.button !== 0) return
@@ -760,7 +760,7 @@ export default function PDFEditor() {
     e.target.value = ''
   }, [page, currentPage, addOp])
 
-  /* â”€â”€ Open file / export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ── Open file / export ────────────────────────────────────────── */
   const openFile = useCallback(async file => {
     setLoading(true); setError('')
     try {
@@ -813,19 +813,19 @@ export default function PDFEditor() {
     pages: session.pages?.filter((_,i)=>!deletedPages.has(i)),
   } : null
 
-  /* â”€â”€ Render: upload phase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ── Render: upload phase ─────────────────────────────────────── */
   if (phase === 'upload') return (
     <UploadPhase onFile={openFile} loading={loading} error={error} />
   )
 
-  /* â”€â”€ Render: editor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ── Render: editor ───────────────────────────────────────────── */
   const cursorMap = { select:'default', hand:'grab', text:'text',
     highlight:'crosshair', underline:'crosshair', strikethrough:'crosshair',
     freehand:'crosshair', rect:'crosshair', circle:'crosshair', line:'crosshair',
     arrow:'crosshair', note:'cell', image:'copy' }
   return (
     <div style={{ display:'flex', flexDirection:'column',
-      /* Fill the parent border container exactly â€” no gap at top/bottom */
+      /* Fill the parent border container exactly — no gap at top/bottom */
       height:'calc(100vh - 200px)', minHeight:600,
       background:C.bg, overflow:'hidden', borderRadius:'inherit' }}>
       <input ref={imgInputRef} type="file" accept="image/*" style={{display:'none'}} onChange={onImageInsert} />
@@ -888,7 +888,7 @@ export default function PDFEditor() {
       <div style={{ background:C.bg2, borderTop:`1px solid ${C.border}`, padding:'5px 16px',
         display:'flex', alignItems:'center', gap:16, fontFamily:C.mono, fontSize:9, color:C.muted,
         flexWrap:'wrap', rowGap:2 }}>
-        <span>ðŸ“„ <span style={{color:C.cyan}}>{session.filename}</span></span>
+        <span>📄 <span style={{color:C.cyan}}>{session.filename}</span></span>
         <span style={{color:C.border}}>|</span>
         <span>Page <span style={{color:C.cyan}}>{currentPage+1}</span> / {session.page_count}</span>
         <span style={{color:C.border}}>|</span>
@@ -897,9 +897,9 @@ export default function PDFEditor() {
         <span>Tool <span style={{color:C.green}}>{TOOLS.find(t=>t.id===tool)?.label}</span></span>
         <span style={{color:C.border}}>|</span>
         <span><span style={{color:ops.length>0?C.green:C.muted}}>{ops.length}</span> annotation{ops.length!==1?'s':''}</span>
-        {status && <span style={{color:C.red, marginLeft:'auto'}}>âš  {status}</span>}
+        {status && <span style={{color:C.red, marginLeft:'auto'}}>⚠ {status}</span>}
         {/* Keyboard shortcuts hint */}
-        <span style={{marginLeft:'auto', color:C.muted, opacity:0.5}}>Ctrl+Z undo Â· Ctrl+Y redo Â· Esc cancel</span>
+        <span style={{marginLeft:'auto', color:C.muted, opacity:0.5}}>Ctrl+Z undo · Ctrl+Y redo · Esc cancel</span>
       </div>
     </div>
   )

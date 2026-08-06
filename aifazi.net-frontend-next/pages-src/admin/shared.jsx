@@ -2,7 +2,7 @@
 import { useState, useEffect, Component } from 'react'
 import { dialog } from '../../components/Dialog'
 
-// â”€â”€ #22 ErrorBoundary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── #22 ErrorBoundary ─────────────────────────────────────────────────────────
 // Class component (React requires class for componentDidCatch).
 // Wrap every admin panel with <PanelErrorBoundary label="Panel Name"> so a
 // single render crash cannot take down the entire dashboard.
@@ -26,7 +26,7 @@ class PanelErrorBoundary extends Component {
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           minHeight: 260, padding: 40, gap: 16, textAlign: 'center',
         }}>
-          <div style={{ fontSize: 40 }}>âš ï¸</div>
+          <div style={{ fontSize: 40 }}>⚠️</div>
           <div style={{
             fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
             color: '#f87171', padding: '3px 12px',
@@ -52,7 +52,7 @@ class PanelErrorBoundary extends Component {
               border: 'none', cursor: 'pointer', borderRadius: 4, fontWeight: 700,
             }}
           >
-            â†º RELOAD PANEL
+            ↺ RELOAD PANEL
           </button>
         </div>
       )
@@ -108,7 +108,7 @@ const S = {
   ),
 }
 
-// â”€â”€ Skeleton loaders â€” shimmer placeholders for loading states â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Skeleton loaders — shimmer placeholders for loading states ────────────────
 function SkeletonBlock({ width = '100%', height = 16, style = {} }) {
   return (
     <div className="sk-block" style={{ width, height, ...style }} />
@@ -157,7 +157,7 @@ const SLASH_COMMANDS = [
     { icon: 'H', label: 'Heading 1', desc: 'Big section heading',      action: e => e.exec('formatBlock', '<h1>') },
     { icon: 'H', label: 'Heading 2', desc: 'Medium section heading',   action: e => e.exec('formatBlock', '<h2>') },
     { icon: 'H', label: 'Heading 3', desc: 'Small section heading',    action: e => e.exec('formatBlock', '<h3>') },
-    { icon: 'Â¶', label: 'Text',      desc: 'Paragraph block',          action: e => e.exec('formatBlock', '<p>') },
+    { icon: '¶', label: 'Text',      desc: 'Paragraph block',          action: e => e.exec('formatBlock', '<p>') },
     { icon: '"', label: 'Quote',     desc: 'Add a blockquote section', action: e => e.exec('formatBlock', '<blockquote>') },
     { icon: '</>', label: 'Code',   desc: 'Add a code section',       action: e => e.insert('<pre><code>code here</code></pre>') },
     { icon: 'B',  label: 'Bold',     desc: 'Bold text',                action: e => e.exec('bold') },
@@ -165,26 +165,26 @@ const SLASH_COMMANDS = [
     { icon: 'S',  label: 'Strike',   desc: 'Strikethrough text',       action: e => e.exec('strikeThrough') },
   ]},
   { group: 'STRUCTURE', items: [
-    { icon: 'â—‹', label: 'Divider',        desc: 'Insert a horizontal rule',      action: e => e.insert('<hr/>') },
-    { icon: 'â€¢', label: 'Bulleted list',  desc: 'Create a simple bulleted list', action: e => e.exec('insertUnorderedList') },
+    { icon: '○', label: 'Divider',        desc: 'Insert a horizontal rule',      action: e => e.insert('<hr/>') },
+    { icon: '•', label: 'Bulleted list',  desc: 'Create a simple bulleted list', action: e => e.exec('insertUnorderedList') },
     { icon: '1.', label: 'Numbered list', desc: 'Create a list with numbering',  action: e => e.exec('insertOrderedList') },
-    { icon: 'â—‹', label: 'Checklist',     desc: 'Track tasks with a checklist',  action: e => e.insert('<ul style="list-style:none"><li>â˜‘ Task 1</li><li>â˜ Task 2</li></ul>') },
-    { icon: 'â—‹', label: '2 columns',     desc: 'Convert into 2 columns', action: e => e.insert('<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div>Column 1</div><div>Column 2</div></div>') },
-    { icon: 'â—‹', label: '3 columns',     desc: 'Convert into 3 columns', action: e => e.insert('<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px"><div>Col 1</div><div>Col 2</div><div>Col 3</div></div>') },
-    { icon: 'â—‹', label: 'Table',         desc: 'Insert a table', action: e => e.insert('<table border="1" style="width:100%;border-collapse:collapse"><tr><th>Header 1</th><th>Header 2</th></tr><tr><td>Cell</td><td>Cell</td></tr></table>') },
+    { icon: '○', label: 'Checklist',     desc: 'Track tasks with a checklist',  action: e => e.insert('<ul style="list-style:none"><li>☑ Task 1</li><li>☐ Task 2</li></ul>') },
+    { icon: '○', label: '2 columns',     desc: 'Convert into 2 columns', action: e => e.insert('<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div>Column 1</div><div>Column 2</div></div>') },
+    { icon: '○', label: '3 columns',     desc: 'Convert into 3 columns', action: e => e.insert('<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px"><div>Col 1</div><div>Col 2</div><div>Col 3</div></div>') },
+    { icon: '○', label: 'Table',         desc: 'Insert a table', action: e => e.insert('<table border="1" style="width:100%;border-collapse:collapse"><tr><th>Header 1</th><th>Header 2</th></tr><tr><td>Cell</td><td>Cell</td></tr></table>') },
   ]},
   { group: 'SNIPPETS', items: [
-    { icon: 'â—‹', label: 'Alert',         desc: 'Insert an alert snippet', action: e => e.insert('<div style="padding:12px 16px;border-left:3px solid #00d4ff;background:color-mix(in srgb, var(--cyan) 8%, transparent);margin:8px 0">âš ï¸ Alert text here</div>') },
-    { icon: 'â—‹', label: 'Rating',         desc: 'Insert a rating snippet', action: e => e.insert('<div style="color:#ffb800;font-size:20px">â˜…â˜…â˜…â˜…â˜…</div>') },
-    { icon: 'â—‹', label: 'Card',           desc: 'Insert a card snippet', action: e => e.insert('<div style="border:1px solid color-mix(in srgb, var(--cyan) 20%, transparent);padding:20px;background:color-mix(in srgb, var(--cyan) 3%, transparent);margin:8px 0"><strong>Card Title</strong><p>Card content here.</p></div>') },
-    { icon: 'â—‹', label: 'Share',          desc: 'Insert a share snippet', action: e => e.insert('<div style="padding:12px;border:1px solid var(--border);display:inline-block">ðŸ”— Share this post</div>') },
+    { icon: '○', label: 'Alert',         desc: 'Insert an alert snippet', action: e => e.insert('<div style="padding:12px 16px;border-left:3px solid #00d4ff;background:color-mix(in srgb, var(--cyan) 8%, transparent);margin:8px 0">⚠️ Alert text here</div>') },
+    { icon: '○', label: 'Rating',         desc: 'Insert a rating snippet', action: e => e.insert('<div style="color:#ffb800;font-size:20px">★★★★★</div>') },
+    { icon: '○', label: 'Card',           desc: 'Insert a card snippet', action: e => e.insert('<div style="border:1px solid color-mix(in srgb, var(--cyan) 20%, transparent);padding:20px;background:color-mix(in srgb, var(--cyan) 3%, transparent);margin:8px 0"><strong>Card Title</strong><p>Card content here.</p></div>') },
+    { icon: '○', label: 'Share',          desc: 'Insert a share snippet', action: e => e.insert('<div style="padding:12px;border:1px solid var(--border);display:inline-block">🔗 Share this post</div>') },
     { icon: '|', label: 'Text Highlight', desc: 'Insert a text highlight snippet', action: e => e.insert('<mark style="background:color-mix(in srgb, var(--green) 20%, transparent);color:inherit;padding:2px 6px">highlighted text</mark>') },
-    { icon: 'â—‹', label: 'Chart',         desc: 'Insert a chart snippet', action: e => e.insert('<div style="border:1px dashed color-mix(in srgb, var(--cyan) 30%, transparent);padding:40px;text-align:center;color:var(--muted)">[ Chart placeholder ]</div>') },
-    { icon: 'â—‹', label: 'Progress Bar',   desc: 'Insert a progress bar snippet', action: e => e.insert('<div style="margin:8px 0"><div style="font-size:12px;margin-bottom:4px">Progress</div><div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px"><div style="height:100%;width:75%;background:linear-gradient(to right,#00ff88,#00d4ff);border-radius:3px"></div></div></div>') },
+    { icon: '○', label: 'Chart',         desc: 'Insert a chart snippet', action: e => e.insert('<div style="border:1px dashed color-mix(in srgb, var(--cyan) 30%, transparent);padding:40px;text-align:center;color:var(--muted)">[ Chart placeholder ]</div>') },
+    { icon: '○', label: 'Progress Bar',   desc: 'Insert a progress bar snippet', action: e => e.insert('<div style="margin:8px 0"><div style="font-size:12px;margin-bottom:4px">Progress</div><div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px"><div style="height:100%;width:75%;background:linear-gradient(to right,#00ff88,#00d4ff);border-radius:3px"></div></div></div>') },
   ]},
   { group: 'MEDIA', items: [
-    { icon: 'â—‹', label: 'Media', desc: 'Insert image by URL', action: async e => { const u = await dialog.prompt({ title: 'Insert Image', placeholder: 'https://...', variant: 'info', confirmLabel: 'INSERT' }); if(u) e.insert(`<img src="${u}" style="max-width:100%;border-radius:4px"/>`) } },
-    { icon: 'â—‹', label: 'Link',  desc: 'Insert a hyperlink',  action: async e => { const u = await dialog.prompt({ title: 'Insert Link', placeholder: 'https://...', variant: 'info', confirmLabel: 'NEXT' }); if(!u) return; const lbl = await dialog.prompt({ title: 'Link Label', placeholder: u, variant: 'info', confirmLabel: 'INSERT' }); if(u) e.insert(`<a href="${u}" target="_blank" style="color:var(--cyan)">${lbl || u}</a>`) } },
+    { icon: '○', label: 'Media', desc: 'Insert image by URL', action: async e => { const u = await dialog.prompt({ title: 'Insert Image', placeholder: 'https://...', variant: 'info', confirmLabel: 'INSERT' }); if(u) e.insert(`<img src="${u}" style="max-width:100%;border-radius:4px"/>`) } },
+    { icon: '○', label: 'Link',  desc: 'Insert a hyperlink',  action: async e => { const u = await dialog.prompt({ title: 'Insert Link', placeholder: 'https://...', variant: 'info', confirmLabel: 'NEXT' }); if(!u) return; const lbl = await dialog.prompt({ title: 'Link Label', placeholder: u, variant: 'info', confirmLabel: 'INSERT' }); if(u) e.insert(`<a href="${u}" target="_blank" style="color:var(--cyan)">${lbl || u}</a>`) } },
   ]},
 ]
 

@@ -8,7 +8,7 @@ import api from '@/lib/api'
 const SP_CLOTHING_PROJECT = {
   id: 'sp-clothingmenu',
   num: '005',
-  icon: 'ðŸ§¥',
+  icon: '🧥',
   title: 'sp-clothingmenu',
   desc: 'A futuristic FiveM clothing interaction resource with transparent body anchors, ox_inventory metadata items, ox_lib progress feedback, and illenium-appearance sync.',
   tags: ['FiveM', 'QBX', 'ox_inventory', 'ox_lib', 'NUI'],
@@ -20,10 +20,10 @@ const SP_CLOTHING_PROJECT = {
 }
 
 const DEFAULT_PROJECTS = [
-  { num: '001', icon: 'ðŸ¢', title: 'IT Infrastructure Modernization', desc: 'Leading the end-to-end upgrade of EOL physical servers (HP ProLiant Gen 8) and core switching infrastructure (Cisco Nexus) to modern Catalyst 9300 series.', tags: ['VMware', 'Cisco Catalyst', 'HP ProLiant', 'Project Management'] },
-  { num: '002', icon: 'ðŸ”¥', title: 'Next-Gen Firewall Migration', desc: 'Planning and executing the migration from legacy WatchGuard M470 HA pair to FortiGate 80F, including zero-trust architecture and security policy hardening.', tags: ['FortiGate', 'WatchGuard', 'Security', 'ZTA'] },
-  { num: '003', icon: 'â˜ï¸', title: 'Hybrid Cloud & Azure Migration', desc: 'Architecting a hybrid environment by migrating on-premise file shares (AAFAQ-FPS) to Azure Files and implementing Site-to-Site VPN with Entra ID sync.', tags: ['Azure', 'Entra ID', 'VPN', 'Cloud Migration'] },
-  { num: '004', icon: 'ðŸ’¾', title: 'Enterprise Backup Restoration', desc: 'Revitalizing expired Veeam Backup & Replication across on-premise, Azure Cloud, and M365 workloads with a <4hr restoration SLA.', tags: ['Veeam', 'Disaster Recovery', 'M365', 'Azure Backup'] },
+  { num: '001', icon: '🏢', title: 'IT Infrastructure Modernization', desc: 'Leading the end-to-end upgrade of EOL physical servers (HP ProLiant Gen 8) and core switching infrastructure (Cisco Nexus) to modern Catalyst 9300 series.', tags: ['VMware', 'Cisco Catalyst', 'HP ProLiant', 'Project Management'] },
+  { num: '002', icon: '🔥', title: 'Next-Gen Firewall Migration', desc: 'Planning and executing the migration from legacy WatchGuard M470 HA pair to FortiGate 80F, including zero-trust architecture and security policy hardening.', tags: ['FortiGate', 'WatchGuard', 'Security', 'ZTA'] },
+  { num: '003', icon: '☁️', title: 'Hybrid Cloud & Azure Migration', desc: 'Architecting a hybrid environment by migrating on-premise file shares (AAFAQ-FPS) to Azure Files and implementing Site-to-Site VPN with Entra ID sync.', tags: ['Azure', 'Entra ID', 'VPN', 'Cloud Migration'] },
+  { num: '004', icon: '💾', title: 'Enterprise Backup Restoration', desc: 'Revitalizing expired Veeam Backup & Replication across on-premise, Azure Cloud, and M365 workloads with a <4hr restoration SLA.', tags: ['Veeam', 'Disaster Recovery', 'M365', 'Azure Backup'] },
 ]
 
 function mergeFeaturedProject(items = []) {
@@ -194,7 +194,7 @@ function ProjectCard({ project, index }) {
             </div>
             {project.link && (
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 2, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 14 }}>
-                VIEW PROJECT â†’
+                VIEW PROJECT →
               </div>
             )}
           </div>

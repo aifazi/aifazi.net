@@ -38,7 +38,7 @@ function DocxPreview() {
     <div>
       <DropZone accept=".docx" onFiles={load} label="Drop DOCX to preview" />
       {busy && <Progress pct={60} label="CONVERTING DOCX" />}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {stats && (
         <div style={{ display:'flex', gap:16, margin:'16px 0', flexWrap:'wrap' }}>
           {[{l:'WORDS',v:stats.words,c:'var(--green)'},{l:'CHARACTERS',v:stats.chars,c:'var(--cyan)'},{l:'EST. PAGES',v:stats.pages,c:'var(--orange)'}].map(({l,v,c}) => (
@@ -82,12 +82,12 @@ function DocxToText() {
     <div>
       <DropZone accept=".docx" onFiles={convert} label="Drop DOCX to extract plain text" />
       {busy && <Progress pct={60} label="EXTRACTING TEXT" />}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {text && (
         <div style={{ marginTop:16 }}>
           <div style={{ display:'flex', gap:8, marginBottom:10 }}>
-            <button onClick={copy} style={{ ...S.btnSm, background: copied ? 'var(--cyan)':'var(--green)' }}>{copied ? 'âœ“ COPIED':'COPY TEXT'}</button>
-            <button onClick={save} style={S.btnSm}>â¬‡ SAVE AS .TXT</button>
+            <button onClick={copy} style={{ ...S.btnSm, background: copied ? 'var(--cyan)':'var(--green)' }}>{copied ? '✓ COPIED':'COPY TEXT'}</button>
+            <button onClick={save} style={S.btnSm}>⬇ SAVE AS .TXT</button>
           </div>
           <textarea readOnly value={text} rows={18}
             style={{ ...S.input, fontFamily:'var(--font-mono)', fontSize:12, color:'var(--text2)', resize:'vertical' }} />
@@ -97,9 +97,9 @@ function DocxToText() {
   )
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 // EXCEL / SPREADSHEET TOOLS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 
 function XlsxToCsv() {
   const [file, setFile]   = useState(null)
@@ -142,7 +142,7 @@ function XlsxToCsv() {
   return (
     <div>
       <DropZone accept=".xlsx,.xls,.xlsm" onFiles={load} label="Drop Excel file to convert to CSV" />
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {file && sheets.length > 0 && (
         <div style={{ marginTop:16 }}>
           <FileBadge file={file} />
@@ -168,7 +168,7 @@ function XlsxToCsv() {
               </table>
             </div>
           )}
-          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'CONVERTING...' : 'â¬‡ DOWNLOAD CSV'}</button>
+          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'CONVERTING...' : '⬇ DOWNLOAD CSV'}</button>
         </div>
       )}
     </div>
@@ -214,8 +214,8 @@ function CsvToXlsx() {
           <span style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'var(--muted)', alignSelf:'center', flexShrink:0 }}>.xlsx</span>
         </div>
       </div>
-      <button onClick={() => { loadXLSX().then(convert) }} style={{ ...S.btn, marginTop:16 }}>â¬‡ DOWNLOAD XLSX</button>
-      {err && <div style={S.err}>âš  {err}</div>}
+      <button onClick={() => { loadXLSX().then(convert) }} style={{ ...S.btn, marginTop:16 }}>⬇ DOWNLOAD XLSX</button>
+      {err && <div style={S.err}>⚠ {err}</div>}
     </div>
   )
 }
@@ -249,7 +249,7 @@ function ExcelPreview() {
   return (
     <div>
       <DropZone accept=".xlsx,.xls,.xlsm" onFiles={load} label="Drop Excel file to preview" />
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {sheets.length > 0 && (
         <div style={{ marginTop:16 }}>
           <div style={{ display:'flex', gap:4, marginBottom:12, overflowX:'auto' }}>
@@ -274,7 +274,7 @@ function ExcelPreview() {
             </table>
           </div>
           <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', marginTop:8, letterSpacing:1 }}>
-            {data.length} rows Ã— {Math.max(...data.map(r => Array.isArray(r) ? r.length : 0))} columns in sheet "{sheet}"
+            {data.length} rows × {Math.max(...data.map(r => Array.isArray(r) ? r.length : 0))} columns in sheet "{sheet}"
           </div>
         </div>
       )}
@@ -283,8 +283,8 @@ function ExcelPreview() {
 }
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 // IMAGE TOOLS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 
 export { DocxPreview, DocxToText, XlsxToCsv, CsvToXlsx, ExcelPreview }

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useCallback } from 'react'
 
-// â”€â”€ CDN library loaders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── CDN library loaders ───────────────────────────────────────────────────────
 function loadScript(src) {
   return new Promise((res, rej) => {
     if (document.querySelector(`script[src="${src}"]`)) return res()
@@ -19,14 +19,14 @@ const loadMammoth = () => loadScript('https://cdnjs.cloudflare.com/ajax/libs/mam
 const loadXLSX    = () => loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js').then(() => window.XLSX)
 const loadTesseract = () => loadScript('https://unpkg.com/tesseract.js@5.0.3/dist/tesseract.min.js').then(() => window.Tesseract)
 
-// â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared helpers ────────────────────────────────────────────────────────────
 const downloadBlob = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click() }
 const readAB   = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsArrayBuffer(f) })
 const readText = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsText(f) })
 const readDataUrl = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(f) })
 const fmtBytes = b => b < 1024 ? b + ' B' : b < 1048576 ? (b/1024).toFixed(1) + ' KB' : (b/1048576).toFixed(2) + ' MB'
 
-// â”€â”€ Shared styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Shared styles ─────────────────────────────────────────────────────────────
 const S = {
   input:    { width:'100%', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', fontFamily:'var(--font-display)', fontSize:14, padding:'10px 14px', outline:'none', boxSizing:'border-box' },
   btn:      { fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:2, padding:'10px 22px', background:'var(--green)', color:'#000', border:'none', cursor:'pointer', fontWeight:700, whiteSpace:'nowrap' },
@@ -39,7 +39,7 @@ const S = {
   row:      { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--border2)' },
 }
 
-// â”€â”€ DropZone â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── DropZone ─────────────────────────────────────────────────────────────────
 function DropZone({ onFiles, accept='*', multiple=false, label='Drop files here or click to browse' }) {
   const [over, setOver] = useState(false)
   const ref = useRef()
@@ -53,18 +53,18 @@ function DropZone({ onFiles, accept='*', multiple=false, label='Drop files here 
       style={{ border:`2px dashed ${over ? 'var(--green)' : 'var(--border)'}`, padding:'40px 24px', textAlign:'center', cursor:'pointer', transition:'all .2s', background: over ? 'color-mix(in srgb, var(--green) 4%, transparent)' : 'var(--bg3)' }}
     >
       <input ref={ref} type="file" accept={accept} multiple={multiple} style={{ display:'none' }} onChange={e => handle(e.target.files)} />
-      <div style={{ fontSize:32, marginBottom:10 }}>ðŸ“‚</div>
+      <div style={{ fontSize:32, marginBottom:10 }}>📂</div>
       <div style={{ fontFamily:'var(--font-mono)', fontSize:11, color: over ? 'var(--green)' : 'var(--muted)', letterSpacing:2 }}>{label.toUpperCase()}</div>
       <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', marginTop:6, letterSpacing:1 }}>Accepts: {accept}</div>
     </div>
   )
 }
 
-// â”€â”€ ToolHeader â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── ToolHeader ─────────────────────────────────────────────────────────────────
 function ToolHeader({ tool, onBack }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:28 }}>
-      <button onClick={onBack} style={{ ...S.btnOut, padding:'8px 14px', fontSize:10 }}>â† BACK</button>
+      <button onClick={onBack} style={{ ...S.btnOut, padding:'8px 14px', fontSize:10 }}>← BACK</button>
       <div style={{ fontSize:28 }}>{tool.icon}</div>
       <div>
         <div style={{ fontFamily:'var(--font-display)', fontSize:22, fontWeight:700, color:'var(--text)' }}>{tool.name}</div>
@@ -74,18 +74,18 @@ function ToolHeader({ tool, onBack }) {
   )
 }
 
-// â”€â”€ FileBadge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── FileBadge ─────────────────────────────────────────────────────────────────
 function FileBadge({ file, onRemove }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg3)', border:'1px solid var(--border)', padding:'8px 14px', marginBottom:6 }}>
       <span style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'var(--cyan)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{file.name}</span>
       <span style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)' }}>{fmtBytes(file.size)}</span>
-      {onRemove && <button onClick={onRemove} style={{ background:'none', border:'none', color:'var(--red)', cursor:'pointer', fontSize:14, padding:'0 4px' }}>âœ•</button>}
+      {onRemove && <button onClick={onRemove} style={{ background:'none', border:'none', color:'var(--red)', cursor:'pointer', fontSize:14, padding:'0 4px' }}>✕</button>}
     </div>
   )
 }
 
-// â”€â”€ Progress â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Progress ──────────────────────────────────────────────────────────────────
 function Progress({ pct, label }) {
   return (
     <div style={{ marginTop:16 }}>
@@ -98,8 +98,8 @@ function Progress({ pct, label }) {
 }
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 // PDF TOOLS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 
 export { loadPdfLib, loadPdfJs, loadMammoth, loadXLSX, loadTesseract, downloadBlob, readAB, readText, readDataUrl, fmtBytes, S, DropZone, ToolHeader, FileBadge, Progress }

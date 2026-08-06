@@ -45,7 +45,7 @@ export default function ScanCam({ onScan, label = 'SCAN BARCODE', placeholder = 
         const video = el.querySelector('video')
         streamRef.current = video?.srcObject || null
       }).catch(e => {
-        setErr('Camera unavailable â€” use manual entry.')
+        setErr('Camera unavailable — use manual entry.')
         setActive(false)
       })
     }).catch(() => setErr('Scanner library failed to load.'))
@@ -69,9 +69,9 @@ export default function ScanCam({ onScan, label = 'SCAN BARCODE', placeholder = 
         <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: C }}>{label}</span>
         <div style={{ display: 'flex', gap: 6 }}>
           {!active ? (
-            <button onClick={start} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '5px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>â–¶ START CAMERA</button>
+            <button onClick={start} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '5px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>▶ START CAMERA</button>
           ) : (
-            <button onClick={() => { stop(); setActive(false) }} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '5px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>â–  STOP</button>
+            <button onClick={() => { stop(); setActive(false) }} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '5px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>■ STOP</button>
           )}
         </div>
       </div>

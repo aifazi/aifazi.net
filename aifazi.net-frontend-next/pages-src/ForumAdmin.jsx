@@ -5,7 +5,7 @@ import api, { getAuthToken } from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { Checkbox, Select } from '../core/ui.jsx'
 
-// â”€â”€â”€ Shared styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Shared styles ────────────────────────────────────────────────────────────
 const S = {
   input: {
     width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
@@ -41,7 +41,7 @@ const S = {
 }
 
 const timeAgo = (date) => {
-  if (!date) return 'â€”'
+  if (!date) return '—'
   const s = Math.floor((Date.now() - new Date(date)) / 1000)
   if (s < 60)    return 'just now'
   if (s < 3600)  return `${Math.floor(s / 60)}m ago`
@@ -52,7 +52,7 @@ const timeAgo = (date) => {
 function StatCard({ label, value, color }) {
   return (
     <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '20px 24px', textAlign: 'center', borderRadius: 14 }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 700, color: color || 'var(--green)' }}>{value ?? 'â€”'}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 700, color: color || 'var(--green)' }}>{value ?? '—'}</div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>{label}</div>
     </div>
   )
@@ -98,7 +98,7 @@ function ConfirmModal({ message, onOk, onCancel, danger = false }) {
   )
 }
 
-// â”€â”€â”€ User Profile Editor Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── User Profile Editor Modal ────────────────────────────────────────────────
 function UserEditModal({ userId, onClose, onSaved }) {
   const { notify, Toast } = useNotify()
   const [loading, setLoading] = useState(true)
@@ -164,9 +164,9 @@ function UserEditModal({ userId, onClose, onSaved }) {
 
   const u = data?.user
   const modalTabs = [
-    { key: 'profile',    label: 'ðŸ‘¤ Profile' },
-    { key: 'activity',   label: 'ðŸ“‹ Activity' },
-    { key: 'moderation', label: 'ðŸ›¡ Moderation' },
+    { key: 'profile',    label: '👤 Profile' },
+    { key: 'activity',   label: '📋 Activity' },
+    { key: 'moderation', label: '🛡 Moderation' },
   ]
 
   return (
@@ -188,11 +188,11 @@ function UserEditModal({ userId, onClose, onSaved }) {
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 3, marginBottom: 4 }}>EDIT USER</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700 }}>{u?.username}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>
-                  {u?.email} Â· joined {timeAgo(u?.createdAt)} Â· {u?.threadCount}T / {u?.replyCount}R
+                  {u?.email} · joined {timeAgo(u?.createdAt)} · {u?.threadCount}T / {u?.replyCount}R
                 </div>
               </div>
             </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>âœ•</button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>✕</button>
           </div>
 
           {/* Sub-tabs */}
@@ -243,7 +243,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                   <label style={{ ...S.label, marginBottom: 0 }}>Password Reset</label>
                   <button onClick={() => setShowPwField(v => !v)}
                     style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 9, padding: '4px 10px' }}>
-                    {showPwField ? 'CANCEL' : 'ðŸ”‘ SET NEW PASSWORD'}
+                    {showPwField ? 'CANCEL' : '🔑 SET NEW PASSWORD'}
                   </button>
                 </div>
                 {showPwField && (
@@ -255,11 +255,11 @@ function UserEditModal({ userId, onClose, onSaved }) {
               <div style={{ display: 'flex', gap: 10, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
                 <button onClick={handleSave} disabled={saving}
                   style={{ ...S.btn(), flex: 2, opacity: saving ? 0.7 : 1 }}>
-                  {saving ? 'SAVING...' : 'ðŸ’¾ SAVE CHANGES'}
+                  {saving ? 'SAVING...' : '💾 SAVE CHANGES'}
                 </button>
                 <button onClick={handleDeleteConfirm}
                   style={{ ...S.btn('rgba(255,71,87,0.1)', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', flex: 1 }}>
-                  ðŸ—‘ DELETE USER
+                  🗑 DELETE USER
                 </button>
               </div>
             </div>
@@ -281,7 +281,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                     {t.title}
                   </Link>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
-                    {t.category?.icon} {t.category?.name} Â· {timeAgo(t.createdAt)} Â· {t.replyCount} replies Â· {t.views} views
+                    {t.category?.icon} {t.category?.name} · {timeAgo(t.createdAt)} · {t.replyCount} replies · {t.views} views
                   </div>
                 </div>
               ))}
@@ -296,13 +296,13 @@ function UserEditModal({ userId, onClose, onSaved }) {
                 <div key={r._id} style={{ ...S.card, marginBottom: 6, padding: '12px 16px' }}>
                   <Link to={`/forum/thread/${r.thread?._id}`} target="_blank"
                     style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', textDecoration: 'none', display: 'block', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    â†’ {r.thread?.title}
+                    → {r.thread?.title}
                   </Link>
                   <div style={{ color: 'var(--text)', fontSize: 13, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                     {r.content}
                   </div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
-                    {timeAgo(r.createdAt)}{r.edited && ' Â· edited'}
+                    {timeAgo(r.createdAt)}{r.edited && ' · edited'}
                   </div>
                 </div>
               ))}
@@ -326,7 +326,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: form.banned ? 14 : 0 }}>
                   <div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: form.banned ? 'var(--red)' : 'var(--muted)' }}>
-                      {form.banned ? 'ðŸ”´ USER IS BANNED' : 'ðŸŸ¢ USER IS ACTIVE'}
+                      {form.banned ? '🔴 USER IS BANNED' : '🟢 USER IS ACTIVE'}
                     </div>
                     {u?.lastSeen && (
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
@@ -336,7 +336,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                   </div>
                   <button onClick={() => set('banned', !form.banned)}
                     style={{ ...S.btn(form.banned ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(255,71,87,0.15)', form.banned ? 'var(--green)' : 'var(--red)'), border: `1px solid ${form.banned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,71,87,0.3)'}` }}>
-                    {form.banned ? 'âœ… UNBAN USER' : 'ðŸš« BAN USER'}
+                    {form.banned ? '✅ UNBAN USER' : '🚫 BAN USER'}
                   </button>
                 </div>
                 {form.banned && (
@@ -361,7 +361,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
 
               <button onClick={handleSave} disabled={saving}
                 style={{ ...S.btn(), opacity: saving ? 0.7 : 1 }}>
-                {saving ? 'SAVING...' : 'ðŸ’¾ SAVE MODERATION SETTINGS'}
+                {saving ? 'SAVING...' : '💾 SAVE MODERATION SETTINGS'}
               </button>
             </div>
           )}
@@ -371,7 +371,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
   )
 }
 
-// â”€â”€â”€ Thread Edit Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Thread Edit Modal ────────────────────────────────────────────────────────
 function ThreadEditModal({ thread, cats, onClose, onSaved }) {
   const [form, setForm] = useState({
     title:    thread.title,
@@ -420,8 +420,8 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
     <div style={S.modal} onClick={onClose}>
       <div style={S.modalBox('var(--cyan)')} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: 3 }}>âœï¸ EDIT THREAD</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20 }}>âœ•</button>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: 3 }}>✏️ EDIT THREAD</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20 }}>✕</button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -440,16 +440,16 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
               {attachments.map((f, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>
                   <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {f.mimetype?.startsWith('image/') ? 'ðŸ–¼' : f.mimetype?.startsWith('video/') ? 'ðŸŽ¬' : 'ðŸ“Ž'} {f.original_name}
+                    {f.mimetype?.startsWith('image/') ? '🖼' : f.mimetype?.startsWith('video/') ? '🎬' : '📎'} {f.original_name}
                     <span style={{ color: 'var(--muted)', marginLeft: 8 }}>({((f.size || 0)/1024).toFixed(0)}KB)</span>
                   </span>
-                  <button onClick={() => removeAttachment(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0 }}>âœ•</button>
+                  <button onClick={() => removeAttachment(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0 }}>✕</button>
                 </div>
               ))}
             </div>
             <button type="button" onClick={() => fileInputRef.current.click()} disabled={uploading}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '6px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}>
-              {uploading ? 'â³ Uploading...' : 'ðŸ“Ž Add Attachments'}
+              {uploading ? '⏳ Uploading...' : '📎 Add Attachments'}
             </button>
             <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} />
           </div>
@@ -465,15 +465,15 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 20 }}>
-            <Checkbox checked={form.pinned} onChange={v => set('pinned', v)} label="ðŸ“Œ PINNED"
+            <Checkbox checked={form.pinned} onChange={v => set('pinned', v)} label="📌 PINNED"
               style={{ fontSize: 10, color: form.pinned ? 'var(--green)' : 'var(--muted)', letterSpacing: 1 }} />
-            <Checkbox checked={form.locked} onChange={v => set('locked', v)} label="ðŸ”’ LOCKED"
+            <Checkbox checked={form.locked} onChange={v => set('locked', v)} label="🔒 LOCKED"
               style={{ fontSize: 10, color: form.locked ? 'var(--red)' : 'var(--muted)', letterSpacing: 1 }} />
           </div>
           <div style={{ display: 'flex', gap: 10, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
             <button onClick={handleSave} disabled={saving}
               style={{ ...S.btn('color-mix(in srgb, var(--cyan) 15%, transparent)', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', flex: 2, opacity: saving ? 0.7 : 1 }}>
-              {saving ? 'SAVING...' : 'ðŸ’¾ SAVE THREAD'}
+              {saving ? 'SAVING...' : '💾 SAVE THREAD'}
             </button>
             <button onClick={onClose}
               style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', flex: 1 }}>
@@ -486,7 +486,7 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
   )
 }
 
-// â”€â”€â”€ Reply Edit Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Reply Edit Modal ─────────────────────────────────────────────────────────
 function ReplyEditModal({ reply, onClose, onSaved }) {
   const [content, setContent] = useState(reply.content)
   const [saving, setSaving]   = useState(false)
@@ -506,12 +506,12 @@ function ReplyEditModal({ reply, onClose, onSaved }) {
       <div style={S.modalBox('var(--orange)')} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange)', letterSpacing: 3, marginBottom: 6 }}>âœï¸ EDIT REPLY</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange)', letterSpacing: 3, marginBottom: 6 }}>✏️ EDIT REPLY</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
-              by {reply.author?.username} Â· {timeAgo(reply.createdAt)}
+              by {reply.author?.username} · {timeAgo(reply.createdAt)}
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20 }}>âœ•</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20 }}>✕</button>
         </div>
 
         <label style={S.label}>Content</label>
@@ -521,7 +521,7 @@ function ReplyEditModal({ reply, onClose, onSaved }) {
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={handleSave} disabled={saving}
             style={{ ...S.btn('rgba(255,107,53,0.15)', 'var(--orange)'), border: '1px solid rgba(255,107,53,0.4)', flex: 2, opacity: saving ? 0.7 : 1 }}>
-            {saving ? 'SAVING...' : 'ðŸ’¾ SAVE REPLY'}
+            {saving ? 'SAVING...' : '💾 SAVE REPLY'}
           </button>
           <button onClick={onClose}
             style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', flex: 1 }}>
@@ -533,7 +533,7 @@ function ReplyEditModal({ reply, onClose, onSaved }) {
   )
 }
 
-// â”€â”€â”€ Ban Reason Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Ban Reason Modal ─────────────────────────────────────────────────────────
 function BanModal({ user, onClose, onSaved }) {
   const [reason, setReason] = useState(user.banReason || '')
   const [saving, setSaving] = useState(false)
@@ -550,7 +550,7 @@ function BanModal({ user, onClose, onSaved }) {
   return (
     <div style={S.modal} onClick={onClose}>
       <div style={{ ...S.modalBox('var(--red)'), maxWidth: 420 }} onClick={e => e.stopPropagation()}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', letterSpacing: 3, marginBottom: 16 }}>ðŸš« BAN USER</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', letterSpacing: 3, marginBottom: 16 }}>🚫 BAN USER</div>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, marginBottom: 20 }}>Ban {user.username}?</div>
         <label style={S.label}>Ban Reason (shown to user on login)</label>
         <input value={reason} onChange={e => setReason(e.target.value)}
@@ -570,24 +570,24 @@ function BanModal({ user, onClose, onSaved }) {
   )
 }
 
-// â”€â”€â”€ Pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Pagination ───────────────────────────────────────────────────────────────
 function Pagination({ page, total, pageSize = 20, onPage }) {
   const pages = Math.ceil(total / pageSize)
   if (pages <= 1) return null
   return (
     <div style={{ display: 'flex', gap: 4, marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 10, alignItems: 'center' }}>
       <button disabled={page === 1} onClick={() => onPage(page - 1)}
-        style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '6px 12px', opacity: page === 1 ? 0.3 : 1 }}>â†</button>
+        style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '6px 12px', opacity: page === 1 ? 0.3 : 1 }}>←</button>
       <span style={{ padding: '6px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--muted)' }}>
-        {page} / {pages} &nbsp;Â·&nbsp; {total} total
+        {page} / {pages} &nbsp;·&nbsp; {total} total
       </span>
       <button disabled={page === pages} onClick={() => onPage(page + 1)}
-        style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '6px 12px', opacity: page === pages ? 0.3 : 1 }}>â†’</button>
+        style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '6px 12px', opacity: page === pages ? 0.3 : 1 }}>→</button>
     </div>
   )
 }
 
-// â”€â”€â”€ Main ForumAdmin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main ForumAdmin ──────────────────────────────────────────────────────────
 export default function ForumAdmin({ embedded = false }) {
   const navigate = useNavigate()
   const { notify, Toast } = useNotify()
@@ -617,7 +617,7 @@ export default function ForumAdmin({ embedded = false }) {
   const [banningUser,   setBanningUser]   = useState(null)
   const [confirmDel,    setConfirmDel]    = useState(null)
 
-  const [catForm,    setCatForm]    = useState({ name: '', description: '', icon: 'ðŸ’¬', color: 'var(--cyan)', order: 0, view_roles: [], post_roles: [], reply_roles: [], attach_roles: [], mod_roles: ['moderator', 'admin'] })
+  const [catForm,    setCatForm]    = useState({ name: '', description: '', icon: '💬', color: 'var(--cyan)', order: 0, view_roles: [], post_roles: [], reply_roles: [], attach_roles: [], mod_roles: ['moderator', 'admin'] })
   const ROLE_OPTIONS = ['member', 'moderator', 'admin', 'staff']
   const [editingCat, setEditingCat] = useState(null)
   const [catSaving,  setCatSaving]  = useState(false)
@@ -641,7 +641,7 @@ export default function ForumAdmin({ embedded = false }) {
   const categoryPayload = () => ({
     name: catForm.name.trim(),
     description: catForm.description || '',
-    icon: catForm.icon || 'ðŸ’¬',
+    icon: catForm.icon || '💬',
     color: catForm.color || 'var(--cyan)',
     display_order: Number(catForm.order) || 0,
     view_roles: catForm.view_roles || [],
@@ -681,7 +681,7 @@ export default function ForumAdmin({ embedded = false }) {
       .finally(() => setLoading(false))
   }
 
-  // â”€â”€ Category actions â”€â”€
+  // ── Category actions ──
   const saveCategory = async () => {
     if (!catForm.name.trim()) return
     setCatSaving(true)
@@ -693,7 +693,7 @@ export default function ForumAdmin({ embedded = false }) {
         await api.post('/forum/categories', payload)
       }
       await loadCats(); loadStats()
-      setCatForm({ name: '', description: '', icon: 'ðŸ’¬', color: 'var(--cyan)', order: 0, view_roles: [], post_roles: [], reply_roles: [], attach_roles: [], mod_roles: ['moderator', 'admin'] })
+      setCatForm({ name: '', description: '', icon: '💬', color: 'var(--cyan)', order: 0, view_roles: [], post_roles: [], reply_roles: [], attach_roles: [], mod_roles: ['moderator', 'admin'] })
       setEditingCat(null)
       notify(editingCat ? 'Category updated' : 'Category created')
     } catch (err) { notify(apiError(err), false) }
@@ -711,7 +711,7 @@ export default function ForumAdmin({ embedded = false }) {
     }
   })
 
-  // â”€â”€ User actions â”€â”€
+  // ── User actions ──
   const toggleUserBan = (u) => {
     if (!u.banned) {
       setBanningUser(u)
@@ -739,7 +739,7 @@ export default function ForumAdmin({ embedded = false }) {
     }
   })
 
-  // â”€â”€ Thread actions â”€â”€
+  // ── Thread actions ──
   const deleteThread = (t) => setConfirmDel({
     message: `Delete thread "${t.title}"? This cannot be undone.`,
     danger: true,
@@ -757,7 +757,7 @@ export default function ForumAdmin({ embedded = false }) {
       .catch(() => notify('Failed', false))
   }
 
-  // â”€â”€ Reply actions â”€â”€
+  // ── Reply actions ──
   const deleteReply = (r) => setConfirmDel({
     message: 'Delete this reply? This cannot be undone.',
     danger: true,
@@ -770,11 +770,11 @@ export default function ForumAdmin({ embedded = false }) {
   })
 
   const tabs = [
-    { key: 'overview',   label: 'ðŸ“Š Overview' },
-    { key: 'categories', label: 'ðŸ“ Categories' },
-    { key: 'users',      label: `ðŸ‘¥ Users${tab === 'users' ? ` (${userTotal})` : ''}` },
-    { key: 'threads',    label: `ðŸ—¨ Threads${tab === 'threads' ? ` (${threadTotal})` : ''}` },
-    { key: 'replies',    label: `ðŸ’¬ Replies${tab === 'replies' ? ` (${replyTotal})` : ''}` },
+    { key: 'overview',   label: '📊 Overview' },
+    { key: 'categories', label: '📁 Categories' },
+    { key: 'users',      label: `👥 Users${tab === 'users' ? ` (${userTotal})` : ''}` },
+    { key: 'threads',    label: `🗨 Threads${tab === 'threads' ? ` (${threadTotal})` : ''}` },
+    { key: 'replies',    label: `💬 Replies${tab === 'replies' ? ` (${replyTotal})` : ''}` },
   ]
 
   return (
@@ -831,8 +831,8 @@ export default function ForumAdmin({ embedded = false }) {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700 }}>Forum Management</h1>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link to="/admin" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 10 }}>â† SITE ADMIN</Link>
-          <Link to="/forum" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 10 }}>VIEW FORUM â†’</Link>
+          <Link to="/admin" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 10 }}>← SITE ADMIN</Link>
+          <Link to="/forum" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 10 }}>VIEW FORUM →</Link>
         </div>
       </div>
 
@@ -846,7 +846,7 @@ export default function ForumAdmin({ embedded = false }) {
         ))}
       </div>
 
-      {/* â”€â”€ OVERVIEW â”€â”€ */}
+      {/* ── OVERVIEW ── */}
       {tab === 'overview' && stats && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12, marginBottom: 40 }}>
@@ -866,7 +866,7 @@ export default function ForumAdmin({ embedded = false }) {
                         style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border)' }} />
                       <div>
                         <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600 }}>{u.username}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{u.email} Â· {timeAgo(u.createdAt)}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{u.email} · {timeAgo(u.createdAt)}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -887,7 +887,7 @@ export default function ForumAdmin({ embedded = false }) {
               {stats.recentThreads.map(t => (
                 <div key={t._id} style={S.card}>
                   <Link to={`/forum/thread/${t._id}`} style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: 'var(--text)', textDecoration: 'none', display: 'block', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</Link>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>by {t.author?.username} in {t.category?.name} Â· {timeAgo(t.createdAt)}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>by {t.author?.username} in {t.category?.name} · {timeAgo(t.createdAt)}</div>
                 </div>
               ))}
             </div>
@@ -895,12 +895,12 @@ export default function ForumAdmin({ embedded = false }) {
         </div>
       )}
 
-      {/* â”€â”€ CATEGORIES â”€â”€ */}
+      {/* ── CATEGORIES ── */}
       {tab === 'categories' && (
         <div>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: 24, marginBottom: 24 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 2, marginBottom: 20 }}>
-              {editingCat ? 'âœï¸ EDIT CATEGORY' : '+ NEW CATEGORY'}
+              {editingCat ? '✏️ EDIT CATEGORY' : '+ NEW CATEGORY'}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
@@ -909,7 +909,7 @@ export default function ForumAdmin({ embedded = false }) {
               </div>
               <div>
                 <label style={S.label}>ICON (emoji)</label>
-                <input value={catForm.icon} onChange={e => setCatForm(f => ({ ...f, icon: e.target.value }))} placeholder="ðŸ’¬" style={{ ...S.input, width: 80 }} />
+                <input value={catForm.icon} onChange={e => setCatForm(f => ({ ...f, icon: e.target.value }))} placeholder="💬" style={{ ...S.input, width: 80 }} />
               </div>
               <div style={{ gridColumn: '1/-1' }}>
                 <label style={S.label}>DESCRIPTION</label>
@@ -975,7 +975,7 @@ export default function ForumAdmin({ embedded = false }) {
                 {catSaving ? 'SAVING...' : editingCat ? 'SAVE CHANGES' : 'CREATE CATEGORY'}
               </button>
               {editingCat && (
-                <button onClick={() => { setEditingCat(null); setCatForm({ name: '', description: '', icon: 'ðŸ’¬', color: 'var(--cyan)', order: 0, view_roles: [], post_roles: [], reply_roles: [], attach_roles: [], mod_roles: ['moderator', 'admin'] }) }}
+                <button onClick={() => { setEditingCat(null); setCatForm({ name: '', description: '', icon: '💬', color: 'var(--cyan)', order: 0, view_roles: [], post_roles: [], reply_roles: [], attach_roles: [], mod_roles: ['moderator', 'admin'] }) }}
                   style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)' }}>CANCEL</button>
               )}
             </div>
@@ -988,7 +988,7 @@ export default function ForumAdmin({ embedded = false }) {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: cat.color || 'var(--text)' }}>{cat.name}</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>
-                    {cat.description} Â· {cat.threadCount} threads Â· order {cat.order}
+                    {cat.description} · {cat.threadCount} threads · order {cat.order}
                   </div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     {cat.view_roles?.length > 0 && <span>View: {cat.view_roles.join(', ')}</span>}
@@ -1003,7 +1003,7 @@ export default function ForumAdmin({ embedded = false }) {
                     style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)' }}>EDIT</button>
                   <button onClick={() => api.put(`/forum/categories/${cat._id}`, { locked: !cat.locked }).then(() => { loadCats(); notify(cat.locked ? 'Category unlocked' : 'Category locked') })}
                     style={{ ...S.btn('transparent', cat.locked ? 'var(--red)' : 'var(--muted)'), border: `1px solid ${cat.locked ? 'rgba(255,71,87,0.3)' : 'var(--border)'}` }}>
-                    {cat.locked ? 'ðŸ”“ UNLOCK' : 'ðŸ”’ LOCK'}
+                    {cat.locked ? '🔓 UNLOCK' : '🔒 LOCK'}
                   </button>
                   <button onClick={() => deleteCat(cat._id)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)' }}>DEL</button>
                 </div>
@@ -1014,11 +1014,11 @@ export default function ForumAdmin({ embedded = false }) {
         </div>
       )}
 
-      {/* â”€â”€ USERS â”€â”€ */}
+      {/* ── USERS ── */}
       {tab === 'users' && (
         <div>
           <input value={userSearch} onChange={e => { setUserSearch(e.target.value); setUserPage(1) }}
-            placeholder="ðŸ” Search by username or email..." style={{ ...S.input, marginBottom: 16 }} />
+            placeholder="🔍 Search by username or email..." style={{ ...S.input, marginBottom: 16 }} />
 
           {loading
             ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>Loading...</div>
@@ -1037,7 +1037,7 @@ export default function ForumAdmin({ embedded = false }) {
                       {u.role === 'moderator' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', padding: '2px 6px' }}>MOD</span>}
                     </div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>
-                      {u.email} Â· {u.threadCount}T {u.replyCount}R Â· joined {timeAgo(u.createdAt)} Â· last seen {timeAgo(u.lastSeen)}
+                      {u.email} · {u.threadCount}T {u.replyCount}R · joined {timeAgo(u.createdAt)} · last seen {timeAgo(u.lastSeen)}
                     </div>
                     {u.banReason && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--red)', marginTop: 2 }}>Ban reason: {u.banReason}</div>}
                     {u.bio && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.bio}</div>}
@@ -1045,7 +1045,7 @@ export default function ForumAdmin({ embedded = false }) {
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                     <button onClick={() => setEditingUser(u._id)}
                       style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', fontSize: 9 }}>
-                      âœï¸ EDIT PROFILE
+                      ✏️ EDIT PROFILE
                     </button>
                     <div style={{ width: 150 }}>
                       <Select value={u.role} onChange={v => changeRole(u, v)}
@@ -1054,11 +1054,11 @@ export default function ForumAdmin({ embedded = false }) {
                     </div>
                     <button onClick={() => toggleUserBan(u)}
                       style={{ ...S.btn('transparent', u.banned ? 'var(--green)' : 'var(--orange)'), border: `1px solid ${u.banned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,107,53,0.3)'}`, fontSize: 9 }}>
-                      {u.banned ? 'âœ… UNBAN' : 'ðŸš« BAN'}
+                      {u.banned ? '✅ UNBAN' : '🚫 BAN'}
                     </button>
                     <button onClick={() => deleteUser(u)}
                       style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 9 }}>
-                      ðŸ—‘ DEL
+                      🗑 DEL
                     </button>
                   </div>
                 </div>
@@ -1070,11 +1070,11 @@ export default function ForumAdmin({ embedded = false }) {
         </div>
       )}
 
-      {/* â”€â”€ THREADS â”€â”€ */}
+      {/* ── THREADS ── */}
       {tab === 'threads' && (
         <div>
           <input value={threadSearch} onChange={e => { setThreadSearch(e.target.value); setThreadPage(1) }}
-            placeholder="ðŸ” Search threads by title or content..." style={{ ...S.input, marginBottom: 16 }} />
+            placeholder="🔍 Search threads by title or content..." style={{ ...S.input, marginBottom: 16 }} />
 
           {loading
             ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>Loading...</div>
@@ -1083,7 +1083,7 @@ export default function ForumAdmin({ embedded = false }) {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <Link to={`/forum/thread/${t._id}`} style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: 'var(--text)', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {t.pinned && 'ðŸ“Œ '}{t.locked && 'ðŸ”’ '}{t.title}
+                      {t.pinned && '📌 '}{t.locked && '🔒 '}{t.title}
                     </Link>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <span>by {t.author?.username}</span>
@@ -1096,19 +1096,19 @@ export default function ForumAdmin({ embedded = false }) {
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     <button onClick={() => setEditingThread(t)}
                       style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', fontSize: 9 }}>
-                      âœï¸ EDIT
+                      ✏️ EDIT
                     </button>
                     <button onClick={() => toggleThread(t, 'pinned')}
                       style={{ ...S.btn('transparent', t.pinned ? 'var(--green)' : 'var(--muted)'), border: `1px solid ${t.pinned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, fontSize: 9 }}>
-                      {t.pinned ? 'UNPIN' : 'ðŸ“Œ'}
+                      {t.pinned ? 'UNPIN' : '📌'}
                     </button>
                     <button onClick={() => toggleThread(t, 'locked')}
                       style={{ ...S.btn('transparent', t.locked ? 'var(--red)' : 'var(--muted)'), border: `1px solid ${t.locked ? 'rgba(255,71,87,0.3)' : 'var(--border)'}`, fontSize: 9 }}>
-                      {t.locked ? 'ðŸ”“' : 'ðŸ”’'}
+                      {t.locked ? '🔓' : '🔒'}
                     </button>
                     <button onClick={() => deleteThread(t)}
                       style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 9 }}>
-                      ðŸ—‘
+                      🗑
                     </button>
                   </div>
                 </div>
@@ -1120,11 +1120,11 @@ export default function ForumAdmin({ embedded = false }) {
         </div>
       )}
 
-      {/* â”€â”€ REPLIES â”€â”€ */}
+      {/* ── REPLIES ── */}
       {tab === 'replies' && (
         <div>
           <input value={replySearch} onChange={e => { setReplySearch(e.target.value); setReplyPage(1) }}
-            placeholder="ðŸ” Search reply content..." style={{ ...S.input, marginBottom: 16 }} />
+            placeholder="🔍 Search reply content..." style={{ ...S.input, marginBottom: 16 }} />
 
           {loading
             ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>Loading...</div>
@@ -1145,7 +1145,7 @@ export default function ForumAdmin({ embedded = false }) {
                       </div>
                       <Link to={`/forum/thread/${r.thread?._id}`} target="_blank"
                         style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
-                        â†’ {r.thread?.title}
+                        → {r.thread?.title}
                       </Link>
                     </div>
                     <div style={{ color: 'var(--text)', fontSize: 13, lineHeight: 1.6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
@@ -1155,15 +1155,15 @@ export default function ForumAdmin({ embedded = false }) {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
                     <button onClick={() => setEditingReply(r)}
                       style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', fontSize: 9 }}>
-                      âœï¸ EDIT
+                      ✏️ EDIT
                     </button>
                     <button onClick={() => r.author?._id && setEditingUser(r.author._id)}
                       style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 9 }}>
-                      ðŸ‘¤ USER
+                      👤 USER
                     </button>
                     <button onClick={() => deleteReply(r)}
                       style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 9 }}>
-                      ðŸ—‘ DEL
+                      🗑 DEL
                     </button>
                   </div>
                 </div>

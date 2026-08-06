@@ -6,10 +6,10 @@ import { AnimatableWrapper, EditableList, EditableText } from '../context/EditCo
 import { IconDisplay, useLordiconScript } from './IconPicker'
 
 const DEFAULT_SERVICES = [
-  { icon: 'ðŸŒ', title: 'Network Design & Architecture', desc: 'End-to-end design of enterprise LAN/WAN infrastructure. From IP addressing and routing protocols to redundancy planning and documentation.', features: ['OSPF / BGP / EIGRP', 'VLAN & QoS Design', 'Redundancy & Failover', 'Network Documentation'], accent: 'var(--green)' },
-  { icon: 'ðŸ”’', title: 'Security & Firewall', desc: 'Hardening your perimeter with enterprise-grade firewall deployment, VPN solutions, IDS/IPS configuration, and ongoing security audits.', features: ['Firewall Rule Optimization', 'IPSec / SSL VPN', 'IDS/IPS Deployment', 'Zero Trust Architecture'], accent: 'var(--red)' },
-  { icon: 'â˜ï¸', title: 'Cloud & Hybrid Infrastructure', desc: 'Seamless migration to cloud-hybrid models with AWS and Azure. Direct Connect, VPC design, and cloud-native security controls.', features: ['AWS / Azure Setup', 'Cloud Migration Planning', 'Hybrid Connectivity', 'Cost Optimization'], accent: 'var(--cyan)' },
-  { icon: 'ðŸ–¥ï¸', title: 'Server & Systems Administration', desc: 'Linux and Windows server deployment, Active Directory, virtualization stacks, and containerized application environments.', features: ['Linux / Windows Server', 'Docker & Virtualization', 'Active Directory', 'Backup & Recovery'], accent: 'var(--orange)' },
+  { icon: '🌐', title: 'Network Design & Architecture', desc: 'End-to-end design of enterprise LAN/WAN infrastructure. From IP addressing and routing protocols to redundancy planning and documentation.', features: ['OSPF / BGP / EIGRP', 'VLAN & QoS Design', 'Redundancy & Failover', 'Network Documentation'], accent: 'var(--green)' },
+  { icon: '🔒', title: 'Security & Firewall', desc: 'Hardening your perimeter with enterprise-grade firewall deployment, VPN solutions, IDS/IPS configuration, and ongoing security audits.', features: ['Firewall Rule Optimization', 'IPSec / SSL VPN', 'IDS/IPS Deployment', 'Zero Trust Architecture'], accent: 'var(--red)' },
+  { icon: '☁️', title: 'Cloud & Hybrid Infrastructure', desc: 'Seamless migration to cloud-hybrid models with AWS and Azure. Direct Connect, VPC design, and cloud-native security controls.', features: ['AWS / Azure Setup', 'Cloud Migration Planning', 'Hybrid Connectivity', 'Cost Optimization'], accent: 'var(--cyan)' },
+  { icon: '🖥️', title: 'Server & Systems Administration', desc: 'Linux and Windows server deployment, Active Directory, virtualization stacks, and containerized application environments.', features: ['Linux / Windows Server', 'Docker & Virtualization', 'Active Directory', 'Backup & Recovery'], accent: 'var(--orange)' },
 ]
 
 const SERVICE_FIELDS = [
@@ -75,7 +75,7 @@ function ServiceCard({ svc, i }) {
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{String(i + 1).padStart(2, '0')}</span>
           </div>
 
-          {/* Title â€” admin-editable inline */}
+          {/* Title — admin-editable inline */}
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: 'var(--text)', marginBottom: 10, lineHeight: 1.25, position: 'relative', zIndex: 1 }}>
             <EditableText contentKey={`service.${i}.title`} defaultValue={svc.title} />
           </div>
@@ -89,7 +89,7 @@ function ServiceCard({ svc, i }) {
           <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 16, position: 'relative', zIndex: 1 }}>
             {(svc.features || []).map((f, fi) => (
               <div key={fi} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text)', lineHeight: 1.9 }}>
-                <span style={{ color: accent, fontSize: 12, flexShrink: 0 }}>â€º</span>
+                <span style={{ color: accent, fontSize: 12, flexShrink: 0 }}>›</span>
                 <EditableText contentKey={`service.${i}.feature.${fi}`} defaultValue={f} />
               </div>
             ))}

@@ -5,7 +5,7 @@ import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { authProviderLoginRoute } from '@/lib/authRoutes'
 
-// â”€â”€â”€ Shared styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Shared styles ────────────────────────────────────────────────────────────
 const inputStyle = {
   width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
   color: 'var(--text)', fontFamily: 'var(--font-display)',
@@ -65,7 +65,7 @@ const Tag = ({ text, color = 'var(--green)' }) => (
   </div>
 )
 
-const BackLink = ({ to = '/', label = 'â† BACK TO HOME' }) => (
+const BackLink = ({ to = '/', label = '← BACK TO HOME' }) => (
   <div style={{ marginTop: 16, textAlign: 'center' }}>
     <Link to={to} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>
       {label}
@@ -73,12 +73,12 @@ const BackLink = ({ to = '/', label = 'â† BACK TO HOME' }) => (
   </div>
 )
 
-// â”€â”€â”€ Email Sent Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Email Sent Screen ────────────────────────────────────────────────────────
 function EmailSentScreen({ email, onResend, resending, resent, type = 'verify' }) {
   const isReset = type === 'reset'
   return (
     <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 64, marginBottom: 24 }}>ðŸ“¬</div>
+      <div style={{ fontSize: 64, marginBottom: 24 }}>📬</div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: isReset ? 'var(--cyan)' : 'var(--green)', letterSpacing: 4, marginBottom: 8 }}>EMAIL SENT</div>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, marginBottom: 20 }}>
         {isReset ? 'Check your inbox' : 'Verify your email'}
@@ -91,7 +91,7 @@ function EmailSentScreen({ email, onResend, resending, resent, type = 'verify' }
       </p>
 
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '16px 20px', marginBottom: 24, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
-        ðŸ’¡ Check your spam folder if you don't see it in a few minutes.
+        💡 Check your spam folder if you don't see it in a few minutes.
       </div>
 
       {!isReset && (
@@ -102,7 +102,7 @@ function EmailSentScreen({ email, onResend, resending, resent, type = 'verify' }
             : (
               <button onClick={onResend} disabled={resending}
                 style={{ ...btnStyle('var(--bg3)', resending), border: '1px solid var(--border)', color: 'var(--cyan)', fontSize: 11 }}>
-                {resending ? 'RESENDING...' : 'â†º RESEND VERIFICATION EMAIL'}
+                {resending ? 'RESENDING...' : '↺ RESEND VERIFICATION EMAIL'}
               </button>
             )
           }
@@ -114,7 +114,7 @@ function EmailSentScreen({ email, onResend, resending, resent, type = 'verify' }
   )
 }
 
-// â”€â”€â”€ ForumLogin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── ForumLogin ───────────────────────────────────────────────────────────────
 export function ForumLogin() {
   const { login }  = useForum()
   const navigate   = useNavigate()
@@ -177,13 +177,13 @@ export function ForumLogin() {
             : (
               <button onClick={handleResend} disabled={resending}
                 style={{ ...btnStyle('var(--green)', resending), marginBottom: 12 }}>
-                {resending ? 'SENDING...' : 'â†º RESEND VERIFICATION EMAIL'}
+                {resending ? 'SENDING...' : '↺ RESEND VERIFICATION EMAIL'}
               </button>
             )
           }
           <button onClick={() => setUnverified(false)}
             style={{ ...btnStyle('var(--bg3)'), border: '1px solid var(--border)', color: 'var(--muted)', fontSize: 11 }}>
-            â† BACK TO LOGIN
+            ← BACK TO LOGIN
           </button>
         </div>
       ) : (
@@ -199,13 +199,13 @@ export function ForumLogin() {
                 FORGOT PASSWORD?
               </Link>
             </div>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" style={inputStyle} />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" style={inputStyle} />
           </div>
 
           <ErrorBox msg={error} />
 
           <button type="submit" disabled={loading} style={btnStyle('var(--green)', loading)}>
-            {loading ? 'SIGNING IN...' : 'SIGN IN â†’'}
+            {loading ? 'SIGNING IN...' : 'SIGN IN →'}
           </button>
         </form>
       )}
@@ -222,7 +222,7 @@ export function ForumLogin() {
   )
 }
 
-// â”€â”€â”€ ForumRegister â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── ForumRegister ────────────────────────────────────────────────────────────
 export function ForumRegister() {
   const navigate  = useNavigate()
   const [form, setForm]         = useState({ username: '', email: '', password: '', confirm: '' })
@@ -232,7 +232,7 @@ export function ForumRegister() {
   const [resending, setResending]   = useState(false)
   const [resent, setResent]         = useState(false)
 
-  // â”€â”€ Username availability check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Username availability check ──────────────────────────────────────────
   const [unCheck, setUnCheck] = useState('idle') // 'idle'|'checking'|'available'|'taken'
   const [unSuggest, setUnSuggest] = useState('')
   const debounceRef = useEffect.bind(null) // just a ref holder
@@ -262,7 +262,7 @@ export function ForumRegister() {
     if (k === 'username') checkUsername(v)
   }
 
-  // Normalize API error â€” Pydantic validation returns an array, not a string
+  // Normalize API error — Pydantic validation returns an array, not a string
   const extractError = (err) => {
     const data = err?.response?.data
     if (!data) return 'Registration failed'
@@ -316,20 +316,20 @@ export function ForumRegister() {
     if (!form.username || form.username.length < 3) return null
     if (unCheck === 'checking') return (
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 6, letterSpacing: 1 }}>
-        â³ Checking availabilityâ€¦
+        ⏳ Checking availability…
       </div>
     )
     if (unCheck === 'available') return (
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', marginTop: 6, letterSpacing: 1 }}>
-        âœ“ Available
+        ✓ Available
       </div>
     )
     if (unCheck === 'taken') return (
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>
-        âœ— Username taken
+        ✗ Username taken
         {unSuggest && (
           <span>
-            {' â€” try '}
+            {' — try '}
             <button
               type="button"
               onClick={() => { set('username', unSuggest) }}
@@ -416,7 +416,7 @@ export function ForumRegister() {
         <ErrorBox msg={error} />
 
         <button type="submit" disabled={!canSubmit} style={btnStyle('var(--cyan)', !canSubmit)}>
-          {loading ? 'CREATING...' : 'CREATE ACCOUNT â†’'}
+          {loading ? 'CREATING...' : 'CREATE ACCOUNT →'}
         </button>
       </form>
 
@@ -462,7 +462,7 @@ export function ForumRegister() {
   )
 }
 
-// â”€â”€â”€ VerifyEmail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VerifyEmail ──────────────────────────────────────────────────────────────
 export function VerifyEmail() {
   const { login }  = useForum()
   const navigate   = useNavigate()
@@ -490,28 +490,28 @@ export function VerifyEmail() {
       <div style={{ textAlign: 'center' }}>
         {status === 'loading' && (
           <>
-            <div style={{ fontSize: 56, marginBottom: 20 }}>â³</div>
+            <div style={{ fontSize: 56, marginBottom: 20 }}>⏳</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>VERIFYING YOUR EMAIL...</div>
           </>
         )}
 
         {status === 'success' && (
           <>
-            <div style={{ fontSize: 64, marginBottom: 20 }}>âœ…</div>
+            <div style={{ fontSize: 64, marginBottom: 20 }}>✅</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 4, marginBottom: 12 }}>VERIFIED</div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, marginBottom: 16 }}>Email Confirmed!</h1>
             <p style={{ color: 'var(--muted)', lineHeight: 1.8, marginBottom: 24 }}>
               Your account is active. Redirecting you...
             </p>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>
-              <Link to="/" style={{ color: 'var(--green)', textDecoration: 'none' }}>CLICK HERE IF NOT REDIRECTED â†’</Link>
+              <Link to="/" style={{ color: 'var(--green)', textDecoration: 'none' }}>CLICK HERE IF NOT REDIRECTED →</Link>
             </div>
           </>
         )}
 
         {status === 'error' && (
           <>
-            <div style={{ fontSize: 64, marginBottom: 20 }}>âŒ</div>
+            <div style={{ fontSize: 64, marginBottom: 20 }}>❌</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', letterSpacing: 4, marginBottom: 12 }}>INVALID LINK</div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, marginBottom: 16 }}>Link Expired</h1>
             <p style={{ color: 'var(--muted)', lineHeight: 1.8, marginBottom: 24 }}>{message}</p>
@@ -528,7 +528,7 @@ export function VerifyEmail() {
   )
 }
 
-// â”€â”€â”€ ForgotPassword â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── ForgotPassword ───────────────────────────────────────────────────────────
 export function ForgotPassword() {
   const [tab,        setTab]        = useState('reset')   // 'reset' | 'find'
   // Reset-password tab state
@@ -574,38 +574,38 @@ export function ForgotPassword() {
     transition: 'all 0.15s',
   })
 
-  // â”€â”€ Reset tab sent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Reset tab sent ─────────────────────────────────────────────────────────
   if (resetSent) return (
     <PageWrap>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 64, marginBottom: 20 }}>ðŸ“¬</div>
+        <div style={{ fontSize: 64, marginBottom: 20 }}>📬</div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 8 }}>EMAIL SENT</div>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, marginBottom: 16 }}>Check your inbox</h1>
         <p style={{ color: 'var(--muted)', lineHeight: 1.8, marginBottom: 24, fontSize: 15 }}>
           If an account matches <strong style={{ color: 'var(--text)' }}>{identifier}</strong>, a reset link has been sent. It expires in&nbsp;1&nbsp;hour.
         </p>
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '14px 18px', marginBottom: 28, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
-          ðŸ’¡ Check your spam folder if you don't see it.
+          💡 Check your spam folder if you don't see it.
         </div>
-        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>â† BACK TO LOGIN</Link>
+        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
       </div>
     </PageWrap>
   )
 
-  // â”€â”€ Find-username tab sent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Find-username tab sent ─────────────────────────────────────────────────
   if (findSent) return (
     <PageWrap>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 64, marginBottom: 20 }}>ðŸ“¬</div>
+        <div style={{ fontSize: 64, marginBottom: 20 }}>📬</div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 4, marginBottom: 8 }}>EMAIL SENT</div>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, marginBottom: 16 }}>Check your inbox</h1>
         <p style={{ color: 'var(--muted)', lineHeight: 1.8, marginBottom: 24, fontSize: 15 }}>
           If <strong style={{ color: 'var(--text)' }}>{findEmail}</strong> is registered, your username has been sent to that address.
         </p>
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '14px 18px', marginBottom: 28, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
-          ðŸ’¡ Check your spam folder if you don't see it.
+          💡 Check your spam folder if you don't see it.
         </div>
-        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>â† BACK TO LOGIN</Link>
+        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
       </div>
     </PageWrap>
   )
@@ -617,11 +617,11 @@ export function ForgotPassword() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', marginBottom: 28, border: '1px solid var(--border)', overflow: 'hidden' }}>
-        <button style={tabStyle(tab === 'reset')} onClick={() => setTab('reset')}>ðŸ”‘ RESET PASSWORD</button>
-        <button style={tabStyle(tab === 'find')}  onClick={() => setTab('find')}>ðŸ‘¤ FIND USERNAME</button>
+        <button style={tabStyle(tab === 'reset')} onClick={() => setTab('reset')}>🔑 RESET PASSWORD</button>
+        <button style={tabStyle(tab === 'find')}  onClick={() => setTab('find')}>👤 FIND USERNAME</button>
       </div>
 
-      {/* â”€â”€ Reset Password tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Reset Password tab ─────────────────────────────────────────────── */}
       {tab === 'reset' && (
         <div>
           <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
@@ -643,7 +643,7 @@ export function ForgotPassword() {
             </div>
             <ErrorBox msg={resetError} />
             <button type="submit" disabled={resetLoading} style={btnStyle('var(--cyan)', resetLoading)}>
-              {resetLoading ? 'SENDING...' : 'SEND RESET LINK â†’'}
+              {resetLoading ? 'SENDING...' : 'SEND RESET LINK →'}
             </button>
           </form>
           <div style={{ marginTop: 20, textAlign: 'center' }}>
@@ -657,7 +657,7 @@ export function ForgotPassword() {
         </div>
       )}
 
-      {/* â”€â”€ Find Username tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Find Username tab ──────────────────────────────────────────────── */}
       {tab === 'find' && (
         <div>
           <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
@@ -677,7 +677,7 @@ export function ForgotPassword() {
             </div>
             <ErrorBox msg={findError} />
             <button type="submit" disabled={findLoading} style={btnStyle('var(--green)', findLoading)}>
-              {findLoading ? 'SENDING...' : 'SEND MY USERNAME â†’'}
+              {findLoading ? 'SENDING...' : 'SEND MY USERNAME →'}
             </button>
           </form>
           <div style={{ marginTop: 20, textAlign: 'center' }}>
@@ -692,13 +692,13 @@ export function ForgotPassword() {
       )}
 
       <div style={{ marginTop: 28, textAlign: 'center' }}>
-        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>â† BACK TO LOGIN</Link>
+        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
       </div>
     </PageWrap>
   )
 }
 
-// â”€â”€â”€ ResetPassword â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── ResetPassword ────────────────────────────────────────────────────────────
 export function ResetPassword() {
   const navigate     = useNavigate()
   const [password,   setPassword]  = useState('')
@@ -718,7 +718,7 @@ export function ResetPassword() {
     setLoading(true); setError('')
     try {
       await api.post(`/auth/reset-password/${token}`, { password })
-      // C3 â€” the backend returns {message} only (no token/user); reset revokes
+      // C3 — the backend returns {message} only (no token/user); reset revokes
       // old sessions, so take the user to the login page to sign in fresh.
       setSuccess(true)
       setTimeout(() => navigate('/login?tab=signin'), 2000)
@@ -740,7 +740,7 @@ export function ResetPassword() {
     return (
       <PageWrap>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 64, marginBottom: 20 }}>ðŸ”“</div>
+          <div style={{ fontSize: 64, marginBottom: 20 }}>🔓</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 4, marginBottom: 12 }}>PASSWORD RESET</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, marginBottom: 16 }}>All Done!</h1>
           <p style={{ color: 'var(--muted)', lineHeight: 1.8 }}>Your password has been changed. Redirecting you...</p>
@@ -779,11 +779,11 @@ export function ResetPassword() {
 
         <button type="submit" disabled={loading || password !== confirm || password.length < 6}
           style={btnStyle('var(--green)', loading || password !== confirm || password.length < 6)}>
-          {loading ? 'SAVING...' : 'SET NEW PASSWORD â†’'}
+          {loading ? 'SAVING...' : 'SET NEW PASSWORD →'}
         </button>
       </form>
 
-      <BackLink to="/login" label="â† BACK TO LOGIN" />
+      <BackLink to="/login" label="← BACK TO LOGIN" />
     </PageWrap>
   )
 }

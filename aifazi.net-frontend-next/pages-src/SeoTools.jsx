@@ -3,7 +3,7 @@ import { useState } from 'react'
 import api from '@/lib/api'
 import { Select } from '../core/ui.jsx'
 
-// â”€â”€â”€ Shared proxy fetch (uses our own backend â€” reliable, no CORS issues) â”€â”€â”€â”€â”€
+// ─── Shared proxy fetch (uses our own backend — reliable, no CORS issues) ─────
 async function fetchViaProxy(url) {
   const res = await api.get('/seo-proxy', { params: { url }, timeout: 15000 })
   const data = res.data
@@ -11,7 +11,7 @@ async function fetchViaProxy(url) {
   return data.contents
 }
 
-// â”€â”€â”€ Parse meta tags using DOMParser (robust, handles all attribute orders) â”€â”€â”€
+// ─── Parse meta tags using DOMParser (robust, handles all attribute orders) ───
 function parseMeta(rawHtml) {
   const doc = new DOMParser().parseFromString(rawHtml, 'text/html')
   const getMeta = (attr, val) => doc.querySelector(`meta[${attr}="${val}"]`)?.content ?? null
@@ -34,7 +34,7 @@ function parseMeta(rawHtml) {
   }
 }
 
-// â”€â”€â”€ 1. Meta Tag Analyzer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 1. Meta Tag Analyzer ─────────────────────────────────────────────────────
 function MetaAnalyzer() {
   const [url, setUrl]       = useState('')
   const [html, setHtml]     = useState('')
@@ -47,12 +47,12 @@ function MetaAnalyzer() {
     const meta   = parseMeta(rawHtml)
     const issues = [], good = []
     if (!meta.title) issues.push({ msg: 'Missing <title> tag', sev: 'high' })
-    else if (meta.titleLen < 30)  issues.push({ msg: `Title too short (${meta.titleLen} chars, aim 50â€“60)`, sev: 'medium' })
+    else if (meta.titleLen < 30)  issues.push({ msg: `Title too short (${meta.titleLen} chars, aim 50–60)`, sev: 'medium' })
     else if (meta.titleLen > 60)  issues.push({ msg: `Title too long (${meta.titleLen} chars, keep under 60)`, sev: 'medium' })
     else good.push('Title tag length is optimal')
 
     if (!meta.description) issues.push({ msg: 'Missing meta description', sev: 'high' })
-    else if (meta.description.length < 120) issues.push({ msg: `Description too short (${meta.description.length} chars, aim 150â€“160)`, sev: 'medium' })
+    else if (meta.description.length < 120) issues.push({ msg: `Description too short (${meta.description.length} chars, aim 150–160)`, sev: 'medium' })
     else if (meta.description.length > 160) issues.push({ msg: `Description too long (${meta.description.length} chars, keep under 160)`, sev: 'medium' })
     else good.push('Meta description length is optimal')
 
@@ -98,14 +98,14 @@ function MetaAnalyzer() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {['url', 'paste'].map(m => (
           <button key={m} onClick={() => setMode(m)} style={{ ...S.tab, ...(mode === m ? S.tabActive : {}) }}>
-            {m === 'url' ? 'ðŸŒ FROM URL' : 'ðŸ“‹ PASTE HTML'}
+            {m === 'url' ? '🌐 FROM URL' : '📋 PASTE HTML'}
           </button>
         ))}
       </div>
 
       {mode === 'url' && (
         <div style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.3)', padding: '8px 14px', marginBottom: 12, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff6b35' }}>
-          âš  URL fetching uses a third-party CORS proxy (allorigins.win). If it fails, use Paste HTML mode.
+          ⚠ URL fetching uses a third-party CORS proxy (allorigins.win). If it fails, use Paste HTML mode.
         </div>
       )}
 
@@ -114,7 +114,7 @@ function MetaAnalyzer() {
           <input value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && analyze()}
             placeholder="https://example.com" style={S.input} />
           <button onClick={analyze} disabled={loading} style={{ ...S.btn, opacity: loading ? 0.6 : 1 }}>
-            {loading ? 'âŸ³' : 'ANALYZE'}
+            {loading ? '⟳' : 'ANALYZE'}
           </button>
         </div>
       ) : (
@@ -125,7 +125,7 @@ function MetaAnalyzer() {
         </>
       )}
 
-      {error && <div style={S.error}>âš  {error}</div>}
+      {error && <div style={S.error}>⚠ {error}</div>}
 
       {result && (
         <div style={{ marginTop: 24 }}>
@@ -134,7 +134,7 @@ function MetaAnalyzer() {
             <div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 4 }}>SEO SCORE</div>
               <div style={{ fontSize: 14, color: scoreColor }}>
-                {result.score >= 80 ? 'âœ… Good â€” minor improvements possible' : result.score >= 50 ? 'âš ï¸ Fair â€” several issues to fix' : 'âŒ Poor â€” critical issues found'}
+                {result.score >= 80 ? '✅ Good — minor improvements possible' : result.score >= 50 ? '⚠️ Fair — several issues to fix' : '❌ Poor — critical issues found'}
               </div>
             </div>
           </div>
@@ -144,7 +144,7 @@ function MetaAnalyzer() {
               <div style={S.sectionLabel}>ISSUES FOUND</div>
               {result.issues.map((issue, i) => (
                 <div key={i} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)', alignItems: 'flex-start' }}>
-                  <span>{issue.sev === 'high' ? 'ðŸ”´' : issue.sev === 'medium' ? 'ðŸŸ ' : 'ðŸŸ¡'}</span>
+                  <span>{issue.sev === 'high' ? '🔴' : issue.sev === 'medium' ? '🟠' : '🟡'}</span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)' }}>{issue.msg}</span>
                 </div>
               ))}
@@ -155,7 +155,7 @@ function MetaAnalyzer() {
             <div style={{ marginBottom: 20 }}>
               <div style={S.sectionLabel}>PASSING</div>
               {result.good.map((g, i) => (
-                <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 12, color: '#00ff88' }}>âœ“ {g}</div>
+                <div key={i} style={{ padding: '8px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 12, color: '#00ff88' }}>✓ {g}</div>
               ))}
             </div>
           )}
@@ -177,7 +177,7 @@ function MetaAnalyzer() {
   )
 }
 
-// â”€â”€â”€ 2. Keyword Density â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 2. Keyword Density ───────────────────────────────────────────────────────
 function KeywordDensity() {
   const [text, setText]     = useState('')
   const [target, setTarget] = useState('')
@@ -224,7 +224,7 @@ function KeywordDensity() {
                 <div><span style={{ color: 'var(--muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>COUNT: </span><span style={{ color: 'var(--green)', fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{result.targetResult.count}</span></div>
                 <div><span style={{ color: 'var(--muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>DENSITY: </span><span style={{ color: densityColor(result.targetResult.density), fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{result.targetResult.density}%</span></div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', alignSelf: 'flex-end' }}>
-                  {parseFloat(result.targetResult.density) > 3 ? 'âš ï¸ Keyword stuffing risk' : parseFloat(result.targetResult.density) >= 1 ? 'âœ… Ideal range (1â€“2.5%)' : 'â†— Consider using more'}
+                  {parseFloat(result.targetResult.density) > 3 ? '⚠️ Keyword stuffing risk' : parseFloat(result.targetResult.density) >= 1 ? '✅ Ideal range (1–2.5%)' : '↗ Consider using more'}
                 </div>
               </div>
             </div>
@@ -245,7 +245,7 @@ function KeywordDensity() {
                   <td style={{ padding: '8px 12px', color: 'var(--text)' }}>{word}</td>
                   <td style={{ padding: '8px 12px', color: 'var(--cyan)' }}>{count}</td>
                   <td style={{ padding: '8px 12px', color: densityColor(density), fontWeight: 700 }}>{density}%</td>
-                  <td style={{ padding: '8px 12px', color: 'var(--muted)', fontSize: 10 }}>{parseFloat(density) > 3 ? 'âš ï¸ High' : parseFloat(density) >= 1 ? 'âœ… Good' : 'Low'}</td>
+                  <td style={{ padding: '8px 12px', color: 'var(--muted)', fontSize: 10 }}>{parseFloat(density) > 3 ? '⚠️ High' : parseFloat(density) >= 1 ? '✅ Good' : 'Low'}</td>
                 </tr>
               ))}
             </tbody>
@@ -256,7 +256,7 @@ function KeywordDensity() {
   )
 }
 
-// â”€â”€â”€ 3. Readability Score â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 3. Readability Score ─────────────────────────────────────────────────────
 function ReadabilityScore() {
   const [text, setText]     = useState('')
   const [result, setResult] = useState(null)
@@ -281,8 +281,8 @@ function ReadabilityScore() {
       if (s >= 90) return { label: 'Very Easy',       color: '#00ff88', audience: '5th grade' }
       if (s >= 80) return { label: 'Easy',            color: '#00ff88', audience: '6th grade' }
       if (s >= 70) return { label: 'Fairly Easy',     color: '#00d4ff', audience: '7th grade' }
-      if (s >= 60) return { label: 'Standard',        color: '#00d4ff', audience: '8thâ€“9th grade' }
-      if (s >= 50) return { label: 'Fairly Difficult',color: '#ff6b35', audience: '10thâ€“12th grade' }
+      if (s >= 60) return { label: 'Standard',        color: '#00d4ff', audience: '8th–9th grade' }
+      if (s >= 50) return { label: 'Fairly Difficult',color: '#ff6b35', audience: '10th–12th grade' }
       if (s >= 30) return { label: 'Difficult',       color: '#ff4757', audience: 'College' }
       return        { label: 'Very Confusing',        color: '#ff4757', audience: 'College graduate' }
     }
@@ -325,7 +325,7 @@ function ReadabilityScore() {
   )
 }
 
-// â”€â”€â”€ 4. Bulk URL SEO Checker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 4. Bulk URL SEO Checker ──────────────────────────────────────────────────
 function BulkUrlChecker() {
   const [urls, setUrls]       = useState('')
   const [results, setResults] = useState([])
@@ -374,7 +374,7 @@ function BulkUrlChecker() {
   return (
     <div>
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 12 }}>
-        Enter up to 20 URLs, one per line. Uses a CORS proxy â€” if a URL fails, check it manually.
+        Enter up to 20 URLs, one per line. Uses a CORS proxy — if a URL fails, check it manually.
       </p>
       <textarea value={urls} onChange={e => setUrls(e.target.value)} rows={6}
         placeholder={'https://aifazi.net\nhttps://aifazi.net/blog\nhttps://aifazi.net/forum'}
@@ -382,12 +382,12 @@ function BulkUrlChecker() {
 
       {warning && (
         <div style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.3)', padding: '8px 14px', marginBottom: 10, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff6b35' }}>
-          âš  {warning}
+          ⚠ {warning}
         </div>
       )}
 
       <button onClick={check} disabled={loading} style={{ ...S.btn, marginBottom: 20 }}>
-        {loading ? `âŸ³ CHECKING... (${results.length} done)` : 'CHECK ALL URLS'}
+        {loading ? `⟳ CHECKING... (${results.length} done)` : 'CHECK ALL URLS'}
       </button>
 
       {results.length > 0 && (
@@ -407,10 +407,10 @@ function BulkUrlChecker() {
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   <td style={{ padding: '8px 10px', color: 'var(--cyan)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.url}>{r.url.replace(/^https?:\/\//, '')}</td>
                   <td style={{ padding: '8px 10px', color: r.score >= 70 ? '#00ff88' : r.score >= 40 ? '#ff6b35' : '#ff4757', fontWeight: 700 }}>{r.score}</td>
-                  <td style={{ padding: '8px 10px', color: r.title ? 'var(--text)' : '#ff4757', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title || 'âŒ Missing'}</td>
-                  <td style={{ padding: '8px 10px', color: r.desc ? 'var(--muted)' : '#ff4757', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.desc || 'âŒ Missing'}</td>
-                  <td style={{ padding: '8px 10px', textAlign: 'center' }}>{r.hasOg ? 'âœ…' : 'âŒ'}</td>
-                  <td style={{ padding: '8px 10px', textAlign: 'center' }}>{r.hasCanon ? 'âœ…' : 'âŒ'}</td>
+                  <td style={{ padding: '8px 10px', color: r.title ? 'var(--text)' : '#ff4757', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title || '❌ Missing'}</td>
+                  <td style={{ padding: '8px 10px', color: r.desc ? 'var(--muted)' : '#ff4757', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.desc || '❌ Missing'}</td>
+                  <td style={{ padding: '8px 10px', textAlign: 'center' }}>{r.hasOg ? '✅' : '❌'}</td>
+                  <td style={{ padding: '8px 10px', textAlign: 'center' }}>{r.hasCanon ? '✅' : '❌'}</td>
                 </tr>
               ))}
             </tbody>
@@ -421,7 +421,7 @@ function BulkUrlChecker() {
   )
 }
 
-// â”€â”€â”€ 5. XML Sitemap Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 5. XML Sitemap Generator ─────────────────────────────────────────────────
 function SitemapGenerator() {
   const [urls, setUrls]         = useState('')
   const [freq, setFreq]         = useState('weekly')
@@ -470,8 +470,8 @@ function SitemapGenerator() {
       {output && (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={S.sectionLabel}>OUTPUT â€” SAVE AS sitemap.xml (place in your public folder)</div>
-            <button onClick={copy} style={{ ...S.btn, padding: '6px 16px', fontSize: 9, background: copied ? 'var(--cyan)' : 'var(--green)' }}>{copied ? 'âœ“ COPIED' : 'COPY'}</button>
+            <div style={S.sectionLabel}>OUTPUT — SAVE AS sitemap.xml (place in your public folder)</div>
+            <button onClick={copy} style={{ ...S.btn, padding: '6px 16px', fontSize: 9, background: copied ? 'var(--cyan)' : 'var(--green)' }}>{copied ? '✓ COPIED' : 'COPY'}</button>
           </div>
           <textarea readOnly value={output} rows={14} style={{ ...S.input, color: 'var(--cyan)', fontSize: 11, resize: 'none' }} />
         </>
@@ -480,7 +480,7 @@ function SitemapGenerator() {
   )
 }
 
-// â”€â”€â”€ 6. Open Graph Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 6. Open Graph Preview ────────────────────────────────────────────────────
 function OGPreview() {
   const [form, setForm] = useState({ title: '', description: '', image: '', url: '', siteName: '' })
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
@@ -506,7 +506,7 @@ function OGPreview() {
           ))}
         </div>
         <div>
-          <div style={S.sectionLabel}>ð• / TWITTER PREVIEW</div>
+          <div style={S.sectionLabel}>𝕏 / TWITTER PREVIEW</div>
           <div style={{ border: '1px solid #2f3336', borderRadius: 12, overflow: 'hidden', maxWidth: 380, marginBottom: 20 }}>
             <div style={{ height: 120, background: form.image ? `url(${form.image}) center/cover` : '#1e2d45', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a6070', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
               {!form.image && 'IMAGE PREVIEW'}
@@ -542,7 +542,7 @@ function OGPreview() {
   )
 }
 
-// â”€â”€â”€ 7. Title & Description Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 7. Title & Description Generator ────────────────────────────────────────
 function TitleDescGenerator() {
   const [topic, setTopic]     = useState('')
   const [keyword, setKeyword] = useState('')
@@ -554,12 +554,12 @@ function TitleDescGenerator() {
     const yr = new Date().getFullYear()
     setResults({
       titles: [
-        `${topic} â€” Complete Guide for ${yr}`,
+        `${topic} — Complete Guide for ${yr}`,
         `How to ${topic}: Step-by-Step Guide`,
         `${topic}: Everything You Need to Know`,
         `The Ultimate ${topic} Guide | ${kw}`,
         `${topic} Explained: Tips, Tools & Best Practices`,
-        `Master ${topic} in ${yr} â€” Expert Guide`,
+        `Master ${topic} in ${yr} — Expert Guide`,
       ],
       descs: [
         `Discover everything about ${topic}. Our comprehensive guide covers ${kw}, best practices, tips and more. Start learning today.`,
@@ -590,7 +590,7 @@ function TitleDescGenerator() {
 
       {results && (
         <div style={{ marginTop: 24 }}>
-          <div style={S.sectionLabel}>TITLE TAG IDEAS (aim for 50â€“60 chars)</div>
+          <div style={S.sectionLabel}>TITLE TAG IDEAS (aim for 50–60 chars)</div>
           {results.titles.map((t, i) => (
             <div key={i} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '12px 16px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', cursor: 'pointer' }}
               onClick={() => navigator.clipboard.writeText(t)}>
@@ -598,12 +598,12 @@ function TitleDescGenerator() {
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: charColor(t.length, 30, 60), flexShrink: 0 }}>{t.length}c</span>
             </div>
           ))}
-          <div style={{ ...S.sectionLabel, marginTop: 24 }}>META DESCRIPTION IDEAS (aim for 150â€“160 chars)</div>
+          <div style={{ ...S.sectionLabel, marginTop: 24 }}>META DESCRIPTION IDEAS (aim for 150–160 chars)</div>
           {results.descs.map((d, i) => (
             <div key={i} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '12px 16px', marginBottom: 8, cursor: 'pointer' }}
               onClick={() => navigator.clipboard.writeText(d)}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', marginBottom: 6 }}>{d}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: charColor(d.length, 120, 160) }}>{d.length} chars Â· click to copy</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: charColor(d.length, 120, 160) }}>{d.length} chars · click to copy</div>
             </div>
           ))}
         </div>
@@ -612,7 +612,7 @@ function TitleDescGenerator() {
   )
 }
 
-// â”€â”€â”€ 8. Robots.txt Generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── 8. Robots.txt Generator ──────────────────────────────────────────────────
 function RobotsTxtGenerator() {
   const [sitemapUrl, setSitemapUrl] = useState('')
   const [blocked, setBlocked]       = useState('/admin\n/api\n/login\n/dashboard')
@@ -644,8 +644,8 @@ function RobotsTxtGenerator() {
       {output && (
         <div style={{ marginTop: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div style={S.sectionLabel}>OUTPUT â€” SAVE AS robots.txt in your project root</div>
-            <button onClick={copy} style={{ ...S.btn, padding: '6px 16px', fontSize: 9, background: copied ? 'var(--cyan)' : 'var(--green)' }}>{copied ? 'âœ“ COPIED' : 'COPY'}</button>
+            <div style={S.sectionLabel}>OUTPUT — SAVE AS robots.txt in your project root</div>
+            <button onClick={copy} style={{ ...S.btn, padding: '6px 16px', fontSize: 9, background: copied ? 'var(--cyan)' : 'var(--green)' }}>{copied ? '✓ COPIED' : 'COPY'}</button>
           </div>
           <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)', background: 'var(--bg3)', border: '1px solid var(--border)', padding: 16, overflowX: 'auto' }}>{output}</pre>
         </div>
@@ -654,7 +654,7 @@ function RobotsTxtGenerator() {
   )
 }
 
-// â”€â”€â”€ Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const S = {
   input:        { width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '10px 14px', outline: 'none', boxSizing: 'border-box' },
   btn:          { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '10px 20px', background: 'var(--green)', color: '#000', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 700 },
@@ -665,19 +665,19 @@ const S = {
   fieldLabel:   { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 },
 }
 
-// â”€â”€â”€ TABS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'meta',        label: 'Meta Analyzer',   icon: 'ðŸ”', component: MetaAnalyzer },
-  { id: 'keyword',     label: 'Keyword Density', icon: 'ðŸ“Š', component: KeywordDensity },
-  { id: 'readability', label: 'Readability',     icon: 'ðŸ“–', component: ReadabilityScore },
-  { id: 'bulk',        label: 'Bulk URL Check',  icon: 'ðŸ—‚ï¸', component: BulkUrlChecker },
-  { id: 'sitemap',     label: 'Sitemap Builder', icon: 'ðŸ—ºï¸', component: SitemapGenerator },
-  { id: 'og',          label: 'OG Preview',      icon: 'ðŸ‘ï¸', component: OGPreview },
-  { id: 'titles',      label: 'Title Generator', icon: 'âœï¸', component: TitleDescGenerator },
-  { id: 'robots',      label: 'Robots.txt',      icon: 'ðŸ¤–', component: RobotsTxtGenerator },
+  { id: 'meta',        label: 'Meta Analyzer',   icon: '🔍', component: MetaAnalyzer },
+  { id: 'keyword',     label: 'Keyword Density', icon: '📊', component: KeywordDensity },
+  { id: 'readability', label: 'Readability',     icon: '📖', component: ReadabilityScore },
+  { id: 'bulk',        label: 'Bulk URL Check',  icon: '🗂️', component: BulkUrlChecker },
+  { id: 'sitemap',     label: 'Sitemap Builder', icon: '🗺️', component: SitemapGenerator },
+  { id: 'og',          label: 'OG Preview',      icon: '👁️', component: OGPreview },
+  { id: 'titles',      label: 'Title Generator', icon: '✍️', component: TitleDescGenerator },
+  { id: 'robots',      label: 'Robots.txt',      icon: '🤖', component: RobotsTxtGenerator },
 ]
 
-// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function SeoTools() {
   const [tab, setTab] = useState('meta')
   const Active = TABS.find(t => t.id === tab)?.component || MetaAnalyzer

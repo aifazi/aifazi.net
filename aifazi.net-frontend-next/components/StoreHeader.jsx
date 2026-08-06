@@ -86,7 +86,7 @@ export default function StoreHeader() {
 
         {/* Search */}
         <form onSubmit={handleSearch} style={{ position: 'relative', flex: '0 1 280px', minWidth: 0 }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: 'var(--muted)', pointerEvents: 'none' }}>âŒ•</span>
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: 'var(--muted)', pointerEvents: 'none' }}>⌕</span>
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
@@ -107,7 +107,7 @@ export default function StoreHeader() {
           position: 'relative', background: 'none', border: 'none', cursor: 'pointer',
           padding: 8, color: 'var(--text)', fontSize: 20, textDecoration: 'none',
         }}>
-          ðŸ›’
+          🛒
           {cartCount > 0 && (
             <span style={{
               position: 'absolute', top: 0, right: -2,

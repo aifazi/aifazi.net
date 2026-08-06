@@ -5,14 +5,14 @@ import { useSplitTextReveal } from '../hooks/useSplitTextReveal'
 import { EditableList, EditableText } from '../context/EditContext'
 
 const DEFAULT_EXPERIENCE = [
-  { period: '2023 â€” Present', role: 'IT Infrastructure Manager (AMC Lead)', company: 'Al Qattara', desc: 'Overseeing the full IT asset register and AMC scope for Al Qattara. Managing critical infrastructure including VMware clusters, Cisco core switches, and Azure cloud resources. Leading major upgrades from EOL hardware to modern enterprise solutions.', tags: ['Infrastructure', 'AMC Management', 'Vendor Coordination', 'Azure'], active: true },
-  { period: '2022 â€” 2023', role: 'Senior Network Engineer', company: 'Self-Employed / Freelance', desc: 'Designing and deploying enterprise network infrastructure for clients across multiple industries. Specializing in firewall hardening, VPN architecture, and cloud migrations.', tags: ['Cisco', 'FortiGate', 'AWS', 'Docker'], active: false },
-  { period: '2020 â€” 2022', role: 'IT Infrastructure Specialist', company: 'Regional ISP', desc: 'Managed BGP backbone, implemented QoS policies, and maintained 99.9% uptime across a regional ISP network serving 50,000+ subscribers.', tags: ['BGP', 'MikroTik', 'Linux', 'OSPF'], active: false },
-  { period: '2018 â€” 2020', role: 'Network Administrator', company: 'Enterprise Technology Firm', desc: 'Administered Cisco-based LAN/WAN infrastructure, deployed VLAN segmentation across 3 offices, and led migration from legacy systems to virtualized stack.', tags: ['Cisco IOS', 'VMware', 'Windows Server', 'AD'], active: false },
+  { period: '2023 — Present', role: 'IT Infrastructure Manager (AMC Lead)', company: 'Al Qattara', desc: 'Overseeing the full IT asset register and AMC scope for Al Qattara. Managing critical infrastructure including VMware clusters, Cisco core switches, and Azure cloud resources. Leading major upgrades from EOL hardware to modern enterprise solutions.', tags: ['Infrastructure', 'AMC Management', 'Vendor Coordination', 'Azure'], active: true },
+  { period: '2022 — 2023', role: 'Senior Network Engineer', company: 'Self-Employed / Freelance', desc: 'Designing and deploying enterprise network infrastructure for clients across multiple industries. Specializing in firewall hardening, VPN architecture, and cloud migrations.', tags: ['Cisco', 'FortiGate', 'AWS', 'Docker'], active: false },
+  { period: '2020 — 2022', role: 'IT Infrastructure Specialist', company: 'Regional ISP', desc: 'Managed BGP backbone, implemented QoS policies, and maintained 99.9% uptime across a regional ISP network serving 50,000+ subscribers.', tags: ['BGP', 'MikroTik', 'Linux', 'OSPF'], active: false },
+  { period: '2018 — 2020', role: 'Network Administrator', company: 'Enterprise Technology Firm', desc: 'Administered Cisco-based LAN/WAN infrastructure, deployed VLAN segmentation across 3 offices, and led migration from legacy systems to virtualized stack.', tags: ['Cisco IOS', 'VMware', 'Windows Server', 'AD'], active: false },
 ]
 
 const EXP_FIELDS = [
-  { key: 'period', label: 'Period (e.g. 2022 â€” Present)' },
+  { key: 'period', label: 'Period (e.g. 2022 — Present)' },
   { key: 'role', label: 'Job Title' },
   { key: 'company', label: 'Company Name' },
   { key: 'desc', label: 'Description', type: 'textarea' },

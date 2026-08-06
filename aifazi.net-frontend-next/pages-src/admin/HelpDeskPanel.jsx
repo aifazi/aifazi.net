@@ -18,7 +18,7 @@ const STATUS_MAP = {
 const PRIORITY_MAP = { critical: '#ff4757', high: '#ff6b35', medium: '#ffd700', low: '#00ff88' }
 
 const tid  = t => t.id || t._id
-const tkid = t => t.ticket_id || t.ticketId || 'â€”'
+const tkid = t => t.ticket_id || t.ticketId || '—'
 const tcat = t => t.created_at || t.createdAt
 
 function StatusBadge({ status }) {
@@ -41,7 +41,7 @@ function PriorityBadge({ priority }) {
   )
 }
 
-// â”€â”€ Message Bubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Message Bubble ─────────────────────────────────────────
 function MessageBubble({ msg }) {
   const isStaff = msg.author_type === 'staff'
   const isSystem = msg.author_type === 'system'
@@ -77,7 +77,7 @@ function MessageBubble({ msg }) {
   )
 }
 
-// â”€â”€ Ticket Detail View (inline, not a popup) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Ticket Detail View (inline, not a popup) ────────────────
 function TicketDetailView({ ticket, onBack, onSave }) {
   const toast = useToast()
   const [form, setForm] = useState({
@@ -147,7 +147,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
         <button onClick={onBack} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
           background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer',
           borderRadius: 6, padding: '7px 14px' }}>
-          â† BACK TO LIST
+          ← BACK TO LIST
         </button>
       </div>
 
@@ -211,7 +211,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
             <button onClick={onBack} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '9px 14px', fontSize: 9 }}>CANCEL</button>
             <button onClick={handleSave} disabled={saving}
               style={{ ...S.btn(), padding: '9px 16px', fontSize: 9, opacity: saving ? 0.6 : 1 }}>
-              {saving ? 'SAVING...' : reply.trim() ? 'âœ“ SAVE & REPLY' : 'âœ“ SAVE'}
+              {saving ? 'SAVING...' : reply.trim() ? '✓ SAVE & REPLY' : '✓ SAVE'}
             </button>
           </div>
         </div>
@@ -220,7 +220,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
   )
 }
 
-// â”€â”€ Settings Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Settings Panel ─────────────────────────────────────────
 function HelpDeskSettings() {
   const toast = useToast()
   const [config, setConfig] = useState(null)
@@ -291,7 +291,7 @@ function HelpDeskSettings() {
           actions={
             <button onClick={handleSave} disabled={saving}
               style={{ ...S.btn(), fontSize: 10, padding: '9px 20px', opacity: saving ? 0.6 : 1 }}>
-              {saving ? 'SAVING...' : 'âœ“ SAVE ALL SETTINGS'}
+              {saving ? 'SAVING...' : '✓ SAVE ALL SETTINGS'}
             </button>
           }
         />
@@ -327,7 +327,7 @@ function HelpDeskSettings() {
                 cats[i] = e.target.value
                 set('categories', cats)
               }} style={{ ...inp, flex: 1 }} />
-              <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>âœ•</button>
+              <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
             </div>
           ))}
         </div>
@@ -372,7 +372,7 @@ function HelpDeskSettings() {
                   set('priorities', ps)
                 }} />
               <span style={{ width: 16, height: 16, borderRadius: '50%', background: p.color, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }} />
-              <button onClick={() => removePriority(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>âœ•</button>
+              <button onClick={() => removePriority(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
             </div>
           ))}
         </div>
@@ -437,13 +437,13 @@ function HelpDeskSettings() {
 
       <button onClick={handleSave} disabled={saving}
         style={{ ...S.btn(), fontSize: 11, padding: '12px 28px', opacity: saving ? 0.6 : 1, marginBottom: 40 }}>
-        {saving ? 'SAVING...' : 'âœ“ SAVE ALL SETTINGS'}
+        {saving ? 'SAVING...' : '✓ SAVE ALL SETTINGS'}
       </button>
     </div>
   )
 }
 
-// â”€â”€ Main Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main Panel ─────────────────────────────────────────────
 export default function HelpDeskPanel() {
   const toast = useToast()
   const { confirm } = useDialog()
@@ -493,7 +493,7 @@ export default function HelpDeskPanel() {
   useEffect(() => { load(1); loadStats() }, [fStatus, fPriority])
   useEffect(() => { if (!search) load(1) }, [search])
 
-  // â”€â”€ Realtime sync (mount once, use refs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Realtime sync (mount once, use refs) ────────────────────
   useEffect(() => {
     const sb = getSupabase()
     if (!sb) return
@@ -544,12 +544,12 @@ export default function HelpDeskPanel() {
     try {
       const res = await api.put(`/helpdesk/admin/tickets/${tid(ticket)}`, { status })
       setTickets(t => t.map(x => tid(x) === tid(ticket) ? res.data : x))
-      toast.success(`${tkid(ticket)} â†’ ${status}`, { title: 'Updated' })
+      toast.success(`${tkid(ticket)} → ${status}`, { title: 'Updated' })
     } catch (e) { toast.error(e.response?.data?.error || 'Update failed') }
   }
 
   const ago = d => {
-    if (!d) return 'â€”'
+    if (!d) return '—'
     const s = Math.floor((Date.now() - new Date(d)) / 1000)
     if (s < 60) return `${s}s ago`
     if (s < 3600) return `${Math.floor(s / 60)}m ago`
@@ -569,7 +569,7 @@ export default function HelpDeskPanel() {
     <div>
       <div style={{ marginBottom: 16 }}>
         <button onClick={() => setTab('tickets')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--cyan)', background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}>
-          â† BACK TO TICKETS
+          ← BACK TO TICKETS
         </button>
       </div>
       <HelpDeskSettings />
@@ -588,13 +588,13 @@ export default function HelpDeskPanel() {
               style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px',
                 background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)',
                 cursor: 'pointer', borderRadius: 6 }}>
-              âš™ SETTINGS
+              ⚙ SETTINGS
             </button>
             <button onClick={() => { load(1); loadStats() }}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px',
                 background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)',
                 cursor: 'pointer', borderRadius: 6 }}>
-              â†» REFRESH
+              ↻ REFRESH
             </button>
           </div>
         }
@@ -606,7 +606,7 @@ export default function HelpDeskPanel() {
             <div key={s.label} style={{ background: 'var(--bg2)', border: '1px solid var(--border)',
               borderTop: `2px solid ${s.color}`, borderRadius: 8, padding: '10px 16px', minWidth: 100 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value ?? 'â€”'}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value ?? '—'}</div>
             </div>
           ))}
         </div>
@@ -624,10 +624,10 @@ export default function HelpDeskPanel() {
               onKeyDown={e => e.key === 'Enter' && load(1)}
               placeholder="Search by name, email, subject, ID..."
               style={{ ...S.input, fontSize: 12, padding: '9px 12px 9px 30px', width: '100%', boxSizing: 'border-box' }} />
-            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, opacity: 0.4 }}>ðŸ”</span>
+            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, opacity: 0.4 }}>🔍</span>
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8,
               top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none',
-              color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>âœ•</button>}
+              color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>✕</button>}
           </div>
           <div style={{ display: 'flex', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
             {[['all', 'All'], ['open', 'Open'], ['in-progress', 'Active'], ['pending', 'Pending'], ['resolved', 'Resolved'], ['closed', 'Closed']].map(([v, l]) => (
@@ -652,7 +652,7 @@ export default function HelpDeskPanel() {
             {(fStatus !== 'all' || fPriority !== 'all' || search) && (
               <button onClick={() => { setFStatus('all'); setFPriority('all'); setSearch('') }}
                 style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
-                Clear filters â†’
+                Clear filters →
               </button>
             )}
           </div>
@@ -670,18 +670,18 @@ export default function HelpDeskPanel() {
                   <StatusBadge status={t.status} />
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span>ðŸ‘¤ {t.name}</span>
+                  <span>👤 {t.name}</span>
                   <span style={{ color: 'var(--cyan)' }}>{t.email}</span>
-                  <span style={{ textTransform: 'capitalize' }}>ðŸ“‚ {t.category}</span>
-                  <span>ðŸ•’ {ago(tcat(t))}</span>
-                  {t.responded_by && <span style={{ color: 'var(--green)' }}>âœ“ {t.responded_by}</span>}
-                  <span style={{ color: 'var(--muted)' }}>ðŸ’¬ {t.message_count || 0}</span>
+                  <span style={{ textTransform: 'capitalize' }}>📂 {t.category}</span>
+                  <span>🕒 {ago(tcat(t))}</span>
+                  {t.responded_by && <span style={{ color: 'var(--green)' }}>✓ {t.responded_by}</span>}
+                  <span style={{ color: 'var(--muted)' }}>💬 {t.message_count || 0}</span>
                 </div>
                 {t.internal_note && (
                   <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ffd700',
                     background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)',
                     padding: '3px 10px', borderRadius: 4, display: 'inline-block' }}>
-                    ðŸ“ {t.internal_note}
+                    📝 {t.internal_note}
                   </div>
                 )}
               </div>
@@ -713,14 +713,14 @@ export default function HelpDeskPanel() {
             <button onClick={() => load(page - 1)} disabled={page <= 1}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent',
                 border: '1px solid var(--border)', color: page <= 1 ? 'var(--muted)' : 'var(--text)',
-                cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>â† PREV</button>
+                cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>← PREV</button>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: '7px 14px' }}>
               Page {page} of {pages}
             </span>
             <button onClick={() => load(page + 1)} disabled={page >= pages}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent',
                 border: '1px solid var(--border)', color: page >= pages ? 'var(--muted)' : 'var(--text)',
-                cursor: page >= pages ? 'not-allowed' : 'pointer' }}>NEXT â†’</button>
+                cursor: page >= pages ? 'not-allowed' : 'pointer' }}>NEXT →</button>
           </div>
         )}
       </>)}

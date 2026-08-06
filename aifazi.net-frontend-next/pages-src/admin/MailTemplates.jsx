@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import api from '@/lib/api'
 
-/* â”€â”€ design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── design tokens ─────────────────────────────────────────────────────────── */
 const C = {
   bg:'var(--bg)', bg2:'var(--bg2)', bg3:'var(--bg3)',
   border:'var(--border)', text:'var(--text)', muted:'var(--muted)',
@@ -12,46 +12,46 @@ const C = {
   ui:"'Inter','Segoe UI',system-ui,sans-serif",
 }
 
-/* â”€â”€ All purposes the system can send emails for â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── All purposes the system can send emails for ────────────────────────────── */
 const PURPOSES = [
-  { id:'account_activation', label:'Account Activation',    icon:'âœ…', group:'Auth',    desc:'Sent when a new user registers and needs to verify their email address.',        vars:['{{site_name}}','{{username}}','{{activation_link}}','{{expires_in}}'] },
-  { id:'password_reset',     label:'Password Reset',         icon:'ðŸ”‘', group:'Auth',    desc:'Sent when a user requests a password reset link.',                              vars:['{{site_name}}','{{username}}','{{reset_link}}','{{expires_in}}'] },
-  { id:'2fa_code',           label:'2FA Verification Code',  icon:'ðŸ”', group:'Auth',    desc:'Sent when a user logs in with 2FA enabled.',                                    vars:['{{site_name}}','{{username}}','{{code}}','{{expires_in}}'] },
-  { id:'login_alert',        label:'Admin Login Alert',      icon:'ðŸš¨', group:'Auth',    desc:'Sent to admin email when a new admin session is started.',                      vars:['{{site_name}}','{{admin_email}}','{{ip}}','{{time}}','{{browser}}'] },
-  { id:'mail_test',          label:'Mail Test',              icon:'ðŸ§ª', group:'System',  desc:'Sent when staff tests the configured mail provider.', vars:['{{site_name}}','{{email}}'] },
-  { id:'welcome',            label:'Welcome Email',          icon:'ðŸ‘‹', group:'Users',   desc:'Sent after a user activates their account.',                                    vars:['{{site_name}}','{{username}}','{{site_url}}'] },
-  { id:'staff_invite',       label:'Staff Invitation',       icon:'ðŸ§‘â€ðŸ’¼', group:'Users',  desc:'Sent when an admin creates a new staff account.',                               vars:['{{site_name}}','{{username}}','{{email}}','{{password}}','{{role}}','{{login_url}}'] },
-  { id:'helpdesk_account_created', label:'HelpDesk Account Created', icon:'ðŸ‘¤', group:'Users', desc:'Sent when HelpDesk auto-creates a forum account for a new ticket submitter.', vars:['{{site_name}}','{{username}}','{{password}}','{{login_url}}'] },
-  { id:'admin_user_message', label:'Admin Message To User', icon:'ðŸ“¨', group:'Users', desc:'Sent when staff sends a direct email to a user from admin tools.', vars:['{{site_name}}','{{username}}','{{subject}}','{{message}}'] },
-  { id:'password_reset_admin', label:'Admin Password Reset', icon:'ðŸ”‘', group:'Auth', desc:'Sent when staff queues a password reset email for a user.', vars:['{{site_name}}','{{username}}','{{login_url}}'] },
-  { id:'discord_welcome',    label:'Discord Welcome',       icon:'ðŸŽ®', group:'Users', desc:'Sent after a Discord account is linked or creates a forum account.', vars:['{{site_name}}','{{username}}','{{discord_username}}','{{profile_url}}','{{frontend_url}}'] },
-  { id:'contact_reply',      label:'Contact Form Reply',     icon:'ðŸ’¬', group:'Support', desc:'Sent when an admin replies to a contact form submission.',                      vars:['{{site_name}}','{{name}}','{{reply_message}}','{{original_message}}'] },
-  { id:'contact_confirm',    label:'Contact Confirmation',   icon:'ðŸ“©', group:'Support', desc:'Sent when a visitor submits the contact form.', vars:['{{site_name}}','{{name}}','{{subject}}','{{message}}'] },
-  { id:'ticket_confirmation',label:'Ticket Confirmation',     icon:'ðŸŽ«', group:'Support', desc:'Sent automatically to the guest when they submit a Help Desk ticket. Includes ticket ID, subject, priority, and a tracking link.',  vars:['{{site_name}}','{{name}}','{{ticket_id}}','{{subject}}','{{category}}','{{priority}}','{{description}}','{{track_url}}'] },
-  { id:'ticket_reply',       label:'Ticket Reply',            icon:'â†©ï¸', group:'Support', desc:'Sent when staff replies to a HelpDesk ticket.', vars:['{{site_name}}','{{ticket_id}}','{{subject}}','{{staff_name}}','{{reply_message}}','{{track_url}}'] },
-  { id:'newsletter_welcome', label:'Newsletter Welcome',     icon:'ðŸ“§', group:'Users',   desc:'Sent when someone subscribes to the newsletter.',                               vars:['{{site_name}}','{{email}}','{{unsubscribe_link}}'] },
-  { id:'newsletter_broadcast', label:'Newsletter Broadcast Send', icon:'ðŸ“¢', group:'Marketing', desc:'Sent to newsletter subscribers from the broadcast composer.', vars:['{{site_name}}','{{subject}}','{{body}}','{{unsubscribe_link}}'] },
-  { id:'newsletter_post',    label:'New Blog Post Newsletter', icon:'ðŸ“°', group:'Marketing', desc:'Sent when a scheduled/published blog post is emailed to subscribers.', vars:['{{site_name}}','{{post_title}}','{{excerpt}}','{{post_url}}','{{unsubscribe_link}}'] },
-  { id:'forum_reply',        label:'Forum Reply Notification',icon:'ðŸ’¡',group:'Forum',   desc:'Sent when someone replies to a thread the user is subscribed to.',              vars:['{{site_name}}','{{username}}','{{thread_title}}','{{reply_preview}}','{{thread_url}}'] },
-  { id:'forum_mention',      label:'Forum Mention',          icon:'ðŸ“£', group:'Forum',   desc:"Sent when a user is @mentioned in a forum thread.",                             vars:['{{site_name}}','{{username}}','{{thread_title}}','{{mention_preview}}','{{thread_url}}'] },
-  { id:'chat_message',       label:'Chat Message Notification', icon:'ðŸ’¬', group:'Chat', desc:'Sent when a user receives a chat message notification or mention.', vars:['{{site_name}}','{{username}}','{{sender_name}}','{{room_name}}','{{message_preview}}','{{chat_url}}'] },
-  { id:'chat_invite',        label:'Chat Room Invite',        icon:'âž•', group:'Chat', desc:'Sent when staff invites a user to a chat room.', vars:['{{site_name}}','{{username}}','{{sender_name}}','{{room_name}}','{{chat_url}}'] },
-  { id:'application_submitted', label:'Application Submitted', icon:'ðŸ“', group:'Applications', desc:'Sent when a logged-in user submits a universal application form.',          vars:['{{site_name}}','{{username}}','{{email}}','{{form_title}}','{{form_slug}}','{{submission_id}}','{{status}}','{{answers_table}}'] },
-  { id:'application_approved',  label:'Application Approved',  icon:'âœ…', group:'Applications', desc:'Sent when staff approves a universal application form submission.',        vars:['{{site_name}}','{{username}}','{{email}}','{{form_title}}','{{form_slug}}','{{submission_id}}','{{status}}','{{reviewer_note}}','{{answers_table}}'] },
-  { id:'application_denied',    label:'Application Denied',    icon:'â›”', group:'Applications', desc:'Sent when staff denies a universal application form submission.',          vars:['{{site_name}}','{{username}}','{{email}}','{{form_title}}','{{form_slug}}','{{submission_id}}','{{status}}','{{reviewer_note}}','{{answers_table}}'] },
-  { id:'application_reset',     label:'Application Reset/Pending', icon:'ðŸ”„', group:'Applications', desc:'Sent when staff moves an application back to pending/review.', vars:['{{site_name}}','{{username}}','{{email}}','{{form_title}}','{{form_slug}}','{{submission_id}}','{{status}}','{{reviewer_note}}','{{answers_table}}'] },
-  { id:'application_archived',  label:'Application Archived',  icon:'ðŸ—„ï¸', group:'Applications', desc:'Sent when staff archives an application form submission.', vars:['{{site_name}}','{{username}}','{{email}}','{{form_title}}','{{form_slug}}','{{submission_id}}','{{status}}','{{reviewer_note}}','{{answers_table}}'] },
-  { id:'fivem_applied',      label:'FiveM Application Applied', icon:'ðŸ“‹', group:'FiveM', desc:'Sent when a FiveM whitelist application is received.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{status_url}}'] },
-  { id:'fivem_approved',     label:'FiveM Application Approved', icon:'âœ…', group:'FiveM', desc:'Sent when a FiveM whitelist application is approved.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{status_url}}'] },
-  { id:'fivem_denied',       label:'FiveM Application Denied', icon:'â›”', group:'FiveM', desc:'Sent when a FiveM whitelist application is denied.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{status_url}}'] },
-  { id:'fivem_priority',     label:'FiveM Priority Updated', icon:'â­', group:'FiveM', desc:'Sent when a player queue priority changes.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{tier}}','{{level}}','{{expires_at}}','{{status_url}}'] },
-  { id:'fivem_banned',       label:'FiveM Ban Notice', icon:'ðŸš«', group:'FiveM', desc:'Sent when a player is banned from the FiveM server.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{expires_at}}','{{status_url}}'] },
-  { id:'fivem_unbanned',     label:'FiveM Unban Notice', icon:'âœ…', group:'FiveM', desc:'Sent when a FiveM ban is lifted.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{status_url}}'] },
-  { id:'fivem_reset',        label:'FiveM Application Reset', icon:'ðŸ”„', group:'FiveM', desc:'Sent when a FiveM application/status is reset.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{status_url}}'] },
-  { id:'broadcast',          label:'Newsletter Broadcast',   icon:'ðŸ“¢', group:'Marketing',desc:'Manual broadcast template â€” used for newsletters sent from the admin panel.', vars:['{{site_name}}','{{subject}}','{{body}}','{{unsubscribe_link}}'] },
-  { id:'monitor_alert',      label:'Service Down Alert',    icon:'âš ï¸', group:'Monitoring', desc:'Sent when a monitored service (frontend/API/DB/email/FiveM) is reported down.', vars:['{{site_name}}','{{service}}','{{detail}}','{{checked_at}}','{{status_url}}'] },
-  { id:'error_alert',        label:'Error Alert',           icon:'ðŸš¨', group:'Monitoring', desc:'Sent immediately when a new backend/frontend error is first captured.', vars:['{{site_name}}','{{error_type}}','{{message}}','{{source}}','{{endpoint}}'] },
-  { id:'error_digest',       label:'Error Digest',          icon:'ðŸ“‹', group:'Monitoring', desc:'Daily summary of all errors captured in the last 24 hours.', vars:['{{site_name}}','{{error_count}}','{{errors_html}}'] },
+  { id:'account_activation', label:'Account Activation',    icon:'✅', group:'Auth',    desc:'Sent when a new user registers and needs to verify their email address.',        vars:['{{site_name}}','{{username}}','{{activation_link}}','{{expires_in}}'] },
+  { id:'password_reset',     label:'Password Reset',         icon:'🔑', group:'Auth',    desc:'Sent when a user requests a password reset link.',                              vars:['{{site_name}}','{{username}}','{{reset_link}}','{{expires_in}}'] },
+  { id:'2fa_code',           label:'2FA Verification Code',  icon:'🔐', group:'Auth',    desc:'Sent when a user logs in with 2FA enabled.',                                    vars:['{{site_name}}','{{username}}','{{code}}','{{expires_in}}'] },
+  { id:'login_alert',        label:'Admin Login Alert',      icon:'🚨', group:'Auth',    desc:'Sent to admin email when a new admin session is started.',                      vars:['{{site_name}}','{{admin_email}}','{{ip}}','{{time}}','{{browser}}'] },
+  { id:'mail_test',          label:'Mail Test',              icon:'🧪', group:'System',  desc:'Sent when staff tests the configured mail provider.', vars:['{{site_name}}','{{email}}'] },
+  { id:'welcome',            label:'Welcome Email',          icon:'👋', group:'Users',   desc:'Sent after a user activates their account.',                                    vars:['{{site_name}}','{{username}}','{{site_url}}'] },
+  { id:'staff_invite',       label:'Staff Invitation',       icon:'🧑‍💼', group:'Users',  desc:'Sent when an admin creates a new staff account.',                               vars:['{{site_name}}','{{username}}','{{email}}','{{password}}','{{role}}','{{login_url}}'] },
+  { id:'helpdesk_account_created', label:'HelpDesk Account Created', icon:'👤', group:'Users', desc:'Sent when HelpDesk auto-creates a forum account for a new ticket submitter.', vars:['{{site_name}}','{{username}}','{{password}}','{{login_url}}'] },
+  { id:'admin_user_message', label:'Admin Message To User', icon:'📨', group:'Users', desc:'Sent when staff sends a direct email to a user from admin tools.', vars:['{{site_name}}','{{username}}','{{subject}}','{{message}}'] },
+  { id:'password_reset_admin', label:'Admin Password Reset', icon:'🔑', group:'Auth', desc:'Sent when staff queues a password reset email for a user.', vars:['{{site_name}}','{{username}}','{{login_url}}'] },
+  { id:'discord_welcome',    label:'Discord Welcome',       icon:'🎮', group:'Users', desc:'Sent after a Discord account is linked or creates a forum account.', vars:['{{site_name}}','{{username}}','{{discord_username}}','{{profile_url}}','{{frontend_url}}'] },
+  { id:'contact_reply',      label:'Contact Form Reply',     icon:'💬', group:'Support', desc:'Sent when an admin replies to a contact form submission.',                      vars:['{{site_name}}','{{name}}','{{reply_message}}','{{original_message}}'] },
+  { id:'contact_confirm',    label:'Contact Confirmation',   icon:'📩', group:'Support', desc:'Sent when a visitor submits the contact form.', vars:['{{site_name}}','{{name}}','{{subject}}','{{message}}'] },
+  { id:'ticket_confirmation',label:'Ticket Confirmation',     icon:'🎫', group:'Support', desc:'Sent automatically to the guest when they submit a Help Desk ticket. Includes ticket ID, subject, priority, and a tracking link.',  vars:['{{site_name}}','{{name}}','{{ticket_id}}','{{subject}}','{{category}}','{{priority}}','{{description}}','{{track_url}}'] },
+  { id:'ticket_reply',       label:'Ticket Reply',            icon:'↩️', group:'Support', desc:'Sent when staff replies to a HelpDesk ticket.', vars:['{{site_name}}','{{ticket_id}}','{{subject}}','{{staff_name}}','{{reply_message}}','{{track_url}}'] },
+  { id:'newsletter_welcome', label:'Newsletter Welcome',     icon:'📧', group:'Users',   desc:'Sent when someone subscribes to the newsletter.',                               vars:['{{site_name}}','{{email}}','{{unsubscribe_link}}'] },
+  { id:'newsletter_broadcast', label:'Newsletter Broadcast Send', icon:'📢', group:'Marketing', desc:'Sent to newsletter subscribers from the broadcast composer.', vars:['{{site_name}}','{{subject}}','{{body}}','{{unsubscribe_link}}'] },
+  { id:'newsletter_post',    label:'New Blog Post Newsletter', icon:'📰', group:'Marketing', desc:'Sent when a scheduled/published blog post is emailed to subscribers.', vars:['{{site_name}}','{{post_title}}','{{excerpt}}','{{post_url}}','{{unsubscribe_link}}'] },
+  { id:'forum_reply',        label:'Forum Reply Notification',icon:'💡',group:'Forum',   desc:'Sent when someone replies to a thread the user is subscribed to.',              vars:['{{site_name}}','{{username}}','{{thread_title}}','{{reply_preview}}','{{thread_url}}'] },
+  { id:'forum_mention',      label:'Forum Mention',          icon:'📣', group:'Forum',   desc:"Sent when a user is @mentioned in a forum thread.",                             vars:['{{site_name}}','{{username}}','{{thread_title}}','{{mention_preview}}','{{thread_url}}'] },
+  { id:'chat_message',       label:'Chat Message Notification', icon:'💬', group:'Chat', desc:'Sent when a user receives a chat message notification or mention.', vars:['{{site_name}}','{{username}}','{{sender_name}}','{{room_name}}','{{message_preview}}','{{chat_url}}'] },
+  { id:'chat_invite',        label:'Chat Room Invite',        icon:'➕', group:'Chat', desc:'Sent when staff invites a user to a chat room.', vars:['{{site_name}}','{{username}}','{{sender_name}}','{{room_name}}','{{chat_url}}'] },
+  { id:'application_submitted', label:'Application Submitted', icon:'📝', group:'Applications', desc:'Sent when a logged-in user submits a universal application form.',          vars:['{{site_name}}','{{username}}','{{email}}','{{form_title}}','{{form_slug}}','{{submission_id}}','{{status}}','{{answers_table}}'] },
+  { id:'application_approved',  label:'Application Approved',  icon:'✅', group:'Applications', desc:'Sent when staff approves a universal application form submission.',        vars:['{{site_name}}','{{username}}','{{email}}','{{form_title}}','{{form_slug}}','{{submission_id}}','{{status}}','{{reviewer_note}}','{{answers_table}}'] },
+  { id:'application_denied',    label:'Application Denied',    icon:'⛔', group:'Applications', desc:'Sent when staff denies a universal application form submission.',          vars:['{{site_name}}','{{username}}','{{email}}','{{form_title}}','{{form_slug}}','{{submission_id}}','{{status}}','{{reviewer_note}}','{{answers_table}}'] },
+  { id:'application_reset',     label:'Application Reset/Pending', icon:'🔄', group:'Applications', desc:'Sent when staff moves an application back to pending/review.', vars:['{{site_name}}','{{username}}','{{email}}','{{form_title}}','{{form_slug}}','{{submission_id}}','{{status}}','{{reviewer_note}}','{{answers_table}}'] },
+  { id:'application_archived',  label:'Application Archived',  icon:'🗄️', group:'Applications', desc:'Sent when staff archives an application form submission.', vars:['{{site_name}}','{{username}}','{{email}}','{{form_title}}','{{form_slug}}','{{submission_id}}','{{status}}','{{reviewer_note}}','{{answers_table}}'] },
+  { id:'fivem_applied',      label:'FiveM Application Applied', icon:'📋', group:'FiveM', desc:'Sent when a FiveM whitelist application is received.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{status_url}}'] },
+  { id:'fivem_approved',     label:'FiveM Application Approved', icon:'✅', group:'FiveM', desc:'Sent when a FiveM whitelist application is approved.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{status_url}}'] },
+  { id:'fivem_denied',       label:'FiveM Application Denied', icon:'⛔', group:'FiveM', desc:'Sent when a FiveM whitelist application is denied.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{status_url}}'] },
+  { id:'fivem_priority',     label:'FiveM Priority Updated', icon:'⭐', group:'FiveM', desc:'Sent when a player queue priority changes.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{tier}}','{{level}}','{{expires_at}}','{{status_url}}'] },
+  { id:'fivem_banned',       label:'FiveM Ban Notice', icon:'🚫', group:'FiveM', desc:'Sent when a player is banned from the FiveM server.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{expires_at}}','{{status_url}}'] },
+  { id:'fivem_unbanned',     label:'FiveM Unban Notice', icon:'✅', group:'FiveM', desc:'Sent when a FiveM ban is lifted.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{status_url}}'] },
+  { id:'fivem_reset',        label:'FiveM Application Reset', icon:'🔄', group:'FiveM', desc:'Sent when a FiveM application/status is reset.', vars:['{{site_name}}','{{name}}','{{character_name}}','{{note}}','{{status_url}}'] },
+  { id:'broadcast',          label:'Newsletter Broadcast',   icon:'📢', group:'Marketing',desc:'Manual broadcast template — used for newsletters sent from the admin panel.', vars:['{{site_name}}','{{subject}}','{{body}}','{{unsubscribe_link}}'] },
+  { id:'monitor_alert',      label:'Service Down Alert',    icon:'⚠️', group:'Monitoring', desc:'Sent when a monitored service (frontend/API/DB/email/FiveM) is reported down.', vars:['{{site_name}}','{{service}}','{{detail}}','{{checked_at}}','{{status_url}}'] },
+  { id:'error_alert',        label:'Error Alert',           icon:'🚨', group:'Monitoring', desc:'Sent immediately when a new backend/frontend error is first captured.', vars:['{{site_name}}','{{error_type}}','{{message}}','{{source}}','{{endpoint}}'] },
+  { id:'error_digest',       label:'Error Digest',          icon:'📋', group:'Monitoring', desc:'Daily summary of all errors captured in the last 24 hours.', vars:['{{site_name}}','{{error_count}}','{{errors_html}}'] },
 ]
 
 const GROUPS = [...new Set(PURPOSES.map(p => p.group))]
@@ -59,7 +59,7 @@ const GROUPS = [...new Set(PURPOSES.map(p => p.group))]
 const THEME_VARS = ['{{theme_bg}}','{{theme_bg2}}','{{theme_bg3}}','{{theme_primary}}','{{theme_secondary}}','{{theme_orange}}','{{theme_text}}','{{theme_muted}}','{{theme_border}}']
 PURPOSES.forEach(p => { p.vars = [...p.vars, ...THEME_VARS] })
 
-/* â”€â”€ Default template HTML per purpose â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Default template HTML per purpose ─────────────────────────────────────── */
 // Theme-aware: uses {{theme_bg}}, {{theme_primary}} ... placeholders that the
 // backend injects from site_config.globalTheme, so previews match sent emails.
 const _themeShell = (title, body, btnLabel, btnUrl, icon='', footnote='') => `
@@ -88,14 +88,14 @@ const DEFAULT_TEMPLATES = {
     html: _themeShell('Verify your email',
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, welcome to <strong>{{site_name}}</strong>. Please confirm your email address to activate your account.</p>`,
       'VERIFY EMAIL', '{{activation_link}}',
-      'âœ…', `This link expires in {{expires_in}}. If you didn't create this account, you can safely ignore this email.`),
+      '✅', `This link expires in {{expires_in}}. If you didn't create this account, you can safely ignore this email.`),
   },
   password_reset: {
     subject: '[{{site_name}}] Reset your password',
     html: _themeShell('Reset your password',
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, we received a request to reset your password for <strong>{{site_name}}</strong>. Click below to choose a new one.</p>`,
       'RESET PASSWORD', '{{reset_link}}',
-      'ðŸ”‘', `This link expires in {{expires_in}}. If you didn't request this, you can safely ignore this email.`),
+      '🔑', `This link expires in {{expires_in}}. If you didn't request this, you can safely ignore this email.`),
   },
   ticket_confirmation: {
     subject: '[{{site_name}}] Ticket #{{ticket_id}} received',
@@ -103,88 +103,88 @@ const DEFAULT_TEMPLATES = {
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{name}}</strong>, your support request has been logged and our team will get back to you shortly.</p>
        <div style="background:{{theme_bg3}};border:1px solid {{theme_border}};border-radius:8px;padding:16px 18px;margin:0 0 16px;font-size:13px;">
          <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">TICKET DETAILS</div>
-         <div style="color:{{theme_text}};margin:2px 0;"><strong>#</strong>{{ticket_id}} â€” {{subject}}</div>
-         <div style="color:{{theme_text}};margin:2px 0;">Category: {{category}} Â· Priority: {{priority}}</div>
+         <div style="color:{{theme_text}};margin:2px 0;"><strong>#</strong>{{ticket_id}} — {{subject}}</div>
+         <div style="color:{{theme_text}};margin:2px 0;">Category: {{category}} · Priority: {{priority}}</div>
          <div style="color:{{theme_muted}};margin:6px 0 0;">{{description}}</div>
        </div>`,
-      'TRACK YOUR TICKET', '{{track_url}}', 'ðŸŽ«'),
+      'TRACK YOUR TICKET', '{{track_url}}', '🎫'),
   },
   application_submitted: {
     subject: '[{{site_name}}] {{form_title}} application received',
     html: _themeShell('Application received',
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, your application has been submitted and is now waiting for staff review.</p>
        <div style="background:{{theme_bg3}};border:1px solid {{theme_border}};border-radius:8px;padding:16px 18px;margin:0 0 16px;font-size:13px;">
-         <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">STATUS: {{status}} Â· #{{submission_id}}</div>
+         <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">STATUS: {{status}} · #{{submission_id}}</div>
        </div>
        {{answers_table}}`,
-      '', '', 'ðŸ“'),
+      '', '', '📝'),
   },
   application_approved: {
     subject: '[{{site_name}}] {{form_title}} application approved',
     html: _themeShell('Application approved',
-      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, congratulations â€” your application has been approved.</p>
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, congratulations — your application has been approved.</p>
        <div style="background:{{theme_bg3}};border:1px solid {{theme_border}};border-radius:8px;padding:16px 18px;margin:0 0 16px;font-size:13px;">
-         <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">STATUS: {{status}} Â· #{{submission_id}}</div>
+         <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">STATUS: {{status}} · #{{submission_id}}</div>
          <div style="color:{{theme_text}};margin-top:6px;">Note: {{reviewer_note}}</div>
        </div>
        {{answers_table}}`,
-      '', '', 'âœ…'),
+      '', '', '✅'),
   },
   application_denied: {
     subject: '[{{site_name}}] {{form_title}} application update',
     html: _themeShell('Application update',
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, staff reviewed your application and marked it as <strong>{{status}}</strong>.</p>
        <div style="background:{{theme_bg3}};border:1px solid {{theme_border}};border-radius:8px;padding:16px 18px;margin:0 0 16px;font-size:13px;">
-         <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">STATUS: {{status}} Â· #{{submission_id}}</div>
+         <div style="color:{{theme_muted}};font-size:11px;letter-spacing:2px;margin-bottom:8px;">STATUS: {{status}} · #{{submission_id}}</div>
          <div style="color:{{theme_text}};margin-top:6px;">Note: {{reviewer_note}}</div>
        </div>
        {{answers_table}}`,
-      '', '', 'â›”'),
+      '', '', '⛔'),
   },
   ticket_reply: {
     subject: '[{{site_name}}] New reply on ticket #{{ticket_id}}',
     html: _themeShell('New reply on your ticket',
-      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;"><strong>{{staff_name}}</strong> replied to <strong>#{{ticket_id}}</strong> â€” {{subject}}:</p>
+      `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;"><strong>{{staff_name}}</strong> replied to <strong>#{{ticket_id}}</strong> — {{subject}}:</p>
        <blockquote style="margin:0 0 16px;padding:14px 18px;background:{{theme_bg3}};border-left:3px solid {{theme_primary}};color:{{theme_text}};font-size:13px;line-height:1.7;">{{reply_message}}</blockquote>`,
-      'VIEW TICKET', '{{track_url}}', 'â†©ï¸'),
+      'VIEW TICKET', '{{track_url}}', '↩️'),
   },
   chat_message: {
     subject: '[{{site_name}}] New chat message in {{room_name}}',
     html: _themeShell('New chat message',
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;"><strong>{{sender_name}}</strong> sent a message in <strong>{{room_name}}</strong>:</p>
        <blockquote style="margin:0 0 16px;padding:14px 18px;background:{{theme_bg3}};border-left:3px solid {{theme_primary}};color:{{theme_text}};font-size:13px;line-height:1.7;">{{message_preview}}</blockquote>`,
-      'OPEN CHAT', '{{chat_url}}', 'ðŸ’¬'),
+      'OPEN CHAT', '{{chat_url}}', '💬'),
   },
   chat_invite: {
     subject: '[{{site_name}}] You were invited to {{room_name}}',
     html: _themeShell("You're invited",
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, <strong>{{sender_name}}</strong> invited you to join <strong>{{room_name}}</strong>.</p>`,
-      'JOIN THE CHAT', '{{chat_url}}', 'âž•'),
+      'JOIN THE CHAT', '{{chat_url}}', '➕'),
   },
   admin_user_message: {
     subject: '[{{site_name}}] {{subject}}',
     html: _themeShell('Message from the team',
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>,</p>
        <div style="color:{{theme_text}};font-size:14px;line-height:1.8;">{{message}}</div>`,
-      '', '', 'ðŸ“¨'),
+      '', '', '📨'),
   },
   password_reset_admin: {
     subject: '[{{site_name}}] Password reset requested',
     html: _themeShell('Password reset requested',
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{username}}</strong>, an administrator started a password reset for your account. Open the login page and use <strong>Forgot Password</strong> to complete the reset.</p>`,
-      'OPEN LOGIN', '{{login_url}}', 'ðŸ”‘'),
+      'OPEN LOGIN', '{{login_url}}', '🔑'),
   },
   discord_welcome: {
-    subject: '[{{site_name}}] Welcome â€” your account is ready',
+    subject: '[{{site_name}}] Welcome — your account is ready',
     html: _themeShell("You're all set!",
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Your Discord account <strong>{{discord_username}}</strong> is linked and your account <strong>{{username}}</strong> is ready. Head to your profile to continue.</p>`,
-      'GO TO PROFILE', '{{profile_url}}', 'ðŸŽ®'),
+      'GO TO PROFILE', '{{profile_url}}', '🎮'),
   },
   mail_test: {
     subject: '[{{site_name}}] Test email',
     html: _themeShell('Mail test',
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0;">This is a test email to <strong>{{email}}</strong>. Your email provider is configured and working correctly.</p>`,
-      '', '', 'ðŸ§ª'),
+      '', '', '🧪'),
   },
   contact_confirm: {
     subject: 'Thanks for contacting {{site_name}}',
@@ -192,15 +192,15 @@ const DEFAULT_TEMPLATES = {
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{name}}</strong>, we received your message:</p>
        <blockquote style="margin:0 0 16px;padding:14px 18px;background:{{theme_bg3}};border-left:3px solid {{theme_primary}};color:{{theme_text}};font-size:13px;line-height:1.7;">{{message}}</blockquote>
        <p style="color:{{theme_muted}};font-size:13px;">We'll get back to you as soon as possible.</p>`,
-      '', '', 'ðŸ“©'),
+      '', '', '📩'),
   },
   contact_reply: {
-    subject: 'Re: {{subject}} â€” {{site_name}}',
+    subject: 'Re: {{subject}} — {{site_name}}',
     html: _themeShell('A reply from our team',
       `<p style="color:{{theme_text}};font-size:14px;line-height:1.75;margin:0 0 16px;">Hi <strong>{{name}}</strong>,</p>
        <blockquote style="margin:0 0 16px;padding:14px 18px;background:{{theme_bg3}};border-left:3px solid {{theme_primary}};color:{{theme_text}};font-size:13px;line-height:1.7;">{{reply_message}}</blockquote>
-       <p style="color:{{theme_muted}};font-size:13px;">â€” The {{site_name}} team</p>`,
-      '', '', 'ðŸ’¬'),
+       <p style="color:{{theme_muted}};font-size:13px;">— The {{site_name}} team</p>`,
+      '', '', '💬'),
   },
 }
 
@@ -216,7 +216,7 @@ function VarChip({ v, onClick }) {
 
 function TemplateEditor({ purpose, template, onSave, onReset }) {
   const [subject, setSubject] = useState(template?.subject || DEFAULT_TEMPLATES[purpose.id]?.subject || `[{{site_name}}] ${purpose.label}`)
-  const [html,    setHtml]    = useState(template?.html    || DEFAULT_TEMPLATES[purpose.id]?.html    || `<p>Hello {{username}},</p>\n<p>...</p>\n<p>â€” {{site_name}}</p>`)
+  const [html,    setHtml]    = useState(template?.html    || DEFAULT_TEMPLATES[purpose.id]?.html    || `<p>Hello {{username}},</p>\n<p>...</p>\n<p>— {{site_name}}</p>`)
 const [tab,     setTab]     = useState('editor')
 const [saving,  setSaving]  = useState(false)
 const [dirty,   setDirty]   = useState(false)
@@ -245,7 +245,7 @@ const [saveError, setSaveError] = useState('')
       onSave({ subject, html })
       setDirty(false)
     } catch (e) {
-      // Do NOT report a failed save as success â€” keep the template dirty and
+      // Do NOT report a failed save as success — keep the template dirty and
       // surface the real error so the editor isn't silently lost.
       setSaveError(e?.response?.data?.detail || e?.message || 'Failed to save template')
       setDirty(true)
@@ -344,7 +344,7 @@ const [saveError, setSaveError] = useState('')
 
       {/* Available variables */}
       <div>
-        <div style={{ fontFamily:C.mono, fontSize:9, letterSpacing:2, color:C.muted, marginBottom:8 }}>AVAILABLE VARIABLES â€” click to insert at cursor</div>
+        <div style={{ fontFamily:C.mono, fontSize:9, letterSpacing:2, color:C.muted, marginBottom:8 }}>AVAILABLE VARIABLES — click to insert at cursor</div>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
           {purpose.vars.map(v => <VarChip key={v} v={v} onClick={() => insertVar(v)} />)}
         </div>
@@ -352,9 +352,9 @@ const [saveError, setSaveError] = useState('')
 
       {/* Tabs */}
       <div style={{ borderBottom:`1px solid ${C.border}`, display:'flex', gap:0 }}>
-        {tabBtn('editor',  'âœï¸ EDITOR')}
-        {tabBtn('preview', 'ðŸ‘ PREVIEW')}
-        {tabBtn('text',    'ðŸ“ PLAIN TEXT')}
+        {tabBtn('editor',  '✏️ EDITOR')}
+        {tabBtn('preview', '👁 PREVIEW')}
+        {tabBtn('text',    '📝 PLAIN TEXT')}
       </div>
 
       {/* Editor / Preview / Plain Text panes */}
@@ -371,7 +371,7 @@ const [saveError, setSaveError] = useState('')
         <div style={{ border:`1px solid ${C.border}`, borderRadius:4, overflow:'hidden' }}>
           <div style={{ padding:'8px 14px', background:C.bg2, borderBottom:`1px solid ${C.border}`,
             fontFamily:C.mono, fontSize:9, color:C.muted, letterSpacing:2 }}>
-            PREVIEW â€” variables replaced with sample data
+            PREVIEW — variables replaced with sample data
           </div>
           <iframe srcDoc={previewHtml} title="Template preview"
             style={{ width:'100%', minHeight:400, border:'none', background:'#fff' }} />
@@ -392,20 +392,20 @@ const [saveError, setSaveError] = useState('')
           background: saving ? 'rgba(34,211,238,0.1)' : C.cyan, color: saving ? C.cyan : '#000',
           border:`1px solid ${C.cyan}`, cursor: saving ? 'not-allowed' : 'pointer', borderRadius:4,
           transition:'all 0.15s',
-        }}>{saving ? 'SAVINGâ€¦' : 'ðŸ’¾ SAVE TEMPLATE'}</button>
+        }}>{saving ? 'SAVING…' : '💾 SAVE TEMPLATE'}</button>
         <button onClick={() => { onReset(); setDirty(false) }} style={{
           fontFamily:C.mono, fontSize:10, letterSpacing:2, padding:'10px 20px',
           background:'transparent', color:C.muted, border:`1px solid ${C.border}`,
           cursor:'pointer', borderRadius:4,
-        }}>â†º RESET DEFAULT</button>
+        }}>↺ RESET DEFAULT</button>
         {dirty && <span style={{ fontFamily:C.mono, fontSize:9, color:C.yellow, letterSpacing:2 }}>UNSAVED CHANGES</span>}
-        {saveError && <span style={{ fontFamily:C.mono, fontSize:9, color:'#f87171', letterSpacing:1 }}>âš  {saveError}</span>}
+        {saveError && <span style={{ fontFamily:C.mono, fontSize:9, color:'#f87171', letterSpacing:1 }}>⚠ {saveError}</span>}
       </div>
     </div>
   )
 }
 
-/* â”€â”€ Main export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Main export ─────────────────────────────────────────────────────────── */
 export default function MailTemplates() {
   const [templates, setTemplates] = useState({})    // { purpose_id: { subject, html } }
   const [selected,  setSelected]  = useState(PURPOSES[0].id)
@@ -424,13 +424,13 @@ export default function MailTemplates() {
           setTemplates(raw)
         }
       })
-      .catch(() => setTemplates({}))   // graceful fallback â€” use defaults
+      .catch(() => setTemplates({}))   // graceful fallback — use defaults
       .finally(() => setLoading(false))
   }, [])
 
   const handleSave = (purposeId, data) => {
     setTemplates(p => ({ ...p, [purposeId]: data }))
-    flash('ok', `âœ… Template for "${PURPOSES.find(p => p.id === purposeId)?.label}" saved.`)
+    flash('ok', `✅ Template for "${PURPOSES.find(p => p.id === purposeId)?.label}" saved.`)
   }
 
   const handleReset = (purposeId) => {
@@ -447,11 +447,11 @@ export default function MailTemplates() {
       <div style={{ marginBottom:24 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, fontFamily:C.mono, fontSize:9, color:C.cyan, letterSpacing:4, marginBottom:8, textTransform:'uppercase' }}>
           <span style={{ width:14, height:2, background:'linear-gradient(90deg,#22d3ee,transparent)', borderRadius:2 }} />
-          ADMIN Â· MAIL
+          ADMIN · MAIL
         </div>
         <h2 style={{ fontFamily:'var(--font-display)', fontSize:26, fontWeight:700, margin:0, color:C.text, letterSpacing:-0.5, lineHeight:1.2 }}>Mail Templates</h2>
         <div style={{ fontFamily:C.ui, fontSize:12, color:C.muted, marginTop:6 }}>
-          Customise HTML templates for every system email. Variables are highlighted â€” click to insert.
+          Customise HTML templates for every system email. Variables are highlighted — click to insert.
         </div>
       </div>
 
@@ -464,7 +464,7 @@ export default function MailTemplates() {
       )}
 
       <div style={{ display:'grid', gridTemplateColumns:'260px 1fr', gap:20, alignItems:'start' }}>
-        {/* Sidebar â€” purpose list */}
+        {/* Sidebar — purpose list */}
         <div style={{ border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden', position:'sticky', top:16 }}>
           <div style={{ padding:'12px 14px', background:C.bg2, borderBottom:`1px solid ${C.border}` }}>
             <div style={{ fontFamily:C.mono, fontSize:9, color:C.muted, letterSpacing:2, marginBottom:10 }}>FILTER BY GROUP</div>
@@ -481,7 +481,7 @@ export default function MailTemplates() {
             </div>
           </div>
           {loading ? (
-            <div style={{ padding:'32px 0', textAlign:'center', fontFamily:C.mono, fontSize:10, color:C.muted }}>LOADINGâ€¦</div>
+            <div style={{ padding:'32px 0', textAlign:'center', fontFamily:C.mono, fontSize:10, color:C.muted }}>LOADING…</div>
           ) : filteredPurposes.map(p => {
             const isCustomised = !!templates[p.id]
             const isActive     = selected === p.id

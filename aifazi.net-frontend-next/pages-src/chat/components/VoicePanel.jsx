@@ -234,7 +234,7 @@ export function VoicePanel({ room, onLeave, muted, camOff, onMute, onCam, onScre
   if (error) {
     return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, padding: 20 }}>
-        <div style={{ fontSize: 40 }}>âš ï¸</div>
+        <div style={{ fontSize: 40 }}>⚠️</div>
         <div style={{ fontFamily: T.mono, fontSize: 11, color: T.danger, textAlign: 'center' }}>{error}</div>
         {errorDetail && <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, textAlign: 'center', maxWidth: 300, lineHeight: 1.6 }}>{errorDetail}</div>}
         <button onClick={onLeave} style={{ padding: '10px 20px', border: `1px solid ${T.border}`, borderRadius: 8, background: 'rgba(255,71,87,0.1)', color: T.danger, fontFamily: T.mono, fontSize: 11, cursor: 'pointer' }}>LEAVE</button>
@@ -246,10 +246,10 @@ export function VoicePanel({ room, onLeave, muted, camOff, onMute, onCam, onScre
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: T.main }}>
       <div style={{ padding: '10px 16px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 16 }}>{room.type === 'video' ? 'ðŸ“¹' : 'ðŸ”Š'}</span>
+        <span style={{ fontSize: 16 }}>{room.type === 'video' ? '📹' : '🔊'}</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 700, color: T.text }}>{room.name}</div>
-          <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, letterSpacing: 1 }}>{typeLabel} Â· {participants.length + 1} participant{(participants.length + 1) !== 1 ? 's' : ''}</div>
+          <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, letterSpacing: 1 }}>{typeLabel} · {participants.length + 1} participant{(participants.length + 1) !== 1 ? 's' : ''}</div>
         </div>
         <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#23d160' }} />
       </div>
@@ -259,7 +259,7 @@ export function VoicePanel({ room, onLeave, muted, camOff, onMute, onCam, onScre
           <video ref={el => { if (el && el.srcObject !== screenStream) el.srcObject = screenStream }}
             autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           <div style={{ position: 'absolute', bottom: 8, left: 12, background: 'rgba(0,0,0,0.65)', borderRadius: 6, padding: '2px 10px', fontFamily: T.mono, fontSize: 9, color: '#fff', zIndex: 2 }}>
-            ðŸ–¥ Screen Share
+            🖥 Screen Share
           </div>
         </div>
       )}
@@ -303,7 +303,7 @@ export function VoicePanel({ room, onLeave, muted, camOff, onMute, onCam, onScre
               <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.isMicrophoneEnabled !== false ? '#23d160' : '#ff4757' }} />
                 {(room.type === 'video' || p.isCameraEnabled) && <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.isCameraEnabled ? '#23d160' : '#ff4757' }} />}
-                {p.isScreenShareEnabled && <span style={{ fontSize: 10, color: T.accentB }}>ðŸ–¥</span>}
+                {p.isScreenShareEnabled && <span style={{ fontSize: 10, color: T.accentB }}>🖥</span>}
               </div>
             </div>
           </div>
@@ -313,22 +313,22 @@ export function VoicePanel({ room, onLeave, muted, camOff, onMute, onCam, onScre
       <div style={{ borderTop: `1px solid ${T.border}`, padding: '10px 12px', display: 'flex', justifyContent: 'center', gap: 8, flexShrink: 0, overflowX: 'auto', flexWrap: 'wrap' }}>
         <button onClick={onMute} title={muted ? 'Unmute' : 'Mute'}
           style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: muted ? T.danger : 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {muted ? 'ðŸ”‡' : 'ðŸŽ¤'}
+          {muted ? '🔇' : '🎤'}
         </button>
         <button onClick={onCam} title={camOff ? 'Turn on camera' : 'Turn off camera'}
           style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: camOff ? T.danger : 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {camOff ? 'ðŸ“·' : 'ðŸ“¸'}
+          {camOff ? '📷' : '📸'}
         </button>
         {cameras.length > 1 && !camOff && (
           <button onClick={switchCamera} title="Switch Camera"
             style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: T.mono, fontWeight: 700, flexShrink: 0 }}>
-            â†”
+            ↔
           </button>
         )}
         {!camOff && (
           <button onClick={toggleFrontBack} title="Flip Camera"
             style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            ðŸ”„
+            🔄
           </button>
         )}
         {canScreenShare && (
@@ -336,12 +336,12 @@ export function VoicePanel({ room, onLeave, muted, camOff, onMute, onCam, onScre
             style={{ width: 40, height: 40, borderRadius: '50%', border: screenActive ? '2px solid #00ff88' : 'none',
               background: screenActive ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(255,255,255,0.1)',
               color: '#fff', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            ðŸ–¥
+            🖥
           </button>
         )}
         <button onClick={onLeave} title="Leave"
           style={{ width: 40, height: 40, borderRadius: '50%', border: 'none', background: T.danger, color: '#fff', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          âŒ
+          ❌
         </button>
       </div>
     </div>

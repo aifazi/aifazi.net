@@ -60,7 +60,7 @@ const KF = `
   @keyframes bnrExpiry     { 0%,100%{opacity:1} 50%{opacity:0.5} }
 `
 
-/* â”€â”€ Expiry countdown helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Expiry countdown helper ─────────────────────────────────────────────── */
 function useExpiryCountdown(expiresAt) {
   const [label, setLabel] = useState('')
   useEffect(() => {
@@ -98,7 +98,7 @@ const isBannerVisibleNow = (banner, now) => {
   return true
 }
 
-/* â”€â”€ Link button shared â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Link button shared ──────────────────────────────────────────────────── */
 function LinkBtn({ banner, cfg }) {
   const label = banner.link_label || banner.linkLabel
   if (!banner.link || !label) return null
@@ -122,13 +122,13 @@ function LinkBtn({ banner, cfg }) {
   )
 }
 
-/* â”€â”€ Dismiss / pin button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Dismiss / pin button ────────────────────────────────────────────────── */
 function DismissBtn({ banner, cfg, onDismiss }) {
   if (banner.pinned) {
     return (
-      <div title="Pinned â€” cannot be dismissed"
+      <div title="Pinned — cannot be dismissed"
         style={{ flexShrink:0, padding:'10px 14px', color:'#f59e0b', fontSize:14,
-          display:'flex', alignItems:'center', opacity:0.7 }}>ðŸ“Œ</div>
+          display:'flex', alignItems:'center', opacity:0.7 }}>📌</div>
     )
   }
   return (
@@ -146,7 +146,7 @@ function DismissBtn({ banner, cfg, onDismiss }) {
   )
 }
 
-/* â”€â”€ STRIP style (default full-width bar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── STRIP style (default full-width bar) ────────────────────────────────── */
 function StripBanner({ banner, cfg, onDismiss, leaving, index }) {
   const [hovering, setHovering] = useState(false)
   const msgRef = useRef(null)
@@ -186,7 +186,7 @@ function StripBanner({ banner, cfg, onDismiss, leaving, index }) {
           <div style={{ overflow:'hidden', whiteSpace:'nowrap' }}>
             <span ref={msgRef} style={{ display:'inline-block', fontFamily:'var(--font-mono)', fontSize:12.5, color:'#e8e8f4', letterSpacing:0.3,
               animation: hovering ? 'none' : `bnrTicker ${Math.max(9, banner.message.length * 0.11)}s linear infinite` }}>
-              {banner.message}&nbsp;&nbsp;&nbsp;Â·&nbsp;&nbsp;&nbsp;{banner.message}&nbsp;&nbsp;&nbsp;
+              {banner.message}&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;{banner.message}&nbsp;&nbsp;&nbsp;
             </span>
           </div>
         ) : (
@@ -199,7 +199,7 @@ function StripBanner({ banner, cfg, onDismiss, leaving, index }) {
         <span style={{ flexShrink:0, fontFamily:'var(--font-mono)', fontSize:8, letterSpacing:1,
           color:`${cfg.accent}cc`, marginRight:10, whiteSpace:'nowrap', padding:'3px 8px',
           border:`1px solid ${cfg.accent}30`, borderRadius:3, animation:'bnrExpiry 3s ease-in-out infinite' }}>
-          â± {expiry}
+          ⏱ {expiry}
         </span>
       )}
       <LinkBtn banner={banner} cfg={cfg} />
@@ -211,7 +211,7 @@ function StripBanner({ banner, cfg, onDismiss, leaving, index }) {
   )
 }
 
-/* â”€â”€ HERO style (bold block) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── HERO style (bold block) ─────────────────────────────────────────────── */
 function HeroBanner({ banner, cfg, onDismiss, leaving, index }) {
   const expiry = useExpiryCountdown(banner.expires_at)
   return (
@@ -235,8 +235,8 @@ function HeroBanner({ banner, cfg, onDismiss, leaving, index }) {
               borderRadius:4, padding:'3px 9px' }}>{cfg.label}</span>
             {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}bb`,
               padding:'2px 7px', border:`1px solid ${cfg.accent}30`, borderRadius:3,
-              animation:'bnrExpiry 3s ease-in-out infinite' }}>â± {expiry}</span>}
-            {banner.pinned && <span style={{ fontSize:12, opacity:0.8 }}>ðŸ“Œ</span>}
+              animation:'bnrExpiry 3s ease-in-out infinite' }}>⏱ {expiry}</span>}
+            {banner.pinned && <span style={{ fontSize:12, opacity:0.8 }}>📌</span>}
           </div>
           <div style={{ fontFamily:'var(--font-mono)', fontSize:14, color:'#eef0f8',
             lineHeight:1.5, marginBottom: (banner.link && (banner.link_label || banner.linkLabel)) ? 10 : 0 }}>
@@ -252,7 +252,7 @@ function HeroBanner({ banner, cfg, onDismiss, leaving, index }) {
   )
 }
 
-/* â”€â”€ MINIMAL style (left border only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── MINIMAL style (left border only) ────────────────────────────────────── */
 function MinimalBanner({ banner, cfg, onDismiss, leaving, index }) {
   const expiry = useExpiryCountdown(banner.expires_at)
   return (
@@ -268,14 +268,14 @@ function MinimalBanner({ banner, cfg, onDismiss, leaving, index }) {
       </span>
       {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}cc`,
         whiteSpace:'nowrap', padding:'2px 7px', border:`1px solid ${cfg.accent}30`, borderRadius:3,
-        flexShrink:0, animation:'bnrExpiry 3s ease-in-out infinite' }}>â± {expiry}</span>}
+        flexShrink:0, animation:'bnrExpiry 3s ease-in-out infinite' }}>⏱ {expiry}</span>}
       <LinkBtn banner={banner} cfg={cfg} />
       <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
     </div>
   )
 }
 
-/* â”€â”€ FLOATING style (corner card â€” renders outside fixed band) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── FLOATING style (corner card — renders outside fixed band) ───────────── */
 function FloatingBanner({ banner, cfg, onDismiss, leaving }) {
   const expiry = useExpiryCountdown(banner.expires_at)
   return (
@@ -297,7 +297,7 @@ function FloatingBanner({ banner, cfg, onDismiss, leaving }) {
             <span style={{ fontFamily:'var(--font-mono)', fontSize:8, letterSpacing:2, fontWeight:700,
               color:cfg.accent, background:`${cfg.accent}14`, border:`1px solid ${cfg.accent}40`,
               borderRadius:3, padding:'2px 7px' }}>{cfg.label}</span>
-            {banner.pinned && <span style={{ fontSize:11, opacity:0.8 }}>ðŸ“Œ</span>}
+            {banner.pinned && <span style={{ fontSize:11, opacity:0.8 }}>📌</span>}
           </div>
           <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
         </div>
@@ -306,7 +306,7 @@ function FloatingBanner({ banner, cfg, onDismiss, leaving }) {
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:6 }}>
           {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}aa`,
             padding:'2px 7px', border:`1px solid ${cfg.accent}30`, borderRadius:3,
-            animation:'bnrExpiry 3s ease-in-out infinite' }}>â± {expiry}</span>}
+            animation:'bnrExpiry 3s ease-in-out infinite' }}>⏱ {expiry}</span>}
           {!expiry && <span />}
           <LinkBtn banner={banner} cfg={cfg} />
         </div>
@@ -315,7 +315,7 @@ function FloatingBanner({ banner, cfg, onDismiss, leaving }) {
   )
 }
 
-/* â”€â”€ PILL style (compact rounded chip) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── PILL style (compact rounded chip) ───────────────────────────────────── */
 function PillBanner({ banner, cfg, onDismiss, leaving, index }) {
   const expiry = useExpiryCountdown(banner.expires_at)
   return (
@@ -337,7 +337,7 @@ function PillBanner({ banner, cfg, onDismiss, leaving, index }) {
           overflow:'hidden', textOverflow:'ellipsis' }}>{banner.message}</span>
         {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}bb`,
           padding:'2px 7px', border:`1px solid ${cfg.accent}35`, borderRadius:99, flexShrink:0,
-          animation:'bnrExpiry 3s ease-in-out infinite' }}>â± {expiry}</span>}
+          animation:'bnrExpiry 3s ease-in-out infinite' }}>⏱ {expiry}</span>}
         {(banner.link && (banner.link_label || banner.linkLabel)) && (
           <LinkBtn banner={banner} cfg={cfg} />
         )}
@@ -347,7 +347,7 @@ function PillBanner({ banner, cfg, onDismiss, leaving, index }) {
   )
 }
 
-/* â”€â”€ GLASS style (soft frosted panel) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── GLASS style (soft frosted panel) ───────────────────────────────────── */
 function GlassBanner({ banner, cfg, onDismiss, leaving, index }) {
   const expiry = useExpiryCountdown(banner.expires_at)
   return (
@@ -365,7 +365,7 @@ function GlassBanner({ banner, cfg, onDismiss, leaving, index }) {
         <span style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'#e8eef8', lineHeight:1.5,
           flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.message}</span>
         {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}bb`,
-          padding:'2px 7px', border:`1px solid ${cfg.accent}30`, borderRadius:99, flexShrink:0 }}>â± {expiry}</span>}
+          padding:'2px 7px', border:`1px solid ${cfg.accent}30`, borderRadius:99, flexShrink:0 }}>⏱ {expiry}</span>}
         <LinkBtn banner={banner} cfg={cfg} />
         <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
       </div>
@@ -373,7 +373,7 @@ function GlassBanner({ banner, cfg, onDismiss, leaving, index }) {
   )
 }
 
-/* â”€â”€ OUTLINE style (fine framed rail) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── OUTLINE style (fine framed rail) ───────────────────────────────────── */
 function OutlineBanner({ banner, cfg, onDismiss, leaving, index }) {
   const expiry = useExpiryCountdown(banner.expires_at)
   return (
@@ -386,7 +386,7 @@ function OutlineBanner({ banner, cfg, onDismiss, leaving, index }) {
         <span style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'#e7edf7',
           flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.message}</span>
         {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}cc`,
-          whiteSpace:'nowrap', flexShrink:0 }}>â± {expiry}</span>}
+          whiteSpace:'nowrap', flexShrink:0 }}>⏱ {expiry}</span>}
         <LinkBtn banner={banner} cfg={cfg} />
         <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
       </div>
@@ -394,7 +394,7 @@ function OutlineBanner({ banner, cfg, onDismiss, leaving, index }) {
   )
 }
 
-/* â”€â”€ TICKER style (news rail) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── TICKER style (news rail) ───────────────────────────────────────────── */
 function TickerBanner({ banner, cfg, onDismiss, leaving, index }) {
   const expiry = useExpiryCountdown(banner.expires_at)
   return (
@@ -409,18 +409,18 @@ function TickerBanner({ banner, cfg, onDismiss, leaving, index }) {
       <div style={{ flex:1, minWidth:0, overflow:'hidden', whiteSpace:'nowrap' }}>
         <span style={{ display:'inline-block', fontFamily:'var(--font-mono)', fontSize:11, color:'#e8eef8',
           letterSpacing:0.3, animation:`bnrTicker ${Math.max(12, banner.message.length * 0.14)}s linear infinite` }}>
-          {banner.message}&nbsp;&nbsp;&nbsp;Â·&nbsp;&nbsp;&nbsp;{banner.message}&nbsp;&nbsp;&nbsp;Â·&nbsp;&nbsp;&nbsp;
+          {banner.message}&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;{banner.message}&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;
         </span>
       </div>
       {expiry && <span style={{ flexShrink:0, fontFamily:'var(--font-mono)', fontSize:8,
-        color:`${cfg.accent}cc`, padding:'0 10px', whiteSpace:'nowrap' }}>â± {expiry}</span>}
+        color:`${cfg.accent}cc`, padding:'0 10px', whiteSpace:'nowrap' }}>⏱ {expiry}</span>}
       <LinkBtn banner={banner} cfg={cfg} />
       <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
     </div>
   )
 }
 
-/* â”€â”€ Route to correct style component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Route to correct style component ────────────────────────────────────── */
 function BannerBar({ banner, onClose, index }) {
   const cfg = TYPE_CFG[banner.type] || TYPE_CFG.info
   const id  = banner._id || banner.id
@@ -439,7 +439,7 @@ function BannerBar({ banner, onClose, index }) {
   return <StripBanner {...props} />        // 'banner' (default strip)
 }
 
-/* â”€â”€ Root component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Root component ──────────────────────────────────────────────────────── */
 export default function SiteBanner() {
   const location  = useLocation()
   const bannerRef = useRef(null)
@@ -475,7 +475,7 @@ export default function SiteBanner() {
       setSiteCfg(r.data || {})
     }).catch(() => {})
 
-    // â”€â”€ Primary: Supabase Realtime (instant push on any banner change) â”€â”€â”€â”€â”€â”€
+    // ── Primary: Supabase Realtime (instant push on any banner change) ──────
     // Requires: ALTER TABLE banners REPLICA IDENTITY FULL;
     //           ALTER PUBLICATION supabase_realtime ADD TABLE banners;
     const channel = sb
@@ -485,7 +485,7 @@ export default function SiteBanner() {
           .subscribe()
       : null
 
-    // â”€â”€ Fallback polling (30 s) â€” catches updates when Realtime isn't fired â”€
+    // ── Fallback polling (30 s) — catches updates when Realtime isn't fired ─
     // Covers cases where REPLICA IDENTITY FULL is not yet applied on the table.
     const poll = setInterval(fetchBanners, 30_000)
     const clock = setInterval(() => setNowTick(Date.now()), 30_000)
@@ -514,7 +514,7 @@ export default function SiteBanner() {
 
   const visible = banners.filter(b => isBannerVisibleNow(b, nowTick) && !dismissed.includes(b._id || b.id))
 
-  // Separate floating banners â€” they render fixed, outside the band
+  // Separate floating banners — they render fixed, outside the band
   const floatingBanners = visible.filter(b => b.style === 'floating')
   const stackedBanners  = visible.filter(b => b.style !== 'floating')
 

@@ -32,7 +32,7 @@ function ProtectPDF() {
         },
       })
       downloadBlob(new Blob([bytes], { type:'application/pdf' }), file.name.replace('.pdf','_protected.pdf'))
-      setMsg('âœ“ PDF protected with password')
+      setMsg('✓ PDF protected with password')
     } catch(e) { setErr('Encryption failed: ' + e.message) }
     finally { setBusy(false) }
   }
@@ -47,16 +47,16 @@ function ProtectPDF() {
             <label style={S.label}>PASSWORD</label>
             <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Enter a strong password" style={S.input} />
           </div>
-          <button onClick={protect} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'ENCRYPTING...' : 'ðŸ”’ PROTECT & DOWNLOAD'}</button>
+          <button onClick={protect} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'ENCRYPTING...' : '🔒 PROTECT & DOWNLOAD'}</button>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ Unlock PDF (remove restrictions) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Unlock PDF (remove restrictions) ─────────────────────────────
 function UnlockPDF() {
   const [file, setFile] = useState(null)
   const [pass, setPass] = useState('')
@@ -73,7 +73,7 @@ function UnlockPDF() {
       const doc = await PDFDocument.load(ab, { password: pass || undefined, ignoreEncryption: !pass })
       const bytes = await doc.save()
       downloadBlob(new Blob([bytes], { type:'application/pdf' }), file.name.replace('.pdf','_unlocked.pdf'))
-      setMsg('âœ“ PDF unlocked â€” restrictions removed')
+      setMsg('✓ PDF unlocked — restrictions removed')
     } catch(e) {
       if (e.message?.includes('password')) setErr('Wrong password. Try entering the correct password below.')
       else setErr(e.message)
@@ -85,7 +85,7 @@ function UnlockPDF() {
     <div>
       <div style={{ ...S.panel, padding:'12px 16px', marginBottom:16 }}>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--orange)', letterSpacing:2 }}>
-          âš  Only works on PDFs where you know the password or that are protected with restrictions only (no user password). Do not use to bypass security you don't own.
+          ⚠ Only works on PDFs where you know the password or that are protected with restrictions only (no user password). Do not use to bypass security you don't own.
         </div>
       </div>
       <DropZone accept=".pdf" onFiles={([f]) => { setFile(f); setErr(''); setMsg('') }} label="Drop protected PDF to unlock" />
@@ -96,16 +96,16 @@ function UnlockPDF() {
             <label style={S.label}>PASSWORD (if required)</label>
             <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Leave blank if no user password" style={S.input} />
           </div>
-          <button onClick={unlock} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'UNLOCKING...' : 'ðŸ”“ UNLOCK & DOWNLOAD'}</button>
+          <button onClick={unlock} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'UNLOCKING...' : '🔓 UNLOCK & DOWNLOAD'}</button>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ Organize PDF (reorder pages) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Organize PDF (reorder pages) ──────────────────────────────────
 function OrganizePDF() {
   const [file, setFile]   = useState(null)
   const [order, setOrder] = useState([])  // array of page indices (0-based)
@@ -135,7 +135,7 @@ function OrganizePDF() {
       pages.forEach(p => out.addPage(p))
       const bytes = await out.save()
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), file.name.replace('.pdf','_organized.pdf'))
-      setMsg(`âœ“ Saved with ${order.length} pages in new order`)
+      setMsg(`✓ Saved with ${order.length} pages in new order`)
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -147,32 +147,32 @@ function OrganizePDF() {
         <div style={{ marginTop:16 }}>
           <FileBadge file={file} />
           <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:2, margin:'16px 0 8px' }}>
-            PAGES â€” USE â†‘â†“ TO REORDER, âœ• TO DELETE
+            PAGES — USE ↑↓ TO REORDER, ✕ TO DELETE
           </div>
           <div style={{ maxHeight:360, overflowY:'auto', border:'1px solid var(--border)', padding:8 }}>
             {order.map((pageIdx, i) => (
               <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 8px', background: i%2===0?'var(--bg3)':'transparent', marginBottom:2 }}>
                 <span style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)', width:28 }}>pg {pageIdx+1}</span>
-                <span style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'var(--text)', flex:1 }}>â†’ Position {i+1}</span>
-                <button onClick={() => moveUp(i)}   style={{ ...S.btnSm, background:'var(--bg3)', color:'var(--cyan)',  border:'1px solid var(--border)', padding:'4px 9px', fontSize:12 }}>â†‘</button>
-                <button onClick={() => moveDown(i)} style={{ ...S.btnSm, background:'var(--bg3)', color:'var(--cyan)',  border:'1px solid var(--border)', padding:'4px 9px', fontSize:12 }}>â†“</button>
-                <button onClick={() => remove(i)}   style={{ ...S.btnSm, background:'transparent', color:'var(--red)', border:'1px solid rgba(255,71,87,.3)', padding:'4px 9px', fontSize:12 }}>âœ•</button>
+                <span style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'var(--text)', flex:1 }}>→ Position {i+1}</span>
+                <button onClick={() => moveUp(i)}   style={{ ...S.btnSm, background:'var(--bg3)', color:'var(--cyan)',  border:'1px solid var(--border)', padding:'4px 9px', fontSize:12 }}>↑</button>
+                <button onClick={() => moveDown(i)} style={{ ...S.btnSm, background:'var(--bg3)', color:'var(--cyan)',  border:'1px solid var(--border)', padding:'4px 9px', fontSize:12 }}>↓</button>
+                <button onClick={() => remove(i)}   style={{ ...S.btnSm, background:'transparent', color:'var(--red)', border:'1px solid rgba(255,71,87,.3)', padding:'4px 9px', fontSize:12 }}>✕</button>
               </div>
             ))}
           </div>
           <div style={{ display:'flex', gap:12, marginTop:16 }}>
-            <button onClick={apply} disabled={busy} style={S.btn}>{busy ? 'SAVING...' : 'â¬‡ SAVE ORGANIZED PDF'}</button>
+            <button onClick={apply} disabled={busy} style={S.btn}>{busy ? 'SAVING...' : '⬇ SAVE ORGANIZED PDF'}</button>
             <button onClick={() => setOrder(order => [...order].sort((a,b)=>a-b))} style={S.btnOut}>RESET ORDER</button>
           </div>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ Crop PDF (set page margins) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Crop PDF (set page margins) ───────────────────────────────────
 function CropPDF() {
   const [file, setFile]  = useState(null)
   const [pages, setPages] = useState(0)
@@ -202,7 +202,7 @@ function CropPDF() {
       })
       const bytes = await doc.save()
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), file.name.replace('.pdf','_cropped.pdf'))
-      setMsg('âœ“ Crop applied to all pages')
+      setMsg('✓ Crop applied to all pages')
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -220,20 +220,20 @@ function CropPDF() {
       {file && (
         <div style={{ marginTop:16 }}>
           <FileBadge file={file} />
-          <div style={{ ...S.success, marginTop:8 }}>ðŸ“„ {pages} pages â€” 1 pt â‰ˆ 0.35mm</div>
+          <div style={{ ...S.success, marginTop:8 }}>📄 {pages} pages — 1 pt ≈ 0.35mm</div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:12, marginTop:16 }}>
             {['top','right','bottom','left'].map(s => <M key={s} side={s} />)}
           </div>
-          <button onClick={crop} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'CROPPING...' : 'â¬‡ CROP & DOWNLOAD'}</button>
+          <button onClick={crop} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'CROPPING...' : '⬇ CROP & DOWNLOAD'}</button>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ PDF Metadata Editor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PDF Metadata Editor ───────────────────────────────────────────
 function EditPDFMeta() {
   const [file, setFile]  = useState(null)
   const [meta, setMeta]  = useState({ title:'', author:'', subject:'', keywords:'' })
@@ -267,7 +267,7 @@ function EditPDFMeta() {
       doc.setKeywords(meta.keywords.split(',').map(k=>k.trim()))
       const bytes = await doc.save()
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), file.name.replace('.pdf','_edited.pdf'))
-      setMsg('âœ“ Metadata updated and saved')
+      setMsg('✓ Metadata updated and saved')
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -286,16 +286,16 @@ function EditPDFMeta() {
               </div>
             ))}
           </div>
-          <button onClick={save} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'SAVING...' : 'â¬‡ SAVE PDF'}</button>
+          <button onClick={save} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'SAVING...' : '⬇ SAVE PDF'}</button>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ PDF Info / Inspector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PDF Info / Inspector ──────────────────────────────────────────
 function PDFInfo() {
   const [info, setInfo] = useState(null)
   const [err, setErr]   = useState('')
@@ -313,14 +313,14 @@ function PDFInfo() {
         fileName:  f.name,
         fileSize:  fmtBytes(f.size),
         pageCount: doc.getPageCount(),
-        pageSize:  `${Math.round(width)} Ã— ${Math.round(height)} pt`,
-        title:     doc.getTitle()    || 'â€”',
-        author:    doc.getAuthor()   || 'â€”',
-        subject:   doc.getSubject()  || 'â€”',
-        producer:  doc.getProducer() || 'â€”',
-        creator:   doc.getCreator()  || 'â€”',
-        created:   doc.getCreationDate()?.toLocaleDateString() || 'â€”',
-        modified:  doc.getModificationDate()?.toLocaleDateString() || 'â€”',
+        pageSize:  `${Math.round(width)} × ${Math.round(height)} pt`,
+        title:     doc.getTitle()    || '—',
+        author:    doc.getAuthor()   || '—',
+        subject:   doc.getSubject()  || '—',
+        producer:  doc.getProducer() || '—',
+        creator:   doc.getCreator()  || '—',
+        created:   doc.getCreationDate()?.toLocaleDateString() || '—',
+        modified:  doc.getModificationDate()?.toLocaleDateString() || '—',
       })
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
@@ -330,7 +330,7 @@ function PDFInfo() {
     <div>
       <DropZone accept=".pdf" onFiles={inspect} label="Drop PDF to inspect its properties" />
       {busy && <Progress pct={60} label="READING PDF" />}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {info && (
         <div style={{ ...S.panel, marginTop:16 }}>
           <div style={{ fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:3, color:'var(--cyan)', marginBottom:16 }}>PDF PROPERTIES</div>
@@ -346,7 +346,7 @@ function PDFInfo() {
   )
 }
 
-// â”€â”€ Grayscale PDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Grayscale PDF ─────────────────────────────────────────────────
 function GrayscalePDF() {
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -392,7 +392,7 @@ function GrayscalePDF() {
       setPct(99)
       const bytes = await out.save()
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), file.name.replace('.pdf','_grayscale.pdf'))
-      setMsg(`âœ“ Converted ${pdf.numPages} pages to grayscale`)
+      setMsg(`✓ Converted ${pdf.numPages} pages to grayscale`)
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -405,20 +405,20 @@ function GrayscalePDF() {
           <FileBadge file={file} />
           <div style={{ ...S.panel, padding:'10px 14px', marginTop:12 }}>
             <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--orange)', letterSpacing:1 }}>
-              âš¡ Each page is rendered at 2Ã— quality then converted â€” large PDFs may take a moment.
+              ⚡ Each page is rendered at 2× quality then converted — large PDFs may take a moment.
             </div>
           </div>
-          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? `CONVERTING... ${pct}%` : 'â¬‡ CONVERT TO GRAYSCALE'}</button>
+          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? `CONVERTING... ${pct}%` : '⬇ CONVERT TO GRAYSCALE'}</button>
         </div>
       )}
       {busy && <Progress pct={pct} label="RENDERING PAGES" />}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ Header/Footer Stamp â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Header/Footer Stamp ───────────────────────────────────────────
 function HeaderFooterPDF() {
   const [file, setFile]  = useState(null)
   const [pages, setPages] = useState(0)
@@ -456,7 +456,7 @@ function HeaderFooterPDF() {
       })
       const bytes = await doc.save()
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), file.name.replace('.pdf','_stamped.pdf'))
-      setMsg(`âœ“ Header/footer added to ${pages} pages`)
+      setMsg(`✓ Header/footer added to ${pages} pages`)
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -477,16 +477,16 @@ function HeaderFooterPDF() {
               <input value={footer} onChange={e => setFooter(e.target.value)} placeholder="e.g. aifazi.net" style={S.input} />
             </div>
           </div>
-          <button onClick={apply} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'APPLYING...' : 'â¬‡ ADD & DOWNLOAD'}</button>
+          <button onClick={apply} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'APPLYING...' : '⬇ ADD & DOWNLOAD'}</button>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ Flatten PDF (remove form fields) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Flatten PDF (remove form fields) ─────────────────────────────
 function FlattenPDF() {
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -503,7 +503,7 @@ function FlattenPDF() {
       form.flatten()
       const bytes = await doc.save()
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), file.name.replace('.pdf','_flattened.pdf'))
-      setMsg('âœ“ Form fields flattened â€” PDF is now a static document')
+      setMsg('✓ Form fields flattened — PDF is now a static document')
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -519,16 +519,16 @@ function FlattenPDF() {
               Flattening bakes form field values into the page permanently. The result is a static, non-editable PDF.
             </div>
           </div>
-          <button onClick={flatten} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'FLATTENING...' : 'â¬‡ FLATTEN & DOWNLOAD'}</button>
+          <button onClick={flatten} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'FLATTENING...' : '⬇ FLATTEN & DOWNLOAD'}</button>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ Compare Text (diff two text files) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Compare Text (diff two text files) ───────────────────────────
 
 function PDFToWord() {
   const [file, setFile] = useState(null)
@@ -559,7 +559,7 @@ function PDFToWord() {
           .replace(/\n/g,'\\par\n')
       }}`
       downloadBlob(new Blob([rtf], { type:'application/rtf' }), file.name.replace('.pdf','_converted.rtf'))
-      setMsg(`âœ“ Converted ${pdf.numPages} pages â€” opens in Word, LibreOffice & Google Docs`)
+      setMsg(`✓ Converted ${pdf.numPages} pages — opens in Word, LibreOffice & Google Docs`)
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -568,24 +568,24 @@ function PDFToWord() {
     <div>
       <div style={{ ...S.panel, padding:'12px 16px', marginBottom:16 }}>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--orange)', letterSpacing:1 }}>
-          âš¡ Extracts text from PDF and saves as RTF (Rich Text Format) â€” opens natively in Microsoft Word, LibreOffice, and Google Docs. Complex layouts with images/tables may need manual cleanup.
+          ⚡ Extracts text from PDF and saves as RTF (Rich Text Format) — opens natively in Microsoft Word, LibreOffice, and Google Docs. Complex layouts with images/tables may need manual cleanup.
         </div>
       </div>
       <DropZone accept=".pdf" onFiles={([f]) => { setFile(f); setErr(''); setMsg('') }} label="Drop PDF to convert to Word" />
       {file && (
         <div style={{ marginTop:16 }}>
           <FileBadge file={file} />
-          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? `CONVERTING... ${pct}%` : 'â¬‡ CONVERT TO WORD (.RTF)'}</button>
+          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? `CONVERTING... ${pct}%` : '⬇ CONVERT TO WORD (.RTF)'}</button>
         </div>
       )}
       {busy && <Progress pct={pct} label="EXTRACTING TEXT" />}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ PDF â†’ Excel (extract tables as CSV) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PDF → Excel (extract tables as CSV) ──────────────────────────
 function PDFToExcel() {
   const [file, setFile]   = useState(null)
   const [busy, setBusy]   = useState(false)
@@ -615,7 +615,7 @@ function PDFToExcel() {
           if (!byY[y]) byY[y] = []
           byY[y].push({ x: item.transform[4], str: item.str })
         })
-        // Sort rows topâ†’bottom, cells leftâ†’right
+        // Sort rows top→bottom, cells left→right
         const rows = Object.keys(byY).sort((a,b) => b-a).map(y =>
           byY[y].sort((a,b) => a.x - b.x).map(c => c.str.trim()).filter(Boolean)
         ).filter(r => r.length)
@@ -629,7 +629,7 @@ function PDFToExcel() {
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'PDF Data')
       XLSX.writeFile(wb, file.name.replace('.pdf','_data.xlsx'))
-      setMsg(`âœ“ Extracted ${allRows.length} rows from ${pdf.numPages} pages`)
+      setMsg(`✓ Extracted ${allRows.length} rows from ${pdf.numPages} pages`)
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -638,14 +638,14 @@ function PDFToExcel() {
     <div>
       <div style={{ ...S.panel, padding:'12px 16px', marginBottom:16 }}>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--orange)', letterSpacing:1 }}>
-          âš¡ Extracts text content row-by-row and exports as Excel. Works best on PDFs with structured text/tables. Scanned PDFs may need OCR first.
+          ⚡ Extracts text content row-by-row and exports as Excel. Works best on PDFs with structured text/tables. Scanned PDFs may need OCR first.
         </div>
       </div>
       <DropZone accept=".pdf" onFiles={([f]) => { setFile(f); setErr(''); setMsg(''); setPreview([]) }} label="Drop PDF to extract data to Excel" />
       {file && (
         <div style={{ marginTop:16 }}>
           <FileBadge file={file} />
-          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? `EXTRACTING... ${pct}%` : 'â¬‡ EXPORT TO EXCEL'}</button>
+          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? `EXTRACTING... ${pct}%` : '⬇ EXPORT TO EXCEL'}</button>
         </div>
       )}
       {busy && <Progress pct={pct} label="EXTRACTING DATA" />}
@@ -663,13 +663,13 @@ function PDFToExcel() {
           </table>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ Word â†’ PDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Word → PDF ────────────────────────────────────────────────────
 function WordToPDF() {
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -716,7 +716,7 @@ function WordToPDF() {
 
       const bytes = await doc.save()
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), file.name.replace('.docx','.pdf'))
-      setMsg('âœ“ Word document converted to PDF')
+      setMsg('✓ Word document converted to PDF')
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -727,16 +727,16 @@ function WordToPDF() {
       {file && (
         <div style={{ marginTop:16 }}>
           <FileBadge file={file} />
-          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'CONVERTING...' : 'â¬‡ CONVERT TO PDF'}</button>
+          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'CONVERTING...' : '⬇ CONVERT TO PDF'}</button>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ Excel â†’ PDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Excel → PDF ───────────────────────────────────────────────────
 function ExcelToPDF() {
   const [file, setFile]   = useState(null)
   const [sheets, setSheets] = useState([])
@@ -775,7 +775,7 @@ function ExcelToPDF() {
       let y = pageH - margin
 
       // Title
-      page.drawText(`${file.name} â€” Sheet: ${sheet}`, { x: margin, y, size:11, font:boldFont, color:rgb(0.1,0.1,0.1) })
+      page.drawText(`${file.name} — Sheet: ${sheet}`, { x: margin, y, size:11, font:boldFont, color:rgb(0.1,0.1,0.1) })
       y -= 24
 
       for (let r = 0; r < rows.length; r++) {
@@ -800,7 +800,7 @@ function ExcelToPDF() {
 
       const bytes = await doc.save()
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), file.name.replace(/\.xlsx?/,`_${sheet}.pdf`))
-      setMsg(`âœ“ Converted sheet "${sheet}" â€” ${rows.length} rows`)
+      setMsg(`✓ Converted sheet "${sheet}" — ${rows.length} rows`)
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -819,16 +819,16 @@ function ExcelToPDF() {
               </div>
             </div>
           )}
-          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'CONVERTING...' : 'â¬‡ CONVERT TO PDF'}</button>
+          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'CONVERTING...' : '⬇ CONVERT TO PDF'}</button>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ CSV â†’ PDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── CSV → PDF ─────────────────────────────────────────────────────
 function CSVToPDF() {
   const [file, setFile] = useState(null)
   const [csv, setCsv]   = useState('')
@@ -875,7 +875,7 @@ function CSVToPDF() {
       const bytes = await doc.save()
       const name = file ? file.name.replace('.csv','.pdf') : 'data.pdf'
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), name)
-      setMsg(`âœ“ Converted ${rows.length} rows to PDF`)
+      setMsg(`✓ Converted ${rows.length} rows to PDF`)
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -887,14 +887,14 @@ function CSVToPDF() {
         <label style={S.label}>CSV DATA</label>
         <textarea value={csv} onChange={e=>setCsv(e.target.value)} rows={6} placeholder="name,age,city&#10;Alice,30,Dubai" style={{ ...S.input, fontFamily:'var(--font-mono)', fontSize:11, resize:'vertical' }} />
       </div>
-      <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'CONVERTING...' : 'â¬‡ CONVERT TO PDF'}</button>
-      {err && <div style={S.err}>âš  {err}</div>}
+      <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'CONVERTING...' : '⬇ CONVERT TO PDF'}</button>
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ JPG â†’ PDF (single or batch) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── JPG → PDF (single or batch) ───────────────────────────────────
 function JPGToPDF() {
   const [files, setFiles] = useState([])
   const [busy, setBusy]   = useState(false)
@@ -915,7 +915,7 @@ function JPGToPDF() {
       }
       const bytes = await doc.save()
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), 'images.pdf')
-      setMsg(`âœ“ ${files.length} image(s) â†’ PDF`)
+      setMsg(`✓ ${files.length} image(s) → PDF`)
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -927,18 +927,18 @@ function JPGToPDF() {
         <div style={{ marginTop:12 }}>
           {files.map((f,i) => <FileBadge key={i} file={f} onRemove={()=>setFiles(p=>p.filter((_,j)=>j!==i))} />)}
           <div style={{ display:'flex', gap:8, marginTop:12 }}>
-            <button onClick={convert} disabled={busy} style={S.btn}>{busy ? 'CREATING...' : 'â¬‡ SAVE AS PDF'}</button>
+            <button onClick={convert} disabled={busy} style={S.btn}>{busy ? 'CREATING...' : '⬇ SAVE AS PDF'}</button>
             <button onClick={()=>setFiles([])} style={S.btnOut}>CLEAR</button>
           </div>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ PDF â†’ JPG (alias of PDFToImages, returns JPG not PNG) â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PDF → JPG (alias of PDFToImages, returns JPG not PNG) ─────────
 function PDFToJPG() {
   const [file, setFile]   = useState(null)
   const [pages, setPages] = useState(0)
@@ -970,7 +970,7 @@ function PDFToJPG() {
         await page.render({ canvasContext:canvas.getContext('2d'), viewport:vp }).promise
         await new Promise(res => canvas.toBlob(blob => { downloadBlob(blob, `page_${i}.jpg`); setTimeout(res,100) }, 'image/jpeg', quality/100))
       }
-      setMsg(`âœ“ Downloaded ${pdf.numPages} JPG(s)`)
+      setMsg(`✓ Downloaded ${pdf.numPages} JPG(s)`)
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -981,22 +981,22 @@ function PDFToJPG() {
       {file && (
         <div style={{ marginTop:16 }}>
           <FileBadge file={file} />
-          <div style={{ ...S.success, marginTop:8 }}>ðŸ“„ {pages} pages detected</div>
+          <div style={{ ...S.success, marginTop:8 }}>📄 {pages} pages detected</div>
           <div style={{ marginTop:12 }}>
-            <label style={S.label}>JPEG QUALITY â€” {quality}%</label>
+            <label style={S.label}>JPEG QUALITY — {quality}%</label>
             <Slider min={60} max={100} value={quality} onChange={setQuality} />
           </div>
-          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? `EXPORTING... ${pct}%` : 'â¬‡ EXPORT ALL AS JPG'}</button>
+          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? `EXPORTING... ${pct}%` : '⬇ EXPORT ALL AS JPG'}</button>
         </div>
       )}
       {busy && <Progress pct={pct} label="RENDERING PAGES" />}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ HTML â†’ PDF (render URL or paste HTML) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── HTML → PDF (render URL or paste HTML) ────────────────────────
 function HTMLToPDF() {
   const [html, setHtml] = useState('')
   const [busy, setBusy] = useState(false)
@@ -1019,7 +1019,7 @@ function HTMLToPDF() {
       await new Promise(res => setTimeout(res, 800))
       iframe.contentWindow.print()
       document.body.removeChild(iframe)
-      setMsg('âœ“ Browser print dialog opened â€” choose "Save as PDF" as the printer')
+      setMsg('✓ Browser print dialog opened — choose "Save as PDF" as the printer')
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -1028,7 +1028,7 @@ function HTMLToPDF() {
     <div>
       <div style={{ ...S.panel, padding:'12px 16px', marginBottom:16 }}>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--orange)', letterSpacing:1 }}>
-          âš¡ Renders your HTML in a hidden frame and opens the system print dialog. Select "Save as PDF" as the destination. Works with full CSS styling.
+          ⚡ Renders your HTML in a hidden frame and opens the system print dialog. Select "Save as PDF" as the destination. Works with full CSS styling.
         </div>
       </div>
       <DropZone accept=".html,.htm" onFiles={loadFile} label="Drop HTML file or paste below" />
@@ -1038,14 +1038,14 @@ function HTMLToPDF() {
           placeholder="<html><body><h1>Hello</h1><p>Your content here</p></body></html>"
           style={{ ...S.input, fontFamily:'var(--font-mono)', fontSize:11, resize:'vertical' }} />
       </div>
-      <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'OPENING...' : 'ðŸ–¨ PRINT â†’ SAVE AS PDF'}</button>
-      {err && <div style={S.err}>âš  {err}</div>}
+      <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'OPENING...' : '🖨 PRINT → SAVE AS PDF'}</button>
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ Sign PDF (draw or type signature) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Sign PDF (draw or type signature) ────────────────────────────
 function SignPDF() {
   const [file, setFile]    = useState(null)
   const [pages, setPages]  = useState(0)
@@ -1115,7 +1115,7 @@ function SignPDF() {
 
       const bytes = await doc.save()
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), file.name.replace('.pdf','_signed.pdf'))
-      setMsg('âœ“ Signature applied')
+      setMsg('✓ Signature applied')
     } catch(e) { setErr(e.message) }
     finally { setBusy(false) }
   }
@@ -1128,11 +1128,11 @@ function SignPDF() {
       {file && (
         <div style={{ marginTop:16 }}>
           <FileBadge file={file} />
-          <div style={{ ...S.success, marginTop:8 }}>ðŸ“„ {pages} pages</div>
+          <div style={{ ...S.success, marginTop:8 }}>📄 {pages} pages</div>
 
           {/* Signature mode */}
           <div style={{ display:'flex', gap:8, margin:'16px 0 12px' }}>
-            {[['draw','âœ Draw Signature'],['type','âŒ¨ Type Signature']].map(([v,l])=>(
+            {[['draw','✍ Draw Signature'],['type','⌨ Type Signature']].map(([v,l])=>(
               <button key={v} onClick={()=>setSigMode(v)} style={{ fontFamily:'var(--font-mono)', fontSize:10, padding:'8px 16px', background:sigMode===v?'color-mix(in srgb, var(--green) 10%, transparent)':'var(--bg3)', color:sigMode===v?'var(--green)':'var(--muted)', border:`1px solid ${sigMode===v?'color-mix(in srgb, var(--green) 40%, transparent)':'var(--border)'}`, cursor:'pointer' }}>{l}</button>
             ))}
           </div>
@@ -1165,16 +1165,16 @@ function SignPDF() {
             <div><label style={S.label}>SIZE</label><input type="number" value={size} onChange={e=>setSize(+e.target.value)} min={10} max={100} style={S.input} /></div>
           </div>
 
-          <button onClick={apply} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'SIGNING...' : 'â¬‡ APPLY SIGNATURE'}</button>
+          <button onClick={apply} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'SIGNING...' : '⬇ APPLY SIGNATURE'}</button>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â”€â”€ Repair PDF (re-save to fix corruption) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Repair PDF (re-save to fix corruption) ────────────────────────
 function RepairPDF() {
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -1189,7 +1189,7 @@ function RepairPDF() {
       const doc = await PDFDocument.load(await readAB(file), { ignoreEncryption: true, throwOnInvalidObject: false })
       const bytes = await doc.save({ useObjectStreams: true })
       downloadBlob(new Blob([bytes],{type:'application/pdf'}), file.name.replace('.pdf','_repaired.pdf'))
-      setMsg(`âœ“ PDF repaired and saved â€” ${fmtBytes(bytes.byteLength)}`)
+      setMsg(`✓ PDF repaired and saved — ${fmtBytes(bytes.byteLength)}`)
     } catch(e) { setErr('Could not repair: ' + e.message) }
     finally { setBusy(false) }
   }
@@ -1198,25 +1198,25 @@ function RepairPDF() {
     <div>
       <div style={{ ...S.panel, padding:'12px 16px', marginBottom:16 }}>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--orange)', letterSpacing:1 }}>
-          âš¡ Re-parses and rebuilds the PDF structure. Fixes common corruption issues like broken cross-references, malformed objects, and truncated streams.
+          ⚡ Re-parses and rebuilds the PDF structure. Fixes common corruption issues like broken cross-references, malformed objects, and truncated streams.
         </div>
       </div>
       <DropZone accept=".pdf" onFiles={([f])=>{ setFile(f); setErr(''); setMsg('') }} label="Drop corrupted PDF to repair" />
       {file && (
         <div style={{ marginTop:16 }}>
           <FileBadge file={file} />
-          <button onClick={repair} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'REPAIRING...' : 'ðŸ”§ REPAIR & DOWNLOAD'}</button>
+          <button onClick={repair} disabled={busy} style={{ ...S.btn, marginTop:12 }}>{busy ? 'REPAIRING...' : '🔧 REPAIR & DOWNLOAD'}</button>
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {msg && <div style={S.success}>{msg}</div>}
     </div>
   )
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 // TOOLS CONFIG + MAIN PAGE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 
 
 export { ProtectPDF, UnlockPDF, OrganizePDF, CropPDF, EditPDFMeta, PDFInfo, GrayscalePDF, HeaderFooterPDF, FlattenPDF, PDFToWord, PDFToExcel, WordToPDF, ExcelToPDF, CSVToPDF, JPGToPDF, PDFToJPG, HTMLToPDF, SignPDF, RepairPDF }

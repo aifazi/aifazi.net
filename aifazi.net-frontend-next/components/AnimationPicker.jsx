@@ -10,7 +10,7 @@ import {
   useGsapAnimation,
 } from '@/lib/animate'
 
-// â”€â”€ Animation Library Definition â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Animation Library Definition ─────────────────────────────────────────────
 export const ANIMATION_LIBRARY = [
   ...GSAP_ANIMATION_PRESETS.map(preset => ({
     id: preset.id,
@@ -21,31 +21,31 @@ export const ANIMATION_LIBRARY = [
     preview: preset.id.includes('float') ? 'float 2.8s ease-in-out infinite' : preset.id.includes('pulse') ? 'glow-pulse 1.6s ease-in-out infinite' : 'fadeUp 0.7s ease both',
     icon: preset.icon,
   })),
-  // â”€â”€ Entrance â”€â”€
-  { id: 'fadeUp',         label: 'Fade Up',         category: 'Entrance', css: 'fadeUp {dur}s {ease} {delay}s both', preview: 'fadeUp 0.7s ease both', icon: 'â†‘' },
-  { id: 'fadeDown',       label: 'Fade Down',       category: 'Entrance', css: 'fadeDown {dur}s {ease} {delay}s both', preview: 'fadeDown 0.7s ease both', icon: 'â†“' },
-  { id: 'fadeIn',         label: 'Fade In',         category: 'Entrance', css: 'fadeIn {dur}s {ease} {delay}s both', preview: 'fadeIn 0.7s ease both', icon: 'â—Ž' },
-  { id: 'fadeLeft',       label: 'Fade Left',       category: 'Entrance', css: 'fadeLeft {dur}s {ease} {delay}s both', preview: 'fadeLeft 0.7s ease both', icon: 'â†' },
-  { id: 'fadeRight',      label: 'Fade Right',      category: 'Entrance', css: 'fadeRight {dur}s {ease} {delay}s both', preview: 'fadeRight 0.7s ease both', icon: 'â†’' },
-  { id: 'slideInLeft',    label: 'Slide In Left',   category: 'Entrance', css: 'slide-in-left {dur}s {ease} {delay}s both', preview: 'slide-in-left 0.7s ease both', icon: 'âŸµ' },
-  { id: 'slideInRight',   label: 'Slide In Right',  category: 'Entrance', css: 'slide-in-right {dur}s {ease} {delay}s both', preview: 'slide-in-right 0.7s ease both', icon: 'âŸ¶' },
-  { id: 'scaleUp',        label: 'Scale Up',        category: 'Entrance', css: 'counter-up {dur}s {ease} {delay}s both', preview: 'counter-up 0.6s ease both', icon: 'âŠ•' },
-  // â”€â”€ Loop â”€â”€
-  { id: 'float',          label: 'Float',           category: 'Loop',    css: 'float {dur}s ease-in-out {delay}s infinite', preview: 'float 6s ease-in-out infinite', icon: 'ã€°' },
-  { id: 'blink',          label: 'Blink',           category: 'Loop',    css: 'blink {dur}s {ease} {delay}s infinite', preview: 'blink 1s ease infinite', icon: 'â—‰' },
-  { id: 'pulse',          label: 'Pulse',           category: 'Loop',    css: 'pulse {dur}s ease-in-out {delay}s infinite', preview: 'pulse 2s ease-in-out infinite', icon: 'âŠ›' },
-  { id: 'glowPulse',      label: 'Glow Pulse',      category: 'Loop',    css: 'glow-pulse {dur}s ease-in-out {delay}s infinite', preview: 'glow-pulse 2s ease-in-out infinite', icon: 'âœ¦' },
-  { id: 'orbDrift',       label: 'Orb Drift',       category: 'Loop',    css: 'orb-drift {dur}s ease-in-out {delay}s infinite', preview: 'orb-drift 15s ease-in-out infinite', icon: 'â—Œ' },
-  { id: 'gridDrift',      label: 'Grid Drift',      category: 'Loop',    css: 'gridDrift {dur}s linear {delay}s infinite', preview: 'gridDrift 20s linear infinite', icon: 'âŠž' },
-  { id: 'shimmerLine',    label: 'Shimmer',         category: 'Loop',    css: 'shimmer-line {dur}s ease-in-out {delay}s infinite', preview: 'shimmer-line 3s ease-in-out infinite', icon: 'âŸ¿' },
-  { id: 'borderChase',    label: 'Border Chase',    category: 'Loop',    css: 'border-chase {dur}s linear {delay}s infinite', preview: 'border-chase 4s linear infinite', icon: 'â–£' },
-  // â”€â”€ FX â”€â”€
-  { id: 'glitch1',        label: 'Glitch 1',        category: 'FX',      css: 'glitch-1 {dur}s {ease} {delay}s infinite', preview: 'glitch-1 4s ease 1s infinite', icon: 'â–“' },
-  { id: 'glitch2',        label: 'Glitch 2',        category: 'FX',      css: 'glitch-2 {dur}s {ease} {delay}s infinite', preview: 'glitch-2 4s ease 2s infinite', icon: 'â–’' },
-  { id: 'scanline',       label: 'Scanline',        category: 'FX',      css: 'scanline {dur}s linear {delay}s infinite', preview: 'scanline 8s linear infinite', icon: 'â‰¡' },
-  { id: 'particleRise',   label: 'Particle Rise',   category: 'FX',      css: 'particle-rise {dur}s ease-out {delay}s infinite', preview: 'particle-rise 4s ease-out infinite', icon: 'Â·' },
-  // â”€â”€ None â”€â”€
-  { id: 'none',           label: 'None',            category: 'None',    css: 'none', preview: 'none', icon: 'âœ•' },
+  // ── Entrance ──
+  { id: 'fadeUp',         label: 'Fade Up',         category: 'Entrance', css: 'fadeUp {dur}s {ease} {delay}s both', preview: 'fadeUp 0.7s ease both', icon: '↑' },
+  { id: 'fadeDown',       label: 'Fade Down',       category: 'Entrance', css: 'fadeDown {dur}s {ease} {delay}s both', preview: 'fadeDown 0.7s ease both', icon: '↓' },
+  { id: 'fadeIn',         label: 'Fade In',         category: 'Entrance', css: 'fadeIn {dur}s {ease} {delay}s both', preview: 'fadeIn 0.7s ease both', icon: '◎' },
+  { id: 'fadeLeft',       label: 'Fade Left',       category: 'Entrance', css: 'fadeLeft {dur}s {ease} {delay}s both', preview: 'fadeLeft 0.7s ease both', icon: '←' },
+  { id: 'fadeRight',      label: 'Fade Right',      category: 'Entrance', css: 'fadeRight {dur}s {ease} {delay}s both', preview: 'fadeRight 0.7s ease both', icon: '→' },
+  { id: 'slideInLeft',    label: 'Slide In Left',   category: 'Entrance', css: 'slide-in-left {dur}s {ease} {delay}s both', preview: 'slide-in-left 0.7s ease both', icon: '⟵' },
+  { id: 'slideInRight',   label: 'Slide In Right',  category: 'Entrance', css: 'slide-in-right {dur}s {ease} {delay}s both', preview: 'slide-in-right 0.7s ease both', icon: '⟶' },
+  { id: 'scaleUp',        label: 'Scale Up',        category: 'Entrance', css: 'counter-up {dur}s {ease} {delay}s both', preview: 'counter-up 0.6s ease both', icon: '⊕' },
+  // ── Loop ──
+  { id: 'float',          label: 'Float',           category: 'Loop',    css: 'float {dur}s ease-in-out {delay}s infinite', preview: 'float 6s ease-in-out infinite', icon: '〰' },
+  { id: 'blink',          label: 'Blink',           category: 'Loop',    css: 'blink {dur}s {ease} {delay}s infinite', preview: 'blink 1s ease infinite', icon: '◉' },
+  { id: 'pulse',          label: 'Pulse',           category: 'Loop',    css: 'pulse {dur}s ease-in-out {delay}s infinite', preview: 'pulse 2s ease-in-out infinite', icon: '⊛' },
+  { id: 'glowPulse',      label: 'Glow Pulse',      category: 'Loop',    css: 'glow-pulse {dur}s ease-in-out {delay}s infinite', preview: 'glow-pulse 2s ease-in-out infinite', icon: '✦' },
+  { id: 'orbDrift',       label: 'Orb Drift',       category: 'Loop',    css: 'orb-drift {dur}s ease-in-out {delay}s infinite', preview: 'orb-drift 15s ease-in-out infinite', icon: '◌' },
+  { id: 'gridDrift',      label: 'Grid Drift',      category: 'Loop',    css: 'gridDrift {dur}s linear {delay}s infinite', preview: 'gridDrift 20s linear infinite', icon: '⊞' },
+  { id: 'shimmerLine',    label: 'Shimmer',         category: 'Loop',    css: 'shimmer-line {dur}s ease-in-out {delay}s infinite', preview: 'shimmer-line 3s ease-in-out infinite', icon: '⟿' },
+  { id: 'borderChase',    label: 'Border Chase',    category: 'Loop',    css: 'border-chase {dur}s linear {delay}s infinite', preview: 'border-chase 4s linear infinite', icon: '▣' },
+  // ── FX ──
+  { id: 'glitch1',        label: 'Glitch 1',        category: 'FX',      css: 'glitch-1 {dur}s {ease} {delay}s infinite', preview: 'glitch-1 4s ease 1s infinite', icon: '▓' },
+  { id: 'glitch2',        label: 'Glitch 2',        category: 'FX',      css: 'glitch-2 {dur}s {ease} {delay}s infinite', preview: 'glitch-2 4s ease 2s infinite', icon: '▒' },
+  { id: 'scanline',       label: 'Scanline',        category: 'FX',      css: 'scanline {dur}s linear {delay}s infinite', preview: 'scanline 8s linear infinite', icon: '≡' },
+  { id: 'particleRise',   label: 'Particle Rise',   category: 'FX',      css: 'particle-rise {dur}s ease-out {delay}s infinite', preview: 'particle-rise 4s ease-out infinite', icon: '·' },
+  // ── None ──
+  { id: 'none',           label: 'None',            category: 'None',    css: 'none', preview: 'none', icon: '✕' },
 ]
 
 const CATEGORIES = ['All', 'GSAP', 'Entrance', 'Loop', 'FX', 'None']
@@ -70,7 +70,7 @@ const GSAP_EASINGS = [
   { label: 'none', value: 'none' },
 ]
 
-// â”€â”€ Build final animation string from selection + params â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Build final animation string from selection + params ─────────────────────
 function buildAnimCSS(anim, params) {
   if (!anim || anim.id === 'none') return 'none'
   if (anim.engine === 'gsap') return buildGsapAnimationValue(anim.id, params)
@@ -102,7 +102,7 @@ function LivePreviewElement({ animationValue, label, replayKey }) {
   )
 }
 
-// â”€â”€ Preview Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Preview Card ─────────────────────────────────────────────────────────────
 function PreviewCard({ anim, selected, onSelect }) {
   const [key, setKey] = useState(0)
   const isSelected = selected?.id === anim.id
@@ -155,7 +155,7 @@ function PreviewCard({ anim, selected, onSelect }) {
   )
 }
 
-// â”€â”€ Main AnimationPicker Drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main AnimationPicker Drawer ───────────────────────────────────────────────
 export default function AnimationPicker() {
   const editCtx = useEdit()
   const open      = editCtx?.animPickerOpen    || false
@@ -238,7 +238,7 @@ export default function AnimationPicker() {
         }}
       />
 
-      {/* Drawer â€” inline CSS vars override any data-theme cascade */}
+      {/* Drawer — inline CSS vars override any data-theme cascade */}
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 99995,
         width: 360, borderLeft: '1px solid color-mix(in srgb, var(--cyan) 15%, transparent)',
@@ -259,11 +259,11 @@ export default function AnimationPicker() {
         background: '#0b1118',
       }}>
 
-        {/* â”€â”€ Header â”€â”€ */}
+        {/* ── Header ── */}
         <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 16 }}>âœ¨</span>
+              <span style={{ fontSize: 16 }}>✨</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: 'var(--green)' }}>GSAP ANIMATION LIBRARY</span>
             </div>
             <button
@@ -271,7 +271,7 @@ export default function AnimationPicker() {
               style={{ background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', width: 28, height: 28, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
-            >âœ•</button>
+            >✕</button>
           </div>
           {target && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginTop: 2 }}>
@@ -281,7 +281,7 @@ export default function AnimationPicker() {
           )}
         </div>
 
-        {/* â”€â”€ Live Preview â”€â”€ */}
+        {/* ── Live Preview ── */}
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg3)' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>LIVE PREVIEW</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -302,11 +302,11 @@ export default function AnimationPicker() {
               style={{ flexShrink: 0, width: 28, height: 28, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
-            >â†º</button>
+            >↺</button>
           </div>
         </div>
 
-        {/* â”€â”€ Params â”€â”€ */}
+        {/* ── Params ── */}
         <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>PARAMETERS</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
@@ -350,7 +350,7 @@ export default function AnimationPicker() {
           </div>
         </div>
 
-        {/* â”€â”€ Category Tabs â”€â”€ */}
+        {/* ── Category Tabs ── */}
         <div style={{ padding: '8px 16px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: 4, overflowX: 'auto', paddingBottom: 8 }}>
             {CATEGORIES.map(cat => {
@@ -374,7 +374,7 @@ export default function AnimationPicker() {
           </div>
         </div>
 
-        {/* â”€â”€ Animation Grid â”€â”€ */}
+        {/* ── Animation Grid ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px 8px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             {filtered.map(anim => (
@@ -400,7 +400,7 @@ export default function AnimationPicker() {
           </div>
         </div>
 
-        {/* â”€â”€ Footer Apply â”€â”€ */}
+        {/* ── Footer Apply ── */}
         <div style={{ borderTop: '1px solid var(--border)', padding: '12px 16px', flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             <button
@@ -428,7 +428,7 @@ export default function AnimationPicker() {
             >APPLY ANIMATION</button>
           </div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', letterSpacing: 1, textAlign: 'center', opacity: 0.6 }}>
-            CHANGES STAGED â€” SAVE WITH DONE â†µ
+            CHANGES STAGED — SAVE WITH DONE ↵
           </div>
         </div>
       </div>

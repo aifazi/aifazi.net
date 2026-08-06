@@ -90,15 +90,15 @@ export default function ForumHome() {
           </Card>
         ) : (
           <div className="forum-home-grid forum-frame" style={{ display: 'grid', gridTemplateColumns: '280px minmax(0,1fr)', gap: 26, alignItems: 'start' }}>
-            {/* â”€â”€ Left sidebar: categories â”€â”€ */}
+            {/* ── Left sidebar: categories ── */}
             <aside className="forum-home-sidebar" style={{ position: 'sticky', top: 96, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Stats */}
               <Card style={{ padding: 22 }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>STATS</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <Stat small label="Categories" value={cats.length} color="var(--green)" icon="ðŸ—‚" />
-                  <Stat small label="Threads" value={totalThreads} color="var(--cyan)" icon="ðŸ§µ" />
-                  <Stat small label="Members" value={user ? 'â€”' : 'Join us'} color="var(--muted)" icon="ðŸ‘¥" />
+                  <Stat small label="Categories" value={cats.length} color="var(--green)" icon="🗂" />
+                  <Stat small label="Threads" value={totalThreads} color="var(--cyan)" icon="🧵" />
+                  <Stat small label="Members" value={user ? '—' : 'Join us'} color="var(--muted)" icon="👥" />
                 </div>
               </Card>
 
@@ -117,9 +117,9 @@ export default function ForumHome() {
                         borderRadius: 10, textDecoration: 'none', color: 'var(--text)',
                       }}
                     >
-                      <span style={{ fontSize: 20, flexShrink: 0 }}>{cat.icon || 'ðŸ’¬'}</span>
+                      <span style={{ fontSize: 20, flexShrink: 0 }}>{cat.icon || '💬'}</span>
                       <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
-                      {cat.locked && <span style={{ fontSize: 11, opacity: 0.5 }}>ðŸ”’</span>}
+                      {cat.locked && <span style={{ fontSize: 11, opacity: 0.5 }}>🔒</span>}
                       <span style={{
                         fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)',
                         background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 18%, transparent)',
@@ -132,7 +132,7 @@ export default function ForumHome() {
 
               {/* CTA */}
               <Card accent style={{ padding: 22 }}>
-                <div style={{ fontSize: 26, marginBottom: 10 }}>ðŸ§­</div>
+                <div style={{ fontSize: 26, marginBottom: 10 }}>🧭</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Start a discussion</div>
                 <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: '0 0 16px' }}>
                   {activeCats.length} active categor{activeCats.length !== 1 ? 'ies' : 'y'} with {totalThreads} thread{totalThreads !== 1 ? 's' : ''}.
@@ -167,12 +167,12 @@ export default function ForumHome() {
               )}
             </aside>
 
-            {/* â”€â”€ Main column: trending + recent â”€â”€ */}
+            {/* ── Main column: trending + recent ── */}
             <div className="forum-home-main">
               {/* Trending */}
               {trending.length > 0 && (
                 <div style={{ marginBottom: 32 }}>
-                  <SectionHeader eyebrow="Hot Right Now" title="ðŸ”¥ Trending" />
+                  <SectionHeader eyebrow="Hot Right Now" title="🔥 Trending" />
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {trending.map(t => (
                       <Card key={t.id || t._id} hover style={{ padding: '14px 20px', borderColor: 'color-mix(in srgb, var(--cyan) 18%, transparent)' }}>
@@ -210,15 +210,15 @@ export default function ForumHome() {
                     <Link to={`/forum/thread/${t.id || t._id}`} style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', textDecoration: 'none', color: 'inherit' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 7 }}>
-                          {t.pinned && <Badge tone="green" glow>ðŸ“Œ Pinned</Badge>}
-                          {t.locked && <Badge tone="red">ðŸ”’ Locked</Badge>}
+                          {t.pinned && <Badge tone="green" glow>📌 Pinned</Badge>}
+                          {t.locked && <Badge tone="red">🔒 Locked</Badge>}
                           <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: 'var(--text)', wordBreak: 'break-word' }}>{t.title}</span>
                         </div>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
                           <span style={{ color: t.category?.color || 'var(--cyan)' }}>{t.category?.icon} {t.category?.name || ''}</span>
                           <span>by <span style={{ color: 'var(--text)' }}>{t.author?.username || t.author_name}</span></span>
                           <span>{timeAgo(t.created_at || t.createdAt)}</span>
-                          {t.likes > 0 && <span style={{ color: 'var(--red)' }}>â™¥ {t.likes}</span>}
+                          {t.likes > 0 && <span style={{ color: 'var(--red)' }}>♥ {t.likes}</span>}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
@@ -230,9 +230,9 @@ export default function ForumHome() {
                 ))}
                 {recent.length === 0 && (
                   <EmptyState
-                    icon="ðŸŒ±"
+                    icon="🌱"
                     title="No threads yet"
-                    text={user ? 'Start the conversation â€” create the first thread.' : 'Be the first to post!'}
+                    text={user ? 'Start the conversation — create the first thread.' : 'Be the first to post!'}
                     action="+ New Thread"
                     actionTo={user ? '/forum/new' : '/login'}
                   />

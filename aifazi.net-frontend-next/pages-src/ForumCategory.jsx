@@ -53,7 +53,7 @@ export default function ForumCategory() {
 
   if (!cat && !loading) return (
     <div className="page-container community-page" style={{ zIndex: 1, position: 'relative', textAlign: 'center', paddingTop: 120 }}>
-      <EmptyState icon="ðŸ”" title="Category not found" text="This category may have been removed." action="â† Back to Forum" actionTo="/forum" />
+      <EmptyState icon="🔍" title="Category not found" text="This category may have been removed." action="← Back to Forum" actionTo="/forum" />
     </div>
   )
 
@@ -72,11 +72,11 @@ export default function ForumCategory() {
         <Card accent={cat?.color?.includes('cyan') ? 'cyan' : undefined} style={{ padding: '30px 32px', marginBottom: 26 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-              <div style={{ fontSize: 44 }}>{cat?.icon || 'ðŸ’¬'}</div>
+              <div style={{ fontSize: 44 }}>{cat?.icon || '💬'}</div>
               <div>
                 <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px,4vw,40px)', fontWeight: 700, color: 'var(--text)', margin: 0 }}>{cat?.name}</h1>
                 {cat?.description && <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', margin: '6px 0 0' }}>{cat.description}</p>}
-                {cat?.locked && <Badge tone="red" style={{ marginTop: 10 }}>ðŸ”’ Category locked</Badge>}
+                {cat?.locked && <Badge tone="red" style={{ marginTop: 10 }}>🔒 Category locked</Badge>}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -128,7 +128,7 @@ export default function ForumCategory() {
                       onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 5%, transparent)'}
                       onMouseLeave={e => e.currentTarget.style.background = c.slug === slug ? 'color-mix(in srgb, var(--cyan) 7%, transparent)' : 'transparent'}
                     >
-                      <span style={{ fontSize: 20, flexShrink: 0 }}>{c.icon || 'ðŸ’¬'}</span>
+                      <span style={{ fontSize: 20, flexShrink: 0 }}>{c.icon || '💬'}</span>
                       <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
                       <span style={{
                         fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)',
@@ -143,7 +143,7 @@ export default function ForumCategory() {
 
             {/* Back to forum */}
             <Card accent style={{ padding: 22 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>â†© Back to Forum</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>↩ Back to Forum</div>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: '0 0 16px' }}>
                 Browse all categories and recent activity across the community.
               </p>
@@ -180,15 +180,15 @@ export default function ForumCategory() {
                         <Avatar user={t.author} size={38} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                            {t.pinned && <Badge tone="green" glow>ðŸ“Œ</Badge>}
-                            {t.locked && <Badge tone="red">ðŸ”’</Badge>}
+                            {t.pinned && <Badge tone="green" glow>📌</Badge>}
+                            {t.locked && <Badge tone="red">🔒</Badge>}
                             <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--text)', wordBreak: 'break-word' }}>{t.title}</span>
                           </div>
                           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                             <span style={{ color: 'var(--text)' }}>{t.author?.username || t.author_name}</span>
-                            <span>Â·</span>
+                            <span>·</span>
                             <span>{timeAgo(t.createdAt || t.created_at)}</span>
-                            {t.lastReplyAt && (t.replyCount || 0) > 0 && <span>Â· last reply {timeAgo(t.lastReplyAt)}</span>}
+                            {t.lastReplyAt && (t.replyCount || 0) > 0 && <span>· last reply {timeAgo(t.lastReplyAt)}</span>}
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
@@ -201,7 +201,7 @@ export default function ForumCategory() {
                   ))}
                   {threads.length === 0 && (
                     <EmptyState
-                      icon="ðŸ”Ž"
+                      icon="🔎"
                       title={debouncedSearch ? 'No matches' : 'No threads yet'}
                       text={debouncedSearch ? 'Try a different search.' : (user && !cat?.locked ? 'Be the first to post here.' : 'No threads in this category yet.')}
                       action={user && !cat?.locked && !debouncedSearch ? '+ New Thread' : undefined}

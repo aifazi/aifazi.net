@@ -37,7 +37,7 @@ export function parseJwt(t) {
 }
 
 export function getToken() {
-  // H4 â€” memory-first via the central API client (cookie auth covers the rest).
+  // H4 — memory-first via the central API client (cookie auth covers the rest).
   return getAuthToken()
 }
 

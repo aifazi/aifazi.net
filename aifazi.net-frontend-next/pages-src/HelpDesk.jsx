@@ -53,7 +53,7 @@ const inputStyle = {
 }
 const labelStyle = { ...mono, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }
 
-// â”€â”€ Message Bubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Message Bubble ─────────────────────────────────────────
 function MessageBubble({ msg }) {
   const isStaff = msg.author_type === 'staff'
   const isSystem = msg.author_type === 'system'
@@ -96,7 +96,7 @@ function MessageBubble({ msg }) {
   )
 }
 
-// â”€â”€ Ticket Detail View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Ticket Detail View ─────────────────────────────────────
 function TicketDetail({ ticketId, onBack, accessEmail = '' }) {
   const { user } = useForum()
   const [ticket, setTicket] = useState(null)
@@ -128,7 +128,7 @@ function TicketDetail({ ticketId, onBack, accessEmail = '' }) {
   }, [fetchTicket, ticket])
 
   // Supabase Realtime for ticket messages/status, with polling above as local fallback.
-  // Only subscribed for an authenticated user â€” anon Realtime on helpdesk rows is
+  // Only subscribed for an authenticated user — anon Realtime on helpdesk rows is
   // denied by RLS anyway, so gate it here too (defense in depth + fewer sockets).
   useEffect(() => {
     if (!mounted || !ticketId || !user) return
@@ -208,7 +208,7 @@ const sendReply = async () => {
         background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 6,
         padding: '8px 16px', cursor: 'pointer', marginBottom: 16,
       }}>
-        â† BACK TO TICKETS
+        ← BACK TO TICKETS
       </button>
 
       <div style={card}>
@@ -252,11 +252,11 @@ const sendReply = async () => {
           <button onClick={() => msgListRef.current?.scrollTo({ top: 0, behavior: 'smooth' })} title="Scroll to top"
             style={{ position:'absolute', top:24, right:-4, width:26, height:26, borderRadius:'50%', border:'1px solid var(--border)',
               background:'rgba(0,0,0,0.7)', color:'var(--muted)', fontSize:11, cursor:'pointer', zIndex:5,
-              display:'flex', alignItems:'center', justifyContent:'center', opacity:0.6 }}>â†‘</button>
+              display:'flex', alignItems:'center', justifyContent:'center', opacity:0.6 }}>↑</button>
           {!atBottom && <button onClick={() => msgListRef.current?.scrollTo({ top: msgListRef.current.scrollHeight, behavior: 'smooth' })} title="Scroll to bottom"
             style={{ position:'absolute', bottom: canReply ? 16 : 0, right:-4, width:26, height:26, borderRadius:'50%',
               border:'1px solid color-mix(in srgb, var(--green) 40%, transparent)', background:'color-mix(in srgb, var(--green) 15%, transparent)', color:'var(--green)', fontSize:11, cursor:'pointer', zIndex:5,
-              display:'flex', alignItems:'center', justifyContent:'center' }}>â†“</button>}
+              display:'flex', alignItems:'center', justifyContent:'center' }}>↓</button>}
         </div>
 
         {/* Reply box */}
@@ -275,7 +275,7 @@ const sendReply = async () => {
               border: 'none', borderRadius: 6, cursor: sending || !reply.trim() ? 'not-allowed' : 'pointer',
               fontWeight: 700,
             }}>
-              {sending ? 'SENDING...' : 'â†© SEND REPLY'}
+              {sending ? 'SENDING...' : '↩ SEND REPLY'}
             </button>
           </div>
         )}
@@ -289,7 +289,7 @@ const sendReply = async () => {
   )
 }
 
-// â”€â”€ Submit Ticket â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Submit Ticket ──────────────────────────────────────────
 function SubmitTicket({ onSuccess }) {
   const { user } = useForum()
   const [form, setForm] = useState({ name: '', email: '', subject: '', priority: 'medium', category: 'general', description: '' })
@@ -313,9 +313,9 @@ function SubmitTicket({ onSuccess }) {
       const res = await api.post('/helpdesk/tickets', payload)
       if (res.data.account_created) {
         setAccountCreated(true)
-        notify.success('Ticket submitted! An account was also created â€” check your email for login credentials.', { title: 'Ticket Created âœ“', duration: 8000 })
+        notify.success('Ticket submitted! An account was also created — check your email for login credentials.', { title: 'Ticket Created ✓', duration: 8000 })
       } else {
-        notify.success("Your ticket has been submitted. We'll get back to you soon.", { title: 'Ticket Created âœ“' })
+        notify.success("Your ticket has been submitted. We'll get back to you soon.", { title: 'Ticket Created ✓' })
       }
       setForm({ name: '', email: '', subject: '', priority: 'medium', category: 'general', description: '' })
       onSuccess?.(res.data.id || res.data.ticket_id, form.email)
@@ -329,7 +329,7 @@ function SubmitTicket({ onSuccess }) {
     <div style={card}>
       {accountCreated && (
         <div style={{ ...mono, fontSize: 11, color: '#00ff88', background: 'color-mix(in srgb, var(--green) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 20%, transparent)', borderRadius: 6, padding: '12px 16px', marginBottom: 20, lineHeight: 1.7 }}>
-          âœ“ An aifazi.net account was created with your email. Check your inbox for login credentials so you can track this ticket and future ones from your profile.
+          ✓ An aifazi.net account was created with your email. Check your inbox for login credentials so you can track this ticket and future ones from your profile.
         </div>
       )}
       <div style={{ marginBottom: 20 }}>
@@ -369,7 +369,7 @@ function SubmitTicket({ onSuccess }) {
         <div>
           <label style={labelStyle}>DESCRIPTION *</label>
           <textarea value={form.description} onChange={e => set('description', e.target.value)}
-            placeholder="Describe the issue in detail â€” steps to reproduce, error messages, affected systems..."
+            placeholder="Describe the issue in detail — steps to reproduce, error messages, affected systems..."
             rows={5} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7 }}
             onFocus={e => e.target.style.borderColor = 'var(--cyan)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
         </div>
@@ -379,14 +379,14 @@ function SubmitTicket({ onSuccess }) {
           border: 'none', borderRadius: 6, cursor: sending ? 'not-allowed' : 'pointer',
           fontWeight: 700, transition: 'all 0.2s', alignSelf: 'flex-start',
         }}>
-          {sending ? 'SUBMITTING...' : 'ðŸŽ« SUBMIT TICKET'}
+          {sending ? 'SUBMITTING...' : '🎫 SUBMIT TICKET'}
         </button>
       </form>
     </div>
   )
 }
 
-// â”€â”€ Check Tickets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Check Tickets ─────────────────────────────────────────
 function CheckStatus({ onViewTicket, onGuestEmail }) {
   const { user } = useForum()
   const [query, setQuery] = useState(user?.email || '')
@@ -495,7 +495,7 @@ const filtered = ticketList.filter(t => (
 
       {!user && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>ðŸ”’</div>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🔒</div>
           <div style={{ ...mono, fontSize: 11, color: 'var(--muted)' }}>
             Sign in to view and manage your support tickets.
           </div>
@@ -511,7 +511,7 @@ const filtered = ticketList.filter(t => (
             color: filterStatus === 'all' ? 'var(--text)' : 'var(--muted)',
             borderRadius: 4, cursor: 'pointer',
           }}>
-            ALL Â· {ticketList.length}
+            ALL · {ticketList.length}
           </button>
           {Object.entries(STATUS_CFG).map(([s, cfg]) => {
             const count = ticketList.filter(t => t.status === s).length
@@ -523,7 +523,7 @@ const filtered = ticketList.filter(t => (
                 color: filterStatus === s ? cfg.color : 'var(--muted)',
                 borderRadius: 4, cursor: 'pointer',
               }}>
-                {cfg.label} Â· {count}
+                {cfg.label} · {count}
               </button>
             )
           })}
@@ -539,7 +539,7 @@ const filtered = ticketList.filter(t => (
                 color: active ? 'var(--green)' : 'var(--muted)',
                 borderRadius: 4, cursor: 'pointer',
               }}>
-{label} Â· {count}
+{label} · {count}
               </button>
             )
           })}
@@ -554,14 +554,14 @@ const filtered = ticketList.filter(t => (
                 color: active ? cfg.color : 'var(--muted)',
                 borderRadius: 4, cursor: 'pointer',
               }}>
-                {cfg.label} Â· {count}
+                {cfg.label} · {count}
               </button>
             )
           })}
         </div>
       )}
 
-      {loading && <div style={{ textAlign: 'center', padding: '24px 0', ...mono, fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADINGâ€¦</div>}
+      {loading && <div style={{ textAlign: 'center', padding: '24px 0', ...mono, fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADING…</div>}
 
       {!loading && filtered.length > 0 && (
         <div style={{ marginTop: 4 }}>
@@ -587,7 +587,7 @@ const filtered = ticketList.filter(t => (
                   </div>
                 </div>
                 <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>
-                  #{t.ticket_id || (t.id || '').slice(-6).toUpperCase()} Â· {t.category || 'general'} Â· {t.created_at ? new Date(t.created_at).toLocaleDateString() : 'â€”'}
+                  #{t.ticket_id || (t.id || '').slice(-6).toUpperCase()} · {t.category || 'general'} · {t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}
                 </div>
               </div>
             )
@@ -597,7 +597,7 @@ const filtered = ticketList.filter(t => (
 
       {!loading && tickets !== null && filtered.length === 0 && (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>ðŸ“­</div>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>📭</div>
           <div style={{ ...mono, fontSize: 11, color: 'var(--muted)' }}>
             No tickets match the selected filters.
           </div>
@@ -607,11 +607,11 @@ const filtered = ticketList.filter(t => (
   )
 }
 
-// â”€â”€ FAQ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── FAQ ────────────────────────────────────────────────────
 const FAQS = [
   { q: 'How long does it take to respond?', a: 'Critical and High priority tickets are addressed within 4 hours. Medium within 1 business day. Low within 3 business days.' },
   { q: 'What counts as critical priority?', a: 'System outages, complete loss of service, security incidents, or anything blocking all users from working.' },
-  { q: 'Can I reply to my ticket?', a: 'Yes â€” sign in and go to My Tickets to view and reply to your tickets.' },
+  { q: 'Can I reply to my ticket?', a: 'Yes — sign in and go to My Tickets to view and reply to your tickets.' },
   { q: 'What info should I include?', a: 'Device name, OS version, steps to reproduce the issue, any error messages, and what you were trying to do.' },
 ]
 
@@ -639,7 +639,7 @@ function FAQ() {
   )
 }
 
-// â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main Page ──────────────────────────────────────────────
 export default function HelpDesk() {
   const { user } = useForum()
   const [tab, setTab] = useState('submit')
@@ -663,9 +663,9 @@ export default function HelpDesk() {
 
   const STAT_CARDS = [
     { label: 'AVG RESPONSE', value: '< 4h',  color: 'var(--cyan)' },
-    { label: 'RESOLVED',     value: stats?.resolvedToday ?? 'â€”', color: 'var(--green)' },
-    { label: 'OPEN TICKETS', value: stats?.openTickets ?? 'â€”',   color: 'var(--orange)' },
-    { label: 'IN PROGRESS',  value: stats?.inProgress ?? 'â€”',    color: '#a855f7' },
+    { label: 'RESOLVED',     value: stats?.resolvedToday ?? '—', color: 'var(--green)' },
+    { label: 'OPEN TICKETS', value: stats?.openTickets ?? '—',   color: 'var(--orange)' },
+    { label: 'IN PROGRESS',  value: stats?.inProgress ?? '—',    color: '#a855f7' },
   ]
 
   return (
@@ -675,7 +675,7 @@ export default function HelpDesk() {
         <div style={{ position: 'absolute', top: -60, right: -60, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, color-mix(in srgb, var(--cyan) 6%, transparent) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ ...mono, fontSize: 9, letterSpacing: 4, color: 'var(--cyan)', marginBottom: 10 }}>SUPPORT / TOOLS</div>
         <h1 style={{ fontSize: 40, fontWeight: 800, margin: '0 0 12px', lineHeight: 1.1 }}>
-          ðŸŽ« Help Desk <span style={{ color: 'var(--cyan)' }}>&amp; Tickets</span>
+          🎫 Help Desk <span style={{ color: 'var(--cyan)' }}>&amp; Tickets</span>
         </h1>
         <p style={{ color: 'var(--muted)', fontSize: 15, maxWidth: 520, lineHeight: 1.7, margin: '0 0 28px' }}>
           Submit a support request, check on existing tickets, or browse the FAQ. We aim to respond to all issues as fast as possible.
@@ -695,9 +695,9 @@ export default function HelpDesk() {
         {/* Tabs */}
         <div className="helpdesk-tabs" style={{ display: 'flex', gap: 0, marginBottom: 28, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', width: 'fit-content', flexWrap: 'wrap' }}>
           {[
-            { key: 'submit', label: 'ðŸŽ« Submit Ticket' },
-            { key: 'status', label: user ? 'ðŸ” My Tickets' : 'ðŸ” Find Ticket' },
-            { key: 'faq',    label: 'â“ FAQ' },
+            { key: 'submit', label: '🎫 Submit Ticket' },
+            { key: 'status', label: user ? '🔍 My Tickets' : '🔍 Find Ticket' },
+            { key: 'faq',    label: '❓ FAQ' },
           ].map(t => (
             <button key={t.key} onClick={() => { setTab(t.key); setViewTicketId(null) }} style={{
               ...mono, fontSize: 11, letterSpacing: 1, padding: '10px 20px',
@@ -748,8 +748,8 @@ export default function HelpDesk() {
               <div style={card}>
                 <div style={{ ...mono, fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>OTHER CHANNELS</div>
                 {[
-                  { icon: 'ðŸ’¬', label: 'Live Chat', desc: 'Instant support', to: '/chat' },
-                  { icon: 'ðŸ“§', label: 'Email', desc: 'contact@aifazi.net', href: 'mailto:contact@aifazi.net' },
+                  { icon: '💬', label: 'Live Chat', desc: 'Instant support', to: '/chat' },
+                  { icon: '📧', label: 'Email', desc: 'contact@aifazi.net', href: 'mailto:contact@aifazi.net' },
                 ].map(c => (
                   c.href ? (
                     <a key={c.label} href={c.href} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', textDecoration: 'none' }}>

@@ -7,7 +7,7 @@ import { useDialog } from '../../../components/Dialog'
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15', O = '#ff6b35'
 const money = c => `$${((c || 0) / 100).toFixed(2)}`
-const fmt = iso => iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'â€”'
+const fmt = iso => iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'
 
 const EMPTY = { product_id: '', name: '', subtitle: '', discount_percent: 10, starts_at: null, ends_at: null, active: true }
 
@@ -41,7 +41,7 @@ export default function DealsTab() {
   const save = async () => {
     if (!form.product_id) return toast.error('Pick a product')
     if (!form.name.trim()) return toast.error('Deal name is required')
-    if (form.discount_percent < 0 || form.discount_percent > 100) return toast.error('Discount must be 0â€“100')
+    if (form.discount_percent < 0 || form.discount_percent > 100) return toast.error('Discount must be 0–100')
     const payload = {
       product_id: form.product_id,
       name: form.name.trim(),
@@ -86,7 +86,7 @@ export default function DealsTab() {
             <div>
               <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>PRODUCT</label>
               <select value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })} style={{ ...input, width: '100%' }}>
-                {products.map(p => <option key={p.id} value={p.id}>{p.name} â€” {money(p.price_cents)}</option>)}
+                {products.map(p => <option key={p.id} value={p.id}>{p.name} — {money(p.price_cents)}</option>)}
               </select>
             </div>
             <div>
@@ -108,20 +108,20 @@ export default function DealsTab() {
           </div>
           <div style={{ marginTop: 12 }}>
             <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>SUBTITLE</label>
-            <input value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} placeholder="24 hours only â€” ends midnight" style={{ ...input, width: '100%' }} />
+            <input value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} placeholder="24 hours only — ends midnight" style={{ ...input, width: '100%' }} />
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontFamily: MONO, fontSize: 11, color: 'var(--muted)', cursor: 'pointer' }}>
             <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} /> Active
           </label>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? 'â€¦' : 'SAVE DEAL'}</button>
+            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE DEAL'}</button>
             <button onClick={cancel} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>
           </div>
         </div>
       )}
 
       <div style={{ marginBottom: 14 }}>
-        <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 18px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: 'pointer' }}>âš¡ + NEW DEAL</button>
+        <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 18px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: 'pointer' }}>⚡ + NEW DEAL</button>
       </div>
 
       {loading ? <div className="loader" /> : deals.length === 0 ? (
@@ -133,13 +133,13 @@ export default function DealsTab() {
           const dealPrice = d.product_price_cents ? Math.round(d.product_price_cents * (100 - d.discount_percent) / 100) : null
           return (
             <div key={d.id} style={{ background: 'var(--bg2)', border: `1px solid ${active ? 'var(--border)' : 'rgba(255,255,255,.08)'}`, opacity: active ? 1 : 0.55, borderRadius: 10, padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: MONO, fontSize: 16 }}>âš¡</span>
+              <span style={{ fontFamily: MONO, fontSize: 16 }}>⚡</span>
               <div style={{ flex: 1, minWidth: 160 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{d.name}</div>
-                <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{d.product_name || d.product_id} Â· {d.discount_percent}% off</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{d.product_name || d.product_id} · {d.discount_percent}% off</div>
                 {d.subtitle && <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{d.subtitle}</div>}
               </div>
-              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: active ? (live ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)') : 'rgba(255,71,87,.08)', border: `1px solid ${active ? (live ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'color-mix(in srgb, var(--cyan) 30%, transparent)') : 'rgba(255,71,87,.3)'}`, color: active ? (live ? G : C) : R }}>{active ? (live ? 'â— LIVE' : 'SCHEDULED') : 'PAUSED'}</span>
+              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: active ? (live ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)') : 'rgba(255,71,87,.08)', border: `1px solid ${active ? (live ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'color-mix(in srgb, var(--cyan) 30%, transparent)') : 'rgba(255,71,87,.3)'}`, color: active ? (live ? G : C) : R }}>{active ? (live ? '● LIVE' : 'SCHEDULED') : 'PAUSED'}</span>
               {dealPrice && <span style={{ fontFamily: MONO, fontSize: 12 }}><s style={{ color: 'var(--muted)' }}>{money(d.product_price_cents)}</s> <span style={{ color: O, fontWeight: 700 }}>{money(dealPrice)}</span></span>}
               <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', textAlign: 'right' }}>
                 {d.starts_at ? `from ${fmt(d.starts_at)}` : 'no start'}

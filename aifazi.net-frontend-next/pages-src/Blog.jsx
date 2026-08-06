@@ -15,7 +15,7 @@ function BlogCover({ src, title }) {
   if (!src || failed) {
     return (
       <div className="blog-cover-wrapper">
-        <span style={{ fontSize: 48, opacity: 0.3 }}>ðŸ“</span>
+        <span style={{ fontSize: 48, opacity: 0.3 }}>📝</span>
       </div>
     )
   }
@@ -157,7 +157,7 @@ export default function Blog({ initialPosts }) {
                   padding: '4px 10px', borderRadius: 999, border: '1px solid rgba(255,60,60,0.4)',
                   background: 'rgba(255,60,60,0.08)', color: 'var(--red)',
                   cursor: 'pointer'
-                }}>âœ• CLEAR</button>
+                }}>✕ CLEAR</button>
               )}
               {allTags.map(tag => (
                 <button key={tag} onClick={() => setActiveTag(activeTag === tag ? '' : tag)} style={{
@@ -185,7 +185,7 @@ export default function Blog({ initialPosts }) {
             <NeonButton variant="ghost" onClick={() => fetchPosts()}>RETRY</NeonButton>
           </Card>
         ) : posts.length === 0 ? (
-          <EmptyState icon="ðŸ“­" title="No posts found" text={search ? 'No posts match your filters.' : 'Check back soon.'} />
+          <EmptyState icon="📭" title="No posts found" text={search ? 'No posts match your filters.' : 'Check back soon.'} />
         ) : (
           <>
             {/* Featured post */}
@@ -204,15 +204,15 @@ export default function Blog({ initialPosts }) {
                   </div>
                   <div style={{ padding: 'clamp(24px, 4vw, 44px)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
-                      <Badge tone="green" glow>â˜… Featured</Badge>
+                      <Badge tone="green" glow>★ Featured</Badge>
                       <Badge tone="cyan">{featured.category}</Badge>
                     </div>
                     <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 3vw, 34px)', fontWeight: 700, lineHeight: 1.2, color: 'var(--text)', margin: '0 0 14px' }}>{featured.title}</h2>
                     <p style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.7, margin: '0 0 20px' }}>{featured.excerpt || 'Read more...'}</p>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                       <span>{formatDate(featured.created_at)}</span>
-                      <span>â± {readingTime(featured.excerpt + ' ' + (featured.content || ''))}</span>
-                      {featured.views > 0 && <span>ðŸ‘ {featured.views}</span>}
+                      <span>⏱ {readingTime(featured.excerpt + ' ' + (featured.content || ''))}</span>
+                      {featured.views > 0 && <span>👁 {featured.views}</span>}
                     </div>
                   </div>
                 </Card>
@@ -229,8 +229,8 @@ export default function Blog({ initialPosts }) {
                       <div style={{ display: 'flex', gap: 12, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
                         <Badge tone="cyan">{post.category}</Badge>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{formatDate(post.created_at)}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>â± {readingTime(post.excerpt + ' ' + (post.content || ''))}</span>
-                        {post.views > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>ðŸ‘ {post.views}</span>}
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>⏱ {readingTime(post.excerpt + ' ' + (post.content || ''))}</span>
+                        {post.views > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>👁 {post.views}</span>}
                       </div>
                       <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, marginBottom: 12, lineHeight: 1.3, color: 'var(--text)' }}>
                         {post.title}
@@ -239,7 +239,7 @@ export default function Blog({ initialPosts }) {
                         {post.excerpt || 'Read more...'}
                       </p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2 }}>
-                        READ MORE <span>â†’</span>
+                        READ MORE <span>→</span>
                       </div>
                     </div>
                   </Card>

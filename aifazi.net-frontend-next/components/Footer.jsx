@@ -7,12 +7,12 @@ import api from '@/lib/api'
 import { getSiteSettings } from '@/lib/siteSettings'
 import { isFiveMHost, fivemRoute, useFiveMRoute } from '@/lib/fivemRoutes'
 
-// â”€â”€ Social icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Social icons ───────────────────────────────────────────────────────────────
 const GitHubIcon   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
 const LinkedInIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
 const TwitterIcon  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
 
-// â”€â”€ Animated status panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Animated status panel ─────────────────────────────────────────────────────
 function SystemStatus() {
   const services = [
     { label: 'API Server',     ok: true  },
@@ -27,7 +27,7 @@ function SystemStatus() {
       borderRadius: 8, padding: '14px 16px',
     }}>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 10 }}>
-        â—ˆ SYSTEM STATUS
+        ◈ SYSTEM STATUS
       </div>
       {services.map(s => (
         <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -46,13 +46,13 @@ function SystemStatus() {
         </div>
       ))}
       <div suppressHydrationWarning style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid color-mix(in srgb, var(--green) 10%, transparent)', fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1 }}>
-        Last checked Â· {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} UTC+4
+        Last checked · {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} UTC+4
       </div>
     </div>
   )
 }
 
-// â”€â”€ Skill / tech tag â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Skill / tech tag ──────────────────────────────────────────────────────────
 function TechBadge({ label, color }) {
   return (
     <span style={{
@@ -63,7 +63,7 @@ function TechBadge({ label, color }) {
   )
 }
 
-// â”€â”€ Animated hexagon logo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Animated hexagon logo ─────────────────────────────────────────────────────
 function FooterLogo() {
   return (
     <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style={{ flexShrink: 0 }}>
@@ -80,7 +80,7 @@ function FooterLogo() {
   )
 }
 
-// â”€â”€ Newsletter inline input â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Newsletter inline input ────────────────────────────────────────────────────
 function MiniNewsletter() {
   const [email, setEmail]   = useState('')
   const [status, setStatus] = useState(null) // null | 'ok' | 'err'
@@ -97,7 +97,7 @@ function MiniNewsletter() {
 
   if (status === 'ok') return (
     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1, padding: '8px 0' }}>
-      âœ“ Subscribed â€” thank you!
+      ✓ Subscribed — thank you!
     </div>
   )
 
@@ -122,14 +122,14 @@ function MiniNewsletter() {
         onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
         onMouseLeave={e => e.currentTarget.style.opacity = '1'}
       >
-        SUB â†’
+        SUB →
       </button>
     </div>
   )
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// â”€â”€ Layout variant renderers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Layout variant renderers ──────────────────────────────────────────────────
 
 function FooterMinimal({ siteConfig, sectionLinks, platformLinks, socialLinks, hasAdminAccess, handleHashLink, year }) {
   return (
@@ -169,7 +169,7 @@ function FooterMinimal({ siteConfig, sectionLinks, platformLinks, socialLinks, h
             >{icon}</a>
           ))}
           <div style={{ width: 1, height: 14, background: 'var(--border)' }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>Â© {year} tanvir@aifazi.net</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>© {year} tanvir@aifazi.net</span>
         </div>
       </div>
       <style>{`@media(max-width:768px){footer>div{flex-direction:column;text-align:center;padding:20px 24px!important;}}`}</style>
@@ -187,7 +187,7 @@ function FooterMagazine({ siteConfig, sectionLinks, platformLinks, socialLinks, 
               TANVIR
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 5, color: 'var(--green)', marginBottom: 20, textTransform: 'uppercase' }}>
-              Network Engineer Â· Developer
+              Network Engineer · Developer
             </div>
             <p style={{ fontFamily: 'Georgia, serif', fontSize: 13, color: 'var(--muted)', lineHeight: 1.9, maxWidth: 280, fontStyle: 'italic', marginBottom: 20 }}>
               Building web infrastructure and digital experiences for clients worldwide.
@@ -229,7 +229,7 @@ function FooterMagazine({ siteConfig, sectionLinks, platformLinks, socialLinks, 
       </div>
       <div style={{ padding: '14px 60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>
-          Â© {year} <span style={{ color: 'var(--green)' }}>tanvir@aifazi.net</span> Â· All rights reserved
+          © {year} <span style={{ color: 'var(--green)' }}>tanvir@aifazi.net</span> · All rights reserved
         </span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>UAE / GMT+4</span>
       </div>
@@ -255,7 +255,7 @@ function FooterGlass({ siteConfig, sectionLinks, platformLinks, socialLinks, has
             </div>
           </div>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.9, maxWidth: 320, marginBottom: 20 }}>
-            Network Engineer &amp; Full-Stack Developer.<br/>Building web infrastructure Â· UAE Â· Remote
+            Network Engineer &amp; Full-Stack Developer.<br/>Building web infrastructure · UAE · Remote
           </p>
           {socialLinks.length > 0 && (
             <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
@@ -298,7 +298,7 @@ function FooterGlass({ siteConfig, sectionLinks, platformLinks, socialLinks, has
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 8px var(--green)' }} />
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>ALL SYSTEMS OPERATIONAL</span>
         </div>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>Â© {year} <span style={{ color: 'var(--green)' }}>tanvir@aifazi.net</span></span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>© {year} <span style={{ color: 'var(--green)' }}>tanvir@aifazi.net</span></span>
       </div>
     </footer>
   )
@@ -314,9 +314,9 @@ function FooterSynthwave({ siteConfig, sectionLinks, platformLinks, socialLinks,
         <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr', gap: 48, marginBottom: 32 }}>
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 36, fontWeight: 900, color: 'var(--text)', background: 'linear-gradient(135deg, var(--green), var(--cyan))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', lineHeight: 1, letterSpacing: -1, marginBottom: 6 }}>AIFAZI</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 4, color: 'var(--muted)', marginBottom: 18 }}>NETWORK ENGINEER Â· DEVELOPER</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 4, color: 'var(--muted)', marginBottom: 18 }}>NETWORK ENGINEER · DEVELOPER</div>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.9, maxWidth: 280, marginBottom: 20 }}>
-              Building web infrastructure &amp; digital experiences. UAE Â· Remote Â· Global
+              Building web infrastructure &amp; digital experiences. UAE · Remote · Global
             </p>
             {socialLinks.length > 0 && (
               <div style={{ display: 'flex', gap: 8 }}>
@@ -355,9 +355,9 @@ function FooterSynthwave({ siteConfig, sectionLinks, platformLinks, socialLinks,
       <div style={{ position: 'relative', zIndex: 1, padding: '12px 60px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, background: 'var(--bg3)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 8px var(--green)' }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>ALL SYSTEMS OPERATIONAL Â· UAE / GMT+4</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>ALL SYSTEMS OPERATIONAL · UAE / GMT+4</span>
         </div>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>Â© {year} tanvir@aifazi.net</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>© {year} tanvir@aifazi.net</span>
       </div>
     </footer>
   )
@@ -409,18 +409,18 @@ function FooterDarkCompact({ siteConfig, sectionLinks, platformLinks, socialLink
       <div style={{ padding: '10px 60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>ALL SYSTEMS OPERATIONAL Â· UAE / GMT+4</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>ALL SYSTEMS OPERATIONAL · UAE / GMT+4</span>
         </div>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>
-          Â© {year} <span style={{ color: 'var(--green)' }}>tanvir@aifazi.net</span>
+          © {year} <span style={{ color: 'var(--green)' }}>tanvir@aifazi.net</span>
         </span>
       </div>
     </footer>
   )
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// â”€â”€ FiveM footer (shown on /fivem/* routes and fivem.aifazi.net) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ══════════════════════════════════════════════════════════════════════════════
+// ── FiveM footer (shown on /fivem/* routes and fivem.aifazi.net) ──────────────
 // Shares the theme CSS vars, logo, and socials with the site chrome but
 // presents FiveM-specific navigation, branding, and live server status.
 function FooterFiveM({ socialLinks, year }) {
@@ -471,7 +471,7 @@ function FooterFiveM({ socialLinks, year }) {
             </div>
           </div>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.9, maxWidth: 300, marginBottom: 18 }}>
-            Serious QBX roleplay â€” Neon Ops City.<br />Whitelist, connect, and play.
+            Serious QBX roleplay — Neon Ops City.<br />Whitelist, connect, and play.
           </p>
           {socialLinks.length > 0 && (
             <div style={{ display: 'flex', gap: 8 }}>
@@ -525,7 +525,7 @@ function FooterFiveM({ socialLinks, year }) {
 
       {/* Bottom bar */}
       <div style={{ position: 'relative', zIndex: 1, padding: '12px clamp(16px,5vw,60px)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, background: 'rgba(0,0,0,0.15)' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>Â© {year} <span style={{ color: 'var(--green)' }}>AIFAZI RP</span> Â· Neon Ops City Â· All rights reserved</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>© {year} <span style={{ color: 'var(--green)' }}>AIFAZI RP</span> · Neon Ops City · All rights reserved</span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>UAE / GMT+4</span>
       </div>
 
@@ -538,7 +538,7 @@ function FooterFiveM({ socialLinks, year }) {
   )
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════════════════════════════════════
 export default function Footer() {
   const [hasAdminAccess, setHasAdminAccess] = useState(false)
   const [siteConfig, setSiteConfig] = useState({})
@@ -546,7 +546,7 @@ export default function Footer() {
   const navigate  = useNavigate()
   const location  = useLocation()
 
-  // FiveM-aware footer â€” active on /fivem/* routes and the fivem.aifazi.net host
+  // FiveM-aware footer — active on /fivem/* routes and the fivem.aifazi.net host
   const [isFiveMHostState, setIsFiveMHostState] = useState(false)
   useEffect(() => setIsFiveMHostState(isFiveMHost()), [])
   const isFiveM = location.pathname.startsWith('/fivem') || isFiveMHostState
@@ -635,19 +635,19 @@ export default function Footer() {
 
   const year = new Date().getFullYear()
 
-  // â”€â”€ FiveM footer (shares theme/socials, FiveM-specific content) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── FiveM footer (shares theme/socials, FiveM-specific content) ─────────────
   if (isFiveM) return <FooterFiveM socialLinks={socialLinks} year={year} />
 
-  // â”€â”€ Shared props for variant layouts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Shared props for variant layouts ────────────────────────────────────────
   const sharedProps = { siteConfig, sectionLinks, platformLinks, socialLinks, hasAdminAccess, handleHashLink, year }
   if (footerStyle === 'minimal')      return <FooterMinimal     {...sharedProps} />
   if (footerStyle === 'magazine')     return <FooterMagazine    {...sharedProps} />
   if (footerStyle === 'glass')        return <FooterGlass       {...sharedProps} />
   if (footerStyle === 'synthwave')    return <FooterSynthwave   {...sharedProps} />
   if (footerStyle === 'dark-compact') return <FooterDarkCompact {...sharedProps} />
-  // â”€â”€ Fallthrough: cyber (original full layout) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Fallthrough: cyber (original full layout) ───────────────────────────────
 
-  // Derived styles per footerStyle â€” MUST be declared before monoLink/colHead
+  // Derived styles per footerStyle — MUST be declared before monoLink/colHead
   // which reference fs.muted / fs.sub / fs.border. Declaring fs after those
   // caused a TDZ crash: "Cannot access 'w' before initialization" (minified).
   const FS = {
@@ -692,7 +692,7 @@ export default function Footer() {
         .ft-social:hover { border-color: var(--green) !important; color: var(--green) !important; background: color-mix(in srgb, var(--green) 6%, transparent) !important; }
       `}</style>
 
-      {/* â”€â”€ Decorative background grid â”€â”€ */}
+      {/* ── Decorative background grid ── */}
       <div aria-hidden style={{
         position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
         backgroundImage: `radial-gradient(${fs.accent}08 1px, transparent 1px)`,
@@ -700,7 +700,7 @@ export default function Footer() {
         animation: 'ftGrid 5s ease-in-out infinite',
       }} />
 
-      {/* â”€â”€ Glow blob â”€â”€ */}
+      {/* ── Glow blob ── */}
       <div aria-hidden style={{
         position: 'absolute', bottom: -80, left: '50%', transform: 'translateX(-50%)',
         width: 500, height: 200, borderRadius: '50%',
@@ -708,13 +708,13 @@ export default function Footer() {
         pointerEvents: 'none', zIndex: 0, animation: 'ftGlow 6s ease-in-out infinite',
       }} />
 
-      {/* â”€â”€ Top scanning line â”€â”€ */}
+      {/* ── Top scanning line ── */}
       <div aria-hidden style={{ position: 'absolute', left: 0, right: 0, height: 1, zIndex: 1, pointerEvents: 'none',
         background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--green) 25%, transparent), transparent)',
         animation: 'ftScan 8s linear infinite',
       }} />
 
-      {/* â”€â”€â”€ MAIN GRID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ─── MAIN GRID ─────────────────────────────────────────────────────── */}
       <div className="ft-main" style={{
         position: 'relative', zIndex: 2,
         padding: 'clamp(32px,5vw,56px) clamp(16px,5vw,60px) 40px',
@@ -723,7 +723,7 @@ export default function Footer() {
         gap: 48,
       }}>
 
-        {/* COL 1 â€“ Brand + newsletter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* COL 1 – Brand + newsletter ─────────────────────────────────── */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <FooterLogo />
@@ -735,7 +735,7 @@ export default function Footer() {
 
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.9, maxWidth: 290, marginBottom: 18 }}>
             Network Engineer &amp; Full-Stack Developer.<br />
-            Building web infrastructure Â· UAE Â· Remote Â· Global
+            Building web infrastructure · UAE · Remote · Global
           </p>
 
           {/* Tech stack badges */}
@@ -767,13 +767,13 @@ export default function Footer() {
           {/* Newsletter */}
           <div style={{ marginTop: 22 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
-              âœ‰ GET UPDATES â€” no spam, ever
+              ✉ GET UPDATES — no spam, ever
             </div>
             <MiniNewsletter />
           </div>
         </div>
 
-        {/* COL 2 â€“ Navigate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* COL 2 – Navigate ────────────────────────────────────────────── */}
         <div>
           <span style={colHead}>NAVIGATE</span>
           {sectionLinks.map(({ label, hash }) => (
@@ -784,7 +784,7 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* COL 3 â€“ Platform â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* COL 3 – Platform ────────────────────────────────────────────── */}
         <div>
           <span style={colHead}>PLATFORM</span>
           {platformLinks.map(({ label, to }) => (
@@ -797,9 +797,9 @@ export default function Footer() {
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                 <span style={{ ...colHead, fontSize: 7, marginBottom: 8 }}>ADMIN ACCESS</span>
                 {[
-                  { label: 'âš¡ Dashboard', to: '/admin' },
-                  { label: 'ðŸ“‹ Audit Log', to: '/admin' },
-                  { label: 'ðŸŽ¨ Themes',    to: '/admin' },
+                  { label: '⚡ Dashboard', to: '/admin' },
+                  { label: '📋 Audit Log', to: '/admin' },
+                  { label: '🎨 Themes',    to: '/admin' },
                 ].map(({ label, to }) => (
                   <Link key={label} to={to} className="ft-link"
                     style={{ ...monoLink, fontSize: 10, transition: 'color 0.2s, padding-left 0.2s' }}
@@ -810,14 +810,14 @@ export default function Footer() {
           )}
         </div>
 
-        {/* COL 4 â€“ System status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* COL 4 – System status ───────────────────────────────────────── */}
         <div>
           <span style={colHead}>SYSTEM</span>
           <SystemStatus />
         </div>
       </div>
 
-      {/* â”€â”€â”€ BOTTOM BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ─── BOTTOM BAR ────────────────────────────────────────────────────── */}
       <div style={{
         position: 'relative', zIndex: 2,
         padding: 'clamp(10px,2vw,14px) clamp(16px,5vw,60px)',
@@ -831,11 +831,11 @@ export default function Footer() {
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: fs.accent, animation: 'ftPulse 2s ease-in-out infinite', boxShadow: `0 0 8px ${fs.accent}` }} />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: fs.muted, letterSpacing: 1 }}>ALL SYSTEMS OPERATIONAL</span>
           </div>
-          <span style={{ color: fs.border, fontSize: 10 }}>Â·</span>
+          <span style={{ color: fs.border, fontSize: 10 }}>·</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: fs.muted, letterSpacing: 1 }}>UAE / GMT+4</span>
         </div>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: fs.muted, letterSpacing: 1 }}>
-          Â© {year} <span style={{ color: fs.accent }}>tanvir@aifazi.net</span> Â· All rights reserved
+          © {year} <span style={{ color: fs.accent }}>tanvir@aifazi.net</span> · All rights reserved
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           {['Privacy', 'Terms', 'Contact'].map(label => (
@@ -850,7 +850,7 @@ export default function Footer() {
               style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: fs.muted, letterSpacing: 2, opacity: 0.4, transition: 'opacity 0.3s', textDecoration: 'none' }}
               onMouseEnter={e => e.currentTarget.style.opacity = '1'}
               onMouseLeave={e => e.currentTarget.style.opacity = '0.4'}
-            >ADMIN â†—</Link>
+            >ADMIN ↗</Link>
           )}
         </div>
       </div>

@@ -28,7 +28,7 @@ function CompareText() {
   }
 
   const colors = { same:'transparent', removed:'rgba(255,71,87,.12)', added:'color-mix(in srgb, var(--green) 10%, transparent)', changed:'rgba(255,107,53,.12)' }
-  const labels = { same:'', removed:'âˆ’ DEL', added:'+ ADD', changed:'â‰  CHG' }
+  const labels = { same:'', removed:'− DEL', added:'+ ADD', changed:'≠ CHG' }
   const labelC = { same:'var(--muted)', removed:'var(--red)', added:'var(--green)', changed:'var(--orange)' }
 
   const stats = diff ? {
@@ -52,7 +52,7 @@ function CompareText() {
           {textB && <textarea value={textB} onChange={e=>setTextB(e.target.value)} rows={6} style={{ ...S.input, marginTop:8, fontFamily:'var(--font-mono)', fontSize:11, resize:'vertical' }} />}
         </div>
       </div>
-      <button onClick={compare} style={{ ...S.btn, marginTop:16 }}>âŸ³ COMPARE FILES</button>
+      <button onClick={compare} style={{ ...S.btn, marginTop:16 }}>⟳ COMPARE FILES</button>
 
       {stats && (
         <div style={{ display:'flex', gap:12, margin:'16px 0', flexWrap:'wrap' }}>
@@ -93,7 +93,7 @@ function CompareText() {
   )
 }
 
-// â”€â”€ Text â†’ PDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Text → PDF ────────────────────────────────────────────────────
 function TextToPDF() {
   const [text, setText] = useState('')
   const [title, setTitle] = useState('Document')
@@ -163,8 +163,8 @@ function TextToPDF() {
         <label style={S.label}>TEXT CONTENT</label>
         <textarea value={text} onChange={e=>setText(e.target.value)} rows={12} placeholder="Type or paste your text here..." style={{ ...S.input, fontFamily:'var(--font-mono)', fontSize:12, resize:'vertical', lineHeight:1.7 }} />
       </div>
-      <button onClick={create} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'CREATING...' : 'â¬‡ CREATE PDF'}</button>
-      {err && <div style={S.err}>âš  {err}</div>}
+      <button onClick={create} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'CREATING...' : '⬇ CREATE PDF'}</button>
+      {err && <div style={S.err}>⚠ {err}</div>}
     </div>
   )
 }
@@ -205,15 +205,15 @@ function JsonFormatter() {
         <textarea value={input} onChange={e=>setInput(e.target.value)} rows={8} placeholder='{"name":"Tanvir","site":"aifazi.net"}' style={{ ...S.input, fontFamily:'var(--font-mono)', fontSize:11, resize:'vertical' }} />
       </div>
       <div style={{ display:'flex', gap:8, marginTop:12 }}>
-        <button onClick={format} style={S.btn}>âŸ³ FORMAT / PRETTIFY</button>
-        <button onClick={minify} style={S.btnOut}>âŸ¹ MINIFY</button>
+        <button onClick={format} style={S.btn}>⟳ FORMAT / PRETTIFY</button>
+        <button onClick={minify} style={S.btnOut}>⟹ MINIFY</button>
       </div>
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {output && (
         <div style={{ marginTop:16 }}>
           <div style={{ display:'flex', gap:8, marginBottom:8 }}>
-            <button onClick={copy} style={{ ...S.btnSm, background:copied?'var(--cyan)':'var(--green)' }}>{copied?'âœ“ COPIED':'COPY'}</button>
-            <button onClick={save} style={S.btnSm}>â¬‡ SAVE .JSON</button>
+            <button onClick={copy} style={{ ...S.btnSm, background:copied?'var(--cyan)':'var(--green)' }}>{copied?'✓ COPIED':'COPY'}</button>
+            <button onClick={save} style={S.btnSm}>⬇ SAVE .JSON</button>
           </div>
           <textarea readOnly value={output} rows={12} style={{ ...S.input, fontFamily:'var(--font-mono)', fontSize:11, color:'var(--text2)', resize:'vertical' }} />
         </div>
@@ -222,7 +222,7 @@ function JsonFormatter() {
   )
 }
 
-// â”€â”€ Base64 Encode / Decode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Base64 Encode / Decode ────────────────────────────────────────
 function Base64Tool() {
   const [input, setInput]   = useState('')
   const [output, setOutput] = useState('')
@@ -252,7 +252,7 @@ function Base64Tool() {
   return (
     <div>
       <div style={{ display:'flex', gap:8, marginBottom:16 }}>
-        {[['encode','ENCODE â†’'],['decode','â† DECODE']].map(([v,l])=>(
+        {[['encode','ENCODE →'],['decode','← DECODE']].map(([v,l])=>(
           <button key={v} onClick={()=>setMode(v)} style={{ fontFamily:'var(--font-mono)', fontSize:10, padding:'8px 20px', background:mode===v?'color-mix(in srgb, var(--green) 10%, transparent)':'var(--bg3)', color:mode===v?'var(--green)':'var(--muted)', border:`1px solid ${mode===v?'color-mix(in srgb, var(--green) 40%, transparent)':'var(--border)'}`, cursor:'pointer' }}>{l}</button>
         ))}
       </div>
@@ -261,20 +261,20 @@ function Base64Tool() {
         <label style={S.label}>INPUT</label>
         <textarea value={input} onChange={e=>setInput(e.target.value)} rows={5} placeholder={mode==='encode'?'Text to encode...':'Base64 string to decode...'} style={{ ...S.input, fontFamily:'var(--font-mono)', fontSize:11, resize:'vertical' }} />
       </div>
-      <button onClick={run} style={{ ...S.btn, marginTop:12 }}>âŸ³ {mode.toUpperCase()}</button>
-      {err && <div style={S.err}>âš  {err}</div>}
+      <button onClick={run} style={{ ...S.btn, marginTop:12 }}>⟳ {mode.toUpperCase()}</button>
+      {err && <div style={S.err}>⚠ {err}</div>}
       {output && (
         <div style={{ marginTop:16 }}>
           <label style={S.label}>OUTPUT</label>
           <textarea readOnly value={output} rows={5} style={{ ...S.input, fontFamily:'var(--font-mono)', fontSize:11, color:'var(--text2)', resize:'vertical' }} />
-          <button onClick={copy} style={{ ...S.btnSm, marginTop:8, background:copied?'var(--cyan)':'var(--green)' }}>{copied?'âœ“ COPIED':'COPY OUTPUT'}</button>
+          <button onClick={copy} style={{ ...S.btnSm, marginTop:8, background:copied?'var(--cyan)':'var(--green)' }}>{copied?'✓ COPIED':'COPY OUTPUT'}</button>
         </div>
       )}
     </div>
   )
 }
 
-// â”€â”€ Word Count / Text Stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Word Count / Text Stats ───────────────────────────────────────
 function TextStats() {
   const [text, setText] = useState('')
   const loadFile = async ([f]) => setText(await readText(f))
@@ -316,7 +316,7 @@ function TextStats() {
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 {freq.map(([w,n])=>(
                   <span key={w} style={{ fontFamily:'var(--font-mono)', fontSize:10, padding:'4px 10px', background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)' }}>
-                    {w} <span style={{ color:'var(--cyan)' }}>Ã—{n}</span>
+                    {w} <span style={{ color:'var(--cyan)' }}>×{n}</span>
                   </span>
                 ))}
               </div>
@@ -328,9 +328,9 @@ function TextStats() {
   )
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 // CONVERT TOOLS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 
 
 export { CompareText, TextToPDF, JsonFormatter, Base64Tool, TextStats }

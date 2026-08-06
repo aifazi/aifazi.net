@@ -47,18 +47,18 @@ export function UserSearchModal({ title, actionLabel, onSelect, onClose }) {
         background: 'rgba(18,21,32,0.98)', border: `1px solid ${T.border}`, borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
         <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, letterSpacing: 2 }}>{title || 'SEARCH USERS'}</span>
-          <button onClick={onClose} style={{ padding: '2px 7px', border: `1px solid ${T.border}`, borderRadius: 6, background: 'transparent', color: T.muted, cursor: 'pointer', fontSize: 12 }}>âœ•</button>
+          <button onClick={onClose} style={{ padding: '2px 7px', border: `1px solid ${T.border}`, borderRadius: 6, background: 'transparent', color: T.muted, cursor: 'pointer', fontSize: 12 }}>✕</button>
         </div>
         <div style={{ padding: '10px 16px' }}>
           <input ref={inputRef} value={query} onChange={e => search(e.target.value)} onKeyDown={handleKeyDown}
-            placeholder="Search by username or emailâ€¦"
+            placeholder="Search by username or email…"
             style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: `1px solid rgba(255,255,255,0.1)`, borderRadius: 8,
               color: T.text, fontFamily: T.display, fontSize: 13, padding: '10px 12px', outline: 'none', boxSizing: 'border-box' }}
             onFocus={e => e.target.style.borderColor = 'color-mix(in srgb, var(--green) 40%, transparent)'}
             onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px 8px' }}>
-          {loading && <div style={{ textAlign: 'center', padding: 20, fontFamily: T.mono, fontSize: 10, color: T.muted }}>Searchingâ€¦</div>}
+          {loading && <div style={{ textAlign: 'center', padding: 20, fontFamily: T.mono, fontSize: 10, color: T.muted }}>Searching…</div>}
           {!loading && query && results.length === 0 && (
             <div style={{ textAlign: 'center', padding: 20, fontFamily: T.mono, fontSize: 10, color: T.muted }}>No users found</div>
           )}

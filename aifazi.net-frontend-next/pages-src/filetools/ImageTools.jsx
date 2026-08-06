@@ -42,26 +42,26 @@ function CompressImage() {
       {orig && (
         <div style={{ marginTop:16 }}>
           <div style={{ marginBottom:16 }}>
-            <label style={S.label}>QUALITY â€” {quality}%</label>
+            <label style={S.label}>QUALITY — {quality}%</label>
             <Slider min={10} max={100} value={quality} onChange={onQuality} />
             <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)' }}>
-              <span>10% â€” Smallest</span><span>100% â€” Lossless</span>
+              <span>10% — Smallest</span><span>100% — Lossless</span>
             </div>
           </div>
           {result && (
             <div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
                 <div style={{ textAlign:'center' }}>
-                  <div style={S.label}>ORIGINAL â€” {fmtBytes(result.origSize)}</div>
+                  <div style={S.label}>ORIGINAL — {fmtBytes(result.origSize)}</div>
                   <img src={orig.url} alt="" style={{ maxWidth:'100%', maxHeight:180, objectFit:'contain', border:'1px solid var(--border)' }} />
                 </div>
                 <div style={{ textAlign:'center' }}>
-                  <div style={S.label}>COMPRESSED â€” {fmtBytes(result.newSize)} ({result.pct > 0 ? `-${result.pct}%` : 'PNGâ†’JPG'})</div>
+                  <div style={S.label}>COMPRESSED — {fmtBytes(result.newSize)} ({result.pct > 0 ? `-${result.pct}%` : 'PNG→JPG'})</div>
                   <img src={result.url} alt="" style={{ maxWidth:'100%', maxHeight:180, objectFit:'contain', border:'1px solid var(--border)' }} />
                 </div>
               </div>
               <button onClick={() => downloadBlob(result.blob, orig.file.name.replace(/\.[^.]+$/, '_compressed.jpg'))} style={S.btn}>
-                â¬‡ DOWNLOAD COMPRESSED IMAGE
+                ⬇ DOWNLOAD COMPRESSED IMAGE
               </button>
             </div>
           )}
@@ -121,7 +121,7 @@ function ResizeImage() {
       {orig && (
         <div style={{ marginTop:16 }}>
           <div style={{ ...S.success }}>
-            Original: {orig.w} Ã— {orig.h}px â€” {fmtBytes(orig.file.size)}
+            Original: {orig.w} × {orig.h}px — {fmtBytes(orig.file.size)}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr auto 1fr 1fr', gap:12, marginTop:16, alignItems:'end' }}>
             <div>
@@ -130,7 +130,7 @@ function ResizeImage() {
             </div>
             <button onClick={() => setLock(!lock)} title="Lock aspect ratio"
               style={{ ...S.btnSm, background:'none', border:'1px solid var(--border)', color: lock ? 'var(--green)' : 'var(--muted)', padding:'10px', alignSelf:'end', marginBottom:1 }}>
-              {lock ? 'ðŸ”’' : 'ðŸ”“'}
+              {lock ? '🔒' : '🔓'}
             </button>
             <div>
               <label style={S.label}>HEIGHT (px)</label>
@@ -142,8 +142,8 @@ function ResizeImage() {
                 options={[['image/jpeg', 'JPEG'], ['image/png', 'PNG'], ['image/webp', 'WebP']]} />
             </div>
           </div>
-          <button onClick={resize} style={{ ...S.btn, marginTop:16 }}>â¬‡ RESIZE & DOWNLOAD</button>
-          {err && <div style={S.err}>âš  {err}</div>}
+          <button onClick={resize} style={{ ...S.btn, marginTop:16 }}>⬇ RESIZE & DOWNLOAD</button>
+          {err && <div style={S.err}>⚠ {err}</div>}
         </div>
       )}
     </div>
@@ -200,19 +200,19 @@ function ConvertImage() {
               </div>
             </div>
             <button onClick={convert} disabled={busy} style={{ ...S.btn, alignSelf:'end' }}>
-              {busy ? `CONVERTING ${done}/${files.length}...` : `â¬‡ CONVERT ${files.length} IMAGE(S)`}
+              {busy ? `CONVERTING ${done}/${files.length}...` : `⬇ CONVERT ${files.length} IMAGE(S)`}
             </button>
           </div>
-          {done > 0 && !busy && <div style={S.success}>âœ“ Converted {done} image(s)</div>}
+          {done > 0 && !busy && <div style={S.success}>✓ Converted {done} image(s)</div>}
         </div>
       )}
     </div>
   )
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 // OCR TOOL
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 
 function ImageOCR() {
   const [file, setFile]   = useState(null)
@@ -249,7 +249,7 @@ function ImageOCR() {
     <div>
       <div style={{ ...S.panel, marginBottom:16, padding:'12px 16px' }}>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--orange)', letterSpacing:2 }}>
-          âš¡ OCR runs entirely in your browser using Tesseract.js. First run downloads the language model (~10 MB). No data leaves your device.
+          ⚡ OCR runs entirely in your browser using Tesseract.js. First run downloads the language model (~10 MB). No data leaves your device.
         </div>
       </div>
       <DropZone accept="image/*" onFiles={load} label="Drop image to extract text (OCR)" />
@@ -273,17 +273,17 @@ function ImageOCR() {
                   ]} />
               </div>
             </div>
-            <button onClick={run} disabled={busy} style={S.btn}>{busy ? `SCANNING... ${pct}%` : 'âŸ³ EXTRACT TEXT'}</button>
+            <button onClick={run} disabled={busy} style={S.btn}>{busy ? `SCANNING... ${pct}%` : '⟳ EXTRACT TEXT'}</button>
           </div>
           {busy && <Progress pct={pct} label="RUNNING OCR" />}
         </div>
       )}
-      {err && <div style={S.err}>âš  {err}</div>}
+      {err && <div style={S.err}>⚠ {err}</div>}
       {text && (
         <div style={{ marginTop:16 }}>
           <div style={{ display:'flex', gap:8, marginBottom:10 }}>
-            <button onClick={copy} style={{ ...S.btnSm, background: copied ? 'var(--cyan)':'var(--green)' }}>{copied ? 'âœ“ COPIED':'COPY TEXT'}</button>
-            <button onClick={save} style={S.btnSm}>â¬‡ SAVE AS .TXT</button>
+            <button onClick={copy} style={{ ...S.btnSm, background: copied ? 'var(--cyan)':'var(--green)' }}>{copied ? '✓ COPIED':'COPY TEXT'}</button>
+            <button onClick={save} style={S.btnSm}>⬇ SAVE AS .TXT</button>
           </div>
           <textarea readOnly value={text} rows={14}
             style={{ ...S.input, fontFamily:'var(--font-mono)', fontSize:12, color:'var(--text2)', resize:'vertical', lineHeight:1.7 }} />
@@ -294,9 +294,9 @@ function ImageOCR() {
 }
 
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 // NEW PDF TOOLS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════
 
 function FlipImage() {
   const [orig, setOrig] = useState(null)
@@ -329,7 +329,7 @@ function FlipImage() {
       {orig && (
         <div style={{ marginTop:16 }}>
           <div style={{ display:'flex', gap:8, marginBottom:16 }}>
-            {[['horizontal','â†” Flip Horizontal'],['vertical','â†• Flip Vertical']].map(([v,l]) => (
+            {[['horizontal','↔ Flip Horizontal'],['vertical','↕ Flip Vertical']].map(([v,l]) => (
               <button key={v} onClick={()=>setMode(v)} style={{ fontFamily:'var(--font-mono)', fontSize:10, padding:'8px 16px', background: mode===v?'color-mix(in srgb, var(--green) 10%, transparent)':'var(--bg3)', color: mode===v?'var(--green)':'var(--muted)', border:`1px solid ${mode===v?'color-mix(in srgb, var(--green) 40%, transparent)':'var(--border)'}`, cursor:'pointer' }}>{l}</button>
             ))}
           </div>
@@ -346,8 +346,8 @@ function FlipImage() {
             )}
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            <button onClick={flip} style={S.btn}>âŸ³ APPLY FLIP</button>
-            {result && <button onClick={() => downloadBlob(result.blob, orig.file.name.replace(/\.[^.]+$/, '_flipped.jpg'))} style={S.btnOut}>â¬‡ DOWNLOAD</button>}
+            <button onClick={flip} style={S.btn}>⟳ APPLY FLIP</button>
+            {result && <button onClick={() => downloadBlob(result.blob, orig.file.name.replace(/\.[^.]+$/, '_flipped.jpg'))} style={S.btnOut}>⬇ DOWNLOAD</button>}
           </div>
         </div>
       )}
@@ -355,10 +355,10 @@ function FlipImage() {
   )
 }
 
-// â”€â”€ Add Image Watermark â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Add Image Watermark ───────────────────────────────────────────
 function ImageWatermark() {
   const [base, setBase]   = useState(null)
-  const [text, setText]   = useState('Â© aifazi.net')
+  const [text, setText]   = useState('© aifazi.net')
   const [opacity, setOpacity] = useState(0.35)
   const [pos, setPos]     = useState('bottom-right')
   const [result, setResult] = useState(null)
@@ -403,7 +403,7 @@ function ImageWatermark() {
               <input value={text} onChange={e=>setText(e.target.value)} style={S.input} />
             </div>
             <div>
-              <label style={S.label}>OPACITY â€” {Math.round(opacity*100)}%</label>
+              <label style={S.label}>OPACITY — {Math.round(opacity*100)}%</label>
               <Slider min={0.05} max={1} step={0.05} value={opacity} onChange={setOpacity} style={{ marginTop:10 }} />
             </div>
             <div>
@@ -419,8 +419,8 @@ function ImageWatermark() {
             </div>
           )}
           <div style={{ display:'flex', gap:8 }}>
-            <button onClick={apply} style={S.btn}>âŸ³ APPLY WATERMARK</button>
-            {result && <button onClick={()=>downloadBlob(result.blob, base.file.name.replace(/\.[^.]+$/,'_wm.jpg'))} style={S.btnOut}>â¬‡ DOWNLOAD</button>}
+            <button onClick={apply} style={S.btn}>⟳ APPLY WATERMARK</button>
+            {result && <button onClick={()=>downloadBlob(result.blob, base.file.name.replace(/\.[^.]+$/,'_wm.jpg'))} style={S.btnOut}>⬇ DOWNLOAD</button>}
           </div>
         </div>
       )}

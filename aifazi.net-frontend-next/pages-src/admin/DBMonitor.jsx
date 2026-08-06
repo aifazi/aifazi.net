@@ -326,9 +326,9 @@ function BackupTab() {
         ) : <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--muted)', textAlign:'center', padding:16 }}>
           {statsError ? (
             <>
-              <div style={{ color:'var(--red,#ff4757)', marginBottom:12 }}>Could not load stats{statsError ? ` â€” ${statsError}` : ''}.</div>
+              <div style={{ color:'var(--red,#ff4757)', marginBottom:12 }}>Could not load stats{statsError ? ` — ${statsError}` : ''}.</div>
               <button onClick={loadStats} style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, letterSpacing:1, padding:'8px 18px', background:'var(--green)', color:'#000', border:'none', cursor:'pointer', fontWeight:700 }}>
-                â†» RETRY
+                ↻ RETRY
               </button>
             </>
           ) : <div>Could not load stats.</div>}
@@ -417,7 +417,7 @@ function BackupTab() {
           {downloadingJson ? 'GENERATING JSON...' : 'DOWNLOAD JSON BACKUP'}
         </button>
         <div style={{ marginTop:14, fontFamily:'var(--font-mono,monospace)', fontSize:8, color:'var(--border)', lineHeight:1.8, padding:'10px 14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)' }}>
-          Includes discovered public tables Â· Passwords, tokens and nested secrets redacted Â· Store securely
+          Includes discovered public tables · Passwords, tokens and nested secrets redacted · Store securely
         </div>
       </div>
     </div>

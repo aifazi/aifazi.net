@@ -13,7 +13,7 @@ import { MediaAttachment } from '../components/MediaPreview'
 import AuthorCard from '../components/AuthorCard'
 import NewsletterCTA from '../components/NewsletterCTA'
 
-// â”€â”€ Smart Video Player â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Smart Video Player ────────────────────────────────────────────────────────
 function VideoPlayer({ src, title = '' }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -193,7 +193,7 @@ function VideoPlayer({ src, title = '' }) {
   )
 }
 
-// â”€â”€ Extract video URL from post content or field â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Extract video URL from post content or field ──────────────────────────────
 function extractVideoUrl(content = '') {
   const ytMatch = content.match(/(?:https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11}))/)
   const vimeoMatch = content.match(/(?:https?:\/\/(?:www\.)?vimeo\.com\/(\d+))/)
@@ -207,11 +207,11 @@ function extractVideoUrl(content = '') {
 }
 
 const REACTIONS = [
-  { emoji: 'ðŸ‘', label: 'Like' },
-  { emoji: 'ðŸ”¥', label: 'Fire' },
-  { emoji: 'ðŸ’¡', label: 'Insightful' },
-  { emoji: 'â¤ï¸', label: 'Love' },
-  { emoji: 'ðŸš€', label: 'Amazing' },
+  { emoji: '👍', label: 'Like' },
+  { emoji: '🔥', label: 'Fire' },
+  { emoji: '💡', label: 'Insightful' },
+  { emoji: '❤️', label: 'Love' },
+  { emoji: '🚀', label: 'Amazing' },
 ]
 
 function readingTime(content = '', excerpt = '') {
@@ -239,7 +239,7 @@ function CoverHero({ src, title }) {
   )
 }
 
-// â”€â”€ Server-persisted reactions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Server-persisted reactions ────────────────────────────────────────────────
 function PostReactions({ slug, postId, initialReactions }) {
   const { user } = useForum()
   const [counts, setCounts] = useState({})
@@ -347,7 +347,7 @@ function PostReactions({ slug, postId, initialReactions }) {
   )
 }
 
-// â”€â”€ Comments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Comments ──────────────────────────────────────────────────────────────────
 function Comments({ slug, postId }) {
   const { user } = useForum()
   const [comments, setComments] = useState(null)
@@ -457,7 +457,7 @@ function Comments({ slug, postId }) {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Loading comments...</div>
         ) : comments.length === 0 ? (
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-            No comments yet â€” be the first to share your thoughts.
+            No comments yet — be the first to share your thoughts.
           </div>
         ) : (
           comments.map(comment => {
@@ -502,7 +502,7 @@ function Comments({ slug, postId }) {
   )
 }
 
-// â”€â”€ Related posts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Related posts ─────────────────────────────────────────────────────────────
 function RelatedPosts({ slug, currentId }) {
   const [related, setRelated] = useState(null)
   useEffect(() => {
@@ -530,7 +530,7 @@ function RelatedPosts({ slug, currentId }) {
                 {p.title}
               </div>
               <div style={{ color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, marginTop: 'auto' }}>
-                READ â†’
+                READ →
               </div>
             </Card>
           </Link>
@@ -544,7 +544,7 @@ function RelatedPosts({ slug, currentId }) {
   )
 }
 
-// â”€â”€ Inline document/media previews â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Inline document/media previews ────────────────────────────────────────────
 // Scans the article HTML for links to files (pdf/word/excel/code/archives) and
 // renders them as rich preview cards below the content.
 function ContentMediaPreviews({ html }) {
@@ -594,7 +594,7 @@ export default function BlogPost({ initialPost }) {
   const [copied, setCopied] = useState(false)
   const contentRef = useRef(null)
 
-  // #12 â€” Reading scroll progress bar
+  // #12 — Reading scroll progress bar
   useEffect(() => {
     const onScroll = () => {
       const el = document.documentElement
@@ -620,7 +620,7 @@ export default function BlogPost({ initialPost }) {
   }
 
   useEffect(() => {
-    // ISR-provided body already matches this slug â€” skip the initial fetch to
+    // ISR-provided body already matches this slug — skip the initial fetch to
     // avoid a loader flash. Realtime (below) keeps edits in sync.
     if (initialPost && initialPost.slug === slug) {
       setLoading(false)
@@ -673,9 +673,9 @@ export default function BlogPost({ initialPost }) {
   if (loading) return <div className="page-container"><div className="loader" /></div>
   if (error) return (
     <div className="page-container" style={{ textAlign: 'center', padding: '160px 60px', position: 'relative', zIndex: 1 }}>
-      <div style={{ fontSize: 48, marginBottom: 16 }}>âš ï¸</div>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
       <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--red)', marginBottom: 24 }}>{error}</div>
-      <NeonButton to="/blog" variant="ghost">â† Back to Blog</NeonButton>
+      <NeonButton to="/blog" variant="ghost">← Back to Blog</NeonButton>
     </div>
   )
 
@@ -687,7 +687,7 @@ export default function BlogPost({ initialPost }) {
 
   return (
     <div className="page-container" style={{ position: 'relative', zIndex: 1 }}>
-      {/* #12 â€” Reading progress bar */}
+      {/* #12 — Reading progress bar */}
       <div style={{
         position: 'fixed', top: 0, left: 0, zIndex: 9999,
         height: 2, width: `${scrollProgress}%`,
@@ -723,7 +723,7 @@ export default function BlogPost({ initialPost }) {
           fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
           letterSpacing: 2, marginBottom: 40, textDecoration: 'none',
         }}
-        >â† BACK TO BLOG</Link>
+        >← BACK TO BLOG</Link>
 
         {/* Meta */}
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center', marginBottom: 24 }}>
@@ -732,10 +732,10 @@ export default function BlogPost({ initialPost }) {
             {formatDate(post.created_at)}
           </span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-            â± {readingTime(post.content, post.excerpt)}
+            ⏱ {readingTime(post.content, post.excerpt)}
           </span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-            ðŸ‘ {post.views} views
+            👁 {post.views} views
           </span>
         </div>
 
@@ -760,7 +760,7 @@ export default function BlogPost({ initialPost }) {
           }}>{post.excerpt}</p>
         )}
 
-        {/* Video Player â€” shown if post has a video_url field or content contains a video */}
+        {/* Video Player — shown if post has a video_url field or content contains a video */}
         {(() => {
           const videoSrc = post.video_url || extractVideoUrl(post.content || '')
           if (!videoSrc) return null
@@ -810,7 +810,7 @@ export default function BlogPost({ initialPost }) {
 
         {/* Back to blog */}
         <div style={{ marginTop: 60 }}>
-          <NeonButton to="/blog" variant="ghost">â† Back to All Posts</NeonButton>
+          <NeonButton to="/blog" variant="ghost">← Back to All Posts</NeonButton>
         </div>
         </article>
       </div>
@@ -859,7 +859,7 @@ export default function BlogPost({ initialPost }) {
           color: var(--cyan); text-decoration: none; font-family: var(--font-mono);
           font-size: 12px;
         }
-        .post-content .blog-media-doc a::before { content: "ðŸ“Ž "; }
+        .post-content .blog-media-doc a::before { content: "📎 "; }
         .post-content .blog-media-doc a:hover { border-color: var(--green); color: var(--green); }
         .post-content code {
           font-family: var(--font-mono); font-size: 13px;

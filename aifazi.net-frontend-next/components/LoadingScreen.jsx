@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 
-// â”€â”€ Style: Terminal (original boot sequence) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: Terminal (original boot sequence) ──────────────────────────────────
 const BOOT_LINES = [
   { text: 'Initializing system...', delay: 0 },
   { text: 'Loading kernel modules...', delay: 80 },
@@ -38,7 +38,7 @@ function TerminalLoader({ onComplete }) {
       <div style={{ width:'100%', maxWidth:520, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, overflow:'hidden', boxShadow:'0 0 60px color-mix(in srgb, var(--green) 10%, transparent)', animation:'fadeUp .6s .2s ease both', position:'relative', zIndex:1 }}>
         <div style={{ background:'color-mix(in srgb, var(--cyan) 8%, transparent)', padding:'10px 16px', display:'flex', alignItems:'center', gap:8, borderBottom:'1px solid var(--border)' }}>
           {['#ff5f56','#ffbd2e','#27c93f'].map(c => <div key={c} style={{ width:10, height:10, borderRadius:'50%', background:c }} />)}
-          <div style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)', letterSpacing:2, margin:'0 auto' }}>boot.sh â€” tanvir@portfolio</div>
+          <div style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)', letterSpacing:2, margin:'0 auto' }}>boot.sh — tanvir@portfolio</div>
         </div>
         <div style={{ padding:'16px 20px', minHeight:'min(240px, 40vh)' }}>
           {lines.map((line, i) => (
@@ -99,7 +99,7 @@ function GlitchLoader({ onComplete }) {
         <span aria-hidden style={{ position:'absolute', inset:0, color:'#ff2d8b', clipPath:'polygon(0 65%,100% 65%,100% 100%,0 100%)', animation:'glitch-b 2s .12s infinite', opacity:.7 }}>TANVIR.</span>
       </div>
       <div style={{ marginTop:24, fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:6, color:'var(--muted)' }}>
-        {['â–“â–“â–“â–‘â–‘â–‘â–‘â–‘â–‘â–‘','â–“â–“â–“â–“â–“â–“â–‘â–‘â–‘â–‘','â–“â–“â–“â–“â–“â–“â–“â–“â–‘â–‘','â–“â–“â–“â–“â–“â–“â–“â–“â–“â–‘','â–“â–“â–“â–“â–“â–“â–“â–“â–“â–“'][Math.min(phase,4)]}
+        {['▓▓▓░░░░░░░','▓▓▓▓▓▓░░░░','▓▓▓▓▓▓▓▓░░','▓▓▓▓▓▓▓▓▓░','▓▓▓▓▓▓▓▓▓▓'][Math.min(phase,4)]}
       </div>
       <style>{`
         @keyframes glitch-t{0%{transform:translate(0)}20%{transform:translate(-3px,1px)}40%{transform:translate(3px,-1px)}60%{transform:translate(0)}80%{transform:translate(-2px,0)}100%{transform:translate(0)}}
@@ -117,7 +117,7 @@ function MatrixLoader({ onComplete }) {
     const ctx = canvas.getContext('2d')
     canvas.width = window.innerWidth; canvas.height = window.innerHeight
     const cols = Math.floor(canvas.width / 16), drops = Array(cols).fill(1)
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ï¾Šï¾ï¾‹ï½°ï½³ï½¼ï¾…ï¾“ï¾†ï½»ï¾œï¾‚ï½µï¾˜ï½±ï¾Žï¾ƒï¾ï½¹ï¾’ï½´ï½¶ï½·ï¾‘ï¾•ï¾—ï½¾ï¾ˆï½½ï¾€ï¾‡ï¾'
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ'
     let raf
     const draw = () => {
       ctx.fillStyle = 'rgba(6,10,15,0.05)'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.font = '14px monospace'
@@ -168,7 +168,7 @@ function SplashLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: Pulse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: Pulse ──────────────────────────────────────────────────────────────
 function PulseLoader({ onComplete }) {
   const [exiting, setExiting] = useState(false)
   useEffect(() => {
@@ -192,7 +192,7 @@ function PulseLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: Holo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: Holo ───────────────────────────────────────────────────────────────
 function HoloLoader({ onComplete }) {
   const [exiting, setExiting] = useState(false)
   const [deg, setDeg] = useState(0)
@@ -223,7 +223,7 @@ function HoloLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: CRT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: CRT ────────────────────────────────────────────────────────────────
 function CRTLoader({ onComplete }) {
   const [exiting, setExiting] = useState(false)
   const [lines, setLines] = useState([])
@@ -244,7 +244,7 @@ function CRTLoader({ onComplete }) {
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', fontFamily:'var(--font-mono)', width:'100%', maxWidth:440, padding:'0 8px' }}>
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'rgba(0,255,0,0.04)', border:'1px solid rgba(0,255,0,0.2)', borderRadius:4, marginBottom:10 }}>
         <span style={{ width:8, height:8, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 8px var(--green)' }} />
-        <span style={{ fontSize:10, color:'var(--green)', letterSpacing:2 }}>aifazi.net â€” BOOT</span>
+        <span style={{ fontSize:10, color:'var(--green)', letterSpacing:2 }}>aifazi.net — BOOT</span>
         <span style={{ marginLeft:'auto', fontSize:9, color:'var(--muted)' }}>v4.2</span>
       </div>
       <div style={{ height:130, overflow:'hidden', position:'relative' }}>
@@ -258,7 +258,7 @@ function CRTLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: Cyber â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: Cyber ──────────────────────────────────────────────────────────────
 function CyberLoader({ onComplete }) {
   const [lit, setLit] = useState([])
   const [exiting, setExiting] = useState(false)
@@ -282,7 +282,7 @@ function CyberLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: Bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: Bars ───────────────────────────────────────────────────────────────
 function BarsLoader({ onComplete }) {
   const [progress, setProgress] = useState(0)
   const [exiting, setExiting] = useState(false)
@@ -319,7 +319,7 @@ function BarsLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: Wave â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: Wave ───────────────────────────────────────────────────────────────
 function WaveLoader({ onComplete }) {
   const [exiting, setExiting] = useState(false)
   useEffect(() => {
@@ -340,7 +340,7 @@ function WaveLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: Neon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: Neon ───────────────────────────────────────────────────────────────
 function NeonLoader({ onComplete }) {
   const [exiting, setExiting] = useState(false)
   useEffect(() => {
@@ -359,7 +359,7 @@ function NeonLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: Orbit (animejs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: Orbit (animejs) ────────────────────────────────────────────────────
 // Three dots orbit a center point at different radii and speeds using animejs.
 function OrbitLoader({ onComplete }) {
   const dotRefs = [useRef(null), useRef(null), useRef(null)]
@@ -436,7 +436,7 @@ function OrbitLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: Typewriter (animejs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: Typewriter (animejs) ────────────────────────────────────────────────
 // animejs staggers each character of the name into view one by one.
 function TypewriterLoader({ onComplete }) {
   const containerRef = useRef(null)
@@ -484,7 +484,7 @@ function TypewriterLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: DNA (animejs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Style: DNA (animejs) ──────────────────────────────────────────────────────
 // animejs animates 12 pairs of nodes in a double-helix wave pattern.
 function DNALoader({ onComplete }) {
   const helixRef = useRef(null)
@@ -538,8 +538,8 @@ function DNALoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Style: Countdown (animejs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// animejs pops 3 â†’ 2 â†’ 1 â†’ GO with scale + color transitions.
+// ── Style: Countdown (animejs) ────────────────────────────────────────────────
+// animejs pops 3 → 2 → 1 → GO with scale + color transitions.
 function CountdownLoader({ onComplete }) {
   const numRef   = useRef(null)
   const labelRef = useRef(null)
@@ -605,7 +605,7 @@ function CountdownLoader({ onComplete }) {
   )
 }
 
-// â”€â”€ Root export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Root export ───────────────────────────────────────────────────────────────
 export default function LoadingScreen({ onComplete, style }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])

@@ -13,7 +13,7 @@ export default function ContactPage() {
   const leftRef   = useReveal()
   const rightRef  = useReveal()
 
-  // Where to go back after submission â€” passed via router state, or default to '/'
+  // Where to go back after submission — passed via router state, or default to '/'
   const from = location.state?.from || '/'
 
   const [form, setForm]     = useState({ name: '', email: '', subject: '', message: '' })
@@ -37,7 +37,7 @@ export default function ContactPage() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 24, padding: 24, position: 'relative', zIndex: 1 }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 56, marginBottom: 16 }}>âœ…</div>
+          <div style={{ fontSize: 56, marginBottom: 16 }}>✅</div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, marginBottom: 12 }}>Message Sent!</h2>
           <p style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 13, marginBottom: 32 }}>
             I'll get back to you soon.
@@ -46,7 +46,7 @@ export default function ContactPage() {
             onClick={() => navigate(from)}
             className="btn-primary"
           >
-            â† Go Back
+            ← Go Back
           </button>
         </div>
       </div>
@@ -71,10 +71,10 @@ export default function ContactPage() {
           </p>
 
           {[
-            { icon: 'ðŸ“§', label: 'EMAIL',        key: 'contact.email',        def: 'tanvir@aifazi.net'       },
-            { icon: 'ðŸŒ', label: 'WEBSITE',      key: 'contact.website',      def: 'aifazi.net'              },
-            { icon: 'ðŸ“', label: 'AVAILABILITY', key: 'contact.availability', def: 'Remote / Worldwide'      },
-            { icon: 'ðŸ’¼', label: 'LINKEDIN',     key: 'contact.linkedin',     def: 'linkedin.com/in/tanvir'  },
+            { icon: '📧', label: 'EMAIL',        key: 'contact.email',        def: 'tanvir@aifazi.net'       },
+            { icon: '🌐', label: 'WEBSITE',      key: 'contact.website',      def: 'aifazi.net'              },
+            { icon: '📍', label: 'AVAILABILITY', key: 'contact.availability', def: 'Remote / Worldwide'      },
+            { icon: '💼', label: 'LINKEDIN',     key: 'contact.linkedin',     def: 'linkedin.com/in/tanvir'  },
           ].map(item => (
             <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, padding: 16, border: '1px solid var(--border)', background: 'var(--bg2)', transition: 'border-color 0.3s' }}
               onMouseEnter={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--green) 30%, transparent)'}
@@ -93,7 +93,7 @@ export default function ContactPage() {
           <button onClick={() => navigate(from)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', padding: '10px 20px', cursor: 'pointer', marginTop: 8, transition: 'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
-          >â† Back</button>
+          >← Back</button>
         </div>
 
         <form ref={rightRef} className="fade-up" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

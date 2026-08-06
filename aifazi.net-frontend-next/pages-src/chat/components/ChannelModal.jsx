@@ -61,7 +61,7 @@ export function ChannelModal({ initial, onSave, onClose }) {
             {['text', 'voice', 'video'].map(t => (
               <button key={t} onClick={() => setCtype(t)}
                 style={{ flex: 1, padding: '8px', border: `1px solid ${ctype === t ? 'color-mix(in srgb, var(--green) 40%, transparent)' : T.border}`, borderRadius: 8, background: ctype === t ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'transparent', color: ctype === t ? T.accent : T.muted, fontFamily: T.mono, fontSize: 10, cursor: 'pointer', textTransform: 'uppercase' }}>
-                {t === 'voice' ? 'ðŸ”Š' : t === 'video' ? 'ðŸ“¹' : 'ðŸ“'} {t}
+                {t === 'voice' ? '🔊' : t === 'video' ? '📹' : '📝'} {t}
               </button>
             ))}
           </div>

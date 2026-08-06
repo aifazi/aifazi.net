@@ -5,26 +5,26 @@ import api from '@/lib/api'
 
 const COMMANDS = [
   // Navigation
-  { id: 'home',           label: 'Go to Home',           icon: 'ðŸ ', group: 'Navigate',  action: { type: 'route', to: '/' } },
-  { id: 'blog',           label: 'Go to Blog',           icon: 'ðŸ“', group: 'Navigate',  action: { type: 'route', to: '/blog' } },
-  { id: 'forum',          label: 'Go to Forum',          icon: 'ðŸ’¬', group: 'Navigate',  action: { type: 'route', to: '/forum' } },
-  { id: 'contact-page',   label: 'Go to Contact',        icon: 'ðŸ“¬', group: 'Navigate',  action: { type: 'route', to: '/contact' } },
-  { id: 'admin',          label: 'Admin Panel',          icon: 'âš™ï¸',  group: 'Navigate',  action: { type: 'route', to: '/admin' } },
-  { id: 'network-tools',  label: 'Network Tools',        icon: 'ðŸ› ï¸',  group: 'Navigate',  action: { type: 'route', to: '/tools/network' } },
-  { id: 'file-tools',     label: 'File Tools',           icon: 'ðŸ“',  group: 'Navigate',  action: { type: 'route', to: '/tools/files' } },
-  { id: 'seo-tools',      label: 'SEO Tools',            icon: 'ðŸ”',  group: 'Navigate',  action: { type: 'route', to: '/tools/seo' } },
+  { id: 'home',           label: 'Go to Home',           icon: '🏠', group: 'Navigate',  action: { type: 'route', to: '/' } },
+  { id: 'blog',           label: 'Go to Blog',           icon: '📝', group: 'Navigate',  action: { type: 'route', to: '/blog' } },
+  { id: 'forum',          label: 'Go to Forum',          icon: '💬', group: 'Navigate',  action: { type: 'route', to: '/forum' } },
+  { id: 'contact-page',   label: 'Go to Contact',        icon: '📬', group: 'Navigate',  action: { type: 'route', to: '/contact' } },
+  { id: 'admin',          label: 'Admin Panel',          icon: '⚙️',  group: 'Navigate',  action: { type: 'route', to: '/admin' } },
+  { id: 'network-tools',  label: 'Network Tools',        icon: '🛠️',  group: 'Navigate',  action: { type: 'route', to: '/tools/network' } },
+  { id: 'file-tools',     label: 'File Tools',           icon: '📁',  group: 'Navigate',  action: { type: 'route', to: '/tools/files' } },
+  { id: 'seo-tools',      label: 'SEO Tools',            icon: '🔍',  group: 'Navigate',  action: { type: 'route', to: '/tools/seo' } },
   // Scroll
-  { id: 'about',          label: 'Jump to About',        icon: 'ðŸ‘¤', group: 'Section',   action: { type: 'scroll', id: 'about' } },
-  { id: 'experience',     label: 'Jump to Experience',   icon: 'ðŸ’¼', group: 'Section',   action: { type: 'scroll', id: 'experience' } },
-  { id: 'skills',         label: 'Jump to Skills',       icon: 'âš¡', group: 'Section',   action: { type: 'scroll', id: 'skills' } },
-  { id: 'services',       label: 'Jump to Services',     icon: 'ðŸ”§', group: 'Section',   action: { type: 'scroll', id: 'services' } },
-  { id: 'projects',       label: 'Jump to Projects',     icon: 'ðŸš€', group: 'Section',   action: { type: 'scroll', id: 'projects' } },
+  { id: 'about',          label: 'Jump to About',        icon: '👤', group: 'Section',   action: { type: 'scroll', id: 'about' } },
+  { id: 'experience',     label: 'Jump to Experience',   icon: '💼', group: 'Section',   action: { type: 'scroll', id: 'experience' } },
+  { id: 'skills',         label: 'Jump to Skills',       icon: '⚡', group: 'Section',   action: { type: 'scroll', id: 'skills' } },
+  { id: 'services',       label: 'Jump to Services',     icon: '🔧', group: 'Section',   action: { type: 'scroll', id: 'services' } },
+  { id: 'projects',       label: 'Jump to Projects',     icon: '🚀', group: 'Section',   action: { type: 'scroll', id: 'projects' } },
 
-  { id: 'contact-sec',    label: 'Jump to Contact',      icon: 'ðŸ“¬', group: 'Section',   action: { type: 'scroll', id: 'contact' } },
+  { id: 'contact-sec',    label: 'Jump to Contact',      icon: '📬', group: 'Section',   action: { type: 'scroll', id: 'contact' } },
   // Actions
-  { id: 'theme',          label: 'Toggle Dark/Light',    icon: 'ðŸŒ“', group: 'Action',    action: { type: 'theme' } },
+  { id: 'theme',          label: 'Toggle Dark/Light',    icon: '🌓', group: 'Action',    action: { type: 'theme' } },
   { id: 'terminal',       label: 'Open Terminal Mode',   icon: '>_', group: 'Action',    action: { type: 'terminal' } },
-  { id: 'top',            label: 'Scroll to Top',        icon: 'â¬†ï¸', group: 'Action',    action: { type: 'top' } },
+  { id: 'top',            label: 'Scroll to Top',        icon: '⬆️', group: 'Action',    action: { type: 'top' } },
 ]
 
 export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
@@ -46,8 +46,8 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
       try {
         const res = await api.get('/search', { params: { q: query, limit: 5 } })
         const results = [
-          ...res.data.posts.map(r => ({ ...r, group: 'ðŸ” Blog Posts' })),
-          ...res.data.threads.map(r => ({ ...r, group: 'ðŸ” Forum Threads' })),
+          ...res.data.posts.map(r => ({ ...r, group: '🔍 Blog Posts' })),
+          ...res.data.threads.map(r => ({ ...r, group: '🔍 Forum Threads' })),
         ]
         setSearchResults(results)
       } catch { setSearchResults([]) }
@@ -63,9 +63,9 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
       )
     : COMMANDS
 
-  // Group filtered results â€” merge search results when available
+  // Group filtered results — merge search results when available
   const searchItems = searchResults.map(r => ({
-    id: `search-${r.id}`, label: r.title, icon: r.type === 'post' ? 'ðŸ“' : 'ðŸ’¬',
+    id: `search-${r.id}`, label: r.title, icon: r.type === 'post' ? '📝' : '💬',
     group: r.group, subtitle: r.meta,
     action: { type: 'route', to: r.url },
   }))
@@ -132,7 +132,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--green) 30%, transparent)'; e.currentTarget.style.color = 'var(--green)' }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
     >
-      <span style={{ fontSize: 11 }}>âŒ˜</span> K
+      <span style={{ fontSize: 11 }}>⌘</span> K
     </button>
   )
 
@@ -159,7 +159,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
       >
         {/* Input */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--green)', fontSize: 16 }}>âŒ˜</span>
+          <span style={{ color: 'var(--green)', fontSize: 16 }}>⌘</span>
           <input
             className="command-palette-input"
             ref={inputRef}
@@ -202,7 +202,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
                     <span style={{ fontSize: 14, width: 20, textAlign: 'center', flexShrink: 0 }}>{cmd.icon}</span>
                     <span style={{ fontSize: 14, color: isSelected ? 'var(--text)' : 'var(--text2)' }}>{cmd.label}</span>
                     {isSelected && (
-                      <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>ENTER â†µ</span>
+                      <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>ENTER ↵</span>
                     )}
                   </div>
                 )
@@ -218,7 +218,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
 
         {/* Footer */}
         <div style={{ padding: '8px 18px', borderTop: '1px solid var(--border)', display: 'flex', gap: 16 }}>
-          {[['â†‘â†“', 'Navigate'], ['â†µ', 'Select'], ['ESC', 'Close']].map(([key, label]) => (
+          {[['↑↓', 'Navigate'], ['↵', 'Select'], ['ESC', 'Close']].map(([key, label]) => (
             <span key={key} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <kbd style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '2px 6px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)' }}>{key}</kbd>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{label}</span>

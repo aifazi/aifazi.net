@@ -8,7 +8,7 @@ import { useToast } from '../components/Toast'
 import FiveMStatus from '@/components/FiveMStatus'
 import { getSupabase } from '@/lib/supabase'
 
-/* â”€â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Design tokens ──────────────────────────────────────────────────────── */
 const M = { fontFamily: 'var(--font-mono)' }
 const D = { fontFamily: 'var(--font-display)' }
 const CLRS = {
@@ -54,7 +54,7 @@ function AdminPortalLink({ compact = false }) {
   )
 }
 
-/* â”€â”€â”€ Shared micro-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Shared micro-components ────────────────────────────────────────────── */
 function Badge({ label, color = CLRS.cyan, icon }) {
   return (
     <span style={{ ...M, fontSize: 8, letterSpacing: 2, padding: '4px 10px',
@@ -123,13 +123,13 @@ function StatusMsg({ msg, type = 'success' }) {
       color: ok ? CLRS.green : CLRS.red,
       background: ok ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'rgba(255,71,87,0.06)',
       border: `1px solid ${ok ? 'color-mix(in srgb, var(--green) 25%, transparent)' : 'rgba(255,71,87,0.25)'}` }}>
-      {ok ? 'âœ“  ' : 'âš   '}{msg}
+      {ok ? '✓  ' : '⚠  '}{msg}
     </div>
   )
 }
 
 function ago(d) {
-  if (!d) return 'â€”'
+  if (!d) return '—'
   const s = Math.floor((Date.now() - new Date(d)) / 1000)
   if (s < 60)    return `${s}s ago`
   if (s < 3600)  return `${Math.floor(s / 60)}m ago`
@@ -137,7 +137,7 @@ function ago(d) {
   return new Date(d).toLocaleDateString()
 }
 
-/* â”€â”€â”€ Avatar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Avatar ─────────────────────────────────────────────────────────────── */
 function Avatar({ user, size = 80 }) {
   if (user?.avatar) return (
     <img src={user.avatar} alt={user.username} loading="lazy"
@@ -156,7 +156,7 @@ function Avatar({ user, size = 80 }) {
   )
 }
 
-/* â”€â”€â”€ Ticket status helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Ticket status helpers ──────────────────────────────────────────────── */
 const STATUS_CFG = {
   open:         { color: CLRS.orange,  label: 'OPEN'        },
   'in-progress':{ color: CLRS.cyan,    label: 'IN PROGRESS' },
@@ -187,14 +187,14 @@ function TicketCard({ t, onClick }) {
           <Badge label={sc.label} color={sc.color} />
           <Badge label={pc.label} color={pc.color} />
           <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>{ago(t.created_at)}</span>
-          <span style={{ ...M, fontSize: 10, color: 'var(--cyan)', marginLeft: 4 }}>VIEW â†’</span>
+          <span style={{ ...M, fontSize: 10, color: 'var(--cyan)', marginLeft: 4 }}>VIEW →</span>
         </div>
       </div>
     </div>
   )
 }
 
-/* â”€â”€â”€ Ticket Detail View (inline, with message thread + reply) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Ticket Detail View (inline, with message thread + reply) ────────────── */
 function TicketDetailView({ ticketId, user, onBack }) {
   const notify = useToast()
   const notifyRef = useRef(notify)
@@ -223,7 +223,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
     const refresh = () => loadTicket(true)
     const interval = setInterval(refresh, 10_000)
     const sb = getSupabase()
-    // Realtime on helpdesk rows is denied to anon by RLS â€” only subscribe for an
+    // Realtime on helpdesk rows is denied to anon by RLS — only subscribe for an
     // authenticated user (defense in depth + fewer sockets).
     if (!sb || !ticketId || !user) return () => clearInterval(interval)
 
@@ -285,7 +285,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
 
   if (loading) return (
     <div style={{ ...M, fontSize: 10, color: 'var(--muted)', letterSpacing: 3, padding: 40, textAlign: 'center' }}>
-      LOADING TICKETâ€¦
+      LOADING TICKET…
     </div>
   )
   if (!ticket) return (
@@ -311,7 +311,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
         <button onClick={onBack} style={{ ...M, fontSize: 9, letterSpacing: 1,
           background: 'none', border: '1px solid var(--border)', color: 'var(--muted)',
           cursor: 'pointer', borderRadius: 6, padding: '7px 14px' }}>
-          â† BACK
+          ← BACK
         </button>
       </div>
       {/* Meta */}
@@ -376,7 +376,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
             border: 'none', borderRadius: 6, cursor: sending || !reply.trim() ? 'not-allowed' : 'pointer',
             fontWeight: 700,
           }}>
-            {sending ? 'SENDING...' : 'â†© SEND REPLY'}
+            {sending ? 'SENDING...' : '↩ SEND REPLY'}
           </button>
         </div>
       )}
@@ -389,7 +389,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
   )
 }
 
-/* â”€â”€â”€ My Tickets tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── My Tickets tab ─────────────────────────────────────────────────────── */
 function MyTicketsTab({ user, initialTicketId, onTicketViewChange }) {
   const [tickets, setTickets]   = useState([])
   const [loading, setLoading]   = useState(true)
@@ -445,13 +445,13 @@ function MyTicketsTab({ user, initialTicketId, onTicketViewChange }) {
 
   if (loading) return (
     <div style={{ padding: '40px 0', textAlign: 'center', ...M, fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>
-      LOADING TICKETSâ€¦
+      LOADING TICKETS…
     </div>
   )
 
   if (!user?.email) return (
     <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-      <div style={{ fontSize: 36, marginBottom: 12 }}>ðŸŽ«</div>
+      <div style={{ fontSize: 36, marginBottom: 12 }}>🎫</div>
       <div style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>No email associated with your account.</div>
     </div>
   )
@@ -513,7 +513,7 @@ function MyTicketsTab({ user, initialTicketId, onTicketViewChange }) {
         }} />
       ) : filtered.length === 0 ? (
         <div style={{ padding: '40px 0', textAlign: 'center' }}>
-          <div style={{ fontSize: 36, marginBottom: 12 }}>ðŸ“­</div>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>📭</div>
           <div style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>
             {tickets.length === 0 ? 'No tickets submitted yet.' : 'No tickets match the current filters.'}
           </div>
@@ -521,7 +521,7 @@ function MyTicketsTab({ user, initialTicketId, onTicketViewChange }) {
             <Link to="/helpdesk" style={{ display: 'inline-block', marginTop: 14, ...M, fontSize: 10,
               color: CLRS.cyan, letterSpacing: 2, textDecoration: 'none',
               padding: '8px 18px', border: `1px solid ${CLRS.cyan}55`, borderRadius: 6 }}>
-              SUBMIT A TICKET â†’
+              SUBMIT A TICKET →
             </Link>
           )}
         </div>
@@ -537,7 +537,7 @@ function MyTicketsTab({ user, initialTicketId, onTicketViewChange }) {
   )
 }
 
-/* â”€â”€â”€ Forum Activity tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Forum Activity tab ─────────────────────────────────────────────────── */
 function ActivityTab({ user }) {
   const [threads, setThreads] = useState([])
   const [replies, setReplies] = useState([])
@@ -555,7 +555,7 @@ function ActivityTab({ user }) {
     }).finally(() => setLoading(false))
   }, [user?.id, user?._id])
 
-  if (loading) return <div style={{ padding: '40px 0', textAlign: 'center', ...M, fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADINGâ€¦</div>
+  if (loading) return <div style={{ padding: '40px 0', textAlign: 'center', ...M, fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADING…</div>
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="profile-act-grid">
@@ -588,7 +588,7 @@ function ActivityTab({ user }) {
   )
 }
 
-/* â”€â”€â”€ Profile Edit tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Profile Edit tab ───────────────────────────────────────────────────── */
 function ProfileEditTab({ user, onUpdate }) {
   const toast = useToast()
   const [form, setForm] = useState({ username: user?.username || '', email: user?.email || '', bio: user?.bio || '', avatar: user?.avatar || '' })
@@ -685,7 +685,7 @@ function ProfileEditTab({ user, onUpdate }) {
         )}
         {user?.pending_email ? (
           <div style={{ padding: '10px 14px', background: 'rgba(0,229,255,0.07)', border: '1px solid rgba(0,229,255,0.25)', borderRadius: 6, ...M, fontSize: 10, color: CLRS.cyan, lineHeight: 1.7 }}>
-            ðŸ“§ Verification pending for <strong>{user.pending_email}</strong>. Check your inbox (including spam).<br />
+            📧 Verification pending for <strong>{user.pending_email}</strong>. Check your inbox (including spam).<br />
             Your email will change after you click the verification link in the email.
           </div>
         ) : (
@@ -701,7 +701,7 @@ function ProfileEditTab({ user, onUpdate }) {
         <div>
           <label htmlFor="pf-bio" style={{ ...M, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>BIO</label>
           <textarea id="pf-bio" rows={3} value={form.bio} onChange={e => set('bio', e.target.value)}
-            placeholder="Tell us about yourselfâ€¦"
+            placeholder="Tell us about yourself…"
             style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)',
               ...M, fontSize: 12, padding: '10px 13px', borderRadius: 6, outline: 'none',
               boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.7,
@@ -709,9 +709,9 @@ function ProfileEditTab({ user, onUpdate }) {
             onFocus={e => e.target.style.borderColor = 'var(--cyan)'}
             onBlur={e => e.target.style.borderColor = 'var(--border)'} />
         </div>
-        <Inp label="AVATAR URL" id="pf-avatar" value={form.avatar} onChange={e => set('avatar', e.target.value)} placeholder="https://â€¦/avatar.png" />
+        <Inp label="AVATAR URL" id="pf-avatar" value={form.avatar} onChange={e => set('avatar', e.target.value)} placeholder="https://…/avatar.png" />
         {status && <StatusMsg msg={status.msg} type={status.type} />}
-        <Btn type="submit" disabled={saving || usernameCheck.state === 'error' || usernameCheck.state === 'checking' || emailCheck.state === 'error' || emailCheck.state === 'checking'}>{saving ? 'SAVINGâ€¦' : 'SAVE CHANGES'}</Btn>
+        <Btn type="submit" disabled={saving || usernameCheck.state === 'error' || usernameCheck.state === 'checking' || emailCheck.state === 'error' || emailCheck.state === 'checking'}>{saving ? 'SAVING…' : 'SAVE CHANGES'}</Btn>
       </form>
     </SectionCard>
   )
@@ -744,7 +744,7 @@ function ProfileSessionsPanel({ staffAccount }) {
     finally { setRevoking('') }
   }
   const ago = d => {
-    if (!d) return 'â€”'
+    if (!d) return '—'
     const sec = Math.floor((Date.now() - new Date(d).getTime()) / 1000)
     if (sec < 60) return `${sec}s ago`
     if (sec < 3600) return `${Math.floor(sec/60)}m ago`
@@ -757,11 +757,11 @@ function ProfileSessionsPanel({ staffAccount }) {
         <div style={{ ...M, fontSize:10, color:'var(--muted)', lineHeight:1.7 }}>No session history yet. Sessions are recorded on login and refreshed while you browse.</div>
       ) : sessions.map((sess, i) => (
         <div key={sess.id || i} style={{ display:'flex', gap:12, alignItems:'flex-start', padding:'10px 0', borderBottom:i < sessions.length - 1 ? '1px solid var(--border)' : 'none' }}>
-          <div style={{ fontSize:18 }}>{sess.current ? 'â—' : 'â–¡'}</div>
+          <div style={{ fontSize:18 }}>{sess.current ? '●' : '□'}</div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ ...M, fontSize:11, color:'var(--text)' }}>{sess.ip || 'Unknown IP'} {sess.current && <Badge label="THIS SESSION" color={CLRS.green} />}</div>
             <div style={{ ...M, fontSize:9, color:'var(--muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:3 }}>{sess.user_agent || 'Unknown browser'}</div>
-            <div style={{ ...M, fontSize:9, color:'var(--muted)', marginTop:3 }}>Last active {ago(sess.last_active)} Â· Login {sess.created_at ? new Date(sess.created_at).toLocaleString() : 'â€”'}</div>
+            <div style={{ ...M, fontSize:9, color:'var(--muted)', marginTop:3 }}>Last active {ago(sess.last_active)} · Login {sess.created_at ? new Date(sess.created_at).toLocaleString() : '—'}</div>
           </div>
           {!sess.current && <Btn small ghost color={CLRS.red} disabled={revoking===sess.id} onClick={() => revoke(sess.id)}>REVOKE</Btn>}
         </div>
@@ -904,7 +904,7 @@ function TwoFactorPanel({ user }) {
   )
 }
 
-/* â”€â”€â”€ Security tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Security tab ───────────────────────────────────────────────────────── */
 function SecurityTab({ user }) {
   const navigate = useNavigate()
   const { logout, refreshUser } = useForum()
@@ -1047,7 +1047,7 @@ function SecurityTab({ user }) {
             </div>
           ))}
         </div>
-        {identityLocked && <div style={{ ...M, fontSize: 9, color: CLRS.orange, padding: '8px 14px', background: 'rgba(255,107,53,0.07)', border: '1px solid rgba(255,107,53,0.25)', borderRadius: 6, marginTop: 8 }}>ðŸ”’ Your active FiveM identity is locked. Contact an admin or open a ticket to change OAuth accounts.</div>}
+        {identityLocked && <div style={{ ...M, fontSize: 9, color: CLRS.orange, padding: '8px 14px', background: 'rgba(255,107,53,0.07)', border: '1px solid rgba(255,107,53,0.25)', borderRadius: 6, marginTop: 8 }}>🔒 Your active FiveM identity is locked. Contact an admin or open a ticket to change OAuth accounts.</div>}
         {oauthStatus && <StatusMsg msg={oauthStatus.msg} type={oauthStatus.type} />}
       </SectionCard>
 
@@ -1059,10 +1059,10 @@ function SecurityTab({ user }) {
           <Inp label="CONFIRM NEW PASSWORD" id="sec-conf" type="password" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} autoComplete="new-password"
             style={{ borderColor: form.confirmPassword && form.confirmPassword !== form.newPassword ? CLRS.red : undefined }} />
           {form.confirmPassword && form.confirmPassword !== form.newPassword && (
-            <div style={{ ...M, fontSize: 9, color: CLRS.red }}>âš   Passwords don't match</div>
+            <div style={{ ...M, fontSize: 9, color: CLRS.red }}>⚠  Passwords don't match</div>
           )}
           {status && <StatusMsg msg={status.msg} type={status.type} />}
-          <Btn type="submit" disabled={saving}>{saving ? 'SAVINGâ€¦' : 'CHANGE PASSWORD'}</Btn>
+          <Btn type="submit" disabled={saving}>{saving ? 'SAVING…' : 'CHANGE PASSWORD'}</Btn>
         </form>
       </SectionCard>
 
@@ -1087,7 +1087,7 @@ function SecurityTab({ user }) {
   )
 }
 
-/* â”€â”€â”€ Overview tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Overview tab ───────────────────────────────────────────────────────── */
 function OverviewTab({ user, tickets, onOpenTicket }) {
   const ticketStats = {
     total: tickets.length,
@@ -1102,12 +1102,12 @@ function OverviewTab({ user, tickets, onOpenTicket }) {
       <SectionCard title="Account Info" tag="PROFILE">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }} className="profile-grid-2">
           {[
-            ['USERNAME',  user?.username || 'â€”'],
-            ['EMAIL',     user?.email    || 'â€”'],
+            ['USERNAME',  user?.username || '—'],
+            ['EMAIL',     user?.email    || '—'],
             ['ROLE',      (user?.role    || 'member').toUpperCase()],
-            ['MEMBER SINCE', user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'â€”'],
+            ['MEMBER SINCE', user?.created_at ? new Date(user.created_at).toLocaleDateString() : '—'],
             ['LAST SEEN', ago(user?.last_seen)],
-            ['STATUS',    user?.banned ? 'ðŸš« BANNED' : 'âœ“ ACTIVE'],
+            ['STATUS',    user?.banned ? '🚫 BANNED' : '✓ ACTIVE'],
           ].map(([k, v]) => (
             <div key={k} style={{ padding: '10px 14px', background: 'var(--bg3)', borderRadius: 6, border: '1px solid var(--border)' }}>
               <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{k}</div>
@@ -1119,7 +1119,7 @@ function OverviewTab({ user, tickets, onOpenTicket }) {
 
       {/* Ticket snapshot */}
       <SectionCard title="Helpdesk Tickets" tag="SUPPORT"
-        action={<button type="button" onClick={() => onOpenTicket?.(null)} style={{ ...M, fontSize: 8, letterSpacing: 2, color: CLRS.cyan, textDecoration: 'none', background: 'none', border: 0, cursor: 'pointer' }}>VIEW ALL â†’</button>}>
+        action={<button type="button" onClick={() => onOpenTicket?.(null)} style={{ ...M, fontSize: 8, letterSpacing: 2, color: CLRS.cyan, textDecoration: 'none', background: 'none', border: 0, cursor: 'pointer' }}>VIEW ALL →</button>}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 16 }}>
           {[
             { label: 'TOTAL',    value: ticketStats.total,    color: CLRS.cyan   },
@@ -1148,16 +1148,16 @@ function OverviewTab({ user, tickets, onOpenTicket }) {
   )
 }
 
-/* â”€â”€â”€ FiveM / Whitelist tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── FiveM / Whitelist tab ─────────────────────────────────────────────── */
 const DISCORD_PURPLE = '#5865F2'
 const STEAM_BLUE = '#1b2838'
 const STEAM_LIGHT = '#00b4ff'
 const GITHUB_COLOR = '#e6edf3'
 const WL_STEPS = [
-  { key: 'submitted',   label: 'Submitted',    icon: 'ðŸ“‹' },
-  { key: 'under_review',label: 'Under Review', icon: 'ðŸ”' },
-  { key: 'approved',    label: 'Approved',     icon: 'âœ…' },
-  { key: 'active',      label: 'Active',       icon: 'ðŸŽ®' },
+  { key: 'submitted',   label: 'Submitted',    icon: '📋' },
+  { key: 'under_review',label: 'Under Review', icon: '🔍' },
+  { key: 'approved',    label: 'Approved',     icon: '✅' },
+  { key: 'active',      label: 'Active',       icon: '🎮' },
 ]
 const WL_STATUS_MAP = {
   pending:  { step: 1, color: CLRS.yellow,  label: 'PENDING REVIEW'  },
@@ -1224,12 +1224,12 @@ function FiveMTab({ user }) {
   }, [])
 
   if (loading) return (
-    <div style={{ padding: '40px 0', textAlign: 'center', ...M, fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADINGâ€¦</div>
+    <div style={{ padding: '40px 0', textAlign: 'center', ...M, fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADING…</div>
   )
 
   // Derive values from the response shape.
   // status.discord_id is the authoritative source (from DB via /whitelist-status).
-  // user.discord_id comes from /me â€” may be missing if backend was not yet updated.
+  // user.discord_id comes from /me — may be missing if backend was not yet updated.
   const wl              = status?.application ?? null
   const discordId       = status?.discord_id || user?.discord_id || null
   const discordUsername = user?.discord_username || wl?.discord_name || null
@@ -1381,9 +1381,9 @@ function FiveMTab({ user }) {
             )}
             <div style={{ flex: 1 }}>
               <div style={{ ...M, fontSize: 12, color: 'var(--text)', fontWeight: 700 }}>{discordUsername || 'Discord Account'}</div>
-              <div style={{ ...M, fontSize: 9, color: DISCORD_PURPLE, letterSpacing: 1, marginTop: 2 }}>DISCORD ID: {discordId || 'â€”'}</div>
+              <div style={{ ...M, fontSize: 9, color: DISCORD_PURPLE, letterSpacing: 1, marginTop: 2 }}>DISCORD ID: {discordId || '—'}</div>
             </div>
-            <Badge label="CONNECTED" color={CLRS.green} icon="âœ“" />
+            <Badge label="CONNECTED" color={CLRS.green} icon="✓" />
             {providerAction('discord', discordLinked)}
           </div>
         ) : (
@@ -1433,10 +1433,10 @@ function FiveMTab({ user }) {
             )}
             <div style={{ flex: 1 }}>
               <div style={{ ...M, fontSize: 12, color: 'var(--text)', fontWeight: 700 }}>{steamUsername || 'Steam Account'}</div>
-              <div style={{ ...M, fontSize: 9, color: STEAM_LIGHT, letterSpacing: 1, marginTop: 2 }}>STEAM ID: {steamId || 'â€”'}</div>
+              <div style={{ ...M, fontSize: 9, color: STEAM_LIGHT, letterSpacing: 1, marginTop: 2 }}>STEAM ID: {steamId || '—'}</div>
               {steamHex && <div style={{ ...M, fontSize: 9, color: 'var(--muted)', letterSpacing: 1, marginTop: 2 }}>{steamHex}</div>}
             </div>
-            <Badge label="CONNECTED" color={CLRS.green} icon="âœ“" />
+            <Badge label="CONNECTED" color={CLRS.green} icon="✓" />
             {providerAction('steam', steamLinked)}
           </div>
         ) : (
@@ -1472,18 +1472,18 @@ function FiveMTab({ user }) {
         {error && (
           <div style={{ ...M, fontSize: 11, color: CLRS.red, padding: '10px 14px',
             background: 'rgba(255,71,87,0.07)', border: '1px solid rgba(255,71,87,0.25)', borderRadius: 6, marginBottom: 14 }}>
-            âš   {error}
+            ⚠  {error}
           </div>
         )}
 
         {!error && !wl && (
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <div style={{ fontSize: 36, marginBottom: 12 }}>ðŸ“‹</div>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
             <div style={{ ...M, fontSize: 11, color: 'var(--muted)', marginBottom: 16 }}>No whitelist application found.</div>
             {discordLinked ? (
               <a href="/whitelist" style={{ display: 'inline-block', ...M, fontSize: 10, letterSpacing: 2,
                 color: CLRS.green, padding: '9px 20px', border: `1px solid ${CLRS.green}55`, borderRadius: 7, textDecoration: 'none' }}>
-                APPLY NOW â†’
+                APPLY NOW →
               </a>
             ) : (
               <div style={{ ...M, fontSize: 10, color: 'var(--muted)' }}>Link your Discord first to apply.</div>
@@ -1555,14 +1555,14 @@ function FiveMTab({ user }) {
               {/* Application details */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }} className="profile-grid-2">
                 {[
-                  ['CHARACTER', wl.character_name || 'â€”'],
-                  ['FIVEM ID',  wl.fivem_id       || 'â€”'],
-                  ['DISCORD',   wl.discord_name   || 'â€”'],
-                  ['SERVER',    wl.txadmin_synced ? 'âœ“ Synced' : 'â³ Pending'],
-                  ['LAST PLAYED', playedAt ? new Date(playedAt).toLocaleString() : 'â€”'],
+                  ['CHARACTER', wl.character_name || '—'],
+                  ['FIVEM ID',  wl.fivem_id       || '—'],
+                  ['DISCORD',   wl.discord_name   || '—'],
+                  ['SERVER',    wl.txadmin_synced ? '✓ Synced' : '⏳ Pending'],
+                  ['LAST PLAYED', playedAt ? new Date(playedAt).toLocaleString() : '—'],
                   ['PRIORITY',  Number(wl.priority_level || 0) > 0
                     ? `${wl.priority_tier || 'Priority'} (${wl.priority_level})${wl.priority_expires_at ? ' until ' + new Date(wl.priority_expires_at).toLocaleDateString() : ''}`
-                    : 'â€”'],
+                    : '—'],
                 ].map(([k, v]) => (
                   <div key={k} style={{ padding: '9px 12px', background: 'var(--bg3)', borderRadius: 6, border: '1px solid var(--border)' }}>
                     <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 3 }}>{k}</div>
@@ -1576,7 +1576,7 @@ function FiveMTab({ user }) {
                 <div style={{ marginTop: 16, textAlign: 'center' }}>
                   <a href="/whitelist" style={{ display: 'inline-block', ...M, fontSize: 10, letterSpacing: 2,
                     color: CLRS.cyan, padding: '9px 20px', border: `1px solid ${CLRS.cyan}55`, borderRadius: 7, textDecoration: 'none' }}>
-                    SUBMIT NEW APPLICATION â†’
+                    SUBMIT NEW APPLICATION →
                   </a>
                 </div>
               )}
@@ -1631,7 +1631,7 @@ function FiveMTab({ user }) {
   )
 }
 
-/* â”€â”€â”€ Orders & Documents tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Orders & Documents tab ─────────────────────────────────────────────── */
 function OrdersDocumentsTab({ user }) {
   const toast = useToast()
   const [orders, setOrders] = useState([])
@@ -1736,13 +1736,13 @@ function OrdersDocumentsTab({ user }) {
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
                   {(o.items || []).map((it, i) => (
-                    <span key={i} style={{ fontSize: 10, color: 'var(--muted)', background: 'rgba(255,255,255,0.03)', padding: '3px 8px', borderRadius: 5 }}>{it.product_name} Ã— {it.quantity}</span>
+                    <span key={i} style={{ fontSize: 10, color: 'var(--muted)', background: 'rgba(255,255,255,0.03)', padding: '3px 8px', borderRadius: 5 }}>{it.product_name} × {it.quantity}</span>
                   ))}
                 </div>
                 {o.tracking_number && (
                   <div style={{ ...M, fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>
-                    ðŸ“¦ {o.carrier || 'Carrier'}: {o.tracking_number}
-                    {o.tracking_url && <a href={o.tracking_url} target="_blank" rel="noreferrer" style={{ color: CLRS.cyan, marginLeft: 8 }}>TRACK â†—</a>}
+                    📦 {o.carrier || 'Carrier'}: {o.tracking_number}
+                    {o.tracking_url && <a href={o.tracking_url} target="_blank" rel="noreferrer" style={{ color: CLRS.cyan, marginLeft: 8 }}>TRACK ↗</a>}
                   </div>
                 )}
                 {(o.downloads || []).length > 0 && (
@@ -1750,7 +1750,7 @@ function OrdersDocumentsTab({ user }) {
                     {o.downloads.map(d => (
                       <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer"
                         style={{ fontSize: 10, color: CLRS.green, border: `1px solid ${CLRS.green}40`, borderRadius: 5, padding: '4px 8px', textDecoration: 'none' }}>
-                        â¬‡ {d.filename || d.product_name} ({d.downloads_used}/{d.downloads_allowed})
+                        ⬇ {d.filename || d.product_name} ({d.downloads_used}/{d.downloads_allowed})
                       </a>
                     ))}
                   </div>
@@ -1769,8 +1769,8 @@ function OrdersDocumentsTab({ user }) {
               <span style={{ ...M, fontSize: 8, letterSpacing: 1.5, padding: '3px 10px', borderRadius: 12, border: `1px solid ${CLRS.cyan}55`, color: CLRS.cyan, fontWeight: 800 }}>{(detail.status || '').toUpperCase()}</span>
             </div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
-              Placed {detail.created_at ? new Date(detail.created_at).toLocaleString() : 'â€”'}
-              {(detail.carrier || detail.tracking_number) && <div style={{ marginTop: 4 }}>ðŸ“¦ {detail.carrier || ''} {detail.tracking_number || ''}</div>}
+              Placed {detail.created_at ? new Date(detail.created_at).toLocaleString() : '—'}
+              {(detail.carrier || detail.tracking_number) && <div style={{ marginTop: 4 }}>📦 {detail.carrier || ''} {detail.tracking_number || ''}</div>}
             </div>
             <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>STATUS TIMELINE</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
@@ -1791,7 +1791,7 @@ function OrdersDocumentsTab({ user }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
               {(detail.items || []).map((it, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-                  <span style={{ color: 'var(--text)' }}>{it.product_name} Ã— {it.quantity}</span>
+                  <span style={{ color: 'var(--text)' }}>{it.product_name} × {it.quantity}</span>
                   <span style={{ color: 'var(--muted)' }}>${((it.line_total_cents || 0) / 100).toFixed(2)}</span>
                 </div>
               ))}
@@ -1802,7 +1802,7 @@ function OrdersDocumentsTab({ user }) {
                 <span style={{ fontSize: 11, color: 'var(--muted)' }}>None</span>
               ) : detail.downloads.map(d => (
                 <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: CLRS.green, textDecoration: 'none' }}>
-                  â¬‡ {d.filename || d.product_name} ({d.downloads_used}/{d.downloads_allowed})
+                  ⬇ {d.filename || d.product_name} ({d.downloads_used}/{d.downloads_allowed})
                 </a>
               ))}
             </div>
@@ -1815,7 +1815,7 @@ function OrdersDocumentsTab({ user }) {
 
       <SectionCard title="Documents" tag="PROFILE FILES" action={
         <label style={{ ...M, fontSize: 8, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: '#000', background: 'var(--green)', borderRadius: 6, cursor: 'pointer' }}>
-          {uploading ? 'UPLOADINGâ€¦' : '+ UPLOAD'}
+          {uploading ? 'UPLOADING…' : '+ UPLOAD'}
           <input type="file" hidden onChange={onUpload} />
         </label>
       }>
@@ -1831,15 +1831,15 @@ function OrdersDocumentsTab({ user }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {docs.map(d => (
               <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 10, border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
-                <span style={{ fontSize: 14 }}>ðŸ“„</span>
+                <span style={{ fontSize: 14 }}>📄</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
                   <div style={{ fontSize: 9, color: 'var(--muted)' }}>
-                    {d.category} Â· {d.mime_type} Â· {d.file_size ? (d.file_size / 1024).toFixed(1) + ' KB' : 'â€”'} Â· {d.created_at ? new Date(d.created_at).toLocaleDateString() : ''}
+                    {d.category} · {d.mime_type} · {d.file_size ? (d.file_size / 1024).toFixed(1) + ' KB' : '—'} · {d.created_at ? new Date(d.created_at).toLocaleDateString() : ''}
                   </div>
                 </div>
-                <button onClick={() => downloadDoc(d.id, d.name)} style={ghostBtn}>â¬‡</button>
-                <button onClick={() => onDelete(d.id)} style={{ ...ghostBtn, color: CLRS.red, borderColor: CLRS.red + '55' }}>âœ•</button>
+                <button onClick={() => downloadDoc(d.id, d.name)} style={ghostBtn}>⬇</button>
+                <button onClick={() => onDelete(d.id)} style={{ ...ghostBtn, color: CLRS.red, borderColor: CLRS.red + '55' }}>✕</button>
               </div>
             ))}
           </div>
@@ -1849,15 +1849,15 @@ function OrdersDocumentsTab({ user }) {
   )
 }
 
-/* â”€â”€â”€ Main ForumProfile page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Main ForumProfile page ─────────────────────────────────────────────── */
 const TABS = [
-  { key: 'overview',  label: 'âŠž Overview',        },
-  { key: 'tickets',   label: 'ðŸŽ« My Tickets',     },
-  { key: 'orders',    label: 'ðŸ§¾ Orders & Docs',  },
-  { key: 'activity',  label: 'ðŸ’¬ Forum Activity', },
-  { key: 'fivem',     label: 'ðŸŽ® FiveM',          },
-  { key: 'edit',      label: 'âœŽ Edit Profile',   },
-  { key: 'security',  label: 'ðŸ”’ Security',       },
+  { key: 'overview',  label: '⊞ Overview',        },
+  { key: 'tickets',   label: '🎫 My Tickets',     },
+  { key: 'orders',    label: '🧾 Orders & Docs',  },
+  { key: 'activity',  label: '💬 Forum Activity', },
+  { key: 'fivem',     label: '🎮 FiveM',          },
+  { key: 'edit',      label: '✎ Edit Profile',   },
+  { key: 'security',  label: '🔒 Security',       },
 ]
 
 export default function ForumProfile() {
@@ -1929,7 +1929,7 @@ export default function ForumProfile() {
   }, [])
 
   if (loading || !user) {
-    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', ...M, fontSize: 10, letterSpacing: 3, color: 'var(--muted)' }}>LOADING PROFILEâ€¦</div>
+    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', ...M, fontSize: 10, letterSpacing: 3, color: 'var(--muted)' }}>LOADING PROFILE…</div>
   }
 
   const roleCfg = {
@@ -1956,7 +1956,7 @@ export default function ForumProfile() {
         }
       `}</style>
 
-      {/* â”€â”€ Hero banner â”€â”€ */}
+      {/* ── Hero banner ── */}
       <div style={{ borderBottom: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }} className="profile-hero">
         {/* Grid bg */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(color-mix(in srgb, var(--cyan) 3%, transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb, var(--cyan) 3%, transparent) 1px,transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
@@ -1979,9 +1979,9 @@ export default function ForumProfile() {
               </div>
               {user.bio && <p style={{ ...M, fontSize: 11, color: 'var(--muted)', margin: 0, lineHeight: 1.6, maxWidth: 420 }}>{user.bio}</p>}
               <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
-                <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>ðŸ“§ {user.email || 'â€”'}</span>
-                <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>ðŸ•’ Last seen {ago(user.last_seen)}</span>
-                <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>ðŸ“… Joined {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'â€”'}</span>
+                <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>📧 {user.email || '—'}</span>
+                <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>🕒 Last seen {ago(user.last_seen)}</span>
+                <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>📅 Joined {user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}</span>
               </div>
             </div>
 
@@ -2014,7 +2014,7 @@ export default function ForumProfile() {
         </div>
       </div>
 
-      {/* â”€â”€ Body â”€â”€ */}
+      {/* ── Body ── */}
       <div className="profile-body">
         {tab === 'overview'  && <OverviewTab user={user} tickets={tickets} onOpenTicket={openTicket} />}
         {tab === 'tickets'   && <MyTicketsTab user={user} initialTicketId={profileTicketId} onTicketViewChange={openTicket} />}

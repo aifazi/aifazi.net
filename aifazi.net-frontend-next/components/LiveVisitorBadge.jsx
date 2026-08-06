@@ -1,9 +1,9 @@
 'use client'
 /**
- * LiveVisitorBadge â€” #14
+ * LiveVisitorBadge — #14
  * Shows active visitor count.
  *
- * Security: visitor_sessions is fail-closed (anon/authenticated can't read it â€”
+ * Security: visitor_sessions is fail-closed (anon/authenticated can't read it —
  * migration 022). The public count is served ONLY by the backend
  * /stats/visitors/live endpoint (service role). Polling that endpoint keeps the
  * count fresh without exposing raw visitor rows to the browser.

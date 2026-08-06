@@ -13,7 +13,7 @@ function FieldError({ msg }) {
       fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)',
       animation: 'fieldShake 0.35s ease-out',
     }}>
-      <span style={{ fontSize: 10 }}>âš </span> {msg}
+      <span style={{ fontSize: 10 }}>⚠</span> {msg}
     </div>
   )
 }
@@ -72,10 +72,10 @@ export default function Contact() {
           </p>
 
           {[
-            { icon: 'ðŸ“§', label: 'EMAIL',        key: 'contact.email',        def: 'tanvir@aifazi.net'        },
-            { icon: 'ðŸŒ', label: 'WEBSITE',      key: 'contact.website',      def: 'aifazi.net'               },
-            { icon: 'ðŸ“', label: 'AVAILABILITY', key: 'contact.availability', def: 'Remote / Worldwide'       },
-            { icon: 'ðŸ’¼', label: 'LINKEDIN',     key: 'contact.linkedin',     def: 'linkedin.com/in/tanvir'   },
+            { icon: '📧', label: 'EMAIL',        key: 'contact.email',        def: 'tanvir@aifazi.net'        },
+            { icon: '🌐', label: 'WEBSITE',      key: 'contact.website',      def: 'aifazi.net'               },
+            { icon: '📍', label: 'AVAILABILITY', key: 'contact.availability', def: 'Remote / Worldwide'       },
+            { icon: '💼', label: 'LINKEDIN',     key: 'contact.linkedin',     def: 'linkedin.com/in/tanvir'   },
           ].map(item => (
             <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '10px 14px', border: '1px solid var(--border)', background: 'var(--bg2)', transition: 'border-color 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--green) 30%, transparent)'}
@@ -94,7 +94,7 @@ export default function Contact() {
           {status?.type === 'success' ? (
             <div style={{ padding: '40px 32px', background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 8, background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>âœ“</div>
+                <div style={{ width: 40, height: 40, borderRadius: 8, background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>✓</div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2 }}>MESSAGE SENT</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text)', marginTop: 2 }}>I'll get back to you soon.</div>
@@ -102,7 +102,7 @@ export default function Contact() {
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
                 <div style={{ color: 'var(--cyan)' }}>&gt; echo $RESPONSE_TIME</div>
-                <div style={{ paddingLeft: 16 }}>Typically within 24â€“48 hours.</div>
+                <div style={{ paddingLeft: 16 }}>Typically within 24–48 hours.</div>
               </div>
               <button type="button" onClick={() => setStatus(null)}
                 style={{ alignSelf: 'flex-start', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '8px 18px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', transition: 'all 0.2s' }}
