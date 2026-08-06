@@ -1127,7 +1127,11 @@ function Dashboard({ onLogout }) {
 
           {/* SITE SETTINGS */}
           {/* THEMES / ANNOUNCEMENTS / SETTINGS */}
-          {(view === 'themes' || view === 'theme' || view === 'framework' || view === 'announcements' || view === 'settings' || view === 'siteSettings') && <PanelErrorBoundary label="Theme Library"><ThemeHub /></PanelErrorBoundary>}
+          {(view === 'themes' || view === 'theme' || view === 'framework' || view === 'announcements' || view === 'settings' || view === 'siteSettings') && (
+            <PanelErrorBoundary label="Theme Library">
+              <ThemeHub initialTab={view === 'announcements' ? 'announcements' : view === 'settings' || view === 'siteSettings' ? 'settings' : 'themes'} />
+            </PanelErrorBoundary>
+          )}
           {view === 'stats' && adminUser && <PanelErrorBoundary label="Statistics"><StatsPanel /></PanelErrorBoundary>}
 
           {view === 'helpdesk' && adminUser && <PanelErrorBoundary label="Help Desk"><HelpDeskPanel /></PanelErrorBoundary>}

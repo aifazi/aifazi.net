@@ -9,6 +9,7 @@ import { useNotify } from '../../core/notify.jsx'
 import { useDialog } from '../../core/dialog.jsx'
 import { clearSiteSettingsCache } from '@/lib/siteSettings'
 import { S, useIsMobile, PageHeader } from './shared'
+import { Modal } from './ui'
 import {
   Toggle, PillPicker,
   HEADER_PRESETS, FOOTER_PRESETS,
@@ -445,6 +446,12 @@ function ThemeLibrary() {
   const [savingPackage, setSavingPackage] = useState(null)
   const [fwActive, setFwActive]   = useState('menu')
 
+  // ── Applying UX: preview-before-apply, per-part application, undo ────────
+  const [applyTarget, setApplyTarget] = useState(null)   // package pending confirmation
+  const [applyParts, setApplyParts]   = useState({ appearance: true, framework: true, backgrounds: true })
+  const [lastSnapshot, setLastSnapshot] = useState(null) // siteConfig before the last apply
+  const toggleApplyPart = key => setApplyParts(p => ({ ...p, [key]: !p[key] }))
+
   useEffect(() => {
     if (!siteConfig || fwSaving || savingPackage) return
     setFwDraft(prev => ({
@@ -700,6 +707,7 @@ function ThemeLibrary() {
     setTheme(id)
     setPendingTheme(null)
     setPreviewTheme(null)
+    setLastSnapshot(siteConfig) // snapshot so the global change is undoable
     setRecentThemes(prev => {
       const next = [id, ...prev.filter(x => x !== id)].slice(0, 5)
       try { localStorage.setItem('tl_recent', JSON.stringify(next)) } catch {}
@@ -766,7 +774,13 @@ function ThemeLibrary() {
     } finally { setSavingAppearance(false) }
   }, [refreshSiteConfig, toast])
 
-  const handleThemePackageApply = useCallback(async (pkg) => {
+  // Preview-before-apply: clicking APPLY opens a modal with a per-part selector.
+  const handleThemePackageApply = useCallback((pkg) => {
+    setApplyParts({ appearance: true, framework: true, backgrounds: true })
+    setApplyTarget(pkg)
+  }, [])
+
+  const applyThemePackage = useCallback(async (pkg, parts = { appearance: true, framework: true, backgrounds: true }) => {
     const s = pkg.settings
     const stylePayload = {
       menuStyle: s.menuStyle,
@@ -782,33 +796,41 @@ function ThemeLibrary() {
       headerStyle: s.headerStyle,
       footerStyle: s.footerStyle,
     }
+    const backgroundPayload = {
+      bgAnimation: s.bgAnimation || 'none',
+      gridPattern: s.gridPattern || s.backgroundPattern || 'grid',
+      backgroundPattern: s.backgroundPattern || s.gridPattern || 'grid',
+    }
     const payload = {
       ...siteConfig,
-      ...s,
-      ...stylePayload,
-      ...appearancePayload,
+      ...(parts.appearance ? { ...s, ...appearancePayload } : {}),
+      ...(parts.framework ? stylePayload : {}),
+      ...(parts.backgrounds ? backgroundPayload : {}),
       themePackage: pkg.id,
     }
 
     setSavingPackage(pkg.id)
-    setFwDraft(prev => ({ ...prev, ...stylePayload }))
-    setGAppearance(prev => ({ ...prev, ...appearancePayload }))
-    setBgAnimation(s.bgAnimation || 'none')
-    setGridPattern(s.gridPattern || s.backgroundPattern || 'grid')
-    setGlobalThemeId(s.globalTheme || '')
+    setFwDraft(prev => ({ ...prev, ...(parts.framework ? stylePayload : {}) }))
+    setGAppearance(prev => ({ ...prev, ...(parts.appearance ? appearancePayload : {}) }))
+    if (parts.appearance) setGlobalThemeId(s.globalTheme || '')
+    if (parts.backgrounds) {
+      setBgAnimation(s.bgAnimation || 'none')
+      setGridPattern(s.gridPattern || s.backgroundPattern || 'grid')
+    }
 
     try {
+      setLastSnapshot(siteConfig) // snapshot BEFORE applying → enables Undo
       await api.put('/admin/site-settings', payload)
       clearSiteSettingsCache()
-      FRAMEWORK_CATEGORIES.forEach(cat => {
+      if (parts.framework) FRAMEWORK_CATEGORIES.forEach(cat => {
         const value = stylePayload[cat.configKey]
         if (value) localStorage.setItem(cat.configKey.replace(/([A-Z])/g, '-$1').toLowerCase(), value)
       })
-      if (s.notifyPosition) localStorage.setItem('notify-position', s.notifyPosition)
+      if (parts.framework && s.notifyPosition) localStorage.setItem('notify-position', s.notifyPosition)
       localStorage.setItem('theme-package', pkg.id)
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: payload }))
       if (refreshSiteConfig) await refreshSiteConfig()
-      notify.success(`${pkg.name} applied. You can still override every part manually.`, { title: 'Theme Package' })
+      notify.success(`${pkg.name} applied. You can undo it or override any part manually.`, { title: 'Theme Package' })
     } catch (err) {
       notify.error(err?.response?.data?.error || 'Failed to apply theme package', { title: 'Error' })
       setFwDraft({
@@ -831,8 +853,22 @@ function ThemeLibrary() {
       setGlobalThemeId(siteConfig?.globalTheme || '')
     } finally {
       setSavingPackage(null)
+      setApplyTarget(null)
     }
   }, [siteConfig, refreshSiteConfig, notify])
+
+  const undoLastApply = useCallback(async () => {
+    if (!lastSnapshot) return
+    try {
+      await api.put('/admin/site-settings', lastSnapshot)
+      clearSiteSettingsCache()
+      window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: lastSnapshot }))
+      if (refreshSiteConfig) await refreshSiteConfig()
+      notify.success('Reverted to the previous theme settings.', { title: 'Undo' })
+    } catch (err) {
+      notify.error(err?.response?.data?.error || 'Undo failed', { title: 'Error' })
+    }
+  }, [lastSnapshot, refreshSiteConfig, notify])
 
   const packageStatus = useCallback((pkg) => {
     const s = pkg.settings
@@ -1098,14 +1134,62 @@ function ThemeLibrary() {
             })}
           </div>
 
-          <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontFamily: _FM, fontSize: 9, color: _MT }}>
+          <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontFamily: _FM, fontSize: 9, color: _MT }}>
             {savingPackage
               ? <span style={{ color: _CY }}>Saving package...</span>
-              : <span>Package selection is saved immediately. Individual settings can be changed in Framework, Backgrounds, and Global Settings.</span>
+              : <span>Applying a package asks what to include, and you can undo the last change.</span>
             }
+            {lastSnapshot && !savingPackage && (
+              <button onClick={undoLastApply} style={{
+                fontFamily: _FM, fontSize: 9, letterSpacing: 1, padding: '6px 12px', cursor: 'pointer',
+                background: 'transparent', color: '#ffd700', border: '1px solid rgba(255,215,0,0.4)', borderRadius: 5,
+              }}>↺ UNDO LAST CHANGE</button>
+            )}
           </div>
         </div>
       )}
+
+      {/* Preview-before-apply modal */}
+      <Modal open={!!applyTarget} onClose={() => setApplyTarget(null)} width={480} title={`Apply ${applyTarget ? applyTarget.name : 'Package'}`}>
+        {applyTarget && (
+          <div style={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <span style={{ fontSize: 22 }}>{applyTarget.icon || '🎨'}</span>
+              <div>
+                <div style={{ fontFamily: _FD, fontSize: 17, fontWeight: 800, color: applyTarget.accent }}>{applyTarget.name}</div>
+                <div style={{ fontFamily: _FM, fontSize: 8, letterSpacing: 2, color: applyTarget.accent, textTransform: 'uppercase' }}>{applyTarget.mood}</div>
+              </div>
+            </div>
+            <p style={{ fontFamily: _FM, fontSize: 11, color: _MT, lineHeight: 1.7, margin: '0 0 18px' }}>{applyTarget.desc}</p>
+            <div style={{ fontFamily: _FM, fontSize: 9, letterSpacing: 2, color: _MT, marginBottom: 10 }}>INCLUDE IN THIS APPLY</div>
+            {[
+              { key: 'appearance', label: 'Appearance', desc: 'Theme color, header, footer, loading screen, animations' },
+              { key: 'framework',  label: 'Framework',  desc: 'Menu, notifications, dialogs, inputs, surfaces' },
+              { key: 'backgrounds',label: 'Backgrounds',desc: 'Background animation + grid pattern' },
+            ].map(p => (
+              <label key={p.key} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 12px', borderRadius: 8,
+                background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', marginBottom: 8, cursor: 'pointer' }}>
+                <input type="checkbox" checked={applyParts[p.key]} onChange={() => toggleApplyPart(p.key)} style={{ accentColor: applyTarget.accent }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: _FM, fontSize: 11, color: _TX, fontWeight: 700 }}>{p.label}</div>
+                  <div style={{ fontFamily: _FM, fontSize: 9, color: _MT, marginTop: 2 }}>{p.desc}</div>
+                </div>
+              </label>
+            ))}
+            {!applyParts.appearance && !applyParts.framework && !applyParts.backgrounds && (
+              <div style={{ fontFamily: _FM, fontSize: 10, color: '#ff4757', marginTop: 6 }}>Select at least one part to apply.</div>
+            )}
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <button onClick={() => setApplyTarget(null)} style={{ fontFamily: _FM, fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: 'transparent', color: _MT, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 6, flex: 1 }}>CANCEL</button>
+              <button disabled={savingPackage === applyTarget.id || (!applyParts.appearance && !applyParts.framework && !applyParts.backgrounds)}
+                onClick={() => applyThemePackage(applyTarget, applyParts)}
+                style={{ fontFamily: _FM, fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: applyTarget.accent, color: '#000', border: 'none', cursor: savingPackage === applyTarget.id ? 'wait' : 'pointer', borderRadius: 6, flex: 1, fontWeight: 800, opacity: (!applyParts.appearance && !applyParts.framework && !applyParts.backgrounds) ? 0.4 : 1 }}>
+                {savingPackage === applyTarget.id ? 'APPLYING…' : '✓ APPLY SELECTED'}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* -- THEMES TAB -- */}
       {activeTab === 'themes' && (
