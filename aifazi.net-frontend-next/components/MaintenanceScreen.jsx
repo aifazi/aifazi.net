@@ -6,7 +6,7 @@ function Particle({ style }) {
   return <div style={{ position: 'absolute', width: 2, height: 2, borderRadius: '50%', background: 'color-mix(in srgb, var(--cyan) 35%, transparent)', pointerEvents: 'none', ...style }} />
 }
 
-function ProgressBar({ value, color = '#f59e0b', label }) {
+function ProgressBar({ value, color = 'var(--orange)', label }) {
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -14,7 +14,7 @@ function ProgressBar({ value, color = '#f59e0b', label }) {
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color }}>{value}%</span>
       </div>
       <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-        <div style={{ height: '100%', borderRadius: 2, background: `linear-gradient(90deg, ${color}, ${color}88)`, width: `${value}%`, transition: 'width 1.2s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 0 8px ${color}88` }} />
+        <div style={{ height: '100%', borderRadius: 2, background: `linear-gradient(90deg, ${color}, color-mix(in srgb, ${color} 53%, transparent))`, width: `${value}%`, transition: 'width 1.2s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 0 8px color-mix(in srgb, ${color} 53%, transparent)` }} />
       </div>
     </div>
   )
@@ -22,32 +22,31 @@ function ProgressBar({ value, color = '#f59e0b', label }) {
 
 // ── Status badge colours ──────────────────────────────────────────────────────
 const STATUS_COLORS = {
-  'MAINTENANCE': '#f59e0b',
-  'UPDATING':    '#00d4ff',
-  'COMING SOON': '#a855f7',
-  'OFFLINE':     '#ef4444',
-  'UPGRADING':   '#00ff88',
+  'MAINTENANCE': 'var(--orange)',
+  'UPDATING':    'var(--cyan)',
+  'COMING SOON': 'var(--purple)',
+  'OFFLINE':     'var(--red)',
+  'UPGRADING':   'var(--green)',
 }
 
 // ── Background patterns ───────────────────────────────────────────────────────
 function BgPattern({ bgStyle, accentColor }) {
-  const c = accentColor + '08'
-  const c2 = accentColor + '04'
+  const mix = (pct) => `color-mix(in srgb, ${accentColor} ${pct}%, transparent)`
   if (bgStyle === 'clean') return null
   if (bgStyle === 'radial') return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-      background: `radial-gradient(ellipse at 50% 50%, ${accentColor}10 0%, transparent 70%)` }} />
+      background: `radial-gradient(ellipse at 50% 50%, ${mix(6)} 0%, transparent 70%)` }} />
   )
   if (bgStyle === 'dots') return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-      backgroundImage: `radial-gradient(circle, ${accentColor}20 1px, transparent 1px)`,
+      backgroundImage: `radial-gradient(circle, ${mix(12)} 1px, transparent 1px)`,
       backgroundSize: '32px 32px' }} />
   )
   if (bgStyle === 'matrix') return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
       {Array.from({ length: 20 }).map((_, i) => (
         <div key={i} style={{ position: 'absolute', top: 0, left: `${i * 5}%`, width: 1, height: '100%',
-          background: `linear-gradient(to bottom, transparent, ${accentColor}30, transparent)`,
+          background: `linear-gradient(to bottom, transparent, ${mix(19)} , transparent)`,
           animation: `maint-matrix-fall ${2 + i * 0.3}s linear ${i * 0.1}s infinite` }} />
       ))}
     </div>
@@ -66,18 +65,18 @@ function StyleTerminal({ message, status, icon, returnTime, showProgress, progre
     <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '24px', maxWidth: 600, width: '100%' }}>
       {/* Badge */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 16px', background: accentColor + '14', border: `1px solid ${accentColor}40`, borderRadius: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 16px', background: `color-mix(in srgb, ${accentColor} 8%, transparent)`, border: `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)`, borderRadius: 20 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: accentColor, boxShadow: `0 0 8px ${accentColor}`, animation: 'maint-blink 1.4s infinite' }} />
           <span style={{ fontSize: 9, letterSpacing: 4, color: accentColor }}>{status}</span>
         </div>
       </div>
       {/* Icon */}
       <div style={{ position: 'relative', display: 'inline-block', marginBottom: 16 }}>
-        <div style={{ width: 80, height: 80, borderRadius: '50%', margin: '0 auto', background: accentColor + '14', border: `1px solid ${accentColor}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, boxShadow: `0 0 40px ${accentColor}26`, animation: 'maint-pulse 2.5s ease-in-out infinite' }}>{icon}</div>
-        <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: `1px dashed ${accentColor}33`, animation: 'maint-spin-slow 12s linear infinite' }} />
+        <div style={{ width: 80, height: 80, borderRadius: '50%', margin: '0 auto', background: `color-mix(in srgb, ${accentColor} 8%, transparent)`, border: `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, boxShadow: `0 0 40px color-mix(in srgb, ${accentColor} 15%, transparent)`, animation: 'maint-pulse 2.5s ease-in-out infinite' }}>{icon}</div>
+        <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: `1px dashed color-mix(in srgb, ${accentColor} 20%, transparent)`, animation: 'maint-spin-slow 12s linear infinite' }} />
       </div>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,5vw,48px)', fontWeight: 800, letterSpacing: -1, marginBottom: 10, color: 'var(--text)', lineHeight: 1.1 }}>
-        Down for<br /><span style={{ color: accentColor, textShadow: `0 0 30px ${accentColor}66` }}>Maintenance</span>
+        Down for<br /><span style={{ color: accentColor, textShadow: `0 0 30px color-mix(in srgb, ${accentColor} 40%, transparent)` }}>Maintenance</span>
       </h1>
       <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--muted)', margin: '0 auto 24px', maxWidth: 440 }}>{message}</p>
       {/* Terminal panel */}
@@ -128,13 +127,13 @@ function StyleCyber({ message, status, icon, returnTime, showProgress, progress,
     <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '24px', maxWidth: 640, width: '100%' }}>
       {/* Glowing title */}
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 8, color: accentColor, marginBottom: 8, opacity: 0.7 }}>// SYSTEM ALERT</div>
-      <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(36px,6vw,68px)', fontWeight: 900, color: accentColor, textShadow: `0 0 20px ${accentColor}, 0 0 60px ${accentColor}44`, marginBottom: 8, letterSpacing: -1, lineHeight: 1 }}>
+      <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(36px,6vw,68px)', fontWeight: 900, color: accentColor, textShadow: `0 0 20px ${accentColor}, 0 0 60px color-mix(in srgb, ${accentColor} 27%, transparent)`, marginBottom: 8, letterSpacing: -1, lineHeight: 1 }}>
         {icon} {status}
       </h1>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 24, letterSpacing: 2 }}>
         UPTIME: {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2,'0')}
       </div>
-      <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${accentColor}40`, padding: '20px', marginBottom: 20, borderRadius: 4 }}>
+      <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)`, padding: '20px', marginBottom: 20, borderRadius: 4 }}>
         <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', lineHeight: 1.8, margin: 0 }}>{message}</p>
       </div>
       {showProgress && (
@@ -143,7 +142,7 @@ function StyleCyber({ message, status, icon, returnTime, showProgress, progress,
             <span>PROGRESS</span><span style={{ color: accentColor }}>{progress}%</span>
           </div>
           <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: `linear-gradient(90deg, ${accentColor}, ${accentColor}66)`, width: `${progress}%`, transition: 'width 1s ease', boxShadow: `0 0 12px ${accentColor}` }} />
+            <div style={{ height: '100%', background: `linear-gradient(90deg, ${accentColor}, color-mix(in srgb, ${accentColor} 40%, transparent))`, width: `${progress}%`, transition: 'width 1s ease', boxShadow: `0 0 12px ${accentColor}` }} />
           </div>
         </div>
       )}
@@ -156,7 +155,7 @@ function StyleGlitch({ message, status, icon, returnTime, showProgress, progress
   return (
     <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '24px', maxWidth: 560, width: '100%' }}>
       <div style={{ fontSize: 72, marginBottom: 12, animation: 'maint-glitch 3s ease-in-out infinite' }}>{icon}</div>
-      <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(40px,7vw,72px)', fontWeight: 900, color: accentColor, textShadow: `2px 0 ${accentColor}, -2px 0 #ff0088, 0 0 30px ${accentColor}88`, animation: 'maint-glitch-text 4s ease 2s infinite', marginBottom: 16, letterSpacing: -2 }}>
+      <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(40px,7vw,72px)', fontWeight: 900, color: accentColor, textShadow: `2px 0 ${accentColor}, -2px 0 #ff0088, 0 0 30px color-mix(in srgb, ${accentColor} 53%, transparent)`, animation: 'maint-glitch-text 4s ease 2s infinite', marginBottom: 16, letterSpacing: -2 }}>
         {status}
       </h1>
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, marginBottom: 24 }}>{message}</p>
@@ -166,12 +165,12 @@ function StyleGlitch({ message, status, icon, returnTime, showProgress, progress
             <span>PROGRESS</span><span style={{ color: accentColor }}>{progress}%</span>
           </div>
           <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: `linear-gradient(90deg, ${accentColor}, ${accentColor}66)`, width: `${progress}%`, transition: 'width 1s ease', boxShadow: `0 0 10px ${accentColor}` }} />
+            <div style={{ height: '100%', background: `linear-gradient(90deg, ${accentColor}, color-mix(in srgb, ${accentColor} 40%, transparent))`, width: `${progress}%`, transition: 'width 1s ease', boxShadow: `0 0 10px ${accentColor}` }} />
           </div>
         </div>
       )}
       {returnTime && (
-        <div style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 10, color: accentColor, letterSpacing: 3, padding: '6px 18px', border: `1px solid ${accentColor}40`, animation: 'maint-blink 2s infinite' }}>
+        <div style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 10, color: accentColor, letterSpacing: 3, padding: '6px 18px', border: `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)`, animation: 'maint-blink 2s infinite' }}>
           ETA: {returnTime} MIN
         </div>
       )}
@@ -192,7 +191,7 @@ function StyleComingSoon({ message, status, icon, returnTime, showProgress, prog
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>PROGRESS — {progress}%</div>
           <div style={{ height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88)`, width: `${progress}%`, transition: 'width 1s ease', boxShadow: `0 0 12px ${accentColor}` }} />
+            <div style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${accentColor}, color-mix(in srgb, ${accentColor} 53%, transparent))`, width: `${progress}%`, transition: 'width 1s ease', boxShadow: `0 0 12px ${accentColor}` }} />
           </div>
         </div>
       )}
@@ -204,7 +203,7 @@ function StyleComingSoon({ message, status, icon, returnTime, showProgress, prog
 function StyleRetro({ message, status, icon, returnTime, showProgress, progress, elapsed, accentColor }) {
   return (
     <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '32px 24px', maxWidth: 580, width: '100%',
-      border: `3px solid ${accentColor}`, boxShadow: `8px 8px 0 ${accentColor}40`, background: 'var(--bg)' }}>
+      border: `3px solid ${accentColor}`, boxShadow: `8px 8px 0 color-mix(in srgb, ${accentColor} 25%, transparent)`, background: 'var(--bg)' }}>
       <div style={{ borderBottom: `2px solid ${accentColor}`, paddingBottom: 12, marginBottom: 20, fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
         <span style={{ color: accentColor, fontSize: 16 }}>{icon}</span>
         <span style={{ fontSize: 11, letterSpacing: 4, color: accentColor }}>{status}</span>
@@ -248,7 +247,7 @@ export default function MaintenanceScreen({
     return () => { clearInterval(d); clearInterval(e) }
   }, [])
 
-  const accentColor = STATUS_COLORS[status] || '#f59e0b'
+  const accentColor = STATUS_COLORS[status] || 'var(--orange)'
 
   const sharedProps = { message, status, icon, returnTime, showProgress, progress, elapsed, dots, accentColor, siteConfig }
 
@@ -277,10 +276,10 @@ export default function MaintenanceScreen({
           top:    pos.includes('t') ? 16 : 'auto', bottom: pos.includes('b') ? 16 : 'auto',
           left:   pos.includes('l') ? 16 : 'auto', right:  pos.includes('r') ? 16 : 'auto',
           width: 40, height: 40, pointerEvents: 'none',
-          borderTop:    pos.includes('t') ? `1px solid ${accentColor}40` : 'none',
-          borderBottom: pos.includes('b') ? `1px solid ${accentColor}40` : 'none',
-          borderLeft:   pos.includes('l') ? `1px solid ${accentColor}40` : 'none',
-          borderRight:  pos.includes('r') ? `1px solid ${accentColor}40` : 'none',
+          borderTop:    pos.includes('t') ? `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)` : 'none',
+          borderBottom: pos.includes('b') ? `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)` : 'none',
+          borderLeft:   pos.includes('l') ? `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)` : 'none',
+          borderRight:  pos.includes('r') ? `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)` : 'none',
         }} />
       ))}
 
@@ -303,7 +302,7 @@ export default function MaintenanceScreen({
 
       <style>{`
         @keyframes maint-drift      { 0%,100%{transform:translate(0,0)} 50%{transform:translate(24px,-18px)} }
-        @keyframes maint-pulse      { 0%,100%{box-shadow:0 0 30px ${accentColor}26} 50%{box-shadow:0 0 55px ${accentColor}59} }
+        @keyframes maint-pulse      { 0%,100%{box-shadow:0 0 30px color-mix(in srgb, ${accentColor} 15%, transparent)} 50%{box-shadow:0 0 55px ${accentColor}59} }
         @keyframes maint-spin       { to{transform:rotate(360deg)} }
         @keyframes maint-spin-slow  { to{transform:rotate(360deg)} }
         @keyframes maint-blink      { 0%,100%{opacity:1} 50%{opacity:0.3} }

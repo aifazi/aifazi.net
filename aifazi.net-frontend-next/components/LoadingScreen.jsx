@@ -122,7 +122,7 @@ function MatrixLoader({ onComplete }) {
     const draw = () => {
       ctx.fillStyle = 'rgba(6,10,15,0.05)'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.font = '14px monospace'
       drops.forEach((y,i) => {
-        ctx.fillStyle = Math.random() > 0.95 ? '#fff' : '#00ff88'
+        ctx.fillStyle = Math.random() > 0.95 ? '#fff' : 'var(--green)'
         ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*16, y*16)
         if (y*16 > canvas.height && Math.random() > 0.975) drops[i] = 0
         drops[i]++
@@ -136,7 +136,7 @@ function MatrixLoader({ onComplete }) {
     <div style={{ opacity: exiting ? 0 : 1, transition:'opacity .6s', position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
       <canvas ref={canvasRef} style={{ position:'absolute', inset:0 }} />
       <div style={{ position:'relative', zIndex:1, textAlign:'center', background:'rgba(6,10,15,0.7)', padding:'24px 40px', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', backdropFilter:'blur(4px)' }}>
-        <div style={{ fontFamily:'var(--font-display)', fontSize:48, fontWeight:700, color:'#00ff88', letterSpacing:-1, textShadow:'0 0 20px color-mix(in srgb, var(--green) 80%, transparent)' }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:48, fontWeight:700, color:'var(--green)', letterSpacing:-1, textShadow:'0 0 20px color-mix(in srgb, var(--green) 80%, transparent)' }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4, marginTop:8 }}>DECRYPTING PORTFOLIO</div>
       </div>
     </div>
@@ -349,10 +349,10 @@ function NeonLoader({ onComplete }) {
   }, [])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:24 }}>
-      <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(52px,10vw,96px)', fontWeight:900, letterSpacing:4, color:'#fff', textTransform:'uppercase', animation:'ls-neon-flicker 3s infinite', textShadow:'0 0 10px #00ff88,0 0 30px #00ff88,0 0 60px #00ff88,0 0 120px color-mix(in srgb, var(--green) 50%, transparent)' }}>TANVIR</div>
+      <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(52px,10vw,96px)', fontWeight:900, letterSpacing:4, color:'var(--text)', textTransform:'uppercase', animation:'ls-neon-flicker 3s infinite', textShadow:'0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green),0 0 120px color-mix(in srgb, var(--green) 50%, transparent)' }}>TANVIR</div>
       <div style={{ fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:8, color:'var(--cyan)', animation:'ls-neon-sub 3s 0.3s infinite', textShadow:'0 0 8px var(--cyan)' }}>NETWORK ENGINEER</div>
       <style>{`
-        @keyframes ls-neon-flicker{0%,100%{opacity:1;text-shadow:0 0 10px #00ff88,0 0 30px #00ff88,0 0 60px #00ff88}45%{opacity:0.15;text-shadow:none}50%{opacity:1;text-shadow:0 0 10px #00ff88,0 0 30px #00ff88,0 0 60px #00ff88}75%{opacity:0.3;text-shadow:none}80%{opacity:1;text-shadow:0 0 10px #00ff88,0 0 30px #00ff88,0 0 60px #00ff88}}
+        @keyframes ls-neon-flicker{0%,100%{opacity:1;text-shadow:0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green)}45%{opacity:0.15;text-shadow:none}50%{opacity:1;text-shadow:0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green)}75%{opacity:0.3;text-shadow:none}80%{opacity:1;text-shadow:0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green)}}
         @keyframes ls-neon-sub{0%,100%{opacity:1}45%{opacity:0.1}50%{opacity:1}75%{opacity:0.2}80%{opacity:1}}
       `}</style>
     </div>
