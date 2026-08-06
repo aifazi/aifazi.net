@@ -62,4 +62,13 @@ async def cron_cleanup(request: Request):
     mail = await dispatch_pending()
     logger.info("cron_cleanup: mail dispatch summary %s", mail)
 
-    return {"status": "ok", "ran_at": datetime.now(timezone.utc).isoformat(), "mail": mail}
+    # Baseline uptime check — on Hobby the cron only runs daily; frequent checks
+    # are driven by the public /api/monitor/ping endpoint (external uptime service).
+    monitor_summary = None
+    try:
+        from routers.monitor import _run_all_checks
+        monitor_summary = await _run_all_checks()
+    except Exception as e:
+        logger.warning("cron_cleanup: monitor run failed: %s", e)
+
+    return {"status": "ok", "ran_at": datetime.now(timezone.utc).isoformat(), "mail": mail, "monitor": monitor_summary}

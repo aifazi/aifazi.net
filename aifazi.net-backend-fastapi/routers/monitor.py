@@ -228,12 +228,27 @@ def _cron_auth(request: Request):
         raise HTTPException(401, "Unauthorized")
 
 
-# ── Cron (Vercel scheduled) ───────────────────────────────────────────────────
+# ── Cron (Vercel scheduled, daily on Hobby) ────────────────────────────────────
 @router.get("/api/cron/monitor")
 async def cron_monitor(request: Request):
     _cron_auth(request)
     results = await _run_all_checks()
     return {"status": "ok", "ran_at": _now(), "results": results}
+
+
+# ── Public ping — external uptime service (UptimeRobot/BetterStack, free) hits
+#    this every N minutes to trigger a check. Works on Hobby (no cron frequency
+#    limit needed). Returns lightweight summary. ────────────────────────────────
+@router.get("/api/monitor/ping")
+async def monitor_ping(request: Request):
+    results = await _run_all_checks()
+    overall = "operational" if all(r["status"] == "up" for r in results) else \
+              ("degraded" if any(r["status"] == "up" for r in results) else "outage")
+    return {
+        "status": overall,
+        "ran_at": _now(),
+        "services": {r["service"]: r["status"] for r in results},
+    }
 
 
 # ── Public status (sanitized — no secrets) ────────────────────────────────────

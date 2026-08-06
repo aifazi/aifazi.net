@@ -156,6 +156,7 @@ _OPEN_EXACT: set[str] = {
     "/api/cron/cleanup",
     "/api/cron/monitor",
     "/api/monitor/status",
+    "/api/monitor/ping",
     # Store: Stripe webhook (signature verified inside route) + Lua subscription sync
     "/api/store/webhook",
     "/api/store/stripe/webhook",
