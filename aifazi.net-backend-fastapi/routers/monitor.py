@@ -13,9 +13,10 @@ Alerts are sent via the existing mail queue (Resend/Brevo/SMTP) using the
 `monitor_alert` template when a service transitions to DOWN (or is still down
 after a configurable consecutive-failure threshold).
 """
-import os, hmac, asyncio, logging, time
-from datetime import datetime, timezone
-from fastapi import APIRouter, Request, HTTPException, Depends
+import os, hmac, asyncio, logging, time, socket
+from datetime import datetime, timezone, timedelta
+from fastapi import APIRouter, Request, HTTPException, Depends, Query
+from pydantic import BaseModel
 from database import supabase
 from dependencies import get_current_user, require_staff
 
@@ -151,6 +152,156 @@ CHECKERS = {
 }
 
 
+# ── Custom monitor checkers ───────────────────────────────────────────────────
+# Each returns (ok, latency_ms, detail). Runs inside the same run-all pass so
+# alerts + history reuse the existing uptime_checks machinery.
+
+async def _check_website(m):
+    url = m.get("target") or ""
+    if not url.startswith(("http://", "https://")):
+        return False, 0, "target must be an http(s) URL"
+    return await _check_http(url)
+
+
+async def _check_keyword(m):
+    url = m.get("target") or ""
+    expected = m.get("expected") or ""
+    if not url.startswith(("http://", "https://")):
+        return False, 0, "target must be an http(s) URL"
+    if not expected:
+        return False, 0, "no keyword configured"
+    import httpx
+    start = time.perf_counter()
+    try:
+        async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
+            r = await client.get(url)
+            lat = round((time.perf_counter() - start) * 1000)
+            if r.status_code >= 500:
+                return False, lat, f"HTTP {r.status_code}"
+            present = expected.lower() in r.text.lower()
+            mode = m.get("mode") or "contains"
+            ok = present if mode == "contains" else not present
+            return ok, lat, f"{'found' if present else 'missing'} '{expected}'" if ok else \
+                   (f"expected '{expected}' present but missing" if mode == "contains" else f"keyword '{expected}' unexpectedly present")
+    except Exception as e:
+        lat = round((time.perf_counter() - start) * 1000)
+        return False, lat, type(e).__name__
+
+
+def _socket_connect(host: str, port: int, timeout: float = 5.0) -> tuple[bool, float, str]:
+    start = time.perf_counter()
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            lat = round((time.perf_counter() - start) * 1000)
+            return True, lat, f"connected to {host}:{port}"
+    except Exception as e:
+        lat = round((time.perf_counter() - start) * 1000)
+        return False, lat, type(e).__name__
+
+
+async def _check_ping(m):
+    host = (m.get("target") or "").strip()
+    if not host:
+        return False, 0, "no host configured"
+    # Prefer a subprocess ping; fall back to a TCP connect on 443 (serverless
+    # sandboxes often lack the ping binary or ICMP privileges).
+    import subprocess
+    start = time.perf_counter()
+    try:
+        res = await asyncio.to_thread(
+            subprocess.run, ["ping", "-c", "1", "-W", "2", host],
+            capture_output=True, text=True, timeout=6,
+        )
+        if res.returncode == 0:
+            lat = round((time.perf_counter() - start) * 1000)
+            return True, lat, "reachable"
+    except Exception:
+        pass
+    return await asyncio.to_thread(_socket_connect, host, 443)
+
+
+async def _check_port(m):
+    host = (m.get("target") or "").strip()
+    port = int(m.get("port") or 0)
+    if not host or not (1 <= port <= 65535):
+        return False, 0, "need host and a valid port"
+    return await asyncio.to_thread(_socket_connect, host, port)
+
+
+async def _check_cron(m):
+    """Scheduled-job monitor: alert if the job's last heartbeat is too old."""
+    job = (m.get("target") or "").strip()
+    if not job:
+        return False, 0, "no job name configured"
+    interval = int(m.get("interval_seconds") or 60) or 60
+    try:
+        res = supabase.table("job_heartbeats").select("last_run_at,last_status,last_detail") \
+            .eq("job", job).limit(1).execute()
+        if not res.data or not res.data[0].get("last_run_at"):
+            return False, 0, f"job '{job}' has never run"
+        last = res.data[0]
+        age = (datetime.now(timezone.utc) - datetime.fromisoformat(str(last["last_run_at"]))).total_seconds()
+        if age > interval:
+            return False, round(age), f"last run {int(age)}s ago (> {interval}s)"
+        return True, round(age), f"ran {int(age)}s ago ({last.get('last_status') or 'ok'})"
+    except Exception as e:
+        return False, 0, type(e).__name__
+
+
+async def _check_dns(m):
+    host = (m.get("target") or "").strip()
+    expected = (m.get("expected") or "").strip()
+    if not host:
+        return False, 0, "no hostname configured"
+    start = time.perf_counter()
+    try:
+        infos = await asyncio.to_thread(socket.getaddrinfo, host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+        ips = sorted({info[4][0] for info in infos})
+        lat = round((time.perf_counter() - start) * 1000)
+        if not ips:
+            return False, lat, "no A/AAAA records"
+        if expected:
+            ok = expected in ips
+            return ok, lat, (f"resolves to {', '.join(ips)}" if ok else f"expected {expected}, got {', '.join(ips)}")
+        return True, lat, f"resolves to {', '.join(ips)}"
+    except Exception as e:
+        lat = round((time.perf_counter() - start) * 1000)
+        return False, lat, type(e).__name__
+
+
+CUSTOM_CHECKERS = {
+    "website": _check_website,
+    "keyword": _check_keyword,
+    "ping": _check_ping,
+    "port": _check_port,
+    "cron": _check_cron,
+    "dns": _check_dns,
+}
+
+
+def _get_custom_monitors(enabled_only: bool = True) -> list[dict]:
+    try:
+        q = supabase.table("monitor_checks").select("*").order("created_at")
+        if enabled_only:
+            q = q.eq("enabled", True)
+        return q.execute().data or []
+    except Exception as e:
+        logger.error("monitor: could not load custom monitors: %s", e)
+        return []
+
+
+def record_job_heartbeat(job: str, status: str = "ok", detail: str = "") -> None:
+    """Called by cron/background jobs so 'cron' monitors can detect staleness."""
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        supabase.table("job_heartbeats").upsert({
+            "job": job, "last_run_at": now, "last_status": status,
+            "last_detail": str(detail)[:200], "updated_at": now,
+        }, on_conflict="job").execute()
+    except Exception as e:
+        logger.warning("monitor: heartbeat record failed for %s: %s", job, e)
+
+
 # ── Alerting ───────────────────────────────────────────────────────────────────
 async def _last_fail_count(service: str) -> int:
     """Consecutive failures for a service, from the most recent rows."""
@@ -217,6 +368,32 @@ async def _run_all_checks() -> list[dict]:
             if fails >= threshold:
                 await _send_alert(svc["name"], detail)
 
+    # Custom, admin-configured monitors
+    for m in _get_custom_monitors(enabled_only=True):
+        checker = CUSTOM_CHECKERS.get(m.get("type"))
+        if not checker:
+            continue
+        ok, lat, detail = await checker(m)
+        status = "up" if ok else "down"
+        service = f"custom:{m.get('id')}"
+        row = {
+            "service": service,
+            "label": m.get("name") or m.get("type", "monitor"),
+            "status": status,
+            "latency_ms": lat,
+            "detail": str(detail)[:200],
+            "checked_at": _now(),
+        }
+        results.append(row)
+        try:
+            supabase.table("uptime_checks").insert(row).execute()
+        except Exception as e:
+            logger.error("monitor: failed to record custom monitor %s: %s", service, e)
+        if status == "down":
+            fails = await _last_fail_count(service)
+            if fails >= threshold:
+                await _send_alert(m.get("name") or service, str(detail))
+
     return results
 
 
@@ -233,6 +410,7 @@ def _cron_auth(request: Request):
 async def cron_monitor(request: Request):
     _cron_auth(request)
     results = await _run_all_checks()
+    record_job_heartbeat("monitor", "ok", f"{len(results)} checks")
     return {"status": "ok", "ran_at": _now(), "results": results}
 
 
@@ -479,3 +657,110 @@ async def staff_update_settings(body: dict, user: dict = Depends(require_staff))
     except Exception as e:
         raise HTTPException(500, f"Could not save monitor settings: {e}")
     return monitor_cfg
+
+
+# ── Custom monitors CRUD (admin-configured) ───────────────────────────────────
+ALLOWED_TYPES = ("website", "keyword", "ping", "port", "cron", "dns")
+
+
+class MonitorBody(BaseModel):
+    name: str
+    type: str
+    target: str
+    port: int | None = None
+    expected: str = ""
+    mode: str = "contains"
+    interval_seconds: int = 60
+    enabled: bool = True
+
+
+def _clean_monitor(body: MonitorBody) -> dict:
+    if not body.name.strip():
+        raise HTTPException(400, "Monitor name is required")
+    if body.type not in ALLOWED_TYPES:
+        raise HTTPException(400, f"Invalid monitor type: {body.type}")
+    if not body.target.strip():
+        raise HTTPException(400, "Target is required")
+    mode = body.mode if body.mode in ("contains", "not_contains") else "contains"
+    interval = max(5, int(body.interval_seconds or 60))
+    return {
+        "name": body.name.strip()[:80],
+        "type": body.type,
+        "target": body.target.strip()[:300],
+        "port": body.port if body.type == "port" else None,
+        "expected": (body.expected or "").strip()[:300],
+        "mode": mode,
+        "interval_seconds": interval,
+        "enabled": bool(body.enabled),
+        "updated_at": _now(),
+    }
+
+
+@router.get("/api/monitor/checks/config")
+async def list_custom_monitors(user: dict = Depends(require_staff)):
+    monitors = _get_custom_monitors(enabled_only=False)
+    # Attach the latest result (service = custom:<id>) for each monitor
+    out = []
+    for m in monitors:
+        latest = None
+        try:
+            res = supabase.table("uptime_checks").select("status,latency_ms,detail,checked_at") \
+                .eq("service", f"custom:{m['id']}").order("checked_at", desc=True).limit(1).execute()
+            if res.data:
+                latest = res.data[0]
+        except Exception:
+            pass
+        out.append({**m, "latest": latest})
+    return out
+
+
+@router.post("/api/monitor/checks/config")
+async def create_custom_monitor(body: MonitorBody, user: dict = Depends(require_staff)):
+    row = _clean_monitor(body)
+    row["created_at"] = _now()
+    try:
+        res = supabase.table("monitor_checks").insert(row).execute()
+        return res.data[0] if res.data else row
+    except Exception as e:
+        raise HTTPException(500, f"Could not create monitor: {e}")
+
+
+@router.put("/api/monitor/checks/config/{monitor_id}")
+async def update_custom_monitor(monitor_id: str, body: MonitorBody, user: dict = Depends(require_staff)):
+    row = _clean_monitor(body)
+    try:
+        res = supabase.table("monitor_checks").update(row).eq("id", monitor_id).execute()
+        if not res.data:
+            raise HTTPException(404, "Monitor not found")
+        return res.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Could not update monitor: {e}")
+
+
+@router.delete("/api/monitor/checks/config/{monitor_id}")
+async def delete_custom_monitor(monitor_id: str, user: dict = Depends(require_staff)):
+    try:
+        supabase.table("monitor_checks").delete().eq("id", monitor_id).execute()
+        supabase.table("uptime_checks").delete().eq("service", f"custom:{monitor_id}").execute()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(500, f"Could not delete monitor: {e}")
+
+
+@router.post("/api/monitor/checks/{monitor_id}/run")
+async def run_custom_monitor(monitor_id: str, user: dict = Depends(require_staff)):
+    """Run a single monitor now and return its result (no history write)."""
+    try:
+        res = supabase.table("monitor_checks").select("*").eq("id", monitor_id).limit(1).execute()
+    except Exception as e:
+        raise HTTPException(500, f"Could not read monitor: {e}")
+    if not res.data:
+        raise HTTPException(404, "Monitor not found")
+    m = res.data[0]
+    checker = CUSTOM_CHECKERS.get(m.get("type"))
+    if not checker:
+        raise HTTPException(400, "Unsupported monitor type")
+    ok, lat, detail = await checker(m)
+    return {"ok": ok, "status": "up" if ok else "down", "latency_ms": lat, "detail": str(detail)[:200]}

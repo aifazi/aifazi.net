@@ -46,6 +46,8 @@ async def cron_cleanup(request: Request):
     _auth(request)
     cutoff = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
 
+    from routers.monitor import record_job_heartbeat
+
     supabase.table("users") \
         .update({"verify_token": None, "verify_expires": None}) \
         .lt("verify_expires", cutoff) \
@@ -61,6 +63,7 @@ async def cron_cleanup(request: Request):
     # P2: drain the mail queue so queued emails are actually delivered in production.
     mail = await dispatch_pending()
     logger.info("cron_cleanup: mail dispatch summary %s", mail)
+    record_job_heartbeat("cron-cleanup", "ok", f"mail={mail.get('sent', 0)}")
 
     # Baseline uptime check — on Hobby the cron only runs daily; frequent checks
     # are driven by the public /api/monitor/ping endpoint (external uptime service).
@@ -68,16 +71,20 @@ async def cron_cleanup(request: Request):
     try:
         from routers.monitor import _run_all_checks
         monitor_summary = await _run_all_checks()
+        record_job_heartbeat("monitor", "ok", f"{len(monitor_summary)} checks")
     except Exception as e:
         logger.warning("cron_cleanup: monitor run failed: %s", e)
+        record_job_heartbeat("monitor", "error", str(e))
 
     # Sentry-style daily error digest — email a summary of errors seen in the last 24h
     digest_sent = False
     try:
         from routers.monitor import _send_error_digest
         digest_sent = await _send_error_digest()
+        record_job_heartbeat("error-digest", "ok", f"sent={digest_sent}")
     except Exception as e:
         logger.warning("cron_cleanup: error digest failed: %s", e)
+        record_job_heartbeat("error-digest", "error", str(e))
 
     return {"status": "ok", "ran_at": datetime.now(timezone.utc).isoformat(),
             "mail": mail, "monitor": monitor_summary, "digest_sent": digest_sent}

@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
+import { useDialog } from '../../components/Dialog'
+import { Modal, EmptyState } from './ui'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = 'var(--green)'
@@ -11,6 +13,177 @@ const O = 'var(--orange)'
 
 const STATUS_COLOR = { up: G, down: R, unknown: 'var(--muted)' }
 const STATUS_LABEL = { up: 'OPERATIONAL', down: 'DOWN', unknown: 'NO DATA' }
+
+const TYPES = [
+  { id: 'website',  label: 'Website',  icon: '🌐', desc: 'HTTP(S) endpoint or page — alerts when it stops responding' },
+  { id: 'keyword',  label: 'Keyword',  icon: '🔍', desc: 'Page content — alerts when a keyword appears or disappears' },
+  { id: 'ping',     label: 'Ping',     icon: '📡', desc: 'Server / device reachability (ICMP, TCP fallback)' },
+  { id: 'port',     label: 'Port',     icon: '🔌', desc: 'TCP port — SMTP, POP3, FTP, game servers, etc.' },
+  { id: 'cron',     label: 'Cron Job', icon: '⏰', desc: 'Scheduled job — alerts if it fails or goes missing' },
+  { id: 'dns',      label: 'DNS',      icon: '🌍', desc: 'DNS record — catches unauthorised changes early' },
+]
+
+const emptyForm = { name: '', type: 'website', target: '', port: '', expected: '', mode: 'contains', interval_seconds: 60, enabled: true }
+
+function MonitorsTab() {
+  const toast = useToast()
+  const { confirm } = useDialog()
+  const [monitors, setMonitors] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(null)   // null closed, {} = new, object = edit
+  const [form, setForm] = useState(emptyForm)
+  const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState(null)
+
+  const load = () => {
+    setLoading(true)
+    api.get('/monitor/checks/config').then(r => setMonitors(r.data || [])).catch(() => toast.error('Could not load monitors'))
+      .finally(() => setLoading(false))
+  }
+  useEffect(load, [])
+
+  const set = k => v => setForm(f => ({ ...f, [k]: v }))
+
+  const openNew = () => { setForm(emptyForm); setEditing({}) }
+  const openEdit = m => { setForm({ name: m.name, type: m.type, target: m.target, port: m.port ?? '', expected: m.expected || '', mode: m.mode || 'contains', interval_seconds: m.interval_seconds || 60, enabled: m.enabled }); setEditing(m) }
+
+  const save = async () => {
+    if (!form.name.trim() || !form.target.trim()) { toast.error('Name and target are required'); return }
+    setSaving(true)
+    try {
+      const payload = { ...form, port: form.type === 'port' && form.port ? Number(form.port) : null, interval_seconds: Number(form.interval_seconds) || 60 }
+      if (editing?.id) await api.put(`/monitor/checks/config/${editing.id}`, payload)
+      else await api.post('/monitor/checks/config', payload)
+      toast.success(editing?.id ? 'Monitor updated' : 'Monitor created')
+      setEditing(null)
+      load()
+    } catch (e) { toast.error(e.response?.data?.detail || 'Save failed') } finally { setSaving(false) }
+  }
+
+  const remove = async m => {
+    const ok = await confirm({ title: 'Delete Monitor', message: `Delete "${m.name}"? Its check history will also be removed.`, variant: 'danger', confirmLabel: 'DELETE' })
+    if (!ok) return
+    try { await api.delete(`/monitor/checks/config/${m.id}`); toast.success('Monitor deleted'); load() }
+    catch { toast.error('Delete failed') }
+  }
+
+  const test = async m => {
+    setTesting(m.id)
+    try {
+      const r = await api.post(`/monitor/checks/${m.id}/run`)
+      toast.success(`${m.name}: ${r.data.status.toUpperCase()} — ${r.data.detail || ''} (${r.data.latency_ms}ms)`, { title: 'Monitor test' })
+    } catch (e) { toast.error(e.response?.data?.detail || 'Test failed') } finally { setTesting(null) }
+  }
+
+  const typeMeta = id => TYPES.find(t => t.id === id) || TYPES[0]
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 3, color: C, marginBottom: 4 }}>CUSTOM MONITORS</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>Website, keyword, ping, port, cron job and DNS checks — run on each monitor tick, alerts on consecutive failures.</div>
+        </div>
+        <button onClick={openNew} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: G, color: '#000', border: 'none', cursor: 'pointer', borderRadius: 8, fontWeight: 700 }}>+ ADD MONITOR</button>
+      </div>
+
+      {loading ? <div className="loader" />
+        : monitors.length === 0 ? <EmptyState icon="🛰️" title="No custom monitors yet" hint="Add a website, port, cron job or DNS monitor to start tracking it." />
+        : monitors.map(m => {
+          const meta = typeMeta(m.type)
+          const st = m.latest?.status || 'unknown'
+          const color = STATUS_COLOR[st]
+          return (
+            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: `${color}14`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>{meta.icon}</div>
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{m.name}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, padding: '2px 7px', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)', color: C, borderRadius: 99 }}>{meta.label.toUpperCase()}</span>
+                  {!m.enabled && <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, padding: '2px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 99 }}>PAUSED</span>}
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {m.type === 'port' ? `${m.target}:${m.port}` : m.type === 'keyword' ? `${m.target} → "${m.expected}"` : m.type === 'dns' ? `${m.target}${m.expected ? ` → ${m.expected}` : ''}` : m.target}
+                  {m.type === 'cron' && ` · every ${m.interval_seconds}s`}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, color, fontWeight: 700 }}>{STATUS_LABEL[st]}</div>
+                {m.latest && <div style={{ fontFamily: MONO, fontSize: 8, color: 'var(--muted)', marginTop: 2 }}>{m.latest.latency_ms}ms · {m.latest.checked_at ? new Date(m.latest.checked_at).toLocaleTimeString() : ''}</div>}
+                {m.latest?.detail && m.latest.status !== 'up' && <div style={{ fontFamily: MONO, fontSize: 8, color: R, marginTop: 2, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.latest.detail}</div>}
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button onClick={() => test(m)} disabled={testing === m.id} style={smallBtn()} title="Test now">{testing === m.id ? '…' : '⚡'}</button>
+                <button onClick={() => openEdit(m)} style={smallBtn()} title="Edit">✏️</button>
+                <button onClick={() => remove(m)} style={{ ...smallBtn(), color: R }} title="Delete">🗑</button>
+              </div>
+            </div>
+          )
+        })}
+
+      {/* Add / edit form */}
+      <Modal open={!!editing} onClose={() => setEditing(null)} width={560} title={editing?.id ? 'Edit Monitor' : 'Add Monitor'}>
+        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <label style={lbl}>TYPE</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
+              {TYPES.map(t => (
+                <button key={t.id} onClick={() => set('type')(t.id)} style={{
+                  fontFamily: MONO, fontSize: 10, textAlign: 'left', padding: '10px 12px', cursor: 'pointer', borderRadius: 8,
+                  background: form.type === t.id ? `${C}18` : 'transparent', color: form.type === t.id ? C : 'var(--muted)',
+                  border: `1px solid ${form.type === t.id ? `${C}55` : 'var(--border)'}`,
+                }}>
+                  <div style={{ fontSize: 14, marginBottom: 4 }}>{t.icon} {t.label}</div>
+                  <div style={{ fontSize: 8, color: 'var(--muted)', lineHeight: 1.5, fontWeight: 400 }}>{t.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div><label style={lbl}>NAME</label><input value={form.name} onChange={e => set('name')(e.target.value)} placeholder="My server / My page / DB backup job" style={inp} /></div>
+            <div><label style={lbl}>TARGET</label><input value={form.target} onChange={e => set('target')(e.target.value)} placeholder={form.type === 'port' ? 'host' : form.type === 'cron' ? 'job name (e.g. cron-cleanup)' : form.type === 'dns' ? 'example.com' : 'https://...'} style={inp} /></div>
+          </div>
+          {form.type === 'port' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div><label style={lbl}>PORT</label><input type="number" min={1} max={65535} value={form.port} onChange={e => set('port')(e.target.value)} placeholder="443 / 25 / 3306" style={inp} /></div>
+            </div>
+          )}
+          {(form.type === 'keyword' || form.type === 'dns') && (
+            <div style={{ display: 'grid', gridTemplateColumns: form.type === 'keyword' ? '2fr 1fr' : '1fr', gap: 12 }}>
+              <div><label style={lbl}>{form.type === 'keyword' ? 'KEYWORD' : 'EXPECTED IP (optional)'}</label>
+                <input value={form.expected} onChange={e => set('expected')(e.target.value)} placeholder={form.type === 'keyword' ? 'e.g. "We are online"' : 'e.g. 1.2.3.4 (alert if it changes)'} style={inp} /></div>
+              {form.type === 'keyword' && (
+                <div><label style={lbl}>MODE</label>
+                  <select value={form.mode} onChange={e => set('mode')(e.target.value)} style={inp}>
+                    <option value="contains">Alert when MISSING</option>
+                    <option value="not_contains">Alert when PRESENT</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+          {form.type === 'cron' && (
+            <div><label style={lbl}>EXPECTED MAX GAP (seconds)</label><input type="number" min={5} value={form.interval_seconds} onChange={e => set('interval_seconds')(e.target.value)} style={inp} /></div>
+          )}
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontFamily: MONO, fontSize: 10, color: 'var(--muted)', cursor: 'pointer' }}>
+            <input type="checkbox" checked={form.enabled} onChange={e => set('enabled')(e.target.checked)} /> Enabled
+          </label>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={() => setEditing(null)} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 8, flex: 1 }}>CANCEL</button>
+            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: G, color: '#000', border: 'none', cursor: 'pointer', borderRadius: 8, flex: 1, fontWeight: 800 }}>{saving ? 'SAVING…' : '✓ SAVE MONITOR'}</button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  )
+}
+
+function smallBtn() {
+  return { background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6, padding: '6px 8px', fontSize: 12 }
+}
+const lbl = { fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }
+const inp = { width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '10px 12px', outline: 'none', borderRadius: 6 }
+
 
 function StatusTab() {
   const toast = useToast()
@@ -217,8 +390,8 @@ export default function MonitoringPanel() {
   const [tab, setTab] = useState('status')
   return (
     <div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
-        {[['status', '📊 Status'], ['settings', '⚙️ Settings'], ['errors', '🚨 Errors']].map(([k, l]) => (
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10, flexWrap: 'wrap' }}>
+        {[['status', '📊 Status'], ['monitors', '🛰️ Monitors'], ['settings', '⚙️ Settings'], ['errors', '🚨 Errors']].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} style={{
             fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '8px 16px', cursor: 'pointer',
             background: tab === k ? 'var(--green)' : 'transparent', color: tab === k ? '#000' : 'var(--muted)',
@@ -226,7 +399,7 @@ export default function MonitoringPanel() {
           }}>{l}</button>
         ))}
       </div>
-      {tab === 'status' ? <StatusTab /> : tab === 'settings' ? <SettingsTab /> : <ErrorsTab />}
+      {tab === 'status' ? <StatusTab /> : tab === 'monitors' ? <MonitorsTab /> : tab === 'settings' ? <SettingsTab /> : <ErrorsTab />}
     </div>
   )
 }
