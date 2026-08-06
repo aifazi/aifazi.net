@@ -1065,7 +1065,17 @@ function ThemeLibrary() {
       {activeTab === 'packages' && (
         <div>
           <div style={{ marginBottom: 22, padding: '18px 20px', background: 'linear-gradient(135deg, color-mix(in srgb, var(--green) 8%, transparent), color-mix(in srgb, var(--cyan) 6%, transparent))', border: '1px solid color-mix(in srgb, var(--cyan) 22%, transparent)', borderRadius: 10 }}>
-            <div style={{ fontFamily: _FM, fontSize: 9, color: _G, letterSpacing: 3, marginBottom: 8 }}>THEME PACKAGES</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
+              <div style={{ fontFamily: _FM, fontSize: 9, color: _G, letterSpacing: 3 }}>THEME PACKAGES · {THEME_PACKAGES.length}</div>
+              {(() => {
+                const active = THEME_PACKAGES.find(pkg => packageStatus(pkg).isActive)
+                return active ? (
+                  <span style={{ fontFamily: _FM, fontSize: 9, letterSpacing: 1, color: active.accent, background: `${active.accent}18`, border: `1px solid ${active.accent}40`, borderRadius: 999, padding: '4px 12px' }}>
+                    ● ACTIVE: {active.name}
+                  </span>
+                ) : null
+              })()}
+            </div>
             <div style={{ fontFamily: _FD, fontSize: 24, fontWeight: 800, color: _TX, marginBottom: 6 }}>One click changes the whole UI system</div>
             <div style={{ fontFamily: _FM, fontSize: 10, color: _MT, lineHeight: 1.7, maxWidth: 920 }}>
               Each package applies a coordinated set of theme, header, footer, menu, dialog, notification, input, surface, background, loading, and animation settings. After applying one, all manual controls below stay available for fine tuning.
