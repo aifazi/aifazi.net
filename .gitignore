@@ -23,12 +23,6 @@ out/
 
 # Docker
 docker-compose.override.yml
-supabase/pgdata/
-supabase/.branches/
-
-# Supabase
-supabase/.temp/
-**/supabase/.temp/
 
 # OS files
 .DS_Store
@@ -62,4 +56,3 @@ Dockerfile.dev
 docker-compose.web.yml
 .dockerignore
 .env.docker.example
-supabase/

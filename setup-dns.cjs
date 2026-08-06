@@ -1,7 +1,7 @@
 const https = require("https");
 
 const CLOUDFLARE_TOKEN = process.env.CF_API_TOKEN;
-const ZONE_ID = "b8348e1c37ee0ae8316b7033854cab89";
+const ZONE_ID = process.env.CF_ZONE_ID || "";
 const FRONTEND_URL = "aifazi-net-frontend-next.vercel.app";
 const BACKEND_URL = "aifazinet-backend-fastapi.vercel.app";
 
@@ -17,6 +17,11 @@ if (!CLOUDFLARE_TOKEN) {
   console.error("ERROR: Set CF_API_TOKEN env var first.");
   console.error("Create one at: https://dash.cloudflare.com/profile/api-tokens");
   console.error("Permission needed: Zone DNS:Edit");
+  process.exit(1);
+}
+if (!ZONE_ID) {
+  console.error("ERROR: Set CF_ZONE_ID env var first.");
+  console.error("Find it on the Cloudflare zone overview page.");
   process.exit(1);
 }
 

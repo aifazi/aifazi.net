@@ -14,28 +14,61 @@ if ! command -v docker &>/dev/null; then
   exit 1
 fi
 
+DOCKER_COMPOSE="docker compose"
 if ! docker compose version &>/dev/null; then
-  echo " WARN: 'docker compose' not found, trying 'docker-compose'..."
+  if ! command -v docker-compose &>/dev/null; then
+    echo " ERROR: neither 'docker compose' nor 'docker-compose' is available."
+    exit 1
+  fi
   DOCKER_COMPOSE="docker-compose"
-else
-  DOCKER_COMPOSE="docker compose"
 fi
 
-# 2. Create .env.local if not present
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+# 2. Build .env.local
 if [ ! -f .env.local ]; then
-  echo " Creating .env.local from .env.local.example..."
-  cp .env.local.example .env.local
-  echo " Edit .env.local to set custom secrets if desired."
+  if [ -f aifazi.net-backend-fastapi/.env.vercel ] && [ -f aifazi.net-frontend-next/.env.vercel ]; then
+    echo " Merging production env vars from Vercel..."
+    bash scripts/merge-env.sh
+  else
+    echo " WARNING: No Vercel env files (.env.vercel) found — creating a bare .env.local."
+    echo " You MUST run 'bash scripts/merge-env.sh' (after 'vercel env pull') to get working secrets."
+    cat > .env.local << 'ENVEOF'
+# Fill these in (or run merge-env.sh after pulling from Vercel)
+ENV=development
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://backend:8000
+NEXT_PUBLIC_SUPABASE_URL=REPLACE_ME
+NEXT_PUBLIC_SUPABASE_ANON_KEY=REPLACE_ME
+SUPABASE_URL=REPLACE_ME
+SUPABASE_SERVICE_ROLE_KEY=REPLACE_ME
+PASETO_SECRET=REPLACE_ME
+JWT_SECRET=REPLACE_ME
+INTERNAL_API_SECRET=REPLACE_ME
+ADMIN_GATE_SECRET=REPLACE_ME
+CRON_SECRET=REPLACE_ME
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=REPLACE_ME
+COOKIE_DOMAIN=
+NEXT_TELEMETRY_DISABLED=1
+COMPOSE_PROJECT_NAME=aifazi-local
+ENVEOF
+    echo "  → .env.local created. Fill the REPLACE_ME values, then re-run setup."
+    echo ""
+    echo "  Tip: to pull real values, run on Windows:"
+    echo "   cd aifazi.net-backend-fastapi && vercel env pull .env.vercel --environment production --yes"
+    echo "   cd aifazi.net-frontend-next && vercel env pull .env.vercel --environment production --yes"
+    exit 1
+  fi
 else
-  echo " .env.local already exists — skipping."
+  echo " .env.local already exists — keeping it (run scripts/merge-env.sh to refresh from Vercel)."
 fi
 
-# 3. Generate local secrets
-echo " Generating local secrets..."
-PASETO_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))" 2>/dev/null || echo "dev-paseto-secret-local-$(date +%s)")
-JWT_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))" 2>/dev/null || echo "dev-jwt-secret-local-$(date +%s)")
-INTERNAL_API_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))" 2>/dev/null || echo "dev-internal-local-$(date +%s)")
-CRON_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))" 2>/dev/null || echo "dev-cron-local-$(date +%s)")
+# 3. Warn on placeholder/weak values (non-fatal)
+grep -q "REPLACE_ME" .env.local && echo " ⚠ WARNING: .env.local still has REPLACE_ME placeholders — features will fail until filled."
+grep -q "ADMIN_PASSWORD=tanvir123" .env.local && echo " ⚠ WARNING: ADMIN_PASSWORD is the weak default (tanvir123). Set a real password."
 
 # 4. Build and start all services
 echo " Building and starting services..."
@@ -45,10 +78,10 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  All services are starting..."
 echo ""
-  echo "  Frontend:   http://localhost:3000"
-  echo "  Backend:    http://localhost:8000"
-  echo ""
-  echo "  Watch logs:  $DOCKER_COMPOSE logs -f"
+echo "  Frontend:   http://localhost:3000"
+echo "  Backend:    http://localhost:8000"
+echo ""
+echo "  Watch logs:  $DOCKER_COMPOSE logs -f"
 echo "  Stop:        $DOCKER_COMPOSE down"
 echo "  Rebuild:     $DOCKER_COMPOSE up -d --build"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

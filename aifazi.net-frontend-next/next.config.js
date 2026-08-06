@@ -4,7 +4,9 @@ function backendApiBase() {
   const isVercelProd = !!process.env.VERCEL && process.env.NODE_ENV !== 'development'
   if (process.env.INTERNAL_API_URL) return process.env.INTERNAL_API_URL
   if (!isVercelProd) return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-  if (process.env.NEXT_PUBLIC_API_URL && !/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(process.env.NEXT_PUBLIC_API_URL)) {
+  // In Vercel production, only accept a real public HTTPS URL — never a Docker
+  // hostname (backend:) or localhost/private IP that might leak in from .env.local.
+  if (process.env.NEXT_PUBLIC_API_URL && /^https:\/\/[^/:]+\.(aifazi\.net|[a-z0-9-]+\.(com|net|io|dev|app|vercel\.app))/.test(process.env.NEXT_PUBLIC_API_URL)) {
     return process.env.NEXT_PUBLIC_API_URL
   }
   return 'https://api.aifazi.net'
