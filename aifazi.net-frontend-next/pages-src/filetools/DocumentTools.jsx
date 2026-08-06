@@ -38,7 +38,7 @@ function DocxPreview() {
     <div>
       <DropZone accept=".docx" onFiles={load} label="Drop DOCX to preview" />
       {busy && <Progress pct={60} label="CONVERTING DOCX" />}
-      {err && <div style={S.err}>⚠ {err}</div>}
+      {err && <div style={S.err}>âš  {err}</div>}
       {stats && (
         <div style={{ display:'flex', gap:16, margin:'16px 0', flexWrap:'wrap' }}>
           {[{l:'WORDS',v:stats.words,c:'var(--green)'},{l:'CHARACTERS',v:stats.chars,c:'var(--cyan)'},{l:'EST. PAGES',v:stats.pages,c:'var(--orange)'}].map(({l,v,c}) => (
@@ -82,12 +82,12 @@ function DocxToText() {
     <div>
       <DropZone accept=".docx" onFiles={convert} label="Drop DOCX to extract plain text" />
       {busy && <Progress pct={60} label="EXTRACTING TEXT" />}
-      {err && <div style={S.err}>⚠ {err}</div>}
+      {err && <div style={S.err}>âš  {err}</div>}
       {text && (
         <div style={{ marginTop:16 }}>
           <div style={{ display:'flex', gap:8, marginBottom:10 }}>
-            <button onClick={copy} style={{ ...S.btnSm, background: copied ? 'var(--cyan)':'var(--green)' }}>{copied ? '✓ COPIED':'COPY TEXT'}</button>
-            <button onClick={save} style={S.btnSm}>⬇ SAVE AS .TXT</button>
+            <button onClick={copy} style={{ ...S.btnSm, background: copied ? 'var(--cyan)':'var(--green)' }}>{copied ? 'âœ“ COPIED':'COPY TEXT'}</button>
+            <button onClick={save} style={S.btnSm}>â¬‡ SAVE AS .TXT</button>
           </div>
           <textarea readOnly value={text} rows={18}
             style={{ ...S.input, fontFamily:'var(--font-mono)', fontSize:12, color:'var(--text2)', resize:'vertical' }} />
@@ -97,9 +97,9 @@ function DocxToText() {
   )
 }
 
-// ═══════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // EXCEL / SPREADSHEET TOOLS
-// ═══════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 function XlsxToCsv() {
   const [file, setFile]   = useState(null)
@@ -142,7 +142,7 @@ function XlsxToCsv() {
   return (
     <div>
       <DropZone accept=".xlsx,.xls,.xlsm" onFiles={load} label="Drop Excel file to convert to CSV" />
-      {err && <div style={S.err}>⚠ {err}</div>}
+      {err && <div style={S.err}>âš  {err}</div>}
       {file && sheets.length > 0 && (
         <div style={{ marginTop:16 }}>
           <FileBadge file={file} />
@@ -158,7 +158,7 @@ function XlsxToCsv() {
               <table style={{ borderCollapse:'collapse', fontFamily:'var(--font-mono)', fontSize:11, minWidth:'100%' }}>
                 <tbody>
                   {preview.map((row,i) => (
-                    <tr key={i} style={{ background: i===0 ? 'rgba(0,255,136,.06)' : 'transparent' }}>
+                    <tr key={i} style={{ background: i===0 ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent' }}>
                       {row.map((cell,j) => (
                         <td key={j} style={{ padding:'5px 12px', border:'1px solid var(--border2)', color: i===0 ? 'var(--green)' : 'var(--text2)', whiteSpace:'nowrap', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis' }}>{cell}</td>
                       ))}
@@ -168,7 +168,7 @@ function XlsxToCsv() {
               </table>
             </div>
           )}
-          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'CONVERTING...' : '⬇ DOWNLOAD CSV'}</button>
+          <button onClick={convert} disabled={busy} style={{ ...S.btn, marginTop:16 }}>{busy ? 'CONVERTING...' : 'â¬‡ DOWNLOAD CSV'}</button>
         </div>
       )}
     </div>
@@ -214,8 +214,8 @@ function CsvToXlsx() {
           <span style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'var(--muted)', alignSelf:'center', flexShrink:0 }}>.xlsx</span>
         </div>
       </div>
-      <button onClick={() => { loadXLSX().then(convert) }} style={{ ...S.btn, marginTop:16 }}>⬇ DOWNLOAD XLSX</button>
-      {err && <div style={S.err}>⚠ {err}</div>}
+      <button onClick={() => { loadXLSX().then(convert) }} style={{ ...S.btn, marginTop:16 }}>â¬‡ DOWNLOAD XLSX</button>
+      {err && <div style={S.err}>âš  {err}</div>}
     </div>
   )
 }
@@ -249,12 +249,12 @@ function ExcelPreview() {
   return (
     <div>
       <DropZone accept=".xlsx,.xls,.xlsm" onFiles={load} label="Drop Excel file to preview" />
-      {err && <div style={S.err}>⚠ {err}</div>}
+      {err && <div style={S.err}>âš  {err}</div>}
       {sheets.length > 0 && (
         <div style={{ marginTop:16 }}>
           <div style={{ display:'flex', gap:4, marginBottom:12, overflowX:'auto' }}>
             {sheets.map(s => (
-              <button key={s} onClick={() => switchSheet(s)} style={{ fontFamily:'var(--font-mono)', fontSize:10, padding:'6px 14px', background: sheet===s ? 'rgba(0,255,136,.12)' : 'var(--bg3)', color: sheet===s ? 'var(--green)' : 'var(--muted)', border:`1px solid ${sheet===s ? 'rgba(0,255,136,.35)' : 'var(--border)'}`, cursor:'pointer', whiteSpace:'nowrap' }}>
+              <button key={s} onClick={() => switchSheet(s)} style={{ fontFamily:'var(--font-mono)', fontSize:10, padding:'6px 14px', background: sheet===s ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'var(--bg3)', color: sheet===s ? 'var(--green)' : 'var(--muted)', border:`1px solid ${sheet===s ? 'color-mix(in srgb, var(--green) 35%, transparent)' : 'var(--border)'}`, cursor:'pointer', whiteSpace:'nowrap' }}>
                 {s}
               </button>
             ))}
@@ -263,7 +263,7 @@ function ExcelPreview() {
             <table style={{ borderCollapse:'collapse', fontFamily:'var(--font-mono)', fontSize:11, minWidth:'100%' }}>
               <tbody>
                 {data.map((row,i) => (
-                  <tr key={i} style={{ background: i===0 ? 'rgba(0,255,136,.06)' : i%2===0 ? 'transparent' : 'rgba(0,0,0,.2)' }}>
+                  <tr key={i} style={{ background: i===0 ? 'color-mix(in srgb, var(--green) 6%, transparent)' : i%2===0 ? 'transparent' : 'rgba(0,0,0,.2)' }}>
                     <td style={{ padding:'4px 10px', borderRight:'1px solid var(--border2)', color:'var(--muted)', fontSize:9, userSelect:'none', background:'var(--bg2)', position:'sticky', left:0 }}>{i+1}</td>
                     {(Array.isArray(row) ? row : []).map((cell,j) => (
                       <td key={j} style={{ padding:'5px 14px', border:'1px solid var(--border2)', color: i===0 ? 'var(--green)' : 'var(--text2)', whiteSpace:'nowrap', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis' }}>{cell}</td>
@@ -274,7 +274,7 @@ function ExcelPreview() {
             </table>
           </div>
           <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', marginTop:8, letterSpacing:1 }}>
-            {data.length} rows × {Math.max(...data.map(r => Array.isArray(r) ? r.length : 0))} columns in sheet "{sheet}"
+            {data.length} rows Ã— {Math.max(...data.map(r => Array.isArray(r) ? r.length : 0))} columns in sheet "{sheet}"
           </div>
         </div>
       )}
@@ -283,8 +283,8 @@ function ExcelPreview() {
 }
 
 
-// ═══════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // IMAGE TOOLS
-// ═══════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export { DocxPreview, DocxToText, XlsxToCsv, CsvToXlsx, ExcelPreview }

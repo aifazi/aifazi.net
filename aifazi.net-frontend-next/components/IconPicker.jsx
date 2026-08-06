@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-// ─── Icon data ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Icon data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const LORDICON_ICONS = [
   { label: 'Globe',     url: 'https://cdn.lordicon.com/iykgtsbt.json' },
   { label: 'Shield',    url: 'https://cdn.lordicon.com/mrdiiocb.json' },
@@ -27,12 +27,12 @@ export const LORDICON_ICONS = [
 ]
 
 export const EMOJI_OPTIONS = [
-  '🌐','🔒','🖥️','☁️','🔧','💻','🛡️','⚡','🗄️','📡','🔌','🌊',
-  '🏗️','🤖','🔬','🎯','📱','🔑','🌟','📊','🚀','✉️','📁','🔍',
-  '👤','🏆','💡','🛠️','🌍','⚙️','📝','🧠','🔐','🌐','🎨','📦',
+  'ðŸŒ','ðŸ”’','ðŸ–¥ï¸','â˜ï¸','ðŸ”§','ðŸ’»','ðŸ›¡ï¸','âš¡','ðŸ—„ï¸','ðŸ“¡','ðŸ”Œ','ðŸŒŠ',
+  'ðŸ—ï¸','ðŸ¤–','ðŸ”¬','ðŸŽ¯','ðŸ“±','ðŸ”‘','ðŸŒŸ','ðŸ“Š','ðŸš€','âœ‰ï¸','ðŸ“','ðŸ”',
+  'ðŸ‘¤','ðŸ†','ðŸ’¡','ðŸ› ï¸','ðŸŒ','âš™ï¸','ðŸ“','ðŸ§ ','ðŸ”','ðŸŒ','ðŸŽ¨','ðŸ“¦',
 ]
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function isLordicon(v) { return typeof v === 'string' && v.startsWith('http') && v.endsWith('.json') }
 export function isImageUrl(v) { return typeof v === 'string' && v.startsWith('http') && !v.endsWith('.json') }
 
@@ -46,7 +46,7 @@ export function useLordiconScript() {
   }, [])
 }
 
-// ─── Universal icon renderer ───────────────────────────────────────────────
+// â”€â”€â”€ Universal icon renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function IconDisplay({ value, size = 36 }) {
   if (isLordicon(value)) {
     return (
@@ -61,10 +61,10 @@ export function IconDisplay({ value, size = 36 }) {
   if (isImageUrl(value)) {
     return <img src={value} alt="" style={{ width: size, height: size, objectFit: 'contain' }} />
   }
-  return <span style={{ fontSize: size * 0.85, lineHeight: 1 }}>{value || '❓'}</span>
+  return <span style={{ fontSize: size * 0.85, lineHeight: 1 }}>{value || 'â“'}</span>
 }
 
-// ─── Icon Picker Modal ─────────────────────────────────────────────────────
+// â”€â”€â”€ Icon Picker Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function IconPickerModal({ currentValue, onSave, onClose }) {
   useLordiconScript()
   const [tab, setTab] = useState(() =>
@@ -76,9 +76,9 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
   )
 
   const tabs = [
-    { key: 'emoji',    label: '😀 Emoji'      },
-    { key: 'animated', label: '✨ Animated'    },
-    { key: 'custom',   label: '🔗 Custom URL'  },
+    { key: 'emoji',    label: 'ðŸ˜€ Emoji'      },
+    { key: 'animated', label: 'âœ¨ Animated'    },
+    { key: 'custom',   label: 'ðŸ”— Custom URL'  },
   ]
 
   return createPortal(
@@ -86,24 +86,24 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
       {/* Backdrop */}
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', zIndex: 999997 }} />
 
-      {/* Modal — 3-part flex: header (pinned) | content (scrolls) | footer (pinned) */}
+      {/* Modal â€” 3-part flex: header (pinned) | content (scrolls) | footer (pinned) */}
       <div style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-        background: '#0b1118', border: '1px solid rgba(0,212,255,0.3)',
-        boxShadow: '0 0 60px rgba(0,212,255,0.12), 0 24px 64px rgba(0,0,0,0.9)',
+        background: '#0b1118', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)',
+        boxShadow: '0 0 60px color-mix(in srgb, var(--cyan) 12%, transparent), 0 24px 64px rgba(0,0,0,0.9)',
         width: 440, maxHeight: '80vh',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
         zIndex: 999998, fontFamily: "var(--font-mono)",
       }}>
 
-        {/* ── HEADER + TABS (pinned top, never scrolls) ── */}
-        <div style={{ flexShrink: 0, padding: '20px 24px 0', borderBottom: '1px solid rgba(0,212,255,0.1)', position: 'relative', zIndex: 2 }}>
+        {/* â”€â”€ HEADER + TABS (pinned top, never scrolls) â”€â”€ */}
+        <div style={{ flexShrink: 0, padding: '20px 24px 0', borderBottom: '1px solid color-mix(in srgb, var(--cyan) 10%, transparent)', position: 'relative', zIndex: 2 }}>
           <div style={{ fontSize: 10, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14 }}>EDIT ICON</div>
           <div style={{ display: 'flex', gap: 0 }}>
             {tabs.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)} style={{
                 flex: 1, padding: '8px 4px', fontSize: 10, letterSpacing: 1,
-                background: tab === t.key ? 'rgba(0,212,255,0.1)' : 'transparent',
+                background: tab === t.key ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
                 border: 'none', borderBottom: `2px solid ${tab === t.key ? 'var(--cyan)' : 'transparent'}`,
                 color: tab === t.key ? 'var(--cyan)' : '#4a6070',
                 cursor: 'pointer', transition: 'all 0.2s',
@@ -112,11 +112,11 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
           </div>
         </div>
 
-        {/* ── SCROLLABLE CONTENT (only this part scrolls) ── */}
+        {/* â”€â”€ SCROLLABLE CONTENT (only this part scrolls) â”€â”€ */}
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 24 }}>
 
           {/* Preview */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, padding: '12px 16px', background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.12)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, padding: '12px 16px', background: 'color-mix(in srgb, var(--cyan) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 12%, transparent)' }}>
             <div style={{ width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg3)', border: '1px solid var(--border)', flexShrink: 0 }}>
               <IconDisplay value={selected} size={36} />
             </div>
@@ -132,8 +132,8 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
               {EMOJI_OPTIONS.map(e => (
                 <button key={e} onClick={() => setSelected(e)} style={{
                   width: 44, height: 44, fontSize: 22,
-                  background: selected === e ? 'rgba(0,255,136,0.15)' : 'var(--bg3)',
-                  border: `1px solid ${selected === e ? 'rgba(0,255,136,0.5)' : 'var(--border)'}`,
+                  background: selected === e ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'var(--bg3)',
+                  border: `1px solid ${selected === e ? 'color-mix(in srgb, var(--green) 50%, transparent)' : 'var(--border)'}`,
                   cursor: 'pointer', transition: 'all 0.15s', borderRadius: 4,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>{e}</button>
@@ -149,8 +149,8 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
                 {LORDICON_ICONS.map(icon => (
                   <button key={icon.url} onClick={() => setSelected(icon.url)} style={{
                     padding: '10px 4px',
-                    background: selected === icon.url ? 'rgba(0,212,255,0.12)' : 'var(--bg3)',
-                    border: `1px solid ${selected === icon.url ? 'rgba(0,212,255,0.5)' : 'var(--border)'}`,
+                    background: selected === icon.url ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'var(--bg3)',
+                    border: `1px solid ${selected === icon.url ? 'color-mix(in srgb, var(--cyan) 50%, transparent)' : 'var(--border)'}`,
                     cursor: 'pointer', borderRadius: 4,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                     position: 'relative',
@@ -162,7 +162,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
                 ))}
               </div>
               <div style={{ marginTop: 10, fontSize: 9, color: '#2a3a48', lineHeight: 1.8 }}>
-                💡 More at <a href="https://lordicon.com" target="_blank" rel="noopener" style={{ color: 'var(--green)' }}>lordicon.com</a> — paste .json URL in Custom URL tab
+                ðŸ’¡ More at <a href="https://lordicon.com" target="_blank" rel="noopener" style={{ color: 'var(--green)' }}>lordicon.com</a> â€” paste .json URL in Custom URL tab
               </div>
             </div>
           )}
@@ -186,13 +186,13 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
           )}
         </div>
 
-        {/* ── FOOTER: APPLY / CANCEL (pinned bottom, never scrolls) ── */}
-        <div style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '16px 24px', borderTop: '1px solid rgba(0,212,255,0.1)' }}>
+        {/* â”€â”€ FOOTER: APPLY / CANCEL (pinned bottom, never scrolls) â”€â”€ */}
+        <div style={{ flexShrink: 0, display: 'flex', gap: 8, padding: '16px 24px', borderTop: '1px solid color-mix(in srgb, var(--cyan) 10%, transparent)' }}>
           <button onClick={() => onSave(selected)} style={{
-            flex: 1, padding: 12, background: 'rgba(0,255,136,0.15)',
-            border: '1px solid rgba(0,255,136,0.4)', color: 'var(--green)',
+            flex: 1, padding: 12, background: 'color-mix(in srgb, var(--green) 15%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: 'var(--green)',
             fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer',
-          }}>✓ APPLY</button>
+          }}>âœ“ APPLY</button>
           <button onClick={onClose} style={{
             flex: 1, padding: 12, background: 'transparent',
             border: '1px solid var(--border)', color: 'var(--muted)',

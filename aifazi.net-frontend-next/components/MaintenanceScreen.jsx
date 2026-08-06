@@ -1,9 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 
-// ── Small helpers ─────────────────────────────────────────────────────────────
+// â”€â”€ Small helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Particle({ style }) {
-  return <div style={{ position: 'absolute', width: 2, height: 2, borderRadius: '50%', background: 'rgba(0,212,255,0.35)', pointerEvents: 'none', ...style }} />
+  return <div style={{ position: 'absolute', width: 2, height: 2, borderRadius: '50%', background: 'color-mix(in srgb, var(--cyan) 35%, transparent)', pointerEvents: 'none', ...style }} />
 }
 
 function ProgressBar({ value, color = '#f59e0b', label }) {
@@ -20,7 +20,7 @@ function ProgressBar({ value, color = '#f59e0b', label }) {
   )
 }
 
-// ── Status badge colours ──────────────────────────────────────────────────────
+// â”€â”€ Status badge colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const STATUS_COLORS = {
   'MAINTENANCE': '#f59e0b',
   'UPDATING':    '#00d4ff',
@@ -29,7 +29,7 @@ const STATUS_COLORS = {
   'UPGRADING':   '#00ff88',
 }
 
-// ── Background patterns ───────────────────────────────────────────────────────
+// â”€â”€ Background patterns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function BgPattern({ bgStyle, accentColor }) {
   const c = accentColor + '08'
   const c2 = accentColor + '04'
@@ -60,7 +60,7 @@ function BgPattern({ bgStyle, accentColor }) {
   )
 }
 
-// ── Style renderers ───────────────────────────────────────────────────────────
+// â”€â”€ Style renderers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function StyleTerminal({ message, status, icon, returnTime, showProgress, progress, elapsed, dots, accentColor }) {
   return (
     <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '24px', maxWidth: 600, width: '100%' }}>
@@ -190,7 +190,7 @@ function StyleComingSoon({ message, status, icon, returnTime, showProgress, prog
       <p style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--muted)', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>{message}</p>
       {showProgress && (
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>PROGRESS — {progress}%</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>PROGRESS â€” {progress}%</div>
           <div style={{ height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
             <div style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88)`, width: `${progress}%`, transition: 'width 1s ease', boxShadow: `0 0 12px ${accentColor}` }} />
           </div>
@@ -216,7 +216,7 @@ function StyleRetro({ message, status, icon, returnTime, showProgress, progress,
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: 1.8, color: 'var(--muted)', marginBottom: 20 }}>{message}</p>
       {showProgress && (
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, textAlign: 'left' }}>
-          <span style={{ color: accentColor }}>[{'█'.repeat(Math.floor(progress / 5))}{'░'.repeat(20 - Math.floor(progress / 5))}]</span> {progress}%
+          <span style={{ color: accentColor }}>[{'â–ˆ'.repeat(Math.floor(progress / 5))}{'â–‘'.repeat(20 - Math.floor(progress / 5))}]</span> {progress}%
         </div>
       )}
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: accentColor, letterSpacing: 2 }}>
@@ -226,12 +226,12 @@ function StyleRetro({ message, status, icon, returnTime, showProgress, progress,
   )
 }
 
-// ── Main export ───────────────────────────────────────────────────────────────
+// â”€â”€ Main export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function MaintenanceScreen({
   message        = "We're performing scheduled upgrades to improve your experience. We'll be back online shortly.",
   style          = 'terminal',
   status         = 'MAINTENANCE',
-  icon           = '⚙️',
+  icon           = 'âš™ï¸',
   returnTime     = '',
   showProgress   = false,
   progress       = 0,
@@ -266,7 +266,7 @@ export default function MaintenanceScreen({
 
       {/* Ambient orbs */}
       <div style={{ position: 'absolute', width: 700, height: 700, borderRadius: '50%', background: `radial-gradient(circle,${accentColor}0f 0%,transparent 70%)`, top: '-15%', left: '-15%', pointerEvents: 'none', animation: 'maint-drift 12s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: `radial-gradient(circle,rgba(0,212,255,0.05) 0%,transparent 70%)`, bottom: '-12%', right: '-12%', pointerEvents: 'none', animation: 'maint-drift 16s ease-in-out infinite reverse' }} />
+      <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: `radial-gradient(circle,color-mix(in srgb, var(--cyan) 5%, transparent) 0%,transparent 70%)`, bottom: '-12%', right: '-12%', pointerEvents: 'none', animation: 'maint-drift 16s ease-in-out infinite reverse' }} />
 
       {/* Particles */}
       {particles.map((p, i) => <Particle key={i} style={{ top: p.top, left: p.left, animation: `maint-float ${4+i*0.5}s ease-in-out ${i*0.3}s infinite alternate` }} />)}
@@ -284,7 +284,7 @@ export default function MaintenanceScreen({
         }} />
       ))}
 
-      {/* Content — style switch */}
+      {/* Content â€” style switch */}
       {style === 'minimal'     && <StyleMinimal     {...sharedProps} />}
       {style === 'cyber'       && <StyleCyber        {...sharedProps} />}
       {style === 'glitch'      && <StyleGlitch       {...sharedProps} />}
@@ -295,7 +295,7 @@ export default function MaintenanceScreen({
       {/* Social links (optional) */}
       {showSocial && (siteConfig.twitter || siteConfig.github || siteConfig.linkedin) && (
         <div style={{ position: 'absolute', bottom: 28, display: 'flex', gap: 12, zIndex: 2 }}>
-          {siteConfig.twitter  && <a href={siteConfig.twitter}  target="_blank" rel="noopener" style={socialLink(accentColor)}>𝕏</a>}
+          {siteConfig.twitter  && <a href={siteConfig.twitter}  target="_blank" rel="noopener" style={socialLink(accentColor)}>ð•</a>}
           {siteConfig.github   && <a href={siteConfig.github}   target="_blank" rel="noopener" style={socialLink(accentColor)}>GH</a>}
           {siteConfig.linkedin && <a href={siteConfig.linkedin} target="_blank" rel="noopener" style={socialLink(accentColor)}>in</a>}
         </div>

@@ -8,7 +8,7 @@ import api from '@/lib/api'
 const SP_CLOTHING_PROJECT = {
   id: 'sp-clothingmenu',
   num: '005',
-  icon: '🧥',
+  icon: 'ðŸ§¥',
   title: 'sp-clothingmenu',
   desc: 'A futuristic FiveM clothing interaction resource with transparent body anchors, ox_inventory metadata items, ox_lib progress feedback, and illenium-appearance sync.',
   tags: ['FiveM', 'QBX', 'ox_inventory', 'ox_lib', 'NUI'],
@@ -20,10 +20,10 @@ const SP_CLOTHING_PROJECT = {
 }
 
 const DEFAULT_PROJECTS = [
-  { num: '001', icon: '🏢', title: 'IT Infrastructure Modernization', desc: 'Leading the end-to-end upgrade of EOL physical servers (HP ProLiant Gen 8) and core switching infrastructure (Cisco Nexus) to modern Catalyst 9300 series.', tags: ['VMware', 'Cisco Catalyst', 'HP ProLiant', 'Project Management'] },
-  { num: '002', icon: '🔥', title: 'Next-Gen Firewall Migration', desc: 'Planning and executing the migration from legacy WatchGuard M470 HA pair to FortiGate 80F, including zero-trust architecture and security policy hardening.', tags: ['FortiGate', 'WatchGuard', 'Security', 'ZTA'] },
-  { num: '003', icon: '☁️', title: 'Hybrid Cloud & Azure Migration', desc: 'Architecting a hybrid environment by migrating on-premise file shares (AAFAQ-FPS) to Azure Files and implementing Site-to-Site VPN with Entra ID sync.', tags: ['Azure', 'Entra ID', 'VPN', 'Cloud Migration'] },
-  { num: '004', icon: '💾', title: 'Enterprise Backup Restoration', desc: 'Revitalizing expired Veeam Backup & Replication across on-premise, Azure Cloud, and M365 workloads with a <4hr restoration SLA.', tags: ['Veeam', 'Disaster Recovery', 'M365', 'Azure Backup'] },
+  { num: '001', icon: 'ðŸ¢', title: 'IT Infrastructure Modernization', desc: 'Leading the end-to-end upgrade of EOL physical servers (HP ProLiant Gen 8) and core switching infrastructure (Cisco Nexus) to modern Catalyst 9300 series.', tags: ['VMware', 'Cisco Catalyst', 'HP ProLiant', 'Project Management'] },
+  { num: '002', icon: 'ðŸ”¥', title: 'Next-Gen Firewall Migration', desc: 'Planning and executing the migration from legacy WatchGuard M470 HA pair to FortiGate 80F, including zero-trust architecture and security policy hardening.', tags: ['FortiGate', 'WatchGuard', 'Security', 'ZTA'] },
+  { num: '003', icon: 'â˜ï¸', title: 'Hybrid Cloud & Azure Migration', desc: 'Architecting a hybrid environment by migrating on-premise file shares (AAFAQ-FPS) to Azure Files and implementing Site-to-Site VPN with Entra ID sync.', tags: ['Azure', 'Entra ID', 'VPN', 'Cloud Migration'] },
+  { num: '004', icon: 'ðŸ’¾', title: 'Enterprise Backup Restoration', desc: 'Revitalizing expired Veeam Backup & Replication across on-premise, Azure Cloud, and M365 workloads with a <4hr restoration SLA.', tags: ['Veeam', 'Disaster Recovery', 'M365', 'Azure Backup'] },
 ]
 
 function mergeFeaturedProject(items = []) {
@@ -129,9 +129,9 @@ function ProjectCard({ project, index }) {
   }, [])
   const handleMouseEnter = useCallback(() => {
     const el = cardRef.current; if (!el) return
-    el.style.borderColor = 'rgba(0,255,136,0.4)'
+    el.style.borderColor = 'color-mix(in srgb, var(--green) 40%, transparent)'
     el.style.transform   = 'translateY(-6px)'
-    el.style.boxShadow   = '0 20px 60px rgba(0,0,0,0.4),0 0 0 1px rgba(0,255,136,0.15),inset 0 1px 0 rgba(0,255,136,0.08)'
+    el.style.boxShadow   = '0 20px 60px rgba(0,0,0,0.4),0 0 0 1px color-mix(in srgb, var(--green) 15%, transparent),inset 0 1px 0 color-mix(in srgb, var(--green) 8%, transparent)'
     el.querySelector('.prj-scan')?.classList.add('prj-scan--active')
   }, [])
   const handleMouseLeave = useCallback(() => {
@@ -194,7 +194,7 @@ function ProjectCard({ project, index }) {
             </div>
             {project.link && (
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 2, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 14 }}>
-                VIEW PROJECT →
+                VIEW PROJECT â†’
               </div>
             )}
           </div>
@@ -265,23 +265,23 @@ export default function Projects() {
 
         .prj-spotlight {
           position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-          opacity: 0; background: radial-gradient(200px circle at var(--mx) var(--my), rgba(0,255,136,0.07) 0%, transparent 70%);
+          opacity: 0; background: radial-gradient(200px circle at var(--mx) var(--my), color-mix(in srgb, var(--green) 7%, transparent) 0%, transparent 70%);
           transition: opacity .3s ease; z-index: 0;
         }
         .prj-card:hover .prj-spotlight { opacity: 1; }
 
         .prj-scan {
           position: absolute; left: 0; right: 0; height: 2px;
-          background: linear-gradient(90deg,transparent,rgba(0,255,136,0.5),transparent);
+          background: linear-gradient(90deg,transparent,color-mix(in srgb, var(--green) 50%, transparent),transparent);
           top: -2px; pointer-events: none; z-index: 2; opacity: 0;
         }
         .prj-scan--active { opacity: 1; animation: prjScanLine 1.4s ease-out forwards; }
         @keyframes prjScanLine { 0%{top:0%;opacity:1} 80%{top:96%;opacity:1} 100%{top:100%;opacity:0} }
 
         .prj-corner { position:absolute; width:14px; height:14px; pointer-events:none; transition:border-color .35s,width .35s,height .35s; z-index:3; }
-        .prj-corner--tl { top:8px;left:8px; border-top:1.5px solid rgba(0,255,136,0); border-left:1.5px solid rgba(0,255,136,0); }
-        .prj-corner--br { bottom:8px;right:8px; border-bottom:1.5px solid rgba(0,255,136,0); border-right:1.5px solid rgba(0,255,136,0); }
-        .prj-card:hover .prj-corner--tl,.prj-card:hover .prj-corner--br { width:20px;height:20px; border-color:rgba(0,255,136,0.7); }
+        .prj-corner--tl { top:8px;left:8px; border-top:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); border-left:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); }
+        .prj-corner--br { bottom:8px;right:8px; border-bottom:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); border-right:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); }
+        .prj-card:hover .prj-corner--tl,.prj-card:hover .prj-corner--br { width:20px;height:20px; border-color:color-mix(in srgb, var(--green) 70%, transparent); }
 
         #projects .project-preview {
           position: relative;
@@ -290,9 +290,9 @@ export default function Projects() {
           min-height: 112px;
           max-height: 220px;
           margin: -8px 0 18px;
-          border: 1px solid rgba(0,212,255,0.24);
+          border: 1px solid color-mix(in srgb, var(--cyan) 24%, transparent);
           background:
-            radial-gradient(circle at 50% 38%, rgba(0,255,136,0.13), transparent 35%),
+            radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--green) 13%, transparent), transparent 35%),
             linear-gradient(180deg, rgba(0,15,24,0.48), rgba(0,6,12,0.72));
           overflow: hidden;
         }
@@ -313,7 +313,7 @@ export default function Projects() {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(120deg, transparent 0 42%, rgba(0,212,255,0.12) 48%, transparent 56% 100%);
+          background: linear-gradient(120deg, transparent 0 42%, color-mix(in srgb, var(--cyan) 12%, transparent) 48%, transparent 56% 100%);
           opacity: 0.75;
         }
         #projects .preview-scanline {
@@ -322,8 +322,8 @@ export default function Projects() {
           right: 0;
           top: 50%;
           height: 1px;
-          background: rgba(0,255,136,0.6);
-          box-shadow: 0 0 18px rgba(0,255,136,0.35);
+          background: color-mix(in srgb, var(--green) 60%, transparent);
+          box-shadow: 0 0 18px color-mix(in srgb, var(--green) 35%, transparent);
         }
         #projects .preview-ped {
           position: absolute;
@@ -342,7 +342,7 @@ export default function Projects() {
           transform: translateX(-50%);
           border: 1px solid rgba(210,230,245,0.5);
           background: rgba(210,230,245,0.12);
-          box-shadow: 0 0 18px rgba(0,212,255,0.18);
+          box-shadow: 0 0 18px color-mix(in srgb, var(--cyan) 18%, transparent);
         }
         #projects .preview-head { top: 0; width: 18px; height: 18px; border-radius: 50%; }
         #projects .preview-body { top: 25px; width: 30px; height: 38px; border-radius: 8px 8px 4px 4px; }
@@ -354,20 +354,20 @@ export default function Projects() {
           width: 20px;
           height: 20px;
           transform: translate(-50%, -50%);
-          border: 1px solid rgba(0,212,255,0.58);
+          border: 1px solid color-mix(in srgb, var(--cyan) 58%, transparent);
           background: rgba(0,16,25,0.72);
-          box-shadow: 0 0 16px rgba(0,212,255,0.16);
+          box-shadow: 0 0 16px color-mix(in srgb, var(--cyan) 16%, transparent);
         }
         #projects .preview-anchor::after {
           content: '';
           position: absolute;
           inset: 6px;
           border-radius: 50%;
-          background: rgba(0,212,255,0.75);
+          background: color-mix(in srgb, var(--cyan) 75%, transparent);
         }
         #projects .preview-anchor.active {
           border-color: var(--green);
-          box-shadow: 0 0 22px rgba(0,255,136,0.4);
+          box-shadow: 0 0 22px color-mix(in srgb, var(--green) 40%, transparent);
         }
         #projects .preview-anchor.active::after { background: var(--green); }
         #projects .preview-terminal {

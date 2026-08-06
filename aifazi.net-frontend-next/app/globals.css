@@ -26,6 +26,17 @@
   --shadow-card: 0 8px 40px rgba(0,0,0,0.5);
   --shadow-sm:   0 2px 12px rgba(0,0,0,0.4);
 
+  /* Derived theme tints — recompute from --green/--cyan on every theme.
+     Use these instead of hardcoded rgba(0,212,255,x) / rgba(0,255,136,x). */
+  --green-soft:   color-mix(in srgb, var(--green)  12%, transparent);
+  --green-soft2:  color-mix(in srgb, var(--green)  25%, transparent);
+  --green-border: color-mix(in srgb, var(--green)  35%, transparent);
+  --cyan-soft:    color-mix(in srgb, var(--cyan)   12%, transparent);
+  --cyan-soft2:   color-mix(in srgb, var(--cyan)   25%, transparent);
+  --cyan-border:  color-mix(in srgb, var(--cyan)   35%, transparent);
+  --green-glow:   0 0 20px color-mix(in srgb, var(--green) 35%, transparent);
+  --cyan-glow:    0 0 20px color-mix(in srgb, var(--cyan)  35%, transparent);
+
   --font-mono:    'JetBrains Mono', 'Courier New', monospace;
   --font-display: 'Outfit', 'Inter', sans-serif;
   --font-code:    'JetBrains Mono', monospace;

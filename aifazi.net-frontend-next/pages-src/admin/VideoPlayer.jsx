@@ -102,19 +102,19 @@ function VideoPlayer({ url }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 0 4px', flexWrap: 'wrap' }}>
       {/* Autoplay toggle */}
       <button onClick={() => setAutoplay(a => !a)}
-        style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 10px', background: autoplay ? 'rgba(0,255,136,0.15)' : 'var(--bg3)', border: `1px solid ${autoplay ? 'rgba(0,255,136,0.4)' : 'var(--border)'}`, color: autoplay ? 'var(--green)' : 'var(--muted)', borderRadius: 5, cursor: 'pointer' }}>
-        ▶ AUTO {autoplay ? 'ON' : 'OFF'}      </button>
+        style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 10px', background: autoplay ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'var(--bg3)', border: `1px solid ${autoplay ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}`, color: autoplay ? 'var(--green)' : 'var(--muted)', borderRadius: 5, cursor: 'pointer' }}>
+        â–¶ AUTO {autoplay ? 'ON' : 'OFF'}      </button>
       {/* Mute toggle (embed) */}
       {isEmbed && (
         <button onClick={() => setMuted(m => !m)}
           style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 10px', background: muted ? 'rgba(255,71,87,0.12)' : 'var(--bg3)', border: `1px solid ${muted ? 'rgba(255,71,87,0.4)' : 'var(--border)'}`, color: muted ? '#ff4757' : 'var(--muted)', borderRadius: 5, cursor: 'pointer' }}>
-          {muted ? '🔇 MUTED' : '🔊 SOUND'}
+          {muted ? 'ðŸ”‡ MUTED' : 'ðŸ”Š SOUND'}
         </button>
       )}
       {/* Size selector */}
       {['small','medium','large','cinema'].map(s => (
         <button key={s} onClick={() => setSize(s)}
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 8px', background: size === s ? 'rgba(0,212,255,0.12)' : 'var(--bg3)', border: `1px solid ${size === s ? 'rgba(0,212,255,0.4)' : 'var(--border)'}`, color: size === s ? 'var(--cyan)' : 'var(--muted)', borderRadius: 5, cursor: 'pointer', textTransform: 'uppercase' }}>
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 8px', background: size === s ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'var(--bg3)', border: `1px solid ${size === s ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'var(--border)'}`, color: size === s ? 'var(--cyan)' : 'var(--muted)', borderRadius: 5, cursor: 'pointer', textTransform: 'uppercase' }}>
           {s === 'small' ? 'SM' : s === 'medium' ? 'MD' : s === 'large' ? 'LG' : 'FULL'}
         </button>
       ))}
@@ -155,8 +155,8 @@ function VideoPlayer({ url }) {
         {/* Center play overlay */}
         {!playing && (
           <div onClick={togglePlay} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(0,0,0,0.35)' }}>
-            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0,255,136,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px rgba(0,255,136,0.5)' }}>
-              <span role="img" aria-label="Play" style={{ color: '#000', fontSize: 22, marginLeft: 4 }}>▶</span>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'color-mix(in srgb, var(--green) 85%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px color-mix(in srgb, var(--green) 50%, transparent)' }}>
+              <span role="img" aria-label="Play" style={{ color: '#000', fontSize: 22, marginLeft: 4 }}>â–¶</span>
             </div>
           </div>
         )}
@@ -167,16 +167,16 @@ function VideoPlayer({ url }) {
           <div style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 2, marginBottom: 10, cursor: 'pointer' }}
             onClick={e => { const r = e.currentTarget.getBoundingClientRect(); onSeek((e.clientX - r.left) / r.width) }}>
             <div style={{ height: '100%', width: `${progress * 100}%`, background: 'linear-gradient(90deg, var(--green), var(--cyan))', borderRadius: 2, position: 'relative', transition: 'width 0.1s' }}>
-              <div style={{ position: 'absolute', right: -5, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, background: '#fff', borderRadius: '50%', boxShadow: '0 0 6px rgba(0,255,136,0.8)' }} />
+              <div style={{ position: 'absolute', right: -5, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, background: '#fff', borderRadius: '50%', boxShadow: '0 0 6px color-mix(in srgb, var(--green) 80%, transparent)' }} />
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'} style={{ ...btnStyle, width: 32, height: 32, fontSize: 13 }}>{playing ? '⏸' : '▶'}</button>
-            <button onClick={() => skip(-10)} aria-label="Rewind 10 seconds" style={{ ...btnStyle, width: 28, height: 28, fontSize: 10 }} title="-10s">⏪</button>
-            <button onClick={() => skip(10)} aria-label="Forward 10 seconds" style={{ ...btnStyle, width: 28, height: 28, fontSize: 10 }} title="+10s">⏩</button>
+            <button onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'} style={{ ...btnStyle, width: 32, height: 32, fontSize: 13 }}>{playing ? 'â¸' : 'â–¶'}</button>
+            <button onClick={() => skip(-10)} aria-label="Rewind 10 seconds" style={{ ...btnStyle, width: 28, height: 28, fontSize: 10 }} title="-10s">âª</button>
+            <button onClick={() => skip(10)} aria-label="Forward 10 seconds" style={{ ...btnStyle, width: 28, height: 28, fontSize: 10 }} title="+10s">â©</button>
             <button onClick={toggleMute} aria-label={muted || volume === 0 ? 'Unmute' : 'Mute'} style={{ ...btnStyle, width: 28, height: 28, fontSize: 13 }}>
-              {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+              {muted || volume === 0 ? 'ðŸ”‡' : volume < 0.5 ? 'ðŸ”‰' : 'ðŸ”Š'}
             </button>
             <Slider min={0} max={1} step={0.05} value={muted ? 0 : volume} onChange={onVolumeChange}
               style={{ width: 60 }} />
@@ -190,11 +190,11 @@ function VideoPlayer({ url }) {
               />
             </div>
             <button onClick={() => setLoop(l => !l)} title={loop ? 'Loop: On' : 'Loop: Off'}
-              style={{ ...btnStyle, width: 28, height: 28, fontSize: 12, opacity: loop ? 1 : 0.5 }}>🔁</button>
+              style={{ ...btnStyle, width: 28, height: 28, fontSize: 12, opacity: loop ? 1 : 0.5 }}>ðŸ”</button>
             <a href={url} download target="_blank" rel="noreferrer" aria-label="Download video"
-              style={{ ...btnStyle, width: 28, height: 28, fontSize: 12, textDecoration: 'none' }} title="Download">⬇</a>
+              style={{ ...btnStyle, width: 28, height: 28, fontSize: 12, textDecoration: 'none' }} title="Download">â¬‡</a>
             <button onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'} style={{ ...btnStyle, width: 28, height: 28, fontSize: 13 }}>
-              {isFullscreen ? '⤢' : '⛶'}
+              {isFullscreen ? 'â¤¢' : 'â›¶'}
             </button>
           </div>
         </div>

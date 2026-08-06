@@ -7,14 +7,14 @@ import { HEADER_PRESETS, FOOTER_PRESETS, HeaderPreviewSVG, FooterPreviewSVG } fr
 import { THEME_PACKAGES } from '../core/framework-styles.js'
 import { notify } from '../core/notify.jsx'
 
-// ── All themes (one card per family — toggle switches dark↔light within family) ─
+// â”€â”€ All themes (one card per family â€” toggle switches darkâ†”light within family) â”€
 const THEMES = [
-  // ── COLOR VARIANTS ───────────────────────────────────────────────────────
+  // â”€â”€ COLOR VARIANTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'cyber-dark', name: 'Cyber', tag: 'DARK', type: 'color', style: 'cyber',
     desc: 'Default hacker green',
     bg: '#060a0f', bg2: '#0b1118', bg3: '#111a24', primary: '#00ff88', secondary: '#00d4ff',
-    text: '#c8d8e8', muted: '#6b8296', border: 'rgba(0,212,255,0.15)',
+    text: '#c8d8e8', muted: '#6b8296', border: 'color-mix(in srgb, var(--cyan) 15%, transparent)',
   },
   {
     id: 'midnight', name: 'Midnight', tag: 'DARK', type: 'color', style: 'cyber',
@@ -70,7 +70,7 @@ const THEMES = [
     bg: '#eef4fa', bg2: '#e3edf7', bg3: '#d8e6f2', primary: '#0284c7', secondary: '#0891b2',
     text: '#0b1a2a', muted: '#4a6a86', border: 'rgba(2,132,199,0.22)',
   },
-  // ── DESIGN STYLE THEMES ──────────────────────────────────────────────────
+  // â”€â”€ DESIGN STYLE THEMES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'glass-dark', name: 'Glass', tag: 'STYLE', type: 'design', style: 'glass',
     desc: 'Frosted glassmorphism',
@@ -137,7 +137,7 @@ const THEMES = [
     bg: '#050d1a', bg2: '#08142a', bg3: '#0c1c38', primary: '#64ffda', secondary: '#ff6fd8',
     text: '#cce8ff', muted: '#5a8099', border: 'rgba(100,255,218,0.2)',
   },
-  // ── GAME THEMES ────────────────────────────────────────────────────────────
+  // â”€â”€ GAME THEMES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'mario', name: 'Mario', tag: 'GAME', type: 'design', style: 'mario',
     desc: 'Warp-pipe red & coin gold',
@@ -162,38 +162,38 @@ const THEMES = [
     bg: '#05030f', bg2: '#0a0718', bg3: '#100b24', primary: '#ffe000', secondary: '#00cfff',
     text: '#f4f0ff', muted: '#5a5078', border: 'rgba(255,224,0,0.3)',
   },
-  // ── THEME PACKAGES ────────────────────────────────────────────────────────
+  // â”€â”€ THEME PACKAGES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   {
     id: 'pkg:holo-deck', name: 'Holo Deck', tag: 'STYLE', type: 'package', style: 'holo',
-    desc: 'Holographic command surface — layered cyan glow, corner dialogs, holo boot.',
+    desc: 'Holographic command surface â€” layered cyan glow, corner dialogs, holo boot.',
     bg: '#08121c', bg2: '#0c1a28', bg3: '#112236', primary: '#00e5ff', secondary: '#7b61ff',
     text: '#d0e8ff', muted: '#5a7898', border: 'rgba(0,229,255,0.22)',
     packageId: 'holo-deck',
   },
   {
     id: 'pkg:phosphor-terminal', name: 'Phosphor CRT', tag: 'STYLE', type: 'package', style: 'crt',
-    desc: 'Green phosphor mainframe — CRT scanlines, matrix menus, blink-cursor boot.',
+    desc: 'Green phosphor mainframe â€” CRT scanlines, matrix menus, blink-cursor boot.',
     bg: '#020604', bg2: '#04100a', bg3: '#071a0e', primary: '#33ff33', secondary: '#ccff00',
     text: '#c8ffc8', muted: '#2f7a3a', border: 'rgba(51,255,51,0.25)',
     packageId: 'phosphor-terminal',
   },
 ]
 
-// ── Package lookup (settings sourced from THEME_PACKAGES registry) ────────────
+// â”€â”€ Package lookup (settings sourced from THEME_PACKAGES registry) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PACKAGE_LOOKUP = Object.fromEntries(THEME_PACKAGES.map(p => [p.id, p]))
 
 const CATEGORIES = [
-  { id: 'overview',      icon: '⊞', label: 'OVERVIEW' },
-  { id: 'header',        icon: '▬', label: 'HEADER'   },
-  { id: 'footer',        icon: '▤', label: 'FOOTER'   },
-  { id: 'loading',       icon: '◌', label: 'LOADING'  },
-  { id: 'input',         icon: '■', label: 'INPUT'    },
-  { id: 'notification',  icon: '◉', label: 'NOTIFY'   },
-  { id: 'dialog',        icon: '⬜', label: 'DIALOG'   },
-  { id: 'buttons',       icon: '▶', label: 'BUTTONS'  },
+  { id: 'overview',      icon: 'âŠž', label: 'OVERVIEW' },
+  { id: 'header',        icon: 'â–¬', label: 'HEADER'   },
+  { id: 'footer',        icon: 'â–¤', label: 'FOOTER'   },
+  { id: 'loading',       icon: 'â—Œ', label: 'LOADING'  },
+  { id: 'input',         icon: 'â– ', label: 'INPUT'    },
+  { id: 'notification',  icon: 'â—‰', label: 'NOTIFY'   },
+  { id: 'dialog',        icon: 'â¬œ', label: 'DIALOG'   },
+  { id: 'buttons',       icon: 'â–¶', label: 'BUTTONS'  },
 ]
 
-// ── Helper: style flags ───────────────────────────────────────────────────────
+// â”€â”€ Helper: style flags â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function flags(t) {
   return {
     isBrut:     t.style === 'brutalist',
@@ -280,7 +280,7 @@ function getCardStyle(t, override = {}) {
   return base
 }
 
-// ── Overview Preview ─────────────────────────────────────────────────────────
+// â”€â”€ Overview Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function OverviewPreview({ t }) {
   const f = flags(t)
   const r = radius(t)
@@ -336,7 +336,7 @@ function OverviewPreview({ t }) {
   )
 }
 
-// ── Loading Preview ───────────────────────────────────────────────────────────
+// â”€â”€ Loading Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function LoadingPreview({ t }) {
   const f = flags(t)
   const xBg = getExtraBg(t)
@@ -347,7 +347,7 @@ function LoadingPreview({ t }) {
       {/* Style-specific spinner */}
       {f.isTerm ? (
         <div style={{ fontFamily: 'monospace', fontSize: 14, color: t.primary, letterSpacing: 2, textShadow: `0 0 8px ${t.primary}` }}>
-          {'>_'}<span style={{ animation: 'tpBlink 0.8s infinite' }}>█</span>
+          {'>_'}<span style={{ animation: 'tpBlink 0.8s infinite' }}>â–ˆ</span>
         </div>
       ) : f.isWin95 ? (
         <div style={{ display: 'flex', gap: 3 }}>
@@ -419,7 +419,7 @@ function LoadingPreview({ t }) {
   )
 }
 
-// ── Input Preview ─────────────────────────────────────────────────────────────
+// â”€â”€ Input Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function InputPreview({ t }) {
   const f = flags(t)
   const r = radius(t)
@@ -432,7 +432,7 @@ function InputPreview({ t }) {
             fontFamily: f.isTerm ? 'monospace' : 'inherit',
           }}>{f.isTerm ? '> USERNAME:' : 'USERNAME'}</div>
           <div style={{ ...cs, padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontSize: 8, color: t.primary, opacity: 0.5 }}>{f.isTerm ? '>' : f.isMacos ? '' : '▶'}</div>
+            <div style={{ fontSize: 8, color: t.primary, opacity: 0.5 }}>{f.isTerm ? '>' : f.isMacos ? '' : 'â–¶'}</div>
             <div style={{ height: 8, width: 60, background: t.primary, opacity: 0.6, borderRadius: f.isBrut||f.isWin95 ? 0 : 2 }}/>
             <div style={{ width: 1, height: 12, background: t.primary, animation: 'tpBlink 1s infinite' }}/>
           </div>
@@ -443,7 +443,7 @@ function InputPreview({ t }) {
           </div>
           <div style={{ ...cs, padding: '7px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ height: 6, width: 50, background: t.muted, opacity: 0.4, borderRadius: 2 }}/>
-            <div style={{ fontSize: 8, color: t.muted }}>{f.isWin95 ? '▼' : '▾'}</div>
+            <div style={{ fontSize: 8, color: t.muted }}>{f.isWin95 ? 'â–¼' : 'â–¾'}</div>
           </div>
         </div>
         <div style={{ background: `#ff475711`, borderRadius: f.isBrut||f.isWin95 ? 0 : 4,
@@ -451,7 +451,7 @@ function InputPreview({ t }) {
           padding: '5px 10px', display: 'flex', gap: 5, alignItems: 'center',
           boxShadow: f.isNeumorph ? 'inset 2px 2px 4px #b8bec8, inset -1px -1px 3px #ffffff' : 'none',
         }}>
-          <span style={{ fontSize: 8, color: '#ff4757' }}>✕</span>
+          <span style={{ fontSize: 8, color: '#ff4757' }}>âœ•</span>
           <span style={{ fontSize: 8, color: '#ff4757', letterSpacing: 1 }}>FIELD REQUIRED</span>
         </div>
       </div>
@@ -459,13 +459,13 @@ function InputPreview({ t }) {
   )
 }
 
-// ── Notification Preview ──────────────────────────────────────────────────────
+// â”€â”€ Notification Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function NotificationPreview({ t }) {
   const f = flags(t)
   const types = [
-    { icon: '✓', label: 'SUCCESS', accent: '#22c55e' },
-    { icon: '⚠', label: 'WARNING', accent: '#f59e0b' },
-    { icon: '✕', label: 'ERROR',   accent: '#ef4444' },
+    { icon: 'âœ“', label: 'SUCCESS', accent: '#22c55e' },
+    { icon: 'âš ', label: 'WARNING', accent: '#f59e0b' },
+    { icon: 'âœ•', label: 'ERROR',   accent: '#ef4444' },
   ]
   return (
     <div style={{ padding: 14, background: t.bg, borderRadius: 8, height: 148, overflow: 'hidden', ...getExtraBg(t) }}>
@@ -486,7 +486,7 @@ function NotificationPreview({ t }) {
               <div style={{ height: 5, background: accent, borderRadius: 2, width: '40%', marginBottom: 3 }}/>
               <div style={{ height: 4, background: t.muted, borderRadius: 2, width: '70%', opacity: 0.4 }}/>
             </div>
-            <span style={{ fontSize: 7, color: t.muted }}>✕</span>
+            <span style={{ fontSize: 7, color: t.muted }}>âœ•</span>
           </div>
         ))}
       </div>
@@ -494,7 +494,7 @@ function NotificationPreview({ t }) {
   )
 }
 
-// ── Dialog Preview ────────────────────────────────────────────────────────────
+// â”€â”€ Dialog Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function DialogPreview({ t }) {
   const f = flags(t)
   const r = radius(t)
@@ -510,9 +510,9 @@ function DialogPreview({ t }) {
           border: '2px solid #000',
         }}>
           <div style={{ background: t.primary, padding: '3px 6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 8, color: '#fff', fontWeight: 700, letterSpacing: 0.5 }}>⚠ Confirm</span>
+            <span style={{ fontSize: 8, color: '#fff', fontWeight: 700, letterSpacing: 0.5 }}>âš  Confirm</span>
             <div style={{ display: 'flex', gap: 2 }}>
-              {['─','□','✕'].map(c => (
+              {['â”€','â–¡','âœ•'].map(c => (
                 <div key={c} style={{ width: 14, height: 12, background: t.bg3, border: '1px solid #808080',
                   boxShadow: 'inset -1px -1px 0 #404040, inset 1px 1px 0 #fff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, color: '#000' }}>{c}</div>
@@ -542,7 +542,7 @@ function DialogPreview({ t }) {
           backdropFilter: 'blur(20px)',
         }}>
           <div style={{ padding: '14px 16px 10px', textAlign: 'center' }}>
-            <div style={{ fontSize: 20, marginBottom: 5 }}>⚠️</div>
+            <div style={{ fontSize: 20, marginBottom: 5 }}>âš ï¸</div>
             <div style={{ height: 6, background: '#1d1d1f', borderRadius: 3, width: '60%', margin: '0 auto 4px' }}/>
             <div style={{ height: 4, background: '#86868b', borderRadius: 2, width: '80%', margin: '0 auto', opacity: 0.6 }}/>
           </div>
@@ -559,7 +559,7 @@ function DialogPreview({ t }) {
         <div style={{ width: '100%', ...cs, overflow: 'hidden' }}>
           <div style={{ height: f.isBrut ? 5 : 3, background: `linear-gradient(90deg, ${t.primary}, ${t.secondary})` }}/>
           <div style={{ padding: '10px 12px 8px' }}>
-            <div style={{ fontSize: 7, color: t.primary, letterSpacing: 2, marginBottom: 5, opacity: 0.8 }}>⚠ CONFIRM ACTION</div>
+            <div style={{ fontSize: 7, color: t.primary, letterSpacing: 2, marginBottom: 5, opacity: 0.8 }}>âš  CONFIRM ACTION</div>
             <div style={{ height: 6, background: t.text, borderRadius: 2, width: '75%', marginBottom: 4, opacity: 0.8 }}/>
             <div style={{ height: 4, background: t.muted, borderRadius: 2, width: '90%', marginBottom: 2, opacity: 0.4 }}/>
             <div style={{ height: 4, background: t.muted, borderRadius: 2, width: '65%', opacity: 0.3 }}/>
@@ -578,7 +578,7 @@ function DialogPreview({ t }) {
   )
 }
 
-// ── Buttons Preview ───────────────────────────────────────────────────────────
+// â”€â”€ Buttons Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ButtonsPreview({ t }) {
   const f = flags(t)
   const isCyberish = f.isCyber || f.isSynth || f.isNoir || f.isAurora
@@ -617,7 +617,7 @@ function ButtonsPreview({ t }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: `0 4px 14px ${t.primary}55`,
           }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', letterSpacing: 1 }}>Primary Button ✨</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', letterSpacing: 1 }}>Primary Button âœ¨</span>
           </div>
         ) : (
           <div style={{ padding: '8px 14px', clipPath: clip, borderRadius: r,
@@ -659,7 +659,7 @@ function ButtonsPreview({ t }) {
   )
 }
 
-// ── Header Preview ────────────────────────────────────────────────────────────
+// â”€â”€ Header Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function HeaderPreview({ t }) {
   const f = flags(t)
   const isLight = t.style === 'paper' || t.style === 'neumorph' || t.style === 'macos' || t.style === 'brutalist' || t.style === 'pastel' || t.style === 'win95' || t.tag === 'LIGHT'
@@ -861,7 +861,7 @@ function HeaderPreview({ t }) {
   )
 }
 
-// ── Footer Preview ─────────────────────────────────────────────────────────────
+// â”€â”€ Footer Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function FooterPreview({ t }) {
   const f = flags(t)
   const isLight = t.tag === 'LIGHT' || f.isBrut || f.isNeumorph || f.isMacos || f.isPaper || f.isPastel || f.isWin95
@@ -953,7 +953,7 @@ function FooterPreview({ t }) {
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: mutedColor,
               lineHeight: 1.8, marginBottom: 8 }}>
-              Network Engineer<br/>UAE · Remote
+              Network Engineer<br/>UAE Â· Remote
             </div>
             {/* Social icons */}
             <div style={{ display: 'flex', gap: 4 }}>
@@ -1001,7 +1001,7 @@ function FooterPreview({ t }) {
             </span>
           </div>
           <span suppressHydrationWarning style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: mutedColor }}>
-            © {new Date().getFullYear()} tanvir@aifazi.net
+            Â© {new Date().getFullYear()} tanvir@aifazi.net
           </span>
         </div>
       </div>
@@ -1022,7 +1022,7 @@ function CategoryPreview({ t, category }) {
   }
 }
 
-// ── Map any theme variant back to its canonical family card ID ────────────────
+// â”€â”€ Map any theme variant back to its canonical family card ID â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getThemeFamily(id) {
   const map = {
     'light':'cyber-dark', 'cyber-light':'cyber-dark',
@@ -1039,7 +1039,7 @@ function getThemeFamily(id) {
   return map[id] || id
 }
 
-// ── Theme Card ────────────────────────────────────────────────────────────────
+// â”€â”€ Theme Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ThemeCard({ t, isActive, isSelected, onSelect }) {
   const [hover, setHover] = useState(false)
   const f = flags(t)
@@ -1069,7 +1069,7 @@ function ThemeCard({ t, isActive, isSelected, onSelect }) {
 
   // Style badge colors
   const tagColors = {
-    'DARK':  { bg: 'rgba(0,255,136,0.12)',  border: 'rgba(0,255,136,0.3)',  color: '#00ff88' },
+    'DARK':  { bg: 'color-mix(in srgb, var(--green) 12%, transparent)',  border: 'color-mix(in srgb, var(--green) 30%, transparent)',  color: '#00ff88' },
     'LIGHT': { bg: 'rgba(255,220,50,0.12)', border: 'rgba(255,220,50,0.3)', color: '#ffd700' },
     'STYLE': { bg: 'rgba(168,85,247,0.12)', border: 'rgba(168,85,247,0.3)', color: '#c084fc' },
   }
@@ -1099,7 +1099,7 @@ function ThemeCard({ t, isActive, isSelected, onSelect }) {
           borderRadius: f.isBrut || f.isWin95 ? '0' : '50%',
           background: t.primary, display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 9, color: '#000', fontWeight: 900,
-        }}>✓</div>
+        }}>âœ“</div>
       )}
       {isActive && !isSelected && (
         <div style={{ position: 'absolute', top: 7, right: 7, width: 6, height: 6, borderRadius: '50%',
@@ -1136,7 +1136,7 @@ function ThemeCard({ t, isActive, isSelected, onSelect }) {
   )
 }
 
-// ── Main ThemePicker Drawer ───────────────────────────────────────────────────
+// â”€â”€ Main ThemePicker Drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ThemePicker({ open, onClose }) {
   const { theme, setTheme, siteConfig, refreshSiteConfig, isAdmin, userPackage, applyUserPackage, clearUserPackage } = useTheme()
   const isThemeLocked = !!(siteConfig?.lockTheme && siteConfig?.globalTheme)
@@ -1146,7 +1146,7 @@ export default function ThemePicker({ open, onClose }) {
   const [filter, setFilter] = useState('ALL')
   const [styleFilter, setStyleFilter] = useState('ALL')
 
-  // ── Admin global panel state ─────────────────────────────────────────────
+  // â”€â”€ Admin global panel state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [showAdminPanel, setShowAdminPanel] = useState(false)
   const [globalDraft, setGlobalDraft] = useState({
     globalTheme: '', lockTheme: false,
@@ -1154,7 +1154,7 @@ export default function ThemePicker({ open, onClose }) {
     maintenanceMode: false, maintenanceMessage: '',
     maintenanceStyle: 'terminal',
     maintenanceStatus: 'MAINTENANCE',
-    maintenanceIcon: '⚙️',
+    maintenanceIcon: 'âš™ï¸',
     maintenanceReturnTime: '',
     maintenanceShowProgress: false,
     maintenanceProgress: 65,
@@ -1178,7 +1178,7 @@ export default function ThemePicker({ open, onClose }) {
         maintenanceMessage:      siteConfig.maintenanceMessage      || '',
         maintenanceStyle:        siteConfig.maintenanceStyle        || 'terminal',
         maintenanceStatus:       siteConfig.maintenanceStatus       || 'MAINTENANCE',
-        maintenanceIcon:         siteConfig.maintenanceIcon         || '⚙️',
+        maintenanceIcon:         siteConfig.maintenanceIcon         || 'âš™ï¸',
         maintenanceReturnTime:   siteConfig.maintenanceReturnTime   || '',
         maintenanceShowProgress: siteConfig.maintenanceShowProgress || false,
         maintenanceProgress:     siteConfig.maintenanceProgress     ?? 65,
@@ -1283,19 +1283,19 @@ export default function ThemePicker({ open, onClose }) {
 
       {/* Drawer
            CSS variables are set as INLINE styles so they win over any [data-theme="..."]
-           cascade rule regardless of specificity — !important on custom props is unreliable. */}
+           cascade rule regardless of specificity â€” !important on custom props is unreliable. */}
       <div className="tp-drawer-chrome" style={{
         position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 999,
-        width: 380, borderLeft: '1px solid rgba(0,212,255,0.15)',
+        width: 380, borderLeft: '1px solid color-mix(in srgb, var(--cyan) 15%, transparent)',
         boxShadow: '-24px 0 60px rgba(0,0,0,0.7)',
         display: 'flex', flexDirection: 'column',
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.38s cubic-bezier(0.16,1,0.3,1)',
-        /* ── Drawer follows the active theme's CSS variables (data-theme cascade) ── */
+        /* â”€â”€ Drawer follows the active theme's CSS variables (data-theme cascade) â”€â”€ */
         background: 'var(--bg2)',
       }}>
 
-        {/* ── Header ── */}
+        {/* â”€â”€ Header â”€â”€ */}
         <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
@@ -1310,29 +1310,29 @@ export default function ThemePicker({ open, onClose }) {
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: 'var(--green)' }}>THEME LIBRARY</span>
             </div>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)', margin: 0 }}>
-              {isThemeLocked ? '🔒 THEME LOCKED BY ADMIN' : `${THEMES.filter(t => t.type !== 'package').length} THEMES + ${packageThemes.length} PACKAGES — SELECT THEN APPLY`}
+              {isThemeLocked ? 'ðŸ”’ THEME LOCKED BY ADMIN' : `${THEMES.filter(t => t.type !== 'package').length} THEMES + ${packageThemes.length} PACKAGES â€” SELECT THEN APPLY`}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            {/* ── ADMIN ONLY: link to Admin Portal global settings ── */}
+            {/* â”€â”€ ADMIN ONLY: link to Admin Portal global settings â”€â”€ */}
             {isAdmin && (
               <a href="/admin" onClick={onClose} title="Manage global theme & site settings in Admin Portal"
                 style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.color = '#f59e0b' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
               >
-                ⚙ GLOBAL
-                <span style={{ fontSize: 7, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '1px 4px', borderRadius: 3, letterSpacing: 1 }}>ADMIN ↗</span>
+                âš™ GLOBAL
+                <span style={{ fontSize: 7, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '1px 4px', borderRadius: 3, letterSpacing: 1 }}>ADMIN â†—</span>
               </a>
             )}
             <button className="tp-close" onClick={onClose}
               style={{ background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)',
                 cursor: 'pointer', width: 28, height: 28, borderRadius: 6,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, transition: 'all 0.15s' }}>✕</button>
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, transition: 'all 0.15s' }}>âœ•</button>
           </div>
         </div>
 
-        {/* ── Component Category Tabs ── */}
+        {/* â”€â”€ Component Category Tabs â”€â”€ */}
         <div style={{ padding: '10px 14px 0', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>PREVIEW CATEGORY</div>
           <div style={{ display: 'flex', gap: 3, overflowX: 'auto', paddingBottom: 10 }}>
@@ -1354,11 +1354,11 @@ export default function ThemePicker({ open, onClose }) {
           </div>
         </div>
 
-        {/* ── Live Preview Panel ── */}
+        {/* â”€â”€ Live Preview Panel â”€â”€ */}
         <div style={{ margin: '10px 14px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>
-              PREVIEW — {previewTheme.name.toUpperCase()} ({previewTheme.style.toUpperCase()})
+              PREVIEW â€” {previewTheme.name.toUpperCase()} ({previewTheme.style.toUpperCase()})
             </span>
             <div style={{ display: 'flex', gap: 4 }}>
               {[previewTheme.primary, previewTheme.secondary, previewTheme.bg].map((c, i) => (
@@ -1371,7 +1371,7 @@ export default function ThemePicker({ open, onClose }) {
           </div>
         </div>
 
-        {/* ── Type + Tag Filters ── */}
+        {/* â”€â”€ Type + Tag Filters â”€â”€ */}
         <div style={{ padding: '10px 14px 0', flexShrink: 0 }}>
           {/* Type row */}
           <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
@@ -1417,7 +1417,7 @@ export default function ThemePicker({ open, onClose }) {
           )}
         </div>
 
-        {/* ── Theme Grid ── */}
+        {/* â”€â”€ Theme Grid â”€â”€ */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '4px 14px 8px',
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, alignContent: 'start' }}>
           {filteredThemes.map(t => (
@@ -1437,11 +1437,11 @@ export default function ThemePicker({ open, onClose }) {
           )}
         </div>
 
-        {/* ── Footer: Status + Apply ── */}
+        {/* â”€â”€ Footer: Status + Apply â”€â”€ */}
         <div style={{ borderTop: '1px solid var(--border)', padding: '12px 14px', flexShrink: 0,
           display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-          {/* Active → Pending status */}
+          {/* Active â†’ Pending status */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8,
             background: 'var(--bg3)', borderRadius: 8, padding: '8px 10px', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', gap: 3 }}>
@@ -1457,7 +1457,7 @@ export default function ThemePicker({ open, onClose }) {
             </div>
             {pending && pendingTheme ? (
               <>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', flexShrink: 0 }}>→</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--green)', flexShrink: 0 }}>â†’</span>
                 <div style={{ display: 'flex', gap: 3 }}>
                   {[pendingTheme.bg, pendingTheme.primary, pendingTheme.secondary].map((c, i) => (
                     <div key={i} style={{ width: 10, height: 10, borderRadius: 3, background: c, border: '1px solid rgba(255,255,255,0.08)' }}/>
@@ -1472,7 +1472,7 @@ export default function ThemePicker({ open, onClose }) {
               </>
             ) : (
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1, opacity: 0.6 }}>
-                ← pick a theme
+                â† pick a theme
               </div>
             )}
           </div>
@@ -1508,15 +1508,15 @@ export default function ThemePicker({ open, onClose }) {
               onMouseLeave={e => { e.currentTarget.style.transform = 'none' }}
             >
               {isThemeLocked
-                ? '🔒 THEME LOCKED BY ADMIN'
+                ? 'ðŸ”’ THEME LOCKED BY ADMIN'
                 : pending
-                ? `✓ APPLY ${pendingTheme?.name?.toUpperCase() || ''}`
+                ? `âœ“ APPLY ${pendingTheme?.name?.toUpperCase() || ''}`
                 : 'SELECT A THEME ABOVE'}
             </button>
           </div>
         </div>
 
-        {/* ── ADMIN GLOBAL SETTINGS PANEL ─────────────────────────────── */}
+        {/* â”€â”€ ADMIN GLOBAL SETTINGS PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {showAdminPanel && isAdmin && (
           <div className="tp-drawer-chrome" style={{
             position: 'fixed', top: 0, right: 0, bottom: 0,
@@ -1530,18 +1530,18 @@ export default function ThemePicker({ open, onClose }) {
 
             {/* Panel header */}
             <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-              <span style={{ fontSize: 16 }}>⚙</span>
+              <span style={{ fontSize: 16 }}>âš™</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 3, color: '#f59e0b' }}>GLOBAL SETTINGS</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1 }}>APPLIED TO ALL SITE VISITORS</div>
               </div>
-              <button onClick={() => setShowAdminPanel(false)} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>✕</button>
+              <button onClick={() => setShowAdminPanel(false)} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>âœ•</button>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '14px' }}>
 
-              {/* ── 1. Global Theme ── */}
-              <Section label="🎨 GLOBAL THEME" desc="Force a theme for all users visiting the site">
+              {/* â”€â”€ 1. Global Theme â”€â”€ */}
+              <Section label="ðŸŽ¨ GLOBAL THEME" desc="Force a theme for all users visiting the site">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
                   <AdminThemeBtn id="" label="User's Choice" active={globalDraft.globalTheme === ''} onClick={() => setGlobalDraft(d => ({ ...d, globalTheme: '' }))} color="var(--muted)" />
                   {THEMES.filter(t => t.type !== 'package').map(t => (
@@ -1551,8 +1551,8 @@ export default function ThemePicker({ open, onClose }) {
                 <Toggle label="Lock theme (prevent user overrides)" checked={globalDraft.lockTheme} onChange={v => setGlobalDraft(d => ({ ...d, lockTheme: v }))} />
               </Section>
 
-              {/* ── 2. Loading Screen Style ── */}
-              <Section label="⏳ LOADING SCREEN" desc="Choose the loading animation users see on first visit">
+              {/* â”€â”€ 2. Loading Screen Style â”€â”€ */}
+              <Section label="â³ LOADING SCREEN" desc="Choose the loading animation users see on first visit">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   {[
                     { id: 'terminal', label: 'Terminal', desc: 'Boot sequence'     },
@@ -1569,13 +1569,13 @@ export default function ThemePicker({ open, onClose }) {
                     const active = globalDraft.loadingScreenStyle === s.id
                     return (
                       <button key={s.id} onClick={() => setGlobalDraft(d => ({ ...d, loadingScreenStyle: s.id }))}
-                        style={{ padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', background: active ? 'rgba(0,255,136,0.1)' : 'var(--bg3)', border: `1px solid ${active ? 'var(--green)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', transition: 'all .15s', overflow: 'hidden', boxShadow: active ? '0 0 10px rgba(0,255,136,0.15)' : 'none' }}>
+                        style={{ padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', background: active ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'var(--bg3)', border: `1px solid ${active ? 'var(--green)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', transition: 'all .15s', overflow: 'hidden', boxShadow: active ? '0 0 10px color-mix(in srgb, var(--green) 15%, transparent)' : 'none' }}>
                         {/* Mini animated preview */}
-                        <div style={{ height: 48, background: '#060a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: `1px solid ${active ? 'rgba(0,255,136,0.3)' : 'var(--border)'}`, overflow: 'hidden', position: 'relative' }}>
+                        <div style={{ height: 48, background: '#060a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, overflow: 'hidden', position: 'relative' }}>
                           {s.id === 'terminal' && <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#33ff33' }}>&gt;_<span style={{ borderRight: '2px solid #33ff33', animation: 'tpBlink 1s step-end infinite', marginLeft: 2 }} /></span>}
                           {s.id === 'minimal'  && <div style={{ width: 22, height: 22, border: '3px solid #0a1118', borderTopColor: '#00ff88', borderRadius: '50%', animation: 'tpSpin 0.8s linear infinite' }} />}
                           {s.id === 'glitch'   && <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 15, color: '#fff', textShadow: '2px 0 #ff003c, -2px 0 #00eaff', animation: 'miniGlitch 2.5s infinite' }}>AI</span>}
-                          {s.id === 'splash'   && <div style={{ textAlign: 'center' }}><div style={{ fontSize: 14, animation: 'miniZoomIn 1.8s ease-out infinite alternate' }}>⬡</div><div style={{ fontFamily: 'monospace', fontSize: 8, letterSpacing: 3, color: '#00ff88', marginTop: 1 }}>AIFAZI</div></div>}
+                          {s.id === 'splash'   && <div style={{ textAlign: 'center' }}><div style={{ fontSize: 14, animation: 'miniZoomIn 1.8s ease-out infinite alternate' }}>â¬¡</div><div style={{ fontFamily: 'monospace', fontSize: 8, letterSpacing: 3, color: '#00ff88', marginTop: 1 }}>AIFAZI</div></div>}
                           {s.id === 'matrix'   && <div style={{ display: 'flex', gap: 3, fontFamily: 'monospace', fontSize: 10, color: '#00ff88' }}>{['1','0','1','0','1'].map((c,i) => <span key={i} style={{ animation: `miniDotBounce 1.2s ${i*0.15}s ease-in-out infinite`, display: 'inline-block' }}>{c}</span>)}</div>}
                           {s.id === 'pulse'    && <div style={{ position: 'relative', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid #00ff88', animation: 'lsPulse 1.4s ease-in-out infinite' }} /><div style={{ position: 'absolute', inset: 7, borderRadius: '50%', border: '1px solid #00d4ff', animation: 'lsPulse 1.4s 0.3s ease-in-out infinite' }} /><div style={{ width: 5, height: 5, borderRadius: '50%', background: '#00ff88' }} /></div>}
                           {s.id === 'cyber'    && <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: 40, justifyContent: 'center' }}>{[...Array(9)].map((_,i) => <div key={i} style={{ width: 10, height: 10, border: '1px solid #00d4ff', borderRadius: 2, animation: `lsCyberHex 1.8s ${i*0.12}s ease-in-out infinite` }} />)}</div>}
@@ -1593,8 +1593,8 @@ export default function ThemePicker({ open, onClose }) {
                 </div>
               </Section>
 
-              {/* ── 3. Animation Preset ── */}
-              <Section label="✨ ANIMATION PRESET" desc="Controls transition speed and easing across the whole site">
+              {/* â”€â”€ 3. Animation Preset â”€â”€ */}
+              <Section label="âœ¨ ANIMATION PRESET" desc="Controls transition speed and easing across the whole site">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   {[
                     { id: 'smooth',     label: 'Smooth',     desc: '0.35s elegant ease',   anim: 'apSmooth 1.8s ease infinite alternate' },
@@ -1609,10 +1609,10 @@ export default function ThemePicker({ open, onClose }) {
                     const active = globalDraft.animationPreset === a.id
                     return (
                       <button key={a.id} onClick={() => setGlobalDraft(d => ({ ...d, animationPreset: a.id }))}
-                        style={{ padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', background: active ? 'rgba(0,212,255,0.1)' : 'var(--bg3)', border: `1px solid ${active ? 'var(--cyan)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', transition: 'all .15s', overflow: 'hidden', boxShadow: active ? '0 0 10px rgba(0,212,255,0.15)' : 'none' }}>
-                        <div style={{ height: 48, background: '#060a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: `1px solid ${active ? 'rgba(0,212,255,0.3)' : 'var(--border)'}`, overflow: 'hidden' }}>
+                        style={{ padding: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', background: active ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'var(--bg3)', border: `1px solid ${active ? 'var(--cyan)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', transition: 'all .15s', overflow: 'hidden', boxShadow: active ? '0 0 10px color-mix(in srgb, var(--cyan) 15%, transparent)' : 'none' }}>
+                        <div style={{ height: 48, background: '#060a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: `1px solid ${active ? 'color-mix(in srgb, var(--cyan) 30%, transparent)' : 'var(--border)'}`, overflow: 'hidden' }}>
                           {a.id === 'none' ? (
-                            <span style={{ fontFamily: 'monospace', fontSize: 18, color: '#6b8296' }}>—</span>
+                            <span style={{ fontFamily: 'monospace', fontSize: 18, color: '#6b8296' }}>â€”</span>
                           ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 48, animation: a.anim }}>
                               <div style={{ height: 6, background: active ? '#00d4ff' : '#00ff88', borderRadius: 3, width: '100%', opacity: 0.85 }} />
@@ -1631,8 +1631,8 @@ export default function ThemePicker({ open, onClose }) {
                 </div>
               </Section>
 
-              {/* ── 4. Maintenance Mode ── */}
-              <Section label="🔧 MAINTENANCE MODE" desc="Hides the site for all non-admin visitors">
+              {/* â”€â”€ 4. Maintenance Mode â”€â”€ */}
+              <Section label="ðŸ”§ MAINTENANCE MODE" desc="Hides the site for all non-admin visitors">
 
                 {/* Master toggle */}
                 <div style={{ background: globalDraft.maintenanceMode ? 'rgba(245,158,11,0.06)' : 'var(--bg3)', border: `1px solid ${globalDraft.maintenanceMode ? 'rgba(245,158,11,0.35)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px', marginBottom: 10, transition: 'all .2s' }}>
@@ -1640,23 +1640,23 @@ export default function ThemePicker({ open, onClose }) {
                   {globalDraft.maintenanceMode && (
                     <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 8, color: '#f59e0b', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'tpBlink 1s infinite' }}/>
-                      LIVE — VISITORS SEE MAINTENANCE PAGE
+                      LIVE â€” VISITORS SEE MAINTENANCE PAGE
                     </div>
                   )}
                 </div>
 
                 {globalDraft.maintenanceMode && (<>
 
-                  {/* ── Page Style ── */}
+                  {/* â”€â”€ Page Style â”€â”€ */}
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>PAGE STYLE</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 5, marginBottom: 12 }}>
                     {[
                       { id: 'terminal',    icon: '>_',  label: 'Terminal',    desc: 'Boot console' },
-                      { id: 'cyber',       icon: '⬡',   label: 'Cyber',       desc: 'Grid & glow' },
-                      { id: 'glitch',      icon: '▓',   label: 'Glitch',      desc: 'Corrupted fx' },
-                      { id: 'minimal',     icon: '◌',   label: 'Minimal',     desc: 'Clean & quiet' },
-                      { id: 'coming-soon', icon: '🚀',  label: 'Launch',      desc: 'Coming soon' },
-                      { id: 'retro',       icon: '▶',   label: 'Retro',       desc: 'Pixel / 8-bit' },
+                      { id: 'cyber',       icon: 'â¬¡',   label: 'Cyber',       desc: 'Grid & glow' },
+                      { id: 'glitch',      icon: 'â–“',   label: 'Glitch',      desc: 'Corrupted fx' },
+                      { id: 'minimal',     icon: 'â—Œ',   label: 'Minimal',     desc: 'Clean & quiet' },
+                      { id: 'coming-soon', icon: 'ðŸš€',  label: 'Launch',      desc: 'Coming soon' },
+                      { id: 'retro',       icon: 'â–¶',   label: 'Retro',       desc: 'Pixel / 8-bit' },
                     ].map(s => {
                       const active = globalDraft.maintenanceStyle === s.id
                       return (
@@ -1673,7 +1673,7 @@ export default function ThemePicker({ open, onClose }) {
                     })}
                   </div>
 
-                  {/* ── Status Badge Type ── */}
+                  {/* â”€â”€ Status Badge Type â”€â”€ */}
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>STATUS BADGE</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 12 }}>
                     {['MAINTENANCE', 'UPDATING', 'COMING SOON', 'OFFLINE', 'UPGRADING'].map(s => {
@@ -1693,10 +1693,10 @@ export default function ThemePicker({ open, onClose }) {
                     })}
                   </div>
 
-                  {/* ── Icon picker ── */}
+                  {/* â”€â”€ Icon picker â”€â”€ */}
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>PAGE ICON</div>
                   <div style={{ display: 'flex', gap: 5, marginBottom: 12 }}>
-                    {['⚙️','🔧','🚀','🛠️','⚡','🔒','🌐','💻'].map(ic => (
+                    {['âš™ï¸','ðŸ”§','ðŸš€','ðŸ› ï¸','âš¡','ðŸ”’','ðŸŒ','ðŸ’»'].map(ic => (
                       <button key={ic} onClick={() => setGlobalDraft(d => ({ ...d, maintenanceIcon: ic }))}
                         style={{ width: 32, height: 32, fontSize: 16, borderRadius: 6, cursor: 'pointer',
                           background: globalDraft.maintenanceIcon === ic ? 'rgba(245,158,11,0.15)' : 'var(--bg3)',
@@ -1707,7 +1707,7 @@ export default function ThemePicker({ open, onClose }) {
                     ))}
                   </div>
 
-                  {/* ── Background Style ── */}
+                  {/* â”€â”€ Background Style â”€â”€ */}
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>BACKGROUND PATTERN</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5, marginBottom: 12 }}>
                     {[
@@ -1730,7 +1730,7 @@ export default function ThemePicker({ open, onClose }) {
                     })}
                   </div>
 
-                  {/* ── Progress bar ── */}
+                  {/* â”€â”€ Progress bar â”€â”€ */}
                   <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', marginBottom: 10 }}>
                     <Toggle label="Show progress bar" checked={globalDraft.maintenanceShowProgress} onChange={v => setGlobalDraft(d => ({ ...d, maintenanceShowProgress: v }))} accent="#f59e0b" />
                     {globalDraft.maintenanceShowProgress && (
@@ -1749,7 +1749,7 @@ export default function ThemePicker({ open, onClose }) {
                     )}
                   </div>
 
-                  {/* ── Expected return time ── */}
+                  {/* â”€â”€ Expected return time â”€â”€ */}
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginBottom: 5 }}>EXPECTED RETURN TIME</div>
                     <input value={globalDraft.maintenanceReturnTime} onChange={e => setGlobalDraft(d => ({ ...d, maintenanceReturnTime: e.target.value }))}
@@ -1757,26 +1757,26 @@ export default function ThemePicker({ open, onClose }) {
                       style={{ width: '100%', background: 'var(--bg3)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '8px 10px', borderRadius: 6, outline: 'none', boxSizing: 'border-box' }} />
                   </div>
 
-                  {/* ── Social links visibility ── */}
+                  {/* â”€â”€ Social links visibility â”€â”€ */}
                   <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', marginBottom: 10 }}>
                     <Toggle label="Show social links on maintenance page" checked={globalDraft.maintenanceShowSocial} onChange={v => setGlobalDraft(d => ({ ...d, maintenanceShowSocial: v }))} accent="#f59e0b" />
                   </div>
 
-                  {/* ── Message ── */}
+                  {/* â”€â”€ Message â”€â”€ */}
                   <div style={{ marginBottom: 4 }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginBottom: 5 }}>MAINTENANCE MESSAGE</div>
                     <textarea value={globalDraft.maintenanceMessage} onChange={e => setGlobalDraft(d => ({ ...d, maintenanceMessage: e.target.value }))} rows={3} placeholder="We are currently performing maintenance..."
                       style={{ width: '100%', background: 'var(--bg3)', border: '1px solid rgba(245,158,11,0.4)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '8px 10px', borderRadius: 6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
 
-                  {/* ── Live preview strip ── */}
+                  {/* â”€â”€ Live preview strip â”€â”€ */}
                   <MaintenancePreviewStrip draft={globalDraft} />
 
                 </>)}
               </Section>
 
-              {/* ── 5. Header Style ── */}
-              <Section label="▬ HEADER STYLE" desc="Navigation bar design applied to all site visitors">
+              {/* â”€â”€ 5. Header Style â”€â”€ */}
+              <Section label="â–¬ HEADER STYLE" desc="Navigation bar design applied to all site visitors">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   {HEADER_PRESETS.map(p => {
                     const active = globalDraft.headerStyle === p.id
@@ -1784,17 +1784,17 @@ export default function ThemePicker({ open, onClose }) {
                       <button key={p.id} onClick={() => setGlobalDraft(d => ({ ...d, headerStyle: p.id }))}
                         style={{
                           padding: 0, overflow: 'hidden', cursor: 'pointer', textAlign: 'left',
-                          background: active ? 'rgba(0,255,136,0.07)' : 'var(--bg3)',
+                          background: active ? 'color-mix(in srgb, var(--green) 7%, transparent)' : 'var(--bg3)',
                           border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`,
                           borderRadius: 8, transition: 'all .15s',
-                          boxShadow: active ? '0 0 10px rgba(0,255,136,0.18)' : 'none',
+                          boxShadow: active ? '0 0 10px color-mix(in srgb, var(--green) 18%, transparent)' : 'none',
                         }}>
-                        <div style={{ background: '#000', borderBottom: `1px solid ${active ? 'rgba(0,255,136,0.25)' : 'var(--border)'}` }}>
+                        <div style={{ background: '#000', borderBottom: `1px solid ${active ? 'color-mix(in srgb, var(--green) 25%, transparent)' : 'var(--border)'}` }}>
                           <HeaderPreviewSVG id={p.id} />
                         </div>
                         <div style={{ padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 1 }}>{p.name}</span>
-                          {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--green)', padding: '1px 4px', background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.25)' }}>✓ ACTIVE</span>}
+                          {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--green)', padding: '1px 4px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)' }}>âœ“ ACTIVE</span>}
                         </div>
                       </button>
                     )
@@ -1802,8 +1802,8 @@ export default function ThemePicker({ open, onClose }) {
                 </div>
               </Section>
 
-              {/* ── 6. Footer Style ── */}
-              <Section label="▤ FOOTER STYLE" desc="Footer layout applied site-wide to all visitors">
+              {/* â”€â”€ 6. Footer Style â”€â”€ */}
+              <Section label="â–¤ FOOTER STYLE" desc="Footer layout applied site-wide to all visitors">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   {FOOTER_PRESETS.map(p => {
                     const active = globalDraft.footerStyle === p.id
@@ -1811,17 +1811,17 @@ export default function ThemePicker({ open, onClose }) {
                       <button key={p.id} onClick={() => setGlobalDraft(d => ({ ...d, footerStyle: p.id }))}
                         style={{
                           padding: 0, overflow: 'hidden', cursor: 'pointer', textAlign: 'left',
-                          background: active ? 'rgba(0,255,136,0.07)' : 'var(--bg3)',
+                          background: active ? 'color-mix(in srgb, var(--green) 7%, transparent)' : 'var(--bg3)',
                           border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`,
                           borderRadius: 8, transition: 'all .15s',
-                          boxShadow: active ? '0 0 10px rgba(0,255,136,0.18)' : 'none',
+                          boxShadow: active ? '0 0 10px color-mix(in srgb, var(--green) 18%, transparent)' : 'none',
                         }}>
-                        <div style={{ background: '#000', borderBottom: `1px solid ${active ? 'rgba(0,255,136,0.25)' : 'var(--border)'}` }}>
+                        <div style={{ background: '#000', borderBottom: `1px solid ${active ? 'color-mix(in srgb, var(--green) 25%, transparent)' : 'var(--border)'}` }}>
                           <FooterPreviewSVG id={p.id} />
                         </div>
                         <div style={{ padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 1 }}>{p.name}</span>
-                          {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--green)', padding: '1px 4px', background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.25)' }}>✓ ACTIVE</span>}
+                          {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--green)', padding: '1px 4px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)' }}>âœ“ ACTIVE</span>}
                         </div>
                       </button>
                     )
@@ -1833,8 +1833,8 @@ export default function ThemePicker({ open, onClose }) {
             {/* Save button */}
             <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
               <button onClick={saveGlobalSettings} disabled={savingGlobal}
-                style={{ width: '100%', padding: '12px', background: savedGlobal ? 'rgba(0,255,136,0.15)' : 'rgba(245,158,11,0.15)', border: `1px solid ${savedGlobal ? 'var(--green)' : 'rgba(245,158,11,0.5)'}`, color: savedGlobal ? 'var(--green)' : '#f59e0b', borderRadius: 8, cursor: savingGlobal ? 'default' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, transition: 'all .2s' }}>
-                {savingGlobal ? '⏳ SAVING...' : savedGlobal ? '✓ SAVED GLOBALLY' : '💾 SAVE FOR ALL USERS'}
+                style={{ width: '100%', padding: '12px', background: savedGlobal ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(245,158,11,0.15)', border: `1px solid ${savedGlobal ? 'var(--green)' : 'rgba(245,158,11,0.5)'}`, color: savedGlobal ? 'var(--green)' : '#f59e0b', borderRadius: 8, cursor: savingGlobal ? 'default' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, transition: 'all .2s' }}>
+                {savingGlobal ? 'â³ SAVING...' : savedGlobal ? 'âœ“ SAVED GLOBALLY' : 'ðŸ’¾ SAVE FOR ALL USERS'}
               </button>
             </div>
           </div>
@@ -1844,7 +1844,7 @@ export default function ThemePicker({ open, onClose }) {
   )
 }
 
-// ── Helpers for admin panel ───────────────────────────────────────────────────
+// â”€â”€ Helpers for admin panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Section({ label, desc, children }) {
   return (
     <div style={{ marginBottom: 20 }}>
@@ -1867,7 +1867,7 @@ function Toggle({ label, checked, onChange, accent = 'var(--green)' }) {
   )
 }
 
-// ── Maintenance preview strip (mini mockup inside admin panel) ────────────────
+// â”€â”€ Maintenance preview strip (mini mockup inside admin panel) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function MaintenancePreviewStrip({ draft }) {
   const statusColors = {
     MAINTENANCE: '#f59e0b', UPDATING: '#3b82f6', 'COMING SOON': '#a855f7',
@@ -1876,7 +1876,7 @@ function MaintenancePreviewStrip({ draft }) {
   const sc = statusColors[draft.maintenanceStatus] || '#f59e0b'
 
   const bgPatterns = {
-    grid:   { backgroundImage: 'linear-gradient(rgba(0,212,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.04) 1px,transparent 1px)', backgroundSize: '16px 16px' },
+    grid:   { backgroundImage: 'linear-gradient(color-mix(in srgb, var(--cyan) 4%, transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb, var(--cyan) 4%, transparent) 1px,transparent 1px)', backgroundSize: '16px 16px' },
     radial: { backgroundImage: `radial-gradient(ellipse at 50% 50%, ${sc}12 0%, transparent 70%)` },
     dots:   { backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '10px 10px' },
     clean:  {},
@@ -1887,7 +1887,7 @@ function MaintenancePreviewStrip({ draft }) {
   return (
     <div style={{ marginTop: 10, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)', padding: '5px 8px', background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
-        ◉ LIVE PREVIEW
+        â—‰ LIVE PREVIEW
       </div>
       <div style={{ height: 120, background: '#060a0f', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...bgPat }}>
         <div style={{ textAlign: 'center', zIndex: 1, padding: '0 12px' }}>
@@ -1910,7 +1910,7 @@ function MaintenancePreviewStrip({ draft }) {
           {/* return time */}
           {draft.maintenanceReturnTime && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'rgba(255,255,255,0.3)', letterSpacing: 1 }}>
-              ⏱ {draft.maintenanceReturnTime}
+              â± {draft.maintenanceReturnTime}
             </div>
           )}
         </div>
@@ -1929,7 +1929,7 @@ function AdminThemeBtn({ id, label, active, onClick, color, bg }) {
     <button onClick={onClick} style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 6, background: active ? `${color}15` : 'var(--bg3)', border: `1px solid ${active ? color : 'var(--border)'}`, borderRadius: 6, cursor: 'pointer', transition: 'all .15s', textAlign: 'left' }}>
       {bg && <div style={{ width: 12, height: 12, borderRadius: 3, background: bg, border: `2px solid ${color}`, flexShrink: 0 }} />}
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: active ? color : 'var(--muted)', fontWeight: active ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-      {active && <span style={{ marginLeft: 'auto', color, fontSize: 10 }}>✓</span>}
+      {active && <span style={{ marginLeft: 'auto', color, fontSize: 10 }}>âœ“</span>}
     </button>
   )
 }

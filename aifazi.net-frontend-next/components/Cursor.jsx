@@ -31,12 +31,12 @@ export default function Cursor() {
     const lerp = (a, b, t) => a + (b - a) * t
 
     const animate = () => {
-      // Dot — instant
+      // Dot â€” instant
       if (dotRef.current) {
         dotRef.current.style.left = pos.x + 'px'
         dotRef.current.style.top  = pos.y + 'px'
       }
-      // Ring — lagged
+      // Ring â€” lagged
       ring.x = lerp(ring.x, pos.x, 0.10)
       ring.y = lerp(ring.y, pos.y, 0.10)
 
@@ -63,7 +63,7 @@ export default function Cursor() {
     document.addEventListener('mousemove', onMove, { passive: true })
     rafId = requestAnimationFrame(animate)
 
-    // Magnetic hover — scale dot up & switch colour.
+    // Magnetic hover â€” scale dot up & switch colour.
     // Event delegation on document (instead of attaching to every a/button):
     // no per-element listeners to leak on unmount, and it stays correct across
     // route changes / re-renders without re-scanning the DOM.
@@ -101,7 +101,7 @@ export default function Cursor() {
 
   return (
     <>
-      {/* Dot — instant, mix-blend-mode difference for inversion */}
+      {/* Dot â€” instant, mix-blend-mode difference for inversion */}
       <div ref={dotRef} style={{
         position: 'fixed', pointerEvents: 'none', zIndex: 99999,
         width: 8, height: 8, borderRadius: '50%',
@@ -111,11 +111,11 @@ export default function Cursor() {
         transition: 'transform 0.15s ease, background 0.2s ease',
         willChange: 'left, top, transform',
       }}/>
-      {/* Ring — lagged + velocity squish */}
+      {/* Ring â€” lagged + velocity squish */}
       <div ref={ringRef} style={{
         position: 'fixed', pointerEvents: 'none', zIndex: 99998,
         width: 36, height: 36, borderRadius: '50%',
-        border: '1.5px solid rgba(0,212,255,0.55)',
+        border: '1.5px solid color-mix(in srgb, var(--cyan) 55%, transparent)',
         transform: 'translate(-50%,-50%)',
         willChange: 'left, top, transform',
         transition: 'opacity 0.2s ease',

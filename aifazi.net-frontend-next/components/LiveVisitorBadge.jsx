@@ -1,9 +1,9 @@
 'use client'
 /**
- * LiveVisitorBadge — #14
+ * LiveVisitorBadge â€” #14
  * Shows active visitor count.
  *
- * Security: visitor_sessions is fail-closed (anon/authenticated can't read it —
+ * Security: visitor_sessions is fail-closed (anon/authenticated can't read it â€”
  * migration 022). The public count is served ONLY by the backend
  * /stats/visitors/live endpoint (service role). Polling that endpoint keeps the
  * count fresh without exposing raw visitor rows to the browser.
@@ -34,7 +34,7 @@ export default function LiveVisitorBadge({ style = {} }) {
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
       fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
       padding: '4px 10px', borderRadius: 99,
-      background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.25)',
+      background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)',
       color: 'var(--green)', ...style }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)',
         boxShadow: '0 0 6px var(--green)', flexShrink: 0,

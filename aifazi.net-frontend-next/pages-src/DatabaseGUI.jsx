@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useDialog } from "../core/dialog.jsx";
 import { useNotify } from "../core/notify.jsx";
@@ -20,8 +20,8 @@ const ago = (d) => {
 const fmt = (n) => (n ?? 0).toLocaleString();
 
 const ROLE_META = {
-  admin:     { color: "var(--green,#00ff88)", bg: "rgba(0,255,136,0.08)", label: "ADMIN" },
-  moderator: { color: "var(--cyan,#00d4ff)", bg: "rgba(0,212,255,0.08)", label: "MOD" },
+  admin:     { color: "var(--green,#00ff88)", bg: "color-mix(in srgb, var(--green) 8%, transparent)", label: "ADMIN" },
+  moderator: { color: "var(--cyan,#00d4ff)", bg: "color-mix(in srgb, var(--cyan) 8%, transparent)", label: "MOD" },
   editor:    { color: "var(--orange,#ff6b35)", bg: "rgba(255,107,53,0.08)", label: "EDITOR" },
   chat:      { color: "var(--yellow,#ffd700)", bg: "rgba(255,215,0,0.08)", label: "CHAT" },
   user:      { color: "var(--muted)", bg: "rgba(71,85,105,0.08)", label: "USER" },
@@ -180,7 +180,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
   return (
     <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
       onClick={e => e.target===e.currentTarget && onClose()}>
-      <div style={{ background:"var(--bg)", border:"1px solid #00d4ff22", width:"100%", maxWidth:600, maxHeight:"92vh", display:"flex", flexDirection:"column", boxShadow:"0 0 80px rgba(0,212,255,0.08)" }}>
+      <div style={{ background:"var(--bg)", border:"1px solid #00d4ff22", width:"100%", maxWidth:600, maxHeight:"92vh", display:"flex", flexDirection:"column", boxShadow:"0 0 80px color-mix(in srgb, var(--cyan) 8%, transparent)" }}>
 
         {/* Header */}
         <div style={{ padding:"20px 24px", background:"var(--bg2)", borderBottom:"1px solid #0f1a26", flexShrink:0 }}>
@@ -201,7 +201,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
             <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, padding:"4px 10px", background:roleBg(u.role), color:roleColor(u.role), border:`1px solid ${roleColor(u.role)}33` }}>
               {(ROLE_META[u.role]?.label||"USER")}
             </span>
-            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, padding:"4px 10px", background:u.emailVerified?"rgba(0,255,136,0.06)":"rgba(255,71,87,0.06)", color:u.emailVerified?"var(--green,#00ff88)":"var(--red,#ff4757)", border:`1px solid ${u.emailVerified?"rgba(0,255,136,0.19)":"rgba(255,71,87,0.25)"}` }}>
+            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, padding:"4px 10px", background:u.emailVerified?"color-mix(in srgb, var(--green) 6%, transparent)":"rgba(255,71,87,0.06)", color:u.emailVerified?"var(--green,#00ff88)":"var(--red,#ff4757)", border:`1px solid ${u.emailVerified?"color-mix(in srgb, var(--green) 19%, transparent)":"rgba(255,71,87,0.25)"}` }}>
               {u.emailVerified?"YES VERIFIED":"NO UNVERIFIED"}
             </span>
             {u.banned && <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, padding:"4px 10px", background:"rgba(255,71,87,0.06)", color:"var(--red,#ff4757)", border:"1px solid #ff475730" }}>BAN BANNED</span>}
@@ -214,7 +214,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               flex:1, padding:"11px 6px", fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:1,
-              background:tab===t.id?"rgba(0,212,255,0.03)":"transparent",
+              background:tab===t.id?"color-mix(in srgb, var(--cyan) 3%, transparent)":"transparent",
               borderBottom:tab===t.id?"2px solid #00d4ff":"2px solid transparent",
               border:"none", color:tab===t.id?"var(--cyan,#00d4ff)":"var(--muted)", cursor:"pointer",
             }}>{t.label}</button>
@@ -379,7 +379,7 @@ function EditModal({ doc, coll, token, onClose, onSaved }) {
   return (
     <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
       onClick={e => e.target===e.currentTarget && onClose()}>
-      <div style={{ background:"var(--bg)", border:"1px solid #00ff8822", width:"100%", maxWidth:660, maxHeight:"90vh", display:"flex", flexDirection:"column", boxShadow:"0 0 60px rgba(0,255,136,0.06)" }}>
+      <div style={{ background:"var(--bg)", border:"1px solid #00ff8822", width:"100%", maxWidth:660, maxHeight:"90vh", display:"flex", flexDirection:"column", boxShadow:"0 0 60px color-mix(in srgb, var(--green) 6%, transparent)" }}>
         <div style={{ padding:"14px 20px", background:"var(--bg2)", borderBottom:"1px solid #0f1a26", display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0 }}>
           <div>
             <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--green,#00ff88)" }}>EDIT · {coll.toUpperCase()}</span>
@@ -519,7 +519,7 @@ function CollectionBrowser({ token, toast }) {
         <input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&load()}
           placeholder={`Search ${coll}...`}
           style={{ flex:1, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"8px 12px", outline:"none" }} />
-        <button onClick={load} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"8px 14px", background:"rgba(0,212,255,0.06)", color:"var(--cyan,#00d4ff)", border:"1px solid #00d4ff33", cursor:"pointer" }}>SEARCH</button>
+        <button onClick={load} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"8px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,#00d4ff)", border:"1px solid #00d4ff33", cursor:"pointer" }}>SEARCH</button>
         {search && <button onClick={()=>{setSearch("");}} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"8px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
       </div>
 
@@ -558,7 +558,7 @@ function CollectionBrowser({ token, toast }) {
               </thead>
               <tbody>
                 {data.docs.map((doc, i) => (
-                  <tr key={i} style={{ borderBottom:"1px solid #0a1016", background:selected.has(doc._id)?"rgba(0,255,136,0.02)":"transparent", transition:"background 0.1s" }}
+                  <tr key={i} style={{ borderBottom:"1px solid #0a1016", background:selected.has(doc._id)?"color-mix(in srgb, var(--green) 2%, transparent)":"transparent", transition:"background 0.1s" }}
                     onMouseEnter={e=>{if(!selected.has(doc._id))e.currentTarget.style.background="rgba(255,255,255,0.01)"}}
                     onMouseLeave={e=>{if(!selected.has(doc._id))e.currentTarget.style.background="transparent"}}>
                     <td style={{ padding:"8px 10px" }}>
@@ -669,7 +669,7 @@ function ExportPanel({ token, toast, stats }) {
             <input type="number" value={limit} onChange={e => setLimit(Math.max(1, Math.min(10000, Number(e.target.value))))} style={inp} min={1} max={10000} />
           </div>
         </div>
-        <div style={{ padding:"12px 14px", background:"rgba(0,255,136,0.03)", border:"1px solid #00ff8820", fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)", lineHeight:1.6 }}>
+        <div style={{ padding:"12px 14px", background:"color-mix(in srgb, var(--green) 3%, transparent)", border:"1px solid #00ff8820", fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)", lineHeight:1.6 }}>
           Exporting <span style={{color:"var(--green,#00ff88)"}}>{collection}</span> collection as <span style={{color:"var(--cyan,#00d4ff)"}}>{format.toUpperCase()}</span> (up to {limit.toLocaleString()} records)
         </div>
         <button onClick={doExport} disabled={loading} style={{ padding:"13px", background:loading?"var(--border)":"var(--green,#00ff88)", color:loading?"var(--muted)":"#000", fontFamily:"var(--font-mono,monospace)", fontSize:11, letterSpacing:3, fontWeight:700, border:"none", cursor:loading?"not-allowed":"pointer" }}>
@@ -682,7 +682,7 @@ function ExportPanel({ token, toast, stats }) {
           <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--border)", marginBottom:14 }}>COLLECTION SIZES</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:8 }}>
             {Object.entries({ users: stats.counts?.users?.total, posts: stats.counts?.posts?.total, threads: stats.counts?.forum?.threads, replies: stats.counts?.forum?.replies, contacts: stats.counts?.contacts, media: stats.counts?.media, staff: stats.counts?.staff, newsletter: stats.counts?.newsletter?.total }).map(([k,v]) => (
-              <div key={k} onClick={() => setCollection(k.replace("replies","replies"))} style={{ padding:"12px", background:collection===k?"rgba(0,255,136,0.03)":"var(--bg)", border:`1px solid ${collection===k?"rgba(0,255,136,0.20)":"var(--border)"}`, cursor:"pointer" }}>
+              <div key={k} onClick={() => setCollection(k.replace("replies","replies"))} style={{ padding:"12px", background:collection===k?"color-mix(in srgb, var(--green) 3%, transparent)":"var(--bg)", border:`1px solid ${collection===k?"color-mix(in srgb, var(--green) 20%, transparent)":"var(--border)"}`, cursor:"pointer" }}>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, color:"var(--muted)", marginBottom:4 }}>{k.toUpperCase()}</div>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:18, fontWeight:700, color:"var(--green,#00ff88)" }}>{(v||0).toLocaleString()}</div>
               </div>
@@ -1095,7 +1095,7 @@ function NewsletterTab({ token, toast }) {
             <span style={{ color:"var(--green,#00ff88)" }}>{total.toLocaleString()}</span> total · <span style={{ color:"var(--cyan,#00d4ff)" }}>{active}</span> active
           </div>
         </div>
-        <button onClick={exportCsv} disabled={!subs.length} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"7px 14px", background:"rgba(0,255,136,0.06)", color:"var(--green,#00ff88)", border:"1px solid #00ff8833", cursor:"pointer" }}>
+        <button onClick={exportCsv} disabled={!subs.length} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"7px 14px", background:"color-mix(in srgb, var(--green) 6%, transparent)", color:"var(--green,#00ff88)", border:"1px solid #00ff8833", cursor:"pointer" }}>
           ⬇ EXPORT CSV
         </button>
       </div>
@@ -1103,7 +1103,7 @@ function NewsletterTab({ token, toast }) {
       <div style={{ display:"flex", gap:8, marginBottom:16 }}>
         <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key==="Enter" && (setPage(1), load(1, search))}
           placeholder="Search by email..." style={{ flex:1, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
-        <button onClick={() => { setPage(1); load(1, search); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"9px 14px", background:"rgba(0,212,255,0.06)", color:"var(--cyan,#00d4ff)", border:"1px solid #00d4ff33", cursor:"pointer" }}>SEARCH</button>
+        <button onClick={() => { setPage(1); load(1, search); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"9px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,#00d4ff)", border:"1px solid #00d4ff33", cursor:"pointer" }}>SEARCH</button>
         {search && <button onClick={() => { setSearch(""); setPage(1); load(1, ""); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
       </div>
 
@@ -1126,7 +1126,7 @@ function NewsletterTab({ token, toast }) {
                     onMouseLeave={e => e.currentTarget.style.background="transparent"}>
                     <td style={{ padding:"9px 12px", color:"var(--text)" }}>{s.email}</td>
                     <td style={{ padding:"9px 12px" }}>
-                      <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"2px 8px", background:s.active?"rgba(0,255,136,0.07)":"rgba(255,71,87,0.07)", color:s.active?"var(--green,#00ff88)":"var(--red,#ff4757)", border:`1px solid ${s.active?"rgba(0,255,136,0.19)":"rgba(255,71,87,0.25)"}` }}>
+                      <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"2px 8px", background:s.active?"color-mix(in srgb, var(--green) 7%, transparent)":"rgba(255,71,87,0.07)", color:s.active?"var(--green,#00ff88)":"var(--red,#ff4757)", border:`1px solid ${s.active?"color-mix(in srgb, var(--green) 19%, transparent)":"rgba(255,71,87,0.25)"}` }}>
                         {s.active ? "YES ACTIVE" : "NO UNSUB"}
                       </span>
                     </td>
@@ -1435,8 +1435,8 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
       {/* #19 - Read-only mode banner */}
       {readOnly && (
         <div style={{
-          padding: '8px 24px', background: 'rgba(0,212,255,0.07)',
-          borderBottom: '1px solid rgba(0,212,255,0.2)',
+          padding: '8px 24px', background: 'color-mix(in srgb, var(--cyan) 7%, transparent)',
+          borderBottom: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)',
           display: 'flex', alignItems: 'center', gap: 10,
           fontFamily: 'monospace', fontSize: 10, color: '#00d4ff', letterSpacing: 2,
         }}>

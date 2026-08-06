@@ -6,10 +6,10 @@ import { AnimatableWrapper, EditableList, EditableText } from '../context/EditCo
 import { IconDisplay, useLordiconScript } from './IconPicker'
 
 const DEFAULT_SERVICES = [
-  { icon: '🌐', title: 'Network Design & Architecture', desc: 'End-to-end design of enterprise LAN/WAN infrastructure. From IP addressing and routing protocols to redundancy planning and documentation.', features: ['OSPF / BGP / EIGRP', 'VLAN & QoS Design', 'Redundancy & Failover', 'Network Documentation'], accent: 'var(--green)' },
-  { icon: '🔒', title: 'Security & Firewall', desc: 'Hardening your perimeter with enterprise-grade firewall deployment, VPN solutions, IDS/IPS configuration, and ongoing security audits.', features: ['Firewall Rule Optimization', 'IPSec / SSL VPN', 'IDS/IPS Deployment', 'Zero Trust Architecture'], accent: 'var(--red)' },
-  { icon: '☁️', title: 'Cloud & Hybrid Infrastructure', desc: 'Seamless migration to cloud-hybrid models with AWS and Azure. Direct Connect, VPC design, and cloud-native security controls.', features: ['AWS / Azure Setup', 'Cloud Migration Planning', 'Hybrid Connectivity', 'Cost Optimization'], accent: 'var(--cyan)' },
-  { icon: '🖥️', title: 'Server & Systems Administration', desc: 'Linux and Windows server deployment, Active Directory, virtualization stacks, and containerized application environments.', features: ['Linux / Windows Server', 'Docker & Virtualization', 'Active Directory', 'Backup & Recovery'], accent: 'var(--orange)' },
+  { icon: 'ðŸŒ', title: 'Network Design & Architecture', desc: 'End-to-end design of enterprise LAN/WAN infrastructure. From IP addressing and routing protocols to redundancy planning and documentation.', features: ['OSPF / BGP / EIGRP', 'VLAN & QoS Design', 'Redundancy & Failover', 'Network Documentation'], accent: 'var(--green)' },
+  { icon: 'ðŸ”’', title: 'Security & Firewall', desc: 'Hardening your perimeter with enterprise-grade firewall deployment, VPN solutions, IDS/IPS configuration, and ongoing security audits.', features: ['Firewall Rule Optimization', 'IPSec / SSL VPN', 'IDS/IPS Deployment', 'Zero Trust Architecture'], accent: 'var(--red)' },
+  { icon: 'â˜ï¸', title: 'Cloud & Hybrid Infrastructure', desc: 'Seamless migration to cloud-hybrid models with AWS and Azure. Direct Connect, VPC design, and cloud-native security controls.', features: ['AWS / Azure Setup', 'Cloud Migration Planning', 'Hybrid Connectivity', 'Cost Optimization'], accent: 'var(--cyan)' },
+  { icon: 'ðŸ–¥ï¸', title: 'Server & Systems Administration', desc: 'Linux and Windows server deployment, Active Directory, virtualization stacks, and containerized application environments.', features: ['Linux / Windows Server', 'Docker & Virtualization', 'Active Directory', 'Backup & Recovery'], accent: 'var(--orange)' },
 ]
 
 const SERVICE_FIELDS = [
@@ -35,9 +35,9 @@ function ServiceCard({ svc, i }) {
   }, [])
   const handleMouseEnter = useCallback(() => {
     const el = cardRef.current; if (!el) return
-    el.style.borderColor = 'rgba(0,255,136,0.4)'
+    el.style.borderColor = 'color-mix(in srgb, var(--green) 40%, transparent)'
     el.style.transform   = 'translateY(-6px)'
-    el.style.boxShadow   = '0 20px 60px rgba(0,0,0,0.4),0 0 0 1px rgba(0,255,136,0.15),inset 0 1px 0 rgba(0,255,136,0.08)'
+    el.style.boxShadow   = '0 20px 60px rgba(0,0,0,0.4),0 0 0 1px color-mix(in srgb, var(--green) 15%, transparent),inset 0 1px 0 color-mix(in srgb, var(--green) 8%, transparent)'
     el.querySelector('.svc-scan')?.classList.add('svc-scan--active')
   }, [])
   const handleMouseLeave = useCallback(() => {
@@ -68,14 +68,14 @@ function ServiceCard({ svc, i }) {
 
           {/* Index + icon row */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 18, position: 'relative', zIndex: 1 }}>
-            <div style={{ width: 56, height: 56, border: '1px solid rgba(0,212,255,0.22)', background: 'rgba(0,212,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', borderRadius: 3 }}>
+            <div style={{ width: 56, height: 56, border: '1px solid color-mix(in srgb, var(--cyan) 22%, transparent)', background: 'color-mix(in srgb, var(--cyan) 5%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', borderRadius: 3 }}>
               <IconDisplay value={svc.icon} size={30} />
               <span style={{ position: 'absolute', bottom: -1, right: -1, width: 8, height: 8, background: accent, boxShadow: `0 0 10px ${accent}`, borderRadius: '50%' }} />
             </div>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{String(i + 1).padStart(2, '0')}</span>
           </div>
 
-          {/* Title — admin-editable inline */}
+          {/* Title â€” admin-editable inline */}
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: 'var(--text)', marginBottom: 10, lineHeight: 1.25, position: 'relative', zIndex: 1 }}>
             <EditableText contentKey={`service.${i}.title`} defaultValue={svc.title} />
           </div>
@@ -89,7 +89,7 @@ function ServiceCard({ svc, i }) {
           <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 16, position: 'relative', zIndex: 1 }}>
             {(svc.features || []).map((f, fi) => (
               <div key={fi} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text)', lineHeight: 1.9 }}>
-                <span style={{ color: accent, fontSize: 12, flexShrink: 0 }}>›</span>
+                <span style={{ color: accent, fontSize: 12, flexShrink: 0 }}>â€º</span>
                 <EditableText contentKey={`service.${i}.feature.${fi}`} defaultValue={f} />
               </div>
             ))}
@@ -154,23 +154,23 @@ export default function Services() {
 
         .svc-spotlight {
           position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-          opacity: 0; background: radial-gradient(200px circle at var(--mx) var(--my), rgba(0,255,136,0.07) 0%, transparent 70%);
+          opacity: 0; background: radial-gradient(200px circle at var(--mx) var(--my), color-mix(in srgb, var(--green) 7%, transparent) 0%, transparent 70%);
           transition: opacity .3s ease; z-index: 0;
         }
         .svc-card:hover .svc-spotlight { opacity: 1; }
 
         .svc-scan {
           position: absolute; left: 0; right: 0; height: 2px;
-          background: linear-gradient(90deg,transparent,rgba(0,255,136,0.5),transparent);
+          background: linear-gradient(90deg,transparent,color-mix(in srgb, var(--green) 50%, transparent),transparent);
           top: -2px; pointer-events: none; z-index: 2; opacity: 0;
         }
         .svc-scan--active { opacity: 1; animation: svcScanLine 1.4s ease-out forwards; }
         @keyframes svcScanLine { 0%{top:0%;opacity:1} 80%{top:96%;opacity:1} 100%{top:100%;opacity:0} }
 
         .svc-corner { position:absolute; width:14px; height:14px; pointer-events:none; transition:border-color .35s,width .35s,height .35s; z-index:3; }
-        .svc-corner--tl { top:8px;left:8px; border-top:1.5px solid rgba(0,255,136,0); border-left:1.5px solid rgba(0,255,136,0); }
-        .svc-corner--br { bottom:8px;right:8px; border-bottom:1.5px solid rgba(0,255,136,0); border-right:1.5px solid rgba(0,255,136,0); }
-        .svc-card:hover .svc-corner--tl,.svc-card:hover .svc-corner--br { width:20px;height:20px; border-color:rgba(0,255,136,0.7); }
+        .svc-corner--tl { top:8px;left:8px; border-top:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); border-left:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); }
+        .svc-corner--br { bottom:8px;right:8px; border-bottom:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); border-right:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); }
+        .svc-card:hover .svc-corner--tl,.svc-card:hover .svc-corner--br { width:20px;height:20px; border-color:color-mix(in srgb, var(--green) 70%, transparent); }
 
         @media (max-width: 900px) { .services-section { padding: 80px 24px !important; } }
         @media (max-width: 480px)  { .services-section { padding: 60px 12px !important; } }

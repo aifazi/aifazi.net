@@ -7,14 +7,14 @@ import { DateTimePicker, Select } from '../../core/ui.jsx'
 import { S, useIsMobile, SLASH_COMMANDS } from './shared'
 import VideoPlayer from './VideoPlayer'
 
-// ── Media URL helpers ─────────────────────────────────────────────────────────
+// â”€â”€ Media URL helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SUPA_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '')
 
 // Primary URL: use whatever is stored in the DB (may include custom CDN domain)
 function resolveMediaUrl(file) {
   const u = file?.url || file?.path || ''
   if (u.startsWith('http')) return u
-  // Relative path — rebuild from storage_path as last resort
+  // Relative path â€” rebuild from storage_path as last resort
   if (file?.storage_path) return `${SUPA_URL}/storage/v1/object/public/media/${file.storage_path}`
   return u
 }
@@ -22,12 +22,12 @@ function resolveMediaUrl(file) {
 /**
  * Provider-aware fallback URL.
  *
- * - cloudinary  → reconstruct the canonical res.cloudinary.com URL so a broken
+ * - cloudinary  â†’ reconstruct the canonical res.cloudinary.com URL so a broken
  *                 custom domain (e.g. cdn.aifazi.net not yet proxied) never
  *                 blocks image display. Requires cdnConfig.cloudinaryCloudName.
  * - supabase /
- *   unknown     → build the Supabase Storage public URL from storage_path.
- * - other CDNs  → null (no known direct-access fallback).
+ *   unknown     â†’ build the Supabase Storage public URL from storage_path.
+ * - other CDNs  â†’ null (no known direct-access fallback).
  */
 function buildProviderFallback(file, cdnConfig) {
   const { storage_path, provider, mimetype } = file || {}
@@ -45,10 +45,10 @@ function buildProviderFallback(file, cdnConfig) {
   return `${SUPA_URL}/storage/v1/object/public/media/${storage_path}`
 }
 
-// ── Media thumbnail with 3-level fallback chain ───────────────────────────────
+// â”€â”€ Media thumbnail with 3-level fallback chain â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // 1. Stored URL (may use custom CDN domain)
 // 2. Provider-aware fallback (original Cloudinary URL -or- Supabase direct URL)
-// 3. Styled placeholder — no ugly browser broken-image icons
+// 3. Styled placeholder â€” no ugly browser broken-image icons
 function MediaThumb({ file, height = 120, cdnConfig = null }) {
   const [src, setSrc] = useState(() => resolveMediaUrl(file))
   const [failed, setFailed] = useState(false)
@@ -63,7 +63,7 @@ function MediaThumb({ file, height = 120, cdnConfig = null }) {
     setFailed(true)
   }
 
-  // Non-image / non-video → always show the icon placeholder
+  // Non-image / non-video â†’ always show the icon placeholder
   const isImage = file.mimetype?.startsWith('image/')
   const isVideo = file.mimetype?.startsWith('video/')
   const isPdf   = file.mimetype === 'application/pdf'
@@ -77,7 +77,7 @@ function MediaThumb({ file, height = 120, cdnConfig = null }) {
   }
 
   if (failed || (!isImage && !isVideo)) {
-    const icon  = isVideo ? '🎬' : isPdf ? '📄' : isImage ? '🖼️' : '📁'
+    const icon  = isVideo ? 'ðŸŽ¬' : isPdf ? 'ðŸ“„' : isImage ? 'ðŸ–¼ï¸' : 'ðŸ“'
     const label = failed
       ? file.provider === 'cloudinary' && !cdnConfig?.cloudinaryCloudName
         ? 'NO CLOUD NAME'
@@ -134,13 +134,13 @@ function SlashMenu({ pos, query, onSelect, onClose }) {
     <div style={{
       position: 'fixed', top: pos.top, left: pos.left, zIndex: 999999,
       width: Math.min(280, window.innerWidth - 16), maxHeight: 360, overflowY: 'auto',
-      background: '#0f1820', border: '1px solid rgba(0,212,255,0.25)',
+      background: '#0f1820', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)',
       boxShadow: '0 16px 48px rgba(0,0,0,0.9)', borderRadius: 6,
       fontFamily: "'Share Tech Mono', monospace",
     }}>
       {grouped.map(group => (
         <div key={group.group}>
-          <div style={{ padding: '8px 14px 4px', fontSize: 9, letterSpacing: 2, color: 'rgba(0,212,255,0.5)' }}>{group.group}</div>
+          <div style={{ padding: '8px 14px 4px', fontSize: 9, letterSpacing: 2, color: 'color-mix(in srgb, var(--cyan) 50%, transparent)' }}>{group.group}</div>
           {group.items.map(item => {
             const idx = flatI++
             const isActive = idx === activeIdx
@@ -151,14 +151,14 @@ function SlashMenu({ pos, query, onSelect, onClose }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '8px 14px', cursor: 'pointer',
-                  background: isActive ? 'rgba(0,212,255,0.1)' : 'transparent',
+                  background: isActive ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
                   borderLeft: `2px solid ${isActive ? 'var(--cyan)' : 'transparent'}`,
                 }}
               >
                 <div style={{
                   width: 28, height: 28, borderRadius: 4, flexShrink: 0,
-                  background: isActive ? 'rgba(0,212,255,0.2)' : 'rgba(255,255,255,0.07)',
-                  border: `1px solid ${isActive ? 'rgba(0,212,255,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                  background: isActive ? 'color-mix(in srgb, var(--cyan) 20%, transparent)' : 'rgba(255,255,255,0.07)',
+                  border: `1px solid ${isActive ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'rgba(255,255,255,0.1)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 11, color: isActive ? 'var(--cyan)' : '#6a88a0', fontWeight: 700,
                 }}>{item.icon}</div>
@@ -172,7 +172,7 @@ function SlashMenu({ pos, query, onSelect, onClose }) {
         </div>
       ))}
       <div style={{ padding: '6px 14px', fontSize: 9, color: '#2a3a48', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 12 }}>
-        <span>↑↓ nav</span><span>⏎ select</span><span>esc close</span>
+        <span>â†‘â†“ nav</span><span>âŽ select</span><span>esc close</span>
       </div>
     </div>
   )
@@ -250,7 +250,7 @@ function RichEditor({ value, onChange }) {
     { label: '{}', title: 'Code Block',      action: () => insert('<pre><code>your code here</code></pre>') },
     { label: '',   title: 'Divider',         action: () => insert('<hr/>') },
     { label: '"',   title: 'Blockquote',      action: () => exec('formatBlock', '<blockquote>') },
-    { label: '○',  title: 'Link',            action: async () => { const url = await dialog.prompt({ title: 'Insert Link', placeholder: 'https://', variant: 'info', confirmLabel: 'INSERT' }); if (url) exec('createLink', url) } },
+    { label: 'â—‹',  title: 'Link',            action: async () => { const url = await dialog.prompt({ title: 'Insert Link', placeholder: 'https://', variant: 'info', confirmLabel: 'INSERT' }); if (url) exec('createLink', url) } },
   ]
 
   return (
@@ -259,14 +259,14 @@ function RichEditor({ value, onChange }) {
         {tools.map(t => (
           <button key={t.label} title={t.title} onClick={t.action} type="button"
             style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: isMobile ? '5px 7px' : '6px 10px', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,255,136,0.1)'; e.currentTarget.style.color = 'var(--green)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 10%, transparent)'; e.currentTarget.style.color = 'var(--green)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg2)'; e.currentTarget.style.color = 'var(--text)' }}
           >{t.label}</button>
         ))}
         {!isMobile && (
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingRight: 4 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(0,212,255,0.4)', letterSpacing: 1 }}>
-              type <span style={{ color: 'var(--cyan)', background: 'rgba(0,212,255,0.08)', padding: '1px 5px', borderRadius: 2 }}>/</span> for commands
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'color-mix(in srgb, var(--cyan) 40%, transparent)', letterSpacing: 1 }}>
+              type <span style={{ color: 'var(--cyan)', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', padding: '1px 5px', borderRadius: 2 }}>/</span> for commands
             </span>
           </div>
         )}
@@ -294,20 +294,20 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
   const [files, setFiles] = useState([])
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
-  const [cdnConfig, setCdnConfig] = useState(null)   // ← CDN config from admin panel
+  const [cdnConfig, setCdnConfig] = useState(null)   // â† CDN config from admin panel
   const fileInputRef = useRef()
 
   useEffect(() => {
     fetchFiles()
     // Fetch CDN proxy-config so MediaThumb can do provider-aware fallback.
-    // /admin/cdn/proxy-config is a public endpoint — no auth required.
+    // /admin/cdn/proxy-config is a public endpoint â€” no auth required.
     api.get('/admin/cdn/proxy-config')
       .then(r => setCdnConfig(r.data || {}))
       .catch(() => setCdnConfig({}))
   }, [])
   const fetchFiles = async () => { try { const res = await api.get('/upload/media'); setFiles(res.data) } catch {} }
 
-  // #10 — shared upload logic used by both input change and drop
+  // #10 â€” shared upload logic used by both input change and drop
   const uploadFiles = async fileList => {
     const selected = Array.from(fileList).filter(f => !filter || f.type.startsWith(filter))
     if (!selected.length) return
@@ -321,7 +321,7 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
 
   const handleUpload = async e => { await uploadFiles(e.target.files) }
 
-  // #10 — drag-and-drop handlers
+  // #10 â€” drag-and-drop handlers
   const handleDragOver = e => { e.preventDefault(); setDragOver(true) }
   const handleDragLeave = e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false) }
   const handleDrop = async e => {
@@ -347,23 +347,23 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
           <button onClick={() => fileInputRef.current.click()} disabled={uploading} style={{ ...S.btn(), fontSize: 10, padding: '8px 14px' }}>
             {uploading ? 'UPLOADING...' : '+ UPLOAD'}
           </button>
-          {/* Only show ✕ close button in modal mode */}
+          {/* Only show âœ• close button in modal mode */}
           {!inline && onClose && (
-            <button onClick={onClose} aria-label="Close media library" style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '8px 12px' }}>✕</button>
+            <button onClick={onClose} aria-label="Close media library" style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '8px 12px' }}>âœ•</button>
           )}
         </div>
         <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.zip,.js,.py,.sh,.html,.css,.json,.md,.txt" onChange={handleUpload} style={{ display: 'none' }} />
       </div>
       <div style={{ overflowY: 'auto', padding: isMobile ? 12 : 24, flex: 1,
         border: dragOver ? '2px dashed var(--green)' : '2px dashed transparent',
-        background: dragOver ? 'rgba(0,255,136,0.04)' : 'transparent',
+        background: dragOver ? 'color-mix(in srgb, var(--green) 4%, transparent)' : 'transparent',
         transition: 'all 0.15s', position: 'relative' }}
         onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
         {dragOver && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 10, pointerEvents: 'none' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--green)', letterSpacing: 2, textAlign: 'center' }}>
-              📂 DROP FILES TO UPLOAD
+              ðŸ“‚ DROP FILES TO UPLOAD
             </div>
           </div>
         )}
@@ -382,7 +382,7 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.original_name}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{formatSize(file.size)}</span>
-                    <button onClick={e => { e.stopPropagation(); handleDelete(file.id) }} aria-label={`Delete ${file.original_name}`} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>🗑</button>
+                    <button onClick={e => { e.stopPropagation(); handleDelete(file.id) }} aria-label={`Delete ${file.original_name}`} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>ðŸ—‘</button>
                   </div>
                 </div>
               </div>
@@ -408,7 +408,7 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
 function PostEditor({ post, onSave, onCancel }) {
   const isMobile = useIsMobile()
 
-  // Slug helper — avoids regex with \s inside [] which confuses some parsers
+  // Slug helper â€” avoids regex with \s inside [] which confuses some parsers
   const slugify = t => {
     return t.toLowerCase().trim()
       .replace(/[^a-z0-9\s-]/g, '')
@@ -434,7 +434,7 @@ function PostEditor({ post, onSave, onCancel }) {
   const [saving, setSaving]         = useState(false)
   const [mediaOpen, setMediaOpen]   = useState(false)
   const [mediaTarget, setMediaTarget] = useState(null)
-  // #9 — Draft autosave
+  // #9 â€” Draft autosave
   const [autoStatus, setAutoStatus] = useState('idle') // 'idle'|'saving'|'saved'|'error'
   const [savedAt, setSavedAt]       = useState(null)
   const autosaveTimer = useRef(null)
@@ -454,7 +454,7 @@ function PostEditor({ post, onSave, onCancel }) {
       ...(k === 'title' && (!f.slug || f.slug === slugify(f.title)) ? { slug: slugify(v) } : {}),
     }))
     setIsDirty(true)
-    // #9 — debounce autosave (30s, only for existing posts)
+    // #9 â€” debounce autosave (30s, only for existing posts)
     if (post?.id) {
       clearTimeout(autosaveTimer.current)
       autosaveTimer.current = setTimeout(async () => {
@@ -599,7 +599,7 @@ function PostEditor({ post, onSave, onCancel }) {
           </div>
         )}
 
-        {/* #15 — OG / Social Share Preview */}
+        {/* #15 â€” OG / Social Share Preview */}
         {(form.title || form.cover_image) && (() => {
           const ogTitle = form.title || 'Post Title'
           const ogDesc = form.excerpt ? (form.excerpt.length > 125 ? form.excerpt.slice(0, 122) + '...' : form.excerpt) : 'Add an excerpt to see it here.'
@@ -609,7 +609,7 @@ function PostEditor({ post, onSave, onCancel }) {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>SOCIAL SHARE PREVIEW</div>
               {/* Twitter/X Card */}
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>𝕏 / TWITTER</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>ð• / TWITTER</div>
                 <div style={{ border: '1px solid #2f3336', borderRadius: 12, overflow: 'hidden', maxWidth: 500, background: '#000' }}>
                   {form.cover_image && (
                     <img src={form.cover_image} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
@@ -643,7 +643,7 @@ function PostEditor({ post, onSave, onCancel }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
             <label style={{ ...S.label, marginBottom: 0 }}>Content *</label>
             <button type="button" onClick={() => { setMediaTarget('content'); setMediaOpen(true) }}
-              style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.3)', fontSize: 10, padding: '5px 12px' }}>
+              style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 10, padding: '5px 12px' }}>
               Insert Media
             </button>
           </div>
@@ -668,14 +668,14 @@ function PostEditor({ post, onSave, onCancel }) {
 
         {/* Scheduled date */}
         <div>
-          <label style={S.label}>Scheduled Publish Date <span style={{ color: 'var(--muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — leave blank to publish immediately)</span></label>
+          <label style={S.label}>Scheduled Publish Date <span style={{ color: 'var(--muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional â€” leave blank to publish immediately)</span></label>
           <DateTimePicker value={form.publish_at} onChange={v => set('publish_at', v)} placeholder="Publish immediately..." />
           {form.publish_at && new Date(form.publish_at) > new Date() && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, padding: '3px 10px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.35)', color: '#a855f7', borderRadius: 4 }}>
-                📅 SCHEDULED — {new Date(form.publish_at).toLocaleString()}
+                ðŸ“… SCHEDULED â€” {new Date(form.publish_at).toLocaleString()}
               </span>
-              <button type="button" onClick={() => set('publish_at', '')} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11 }}>✕ clear</button>
+              <button type="button" onClick={() => set('publish_at', '')} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11 }}>âœ• clear</button>
             </div>
           )}
         </div>
@@ -683,26 +683,26 @@ function PostEditor({ post, onSave, onCancel }) {
         {/* Actions */}
         <div style={{ display: 'flex', gap: 10, paddingTop: 16, borderTop: '1px solid var(--border)', flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={() => handleSave(true)} disabled={saving} style={{ ...S.btn(), opacity: saving ? 0.7 : 1, flex: isMobile ? 1 : 'unset' }}>
-            {saving ? 'SAVING...' : '🚀 PUBLISH'}
+            {saving ? 'SAVING...' : 'ðŸš€ PUBLISH'}
           </button>
-          {/* #7 — Schedule button: visible only when publish_at is set to a future date */}
+          {/* #7 â€” Schedule button: visible only when publish_at is set to a future date */}
           {form.publish_at && new Date(form.publish_at) > new Date() && (
             <button onClick={() => handleSave(false)} disabled={saving}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '10px 22px',
                 background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.4)',
                 color: '#a855f7', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1,
                 flex: isMobile ? 1 : 'unset' }}>
-              📅 SCHEDULE
+              ðŸ“… SCHEDULE
             </button>
           )}
           <button onClick={() => handleSave(false)} disabled={saving} style={{ ...S.btn('var(--bg3)', 'var(--text)'), border: '1px solid var(--border)', opacity: saving ? 0.7 : 1, flex: isMobile ? 1 : 'unset' }}>
-            💾 DRAFT
+            ðŸ’¾ DRAFT
           </button>
-          {/* #9 — Autosave status indicator */}
-          {autoStatus === 'saving' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 1 }}>⏳ Autosaving…</span>}
-          {autoStatus === 'saved'  && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>✓ Autosaved {savedAt ? new Date(savedAt).toLocaleTimeString() : ''}</span>}
-          {autoStatus === 'error'  && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', letterSpacing: 1 }}>⚠ Autosave failed</span>}
-          {autoStatus === 'idle' && isDirty && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ffd700', letterSpacing: 1 }}>● unsaved changes</span>}
+          {/* #9 â€” Autosave status indicator */}
+          {autoStatus === 'saving' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 1 }}>â³ Autosavingâ€¦</span>}
+          {autoStatus === 'saved'  && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>âœ“ Autosaved {savedAt ? new Date(savedAt).toLocaleTimeString() : ''}</span>}
+          {autoStatus === 'error'  && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', letterSpacing: 1 }}>âš  Autosave failed</span>}
+          {autoStatus === 'idle' && isDirty && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ffd700', letterSpacing: 1 }}>â— unsaved changes</span>}
         </div>
 
       </div>

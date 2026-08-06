@@ -19,14 +19,14 @@ export default function NotificationBell({ forumUser }) {
 
   const unreadCount = notifications.filter(n => !n.read).length
 
-  /* ── init push-state from browser ─────────────────────────────────────── */
+  /* â”€â”€ init push-state from browser â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (!isPushSupported()) { setPushState('unsupported'); return }
     setPushState(getPushPermission())   // 'default' | 'granted' | 'denied'
   }, [])
 
-  /* ── notification fetch ────────────────────────────────────────────────── */
+  /* â”€â”€ notification fetch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const fetchNotifications = async () => {
     if (!forumUser || forumUser._staff) return
     setLoading(true)
@@ -42,7 +42,7 @@ export default function NotificationBell({ forumUser }) {
     return () => clearInterval(interval)
   }, [forumUser])
 
-  /* ── close on outside click ───────────────────────────────────────────── */
+  /* â”€â”€ close on outside click â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   useEffect(() => {
     const handler = e => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setOpen(false)
@@ -51,7 +51,7 @@ export default function NotificationBell({ forumUser }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  /* ── mark read helpers ─────────────────────────────────────────────────── */
+  /* â”€â”€ mark read helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const markAllRead = async () => {
     try {
       await api.post('/forum/notifications/read-all')
@@ -66,7 +66,7 @@ export default function NotificationBell({ forumUser }) {
     } catch {}
   }
 
-  /* ── web push handlers ─────────────────────────────────────────────────── */
+  /* â”€â”€ web push handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const handleEnablePush = async () => {
     setPushState('loading')
     const result = await subscribeToPush(api)
@@ -97,7 +97,7 @@ export default function NotificationBell({ forumUser }) {
 
   if (!forumUser || forumUser._staff) return null
 
-  /* ── push CTA chip rendered inside the dropdown footer ──────────────────── */
+  /* â”€â”€ push CTA chip rendered inside the dropdown footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const PushCTA = () => {
     if (pushState === 'unsupported') return null
 
@@ -105,7 +105,7 @@ export default function NotificationBell({ forumUser }) {
       <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>
-          🔔 Push notifications ON
+          ðŸ”” Push notifications ON
         </span>
         <button onClick={handleDisablePush}
           style={{ background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
@@ -121,7 +121,7 @@ export default function NotificationBell({ forumUser }) {
     if (pushState === 'denied') return (
       <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', letterSpacing: 1 }}>
-          🔕 Notifications blocked — enable in browser settings
+          ðŸ”• Notifications blocked â€” enable in browser settings
         </span>
       </div>
     )
@@ -129,22 +129,22 @@ export default function NotificationBell({ forumUser }) {
     if (pushState === 'loading') return (
       <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)',
         fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>
-        ⏳ Requesting permission…
+        â³ Requesting permissionâ€¦
       </div>
     )
 
-    // 'default' — show enable button
+    // 'default' â€” show enable button
     return (
       <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
         <button onClick={handleEnablePush}
           style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
             gap: 7, padding: '8px 14px', borderRadius: 5, cursor: 'pointer', transition: 'all 0.18s',
-            background: 'rgba(0,255,136,0.07)', border: '1px solid rgba(0,255,136,0.3)',
+            background: 'color-mix(in srgb, var(--green) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)',
             color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10,
             letterSpacing: 1.5, fontWeight: 700 }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,255,136,0.14)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(0,255,136,0.15)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,255,136,0.07)'; e.currentTarget.style.boxShadow = 'none' }}>
-          🔔 ENABLE NOTIFICATIONS
+          onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 14%, transparent)'; e.currentTarget.style.boxShadow = '0 0 12px color-mix(in srgb, var(--green) 15%, transparent)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 7%, transparent)'; e.currentTarget.style.boxShadow = 'none' }}>
+          ðŸ”” ENABLE NOTIFICATIONS
         </button>
       </div>
     )
@@ -155,14 +155,14 @@ export default function NotificationBell({ forumUser }) {
       {/* Bell button */}
       <button
         onClick={() => { setOpen(o => !o); if (!open) fetchNotifications() }}
-        aria-label={`Notifications${unreadCount > 0 ? ` — ${unreadCount} unread` : ''}`}
+        aria-label={`Notifications${unreadCount > 0 ? ` â€” ${unreadCount} unread` : ''}`}
         aria-haspopup="true" aria-expanded={open} title="Notifications"
         style={{ position: 'relative', padding: '5px 10px',
-          background: open ? 'rgba(0,255,136,0.08)' : 'var(--bg3)',
-          border: `1px solid ${open ? 'rgba(0,255,136,0.3)' : 'var(--border)'}`,
+          background: open ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'var(--bg3)',
+          border: `1px solid ${open ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`,
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 0.2s', color: unreadCount > 0 ? 'var(--green)' : 'var(--muted)' }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,255,136,0.3)'; e.currentTarget.style.color = 'var(--green)' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--green) 30%, transparent)'; e.currentTarget.style.color = 'var(--green)' }}
         onMouseLeave={e => { if (!open) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = unreadCount > 0 ? 'var(--green)' : 'var(--muted)' } }}
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -211,7 +211,7 @@ export default function NotificationBell({ forumUser }) {
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>LOADING...</div>
             ) : notifications.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>🔔</div>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>ðŸ””</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>NO NOTIFICATIONS YET</div>
               </div>
             ) : (
@@ -220,10 +220,10 @@ export default function NotificationBell({ forumUser }) {
                   onClick={() => { markRead(notif._id); setOpen(false) }}
                   style={{ display: 'block', padding: '14px 16px',
                     borderBottom: '1px solid var(--border)', textDecoration: 'none',
-                    background: notif.read ? 'transparent' : 'rgba(0,255,136,0.03)',
+                    background: notif.read ? 'transparent' : 'color-mix(in srgb, var(--green) 3%, transparent)',
                     transition: 'background 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,212,255,0.05)'}
-                  onMouseLeave={e => e.currentTarget.style.background = notif.read ? 'transparent' : 'rgba(0,255,136,0.03)'}>
+                  onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--cyan) 5%, transparent)'}
+                  onMouseLeave={e => e.currentTarget.style.background = notif.read ? 'transparent' : 'color-mix(in srgb, var(--green) 3%, transparent)'}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                     {!notif.read && (
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', marginTop: 5, flexShrink: 0 }} />

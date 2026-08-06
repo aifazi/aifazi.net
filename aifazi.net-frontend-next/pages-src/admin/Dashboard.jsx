@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useNavigate } from '@/lib/router-compat'
@@ -117,7 +117,7 @@ function PermissionEditor({ value = {}, onChange }) {
             <div style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--text)' }}>{label}<div style={{ color:'var(--muted)', fontSize:8, marginTop:2 }}>{module}</div></div>
             <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
               {PERMISSION_ACTIONS.map(action => (
-                <button type="button" key={action} onClick={() => toggle(module, action)} style={{ fontFamily:'var(--font-mono)', fontSize:8, letterSpacing:.5, border:`1px solid ${(value?.[module]||[]).includes(action)?'rgba(0,255,136,.55)':'var(--border)'}`, background:(value?.[module]||[]).includes(action)?'rgba(0,255,136,.12)':'transparent', color:(value?.[module]||[]).includes(action)?'var(--green)':'var(--muted)', borderRadius:5, padding:'3px 6px', cursor:'pointer' }}>{action}</button>
+                <button type="button" key={action} onClick={() => toggle(module, action)} style={{ fontFamily:'var(--font-mono)', fontSize:8, letterSpacing:.5, border:`1px solid ${(value?.[module]||[]).includes(action)?'color-mix(in srgb, var(--green) 55%, transparent)':'var(--border)'}`, background:(value?.[module]||[]).includes(action)?'color-mix(in srgb, var(--green) 12%, transparent)':'transparent', color:(value?.[module]||[]).includes(action)?'var(--green)':'var(--muted)', borderRadius:5, padding:'3px 6px', cursor:'pointer' }}>{action}</button>
               ))}
             </div>
           </div>
@@ -453,8 +453,8 @@ function Dashboard({ onLogout }) {
   ]
 
   const ROLE_COLORS = {
-    admin:     { bg: 'rgba(0,255,136,0.1)',  border: 'rgba(0,255,136,0.4)',  color: 'var(--green)' },
-    moderator: { bg: 'rgba(0,212,255,0.1)',  border: 'rgba(0,212,255,0.4)',  color: 'var(--cyan)'  },
+    admin:     { bg: 'color-mix(in srgb, var(--green) 10%, transparent)',  border: 'color-mix(in srgb, var(--green) 40%, transparent)',  color: 'var(--green)' },
+    moderator: { bg: 'color-mix(in srgb, var(--cyan) 10%, transparent)',  border: 'color-mix(in srgb, var(--cyan) 40%, transparent)',  color: 'var(--cyan)'  },
     editor:    { bg: 'rgba(255,107,53,0.1)', border: 'rgba(255,107,53,0.4)', color: '#ff6b35'      },
     chat:      { bg: 'rgba(255,215,0,0.1)',  border: 'rgba(255,215,0,0.4)',  color: '#ffd700'      },
   }
@@ -493,14 +493,14 @@ function Dashboard({ onLogout }) {
 
         /* ── Quick-action cards ── */
         .admin-quick-action { transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; }
-        .admin-quick-action:hover { border-color: var(--cyan) !important; background: rgba(0,212,255,0.06) !important; box-shadow: 0 4px 16px rgba(0,212,255,0.08); }
+        .admin-quick-action:hover { border-color: var(--cyan) !important; background: color-mix(in srgb, var(--cyan) 6%, transparent) !important; box-shadow: 0 4px 16px color-mix(in srgb, var(--cyan) 8%, transparent); }
 
         /* ── View-transition fade ── */
         @keyframes adminViewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         .admin-view { animation: adminViewIn 0.25s ease; }
 
         /* ── Post-list card hover ── */
-        .admin-post-row:hover { border-color: var(--cyan) !important; background: rgba(0,212,255,0.04) !important; }
+        .admin-post-row:hover { border-color: var(--cyan) !important; background: color-mix(in srgb, var(--cyan) 4%, transparent) !important; }
         .admin-post-row { transition: border-color 0.15s, background 0.15s; }
       `}</style>
       <div style={{ display: 'flex', flex: 1, height: '100%', position: 'relative', zIndex: 1, minHeight: 0, overflow: 'hidden' }}>
@@ -551,7 +551,7 @@ function Dashboard({ onLogout }) {
                 subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 actions={<>
                   <button onClick={fetchDashStats} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> REFRESH</button>
-                  <button onClick={() => setView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.3)', color: 'var(--green)', cursor: 'pointer', borderRadius: 6 }}> DB MONITOR</button>
+                  <button onClick={() => setView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer', borderRadius: 6 }}> DB MONITOR</button>
                   <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> ⌨</button>
                 </>}
               />
@@ -664,7 +664,7 @@ function Dashboard({ onLogout }) {
                       </div>
                       {dashStats.recentPosts.map(post => (
                         <div key={post.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '11px 14px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, padding: '2px 6px', border: '1px solid', borderColor: post.published ? 'rgba(0,255,136,0.4)' : 'var(--border)', color: post.published ? 'var(--green)' : 'var(--muted)', background: post.published ? 'rgba(0,255,136,0.06)' : 'transparent', flexShrink: 0 }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, padding: '2px 6px', border: '1px solid', borderColor: post.published ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)', color: post.published ? 'var(--green)' : 'var(--muted)', background: post.published ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent', flexShrink: 0 }}>
                             {post.published ? 'LIVE' : 'DRAFT'}
                           </span>
                           <div style={{ flex: 1, fontFamily: 'var(--font-display)', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</div>
@@ -684,12 +684,12 @@ function Dashboard({ onLogout }) {
                 eyebrow="CONTENT"
                 title="Content Hub"
                 actions={<>
-                  <button onClick={() => setView('content')} style={{ ...S.btn('rgba(0,255,136,0.08)', 'var(--green)'), border: '1px solid rgba(0,255,136,0.35)', fontSize: 10, padding: '8px 14px' }}>POSTS</button>
-                  <button onClick={() => { setEditingPost(null); setView('editor') }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 10, padding: '8px 14px' }}>NEW POST</button>
+                  <button onClick={() => setView('content')} style={{ ...S.btn('color-mix(in srgb, var(--green) 8%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', fontSize: 10, padding: '8px 14px' }}>POSTS</button>
+                  <button onClick={() => { setEditingPost(null); setView('editor') }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', fontSize: 10, padding: '8px 14px' }}>NEW POST</button>
                   <button onClick={() => setView('forum')} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '8px 14px' }}>FORUM ADMIN</button>
                   {selectedPosts.size > 0 && (
                     <>
-                      <button onClick={() => bulkPublishPosts(true)} style={{ ...S.btn('transparent', 'var(--green)'), border: '1px solid rgba(0,255,136,0.4)', fontSize: 10, padding: '8px 14px' }}> PUBLISH ({selectedPosts.size})</button>
+                      <button onClick={() => bulkPublishPosts(true)} style={{ ...S.btn('transparent', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', fontSize: 10, padding: '8px 14px' }}> PUBLISH ({selectedPosts.size})</button>
                       <button onClick={() => bulkPublishPosts(false)} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '8px 14px' }}> UNPUBLISH ({selectedPosts.size})</button>
                       <button onClick={bulkDeletePosts} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.4)', fontSize: 10, padding: '8px 14px' }}> DELETE ({selectedPosts.size})</button>
                     </>
@@ -712,7 +712,7 @@ function Dashboard({ onLogout }) {
                   {[['all','All'],['live','Live'],['draft','Draft']].map(([v, l]) => (
                     <button key={v} onClick={() => setPostFilter(v)} style={{
                       fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 12px', cursor: 'pointer',
-                      background: postFilter === v ? 'rgba(0,255,136,0.12)' : 'transparent',
+                      background: postFilter === v ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
                       color: postFilter === v ? 'var(--green)' : 'var(--muted)', border: 'none',
                       borderRight: '1px solid var(--border)',
                     }}>{l}</button>
@@ -748,7 +748,7 @@ function Dashboard({ onLogout }) {
                   )}
                 </div>
               ) : filteredPosts.map(post => (
-                <div key={post.id} className="admin-post-row" style={{ ...S.card, borderColor: selectedPosts.has(post.id) ? 'rgba(0,255,136,0.4)' : undefined }}
+                <div key={post.id} className="admin-post-row" style={{ ...S.card, borderColor: selectedPosts.has(post.id) ? 'color-mix(in srgb, var(--green) 40%, transparent)' : undefined }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                     <Checkbox
@@ -781,7 +781,7 @@ function Dashboard({ onLogout }) {
                           )
                         })()}
                       </div>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, padding: '3px 8px', border: '1px solid', borderColor: post.published ? 'rgba(0,255,136,0.4)' : 'var(--border)', color: post.published ? 'var(--green)' : 'var(--muted)', background: post.published ? 'rgba(0,255,136,0.06)' : 'transparent', flexShrink: 0 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, padding: '3px 8px', border: '1px solid', borderColor: post.published ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)', color: post.published ? 'var(--green)' : 'var(--muted)', background: post.published ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent', flexShrink: 0 }}>
                         {post.published ? 'LIVE' : 'DRAFT'}
                       </span>
                     </div>
@@ -816,12 +816,12 @@ function Dashboard({ onLogout }) {
                 eyebrow="COMMUNITY"
                 title="Communications"
                 actions={<>
-                  <button onClick={() => setView('communications')} style={{ ...S.btn('rgba(0,255,136,0.08)', 'var(--green)'), border: '1px solid rgba(0,255,136,0.35)', fontSize: 10, padding: '8px 14px' }}>CONTACTS</button>
-                  <button onClick={() => setView('newsletter')} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 10, padding: '8px 14px' }}>NEWSLETTER</button>
+                  <button onClick={() => setView('communications')} style={{ ...S.btn('color-mix(in srgb, var(--green) 8%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', fontSize: 10, padding: '8px 14px' }}>CONTACTS</button>
+                  <button onClick={() => setView('newsletter')} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', fontSize: 10, padding: '8px 14px' }}>NEWSLETTER</button>
                   {selectedContacts.size > 0 && (
                     <>
                       <button onClick={() => { setReplyModal('bulk'); setReplySubject('Re: Your message'); setReplyBody('') }}
-                        style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.4)', fontSize: 10, padding: '8px 14px' }}>
+                        style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', fontSize: 10, padding: '8px 14px' }}>
                         📨 BULK REPLY ({selectedContacts.size})
                       </button>
                       <button onClick={bulkDeleteContacts} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.4)', fontSize: 10, padding: '8px 14px' }}> DELETE ({selectedContacts.size})</button>
@@ -839,7 +839,7 @@ function Dashboard({ onLogout }) {
                   <button key={v} onClick={() => setContactFilter(v)} style={{
                     fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
                     padding: '8px 16px', cursor: 'pointer', border: 'none',
-                    background: contactFilter === v ? 'rgba(0,255,136,0.12)' : 'transparent',
+                    background: contactFilter === v ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
                     color: contactFilter === v ? 'var(--green)' : 'var(--muted)',
                     borderRight: '1px solid var(--border)',
                   }}>{l}</button>
@@ -852,7 +852,7 @@ function Dashboard({ onLogout }) {
                   ) : 'No messages yet.'}
                 </div>
               ) : filteredContacts.map(c => (
-                <div key={c.id} style={{ ...S.card, borderColor: selectedContacts.has(c.id) ? 'rgba(0,255,136,0.4)' : undefined }}>
+                <div key={c.id} style={{ ...S.card, borderColor: selectedContacts.has(c.id) ? 'color-mix(in srgb, var(--green) 40%, transparent)' : undefined }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                       <Checkbox
@@ -868,10 +868,10 @@ function Dashboard({ onLogout }) {
                     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{formatDate(c.created_at)}</span>
                       {c.replied && (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, padding: '3px 7px', background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.3)', color: 'var(--green)', borderRadius: 3 }}> REPLIED</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, padding: '3px 7px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', borderRadius: 3 }}> REPLIED</span>
                       )}
                       <button onClick={() => { setReplyModal(c); setReplySubject(`Re: ${c.subject || 'Your message'}`); setReplyBody('') }}
-                        style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.3)', fontSize: 10, padding: '4px 10px' }}>
+                        style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 10, padding: '4px 10px' }}>
                          REPLY
                       </button>
                       <button onClick={() => handleDeleteContact(c.id)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 10, padding: '4px 10px' }}>DEL</button>
@@ -911,7 +911,7 @@ function Dashboard({ onLogout }) {
                 </div>
 
                 {/* Templates */}
-                <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(0,212,255,0.02)' }}>
+                <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'color-mix(in srgb, var(--cyan) 2%, transparent)' }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>QUICK TEMPLATES</div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {REPLY_TEMPLATES.map(tpl => (
@@ -1036,7 +1036,7 @@ function Dashboard({ onLogout }) {
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--border)' }}>joined {formatDate(s.createdAt)}</span>
                     </div>
                   )}
-                  <button onClick={() => { setEditingStaff(s); setEditStaffForm({ username: s.username, email: s.email, role: s.role, password: '', forum_user_id: s.forum_user_id || '', module_permissions: s.module_permissions || s.permissions || permissionForRole(s.role) }) }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.3)', fontSize: 10, padding: '6px 12px', flexShrink: 0 }}>EDIT</button>
+                  <button onClick={() => { setEditingStaff(s); setEditStaffForm({ username: s.username, email: s.email, role: s.role, password: '', forum_user_id: s.forum_user_id || '', module_permissions: s.module_permissions || s.permissions || permissionForRole(s.role) }) }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 10, padding: '6px 12px', flexShrink: 0 }}>EDIT</button>
                   <button onClick={() => handleDeleteStaff(s._id, s.username)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 10, padding: '6px 12px', flexShrink: 0 }}>REMOVE</button>
                 </div>
               ))}
@@ -1049,7 +1049,7 @@ function Dashboard({ onLogout }) {
                       <div>
                         <label style={S.label}>Account type</label>
                         <div style={{ display:'flex', gap:8 }}>
-                          {['standalone','existing'].map(m => <button key={m} type="button" onClick={() => setNewStaff(p => ({ ...p, mode:m, forum_user_id: m === 'standalone' ? '' : p.forum_user_id, password: m === 'existing' ? '' : p.password }))} style={{ flex:1, padding:'9px', fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:1.5, background:newStaff.mode===m?'rgba(0,255,136,.1)':'transparent', color:newStaff.mode===m?'var(--green)':'var(--muted)', border:`1px solid ${newStaff.mode===m?'rgba(0,255,136,.4)':'var(--border)'}`, cursor:'pointer' }}>{m === 'existing' ? 'SELECT USER' : 'STANDALONE'}</button>)}
+                          {['standalone','existing'].map(m => <button key={m} type="button" onClick={() => setNewStaff(p => ({ ...p, mode:m, forum_user_id: m === 'standalone' ? '' : p.forum_user_id, password: m === 'existing' ? '' : p.password }))} style={{ flex:1, padding:'9px', fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:1.5, background:newStaff.mode===m?'color-mix(in srgb, var(--green) 10%, transparent)':'transparent', color:newStaff.mode===m?'var(--green)':'var(--muted)', border:`1px solid ${newStaff.mode===m?'color-mix(in srgb, var(--green) 40%, transparent)':'var(--border)'}`, cursor:'pointer' }}>{m === 'existing' ? 'SELECT USER' : 'STANDALONE'}</button>)}
                         </div>
                       </div>
                       {newStaff.mode === 'existing' && (

@@ -9,44 +9,44 @@ import api from '@/lib/api'
 
 const DEFAULT_SKILLS = [
   {
-    icon: '🌐', title: 'Networking & Infrastructure', tagline: 'Router, switch, server, and wireless deployment across enterprise environments',
+    icon: 'ðŸŒ', title: 'Networking & Infrastructure', tagline: 'Router, switch, server, and wireless deployment across enterprise environments',
     items: [
       { name: 'Router / Switch / Server Config', pct: 90 },
       { name: 'Wireless AP & Controller', pct: 85 },
       { name: 'NAS Storage Management', pct: 82 },
       { name: 'Network Fault Diagnosis', pct: 88 },
     ],
-    proven: 'Multi-site deployments · Wireless controller setups · NAS configuration',
+    proven: 'Multi-site deployments Â· Wireless controller setups Â· NAS configuration',
   },
   {
-    icon: '🧠', title: 'Systems & Hardware', tagline: 'End-to-end hardware troubleshooting, OS deployment, and server administration',
+    icon: 'ðŸ§ ', title: 'Systems & Hardware', tagline: 'End-to-end hardware troubleshooting, OS deployment, and server administration',
     items: [
       { name: 'Hardware Troubleshooting', pct: 92 },
       { name: 'OS & Application Install', pct: 90 },
       { name: 'Server Backup & Restore', pct: 85 },
       { name: 'System Failure Recovery', pct: 86 },
     ],
-    proven: 'Server backup/restore · Desktop/Laptop setup · OS deployments',
+    proven: 'Server backup/restore Â· Desktop/Laptop setup Â· OS deployments',
   },
   {
-    icon: '🔒', title: 'Security & User Management', tagline: 'Account provisioning, access control, and endpoint security enforcement',
+    icon: 'ðŸ”’', title: 'Security & User Management', tagline: 'Account provisioning, access control, and endpoint security enforcement',
     items: [
       { name: 'Antivirus / Anti-Malware', pct: 88 },
       { name: 'User Account Management', pct: 90 },
       { name: 'Password Management', pct: 88 },
       { name: 'Etisalat Account Admin', pct: 85 },
     ],
-    proven: 'Etisalat accounts · Role-based provisioning · Security enforcement',
+    proven: 'Etisalat accounts Â· Role-based provisioning Â· Security enforcement',
   },
   {
-    icon: '🛠️', title: 'IT Support & Operations', tagline: '24×7 helpdesk, service request management, and end-user support',
+    icon: 'ðŸ› ï¸', title: 'IT Support & Operations', tagline: '24Ã—7 helpdesk, service request management, and end-user support',
     items: [
-      { name: '24×7 Helpdesk Support', pct: 90 },
+      { name: '24Ã—7 Helpdesk Support', pct: 90 },
       { name: 'Service Request Management', pct: 88 },
       { name: 'End-User Training', pct: 82 },
       { name: 'Vendor Communication', pct: 80 },
     ],
-    proven: '24/7 incident response · Store & office setups · Supplier coordination',
+    proven: '24/7 incident response Â· Store & office setups Â· Supplier coordination',
   },
 ]
 
@@ -55,7 +55,7 @@ const SKILL_FIELDS = [
   { key: 'pct', label: 'Proficiency %', type: 'number' },
 ]
 
-// ── Animated skill bar — triggers on intersection ────────────────────────────
+// â”€â”€ Animated skill bar â€” triggers on intersection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SkillBar({ pct }) {
   const barRef = useRef()
   const [active, setActive] = useState(false)
@@ -82,9 +82,9 @@ function SkillBar({ pct }) {
       ? 'linear-gradient(90deg,#00d4ff,#7c5cbf)'
       : 'linear-gradient(90deg,#ff6b35,#ff4757)'
   const glow = pct >= 85
-    ? '0 0 10px rgba(0,255,136,0.55)'
+    ? '0 0 10px color-mix(in srgb, var(--green) 55%, transparent)'
     : pct >= 70
-      ? '0 0 10px rgba(0,212,255,0.45)'
+      ? '0 0 10px color-mix(in srgb, var(--cyan) 45%, transparent)'
       : '0 0 10px rgba(255,107,53,0.45)'
 
   return (
@@ -115,7 +115,7 @@ function SkillBar({ pct }) {
   )
 }
 
-// ── Per-skill row (name + bar) ────────────────────────────────────────────────
+// â”€â”€ Per-skill row (name + bar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SkillItem({ skill, catIdx, skillIdx }) {
   const { value: livePct } = useInlineEdit(`skills.cat.${catIdx}.item.${skillIdx}.pct`, skill.pct)
   const pct = Number(livePct) || skill.pct
@@ -134,7 +134,7 @@ function SkillItem({ skill, catIdx, skillIdx }) {
   )
 }
 
-// ── Skills list inside a category card ───────────────────────────────────────
+// â”€â”€ Skills list inside a category card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SkillList({ catIdx, items, isAdmin, onUpdate }) {
   const [editIdx, setEditIdx] = useState(null)
   const [draft, setDraft]     = useState({})
@@ -155,9 +155,9 @@ function SkillList({ catIdx, items, isAdmin, onUpdate }) {
           <SkillItem skill={skill} catIdx={catIdx} skillIdx={si} />
           {isAdmin && (
             <div className="sk-item-toolbar" style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: 3, opacity: 0, transition: 'opacity 0.2s', zIndex: 5 }}>
-              {['↑','↓'].map((a, di) => <button key={a} onClick={() => moveItem(si, di === 0 ? -1 : 1)} style={toolBtn}>{a}</button>)}
-              <button onClick={() => openEdit(si)} style={{ ...toolBtn, color: 'var(--cyan)' }}>✎</button>
-              <button onClick={() => deleteItem(si)} style={{ ...toolBtn, color: 'var(--red)' }}>✕</button>
+              {['â†‘','â†“'].map((a, di) => <button key={a} onClick={() => moveItem(si, di === 0 ? -1 : 1)} style={toolBtn}>{a}</button>)}
+              <button onClick={() => openEdit(si)} style={{ ...toolBtn, color: 'var(--cyan)' }}>âœŽ</button>
+              <button onClick={() => deleteItem(si)} style={{ ...toolBtn, color: 'var(--red)' }}>âœ•</button>
             </div>
           )}
         </div>
@@ -165,16 +165,16 @@ function SkillList({ catIdx, items, isAdmin, onUpdate }) {
       {isAdmin && (
         <button
           onClick={() => openEdit(-1)}
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '7px 14px', marginTop: 8, background: 'rgba(0,255,136,0.07)', border: '1px dashed rgba(0,255,136,0.4)', color: 'var(--green)', cursor: 'pointer', width: '100%', transition: 'all 0.2s', borderRadius: 2 }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,255,136,0.14)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,255,136,0.07)'}
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '7px 14px', marginTop: 8, background: 'color-mix(in srgb, var(--green) 7%, transparent)', border: '1px dashed color-mix(in srgb, var(--green) 40%, transparent)', color: 'var(--green)', cursor: 'pointer', width: '100%', transition: 'all 0.2s', borderRadius: 2 }}
+          onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 14%, transparent)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 7%, transparent)'}
         >+ Add Skill</button>
       )}
       {editIdx !== null && (
         <>
           <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} />
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px rgba(0,255,136,0.15)', padding: 32, width: '100%', maxWidth: 420, zIndex: 99996 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD SKILL' : '✎ EDIT SKILL'}</div>
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px color-mix(in srgb, var(--green) 15%, transparent)', padding: 32, width: '100%', maxWidth: 420, zIndex: 99996 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD SKILL' : 'âœŽ EDIT SKILL'}</div>
             {SKILL_FIELDS.map(f => (
               <div key={f.key} style={{ marginBottom: 16 }}>
                 <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{f.label}</label>
@@ -193,7 +193,7 @@ function SkillList({ catIdx, items, isAdmin, onUpdate }) {
   )
 }
 
-// ── Category card ─────────────────────────────────────────────────────────────
+// â”€â”€ Category card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SkillCategory({ cat, i, isAdmin, cats, onCatsChange }) {
   const ref     = useReveal()
   const cardRef = useRef(null)
@@ -207,9 +207,9 @@ function SkillCategory({ cat, i, isAdmin, cats, onCatsChange }) {
   }, [])
   const handleMouseEnter = useCallback(() => {
     const el = cardRef.current; if (!el) return
-    el.style.borderColor = 'rgba(0,255,136,0.4)'
+    el.style.borderColor = 'color-mix(in srgb, var(--green) 40%, transparent)'
     el.style.transform   = 'translateY(-6px) scale(1.01)'
-    el.style.boxShadow   = '0 20px 60px rgba(0,0,0,0.4),0 0 0 1px rgba(0,255,136,0.15),inset 0 1px 0 rgba(0,255,136,0.08)'
+    el.style.boxShadow   = '0 20px 60px rgba(0,0,0,0.4),0 0 0 1px color-mix(in srgb, var(--green) 15%, transparent),inset 0 1px 0 color-mix(in srgb, var(--green) 8%, transparent)'
     el.querySelector('.sk-scan')?.classList.add('sk-scan--active')
   }, [])
   const handleMouseLeave = useCallback(() => {
@@ -244,17 +244,17 @@ function SkillCategory({ cat, i, isAdmin, cats, onCatsChange }) {
           <span className="sk-corner sk-corner--tl" />
           <span className="sk-corner sk-corner--br" />
 
-          {/* Icon — editable via EditableIcon or IconPickerModal in CatEditModal */}
+          {/* Icon â€” editable via EditableIcon or IconPickerModal in CatEditModal */}
           <div style={{ fontSize: 28, marginBottom: 16, position: 'relative', zIndex: 1 }}>
             <IconDisplay value={cat.icon} size={28} />
           </div>
 
-          {/* Category title — admin-editable inline */}
+          {/* Category title â€” admin-editable inline */}
           <div style={{ fontFamily: 'var(--font-code)', fontSize: 12, letterSpacing: 3, color: 'var(--cyan)', textTransform: 'uppercase', marginBottom: 8, position: 'relative', zIndex: 1 }}>
             <EditableText contentKey={`skills.cat.${i}.title`} defaultValue={cat.title} />
           </div>
 
-          {/* Tagline — admin-editable inline */}
+          {/* Tagline â€” admin-editable inline */}
           {cat.tagline !== undefined && (
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 24, opacity: 0.8, position: 'relative', zIndex: 1 }}>
               <EditableText contentKey={`skills.cat.${i}.tagline`} defaultValue={cat.tagline} />
@@ -266,10 +266,10 @@ function SkillCategory({ cat, i, isAdmin, cats, onCatsChange }) {
             <SkillList catIdx={i} items={cat.items || []} isAdmin={isAdmin} onUpdate={updateItems} />
           </div>
 
-          {/* Proof tags — each tag is individually editable */}
+          {/* Proof tags â€” each tag is individually editable */}
           {cat.proven && (
             <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexWrap: 'wrap', gap: 6, position: 'relative', zIndex: 1 }}>
-              {cat.proven.split('·').map(p => p.trim()).filter(Boolean).map((p, pi) => (
+              {cat.proven.split('Â·').map(p => p.trim()).filter(Boolean).map((p, pi) => (
                 <span key={pi} className="sk-tag">
                   <EditableText contentKey={`skills.cat.${i}.tag.${pi}`} defaultValue={p} />
                 </span>
@@ -282,21 +282,21 @@ function SkillCategory({ cat, i, isAdmin, cats, onCatsChange }) {
   )
 }
 
-// ── Category editor modal ─────────────────────────────────────────────────────
+// â”€â”€ Category editor modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CatEditModal({ cat, onSave, onClose }) {
-  const [draft, setDraft]   = useState(cat ? { ...cat } : { icon: '🌐', title: '', tagline: '', proven: '' })
+  const [draft, setDraft]   = useState(cat ? { ...cat } : { icon: 'ðŸŒ', title: '', tagline: '', proven: '' })
   const [iconOpen, setIconOpen] = useState(false)
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} />
-      <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px rgba(0,255,136,0.15)', padding: 32, width: '100%', maxWidth: 520, zIndex: 99996, maxHeight: '85vh', overflowY: 'auto' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{cat ? '✎ EDIT CATEGORY' : '+ ADD CATEGORY'}</div>
+      <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px color-mix(in srgb, var(--green) 15%, transparent)', padding: 32, width: '100%', maxWidth: 520, zIndex: 99996, maxHeight: '85vh', overflowY: 'auto' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{cat ? 'âœŽ EDIT CATEGORY' : '+ ADD CATEGORY'}</div>
 
         {/* Icon */}
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>ICON</label>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div onClick={() => setIconOpen(true)} style={{ width: 52, height: 52, fontSize: 28, background: 'var(--bg3)', border: '1px solid rgba(0,212,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: 4 }}>
+            <div onClick={() => setIconOpen(true)} style={{ width: 52, height: 52, fontSize: 28, background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: 4 }}>
               <IconDisplay value={draft.icon} size={36} />
             </div>
             <input value={draft.icon || ''} onChange={e => setDraft(d => ({ ...d, icon: e.target.value }))} placeholder="or paste emoji / lordicon URL" style={{ ...modalInput, marginBottom: 0, flex: 1 }} />
@@ -307,7 +307,7 @@ function CatEditModal({ cat, onSave, onClose }) {
         {[
           { key: 'title',   label: 'CATEGORY TITLE' },
           { key: 'tagline', label: 'SHORT DESCRIPTION' },
-          { key: 'proven',  label: 'PROOF POINTS (· separated)' },
+          { key: 'proven',  label: 'PROOF POINTS (Â· separated)' },
         ].map(f => (
           <div key={f.key} style={{ marginBottom: 16 }}>
             <label style={labelStyle}>{f.label}</label>
@@ -325,7 +325,7 @@ function CatEditModal({ cat, onSave, onClose }) {
   )
 }
 
-// ── Main Skills section ───────────────────────────────────────────────────────
+// â”€â”€ Main Skills section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function Skills() {
   const headerRef = useReveal()
   const titleRef  = useSplitTextReveal({ staggerMs: 40, fromY: 28 })
@@ -368,7 +368,7 @@ export default function Skills() {
   return (
     <section id="skills" style={{ padding: '120px 60px', position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)' }} className="skills-section">
 
-      {/* Section header — AnimatableWrapper lets admin pick entrance animation */}
+      {/* Section header â€” AnimatableWrapper lets admin pick entrance animation */}
       <AnimatableWrapper animKey="skills.header" label="Skills Section Header" currentAnim="fadeUp 0.8s both">
         <div ref={headerRef} className="fade-up section-header">
           <span className="section-tag">03 /</span>
@@ -389,15 +389,15 @@ export default function Skills() {
             <SkillCategory cat={cat} i={i} isAdmin={isAdmin} cats={cats} onCatsChange={handleCatsChange} />
             {isAdmin && (
               <div className="sk-cat-toolbar" style={{ position: 'absolute', top: 8, right: 8, zIndex: 20, display: 'flex', gap: 4, opacity: 0, transition: 'opacity 0.2s' }}>
-                {['↑','↓'].map((a, di) => <button key={a} onClick={() => moveCat(i, di === 0 ? -1 : 1)} style={toolBtn}>{a}</button>)}
-                <button onClick={() => openEditCat(i)} style={{ ...toolBtn, color: 'var(--cyan)' }}>✎</button>
-                <button onClick={() => deleteCat(i)}   style={{ ...toolBtn, color: 'var(--red)' }}>✕</button>
+                {['â†‘','â†“'].map((a, di) => <button key={a} onClick={() => moveCat(i, di === 0 ? -1 : 1)} style={toolBtn}>{a}</button>)}
+                <button onClick={() => openEditCat(i)} style={{ ...toolBtn, color: 'var(--cyan)' }}>âœŽ</button>
+                <button onClick={() => deleteCat(i)}   style={{ ...toolBtn, color: 'var(--red)' }}>âœ•</button>
               </div>
             )}
           </div>
         ))}
 
-        {/* Add Category — sits in the grid as an extra cell, auto-positioned */}
+        {/* Add Category â€” sits in the grid as an extra cell, auto-positioned */}
         {isAdmin && (
           <div className="sk-add-cell">
             <button onClick={openAddCat} className="sk-add-btn">
@@ -417,10 +417,10 @@ export default function Skills() {
       )}
 
       <style>{`
-        /* ── Grid ──────────────────────────────────────────────────────────────
+        /* â”€â”€ Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
            auto-fill + minmax: cards wrap automatically when new ones are added.
-           No fixed column count — works for 1 card or 20 cards.
-        ────────────────────────────────────────────────────────────────────── */
+           No fixed column count â€” works for 1 card or 20 cards.
+        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
         .skills-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 340px));
@@ -472,7 +472,7 @@ export default function Skills() {
           flex: 1;
           display: flex; flex-direction: column; align-items: center; justify-content: center;
           background: transparent;
-          border: 2px dashed rgba(0,255,136,0.25);
+          border: 2px dashed color-mix(in srgb, var(--green) 25%, transparent);
           color: var(--green);
           cursor: pointer;
           border-radius: 4px;
@@ -480,14 +480,14 @@ export default function Skills() {
           padding: 32px;
         }
         .sk-add-btn:hover {
-          background: rgba(0,255,136,0.05);
-          border-color: rgba(0,255,136,0.55);
+          background: color-mix(in srgb, var(--green) 5%, transparent);
+          border-color: color-mix(in srgb, var(--green) 55%, transparent);
         }
 
         /* Spotlight */
         .sk-spotlight {
           position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-          opacity: 0; background: radial-gradient(200px circle at var(--mx) var(--my), rgba(0,255,136,0.07) 0%, transparent 70%);
+          opacity: 0; background: radial-gradient(200px circle at var(--mx) var(--my), color-mix(in srgb, var(--green) 7%, transparent) 0%, transparent 70%);
           transition: opacity .3s ease; z-index: 0;
         }
         .sk-card:hover .sk-spotlight { opacity: 1; }
@@ -495,7 +495,7 @@ export default function Skills() {
         /* Scan line */
         .sk-scan {
           position: absolute; left: 0; right: 0; height: 2px;
-          background: linear-gradient(90deg,transparent,rgba(0,255,136,0.5),transparent);
+          background: linear-gradient(90deg,transparent,color-mix(in srgb, var(--green) 50%, transparent),transparent);
           top: -2px; pointer-events: none; z-index: 2; opacity: 0;
         }
         .sk-scan--active { opacity: 1; animation: scanLine 1.4s ease-out forwards; }
@@ -503,13 +503,13 @@ export default function Skills() {
 
         /* Corner accents */
         .sk-corner { position:absolute; width:14px; height:14px; pointer-events:none; transition:border-color .35s,width .35s,height .35s; z-index:3; }
-        .sk-corner--tl { top:8px;left:8px; border-top:1.5px solid rgba(0,255,136,0); border-left:1.5px solid rgba(0,255,136,0); }
-        .sk-corner--br { bottom:8px;right:8px; border-bottom:1.5px solid rgba(0,255,136,0); border-right:1.5px solid rgba(0,255,136,0); }
-        .sk-card:hover .sk-corner--tl,.sk-card:hover .sk-corner--br { width:20px;height:20px; border-color:rgba(0,255,136,0.7); }
+        .sk-corner--tl { top:8px;left:8px; border-top:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); border-left:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); }
+        .sk-corner--br { bottom:8px;right:8px; border-bottom:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); border-right:1.5px solid color-mix(in srgb, var(--green) 0%, transparent); }
+        .sk-card:hover .sk-corner--tl,.sk-card:hover .sk-corner--br { width:20px;height:20px; border-color:color-mix(in srgb, var(--green) 70%, transparent); }
 
         /* Proof tags */
-        .sk-tag { font-family:var(--font-mono);font-size:9px;letter-spacing:1px;padding:3px 8px; background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);color:var(--muted);border-radius:2px;transition:all .25s; }
-        .sk-card:hover .sk-tag { background:rgba(0,255,136,0.10);border-color:rgba(0,255,136,0.30);color:var(--cyan); }
+        .sk-tag { font-family:var(--font-mono);font-size:9px;letter-spacing:1px;padding:3px 8px; background:color-mix(in srgb, var(--green) 6%, transparent);border:1px solid color-mix(in srgb, var(--green) 15%, transparent);color:var(--muted);border-radius:2px;transition:all .25s; }
+        .sk-card:hover .sk-tag { background:color-mix(in srgb, var(--green) 10%, transparent);border-color:color-mix(in srgb, var(--green) 30%, transparent);color:var(--cyan); }
 
         /* responsive handled by globals.css */
       `}</style>
@@ -520,5 +520,5 @@ export default function Skills() {
 const toolBtn      = { fontFamily:'monospace',fontSize:11,padding:'4px 8px',background:'rgba(0,0,0,0.85)',border:'1px solid var(--border)',color:'var(--muted)',cursor:'pointer',backdropFilter:'blur(4px)',borderRadius:2 }
 const labelStyle   = { fontFamily:'var(--font-mono)',fontSize:10,letterSpacing:2,color:'var(--muted)',display:'block',marginBottom:6 }
 const modalInput   = { width:'100%',background:'var(--bg3)',border:'1px solid var(--border)',color:'var(--text)',fontFamily:'var(--font-display)',fontSize:15,padding:'10px 14px',outline:'none',boxSizing:'border-box' }
-const modalSaveBtn   = { flex:1,padding:'12px',background:'rgba(0,255,136,0.15)',border:'1px solid rgba(0,255,136,0.4)',color:'var(--green)',fontFamily:'var(--font-mono)',fontSize:11,letterSpacing:2,cursor:'pointer' }
+const modalSaveBtn   = { flex:1,padding:'12px',background:'color-mix(in srgb, var(--green) 15%, transparent)',border:'1px solid color-mix(in srgb, var(--green) 40%, transparent)',color:'var(--green)',fontFamily:'var(--font-mono)',fontSize:11,letterSpacing:2,cursor:'pointer' }
 const modalCancelBtn = { flex:1,padding:'12px',background:'transparent',border:'1px solid var(--border)',color:'var(--muted)',fontFamily:'var(--font-mono)',fontSize:11,letterSpacing:2,cursor:'pointer' }

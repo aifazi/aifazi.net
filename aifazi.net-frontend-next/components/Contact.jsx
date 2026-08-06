@@ -13,7 +13,7 @@ function FieldError({ msg }) {
       fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)',
       animation: 'fieldShake 0.35s ease-out',
     }}>
-      <span style={{ fontSize: 10 }}>⚠</span> {msg}
+      <span style={{ fontSize: 10 }}>âš </span> {msg}
     </div>
   )
 }
@@ -72,13 +72,13 @@ export default function Contact() {
           </p>
 
           {[
-            { icon: '📧', label: 'EMAIL',        key: 'contact.email',        def: 'tanvir@aifazi.net'        },
-            { icon: '🌐', label: 'WEBSITE',      key: 'contact.website',      def: 'aifazi.net'               },
-            { icon: '📍', label: 'AVAILABILITY', key: 'contact.availability', def: 'Remote / Worldwide'       },
-            { icon: '💼', label: 'LINKEDIN',     key: 'contact.linkedin',     def: 'linkedin.com/in/tanvir'   },
+            { icon: 'ðŸ“§', label: 'EMAIL',        key: 'contact.email',        def: 'tanvir@aifazi.net'        },
+            { icon: 'ðŸŒ', label: 'WEBSITE',      key: 'contact.website',      def: 'aifazi.net'               },
+            { icon: 'ðŸ“', label: 'AVAILABILITY', key: 'contact.availability', def: 'Remote / Worldwide'       },
+            { icon: 'ðŸ’¼', label: 'LINKEDIN',     key: 'contact.linkedin',     def: 'linkedin.com/in/tanvir'   },
           ].map(item => (
             <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '10px 14px', border: '1px solid var(--border)', background: 'var(--bg2)', transition: 'border-color 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,255,136,0.3)'}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--green) 30%, transparent)'}
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
             >
               <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
@@ -92,9 +92,9 @@ export default function Contact() {
 
         <form ref={rightRef} className="fade-up" onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {status?.type === 'success' ? (
-            <div style={{ padding: '40px 32px', background: 'var(--bg2)', border: '1px solid rgba(0,255,136,0.3)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ padding: '40px 32px', background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 8, background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>✓</div>
+                <div style={{ width: 40, height: 40, borderRadius: 8, background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>âœ“</div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2 }}>MESSAGE SENT</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text)', marginTop: 2 }}>I'll get back to you soon.</div>
@@ -102,7 +102,7 @@ export default function Contact() {
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
                 <div style={{ color: 'var(--cyan)' }}>&gt; echo $RESPONSE_TIME</div>
-                <div style={{ paddingLeft: 16 }}>Typically within 24–48 hours.</div>
+                <div style={{ paddingLeft: 16 }}>Typically within 24â€“48 hours.</div>
               </div>
               <button type="button" onClick={() => setStatus(null)}
                 style={{ alignSelf: 'flex-start', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '8px 18px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -139,11 +139,11 @@ export default function Contact() {
                       style={{
                         fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
                         padding: '6px 14px', cursor: 'pointer', transition: 'all 0.2s',
-                        background: form.subject === s ? 'rgba(0,255,136,0.12)' : 'transparent',
+                        background: form.subject === s ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
                         border: form.subject === s ? '1px solid var(--green)' : errors.subject ? '1px solid rgba(255,71,87,0.5)' : '1px solid var(--border)',
                         color: form.subject === s ? 'var(--green)' : 'var(--muted)',
                       }}
-                      onMouseEnter={e => { if (form.subject !== s) { e.currentTarget.style.borderColor = 'rgba(0,255,136,0.3)'; e.currentTarget.style.color = 'var(--text)' } }}
+                      onMouseEnter={e => { if (form.subject !== s) { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--green) 30%, transparent)'; e.currentTarget.style.color = 'var(--text)' } }}
                       onMouseLeave={e => { if (form.subject !== s) { e.currentTarget.style.borderColor = errors.subject ? 'rgba(255,71,87,0.5)' : 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' } }}
                     >{s}</button>
                   ))}

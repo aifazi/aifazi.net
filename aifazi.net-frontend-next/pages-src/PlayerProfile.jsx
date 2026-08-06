@@ -1,6 +1,6 @@
 'use client'
 /**
- * PlayerProfile.jsx — Player profile page for AIFAZI RP
+ * PlayerProfile.jsx â€” Player profile page for AIFAZI RP
  * Shows Discord info, whitelist application status tracker, and FiveM details.
  * Requires Discord login via DiscordContext.
  */
@@ -15,12 +15,12 @@ const R = '#ff4757'
 const DISCORD_PURPLE = '#5865F2'
 const API = ''
 
-/* ── Status step config ─────────────────────────────────────────────────── */
+/* â”€â”€ Status step config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const STEPS = [
-  { key: 'submitted',   label: 'Submitted',    icon: '📝', desc: 'Your application has been received.' },
-  { key: 'reviewing',   label: 'Under Review',  icon: '🔍', desc: 'Staff are reviewing your application.' },
-  { key: 'approved',    label: 'Approved',      icon: '✅', desc: 'You have been approved! Join the server.' },
-  { key: 'denied',      label: 'Denied',        icon: '❌', desc: 'Your application was not accepted.' },
+  { key: 'submitted',   label: 'Submitted',    icon: 'ðŸ“', desc: 'Your application has been received.' },
+  { key: 'reviewing',   label: 'Under Review',  icon: 'ðŸ”', desc: 'Staff are reviewing your application.' },
+  { key: 'approved',    label: 'Approved',      icon: 'âœ…', desc: 'You have been approved! Join the server.' },
+  { key: 'denied',      label: 'Denied',        icon: 'âŒ', desc: 'Your application was not accepted.' },
 ]
 
 function getStepIndex(status) {
@@ -60,7 +60,7 @@ function StatusTracker({ application }) {
                 transition: 'all 0.3s',
               }}>
                 {isComplete ? (
-                  <span style={{ color: G, fontSize: 14 }}>✓</span>
+                  <span style={{ color: G, fontSize: 14 }}>âœ“</span>
                 ) : (
                   <span style={{ fontSize: 14 }}>{step.icon}</span>
                 )}
@@ -115,12 +115,12 @@ function StatusTracker({ application }) {
       {/* Application details */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
         {[
-          { label: 'Application ID', value: application.id || '—' },
-          { label: 'Submitted', value: application.created_at ? new Date(application.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—' },
-          { label: 'FiveM ID', value: application.fivem_id ? 'fivem:' + application.fivem_id : '—' },
+          { label: 'Application ID', value: application.id || 'â€”' },
+          { label: 'Submitted', value: application.created_at ? new Date(application.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'â€”' },
+          { label: 'FiveM ID', value: application.fivem_id ? 'fivem:' + application.fivem_id : 'â€”' },
           { label: 'Priority', value: Number(application.priority_level || 0) > 0
             ? `${application.priority_tier || 'Priority'} (${application.priority_level})${application.priority_expires_at ? ' until ' + new Date(application.priority_expires_at).toLocaleDateString() : ''}`
-            : '—' },
+            : 'â€”' },
           { label: 'Reviewed By', value: application.reviewed_by || 'Pending review' },
         ].map(({ label, value }) => (
           <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '12px 14px' }}>
@@ -138,7 +138,7 @@ function StatusTracker({ application }) {
           border: '1px solid ' + (application.txadmin_synced ? G + '30' : W + '30'),
           borderRadius: 8, padding: '10px 14px',
         }}>
-          <span style={{ fontSize: 16 }}>{application.txadmin_synced ? '🟢' : '🟡'}</span>
+          <span style={{ fontSize: 16 }}>{application.txadmin_synced ? 'ðŸŸ¢' : 'ðŸŸ¡'}</span>
           <div>
             <div style={{ fontSize: 11, color: application.txadmin_synced ? G : W, fontFamily: 'var(--font-mono)', letterSpacing: 1 }}>
               {application.txadmin_synced ? 'IN-GAME WHITELIST: ACTIVE' : 'IN-GAME WHITELIST: SYNCING...'}
@@ -155,7 +155,7 @@ function StatusTracker({ application }) {
   )
 }
 
-/* ── Main component ─────────────────────────────────────────────────────── */
+/* â”€â”€ Main component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function PlayerProfile() {
   const { player, loading: discordLoading, login: discordLogin, logout } = useDiscord()
   const [application, setApplication] = useState(null)
@@ -186,7 +186,7 @@ export default function PlayerProfile() {
       .catch(() => setFormsError('Failed to load community applications.'))
   }, [player])
 
-  /* ── Loading ── */
+  /* â”€â”€ Loading â”€â”€ */
   if (discordLoading) {
     return (
       <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -195,7 +195,7 @@ export default function PlayerProfile() {
     )
   }
 
-  /* ── Not logged in ── */
+  /* â”€â”€ Not logged in â”€â”€ */
   if (!player) {
     return (
       <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
@@ -223,14 +223,14 @@ export default function PlayerProfile() {
     )
   }
 
-  /* ── Profile page ── */
+  /* â”€â”€ Profile page â”€â”€ */
   return (
     <main style={{ minHeight: '100vh', padding: '80px 20px 60px' }}>
       <div style={{ maxWidth: 720, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
 
         {/* Header */}
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP — NEON OPS CITY</div>
+          <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP â€” NEON OPS CITY</div>
           <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 26, color: 'var(--text)', margin: '0 0 4px', letterSpacing: 2 }}>PLAYER PROFILE</h1>
         </div>
 
@@ -335,11 +335,11 @@ export default function PlayerProfile() {
                   <div style={{ display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
                     <div>
                       <div style={{ color:'var(--text)', fontFamily:'var(--font-mono)', fontSize:14, marginBottom:4 }}>{sub.form_title || sub.form_slug}</div>
-                      <div style={{ color:'var(--muted)', fontSize:11, fontFamily:'var(--font-mono)' }}>Submitted {sub.created_at ? new Date(sub.created_at).toLocaleDateString() : '—'}</div>
+                      <div style={{ color:'var(--muted)', fontSize:11, fontFamily:'var(--font-mono)' }}>Submitted {sub.created_at ? new Date(sub.created_at).toLocaleDateString() : 'â€”'}</div>
                     </div>
                     <div style={{ display:'flex', gap:6, alignItems:'flex-start', flexWrap:'wrap' }}>
                       <span style={{ color:statusColor, border:'1px solid ' + statusColor + '55', background:statusColor + '12', borderRadius:999, padding:'4px 9px', fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:1 }}>{String(sub.status || 'pending').toUpperCase()}</span>
-                      <span style={{ color:sub.action_status === 'synced' ? G : sub.action_status === 'failed' ? R : C, border:'1px solid rgba(0,212,255,0.25)', borderRadius:999, padding:'4px 9px', fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:1 }}>ACTION {String(sub.action_status || 'NONE').toUpperCase()}</span>
+                      <span style={{ color:sub.action_status === 'synced' ? G : sub.action_status === 'failed' ? R : C, border:'1px solid color-mix(in srgb, var(--cyan) 25%, transparent)', borderRadius:999, padding:'4px 9px', fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:1 }}>ACTION {String(sub.action_status || 'NONE').toUpperCase()}</span>
                     </div>
                   </div>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:0, margin:'16px 0 12px' }}>
@@ -359,10 +359,10 @@ export default function PlayerProfile() {
         {/* Quick links */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
           {[
-            { label: 'Apply for Whitelist', href: '/whitelist', color: G, icon: '📝' },
-            { label: 'Join Discord',        href: 'https://discord.gg/aifazi', color: DISCORD_PURPLE, icon: '💬', external: true },
-            { label: 'Applications',        href: '/whitelist#applications', color: C, icon: '🧾' },
-            { label: 'Server Rules',        href: '/rules', color: C, icon: '📜' },
+            { label: 'Apply for Whitelist', href: '/whitelist', color: G, icon: 'ðŸ“' },
+            { label: 'Join Discord',        href: 'https://discord.gg/aifazi', color: DISCORD_PURPLE, icon: 'ðŸ’¬', external: true },
+            { label: 'Applications',        href: '/whitelist#applications', color: C, icon: 'ðŸ§¾' },
+            { label: 'Server Rules',        href: '/rules', color: C, icon: 'ðŸ“œ' },
           ].map(({ label, href, color, icon, external }) => (
             <a key={label} href={href} target={external ? '_blank' : undefined} rel={external ? 'noreferrer' : undefined}
               style={{

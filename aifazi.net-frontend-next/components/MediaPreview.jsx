@@ -4,7 +4,7 @@ import api, { mediaUrl } from '@/lib/api'
 import { NeonButton } from './community'
 import { notify } from '../core/notify.jsx'
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function extOf(name = '') {
   const m = String(name).toLowerCase().match(/\.([a-z0-9]+)(?:$|[?#])/)
   return m ? m[1] : ''
@@ -38,8 +38,8 @@ function fileKind(file) {
 }
 
 const KIND_ICON = {
-  image: '🖼', video: '🎬', pdf: '📄', code: '👩‍💻',
-  word: '📝', sheet: '📊', slides: '📽', archive: '📦', audio: '🎵', file: '📎',
+  image: 'ðŸ–¼', video: 'ðŸŽ¬', pdf: 'ðŸ“„', code: 'ðŸ‘©â€ðŸ’»',
+  word: 'ðŸ“', sheet: 'ðŸ“Š', slides: 'ðŸ“½', archive: 'ðŸ“¦', audio: 'ðŸŽµ', file: 'ðŸ“Ž',
 }
 
 function formatSize(bytes) {
@@ -50,25 +50,25 @@ function formatSize(bytes) {
   return `${n}B`
 }
 
-// ── Icon / label card for non-image, non-video, non-code files ───────────────
+// â”€â”€ Icon / label card for non-image, non-video, non-code files â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function FileIconCard({ file, kind, label }) {
   const url = file?.url || file?.path
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" className="media-file-card">
-      <div className="media-file-icon">{KIND_ICON[kind] || '📎'}</div>
+      <div className="media-file-icon">{KIND_ICON[kind] || 'ðŸ“Ž'}</div>
       <div className="media-file-meta">
         <div className="media-file-name">{label}</div>
         <div className="media-file-sub">
           <span>{kind === 'pdf' ? 'PDF' : kind === 'word' ? 'Word' : kind === 'sheet' ? 'Excel' : kind === 'slides' ? 'Presentation' : kind === 'archive' ? 'Archive' : (file?.mimetype?.split('/')[1] || extOf(label) || 'file').toUpperCase()}</span>
-          {formatSize(file?.size) && <span> · {formatSize(file?.size)}</span>}
+          {formatSize(file?.size) && <span> Â· {formatSize(file?.size)}</span>}
         </div>
       </div>
-      <span className="media-file-download">⤓</span>
+      <span className="media-file-download">â¤“</span>
     </a>
   )
 }
 
-// ── Code preview block (fetch + render) ───────────────────────────────────────
+// â”€â”€ Code preview block (fetch + render) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CodePreview({ file }) {
   const [text, setText] = useState(null)
   const [failed, setFailed] = useState(false)
@@ -91,19 +91,19 @@ function CodePreview({ file }) {
   return (
     <div className="media-code-card">
       <div className="media-code-header">
-        <span className="media-code-name">👩‍💻 {name}</span>
+        <span className="media-code-name">ðŸ‘©â€ðŸ’» {name}</span>
         <span className="media-code-lang">{extOf(name).toUpperCase() || 'CODE'}</span>
       </div>
       {failed ? (
-        <div className="media-code-fail">Preview unavailable — <a href={file?.url || file?.path} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--cyan)' }}>open file</a></div>
+        <div className="media-code-fail">Preview unavailable â€” <a href={file?.url || file?.path} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--cyan)' }}>open file</a></div>
       ) : text === null ? (
-        <pre className="media-code-body"><span style={{ opacity: 0.4 }}>Loading preview…</span></pre>
+        <pre className="media-code-body"><span style={{ opacity: 0.4 }}>Loading previewâ€¦</span></pre>
       ) : (
         <>
           <pre className="media-code-body">{preview}</pre>
           {lines > 40 && (
             <button className="media-code-toggle" onClick={() => setExpanded(!expanded)}>
-              {expanded ? '△ Collapse' : `▽ Show all ${lines} lines`}
+              {expanded ? 'â–³ Collapse' : `â–½ Show all ${lines} lines`}
             </button>
           )}
         </>
@@ -112,7 +112,7 @@ function CodePreview({ file }) {
   )
 }
 
-// ── Lightbox for images ───────────────────────────────────────────────────────
+// â”€â”€ Lightbox for images â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ImagePreview({ file }) {
   const [open, setOpen] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -124,7 +124,7 @@ function ImagePreview({ file }) {
       <div className="media-image-frame" onClick={() => setOpen(true)} role="button" title="Click to view full size">
         {failed ? (
           <a href={src} target="_blank" rel="noopener noreferrer" className="media-file-card" style={{ border: 'none' }}>
-            <div className="media-file-icon">🖼</div>
+            <div className="media-file-icon">ðŸ–¼</div>
             <div className="media-file-meta">
               <div className="media-file-name">{name}</div>
               <div className="media-file-sub">IMAGE</div>
@@ -139,7 +139,7 @@ function ImagePreview({ file }) {
       {open && (
         <div className="media-lightbox" onClick={() => setOpen(false)}>
           <div className="media-lightbox-inner" onClick={e => e.stopPropagation()}>
-            <button className="media-lightbox-close" onClick={() => setOpen(false)}>✕</button>
+            <button className="media-lightbox-close" onClick={() => setOpen(false)}>âœ•</button>
             <img src={mediaUrl(src)} alt={name} style={{ maxWidth: '100%', maxHeight: '82vh', borderRadius: 10, display: 'block', margin: '0 auto' }} />
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 12 }}>{name}</div>
           </div>
@@ -149,7 +149,7 @@ function ImagePreview({ file }) {
   )
 }
 
-// ── Video preview ─────────────────────────────────────────────────────────────
+// â”€â”€ Video preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function VideoPreview({ file }) {
   const src = file?.url || file?.path
   const name = file?.original_name || file?.name || file?.filename || 'video'
@@ -161,7 +161,7 @@ function VideoPreview({ file }) {
   )
 }
 
-// ── Office preview (Word / Excel / slides) via Google Docs viewer + direct link
+// â”€â”€ Office preview (Word / Excel / slides) via Google Docs viewer + direct link
 function OfficePreview({ file }) {
   const url = file?.url || file?.path
   const { ext } = mimeOrExt(file)
@@ -171,16 +171,16 @@ function OfficePreview({ file }) {
   return (
     <div className="media-office">
       <div className="media-office-bar">
-        <span className="media-file-icon" style={{ fontSize: 16 }}>{isSheet ? '📊' : '📝'}</span>
+        <span className="media-file-icon" style={{ fontSize: 16 }}>{isSheet ? 'ðŸ“Š' : 'ðŸ“'}</span>
         <span className="media-file-name" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>{name}</span>
-        <a href={url} target="_blank" rel="noopener noreferrer" className="media-file-download" style={{ color: 'var(--green)', fontSize: 10 }}>OPEN ↗</a>
+        <a href={url} target="_blank" rel="noopener noreferrer" className="media-file-download" style={{ color: 'var(--green)', fontSize: 10 }}>OPEN â†—</a>
       </div>
       <iframe src={viewerSrc} className="media-office-iframe" title={name} />
     </div>
   )
 }
 
-// ── Main attachment renderer ──────────────────────────────────────────────────
+// â”€â”€ Main attachment renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function MediaAttachment({ file, maxWidth = 700 }) {
   const name = file?.original_name || file?.name || file?.filename || 'file'
   const kind = fileKind(file)
@@ -198,7 +198,7 @@ export function MediaAttachment({ file, maxWidth = 700 }) {
 
 export { fileKind, extOf }
 
-// ── Media uploader (shared by forum composers) ─────────────────────────────────
+// â”€â”€ Media uploader (shared by forum composers) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MEDIA_ACCEPT = {
   image: 'image/*',
   video: 'video/*',
@@ -208,11 +208,11 @@ const MEDIA_ACCEPT = {
 }
 
 const KIND_CHIPS = [
-  { key: 'all', label: '📎 All' },
-  { key: 'image', label: '🖼 Image' },
-  { key: 'video', label: '🎬 Video' },
-  { key: 'code', label: '👩‍💻 Code' },
-  { key: 'document', label: '📄 Document' },
+  { key: 'all', label: 'ðŸ“Ž All' },
+  { key: 'image', label: 'ðŸ–¼ Image' },
+  { key: 'video', label: 'ðŸŽ¬ Video' },
+  { key: 'code', label: 'ðŸ‘©â€ðŸ’» Code' },
+  { key: 'document', label: 'ðŸ“„ Document' },
 ]
 
 export function MediaUploader({ onUploaded, defaultKind = 'all', buttonLabel }) {
@@ -250,8 +250,8 @@ export function MediaUploader({ onUploaded, defaultKind = 'all', buttonLabel }) 
             style={{
               fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
               padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
-              border: `1px solid ${kind === k.key ? 'rgba(0,255,136,0.4)' : 'var(--border)'}`,
-              background: kind === k.key ? 'rgba(0,255,136,0.1)' : 'transparent',
+              border: `1px solid ${kind === k.key ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}`,
+              background: kind === k.key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent',
               color: kind === k.key ? 'var(--green)' : 'var(--muted)',
               transition: 'all 0.15s',
             }}
@@ -259,7 +259,7 @@ export function MediaUploader({ onUploaded, defaultKind = 'all', buttonLabel }) 
         ))}
         <NeonButton variant="ghost" size="sm" onClick={() => inputRef.current.click()} disabled={uploading}
           style={{ marginLeft: 'auto' }}>
-          {uploading ? '⏳ Uploading...' : (buttonLabel || '📎 Attach Files')}
+          {uploading ? 'â³ Uploading...' : (buttonLabel || 'ðŸ“Ž Attach Files')}
         </NeonButton>
       </div>
       <input ref={inputRef} type="file" multiple style={{ display: 'none' }} accept={MEDIA_ACCEPT[kind]} onChange={handleUpload} />
@@ -267,8 +267,8 @@ export function MediaUploader({ onUploaded, defaultKind = 'all', buttonLabel }) 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           {attachments.map((f, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 999, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>
-              {f.mimetype?.startsWith('image/') ? '🖼' : f.mimetype?.startsWith('video/') ? '🎬' : f.mimetype === 'application/pdf' ? '📄' : '📎'} {f.original_name}
-              <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>✕</button>
+              {f.mimetype?.startsWith('image/') ? 'ðŸ–¼' : f.mimetype?.startsWith('video/') ? 'ðŸŽ¬' : f.mimetype === 'application/pdf' ? 'ðŸ“„' : 'ðŸ“Ž'} {f.original_name}
+              <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>âœ•</button>
             </div>
           ))}
         </div>

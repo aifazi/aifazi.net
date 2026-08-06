@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from '@/lib/router-compat'
 import { getAuthToken } from '@/lib/api'
@@ -315,7 +315,7 @@ export default function Terminal({ onClose }) {
       <div style={{
         width: '90%', maxWidth: 720, maxHeight: '80vh',
         background: 'var(--bg)', border: '1px solid var(--green)',
-        boxShadow: '0 0 60px rgba(0,255,136,0.15)',
+        boxShadow: '0 0 60px color-mix(in srgb, var(--green) 15%, transparent)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
         {/* Title bar */}

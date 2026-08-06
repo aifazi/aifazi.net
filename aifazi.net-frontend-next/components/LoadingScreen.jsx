@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 
-// ── Style: Terminal (original boot sequence) ──────────────────────────────────
+// â”€â”€ Style: Terminal (original boot sequence) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const BOOT_LINES = [
   { text: 'Initializing system...', delay: 0 },
   { text: 'Loading kernel modules...', delay: 80 },
@@ -35,10 +35,10 @@ function TerminalLoader({ onComplete }) {
         TANVIR<span style={{ color:'var(--green)' }}>.</span>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'var(--muted)', letterSpacing:6, marginTop:8, fontWeight:400 }}>NETWORK ENGINEER & IT SPECIALIST</div>
       </div>
-      <div style={{ width:'100%', maxWidth:520, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, overflow:'hidden', boxShadow:'0 0 60px rgba(0,255,136,0.1)', animation:'fadeUp .6s .2s ease both', position:'relative', zIndex:1 }}>
-        <div style={{ background:'rgba(0,212,255,0.08)', padding:'10px 16px', display:'flex', alignItems:'center', gap:8, borderBottom:'1px solid var(--border)' }}>
+      <div style={{ width:'100%', maxWidth:520, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, overflow:'hidden', boxShadow:'0 0 60px color-mix(in srgb, var(--green) 10%, transparent)', animation:'fadeUp .6s .2s ease both', position:'relative', zIndex:1 }}>
+        <div style={{ background:'color-mix(in srgb, var(--cyan) 8%, transparent)', padding:'10px 16px', display:'flex', alignItems:'center', gap:8, borderBottom:'1px solid var(--border)' }}>
           {['#ff5f56','#ffbd2e','#27c93f'].map(c => <div key={c} style={{ width:10, height:10, borderRadius:'50%', background:c }} />)}
-          <div style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)', letterSpacing:2, margin:'0 auto' }}>boot.sh — tanvir@portfolio</div>
+          <div style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)', letterSpacing:2, margin:'0 auto' }}>boot.sh â€” tanvir@portfolio</div>
         </div>
         <div style={{ padding:'16px 20px', minHeight:'min(240px, 40vh)' }}>
           {lines.map((line, i) => (
@@ -54,7 +54,7 @@ function TerminalLoader({ onComplete }) {
             <span style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--green)' }}>{progress}%</span>
           </div>
           <div style={{ height:2, background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
-            <div style={{ height:'100%', width:`${progress}%`, background:'linear-gradient(to right,var(--green),var(--cyan))', boxShadow:'0 0 10px rgba(0,255,136,0.6)', transition:'width .3s ease' }} />
+            <div style={{ height:'100%', width:`${progress}%`, background:'linear-gradient(to right,var(--green),var(--cyan))', boxShadow:'0 0 10px color-mix(in srgb, var(--green) 60%, transparent)', transition:'width .3s ease' }} />
           </div>
         </div>
       </div>
@@ -99,7 +99,7 @@ function GlitchLoader({ onComplete }) {
         <span aria-hidden style={{ position:'absolute', inset:0, color:'#ff2d8b', clipPath:'polygon(0 65%,100% 65%,100% 100%,0 100%)', animation:'glitch-b 2s .12s infinite', opacity:.7 }}>TANVIR.</span>
       </div>
       <div style={{ marginTop:24, fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:6, color:'var(--muted)' }}>
-        {['▓▓▓░░░░░░░','▓▓▓▓▓▓░░░░','▓▓▓▓▓▓▓▓░░','▓▓▓▓▓▓▓▓▓░','▓▓▓▓▓▓▓▓▓▓'][Math.min(phase,4)]}
+        {['â–“â–“â–“â–‘â–‘â–‘â–‘â–‘â–‘â–‘','â–“â–“â–“â–“â–“â–“â–‘â–‘â–‘â–‘','â–“â–“â–“â–“â–“â–“â–“â–“â–‘â–‘','â–“â–“â–“â–“â–“â–“â–“â–“â–“â–‘','â–“â–“â–“â–“â–“â–“â–“â–“â–“â–“'][Math.min(phase,4)]}
       </div>
       <style>{`
         @keyframes glitch-t{0%{transform:translate(0)}20%{transform:translate(-3px,1px)}40%{transform:translate(3px,-1px)}60%{transform:translate(0)}80%{transform:translate(-2px,0)}100%{transform:translate(0)}}
@@ -117,7 +117,7 @@ function MatrixLoader({ onComplete }) {
     const ctx = canvas.getContext('2d')
     canvas.width = window.innerWidth; canvas.height = window.innerHeight
     const cols = Math.floor(canvas.width / 16), drops = Array(cols).fill(1)
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ'
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ï¾Šï¾ï¾‹ï½°ï½³ï½¼ï¾…ï¾“ï¾†ï½»ï¾œï¾‚ï½µï¾˜ï½±ï¾Žï¾ƒï¾ï½¹ï¾’ï½´ï½¶ï½·ï¾‘ï¾•ï¾—ï½¾ï¾ˆï½½ï¾€ï¾‡ï¾'
     let raf
     const draw = () => {
       ctx.fillStyle = 'rgba(6,10,15,0.05)'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.font = '14px monospace'
@@ -135,8 +135,8 @@ function MatrixLoader({ onComplete }) {
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition:'opacity .6s', position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
       <canvas ref={canvasRef} style={{ position:'absolute', inset:0 }} />
-      <div style={{ position:'relative', zIndex:1, textAlign:'center', background:'rgba(6,10,15,0.7)', padding:'24px 40px', border:'1px solid rgba(0,255,136,0.3)', backdropFilter:'blur(4px)' }}>
-        <div style={{ fontFamily:'var(--font-display)', fontSize:48, fontWeight:700, color:'#00ff88', letterSpacing:-1, textShadow:'0 0 20px rgba(0,255,136,0.8)' }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
+      <div style={{ position:'relative', zIndex:1, textAlign:'center', background:'rgba(6,10,15,0.7)', padding:'24px 40px', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', backdropFilter:'blur(4px)' }}>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:48, fontWeight:700, color:'#00ff88', letterSpacing:-1, textShadow:'0 0 20px color-mix(in srgb, var(--green) 80%, transparent)' }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4, marginTop:8 }}>DECRYPTING PORTFOLIO</div>
       </div>
     </div>
@@ -168,7 +168,7 @@ function SplashLoader({ onComplete }) {
   )
 }
 
-// ── Style: Pulse ──────────────────────────────────────────────────────────────
+// â”€â”€ Style: Pulse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function PulseLoader({ onComplete }) {
   const [exiting, setExiting] = useState(false)
   useEffect(() => {
@@ -179,7 +179,7 @@ function PulseLoader({ onComplete }) {
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:40 }}>
       <div style={{ position:'relative', width:120, height:120, display:'flex', alignItems:'center', justifyContent:'center' }}>
         {[0,1,2].map(i => (
-          <div key={i} style={{ position:'absolute', inset: i*16, borderRadius:'50%', border:`${1.5-i*0.3}px solid ${i===0?'var(--green)':i===1?'var(--cyan)':'rgba(0,255,136,0.3)'}`, animation:`ls-pulse-ring ${1.4+i*0.3}s ${i*0.2}s ease-in-out infinite` }} />
+          <div key={i} style={{ position:'absolute', inset: i*16, borderRadius:'50%', border:`${1.5-i*0.3}px solid ${i===0?'var(--green)':i===1?'var(--cyan)':'color-mix(in srgb, var(--green) 30%, transparent)'}`, animation:`ls-pulse-ring ${1.4+i*0.3}s ${i*0.2}s ease-in-out infinite` }} />
         ))}
         <div style={{ width:16, height:16, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 20px var(--green)', animation:'ls-pulse-core 1.4s ease-in-out infinite' }} />
       </div>
@@ -192,7 +192,7 @@ function PulseLoader({ onComplete }) {
   )
 }
 
-// ── Style: Holo ───────────────────────────────────────────────────────────────
+// â”€â”€ Style: Holo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function HoloLoader({ onComplete }) {
   const [exiting, setExiting] = useState(false)
   const [deg, setDeg] = useState(0)
@@ -223,7 +223,7 @@ function HoloLoader({ onComplete }) {
   )
 }
 
-// ── Style: CRT ────────────────────────────────────────────────────────────────
+// â”€â”€ Style: CRT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CRTLoader({ onComplete }) {
   const [exiting, setExiting] = useState(false)
   const [lines, setLines] = useState([])
@@ -244,7 +244,7 @@ function CRTLoader({ onComplete }) {
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', fontFamily:'var(--font-mono)', width:'100%', maxWidth:440, padding:'0 8px' }}>
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'rgba(0,255,0,0.04)', border:'1px solid rgba(0,255,0,0.2)', borderRadius:4, marginBottom:10 }}>
         <span style={{ width:8, height:8, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 8px var(--green)' }} />
-        <span style={{ fontSize:10, color:'var(--green)', letterSpacing:2 }}>aifazi.net — BOOT</span>
+        <span style={{ fontSize:10, color:'var(--green)', letterSpacing:2 }}>aifazi.net â€” BOOT</span>
         <span style={{ marginLeft:'auto', fontSize:9, color:'var(--muted)' }}>v4.2</span>
       </div>
       <div style={{ height:130, overflow:'hidden', position:'relative' }}>
@@ -258,7 +258,7 @@ function CRTLoader({ onComplete }) {
   )
 }
 
-// ── Style: Cyber ──────────────────────────────────────────────────────────────
+// â”€â”€ Style: Cyber â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CyberLoader({ onComplete }) {
   const [lit, setLit] = useState([])
   const [exiting, setExiting] = useState(false)
@@ -274,7 +274,7 @@ function CyberLoader({ onComplete }) {
       <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
       <div style={{ display:'grid', gridTemplateColumns:`repeat(${COLS},1fr)`, gap:5 }}>
         {Array.from({ length: TOTAL }, (_, i) => (
-          <div key={i} style={{ width:18, height:18, borderRadius:3, background: lit.includes(i) ? 'var(--cyan)' : 'rgba(0,212,255,0.08)', border:`1px solid ${lit.includes(i) ? 'rgba(0,212,255,0.8)' : 'rgba(0,212,255,0.2)'}`, boxShadow: lit.includes(i) ? '0 0 8px rgba(0,212,255,0.6)' : 'none', transition:'all 0.1s' }} />
+          <div key={i} style={{ width:18, height:18, borderRadius:3, background: lit.includes(i) ? 'var(--cyan)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)', border:`1px solid ${lit.includes(i) ? 'color-mix(in srgb, var(--cyan) 80%, transparent)' : 'color-mix(in srgb, var(--cyan) 20%, transparent)'}`, boxShadow: lit.includes(i) ? '0 0 8px color-mix(in srgb, var(--cyan) 60%, transparent)' : 'none', transition:'all 0.1s' }} />
         ))}
       </div>
       <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>BOOT SEQUENCE</div>
@@ -282,7 +282,7 @@ function CyberLoader({ onComplete }) {
   )
 }
 
-// ── Style: Bars ───────────────────────────────────────────────────────────────
+// â”€â”€ Style: Bars â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function BarsLoader({ onComplete }) {
   const [progress, setProgress] = useState(0)
   const [exiting, setExiting] = useState(false)
@@ -309,7 +309,7 @@ function BarsLoader({ onComplete }) {
                 <span>{b.label}</span><span style={{ color: b.color }}>{Math.round(p)}%</span>
               </div>
               <div style={{ height:3, background:'rgba(255,255,255,0.05)', borderRadius:2, overflow:'hidden' }}>
-                <div style={{ height:'100%', width:`${p}%`, background:`linear-gradient(90deg,${b.color},rgba(0,255,136,0.4))`, boxShadow:`0 0 8px ${b.color}`, transition:'width .05s linear', borderRadius:2 }} />
+                <div style={{ height:'100%', width:`${p}%`, background:`linear-gradient(90deg,${b.color},color-mix(in srgb, var(--green) 40%, transparent))`, boxShadow:`0 0 8px ${b.color}`, transition:'width .05s linear', borderRadius:2 }} />
               </div>
             </div>
           )
@@ -319,7 +319,7 @@ function BarsLoader({ onComplete }) {
   )
 }
 
-// ── Style: Wave ───────────────────────────────────────────────────────────────
+// â”€â”€ Style: Wave â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function WaveLoader({ onComplete }) {
   const [exiting, setExiting] = useState(false)
   useEffect(() => {
@@ -340,7 +340,7 @@ function WaveLoader({ onComplete }) {
   )
 }
 
-// ── Style: Neon ───────────────────────────────────────────────────────────────
+// â”€â”€ Style: Neon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function NeonLoader({ onComplete }) {
   const [exiting, setExiting] = useState(false)
   useEffect(() => {
@@ -349,7 +349,7 @@ function NeonLoader({ onComplete }) {
   }, [])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:24 }}>
-      <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(52px,10vw,96px)', fontWeight:900, letterSpacing:4, color:'#fff', textTransform:'uppercase', animation:'ls-neon-flicker 3s infinite', textShadow:'0 0 10px #00ff88,0 0 30px #00ff88,0 0 60px #00ff88,0 0 120px rgba(0,255,136,0.5)' }}>TANVIR</div>
+      <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(52px,10vw,96px)', fontWeight:900, letterSpacing:4, color:'#fff', textTransform:'uppercase', animation:'ls-neon-flicker 3s infinite', textShadow:'0 0 10px #00ff88,0 0 30px #00ff88,0 0 60px #00ff88,0 0 120px color-mix(in srgb, var(--green) 50%, transparent)' }}>TANVIR</div>
       <div style={{ fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:8, color:'var(--cyan)', animation:'ls-neon-sub 3s 0.3s infinite', textShadow:'0 0 8px var(--cyan)' }}>NETWORK ENGINEER</div>
       <style>{`
         @keyframes ls-neon-flicker{0%,100%{opacity:1;text-shadow:0 0 10px #00ff88,0 0 30px #00ff88,0 0 60px #00ff88}45%{opacity:0.15;text-shadow:none}50%{opacity:1;text-shadow:0 0 10px #00ff88,0 0 30px #00ff88,0 0 60px #00ff88}75%{opacity:0.3;text-shadow:none}80%{opacity:1;text-shadow:0 0 10px #00ff88,0 0 30px #00ff88,0 0 60px #00ff88}}
@@ -359,7 +359,7 @@ function NeonLoader({ onComplete }) {
   )
 }
 
-// ── Style: Orbit (animejs) ────────────────────────────────────────────────────
+// â”€â”€ Style: Orbit (animejs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Three dots orbit a center point at different radii and speeds using animejs.
 function OrbitLoader({ onComplete }) {
   const dotRefs = [useRef(null), useRef(null), useRef(null)]
@@ -370,7 +370,7 @@ function OrbitLoader({ onComplete }) {
     const ORBITS = [
       { radius: 36, duration: 1200, color: 'var(--green)',  size: 8,  delay: 0 },
       { radius: 56, duration: 1800, color: 'var(--cyan)',   size: 6,  delay: 200 },
-      { radius: 74, duration: 2600, color: 'rgba(0,255,136,0.45)', size: 5, delay: 100 },
+      { radius: 74, duration: 2600, color: 'color-mix(in srgb, var(--green) 45%, transparent)', size: 5, delay: 100 },
     ]
 
     import('gsap').then(m => {
@@ -404,7 +404,7 @@ function OrbitLoader({ onComplete }) {
   const ORBITS = [
     { radius: 36, color: 'var(--green)',  size: 8 },
     { radius: 56, color: 'var(--cyan)',   size: 6 },
-    { radius: 74, color: 'rgba(0,255,136,0.45)', size: 5 },
+    { radius: 74, color: 'color-mix(in srgb, var(--green) 45%, transparent)', size: 5 },
   ]
 
   return (
@@ -415,7 +415,7 @@ function OrbitLoader({ onComplete }) {
           <div key={i} style={{ position:'absolute', width: orb.radius*2, height: orb.radius*2, borderRadius:'50%', border:`1px solid ${orb.color}22` }} />
         ))}
         {/* Center glow */}
-        <div style={{ width:14, height:14, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 24px var(--green), 0 0 48px rgba(0,255,136,0.3)', zIndex:2 }} />
+        <div style={{ width:14, height:14, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 24px var(--green), 0 0 48px color-mix(in srgb, var(--green) 30%, transparent)', zIndex:2 }} />
         {/* Orbiting dots */}
         {ORBITS.map((orb, i) => (
           <div key={i} ref={dotRefs[i]} style={{
@@ -436,7 +436,7 @@ function OrbitLoader({ onComplete }) {
   )
 }
 
-// ── Style: Typewriter (animejs) ────────────────────────────────────────────────
+// â”€â”€ Style: Typewriter (animejs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // animejs staggers each character of the name into view one by one.
 function TypewriterLoader({ onComplete }) {
   const containerRef = useRef(null)
@@ -484,7 +484,7 @@ function TypewriterLoader({ onComplete }) {
   )
 }
 
-// ── Style: DNA (animejs) ──────────────────────────────────────────────────────
+// â”€â”€ Style: DNA (animejs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // animejs animates 12 pairs of nodes in a double-helix wave pattern.
 function DNALoader({ onComplete }) {
   const helixRef = useRef(null)
@@ -538,8 +538,8 @@ function DNALoader({ onComplete }) {
   )
 }
 
-// ── Style: Countdown (animejs) ────────────────────────────────────────────────
-// animejs pops 3 → 2 → 1 → GO with scale + color transitions.
+// â”€â”€ Style: Countdown (animejs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// animejs pops 3 â†’ 2 â†’ 1 â†’ GO with scale + color transitions.
 function CountdownLoader({ onComplete }) {
   const numRef   = useRef(null)
   const labelRef = useRef(null)
@@ -605,7 +605,7 @@ function CountdownLoader({ onComplete }) {
   )
 }
 
-// ── Root export ───────────────────────────────────────────────────────────────
+// â”€â”€ Root export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function LoadingScreen({ onComplete, style }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])

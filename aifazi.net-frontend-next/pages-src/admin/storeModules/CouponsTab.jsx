@@ -7,7 +7,7 @@ import { useDialog } from '../../../components/Dialog'
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15'
 const money = c => `$${((c || 0) / 100).toFixed(2)}`
-const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'â€”'
 
 const EMPTY = { code: '', description: '', type: 'percent', value_cents: 0, value_percent: 10, min_subtotal_cents: 0, max_uses: 0, per_user_limit: 0, product_ids: [], category_id: null, active: true, starts_at: null, expires_at: null }
 
@@ -72,7 +72,7 @@ export default function CouponsTab() {
 
   const save = async () => {
     if (!form.code.trim()) return toast.error('Code is required')
-    if (form.type === 'percent' && (form.value_percent < 0 || form.value_percent > 100)) return toast.error('Percent must be 0–100')
+    if (form.type === 'percent' && (form.value_percent < 0 || form.value_percent > 100)) return toast.error('Percent must be 0â€“100')
     setSaving(true)
     try {
       if (editing === 'new') await api.post('/store/admin/coupons', buildPayload())
@@ -117,7 +117,7 @@ export default function CouponsTab() {
               </select>
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>{form.type === 'percent' ? 'PERCENT (0–100)' : 'AMOUNT (CENTS)'}</label>
+              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>{form.type === 'percent' ? 'PERCENT (0â€“100)' : 'AMOUNT (CENTS)'}</label>
               <input type="number" value={form.type === 'percent' ? form.value_percent : form.value_cents} onChange={e => setForm(form.type === 'percent' ? { ...form, value_percent: Number(e.target.value) } : { ...form, value_cents: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
@@ -125,11 +125,11 @@ export default function CouponsTab() {
               <input type="number" value={form.min_subtotal_cents} onChange={e => setForm({ ...form, min_subtotal_cents: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>MAX USES (0 = ∞)</label>
+              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>MAX USES (0 = âˆž)</label>
               <input type="number" value={form.max_uses} onChange={e => setForm({ ...form, max_uses: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>PER-USER LIMIT (0 = ∞)</label>
+              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>PER-USER LIMIT (0 = âˆž)</label>
               <input type="number" value={form.per_user_limit} onChange={e => setForm({ ...form, per_user_limit: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
@@ -149,12 +149,12 @@ export default function CouponsTab() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
             <select value={pid} onChange={e => setPid(e.target.value)} style={{ ...input }}>
-              <option value="">+ restrict to product…</option>
+              <option value="">+ restrict to productâ€¦</option>
               {products.filter(p => !form.product_ids.includes(p.id)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <button onClick={addProduct} disabled={!pid} style={{ fontFamily: MONO, fontSize: 10, padding: '8px 12px', background: 'rgba(0,212,255,.1)', border: '1px solid rgba(0,212,255,.4)', color: C, borderRadius: 6, cursor: pid ? 'pointer' : 'not-allowed' }}>+ PRODUCT</button>
+            <button onClick={addProduct} disabled={!pid} style={{ fontFamily: MONO, fontSize: 10, padding: '8px 12px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: pid ? 'pointer' : 'not-allowed' }}>+ PRODUCT</button>
             <select value={cid} onChange={e => setCid(e.target.value)} style={{ ...input }}>
-              <option value="">+ restrict to category…</option>
+              <option value="">+ restrict to categoryâ€¦</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <button onClick={addCat} disabled={!cid} style={{ fontFamily: MONO, fontSize: 10, padding: '8px 12px', background: 'rgba(250,204,21,.1)', border: '1px solid rgba(250,204,21,.4)', color: Y, borderRadius: 6, cursor: cid ? 'pointer' : 'not-allowed' }}>+ CATEGORY</button>
@@ -162,13 +162,13 @@ export default function CouponsTab() {
 
           <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
             {form.product_ids.map(id => { const p = products.find(x => x.id === id); return (
-              <span key={id} style={{ fontFamily: MONO, fontSize: 10, padding: '4px 10px', background: 'rgba(0,212,255,.08)', border: '1px solid rgba(0,212,255,.3)', color: C, borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                {p?.name || id} <button onClick={() => setForm({ ...form, product_ids: form.product_ids.filter(x => x !== id) })} style={{ background: 'none', border: 'none', color: R, cursor: 'pointer', fontSize: 12 }}>✕</button>
+              <span key={id} style={{ fontFamily: MONO, fontSize: 10, padding: '4px 10px', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C, borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {p?.name || id} <button onClick={() => setForm({ ...form, product_ids: form.product_ids.filter(x => x !== id) })} style={{ background: 'none', border: 'none', color: R, cursor: 'pointer', fontSize: 12 }}>âœ•</button>
               </span>
             )})}
             {form.category_id && (() => { const c = categories.find(x => x.id === form.category_id); return (
               <span style={{ fontFamily: MONO, fontSize: 10, padding: '4px 10px', background: 'rgba(250,204,21,.08)', border: '1px solid rgba(250,204,21,.3)', color: Y, borderRadius: 14, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                📂 {c?.name || form.category_id} <button onClick={() => setForm({ ...form, category_id: null })} style={{ background: 'none', border: 'none', color: R, cursor: 'pointer', fontSize: 12 }}>✕</button>
+                ðŸ“‚ {c?.name || form.category_id} <button onClick={() => setForm({ ...form, category_id: null })} style={{ background: 'none', border: 'none', color: R, cursor: 'pointer', fontSize: 12 }}>âœ•</button>
               </span>
             ) })()}
           </div>
@@ -178,13 +178,13 @@ export default function CouponsTab() {
           </label>
 
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'rgba(0,255,136,.12)', border: '1px solid rgba(0,255,136,.4)', color: G, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE COUPON'}</button>
+            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? 'â€¦' : 'SAVE COUPON'}</button>
             <button onClick={cancel} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>
           </div>
         </div>
       ) : (
         <div style={{ marginBottom: 14 }}>
-          <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 18px', background: 'rgba(0,255,136,.12)', border: '1px solid rgba(0,255,136,.4)', color: G, borderRadius: 6, cursor: 'pointer' }}>+ NEW COUPON</button>
+          <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 18px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>+ NEW COUPON</button>
         </div>
       )}
 
@@ -196,17 +196,17 @@ export default function CouponsTab() {
           const val = c.type === 'percent' ? `${c.value_percent || 0}% OFF` : `${money(c.value_cents)} OFF`
           return (
             <div key={c.id} style={{ background: 'var(--bg2)', border: `1px solid ${active ? 'var(--border)' : 'rgba(255,255,255,.08)'}`, opacity: active ? 1 : 0.55, borderRadius: 10, padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: C, minWidth: 90 }}>🎟 {c.code}</div>
-              <span style={{ fontFamily: MONO, fontSize: 10, padding: '2px 10px', borderRadius: 12, background: c.type === 'percent' ? 'rgba(250,204,21,.08)' : 'rgba(0,212,255,.08)', border: `1px solid ${c.type === 'percent' ? 'rgba(250,204,21,.3)' : 'rgba(0,212,255,.3)'}`, color: c.type === 'percent' ? Y : C }}>{val}</span>
-              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: active ? 'rgba(0,255,136,.08)' : 'rgba(255,71,87,.08)', border: `1px solid ${active ? 'rgba(0,255,136,.3)' : 'rgba(255,71,87,.3)'}`, color: active ? G : R }}>{active ? 'ACTIVE' : 'PAUSED'}</span>
+              <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: C, minWidth: 90 }}>ðŸŽŸ {c.code}</div>
+              <span style={{ fontFamily: MONO, fontSize: 10, padding: '2px 10px', borderRadius: 12, background: c.type === 'percent' ? 'rgba(250,204,21,.08)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: `1px solid ${c.type === 'percent' ? 'rgba(250,204,21,.3)' : 'color-mix(in srgb, var(--cyan) 30%, transparent)'}`, color: c.type === 'percent' ? Y : C }}>{val}</span>
+              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: active ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'rgba(255,71,87,.08)', border: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,71,87,.3)'}`, color: active ? G : R }}>{active ? 'ACTIVE' : 'PAUSED'}</span>
               {c.min_subtotal_cents > 0 && <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>min {money(c.min_subtotal_cents)}</span>}
               <div style={{ flex: 1 }} />
               <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', textAlign: 'right' }}>
-                {c.used_count || 0} / {c.max_uses || '∞'} uses
+                {c.used_count || 0} / {c.max_uses || 'âˆž'} uses
                 <div>{c.expires_at ? `exp ${fmt(c.expires_at)}` : 'no expiry'}</div>
               </div>
               <button onClick={() => toggleActive(c)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>{active ? 'PAUSE' : 'ACTIVATE'}</button>
-              <button onClick={() => startEdit(c)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'rgba(0,212,255,.1)', border: '1px solid rgba(0,212,255,.4)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
+              <button onClick={() => startEdit(c)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
               <button onClick={() => remove(c)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
             </div>
           )

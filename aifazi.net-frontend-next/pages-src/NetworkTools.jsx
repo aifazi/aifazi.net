@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { notify } from '../core/notify.jsx'
 import NetworkSim from '@/components/NetworkSim'
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ipToLong(ip) {
   return ip.split('.').reduce((acc, oct) => (acc << 8) + parseInt(oct, 10), 0) >>> 0
 }
@@ -20,7 +20,7 @@ function isValidIp(ip) {
   return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip) && ip.split('.').every(o => parseInt(o) <= 255)
 }
 
-// ── Subnet Calculator ─────────────────────────────────────────────────────────
+// â”€â”€ Subnet Calculator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SubnetCalc() {
   const [input, setInput] = useState('192.168.1.0/24')
   const [result, setResult] = useState(null)
@@ -33,7 +33,7 @@ function SubnetCalc() {
     const [ip, cidrStr] = parts
     const cidr = parseInt(cidrStr)
     if (!isValidIp(ip)) return setError('Invalid IP address')
-    if (isNaN(cidr) || cidr < 0 || cidr > 32) return setError('CIDR must be 0–32')
+    if (isNaN(cidr) || cidr < 0 || cidr > 32) return setError('CIDR must be 0â€“32')
 
     const ipLong    = ipToLong(ip)
     const mask      = cidrToMask(cidr)
@@ -84,7 +84,7 @@ function SubnetCalc() {
         />
         <button onClick={calculate} style={S.btn}>CALCULATE</button>
       </div>
-      {error && <div style={{ color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 11, marginBottom: 12 }}>⚠ {error}</div>}
+      {error && <div style={{ color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 11, marginBottom: 12 }}>âš  {error}</div>}
       {result && (
         <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '0 20px' }}>
           <Row label="NETWORK ADDRESS"   value={result.network + '/' + result.cidr} />
@@ -112,7 +112,7 @@ function SubnetCalc() {
   )
 }
 
-// ── CIDR Reference Table ───────────────────────────────────────────────────────
+// â”€â”€ CIDR Reference Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CidrTable() {
   const rows = [8,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32].map(cidr => ({
     cidr,
@@ -134,7 +134,7 @@ function CidrTable() {
         <tbody>
           {rows.map(r => (
             <tr key={r.cidr} style={{ borderBottom: '1px solid var(--border)' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,255,136,0.04)'}
+              onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 4%, transparent)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
               <td style={{ padding: '8px 16px', color: 'var(--cyan)' }}>/{r.cidr}</td>
@@ -149,7 +149,7 @@ function CidrTable() {
   )
 }
 
-// ── IP Info / Lookup with Globe Map ──────────────────────────────────────────
+// â”€â”€ IP Info / Lookup with Globe Map â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function GlobeMap({ lat, lon, city, mapId }) {
   const mapRef = useRef(null)
   const leafletRef = useRef(null)
@@ -175,7 +175,7 @@ function GlobeMap({ lat, lon, city, mapId }) {
       })
 
       window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+        attribution: 'Â© OpenStreetMap contributors',
         maxZoom: 19,
       }).addTo(map)
 
@@ -303,7 +303,7 @@ function IpInfo() {
         {icon} {label}
       </div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: color || 'var(--text)', wordBreak: 'break-all', letterSpacing: 1 }}>
-        {value || '—'}
+        {value || 'â€”'}
       </div>
     </div>
   )
@@ -319,7 +319,7 @@ function IpInfo() {
           style={{ ...S.input, minWidth: 180 }}
         />
         <button onClick={handleLookup} disabled={loading} style={{ ...S.btn, opacity: loading ? 0.6 : 1 }}>
-          {loading ? '…' : 'LOOKUP'}
+          {loading ? 'â€¦' : 'LOOKUP'}
         </button>
       </div>
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 20 }}>
@@ -328,19 +328,19 @@ function IpInfo() {
 
       {loading && (
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', padding: '20px 0', letterSpacing: 2 }}>
-          ◉ DETECTING IP LOCATION…
+          â—‰ DETECTING IP LOCATIONâ€¦
         </div>
       )}
 
       {error && (
-        <div style={{ color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 11, marginBottom: 12 }}>⚠ {error}</div>
+        <div style={{ color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 11, marginBottom: 12 }}>âš  {error}</div>
       )}
 
       {result && !loading && (
         <>
           {/* IP Hero */}
           <div style={{
-            background: 'linear-gradient(135deg,rgba(0,255,136,0.08) 0%,rgba(0,200,255,0.04) 100%)',
+            background: 'linear-gradient(135deg,color-mix(in srgb, var(--green) 8%, transparent) 0%,rgba(0,200,255,0.04) 100%)',
             border: '1px solid var(--green)', padding: '20px 24px', marginBottom: 20,
             display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
           }}>
@@ -363,24 +363,24 @@ function IpInfo() {
 
           {/* Info Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 8, marginBottom: 8 }}>
-            <InfoCard icon="🌐" label="IP ADDRESS"    value={result.ip}                              color="var(--green)"  onClick={() => copy(result.ip)} />
-            <InfoCard icon="🏠" label="HOSTNAME"      value={result.hostname}                        color="var(--cyan)"   onClick={result.hostname ? () => copy(result.hostname) : null} />
-            <InfoCard icon="🏙" label="CITY"          value={result.city}                            color="var(--text)" />
-            <InfoCard icon="🗺" label="REGION"        value={result.region}                          color="var(--text)" />
-            <InfoCard icon="🌍" label="COUNTRY"       value={result.country_name ? `${result.country_name} (${result.country_code})` : null} color="var(--text)" />
-            <InfoCard icon="📮" label="POSTAL CODE"   value={result.postal}                          color="var(--muted)" />
-            <InfoCard icon="🕐" label="TIMEZONE"      value={result.timezone}                        color="var(--orange)" />
-            <InfoCard icon="🔌" label="ISP / ORG"     value={result.org}                             color="var(--cyan)"   onClick={result.org ? () => copy(result.org) : null} />
-            <InfoCard icon="📡" label="ASN"           value={result.asn}                             color="var(--purple)" onClick={result.asn ? () => copy(result.asn) : null} />
-            <InfoCard icon="💬" label="CALLING CODE"  value={result.country_calling_code}            color="var(--muted)" />
-            <InfoCard icon="💰" label="CURRENCY"      value={result.currency ? `${result.currency} (${result.currency_name})` : null} color="var(--muted)" />
-            <InfoCard icon="🌐" label="LANGUAGES"     value={result.languages}                       color="var(--muted)" />
+            <InfoCard icon="ðŸŒ" label="IP ADDRESS"    value={result.ip}                              color="var(--green)"  onClick={() => copy(result.ip)} />
+            <InfoCard icon="ðŸ " label="HOSTNAME"      value={result.hostname}                        color="var(--cyan)"   onClick={result.hostname ? () => copy(result.hostname) : null} />
+            <InfoCard icon="ðŸ™" label="CITY"          value={result.city}                            color="var(--text)" />
+            <InfoCard icon="ðŸ—º" label="REGION"        value={result.region}                          color="var(--text)" />
+            <InfoCard icon="ðŸŒ" label="COUNTRY"       value={result.country_name ? `${result.country_name} (${result.country_code})` : null} color="var(--text)" />
+            <InfoCard icon="ðŸ“®" label="POSTAL CODE"   value={result.postal}                          color="var(--muted)" />
+            <InfoCard icon="ðŸ•" label="TIMEZONE"      value={result.timezone}                        color="var(--orange)" />
+            <InfoCard icon="ðŸ”Œ" label="ISP / ORG"     value={result.org}                             color="var(--cyan)"   onClick={result.org ? () => copy(result.org) : null} />
+            <InfoCard icon="ðŸ“¡" label="ASN"           value={result.asn}                             color="var(--purple)" onClick={result.asn ? () => copy(result.asn) : null} />
+            <InfoCard icon="ðŸ’¬" label="CALLING CODE"  value={result.country_calling_code}            color="var(--muted)" />
+            <InfoCard icon="ðŸ’°" label="CURRENCY"      value={result.currency ? `${result.currency} (${result.currency_name})` : null} color="var(--muted)" />
+            <InfoCard icon="ðŸŒ" label="LANGUAGES"     value={result.languages}                       color="var(--muted)" />
           </div>
 
           {/* Coordinates row */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 }}>
-            <InfoCard icon="📍" label="LATITUDE"  value={result.latitude  != null ? result.latitude.toFixed(6)  : null} color="var(--yellow)" onClick={result.latitude  != null ? () => copy(result.latitude)  : null} />
-            <InfoCard icon="📍" label="LONGITUDE" value={result.longitude != null ? result.longitude.toFixed(6) : null} color="var(--yellow)" onClick={result.longitude != null ? () => copy(result.longitude) : null} />
+            <InfoCard icon="ðŸ“" label="LATITUDE"  value={result.latitude  != null ? result.latitude.toFixed(6)  : null} color="var(--yellow)" onClick={result.latitude  != null ? () => copy(result.latitude)  : null} />
+            <InfoCard icon="ðŸ“" label="LONGITUDE" value={result.longitude != null ? result.longitude.toFixed(6) : null} color="var(--yellow)" onClick={result.longitude != null ? () => copy(result.longitude) : null} />
           </div>
 
           {/* Globe / Map */}
@@ -398,7 +398,7 @@ function IpInfo() {
   )
 }
 
-// ── Binary / Decimal / Hex Converter ─────────────────────────────────────────
+// â”€â”€ Binary / Decimal / Hex Converter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function IpConverter() {
   const [decimal, setDecimal] = useState('')
   const [binary, setBinary]   = useState('')
@@ -440,13 +440,13 @@ function IpConverter() {
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
       <Field label="IP ADDRESS (DOT-DECIMAL)" value={ipAddr} onChange={fromIp} placeholder="192.168.1.1" color="var(--green)" />
       <Field label="INTEGER (LONG)" value={decimal} onChange={fromDecimal} placeholder="3232235777" color="var(--cyan)" />
-      <Field label="BINARY" value={binary} onChange={() => {}} placeholder="—" color="var(--orange)" />
-      <Field label="HEXADECIMAL" value={hex} onChange={() => {}} placeholder="—" color="var(--purple)" />
+      <Field label="BINARY" value={binary} onChange={() => {}} placeholder="â€”" color="var(--orange)" />
+      <Field label="HEXADECIMAL" value={hex} onChange={() => {}} placeholder="â€”" color="var(--purple)" />
     </div>
   )
 }
 
-// ── Wildcard / ACL Helper ─────────────────────────────────────────────────────
+// â”€â”€ Wildcard / ACL Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function WildcardCalc() {
   const [network, setNetwork] = useState('192.168.1.0')
   const [cidr, setCidr]       = useState('24')
@@ -499,7 +499,7 @@ function WildcardCalc() {
   )
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// â”€â”€ Styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const S = {
   input: {
     background: 'var(--bg3)', border: '1px solid var(--border)',
@@ -516,15 +516,15 @@ const S = {
 }
 
 const TABS = [
-  { id: 'subnet',   label: 'Subnet Calc',   icon: '🌐', component: SubnetCalc },
-  { id: 'cidr',     label: 'CIDR Table',    icon: '📋', component: CidrTable },
-  { id: 'ipinfo',   label: 'IP Lookup',     icon: '🔍', component: IpInfo },
-  { id: 'convert',  label: 'IP Converter',  icon: '🔄', component: IpConverter },
-  { id: 'wildcard', label: 'Wildcard/ACL',  icon: '🛡️', component: WildcardCalc },
-  { id: 'cli',      label: 'CLI Sim',       icon: '⌨',  component: NetworkSim },
+  { id: 'subnet',   label: 'Subnet Calc',   icon: 'ðŸŒ', component: SubnetCalc },
+  { id: 'cidr',     label: 'CIDR Table',    icon: 'ðŸ“‹', component: CidrTable },
+  { id: 'ipinfo',   label: 'IP Lookup',     icon: 'ðŸ”', component: IpInfo },
+  { id: 'convert',  label: 'IP Converter',  icon: 'ðŸ”„', component: IpConverter },
+  { id: 'wildcard', label: 'Wildcard/ACL',  icon: 'ðŸ›¡ï¸', component: WildcardCalc },
+  { id: 'cli',      label: 'CLI Sim',       icon: 'âŒ¨',  component: NetworkSim },
 ]
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function NetworkTools() {
   const [tab, setTab] = useState('subnet')
   const Active = TABS.find(t => t.id === tab)?.component || SubnetCalc
@@ -538,7 +538,7 @@ export default function NetworkTools() {
         .nt-tabs::-webkit-scrollbar { display: none; }
         .nt-panel { background: var(--bg2); border: 1px solid var(--border); padding: 32px; }
         .leaflet-container { font-family: var(--font-mono) !important; }
-        .leaflet-popup-content-wrapper { background: var(--bg2,#111) !important; color: var(--text,#eee) !important; border: 1px solid var(--green,#00ff88) !important; border-radius: 0 !important; box-shadow: 0 0 16px rgba(0,255,136,0.2) !important; }
+        .leaflet-popup-content-wrapper { background: var(--bg2,#111) !important; color: var(--text,#eee) !important; border: 1px solid var(--green,#00ff88) !important; border-radius: 0 !important; box-shadow: 0 0 16px color-mix(in srgb, var(--green) 20%, transparent) !important; }
         .leaflet-popup-tip { background: var(--bg2,#111) !important; }
         .leaflet-popup-content { color: var(--text,#eee) !important; font-size: 12px; }
         .leaflet-control-zoom a { background: var(--bg2,#111) !important; color: var(--green,#00ff88) !important; border-color: var(--border,#333) !important; }
@@ -558,7 +558,7 @@ export default function NetworkTools() {
           </div>
           <h1 className="nt-title">Network Tools</h1>
           <p style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.7 }}>
-            Essential utilities for network engineers — subnet calculations, CIDR references, IP lookups and more.
+            Essential utilities for network engineers â€” subnet calculations, CIDR references, IP lookups and more.
           </p>
         </div>
 

@@ -12,8 +12,8 @@ export function RoleSelect({ label, value, onChange }) {
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {ROLES.map(role => (
           <button key={role} onClick={() => toggle(role)}
-            style={{ padding: '5px 12px', border: `1px solid ${value.includes(role) ? 'rgba(0,255,136,0.5)' : T.border}`,
-              borderRadius: 7, background: value.includes(role) ? 'rgba(0,255,136,0.1)' : 'transparent',
+            style={{ padding: '5px 12px', border: `1px solid ${value.includes(role) ? 'color-mix(in srgb, var(--green) 50%, transparent)' : T.border}`,
+              borderRadius: 7, background: value.includes(role) ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent',
               color: value.includes(role) ? T.accent : T.muted, fontFamily: T.mono, fontSize: 10,
               cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>
             {role}
@@ -60,8 +60,8 @@ export function ChannelModal({ initial, onSave, onClose }) {
           <div style={{ display: 'flex', gap: 6 }}>
             {['text', 'voice', 'video'].map(t => (
               <button key={t} onClick={() => setCtype(t)}
-                style={{ flex: 1, padding: '8px', border: `1px solid ${ctype === t ? 'rgba(0,255,136,0.4)' : T.border}`, borderRadius: 8, background: ctype === t ? 'rgba(0,255,136,0.08)' : 'transparent', color: ctype === t ? T.accent : T.muted, fontFamily: T.mono, fontSize: 10, cursor: 'pointer', textTransform: 'uppercase' }}>
-                {t === 'voice' ? '🔊' : t === 'video' ? '📹' : '📝'} {t}
+                style={{ flex: 1, padding: '8px', border: `1px solid ${ctype === t ? 'color-mix(in srgb, var(--green) 40%, transparent)' : T.border}`, borderRadius: 8, background: ctype === t ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'transparent', color: ctype === t ? T.accent : T.muted, fontFamily: T.mono, fontSize: 10, cursor: 'pointer', textTransform: 'uppercase' }}>
+                {t === 'voice' ? 'ðŸ”Š' : t === 'video' ? 'ðŸ“¹' : 'ðŸ“'} {t}
               </button>
             ))}
           </div>
@@ -97,7 +97,7 @@ export function ChannelModal({ initial, onSave, onClose }) {
         )}
 
         <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
-          <button onClick={handleSave} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,rgba(0,255,136,0.85),rgba(0,212,255,0.85))', color: '#000', fontFamily: T.mono, fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>
+          <button onClick={handleSave} style={{ flex: 1, padding: '10px', border: 'none', borderRadius: 8, background: 'linear-gradient(135deg,color-mix(in srgb, var(--green) 85%, transparent),color-mix(in srgb, var(--cyan) 85%, transparent))', color: '#000', fontFamily: T.mono, fontSize: 11, fontWeight: 700, cursor: 'pointer', letterSpacing: 1 }}>
             {editing ? 'SAVE' : 'CREATE'}
           </button>
           <button onClick={onClose} style={{ padding: '10px 18px', border: `1px solid ${T.border}`, borderRadius: 8, background: 'transparent', color: T.muted, fontFamily: T.mono, fontSize: 11, cursor: 'pointer' }}>CANCEL</button>

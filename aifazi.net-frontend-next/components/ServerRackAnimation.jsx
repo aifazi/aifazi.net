@@ -2,24 +2,24 @@
 import { useEffect, useState, useRef } from 'react'
 import { useInlineEdit } from '../context/EditContext'
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  ServerRackAnimation  —  multi-mode animated dashboard
-//  Modes: DATACENTER · DEPLOY PIPELINE · SYSTEM MONITOR · THREAT MAP
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  ServerRackAnimation  â€”  multi-mode animated dashboard
+//  Modes: DATACENTER Â· DEPLOY PIPELINE Â· SYSTEM MONITOR Â· THREAT MAP
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const MODES = [
-  { id: 'datacenter', label: 'DATACENTER',   icon: '⬡' },
-  { id: 'deploy',     label: 'DEPLOY',        icon: '▶' },
-  { id: 'monitor',    label: 'SYS MONITOR',  icon: '◈' },
-  { id: 'threat',     label: 'THREAT MAP',   icon: '◉' },
-  { id: 'neural',     label: 'NEURAL NET',   icon: '◎' },
-  { id: 'packets',    label: 'PACKET FLOW',  icon: '⟶' },
-  { id: 'avatar',     label: 'AVATAR',       icon: '◐' },
-  { id: 'globe',      label: 'GLOBE',        icon: '◑' },
+  { id: 'datacenter', label: 'DATACENTER',   icon: 'â¬¡' },
+  { id: 'deploy',     label: 'DEPLOY',        icon: 'â–¶' },
+  { id: 'monitor',    label: 'SYS MONITOR',  icon: 'â—ˆ' },
+  { id: 'threat',     label: 'THREAT MAP',   icon: 'â—‰' },
+  { id: 'neural',     label: 'NEURAL NET',   icon: 'â—Ž' },
+  { id: 'packets',    label: 'PACKET FLOW',  icon: 'âŸ¶' },
+  { id: 'avatar',     label: 'AVATAR',       icon: 'â—' },
+  { id: 'globe',      label: 'GLOBE',        icon: 'â—‘' },
 ]
 
 export default function ServerRackAnimation() {
-  // Persist the active mode globally — saved for all visitors via the content API
+  // Persist the active mode globally â€” saved for all visitors via the content API
   const { value: savedMode, save: persistMode, isAdmin: canEditMode } = useInlineEdit('hero.animMode', 'datacenter')
 
   // Local state follows the saved value; also allows instant preview while in edit mode
@@ -52,7 +52,7 @@ export default function ServerRackAnimation() {
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
       paddingTop: canEditMode ? 16 : 0 }}>
 
-      {/* ── Mode Switcher — only visible in admin edit mode ── */}
+      {/* â”€â”€ Mode Switcher â€” only visible in admin edit mode â”€â”€ */}
       {canEditMode && (
       <div style={{ display: 'flex', gap: 4, marginBottom: 14, background: 'var(--bg2)',
         border: '1px solid var(--border)', borderRadius: 6, padding: 4, flexWrap: 'wrap',
@@ -62,9 +62,9 @@ export default function ServerRackAnimation() {
           position: 'absolute', top: -9, left: '50%', transform: 'translateX(-50%)',
           fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2,
           color: 'var(--green)', background: 'var(--bg2)',
-          border: '1px solid rgba(0,255,136,0.35)', borderRadius: 10,
+          border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', borderRadius: 10,
           padding: '1px 8px', whiteSpace: 'nowrap', pointerEvents: 'none',
-        }}>✎ EDIT MODE — SELECT ANIMATION</div>
+        }}>âœŽ EDIT MODE â€” SELECT ANIMATION</div>
         {MODES.map(m => {
           const active = mode === m.id
           return (
@@ -76,10 +76,10 @@ export default function ServerRackAnimation() {
                 fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2,
                 padding: '6px 14px', cursor: 'pointer', borderRadius: 4,
                 border: active ? '1px solid var(--cyan)' : '1px solid transparent',
-                background: active ? 'rgba(0,212,255,0.1)' : hovMode === m.id ? 'var(--bg3)' : 'transparent',
+                background: active ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : hovMode === m.id ? 'var(--bg3)' : 'transparent',
                 color: active ? 'var(--cyan)' : 'var(--muted)',
                 transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 6,
-                boxShadow: active ? '0 0 10px rgba(0,212,255,0.15)' : 'none',
+                boxShadow: active ? '0 0 10px color-mix(in srgb, var(--cyan) 15%, transparent)' : 'none',
               }}>
               <span style={{ fontSize: 11, color: active ? 'var(--cyan)' : 'var(--muted)' }}>{m.icon}</span>
               {m.label}
@@ -91,7 +91,7 @@ export default function ServerRackAnimation() {
       </div>
       )}
 
-      {/* ── Animation panel ── */}
+      {/* â”€â”€ Animation panel â”€â”€ */}
       <div style={{ width: '100%', flex: 1, position: 'relative' }}>
         {mode === 'datacenter' && <DatacenterMode tick={tick} visibleRef={visibleRef}/>}
         {mode === 'deploy'     && <DeployMode     tick={tick} visibleRef={visibleRef}/>}
@@ -106,9 +106,9 @@ export default function ServerRackAnimation() {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  SHARED CSS
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SHARED_CSS = `
   .rk-chassis { fill:var(--bg2); stroke:var(--border); stroke-width:1.5; }
   .rk-lip     { fill:var(--bg3); }
@@ -156,9 +156,9 @@ function SvgWrap({ viewBox = "0 0 900 460", children }) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  MODE 1: DATACENTER (enhanced original)
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function DatacenterMode({ tick, visibleRef }) {
   const [lights, setLights] = useState(() => Array.from({ length: 40 }, () => Math.random() > 0.35))
   const [robotY, setRobotY] = useState(0)
@@ -170,12 +170,12 @@ function DatacenterMode({ tick, visibleRef }) {
   const [netParticles, setNetParticles] = useState([])
   const [alerts, setAlerts] = useState([])
 
-  const LOG_LINES = ['PING 10.0.0.1 — OK','BGP SESSION UP','OSPF ADJ FORMED','VLAN 100 ACTIVE',
+  const LOG_LINES = ['PING 10.0.0.1 â€” OK','BGP SESSION UP','OSPF ADJ FORMED','VLAN 100 ACTIVE',
     'CPU: 12%  MEM: 41%','FW RULE 42 MATCH','SSH AUTH OK','BACKUP COMPLETE',
     'CERT RENEWED OK','UPTIME: 99.99%','DEPLOY v2.4.1 OK','TLS 1.3 ENFORCED',
     'IPSEC TUNNEL UP','NTP SYNC OK','DNS CACHE FLUSH']
 
-  const ALERT_MSGS = ['⚡ BGP PEER UP','✓ CERT RENEWED','⚠ HIGH CPU SRV-3','✓ BACKUP DONE','⚡ DEPLOY OK']
+  const ALERT_MSGS = ['âš¡ BGP PEER UP','âœ“ CERT RENEWED','âš  HIGH CPU SRV-3','âœ“ BACKUP DONE','âš¡ DEPLOY OK']
 
   const bezier = (t, p0, p1, p2, p3) =>
     (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3 * p3
@@ -230,7 +230,7 @@ function DatacenterMode({ tick, visibleRef }) {
       // Random floating alert
       if (Math.random() > 0.72) {
         const msg = ALERT_MSGS[Math.floor(Math.random() * ALERT_MSGS.length)]
-        const isWarn = msg.includes('⚠')
+        const isWarn = msg.includes('âš ')
         setAlerts(a => [...a.slice(-2), { id: Date.now(), msg, warn: isWarn, age: 0 }])
       }
       setAlerts(a => a.map(x => ({ ...x, age: x.age + 1 })).filter(x => x.age < 6))
@@ -246,7 +246,7 @@ function DatacenterMode({ tick, visibleRef }) {
       <ellipse cx="200" cy="468" rx="135" ry="9" className="shadow-el"/>
       <ellipse cx="410" cy="468" rx="82" ry="6" className="shadow-el"/>
 
-      {/* ── MAIN RACK ── */}
+      {/* â”€â”€ MAIN RACK â”€â”€ */}
       <rect x="78" y="88" width="244" height="376" rx="4" className="rk-chassis"/>
       <rect x="78" y="88" width="244" height="12" rx="4" className="rk-lip"/>
       <rect x="78" y="452" width="244" height="12" rx="2" className="rk-lip"/>
@@ -260,17 +260,17 @@ function DatacenterMode({ tick, visibleRef }) {
 
       {/* Router */}
       <rect x="100" y="103" width="200" height="28" rx="2" className="sv-body"/>
-      <text x="110" y="114" fontSize="6" letterSpacing="1" className="lbl-c">ROUTER · CORE-01</text>
-      <text x="110" y="123" fontSize="5" className="lbl-m">BGP · OSPF · IS-IS · MPLS</text>
+      <text x="110" y="114" fontSize="6" letterSpacing="1" className="lbl-c">ROUTER Â· CORE-01</text>
+      <text x="110" y="123" fontSize="5" className="lbl-m">BGP Â· OSPF Â· IS-IS Â· MPLS</text>
       {[0,1,2,3,4,5,6,7].map(i => <rect key={i} x={246+i*7} y="108" width="5" height="4" rx="1" className={lights[i]?'led-g-on':'led-off'}/>)}
       <circle cx="294" cy="117" r="3" className={tick%2===0?'led-c-on':'led-off'}/>
 
       {/* Switches */}
       <rect x="100" y="135" width="200" height="16" rx="2" className="sv-body"/>
-      <text x="110" y="146" fontSize="6" letterSpacing="1" className="lbl-p">SWITCH · 48P</text>
+      <text x="110" y="146" fontSize="6" letterSpacing="1" className="lbl-p">SWITCH Â· 48P</text>
       {Array.from({length:24},(_,i)=><rect key={i} x={200+i*4.2} y="138" width="3.2" height="3" rx="0.5" className={lights[(8+i)%40]?'led-g-on':'led-off'}/>)}
       <rect x="100" y="155" width="200" height="16" rx="2" className="sv-body"/>
-      <text x="110" y="166" fontSize="6" letterSpacing="1" className="lbl-p">SWITCH · 24P</text>
+      <text x="110" y="166" fontSize="6" letterSpacing="1" className="lbl-p">SWITCH Â· 24P</text>
       {Array.from({length:12},(_,i)=><rect key={i} x={222+i*4.5} y="158" width="3.5" height="3" rx="0.5" className={lights[(16+i)%40]?'led-c-on':'led-off'}/>)}
 
       {/* 8 Servers */}
@@ -285,22 +285,22 @@ function DatacenterMode({ tick, visibleRef }) {
           <circle cx="202" cy={sy+9} r="2.5" className={lights[(s*3+1)%40]?'led-c-on':'led-off'}/>
           <rect x="220" y={sy+6} width="42" height="4" rx="1" className="sv-face"/>
           <rect x="220" y={sy+6} width={cpu*0.42} height="4" rx="1" className={cpu>70?'led-o-on':'led-c-on'} style={{opacity:0.85}}/>
-          {/* Temperature dot — new */}
+          {/* Temperature dot â€” new */}
           <circle cx="275" cy={sy+9} r="2" className={cpu>60?'led-o-on':cpu>80?'led-r-on':'led-g-on'}/>
         </g>
       })}
 
       {/* Patch + UPS */}
       <rect x="100" y="351" width="200" height="14" rx="2" className="sv-body"/>
-      <text x="110" y="361" fontSize="6" className="lbl-m">PATCH PANEL · 24P</text>
+      <text x="110" y="361" fontSize="6" className="lbl-m">PATCH PANEL Â· 24P</text>
       {Array.from({length:16},(_,i)=><rect key={i} x={206+i*5.5} y="354" width="4" height="4" rx="0.5" className="sv-port"/>)}
       <rect x="100" y="369" width="200" height="48" rx="2" className="sv-body"/>
-      <text x="110" y="383" fontSize="7" letterSpacing="1" className="lbl-o">UPS · 3000VA</text>
+      <text x="110" y="383" fontSize="7" letterSpacing="1" className="lbl-o">UPS Â· 3000VA</text>
       {[0,1,2,3,4,5].map(i=><rect key={i} x={196+i*13} y="372" width="11" height="40" rx="1"
         className={i<4?'led-c-on':'led-off'} style={{opacity:i<4?0.18:0.5}}/>)}
-      <text x="110" y="405" fontSize="5.5" className="lbl-m">BATT: {70+(tick%15)}%  ·  LOAD: 42%</text>
+      <text x="110" y="405" fontSize="5.5" className="lbl-m">BATT: {70+(tick%15)}%  Â·  LOAD: 42%</text>
 
-      {/* ── RIGHT MINI-RACK ── */}
+      {/* â”€â”€ RIGHT MINI-RACK â”€â”€ */}
       <rect x="352" y="148" width="162" height="248" rx="4" className="rk-chassis" style={{strokeWidth:1.2}}/>
       <rect x="352" y="148" width="162" height="10" rx="4" className="rk-lip"/>
       <rect x="352" y="386" width="162" height="10" rx="2" className="rk-lip"/>
@@ -308,10 +308,10 @@ function DatacenterMode({ tick, visibleRef }) {
       <rect x="502" y="158" width="6" height="228" className="rk-rail"/>
       <rect x="366" y="161" width="132" height="24" rx="2" className="sv-body"/>
       <text x="374" y="172" fontSize="6.5" letterSpacing="1" className="lbl-g">FIREWALL</text>
-      <text x="374" y="180" fontSize="5" className="lbl-m">FortiGate · pfSense</text>
+      <text x="374" y="180" fontSize="5" className="lbl-m">FortiGate Â· pfSense</text>
       <circle cx="484" cy="173" r="3.5" className={tick%3===0?'led-g-on':'led-off'}/>
       <rect x="366" y="189" width="132" height="38" rx="2" className="sv-body"/>
-      <text x="374" y="200" fontSize="6" className="lbl-c">NAS · 96 TB</text>
+      <text x="374" y="200" fontSize="6" className="lbl-c">NAS Â· 96 TB</text>
       {[0,1,2,3,4,5].map(i=><g key={i}>
         <rect x={374+i*18} y="204" width="14" height="18" rx="1" className="sv-port"/>
         <circle cx={381+i*18} cy="209" r="2" className={lights[(i*5+1)%40]?'led-c-on':'led-off'}/>
@@ -351,8 +351,8 @@ function DatacenterMode({ tick, visibleRef }) {
 
       {/* HUDs */}
       <rect x="80" y="58" width="92" height="24" rx="3" className="hud-bg"/>
-      <text x="88" y="69" fontSize="6" className="lbl-c">↑ 2.4 Gbps</text>
-      <text x="88" y="78" fontSize="6" className="lbl-g">↓ 1.8 Gbps</text>
+      <text x="88" y="69" fontSize="6" className="lbl-c">â†‘ 2.4 Gbps</text>
+      <text x="88" y="78" fontSize="6" className="lbl-g">â†“ 1.8 Gbps</text>
       <rect x="352" y="118" width="86" height="24" rx="3" className="hud-bg"/>
       <text x="360" y="129" fontSize="6" className="lbl-g">UPTIME 99.9%</text>
       <text x="360" y="138" fontSize="6" className="lbl-m">{Math.floor(tick/2.5)%60}d {Math.floor(tick*0.4)%24}h uptime</text>
@@ -362,7 +362,7 @@ function DatacenterMode({ tick, visibleRef }) {
       <path d="M 532 26 L 532 46 M 532 26 L 512 26" className="bracket"/>
       <path d="M 48 454 L 48 434 M 48 454 L 68 454" className="bracket"/>
       <path d="M 532 454 L 532 434 M 532 454 L 512 454" className="bracket"/>
-      <text x="48" y="20" className="hud-title">DATACENTER · NODE-CLUSTER-01</text>
+      <text x="48" y="20" className="hud-title">DATACENTER Â· NODE-CLUSTER-01</text>
 
       {/* Robot */}
       <g style={{transition:'transform 0.85s cubic-bezier(0.4,0,0.2,1)'}} transform={`translate(335,${ry})`}>
@@ -398,7 +398,7 @@ function DatacenterMode({ tick, visibleRef }) {
         <rect x="15" y="1" width="5" height="7" rx="2" style={{fill:'var(--bg4,var(--bg3))'}}/>
       </g>
 
-      {/* ── Network topology panel ── */}
+      {/* â”€â”€ Network topology panel â”€â”€ */}
       {(() => {
         const PX=560
         const nodes=[
@@ -417,7 +417,7 @@ function DatacenterMode({ tick, visibleRef }) {
         const areaD=pathD+` L${GX+GW},${GY+GH} L${GX},${GY+GH} Z`
         return <g>
           <rect x={PX} y="20" width="480" height="450" rx="6" fill="var(--bg2)" fillOpacity="0.5" stroke="var(--border)" strokeWidth="1"/>
-          <text x={PX+12} y="35" className="hud-title">NETWORK TOPOLOGY · LIVE</text>
+          <text x={PX+12} y="35" className="hud-title">NETWORK TOPOLOGY Â· LIVE</text>
           <circle cx={PX+460} cy="29" r="3.5" className={tick%2===0?'led-g-on':'led-off'}/>
           {edges.map(([a,b],i)=><line key={i} x1={nodes[a].x} y1={nodes[a].y} x2={nodes[b].x} y2={nodes[b].y} stroke="var(--border)" strokeWidth="1.2" strokeDasharray="4 3"/>)}
           {netParticles.map(p=>{
@@ -435,7 +435,7 @@ function DatacenterMode({ tick, visibleRef }) {
           })}
           {/* Graph */}
           <rect x={GX} y={GY} width={GW} height={GH} rx="4" fill="var(--bg3)" stroke="var(--border)" strokeWidth="0.8"/>
-          <text x={GX+6} y={GY+12} fontSize="6" letterSpacing="1" fill="var(--cyan)" fontFamily="monospace">BANDWIDTH · REAL-TIME</text>
+          <text x={GX+6} y={GY+12} fontSize="6" letterSpacing="1" fill="var(--cyan)" fontFamily="monospace">BANDWIDTH Â· REAL-TIME</text>
           <defs>
             <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--cyan)" stopOpacity="0.25"/>
@@ -475,7 +475,7 @@ function DatacenterMode({ tick, visibleRef }) {
       {alerts.map((a,i)=>(
         <g key={a.id} style={{transition:'opacity 0.5s'}} opacity={Math.max(0,1-a.age*0.18)}>
           <rect x={84+i*160} y="64" width={a.msg.length*5+16} height="16" rx="4"
-            fill={a.warn?'rgba(255,165,0,0.15)':'rgba(0,255,136,0.1)'}
+            fill={a.warn?'rgba(255,165,0,0.15)':'color-mix(in srgb, var(--green) 10%, transparent)'}
             stroke={a.warn?'var(--orange)':'var(--green)'} strokeWidth="0.8"/>
           <text x={92+i*160} y="75" fontSize="6" fontFamily="monospace" fill={a.warn?'var(--orange)':'var(--green)'}>{a.msg}</text>
         </g>
@@ -484,17 +484,17 @@ function DatacenterMode({ tick, visibleRef }) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  MODE 2: DEPLOY PIPELINE
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const STAGES = [
-  { id:'checkout',  label:'CHECKOUT',   icon:'⬡', desc:'Clone repo' },
-  { id:'install',   label:'INSTALL',    icon:'◈', desc:'npm install' },
-  { id:'lint',      label:'LINT',       icon:'◇', desc:'ESLint + TS' },
-  { id:'test',      label:'TEST',       icon:'◉', desc:'Jest 42 tests' },
-  { id:'build',     label:'BUILD',      icon:'▶', desc:'next build' },
-  { id:'preview',   label:'PREVIEW',    icon:'◈', desc:'Deploy preview' },
-  { id:'production',label:'PRODUCTION', icon:'⬡', desc:'aifazi.net' },
+  { id:'checkout',  label:'CHECKOUT',   icon:'â¬¡', desc:'Clone repo' },
+  { id:'install',   label:'INSTALL',    icon:'â—ˆ', desc:'npm install' },
+  { id:'lint',      label:'LINT',       icon:'â—‡', desc:'ESLint + TS' },
+  { id:'test',      label:'TEST',       icon:'â—‰', desc:'Jest 42 tests' },
+  { id:'build',     label:'BUILD',      icon:'â–¶', desc:'next build' },
+  { id:'preview',   label:'PREVIEW',    icon:'â—ˆ', desc:'Deploy preview' },
+  { id:'production',label:'PRODUCTION', icon:'â¬¡', desc:'aifazi.net' },
 ]
 
 function DeployMode({ tick, visibleRef }) {
@@ -508,11 +508,11 @@ function DeployMode({ tick, visibleRef }) {
   const STAGE_LOGS = {
     checkout:  ['Cloning into aifazi.net...','remote: Counting objects: 2847','Resolving deltas: 100%','HEAD is at d8fa3bc'],
     install:   ['npm warn deprecated inflight@1.0.6','added 847 packages in 14s','Packages audited: 847','found 0 vulnerabilities'],
-    lint:      ['Running eslint on 312 files...','✓  components/Navbar.jsx','✓  lib/api.ts','✓  No warnings or errors'],
+    lint:      ['Running eslint on 312 files...','âœ“  components/Navbar.jsx','âœ“  lib/api.ts','âœ“  No warnings or errors'],
     test:      ['PASS  components/__tests__/Hero.test.jsx','PASS  lib/__tests__/api.test.ts','Test Suites: 12 passed','Tests: 42 passed, 0 failed'],
-    build:    ['Creating an optimized production build...','Route (app)  Size  First Load','✓ Compiled successfully','Build time: 28.4s'],
-    preview:   ['Deploying to Vercel preview...','Assigned URL: aifazi-git-main.vercel.app','Edge Network: 28 regions','✓ Preview ready'],
-    production:['Promoting to production...','Assigning domain: aifazi.net','Purging CDN cache...','✓ Production live'],
+    build:    ['Creating an optimized production build...','Route (app)  Size  First Load','âœ“ Compiled successfully','Build time: 28.4s'],
+    preview:   ['Deploying to Vercel preview...','Assigned URL: aifazi-git-main.vercel.app','Edge Network: 28 regions','âœ“ Preview ready'],
+    production:['Promoting to production...','Assigning domain: aifazi.net','Purging CDN cache...','âœ“ Production live'],
   }
 
   useEffect(() => {
@@ -548,7 +548,7 @@ function DeployMode({ tick, visibleRef }) {
       <rect x="20" y="20" width="860" height="3" rx="3" fill="var(--green)" opacity="0.5"/>
 
       {/* Title */}
-      <text x="36" y="42" fontSize="7" letterSpacing="3" fontFamily="monospace" fill="var(--green)" opacity="0.5">DEPLOY PIPELINE · RUN #{runCount}</text>
+      <text x="36" y="42" fontSize="7" letterSpacing="3" fontFamily="monospace" fill="var(--green)" opacity="0.5">DEPLOY PIPELINE Â· RUN #{runCount}</text>
       <circle cx="856" cy="32" r="4" className={tick%2===0?'led-g-on':'led-off'}/>
 
       {/* Pipeline stages */}
@@ -576,7 +576,7 @@ function DeployMode({ tick, visibleRef }) {
             <text x={cx} y="128" textAnchor="middle" fontSize="16" fontFamily="monospace" fill={textColor}>{s.icon}</text>
             {/* Status indicator */}
             {done && <circle cx={cx + 24} cy="106" r="5" fill="var(--green)" style={{ filter: 'drop-shadow(0 0 4px var(--green))' }}/>}
-            {done && <text x={cx + 24} y="109" textAnchor="middle" fontSize="6" fontFamily="monospace" fill="var(--bg)">✓</text>}
+            {done && <text x={cx + 24} y="109" textAnchor="middle" fontSize="6" fontFamily="monospace" fill="var(--bg)">âœ“</text>}
             {active && <circle cx={cx + 24} cy="106" r="5" fill="var(--cyan)" opacity={0.5 + (tick % 2) * 0.4}/>}
             {/* Label */}
             <text x={cx} y="172" textAnchor="middle" fontSize="6" letterSpacing="1" fontFamily="monospace" fill={textColor}>{s.label}</text>
@@ -616,7 +616,7 @@ function DeployMode({ tick, visibleRef }) {
       ))}
       {logLines.map((line, i) => (
         <text key={i} x="48" y={234 + i * 16} fontSize="6.5" fontFamily="monospace"
-          fill={line.startsWith('✓') ? 'var(--green)' : line.startsWith('✗') ? '#ff4757' : line.startsWith('PASS') ? 'var(--cyan)' : 'var(--muted)'}
+          fill={line.startsWith('âœ“') ? 'var(--green)' : line.startsWith('âœ—') ? '#ff4757' : line.startsWith('PASS') ? 'var(--cyan)' : 'var(--muted)'}
           opacity={Math.max(0.4, 1 - (logLines.length - 1 - i) * 0.07)}>
           {line}
         </text>
@@ -629,9 +629,9 @@ function DeployMode({ tick, visibleRef }) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  MODE 3: SYSTEM MONITOR
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SERVERS_MON = [
   { name:'SRV-01', role:'Web / Next.js' },
   { name:'SRV-02', role:'API / FastAPI' },
@@ -716,7 +716,7 @@ function MonitorMode({ tick, visibleRef }) {
   return (
     <SvgWrap viewBox="0 0 900 480">
       <rect x="20" y="20" width="860" height="440" rx="8" fill="var(--bg2)" stroke="var(--border)" strokeWidth="1"/>
-      <text x="36" y="42" fontSize="7" letterSpacing="3" fontFamily="monospace" fill="var(--cyan)" opacity="0.5">SYSTEM MONITOR · LIVE</text>
+      <text x="36" y="42" fontSize="7" letterSpacing="3" fontFamily="monospace" fill="var(--cyan)" opacity="0.5">SYSTEM MONITOR Â· LIVE</text>
       <circle cx="856" cy="32" r="4" className={tick%2===0?'led-g-on':'led-off'}/>
 
       {/* Server list */}
@@ -727,7 +727,7 @@ function MonitorMode({ tick, visibleRef }) {
         return (
           <g key={i} onClick={() => setSelected(i)} style={{ cursor: 'pointer' }}>
             <rect x="36" y={56 + i * 62} width="200" height="54" rx="5"
-              fill={isSelected ? 'rgba(0,212,255,0.06)' : 'var(--bg3)'}
+              fill={isSelected ? 'color-mix(in srgb, var(--cyan) 6%, transparent)' : 'var(--bg3)'}
               stroke={isSelected ? 'var(--cyan)' : 'var(--border)'} strokeWidth={isSelected ? 1.2 : 0.7}/>
             {/* Server name + status */}
             <circle cx="52" cy={69 + i * 62} r="4" fill={statusColor} style={{ filter: `drop-shadow(0 0 4px ${statusColor})` }}/>
@@ -748,7 +748,7 @@ function MonitorMode({ tick, visibleRef }) {
             ))}
             {/* Temp */}
             <text x="164" y={72 + i * 62} fontSize="6" fontFamily="monospace"
-              fill={m.temp > 75 ? 'var(--orange)' : 'var(--muted)'}>{Math.round(m.temp)}°C</text>
+              fill={m.temp > 75 ? 'var(--orange)' : 'var(--muted)'}>{Math.round(m.temp)}Â°C</text>
             <text x="164" y={82 + i * 62} fontSize="5" fontFamily="monospace" fill={statusColor}>{m.status}</text>
           </g>
         )
@@ -776,7 +776,7 @@ function MonitorMode({ tick, visibleRef }) {
           { label:'UPTIME',  value: `${(tick * 0.06 + 12).toFixed(1)}h` },
           { label:'REQUESTS',value: `${((sel.cpu * 42 + tick) % 9000 + 1000).toFixed(0)}/s` },
           { label:'ERRORS',  value: sel.cpu > 85 ? `${Math.floor(sel.cpu - 80)}` : '0' },
-          { label:'TEMP',    value: `${Math.round(sel.temp)}°C` },
+          { label:'TEMP',    value: `${Math.round(sel.temp)}Â°C` },
           { label:'NETWORK', value: `${(sel.net * 0.01).toFixed(1)}Gbps` },
           { label:'PROCESSES',value:'142' },
         ].map((s, i) => (
@@ -794,9 +794,9 @@ function MonitorMode({ tick, visibleRef }) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  MODE 4: THREAT MAP
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const THREAT_SOURCES = [
   { name:'RUSSIA',   x:540, y:130, color:'#ff4757' },
   { name:'CHINA',    x:640, y:165, color:'#ff4757' },
@@ -870,7 +870,7 @@ function ThreatMode({ tick, visibleRef }) {
     <SvgWrap viewBox="0 0 900 480">
       <rect x="20" y="20" width="860" height="440" rx="8" fill="var(--bg2)" stroke="var(--border)" strokeWidth="1"/>
       <rect x="20" y="20" width="860" height="3" rx="3" fill="#ff4757" opacity="0.5"/>
-      <text x="36" y="42" fontSize="7" letterSpacing="3" fontFamily="monospace" fill="#ff4757" opacity="0.5">THREAT MAP · REAL-TIME DEFENSE</text>
+      <text x="36" y="42" fontSize="7" letterSpacing="3" fontFamily="monospace" fill="#ff4757" opacity="0.5">THREAT MAP Â· REAL-TIME DEFENSE</text>
       <circle cx="856" cy="32" r="4" className={tick%3===0?'led-r-on':tick%3===1?'led-o-on':'led-off'}/>
 
       {/* Grid */}
@@ -921,7 +921,7 @@ function ThreatMode({ tick, visibleRef }) {
         )
       })}
 
-      {/* Right panel — stats + log */}
+      {/* Right panel â€” stats + log */}
       <rect x="698" y="52" width="182" height="390" rx="6" fill="var(--bg3)" stroke="var(--border)" strokeWidth="0.8"/>
       <rect x="698" y="52" width="182" height="2" fill="#ff4757" opacity="0.5"/>
       <text x="710" y="68" fontSize="6" letterSpacing="2" fontFamily="monospace" fill="var(--muted)">THREAT STATS</text>
@@ -961,16 +961,16 @@ function ThreatMode({ tick, visibleRef }) {
       {/* Bottom status */}
       <rect x="36" y="440" width="644" height="30" rx="4" fill="var(--bg3)" stroke="var(--border)" strokeWidth="0.6"/>
       <circle cx="52" cy="455" r="4" fill="var(--green)" style={{ filter: 'drop-shadow(0 0 4px var(--green))' }}/>
-      <text x="62" y="459" fontSize="6" fontFamily="monospace" fill="var(--green)">FIREWALL ACTIVE · ALL THREATS BLOCKED · SYSTEM SECURE</text>
+      <text x="62" y="459" fontSize="6" fontFamily="monospace" fill="var(--green)">FIREWALL ACTIVE Â· ALL THREATS BLOCKED Â· SYSTEM SECURE</text>
       <text x="580" y="459" fontSize="6" fontFamily="monospace" fill="var(--muted)" suppressHydrationWarning>{new Date().toISOString().slice(0, 19).replace('T',' ')}</text>
     </SvgWrap>
   )
 }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  MODE 5: NEURAL NET  (GSAP-powered)
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const NEURAL_NODES = [
   // Input layer
   { id: 0, x: 120, y: 100, layer: 0 }, { id: 1, x: 120, y: 175, layer: 0 },
@@ -1008,7 +1008,7 @@ function NeuralNetMode({ visibleRef }) {
       const ctx = gsap.context(() => {
         const svg = svgRef.current
 
-        // ── Pulse each node with staggered glow ──
+        // â”€â”€ Pulse each node with staggered glow â”€â”€
         gsap.to('.nn-node', {
           attr: { r: 14 },
           filter: 'drop-shadow(0 0 10px var(--cyan))',
@@ -1019,7 +1019,7 @@ function NeuralNetMode({ visibleRef }) {
           stagger: { each: 0.18, from: 'start' },
         })
 
-        // ── Shimmer edges — animate stroke-dashoffset ──
+        // â”€â”€ Shimmer edges â€” animate stroke-dashoffset â”€â”€
         gsap.to('.nn-edge', {
           strokeDashoffset: 0,
           duration: 1.4,
@@ -1028,7 +1028,7 @@ function NeuralNetMode({ visibleRef }) {
           stagger: { each: 0.04, from: 'random' },
         })
 
-        // ── Output nodes pulse green on a slower cycle ──
+        // â”€â”€ Output nodes pulse green on a slower cycle â”€â”€
         gsap.to('.nn-out', {
           attr: { r: 16 },
           opacity: 1,
@@ -1039,7 +1039,7 @@ function NeuralNetMode({ visibleRef }) {
           stagger: 0.3,
         })
 
-        // ── Floating signal blobs travelling along edges ──
+        // â”€â”€ Floating signal blobs travelling along edges â”€â”€
         const signals = svg.querySelectorAll('.nn-signal')
         signals.forEach((sig, i) => {
           const edge = svg.querySelectorAll('.nn-edge')[i % NEURAL_EDGES.length]
@@ -1056,7 +1056,7 @@ function NeuralNetMode({ visibleRef }) {
             .to(sig, { opacity: 0, duration: 0.1 })
         })
 
-        // ── Layer label fade in ──
+        // â”€â”€ Layer label fade in â”€â”€
         gsap.from('.nn-label', {
           opacity: 0,
           y: 10,
@@ -1075,7 +1075,7 @@ function NeuralNetMode({ visibleRef }) {
     <svg ref={svgRef} viewBox="0 0 900 480" width="100%" height="100%" style={{ maxHeight: 520 }}
       xmlns="http://www.w3.org/2000/svg">
       <style>{SHARED_CSS}{`
-        .nn-edge  { stroke: rgba(0,212,255,0.18); stroke-width: 1; fill: none;
+        .nn-edge  { stroke: color-mix(in srgb, var(--cyan) 18%, transparent); stroke-width: 1; fill: none;
                     stroke-dasharray: 6 4; }
         .nn-node  { fill: var(--bg3); stroke: var(--cyan); stroke-width: 1.5; }
         .nn-out   { fill: var(--bg3); stroke: var(--green); stroke-width: 2; opacity: 0.7; }
@@ -1083,7 +1083,7 @@ function NeuralNetMode({ visibleRef }) {
       `}</style>
       <defs>
         <radialGradient id="nn-bg" cx="50%" cy="50%" r="60%">
-          <stop offset="0%"   stopColor="rgba(0,212,255,0.04)"/>
+          <stop offset="0%"   stopColor="color-mix(in srgb, var(--cyan) 4%, transparent)"/>
           <stop offset="100%" stopColor="transparent"/>
         </radialGradient>
       </defs>
@@ -1094,7 +1094,7 @@ function NeuralNetMode({ visibleRef }) {
       <rect x="20" y="20" width="860" height="3"   rx="2" fill="var(--cyan)" opacity="0.5"/>
 
       {/* Title */}
-      <text x="36" y="42" fontSize="7" letterSpacing="3" fontFamily="monospace" fill="var(--cyan)" opacity="0.6">NEURAL NETWORK · LIVE INFERENCE</text>
+      <text x="36" y="42" fontSize="7" letterSpacing="3" fontFamily="monospace" fill="var(--cyan)" opacity="0.6">NEURAL NETWORK Â· LIVE INFERENCE</text>
 
       {/* Edges */}
       {NEURAL_EDGES.map((e, i) => {
@@ -1147,24 +1147,24 @@ function NeuralNetMode({ visibleRef }) {
 
       {/* Footer */}
       <circle cx="52" cy="455" r="4" fill="var(--green)" style={{ filter: 'drop-shadow(0 0 4px var(--green))' }}/>
-      <text x="62" y="459" fontSize="6" fontFamily="monospace" fill="var(--green)">INFERENCE ACTIVE · ZERO PACKET LOSS · MODEL LOCKED</text>
+      <text x="62" y="459" fontSize="6" fontFamily="monospace" fill="var(--green)">INFERENCE ACTIVE Â· ZERO PACKET LOSS Â· MODEL LOCKED</text>
     </svg>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  MODE 6: PACKET FLOW  (GSAP-powered)
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PF_NODES = [
-  { id: 'client',  x: 80,  y: 240, label: 'CLIENT',   icon: '▣', color: 'var(--cyan)'   },
-  { id: 'fw',      x: 220, y: 240, label: 'FIREWALL',  icon: '⬡', color: '#ff4757'       },
-  { id: 'lb',      x: 390, y: 160, label: 'LOAD BAL',  icon: '◈', color: 'var(--orange)' },
-  { id: 'cache',   x: 390, y: 320, label: 'CACHE',     icon: '◇', color: 'var(--cyan)'   },
-  { id: 'api1',    x: 560, y: 110, label: 'API  #1',   icon: '▶', color: 'var(--green)'  },
-  { id: 'api2',    x: 560, y: 240, label: 'API  #2',   icon: '▶', color: 'var(--green)'  },
-  { id: 'api3',    x: 560, y: 370, label: 'API  #3',   icon: '▶', color: 'var(--green)'  },
-  { id: 'db',      x: 730, y: 190, label: 'DATABASE',  icon: '◉', color: 'var(--cyan)'   },
-  { id: 'cdn',     x: 730, y: 330, label: 'CDN',       icon: '⊕', color: 'var(--muted)'  },
+  { id: 'client',  x: 80,  y: 240, label: 'CLIENT',   icon: 'â–£', color: 'var(--cyan)'   },
+  { id: 'fw',      x: 220, y: 240, label: 'FIREWALL',  icon: 'â¬¡', color: '#ff4757'       },
+  { id: 'lb',      x: 390, y: 160, label: 'LOAD BAL',  icon: 'â—ˆ', color: 'var(--orange)' },
+  { id: 'cache',   x: 390, y: 320, label: 'CACHE',     icon: 'â—‡', color: 'var(--cyan)'   },
+  { id: 'api1',    x: 560, y: 110, label: 'API  #1',   icon: 'â–¶', color: 'var(--green)'  },
+  { id: 'api2',    x: 560, y: 240, label: 'API  #2',   icon: 'â–¶', color: 'var(--green)'  },
+  { id: 'api3',    x: 560, y: 370, label: 'API  #3',   icon: 'â–¶', color: 'var(--green)'  },
+  { id: 'db',      x: 730, y: 190, label: 'DATABASE',  icon: 'â—‰', color: 'var(--cyan)'   },
+  { id: 'cdn',     x: 730, y: 330, label: 'CDN',       icon: 'âŠ•', color: 'var(--muted)'  },
 ]
 const PF_EDGES = [
   { s: 'client', t: 'fw'    },
@@ -1191,7 +1191,7 @@ function PacketFlowMode({ visibleRef }) {
       const svg = svgRef.current
 
       const ctx = gsap.context(() => {
-        // ── Node pulse rings ──
+        // â”€â”€ Node pulse rings â”€â”€
         gsap.to('.pf-ring', {
           attr: { r: 26 },
           opacity: 0,
@@ -1201,7 +1201,7 @@ function PacketFlowMode({ visibleRef }) {
           stagger: { each: 0.4, from: 'random' },
         })
 
-        // ── Packet blobs travel each edge repeatedly ──
+        // â”€â”€ Packet blobs travel each edge repeatedly â”€â”€
         svg.querySelectorAll('.pf-edge').forEach((edge, i) => {
           const pkts = svg.querySelectorAll(`.pf-pkt-${i}`)
           pkts.forEach((pkt, j) => {
@@ -1218,7 +1218,7 @@ function PacketFlowMode({ visibleRef }) {
           })
         })
 
-        // ── Throughput counter tween ──
+        // â”€â”€ Throughput counter tween â”€â”€
         const counter = { val: 0 }
         gsap.to(counter, {
           val: 1248,
@@ -1232,7 +1232,7 @@ function PacketFlowMode({ visibleRef }) {
           },
         })
 
-        // ── Node labels entrance ──
+        // â”€â”€ Node labels entrance â”€â”€
         gsap.from('.pf-label', {
           opacity: 0,
           y: 8,
@@ -1253,7 +1253,7 @@ function PacketFlowMode({ visibleRef }) {
     <svg ref={svgRef} viewBox="0 0 900 480" width="100%" height="100%" style={{ maxHeight: 520 }}
       xmlns="http://www.w3.org/2000/svg">
       <style>{SHARED_CSS}{`
-        .pf-edge { stroke: rgba(0,212,255,0.15); stroke-width: 1.5; fill: none; stroke-dasharray: 5 3; }
+        .pf-edge { stroke: color-mix(in srgb, var(--cyan) 15%, transparent); stroke-width: 1.5; fill: none; stroke-dasharray: 5 3; }
         .pf-node { fill: var(--bg3); stroke-width: 1.5; }
         .pf-ring { fill: none; stroke-width: 1; opacity: 0.4; }
       `}</style>
@@ -1261,7 +1261,7 @@ function PacketFlowMode({ visibleRef }) {
       {/* Background */}
       <rect x="20" y="20" width="860" height="440" rx="8" fill="var(--bg2)" stroke="var(--border)" strokeWidth="1"/>
       <rect x="20" y="20" width="860" height="3"   rx="2" fill="var(--green)" opacity="0.6"/>
-      <text x="36" y="42" fontSize="7" letterSpacing="3" fontFamily="monospace" fill="var(--green)" opacity="0.7">PACKET FLOW · REAL-TIME NETWORK TOPOLOGY</text>
+      <text x="36" y="42" fontSize="7" letterSpacing="3" fontFamily="monospace" fill="var(--green)" opacity="0.7">PACKET FLOW Â· REAL-TIME NETWORK TOPOLOGY</text>
 
       {/* Edges */}
       {PF_EDGES.map((e, i) => {
@@ -1317,20 +1317,20 @@ function PacketFlowMode({ visibleRef }) {
 
       {/* Footer */}
       <circle cx="52" cy="455" r="4" fill="var(--green)" style={{ filter: 'drop-shadow(0 0 4px var(--green))' }}/>
-      <text x="62" y="459" fontSize="6" fontFamily="monospace" fill="var(--green)">ALL NODES HEALTHY · ZERO PACKET LOSS · ROUTING OPTIMAL</text>
+      <text x="62" y="459" fontSize="6" fontFamily="monospace" fill="var(--green)">ALL NODES HEALTHY Â· ZERO PACKET LOSS Â· ROUTING OPTIMAL</text>
       <text x="580" y="459" fontSize="6" fontFamily="monospace" fill="var(--muted)">{new Date().toISOString().slice(0, 19).replace('T', ' ')}</text>
     </svg>
   )
 }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  MODE 7: AVATAR  (GSAP-powered, Dave Holloway style)
 //  - Floating/bobbing avatar image
 //  - Mouse parallax tilt
 //  - Swirling orb background
 //  - Configurable image URL via edit toolkit
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AvatarMode({ visibleRef }) {
   const wrapRef   = useRef()
   const imgRef    = useRef()
@@ -1338,7 +1338,7 @@ function AvatarMode({ visibleRef }) {
   const ring2Ref  = useRef()
   const ctxRef    = useRef()
 
-  // Editable avatar image URL — admin can paste any URL
+  // Editable avatar image URL â€” admin can paste any URL
   const { value: avatarUrl, save: saveUrl, isAdmin } = useInlineEdit('hero.avatarUrl', '')
   const { value: savedFilter, save: saveFilter }     = useInlineEdit('hero.avatarFilter', 'normal')
 
@@ -1365,14 +1365,14 @@ function AvatarMode({ visibleRef }) {
 
   const currentFilterCss = FILTERS.find(f => f.id === activeFilter)?.css || 'none'
 
-  // ── GSAP: float + ring spin ──────────────────────────────────────────────
+  // â”€â”€ GSAP: float + ring spin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (typeof window === 'undefined') return
     import('gsap').then(m => {
       const gsap = m.gsap
       if (!wrapRef.current) return
       const ctx = gsap.context(() => {
-        // Gentle float — bob up 18px then back
+        // Gentle float â€” bob up 18px then back
         gsap.to(imgRef.current, {
           y: -18,
           duration: 2.8,
@@ -1449,7 +1449,7 @@ function AvatarMode({ visibleRef }) {
     return () => { try { ctxRef.current?.revert() } catch {} }
   }, [])
 
-  // ── Mouse parallax tilt ──────────────────────────────────────────────────
+  // â”€â”€ Mouse parallax tilt â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const wrap = wrapRef.current
     const img  = imgRef.current
@@ -1502,18 +1502,18 @@ function AvatarMode({ visibleRef }) {
       {/* Title */}
       <div style={{ position: 'absolute', top: 16, left: 20,
         fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 3, color: 'var(--cyan)', opacity: 0.6 }}>
-        AVATAR · HOLOGRAPHIC PRESENCE
+        AVATAR Â· HOLOGRAPHIC PRESENCE
       </div>
 
       {/* Swirling background orbs */}
       <div id="av-orb1" style={{
         position: 'absolute', width: 320, height: 320, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, color-mix(in srgb, var(--cyan) 12%, transparent) 0%, transparent 70%)',
         top: '10%', left: '5%', pointerEvents: 'none',
       }}/>
       <div id="av-orb2" style={{
         position: 'absolute', width: 280, height: 280, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0,255,136,0.10) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, color-mix(in srgb, var(--green) 10%, transparent) 0%, transparent 70%)',
         bottom: '5%', right: '5%', pointerEvents: 'none',
       }}/>
       <div id="av-orb3" style={{
@@ -1549,7 +1549,7 @@ function AvatarMode({ visibleRef }) {
           <div ref={ring1Ref} style={{
             position: 'absolute', inset: -14,
             borderRadius: '50%',
-            border: '1.5px dashed rgba(0,212,255,0.35)',
+            border: '1.5px dashed color-mix(in srgb, var(--cyan) 35%, transparent)',
           }}/>
 
           {/* Inner glow ring with gap markers */}
@@ -1567,7 +1567,7 @@ function AvatarMode({ visibleRef }) {
             borderRadius: '50%',
             overflow: 'hidden',
             position: 'relative',
-            boxShadow: '0 0 40px rgba(0,212,255,0.2), 0 0 80px rgba(0,255,136,0.1), 0 20px 60px rgba(0,0,0,0.5)',
+            boxShadow: '0 0 40px color-mix(in srgb, var(--cyan) 20%, transparent), 0 0 80px color-mix(in srgb, var(--green) 10%, transparent), 0 20px 60px rgba(0,0,0,0.5)',
             willChange: 'transform',
           }}>
             {!imgErr && avatarUrl && avatarUrl.trim() !== '' ? (
@@ -1582,13 +1582,13 @@ function AvatarMode({ visibleRef }) {
                 }}
               />
             ) : (
-              /* Placeholder — pulsing neon silhouette */
+              /* Placeholder â€” pulsing neon silhouette */
               <div style={{
                 width: '100%', height: '100%',
                 background: 'linear-gradient(135deg, var(--bg3), var(--bg2))',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}>
-                <div style={{ fontSize: 64, opacity: 0.3 }}>◐</div>
+                <div style={{ fontSize: 64, opacity: 0.3 }}>â—</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, textAlign: 'center', whiteSpace: 'pre-line' }}>
                   {imgErr
                     ? 'IMAGE FAILED TO LOAD\nCHECK URL OR CORS'
@@ -1627,11 +1627,11 @@ function AvatarMode({ visibleRef }) {
             </span>
           </div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1 }}>
-            IT SPECIALIST · NETWORK SPECIALIST · AI ENTHUSIAST
+            IT SPECIALIST Â· NETWORK SPECIALIST Â· AI ENTHUSIAST
           </div>
         </div>
 
-        {/* Filter picker — always visible when image is set */}
+        {/* Filter picker â€” always visible when image is set */}
         {avatarUrl && avatarUrl.trim() !== '' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', letterSpacing: 2 }}>
@@ -1646,7 +1646,7 @@ function AvatarMode({ visibleRef }) {
                   fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1,
                   padding: '4px 10px', borderRadius: 2, cursor: 'pointer',
                   border: `1px solid ${activeFilter === f.id ? 'var(--cyan)' : 'var(--border)'}`,
-                  background: activeFilter === f.id ? 'rgba(0,212,255,0.12)' : 'transparent',
+                  background: activeFilter === f.id ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'transparent',
                   color: activeFilter === f.id ? 'var(--cyan)' : 'var(--muted)',
                   transition: 'all 0.2s',
                 }}>
@@ -1663,11 +1663,11 @@ function AvatarMode({ visibleRef }) {
             onClick={() => { setDraftUrl(avatarUrl || ''); setEditMode(true) }}
             style={{
               fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2,
-              padding: '6px 14px', background: 'rgba(0,212,255,0.08)',
-              color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.3)',
+              padding: '6px 14px', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)',
+              color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)',
               borderRadius: 2, cursor: 'pointer',
             }}>
-            ✎ CHANGE IMAGE URL
+            âœŽ CHANGE IMAGE URL
           </button>
         )}
 
@@ -1713,7 +1713,7 @@ function AvatarMode({ visibleRef }) {
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)',
           boxShadow: '0 0 6px var(--green)', flexShrink: 0 }}/>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, color: 'var(--green)', letterSpacing: 1 }}>
-          HOLOGRAPHIC PRESENCE ACTIVE · IDENTITY VERIFIED · SECURE CONNECTION
+          HOLOGRAPHIC PRESENCE ACTIVE Â· IDENTITY VERIFIED Â· SECURE CONNECTION
         </span>
       </div>
     </div>
@@ -1721,11 +1721,11 @@ function AvatarMode({ visibleRef }) {
 }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  MODE 8: GLOBE — spinning 3D network globe (pure Canvas 2D, no Three.js)
-//  Great-circle arcs · glowing city nodes · drag-to-rotate · scroll-to-zoom
-//  Theme-synced · bigger · more interactable
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  MODE 8: GLOBE â€” spinning 3D network globe (pure Canvas 2D, no Three.js)
+//  Great-circle arcs Â· glowing city nodes Â· drag-to-rotate Â· scroll-to-zoom
+//  Theme-synced Â· bigger Â· more interactable
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Read a CSS variable from the root element (falls back gracefully)
 function cssVar(name, fallback) {
@@ -1810,7 +1810,7 @@ function clampGlobeZoom(value) {
 
 function firstGeoValue(...values) {
   const found = values.find(v => v !== undefined && v !== null && String(v).trim() !== '')
-  return found === undefined ? '—' : String(found).trim()
+  return found === undefined ? 'â€”' : String(found).trim()
 }
 
 function GlobeMode({ visibleRef }) {
@@ -1823,7 +1823,7 @@ function GlobeMode({ visibleRef }) {
   const themeRef = useRef(null)
   const stateRef  = useRef({
     rotY:     0.3,          // Y-axis (longitude) angle
-    rotX:     0.12,         // X-axis (latitude tilt) angle — fixed gentle tilt
+    rotX:     0.12,         // X-axis (latitude tilt) angle â€” fixed gentle tilt
     velY:     0.0018,       // auto-spin velocity (slows on drag, resumes after)
     velYDamp: 0,            // drag-contributed velocity for momentum
     drag:     null,         // { startX, startY, lastRotY, lastVelY }
@@ -1840,7 +1840,7 @@ function GlobeMode({ visibleRef }) {
 
   useEffect(() => { visitorRef.current = visitor }, [visitor])
 
-  // ── Fetch visitor geo info ────────────────────────────────────────────────
+  // â”€â”€ Fetch visitor geo info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     let cancelled = false
 
@@ -1854,7 +1854,7 @@ function GlobeMode({ visibleRef }) {
       const region = firstGeoValue(d.region, d.regionName, d.stateProv)
       const country = firstGeoValue(d.country_name, d.country, d.countryName)
       const postal = firstGeoValue(d.postal, d.zip)
-      const addressParts = [city, region, postal, country].filter(v => v && v !== '—')
+      const addressParts = [city, region, postal, country].filter(v => v && v !== 'â€”')
 
       return {
         ip:          firstGeoValue(d.ip, d.query, d.ipAddress),
@@ -1865,12 +1865,12 @@ function GlobeMode({ visibleRef }) {
         countryCode: firstGeoValue(d.country_code, d.countryCode),
         flag:        firstGeoValue(d.flag?.emoji, d.country_flag_emoji),
         postal,
-        address:     addressParts.length ? addressParts.join(', ') : '—',
+        address:     addressParts.length ? addressParts.join(', ') : 'â€”',
         org:         firstGeoValue(d.connection?.isp, d.isp, d.org),
         network:     firstGeoValue(d.network, d.connection?.domain, d.asname),
         asn:         firstGeoValue(d.connection?.asn, d.asn, d.as),
-        lat:         latRaw != null ? (+latRaw).toFixed(4) : '—',
-        lon:         lonRaw != null ? (+lonRaw).toFixed(4) : '—',
+        lat:         latRaw != null ? (+latRaw).toFixed(4) : 'â€”',
+        lon:         lonRaw != null ? (+lonRaw).toFixed(4) : 'â€”',
         tz:          firstGeoValue(d.timezone?.id, d.timezone),
         utc:         firstGeoValue(d.timezone?.utc, d.utc_offset),
         currency:    firstGeoValue(d.currency?.code, d.currency),
@@ -1908,7 +1908,7 @@ function GlobeMode({ visibleRef }) {
 
       try {
         const ipOnly = await fetchJson('https://api64.ipify.org?format=json')
-        if (!cancelled) setVisitor({ ip: ipOnly.ip || '—', city: '—', region: '—', country: '—', address: '—' })
+        if (!cancelled) setVisitor({ ip: ipOnly.ip || 'â€”', city: 'â€”', region: 'â€”', country: 'â€”', address: 'â€”' })
       } catch {
         // Leave the loading label in place if every lookup is unavailable.
       }
@@ -1918,7 +1918,7 @@ function GlobeMode({ visibleRef }) {
     return () => { cancelled = true }
   }, [])
 
-  // ── React to theme changes ──
+  // â”€â”€ React to theme changes â”€â”€
   useEffect(() => {
     themeRef.current = readGlobeTheme()
     setThemeKey(k => k + 1)
@@ -1931,7 +1931,7 @@ function GlobeMode({ visibleRef }) {
     return () => obs.disconnect()
   }, [])
 
-  // ── Resize (DPR-aware) ────────────────────────────────────────────────────
+  // â”€â”€ Resize (DPR-aware) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -1955,7 +1955,7 @@ function GlobeMode({ visibleRef }) {
     return () => ro.disconnect()
   }, [])
 
-  // ── Pointer events (drag-to-rotate + hover) ───────────────────────────────
+  // â”€â”€ Pointer events (drag-to-rotate + hover) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -2029,7 +2029,7 @@ function GlobeMode({ visibleRef }) {
     }
   }, [])
 
-  // ── Main render loop ───────────────────────────────────────────────────────
+  // â”€â”€ Main render loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -2037,7 +2037,7 @@ function GlobeMode({ visibleRef }) {
     const ctx = canvas.getContext('2d')
     const s   = stateRef.current
 
-    // ── CSS-var → rgb helper ──────────────────────────────────────────────
+    // â”€â”€ CSS-var â†’ rgb helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const hexToRgb = (hex, fb) => {
       if (!hex) return fb
       // Handle #rrggbb
@@ -2054,7 +2054,7 @@ function GlobeMode({ visibleRef }) {
 
     const toRad = d => d * Math.PI / 180
 
-    // lat/lng → unit sphere
+    // lat/lng â†’ unit sphere
     const latLng3D = (lat, lng) => ({
       x:  Math.cos(toRad(lat)) * Math.sin(toRad(lng)),
       y:  Math.sin(toRad(lat)),
@@ -2074,7 +2074,7 @@ function GlobeMode({ visibleRef }) {
       return { x: x2, y: y2, z: z2 }
     }
 
-    // Orthographic → canvas
+    // Orthographic â†’ canvas
     const proj = (p, cx, cy, R) => ({
       x: cx + p.x * R,
       y: cy - p.y * R,
@@ -2101,7 +2101,7 @@ function GlobeMode({ visibleRef }) {
       const dt = Math.min(ts - last, 50) / 16.67   // normalize to ~60 fps
       last = ts
 
-      // ── Globe colors — theme-synced via themeRef (updated on data-theme change) ──
+      // â”€â”€ Globe colors â€” theme-synced via themeRef (updated on data-theme change) â”€â”€
       const { cyanRgb, greenRgb, bgRgb, isLight, textRgb, mutedRgb, orangeRgb } = themeRef.current
       const accentRgb = cyanRgb
 
@@ -2111,10 +2111,10 @@ function GlobeMode({ visibleRef }) {
       const cx  = W / 2
       const cy  = H / 2
       s.zoom = clampGlobeZoom(s.zoom)
-      // Globe base size — grows from 36% to 44% of the shorter dimension when zoomed in
+      // Globe base size â€” grows from 36% to 44% of the shorter dimension when zoomed in
       const R   = Math.min(W, H) * GLOBE_BASE_RATIO * s.zoom
 
-      // ── Update rotation ──
+      // â”€â”€ Update rotation â”€â”€
       if (!s.drag) {
         if (s._face) {
           // Gently spin to center the visitor before resuming auto-spin
@@ -2143,7 +2143,7 @@ function GlobeMode({ visibleRef }) {
       const cities3D   = base3D.map(p => rotate(p, ry, rx))
       const citiesProj = cities3D.map(p => proj(p, cx, cy, R))
 
-      // ── Hover detection ──
+      // â”€â”€ Hover detection â”€â”€
       const mx = s.mouseX, my = s.mouseY
       let hovIdx = -1, hovDist = 22 * 22
       citiesProj.forEach((pp, i) => {
@@ -2153,10 +2153,10 @@ function GlobeMode({ visibleRef }) {
       })
       s.hovered = hovIdx
 
-      // ── Clear ──
+      // â”€â”€ Clear â”€â”€
       ctx.clearRect(0, 0, W, H)
 
-      // ── Star field ──
+      // â”€â”€ Star field â”€â”€
       const starBase = isLight ? '60,80,110' : '255,255,255'
       const starMaxA = isLight ? 0.35 : 1
       if (!s._stars) s._stars = Array.from({ length: 160 }, (_, i) => ({ x:Math.random(), y:Math.random(), r:0.4+Math.random()*1.4, a:0.3+Math.random()*0.7, tw:0.001+Math.random()*0.008, to:Math.random()*Math.PI*2, l:i%3 }))
@@ -2169,7 +2169,7 @@ function GlobeMode({ visibleRef }) {
         ctx.fill()
       })
 
-      // ── Sci-fi meteor streaks ──
+      // â”€â”€ Sci-fi meteor streaks â”€â”€
       if (!s._meteors) s._meteors = Array.from({ length: 2 }, (_, i) => ({
         x: Math.random() * W, y: Math.random() * H * 0.5,
         vx: 1.6 + Math.random() * 2.4, vy: 0.9 + Math.random() * 1.4,
@@ -2201,7 +2201,7 @@ function GlobeMode({ visibleRef }) {
         }
       })
 
-      // ── Orbiting satellites (holo satellites circling the globe) ──
+      // â”€â”€ Orbiting satellites (holo satellites circling the globe) â”€â”€
       if (!s._sats) s._sats = Array.from({ length: 6 }, (_, i) => ({
         a: i * 1.04,
         tilt: ((i % 3) - 1) * 0.3,
@@ -2234,7 +2234,7 @@ function GlobeMode({ visibleRef }) {
         }
       })
 
-      // ── Atmosphere halo (capped, theme-synced) ──
+      // â”€â”€ Atmosphere halo (capped, theme-synced) â”€â”€
       const breathe = 1 + 0.03 * Math.sin(ts * 0.001)
       const maxDist  = Math.min(cx, cy, W - cx, H - cy) * 0.92
       const atmoOuter = Math.min(R * 1.25 * breathe, maxDist)
@@ -2248,7 +2248,7 @@ function GlobeMode({ visibleRef }) {
       ctx.fillStyle = atmo
       ctx.fill()
 
-      // ── Secondary green atmosphere ring ──
+      // â”€â”€ Secondary green atmosphere ring â”€â”€
       const atmo2 = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, Math.min(R * 1.15 * breathe, maxDist))
       atmo2.addColorStop(0, `rgba(${greenRgb},${isLight ? 0.06 : 0.08})`)
       atmo2.addColorStop(0.5, `rgba(${greenRgb},${isLight ? 0.02 : 0.03})`)
@@ -2258,7 +2258,7 @@ function GlobeMode({ visibleRef }) {
       ctx.fillStyle = atmo2
       ctx.fill()
 
-      // ── Globe body ──
+      // â”€â”€ Globe body â”€â”€
       const sphereGrad = ctx.createRadialGradient(cx - R*0.26, cy - R*0.26, 0, cx, cy, R)
       if (isLight) {
         sphereGrad.addColorStop(0, 'rgba(246,251,255,0.94)')
@@ -2274,7 +2274,7 @@ function GlobeMode({ visibleRef }) {
       ctx.fillStyle = sphereGrad
       ctx.fill()
 
-      // ── Sunlight highlight ──
+      // â”€â”€ Sunlight highlight â”€â”€
       const hlX = cx - R * 0.3, hlY = cy - R * 0.3
       const hlGrad = ctx.createRadialGradient(hlX, hlY, 0, hlX, hlY, R * 0.4)
       hlGrad.addColorStop(0, `rgba(${isLight ? '255,255,255' : cyanRgb},${isLight ? 0.15 : 0.06})`)
@@ -2284,7 +2284,7 @@ function GlobeMode({ visibleRef }) {
       ctx.fillStyle = hlGrad
       ctx.fill()
 
-      // ── Inner shadow for depth ──
+      // â”€â”€ Inner shadow for depth â”€â”€
       const shX = cx + R * 0.35, shY = cy + R * 0.35
       const shadowGrad = ctx.createRadialGradient(shX, shY, 0, cx, cy, R)
       shadowGrad.addColorStop(0, `rgba(0,0,0,${isLight ? 0.08 : 0.22})`)
@@ -2295,7 +2295,7 @@ function GlobeMode({ visibleRef }) {
       ctx.fillStyle = shadowGrad
       ctx.fill()
 
-      // ── Wireframe mesh (technical drawing) ──
+      // â”€â”€ Wireframe mesh (technical drawing) â”€â”€
       ctx.save()
       const meshGlow = isLight ? 2.2 : 1
       const meshBase = isLight ? textRgb : accentRgb
@@ -2363,7 +2363,7 @@ function GlobeMode({ visibleRef }) {
       }
       ctx.restore()
 
-      // ── Holo scan sweep (bright lat-line sweeping the sphere) ──
+      // â”€â”€ Holo scan sweep (bright lat-line sweeping the sphere) â”€â”€
       const sweepT = (ts * 0.00016) % 1
       const sweepLat = -80 + sweepT * 160
       ctx.save()
@@ -2383,7 +2383,7 @@ function GlobeMode({ visibleRef }) {
       ctx.stroke()
       ctx.restore()
 
-      // ── Connection arcs + packets ──
+      // â”€â”€ Connection arcs + packets â”€â”€
       GLOBE_CONNECTIONS.forEach(([a, b], i) => {
         const ca  = cities3D[a], cb = cities3D[b]
         const pkt = s.packets[i]
@@ -2419,7 +2419,7 @@ function GlobeMode({ visibleRef }) {
         ctx.stroke()
         ctx.restore()
 
-        // Packet advance — with trail dots and splash rings
+        // Packet advance â€” with trail dots and splash rings
         pkt.t = (pkt.t + pkt.speed * dt) % 1
         const pkIdx = Math.floor(pkt.t * ARC_SAMPLES)
         const pkPt  = arc[Math.min(pkIdx, arc.length - 1)]
@@ -2456,7 +2456,7 @@ function GlobeMode({ visibleRef }) {
         }
       })
 
-      // ── Globe outline ──
+      // â”€â”€ Globe outline â”€â”€
       ctx.save()
       ctx.beginPath()
       ctx.arc(cx, cy, R, 0, Math.PI * 2)
@@ -2465,7 +2465,7 @@ function GlobeMode({ visibleRef }) {
       ctx.stroke()
       ctx.restore()
 
-      // ── City nodes ──
+      // â”€â”€ City nodes â”€â”€
       citiesProj.forEach((pp, i) => {
         const city   = GLOBE_CITIES[i]
         const alpha  = Math.max(0, pp.z * 1.5)
@@ -2502,7 +2502,7 @@ function GlobeMode({ visibleRef }) {
         ctx.fill()
         ctx.restore()
 
-        // Label — visible on front half, always shown for hub or hovered
+        // Label â€” visible on front half, always shown for hub or hovered
         const showLabel = pp.z > 0.08 || isHub || isHov
         if (showLabel) {
           ctx.save()
@@ -2537,14 +2537,14 @@ function GlobeMode({ visibleRef }) {
           ctx.fillText(city.name, tx + 8, ty + 13)
           ctx.font      = '6px monospace'
           ctx.fillStyle = `rgba(${cyanRgb},0.7)`
-          ctx.fillText(`${city.lat.toFixed(1)}°N  ${Math.abs(city.lng).toFixed(1)}°${city.lng < 0 ? 'W' : 'E'}`, tx + 8, ty + 25)
+          ctx.fillText(`${city.lat.toFixed(1)}Â°N  ${Math.abs(city.lng).toFixed(1)}Â°${city.lng < 0 ? 'W' : 'E'}`, tx + 8, ty + 25)
           ctx.fillStyle = city.hub ? `rgba(${greenRgb},0.85)` : `rgba(${cyanRgb},0.7)`
-          ctx.fillText(city.hub ? '★ HUB NODE' : '● EDGE NODE', tx + 8, ty + 35)
+          ctx.fillText(city.hub ? 'â˜… HUB NODE' : 'â— EDGE NODE', tx + 8, ty + 35)
           ctx.restore()
         }
       })
 
-      // ── Hub pulse rings ──
+      // â”€â”€ Hub pulse rings â”€â”€
       GLOBE_CITIES.forEach((city, i) => {
         if (!city.hub) return
         const pp = citiesProj[i]
@@ -2560,7 +2560,7 @@ function GlobeMode({ visibleRef }) {
         ctx.restore()
       })
 
-      // ── Current visitor marker + sci-fi great-circle trace ──
+      // â”€â”€ Current visitor marker + sci-fi great-circle trace â”€â”€
       const visitorLat = Number(liveVisitor?.lat)
       const visitorLon = Number(liveVisitor?.lon)
       if (Number.isFinite(visitorLat) && Number.isFinite(visitorLon)) {
@@ -2724,7 +2724,7 @@ function GlobeMode({ visibleRef }) {
         }
       }
 
-      // ── Drag hint (fade after first interaction) ──
+      // â”€â”€ Drag hint (fade after first interaction) â”€â”€
       if (!s._everDragged && ts < 4000) {
         ctx.save()
         const hintAlpha = Math.max(0, Math.min(0.55, (4000 - ts) / 3000))
@@ -2732,7 +2732,7 @@ function GlobeMode({ visibleRef }) {
         ctx.font        = '8px monospace'
         ctx.fillStyle   = `rgba(${cyanRgb},1)`
         ctx.textAlign   = 'center'
-        ctx.fillText('DRAG · SCROLL TO ZOOM · PINCH', cx, H - 14)
+        ctx.fillText('DRAG Â· SCROLL TO ZOOM Â· PINCH', cx, H - 14)
         ctx.restore()
       }
 
@@ -2752,16 +2752,16 @@ function GlobeMode({ visibleRef }) {
       position: 'relative', overflow: 'hidden',
       background: 'transparent',
     }}>
-      {/* Floating title — top left */}
+      {/* Floating title â€” top left */}
       <div className="globe-network-title" style={{
         position: 'absolute', top: 10, left: 14, zIndex: 3,
         fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 3,
         color: 'var(--cyan)', opacity: 0.55, pointerEvents: 'none',
       }}>
-        GLOBAL NETWORK · LIVE CONNECTION MAP
+        GLOBAL NETWORK Â· LIVE CONNECTION MAP
       </div>
 
-      {/* Floating stats — top right */}
+      {/* Floating stats â€” top right */}
       <div className="globe-network-stats" style={{
         position: 'absolute', top: 8, right: 14, zIndex: 3,
         display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-end',
@@ -2780,10 +2780,10 @@ function GlobeMode({ visibleRef }) {
         ))}
       </div>
 
-      {/* Canvas — fills entire panel */}
+      {/* Canvas â€” fills entire panel */}
       <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }}/>
 
-      {/* Visitor info card — bottom left */}
+      {/* Visitor info card â€” bottom left */}
       <div className="globe-visitor-shell" style={{
         position: 'absolute', bottom: 12, left: 14, zIndex: 3,
         display: 'flex', flexDirection: 'column', gap: 4,
@@ -2807,17 +2807,17 @@ function GlobeMode({ visibleRef }) {
             {[
               ['IP ADDRESS',     visitor.ip],
               ['IP TYPE',        visitor.ipType],
-              ['LOCATION',       `${visitor.flag && visitor.flag !== '—' ? visitor.flag + ' ' : ''}${visitor.city || '—'}, ${visitor.country || '—'}`],
+              ['LOCATION',       `${visitor.flag && visitor.flag !== 'â€”' ? visitor.flag + ' ' : ''}${visitor.city || 'â€”'}, ${visitor.country || 'â€”'}`],
               ['APPROX ADDRESS', visitor.address],
               ['REGION',         visitor.region],
               ['POSTAL',         visitor.postal],
-              ['COORDINATES',    `${visitor.lat || '—'}°, ${visitor.lon || '—'}°`],
-              ['TIMEZONE',       [visitor.tz, visitor.utc].filter(v => v && v !== '—').join(' ') || '—'],
+              ['COORDINATES',    `${visitor.lat || 'â€”'}Â°, ${visitor.lon || 'â€”'}Â°`],
+              ['TIMEZONE',       [visitor.tz, visitor.utc].filter(v => v && v !== 'â€”').join(' ') || 'â€”'],
               ['ISP / ORG',      visitor.org],
               ['NETWORK',        visitor.network],
               ['ASN',            visitor.asn],
               ['CURRENCY',       visitor.currency],
-            ].filter(([, val]) => val && val !== '—' && val !== '—, —' && val !== '°, °').map(([label, val]) => (
+            ].filter(([, val]) => val && val !== 'â€”' && val !== 'â€”, â€”' && val !== 'Â°, Â°').map(([label, val]) => (
               <div key={label} style={{ display: 'contents' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, color: 'var(--muted)', letterSpacing: 1.4, lineHeight: '1.55' }}>{label}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7.5, color: label === 'APPROX ADDRESS' ? 'var(--green)' : 'var(--cyan)', fontWeight: 700, lineHeight: '1.55', wordBreak: 'break-word' }}>{val}</span>
@@ -2829,7 +2829,7 @@ function GlobeMode({ visibleRef }) {
             fontFamily: 'var(--font-mono)', fontSize: 6, color: 'var(--muted)',
             letterSpacing: 1.5, opacity: 0.6,
           }}>
-            LOCATING VISITOR…
+            LOCATING VISITORâ€¦
           </div>
         )}
       </div>

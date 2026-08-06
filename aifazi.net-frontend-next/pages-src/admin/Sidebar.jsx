@@ -2,10 +2,10 @@
 import React, { useState } from 'react'
 import { Icon, NAV_ICONS } from './icons'
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    All colours use CSS variables so the sidebar responds to theme changes.
    Supports a collapsed rail (icon-only) on desktop, drawer on mobile.
-───────────────────────────────────────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const C = {
   bg:      'var(--bg)',
   bg2:     'var(--bg2)',
@@ -19,8 +19,8 @@ const C = {
 }
 
 const ROLE_META = {
-  admin:     { dot:'var(--green)',  bg:'rgba(0,255,136,0.10)',     border:'rgba(0,255,136,0.28)',    label:'Admin'     },
-  moderator: { dot:'var(--cyan)',   bg:'rgba(0,212,255,0.10)',     border:'rgba(0,212,255,0.28)',    label:'Moderator' },
+  admin:     { dot:'var(--green)',  bg:'color-mix(in srgb, var(--green) 10%, transparent)',     border:'color-mix(in srgb, var(--green) 28%, transparent)',    label:'Admin'     },
+  moderator: { dot:'var(--cyan)',   bg:'color-mix(in srgb, var(--cyan) 10%, transparent)',     border:'color-mix(in srgb, var(--cyan) 28%, transparent)',    label:'Moderator' },
   editor:    { dot:'var(--orange)', bg:'rgba(255,107,53,0.10)',    border:'rgba(255,107,53,0.28)',   label:'Editor'    },
   chat:      { dot:'#facc15',       bg:'rgba(250,204,21,0.10)',    border:'rgba(250,204,21,0.28)',   label:'Chat'      },
 }
@@ -33,7 +33,7 @@ const GROUP_LABELS = {
 
 const NAV_ICON = item => NAV_ICONS[item.key] || NAV_ICONS[item.icon] || 'grid'
 
-/* ── Single nav item ── */
+/* â”€â”€ Single nav item â”€â”€ */
 function NavItem({ item, active, accentDot, onClick, collapsed }) {
   const [hov, setHov] = useState(false)
   const iconName = NAV_ICON(item)
@@ -72,25 +72,25 @@ function NavItem({ item, active, accentDot, onClick, collapsed }) {
       {/* Badge */}
       {!collapsed && item.badge != null && (
         <span style={{ fontSize:10, padding:'2px 6px', borderRadius:20,
-          background: active ? 'rgba(0,255,136,0.15)' : 'rgba(255,255,255,0.06)',
+          background: active ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(255,255,255,0.06)',
           color: active ? 'var(--green)' : C.muted, fontFamily:C.fontMono,
-          border:`1px solid ${active ? 'rgba(0,255,136,0.3)' : C.border}`, flexShrink:0 }}>
+          border:`1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : C.border}`, flexShrink:0 }}>
           {item.badge}
         </span>
       )}
 
-      {/* Collapsed badge → dot */}
+      {/* Collapsed badge â†’ dot */}
       {collapsed && item.badge != null && (
         <span style={{ position:'absolute', top:8, right:12, width:6, height:6, borderRadius:'50%',
-          background:'var(--green)', boxShadow:'0 0 6px rgba(0,255,136,0.7)' }} />
+          background:'var(--green)', boxShadow:'0 0 6px color-mix(in srgb, var(--green) 70%, transparent)' }} />
       )}
     </button>
   )
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    MAIN EXPORT
-───────────────────────────────────────────────────────────────────────────── */
+â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function Sidebar({ view, setView, navItems, username, role, onLogout, isMobile, open, onClose, collapsed }) {
   const meta = ROLE_META[role] || ROLE_META.editor
   const initials = username ? username.slice(0, 2).toUpperCase() : '??'
@@ -132,7 +132,7 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
         }),
       }}>
 
-        {/* ── User card ── */}
+        {/* â”€â”€ User card â”€â”€ */}
         <div style={{ padding: collapsed ? '14px 0' : '14px 14px 12px', borderBottom:`1px solid ${C.border}` }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, justifyContent: collapsed ? 'center' : 'flex-start' }}>
             {/* Avatar */}
@@ -161,7 +161,7 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
           </div>
         </div>
 
-        {/* ── Navigation ── */}
+        {/* â”€â”€ Navigation â”€â”€ */}
         <div style={{ flex:1, overflowY:'auto', overflowX:'visible', padding: collapsed ? '8px 0' : '8px 8px 4px',
           scrollbarWidth:'thin', scrollbarColor:`${C.border} transparent` }}>
           {Object.entries(grouped).map(([groupName, items]) => (
@@ -184,7 +184,7 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
           ))}
         </div>
 
-        {/* ── Footer ── */}
+        {/* â”€â”€ Footer â”€â”€ */}
         <div style={{ borderTop:`1px solid ${C.border}`, padding:'6px 8px' }}>
           {!collapsed && (
             <div style={{ padding:'4px 10px 8px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>

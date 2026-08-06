@@ -18,7 +18,7 @@ import {
   FRAMEWORK_CATEGORIES, DEFAULT_FRAMEWORK, NOTIFY_POSITIONS, THEME_PACKAGES,
 } from '../../core/framework-styles.js'
 
-// ── Framework preview tokens ──────────────────────────────────────────────────
+// â”€â”€ Framework preview tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const _G   = 'var(--green)', _CY = 'var(--cyan)'
 const _BG  = 'var(--bg)',    _BG2 = 'var(--bg2)', _BG3 = 'var(--bg3)'
 const _BD  = 'var(--border)',_TX  = 'var(--text)', _MT  = 'var(--muted)'
@@ -28,28 +28,28 @@ const _tag = c => ({ fontFamily: _FM, fontSize: 8, letterSpacing: 2, padding: '2
 function FwMenuPreview({ id }) {
   const items = ['Dashboard','Settings','Logout']
   const conf = {
-    cyber:    { bg: _BG2, border:`1px solid rgba(0,255,136,0.3)`, color:_G,  hover:'rgba(0,255,136,0.06)', r:4 },
+    cyber:    { bg: _BG2, border:`1px solid color-mix(in srgb, var(--green) 30%, transparent)`, color:_G,  hover:'color-mix(in srgb, var(--green) 6%, transparent)', r:4 },
     glass:    { bg:'rgba(10,20,35,0.8)', border:'1px solid rgba(255,255,255,0.1)', color:_TX, hover:'rgba(255,255,255,0.07)', r:10, bd:'blur(16px)' },
-    terminal: { bg:'#060a06', border:'1px solid #00ff8833', color:'#33ff33', hover:'rgba(0,255,136,0.08)', r:0 },
+    terminal: { bg:'#060a06', border:'1px solid #00ff8833', color:'#33ff33', hover:'color-mix(in srgb, var(--green) 8%, transparent)', r:0 },
     minimal:  { bg:_BG2, border:`1px solid ${_BD}`, color:_TX, hover:'rgba(255,255,255,0.04)', r:6 },
-    neon:     { bg:_BG,  border:'1px solid rgba(0,212,255,0.6)', color:_CY, hover:'rgba(0,212,255,0.08)', r:5, sh:'0 0 12px rgba(0,212,255,0.15)' },
+    neon:     { bg:_BG,  border:'1px solid color-mix(in srgb, var(--cyan) 60%, transparent)', color:_CY, hover:'color-mix(in srgb, var(--cyan) 8%, transparent)', r:5, sh:'0 0 12px color-mix(in srgb, var(--cyan) 15%, transparent)' },
     floating: { bg:_BG2, border:'none', color:_TX, hover:'rgba(255,255,255,0.06)', r:14, sh:'0 12px 32px rgba(0,0,0,0.5)' },
     holo:     { bg:'rgba(8,20,32,0.85)', border:'1px solid rgba(0,229,255,0.45)', color:_CY, hover:'rgba(0,229,255,0.12)', r:14, sh:'0 0 18px rgba(0,229,255,0.18), inset 0 0 14px rgba(0,229,255,0.06)' },
     matrix:   { bg:'#020604', border:'1px solid #22ff2244', color:'#33ff33', hover:'rgba(0,255,0,0.08)', r:0, sh:'0 0 14px rgba(0,255,0,0.1)' },
   }
   const s = conf[id] || conf.cyber
   return <div style={{ width:'100%', padding:'5px 3px', background:s.bg, border:s.border, borderRadius:s.r, backdropFilter:s.bd, boxShadow:s.sh, overflow:'hidden' }}>
-    {items.map((item,i) => <div key={i} style={{ fontFamily:_FM, fontSize:9, color:s.color, padding:'5px 8px', borderRadius:Math.max(0,s.r-2), background:i===0?s.hover:'transparent', display:'flex', alignItems:'center', gap:5 }}><span style={{ opacity:0.5, fontSize:8 }}>›</span>{item}</div>)}
+    {items.map((item,i) => <div key={i} style={{ fontFamily:_FM, fontSize:9, color:s.color, padding:'5px 8px', borderRadius:Math.max(0,s.r-2), background:i===0?s.hover:'transparent', display:'flex', alignItems:'center', gap:5 }}><span style={{ opacity:0.5, fontSize:8 }}>â€º</span>{item}</div>)}
   </div>
 }
 function FwNotifyPreview({ id }) {
-  const p = { cyber:<div style={{ background:'rgba(0,255,136,0.07)', border:'1px solid rgba(0,255,136,0.25)', padding:'9px 10px 9px 34px', position:'relative', overflow:'hidden', width:'100%' }}><div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:_G }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontFamily:_FM, fontSize:11, color:_G }}>✓</div><div style={{ fontFamily:_FM, fontSize:9, color:_G, marginBottom:1 }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, pill:<div style={{ background:'rgba(0,255,136,0.08)', border:'1px solid rgba(0,255,136,0.25)', borderRadius:999, padding:'7px 14px 7px 10px', display:'flex', alignItems:'center', gap:7 }}><span style={{ fontSize:12, color:_G }}>✓</span><span style={{ fontFamily:_FM, fontSize:10, color:_TX }}>Changes saved!</span></div>, minimal:<div style={{ background:_BG2, border:`1px solid ${_BD}`, borderRadius:7, padding:'9px 12px', width:'100%' }}><div style={{ fontFamily:_FM, fontSize:8, color:_G, letterSpacing:1, marginBottom:2 }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, terminal:<div style={{ background:'#0a0f0a', border:'1px solid rgba(0,255,136,0.3)', padding:'7px 10px', width:'100%' }}><span style={{ fontFamily:_FM, fontSize:10, color:_G, fontWeight:700, marginRight:6 }}>[SUCCESS]</span><span style={{ fontFamily:_FM, fontSize:10, color:'#a0d0a0' }}>Saved!</span></div>, glass:<div style={{ background:'rgba(10,20,30,0.7)', border:'1px solid rgba(0,255,136,0.3)', borderRadius:9, padding:'9px 10px 9px 34px', backdropFilter:'blur(16px)', position:'relative', width:'100%' }}><div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:_G, borderRadius:'9px 0 0 9px' }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontSize:12, color:_G }}>✓</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, banner:<div style={{ background:'rgba(0,255,136,0.07)', borderLeft:'3px solid '+_G, padding:'8px 12px', display:'flex', alignItems:'center', gap:7, width:'100%' }}><span style={{ fontSize:10, color:_G }}>✓</span><span style={{ fontFamily:_FM, fontSize:10, color:_TX }}>Site updated.</span></div> }
-  p.float = <div style={{ background:_BG2, border:`1px solid ${_BD}`, borderRadius:8, padding:9, width:'100%', boxShadow:'0 10px 22px rgba(0,0,0,.35)' }}><div style={{ display:'flex', gap:7, alignItems:'center' }}><span style={{ width:18, height:18, borderRadius:5, background:'rgba(0,255,136,.12)', color:_G, display:'grid', placeItems:'center', fontSize:10 }}>✓</span><div><div style={{ fontFamily:_FM, fontSize:8, color:_G }}>Saved</div><div style={{ fontFamily:_FM, fontSize:7, color:_MT }}>12:04 · aifazi.net</div></div></div></div>
+  const p = { cyber:<div style={{ background:'color-mix(in srgb, var(--green) 7%, transparent)', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)', padding:'9px 10px 9px 34px', position:'relative', overflow:'hidden', width:'100%' }}><div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:_G }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontFamily:_FM, fontSize:11, color:_G }}>âœ“</div><div style={{ fontFamily:_FM, fontSize:9, color:_G, marginBottom:1 }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, pill:<div style={{ background:'color-mix(in srgb, var(--green) 8%, transparent)', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)', borderRadius:999, padding:'7px 14px 7px 10px', display:'flex', alignItems:'center', gap:7 }}><span style={{ fontSize:12, color:_G }}>âœ“</span><span style={{ fontFamily:_FM, fontSize:10, color:_TX }}>Changes saved!</span></div>, minimal:<div style={{ background:_BG2, border:`1px solid ${_BD}`, borderRadius:7, padding:'9px 12px', width:'100%' }}><div style={{ fontFamily:_FM, fontSize:8, color:_G, letterSpacing:1, marginBottom:2 }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, terminal:<div style={{ background:'#0a0f0a', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', padding:'7px 10px', width:'100%' }}><span style={{ fontFamily:_FM, fontSize:10, color:_G, fontWeight:700, marginRight:6 }}>[SUCCESS]</span><span style={{ fontFamily:_FM, fontSize:10, color:'#a0d0a0' }}>Saved!</span></div>, glass:<div style={{ background:'rgba(10,20,30,0.7)', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', borderRadius:9, padding:'9px 10px 9px 34px', backdropFilter:'blur(16px)', position:'relative', width:'100%' }}><div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:_G, borderRadius:'9px 0 0 9px' }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontSize:12, color:_G }}>âœ“</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, banner:<div style={{ background:'color-mix(in srgb, var(--green) 7%, transparent)', borderLeft:'3px solid '+_G, padding:'8px 12px', display:'flex', alignItems:'center', gap:7, width:'100%' }}><span style={{ fontSize:10, color:_G }}>âœ“</span><span style={{ fontFamily:_FM, fontSize:10, color:_TX }}>Site updated.</span></div> }
+  p.float = <div style={{ background:_BG2, border:`1px solid ${_BD}`, borderRadius:8, padding:9, width:'100%', boxShadow:'0 10px 22px rgba(0,0,0,.35)' }}><div style={{ display:'flex', gap:7, alignItems:'center' }}><span style={{ width:18, height:18, borderRadius:5, background:'color-mix(in srgb, var(--green) 12%, transparent)', color:_G, display:'grid', placeItems:'center', fontSize:10 }}>âœ“</span><div><div style={{ fontFamily:_FM, fontSize:8, color:_G }}>Saved</div><div style={{ fontFamily:_FM, fontSize:7, color:_MT }}>12:04 Â· aifazi.net</div></div></div></div>
   p.glitch = <div style={{ background:'rgba(255,71,87,.08)', border:'1px solid var(--red)', padding:'9px 10px', width:'100%', position:'relative', overflow:'hidden' }}><div style={{ fontFamily:_FM, fontSize:8, color:'var(--red)', letterSpacing:2 }}>[ALERT]</div><div style={{ fontFamily:_FM, fontSize:10, color:'var(--red)', textShadow:`2px 0 ${_CY}` }}>SYNC COMPLETE</div></div>
-  p.inbox = <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:3 }}>{[0,1,2].map(i=><div key={i} style={{ display:'flex', gap:5, alignItems:'center', background:i===0?'rgba(0,255,136,.08)':_BG2, border:`1px solid ${_BD}`, borderRadius:5, padding:'4px 6px' }}><span style={{ width:5, height:5, borderRadius:'50%', background:i===0?_G:_MT }}/><span style={{ fontFamily:_FM, fontSize:7, color:i===0?_TX:_MT }}>Message {i+1}</span></div>)}</div>
-  p.hud = <div style={{ marginLeft:'auto', width:92, background:'rgba(0,212,255,.06)', border:`1px solid ${_CY}55`, padding:'6px 7px', clipPath:'polygon(0 0,100% 0,100% 75%,88% 100%,0 100%)' }}><div style={{ fontFamily:_FM, fontSize:7, color:_CY, letterSpacing:2 }}>HUD</div><div style={{ fontFamily:_FM, fontSize:9, color:_TX }}>ONLINE</div></div>
-  p.holo = <div style={{ background:'rgba(8,20,32,0.85)', border:'1px solid rgba(0,229,255,0.45)', borderRadius:14, padding:'9px 10px 9px 34px', position:'relative', boxShadow:'0 0 16px rgba(0,229,255,0.15)', width:'100%' }}><div style={{ position:'absolute', left:5, top:5, width:7, height:7, borderLeft:'1px solid rgba(0,229,255,0.5)', borderTop:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', right:5, bottom:5, width:7, height:7, borderRight:'1px solid rgba(0,229,255,0.5)', borderBottom:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', width:14, height:14, borderRadius:'50%', border:`1px solid ${_CY}88`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, color:_CY }}>✓</div><div style={{ fontFamily:_FM, fontSize:8, color:_CY }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>
-  p.chip = <div style={{ display:'flex', alignItems:'center', gap:7, background:_BG2, border:`1px solid ${_BD}`, borderRadius:5, padding:'6px 9px', width:'100%' }}><span style={{ width:7, height:7, borderRadius:'50%', background:_G }}/><span style={{ fontFamily:_FM, fontSize:7, color:_MT }}>12:04</span><span style={{ fontFamily:_FM, fontSize:9, color:_TX, flex:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>Changes saved!</span><span style={{ fontFamily:_FM, fontSize:8, color:_G }}>▶</span></div>
+  p.inbox = <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:3 }}>{[0,1,2].map(i=><div key={i} style={{ display:'flex', gap:5, alignItems:'center', background:i===0?'color-mix(in srgb, var(--green) 8%, transparent)':_BG2, border:`1px solid ${_BD}`, borderRadius:5, padding:'4px 6px' }}><span style={{ width:5, height:5, borderRadius:'50%', background:i===0?_G:_MT }}/><span style={{ fontFamily:_FM, fontSize:7, color:i===0?_TX:_MT }}>Message {i+1}</span></div>)}</div>
+  p.hud = <div style={{ marginLeft:'auto', width:92, background:'color-mix(in srgb, var(--cyan) 6%, transparent)', border:`1px solid ${_CY}55`, padding:'6px 7px', clipPath:'polygon(0 0,100% 0,100% 75%,88% 100%,0 100%)' }}><div style={{ fontFamily:_FM, fontSize:7, color:_CY, letterSpacing:2 }}>HUD</div><div style={{ fontFamily:_FM, fontSize:9, color:_TX }}>ONLINE</div></div>
+  p.holo = <div style={{ background:'rgba(8,20,32,0.85)', border:'1px solid rgba(0,229,255,0.45)', borderRadius:14, padding:'9px 10px 9px 34px', position:'relative', boxShadow:'0 0 16px rgba(0,229,255,0.15)', width:'100%' }}><div style={{ position:'absolute', left:5, top:5, width:7, height:7, borderLeft:'1px solid rgba(0,229,255,0.5)', borderTop:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', right:5, bottom:5, width:7, height:7, borderRight:'1px solid rgba(0,229,255,0.5)', borderBottom:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', width:14, height:14, borderRadius:'50%', border:`1px solid ${_CY}88`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, color:_CY }}>âœ“</div><div style={{ fontFamily:_FM, fontSize:8, color:_CY }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>
+  p.chip = <div style={{ display:'flex', alignItems:'center', gap:7, background:_BG2, border:`1px solid ${_BD}`, borderRadius:5, padding:'6px 9px', width:'100%' }}><span style={{ width:7, height:7, borderRadius:'50%', background:_G }}/><span style={{ fontFamily:_FM, fontSize:7, color:_MT }}>12:04</span><span style={{ fontFamily:_FM, fontSize:9, color:_TX, flex:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>Changes saved!</span><span style={{ fontFamily:_FM, fontSize:8, color:_G }}>â–¶</span></div>
   return <div style={{ width:'100%' }}>{p[id]||p.cyber}</div>
 }
 function FwDialogPreview({ id }) {
@@ -57,13 +57,13 @@ function FwDialogPreview({ id }) {
   if (s.side) return <div style={{ width:'100%', display:'grid', gridTemplateColumns:'36px 1fr', background:s.bg, border:s.border, borderRadius:s.r, overflow:'hidden' }}><div style={{ background:'rgba(255,71,87,0.12)', display:'flex', alignItems:'center', justifyContent:'center', color:red, fontSize:18 }}>!</div><div style={{ padding:9 }}><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:_TX }}>Review change</div><div style={{ fontFamily:_FM, fontSize:8, color:_MT, marginTop:3 }}>Split info + actions</div><div style={{ height:1, background:_BD, margin:'8px 0' }}/><div style={{ display:'flex', gap:5 }}><span style={{ flex:1, height:14, border:`1px solid ${_BD}` }}/><span style={{ flex:1, height:14, background:red }}/></div></div></div>
   if (s.drawer) return <div style={{ width:'74%', marginLeft:'auto', height:'100%', background:s.bg, border:s.border, borderRadius:s.r, padding:10, boxShadow:'-12px 0 30px rgba(0,0,0,0.35)' }}><div style={{ fontFamily:_FM, fontSize:7, color:_MT, letterSpacing:2 }}>INSPECTOR</div><div style={{ fontFamily:_FD, fontSize:13, color:_TX, fontWeight:700, margin:'5px 0 8px' }}>Publish?</div><div style={{ height:4, width:'70%', background:red, borderRadius:2 }}/><div style={{ height:4, width:'45%', background:_BD, marginTop:5, borderRadius:2 }}/></div>
   if (s.paper) return <div style={{ width:'100%', background:s.bg, border:s.border, borderRadius:s.r, color:'#1a1a1a', padding:10, boxShadow:'0 2px 8px rgba(0,0,0,0.18)' }}><div style={{ fontFamily:'serif', fontSize:15, fontWeight:900 }}>Delete draft?</div><div style={{ height:1, background:'#1a1a1a', opacity:0.25, margin:'6px 0' }}/><div style={{ display:'flex', justifyContent:'space-between', fontFamily:_FM, fontSize:7 }}><span>CANCEL</span><span style={{ color:'#b91c1c' }}>CONFIRM</span></div></div>
-  if (s.crt) return <div style={{ width:'100%', background:s.bg, border:s.border, borderRadius:s.r, boxShadow:s.sh, overflow:'hidden', position:'relative' }}><div style={{ position:'absolute', inset:0, pointerEvents:'none', background:'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.25) 2px,rgba(0,0,0,0.25) 4px)' }}/><div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 8px', borderBottom:'1px solid rgba(51,255,51,0.2)', fontFamily:_FM, fontSize:7, color:'#33ff33', letterSpacing:2 }}><span style={{ width:6, height:6, borderRadius:'50%', background:'#33ff33' }}/>PHOSPHOR.DIALOG</div><div style={{ padding:'9px 11px 7px' }}><div style={{ fontFamily:_FM, fontSize:7, color:'#33ff33', letterSpacing:2, marginBottom:3 }}>⚠ DANGER</div><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:'#33ff33', marginBottom:6 }}>Delete post?</div><div style={{ display:'flex', borderTop:'1px solid rgba(51,255,51,0.2)' }}><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:'rgba(51,255,51,0.6)', textAlign:'center', borderRight:'1px solid rgba(51,255,51,0.2)' }}>CANCEL</div><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:'#33ff33', textAlign:'center', fontWeight:700, background:'rgba(51,255,51,0.08)' }}>CONFIRM</div></div></div></div>
-  if (s.holo) return <div style={{ width:'100%', position:'relative', background:s.bg, border:s.border, borderRadius:s.r, boxShadow:s.sh, overflow:'hidden' }}><div style={{ position:'absolute', top:8, left:8, width:9, height:9, borderLeft:'1px solid rgba(0,229,255,0.5)', borderTop:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', top:8, right:8, width:9, height:9, borderRight:'1px solid rgba(0,229,255,0.5)', borderTop:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', bottom:8, left:8, width:9, height:9, borderLeft:'1px solid rgba(0,229,255,0.5)', borderBottom:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', bottom:8, right:8, width:9, height:9, borderRight:'1px solid rgba(0,229,255,0.5)', borderBottom:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ padding:'10px 12px' }}><div style={{ fontFamily:_FM, fontSize:7, color:_CY, letterSpacing:2, marginBottom:3 }}>⚠ DANGER</div><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:_TX, marginBottom:6 }}>Delete post?</div><div style={{ display:'flex', borderTop:'1px solid rgba(0,229,255,0.2)' }}><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:_MT, textAlign:'center', borderRight:'1px solid rgba(0,229,255,0.2)' }}>CANCEL</div><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:_CY, textAlign:'center', fontWeight:700, background:'rgba(0,229,255,0.08)' }}>CONFIRM</div></div></div></div>
-  return <div style={{ width:'100%', background:s.bg, border:s.border, borderRadius:s.r, backdropFilter:s.bd, boxShadow:s.sh, overflow:'hidden' }}>{s.topBar&&<div style={{ height:2, background:`linear-gradient(90deg,${red},transparent)` }}/>}{s.titleBar&&<div style={{ background:'rgba(255,71,87,0.1)', borderBottom:'1px solid rgba(255,71,87,0.2)', padding:'4px 8px', display:'flex', gap:4 }}>{['#ff5f56','#ffbd2e','#27c93f'].map(c=><div key={c} style={{ width:7, height:7, borderRadius:'50%', background:c }}/>)}</div>}{s.handle&&<div style={{ width:24, height:3, borderRadius:3, background:_MT, margin:'6px auto', opacity:0.4 }}/>}<div style={{ padding:'9px 11px 7px' }}><div style={{ fontFamily:_FM, fontSize:7, color:red, letterSpacing:2, marginBottom:3 }}>⚠ DANGER</div><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:_TX, marginBottom:6 }}>Delete post?</div><div style={{ display:'flex', borderTop:`1px solid ${_BD}` }}><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:_MT, textAlign:'center', borderRight:`1px solid ${_BD}` }}>CANCEL</div><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:red, textAlign:'center', fontWeight:700, background:'rgba(255,71,87,0.08)' }}>CONFIRM</div></div></div></div>
+  if (s.crt) return <div style={{ width:'100%', background:s.bg, border:s.border, borderRadius:s.r, boxShadow:s.sh, overflow:'hidden', position:'relative' }}><div style={{ position:'absolute', inset:0, pointerEvents:'none', background:'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.25) 2px,rgba(0,0,0,0.25) 4px)' }}/><div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 8px', borderBottom:'1px solid rgba(51,255,51,0.2)', fontFamily:_FM, fontSize:7, color:'#33ff33', letterSpacing:2 }}><span style={{ width:6, height:6, borderRadius:'50%', background:'#33ff33' }}/>PHOSPHOR.DIALOG</div><div style={{ padding:'9px 11px 7px' }}><div style={{ fontFamily:_FM, fontSize:7, color:'#33ff33', letterSpacing:2, marginBottom:3 }}>âš  DANGER</div><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:'#33ff33', marginBottom:6 }}>Delete post?</div><div style={{ display:'flex', borderTop:'1px solid rgba(51,255,51,0.2)' }}><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:'rgba(51,255,51,0.6)', textAlign:'center', borderRight:'1px solid rgba(51,255,51,0.2)' }}>CANCEL</div><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:'#33ff33', textAlign:'center', fontWeight:700, background:'rgba(51,255,51,0.08)' }}>CONFIRM</div></div></div></div>
+  if (s.holo) return <div style={{ width:'100%', position:'relative', background:s.bg, border:s.border, borderRadius:s.r, boxShadow:s.sh, overflow:'hidden' }}><div style={{ position:'absolute', top:8, left:8, width:9, height:9, borderLeft:'1px solid rgba(0,229,255,0.5)', borderTop:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', top:8, right:8, width:9, height:9, borderRight:'1px solid rgba(0,229,255,0.5)', borderTop:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', bottom:8, left:8, width:9, height:9, borderLeft:'1px solid rgba(0,229,255,0.5)', borderBottom:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', bottom:8, right:8, width:9, height:9, borderRight:'1px solid rgba(0,229,255,0.5)', borderBottom:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ padding:'10px 12px' }}><div style={{ fontFamily:_FM, fontSize:7, color:_CY, letterSpacing:2, marginBottom:3 }}>âš  DANGER</div><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:_TX, marginBottom:6 }}>Delete post?</div><div style={{ display:'flex', borderTop:'1px solid rgba(0,229,255,0.2)' }}><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:_MT, textAlign:'center', borderRight:'1px solid rgba(0,229,255,0.2)' }}>CANCEL</div><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:_CY, textAlign:'center', fontWeight:700, background:'rgba(0,229,255,0.08)' }}>CONFIRM</div></div></div></div>
+  return <div style={{ width:'100%', background:s.bg, border:s.border, borderRadius:s.r, backdropFilter:s.bd, boxShadow:s.sh, overflow:'hidden' }}>{s.topBar&&<div style={{ height:2, background:`linear-gradient(90deg,${red},transparent)` }}/>}{s.titleBar&&<div style={{ background:'rgba(255,71,87,0.1)', borderBottom:'1px solid rgba(255,71,87,0.2)', padding:'4px 8px', display:'flex', gap:4 }}>{['#ff5f56','#ffbd2e','#27c93f'].map(c=><div key={c} style={{ width:7, height:7, borderRadius:'50%', background:c }}/>)}</div>}{s.handle&&<div style={{ width:24, height:3, borderRadius:3, background:_MT, margin:'6px auto', opacity:0.4 }}/>}<div style={{ padding:'9px 11px 7px' }}><div style={{ fontFamily:_FM, fontSize:7, color:red, letterSpacing:2, marginBottom:3 }}>âš  DANGER</div><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:_TX, marginBottom:6 }}>Delete post?</div><div style={{ display:'flex', borderTop:`1px solid ${_BD}` }}><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:_MT, textAlign:'center', borderRight:`1px solid ${_BD}` }}>CANCEL</div><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize:8, color:red, textAlign:'center', fontWeight:700, background:'rgba(255,71,87,0.08)' }}>CONFIRM</div></div></div></div>
 }
 function FwInputPreview({ id }) {
   const c={ cyber:{bg:_BG3,b:`1px solid ${_CY}55`,r:0,sh:`inset 3px 0 0 ${_CY}`}, glass:{bg:'rgba(255,255,255,0.06)',b:'1px solid rgba(255,255,255,0.16)',r:12,bd:'blur(14px)'}, terminal:{bg:'#050805',b:'1px solid #33ff3355',r:2,fg:'#33ff33',prompt:'>'}, minimal:{bg:'transparent',b:'0 solid transparent',r:0,under:true}, brutal:{bg:'#fff',b:'3px solid #111',r:0,fg:'#111',sh:'4px 4px 0 #111'}, paper:{bg:'#fbf5ea',b:'1px solid #d8c7b3',r:2,fg:'#2b241f',paper:true}, pill:{bg:_BG3,b:`1px solid ${_BD}`,r:999}, command:{bg:'#070b12',b:`1px solid ${_CY}44`,r:8,cmd:true}, holo:{bg:'rgba(8,20,32,0.85)',b:'1px solid rgba(0,229,255,0.4)',r:12,fg:'#e6faff',bd:'blur(14px)',sh:'0 0 12px rgba(0,229,255,0.08)'}, crt:{bg:'#020604',b:'1px solid #33ff3344',r:2,fg:'#33ff33',prompt:'$'} }[id] || {}
-  if (c.cmd) return <div style={{ width:'100%', background:c.bg, border:c.b, borderRadius:c.r, padding:8 }}><div style={{ fontFamily:_FM, fontSize:8, color:_MT, marginBottom:6 }}>⌘ Search actions</div><div style={{ display:'flex', gap:5 }}>{['deploy','theme','user'].map(x=><span key={x} style={{ fontFamily:_FM, fontSize:7, color:_CY, border:`1px solid ${_CY}33`, padding:'2px 5px', borderRadius:4 }}>{x}</span>)}</div></div>
+  if (c.cmd) return <div style={{ width:'100%', background:c.bg, border:c.b, borderRadius:c.r, padding:8 }}><div style={{ fontFamily:_FM, fontSize:8, color:_MT, marginBottom:6 }}>âŒ˜ Search actions</div><div style={{ display:'flex', gap:5 }}>{['deploy','theme','user'].map(x=><span key={x} style={{ fontFamily:_FM, fontSize:7, color:_CY, border:`1px solid ${_CY}33`, padding:'2px 5px', borderRadius:4 }}>{x}</span>)}</div></div>
   return <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:6 }}><div style={{ fontFamily:_FM, fontSize:7, color:c.paper?'#6f5d4c':_MT, letterSpacing:2 }}>EMAIL</div><div style={{ height:28, display:'flex', alignItems:'center', gap:6, padding:'0 10px', color:c.fg||_TX, background:c.bg, border:c.under?'none':c.b, borderBottom:c.under?`1px solid ${_BD}`:undefined, borderRadius:c.r, boxShadow:c.sh, backdropFilter:c.bd, fontFamily:_FM, fontSize:9 }}><span style={{ color:c.fg||_CY }}>{c.prompt||'@'}</span><span style={{ opacity:.75 }}>hello@aifazi.net</span></div><div style={{ height:20, border:c.under?`1px solid ${_BD}`:c.b, borderRadius:c.r, background:c.paper?'#fff8ef':c.bg, opacity:.65 }}/></div>
 }
 function FwSurfacePreview({ id }) {
@@ -84,16 +84,16 @@ function FwSurfacePreview({ id }) {
 }
 function FwLoadingPreview({ id }) {
   const g='#00ff88', cy='var(--cyan)'
-  const p={ terminal:<div style={{ fontFamily:_FM, fontSize:8, color:g, textAlign:'left', padding:'5px 7px', background:'#060a06', border:'1px solid rgba(0,255,136,0.2)', borderRadius:3, width:'100%' }}><div style={{ color:_MT, marginBottom:1 }}>{'>'} Initializing...</div><div>{'>'} <span style={{ color:g }}>eth0: connected [OK]</span></div><div style={{ display:'flex', gap:3, marginTop:4, height:2 }}><div style={{ flex:3, background:`linear-gradient(90deg,${g},${cy})`, borderRadius:2 }}/><div style={{ flex:2, background:'rgba(255,255,255,0.06)', borderRadius:2 }}/></div></div>, minimal:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7 }}><div style={{ width:26, height:26, borderRadius:'50%', border:`1.5px solid transparent`, borderTopColor:g, borderBottomColor:cy, animation:'fwSpin 1s linear infinite' }}/><div style={{ fontFamily:_FM, fontSize:8, color:_MT, letterSpacing:2 }}>LOADING</div></div>, glitch:<div style={{ position:'relative', fontFamily:_FD, fontSize:20, fontWeight:700, letterSpacing:-1, textAlign:'center' }}>TANVIR<span style={{ color:g }}>.</span><span style={{ position:'absolute', inset:0, color:cy, clipPath:'polygon(0 0,100% 0,100% 40%,0 40%)', animation:'fwGlitch 2s infinite', opacity:0.6 }}>TANVIR.</span></div>, splash:<div style={{ textAlign:'center' }}><div style={{ fontFamily:_FD, fontSize:20, fontWeight:700, letterSpacing:-1 }}>T<span style={{ color:g }}>.</span>TANVIR</div><div style={{ display:'flex', justifyContent:'center', gap:4, marginTop:5 }}>{[0,1,2].map(i=><div key={i} style={{ width:4, height:4, borderRadius:'50%', background:g, animation:`fwBounce 0.8s ${i*0.15}s ease-in-out infinite alternate` }}/>)}</div></div>, matrix:<div style={{ fontFamily:_FM, fontSize:9, color:g, textAlign:'center', lineHeight:1.5 }}>{['ＡＢＣＤ','ＨＩＪＫ','ＱＲＳＴ'].map((r,i)=><div key={i} style={{ opacity:1-i*0.25 }}>{r}</div>)}</div>, pulse:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7 }}><div style={{ position:'relative', width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center' }}>{[0,1].map(i=><div key={i} style={{ position:'absolute', inset:i*7, borderRadius:'50%', border:`1px solid ${i===0?g:cy}`, animation:`fwPulse ${1.4+i*0.3}s ${i*0.2}s ease-in-out infinite` }}/>)}<div style={{ width:5, height:5, borderRadius:'50%', background:g }}/></div><div style={{ fontFamily:_FM, fontSize:8, color:_MT, letterSpacing:2 }}>CONNECTING</div></div>, cyber:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5 }}><div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:2 }}>{Array.from({length:18},(_,i)=><div key={i} style={{ width:7, height:7, borderRadius:1, background:i<11?cy:'rgba(0,212,255,0.08)', border:`1px solid ${i<11?'rgba(0,212,255,0.7)':'rgba(0,212,255,0.12)'}` }}/>)}</div><div style={{ fontFamily:_FM, fontSize:7, color:_MT, letterSpacing:2 }}>BOOT SEQUENCE</div></div>, bars:<div style={{ width:'100%', display:'flex', flexDirection:'column', gap:4 }}>{[['KERNEL',100,g],['NETWORK',72,cy],['ASSETS',45,g]].map(([l,p,c])=><div key={l}><div style={{ display:'flex', justifyContent:'space-between', fontFamily:_FM, fontSize:7, color:_MT, marginBottom:2 }}><span>{l}</span><span style={{ color:c }}>{p}%</span></div><div style={{ height:2, background:'rgba(255,255,255,0.06)', borderRadius:1 }}><div style={{ height:'100%', width:`${p}%`, background:`linear-gradient(90deg,${c},rgba(0,255,136,0.3))`, borderRadius:1 }}/></div></div>)}</div>, wave:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5 }}><div style={{ display:'flex', alignItems:'flex-end', gap:2, height:22 }}>{Array.from({length:8},(_,i)=><div key={i} style={{ width:4, borderRadius:2, background:i%2===0?g:cy, animation:`fwWave ${0.8+i*0.06}s ${i*0.06}s ease-in-out infinite` }}/>)}</div><div style={{ fontFamily:_FM, fontSize:8, color:_MT, letterSpacing:2 }}>LOADING</div></div>, neon:<div style={{ textAlign:'center', fontFamily:_FD, fontSize:18, fontWeight:900, letterSpacing:3, color:'#fff', animation:'fwNeon 3s infinite', textShadow:`0 0 8px ${g},0 0 20px ${g}` }}>TANVIR</div> }
+  const p={ terminal:<div style={{ fontFamily:_FM, fontSize:8, color:g, textAlign:'left', padding:'5px 7px', background:'#060a06', border:'1px solid color-mix(in srgb, var(--green) 20%, transparent)', borderRadius:3, width:'100%' }}><div style={{ color:_MT, marginBottom:1 }}>{'>'} Initializing...</div><div>{'>'} <span style={{ color:g }}>eth0: connected [OK]</span></div><div style={{ display:'flex', gap:3, marginTop:4, height:2 }}><div style={{ flex:3, background:`linear-gradient(90deg,${g},${cy})`, borderRadius:2 }}/><div style={{ flex:2, background:'rgba(255,255,255,0.06)', borderRadius:2 }}/></div></div>, minimal:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7 }}><div style={{ width:26, height:26, borderRadius:'50%', border:`1.5px solid transparent`, borderTopColor:g, borderBottomColor:cy, animation:'fwSpin 1s linear infinite' }}/><div style={{ fontFamily:_FM, fontSize:8, color:_MT, letterSpacing:2 }}>LOADING</div></div>, glitch:<div style={{ position:'relative', fontFamily:_FD, fontSize:20, fontWeight:700, letterSpacing:-1, textAlign:'center' }}>TANVIR<span style={{ color:g }}>.</span><span style={{ position:'absolute', inset:0, color:cy, clipPath:'polygon(0 0,100% 0,100% 40%,0 40%)', animation:'fwGlitch 2s infinite', opacity:0.6 }}>TANVIR.</span></div>, splash:<div style={{ textAlign:'center' }}><div style={{ fontFamily:_FD, fontSize:20, fontWeight:700, letterSpacing:-1 }}>T<span style={{ color:g }}>.</span>TANVIR</div><div style={{ display:'flex', justifyContent:'center', gap:4, marginTop:5 }}>{[0,1,2].map(i=><div key={i} style={{ width:4, height:4, borderRadius:'50%', background:g, animation:`fwBounce 0.8s ${i*0.15}s ease-in-out infinite alternate` }}/>)}</div></div>, matrix:<div style={{ fontFamily:_FM, fontSize:9, color:g, textAlign:'center', lineHeight:1.5 }}>{['ï¼¡ï¼¢ï¼£ï¼¤','ï¼¨ï¼©ï¼ªï¼«','ï¼±ï¼²ï¼³ï¼´'].map((r,i)=><div key={i} style={{ opacity:1-i*0.25 }}>{r}</div>)}</div>, pulse:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7 }}><div style={{ position:'relative', width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center' }}>{[0,1].map(i=><div key={i} style={{ position:'absolute', inset:i*7, borderRadius:'50%', border:`1px solid ${i===0?g:cy}`, animation:`fwPulse ${1.4+i*0.3}s ${i*0.2}s ease-in-out infinite` }}/>)}<div style={{ width:5, height:5, borderRadius:'50%', background:g }}/></div><div style={{ fontFamily:_FM, fontSize:8, color:_MT, letterSpacing:2 }}>CONNECTING</div></div>, cyber:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5 }}><div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:2 }}>{Array.from({length:18},(_,i)=><div key={i} style={{ width:7, height:7, borderRadius:1, background:i<11?cy:'color-mix(in srgb, var(--cyan) 8%, transparent)', border:`1px solid ${i<11?'color-mix(in srgb, var(--cyan) 70%, transparent)':'color-mix(in srgb, var(--cyan) 12%, transparent)'}` }}/>)}</div><div style={{ fontFamily:_FM, fontSize:7, color:_MT, letterSpacing:2 }}>BOOT SEQUENCE</div></div>, bars:<div style={{ width:'100%', display:'flex', flexDirection:'column', gap:4 }}>{[['KERNEL',100,g],['NETWORK',72,cy],['ASSETS',45,g]].map(([l,p,c])=><div key={l}><div style={{ display:'flex', justifyContent:'space-between', fontFamily:_FM, fontSize:7, color:_MT, marginBottom:2 }}><span>{l}</span><span style={{ color:c }}>{p}%</span></div><div style={{ height:2, background:'rgba(255,255,255,0.06)', borderRadius:1 }}><div style={{ height:'100%', width:`${p}%`, background:`linear-gradient(90deg,${c},color-mix(in srgb, var(--green) 30%, transparent))`, borderRadius:1 }}/></div></div>)}</div>, wave:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5 }}><div style={{ display:'flex', alignItems:'flex-end', gap:2, height:22 }}>{Array.from({length:8},(_,i)=><div key={i} style={{ width:4, borderRadius:2, background:i%2===0?g:cy, animation:`fwWave ${0.8+i*0.06}s ${i*0.06}s ease-in-out infinite` }}/>)}</div><div style={{ fontFamily:_FM, fontSize:8, color:_MT, letterSpacing:2 }}>LOADING</div></div>, neon:<div style={{ textAlign:'center', fontFamily:_FD, fontSize:18, fontWeight:900, letterSpacing:3, color:'#fff', animation:'fwNeon 3s infinite', textShadow:`0 0 8px ${g},0 0 20px ${g}` }}>TANVIR</div> }
   p.holo = <div style={{ position:'relative', width:44, height:44, display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'1px solid rgba(0,229,255,0.4)', borderTop:'1px solid var(--cyan)', animation:'fwSpin 0.9s linear infinite' }}/><div style={{ position:'absolute', inset:6, borderRadius:'50%', border:'1px dashed rgba(0,229,255,0.35)' }}/><div style={{ width:7, height:7, borderRadius:'50%', background:'var(--cyan)', boxShadow:'0 0 10px var(--cyan)' }}/></div>
   p.crt = <div style={{ fontFamily:_FM, fontSize:8, color:g, textAlign:'left', padding:'5px 7px', background:'#020604', border:'1px solid rgba(0,255,0,0.25)', borderRadius:3, width:'100%', position:'relative' }}>{['> BIOS ok','> GRID ready','> NET eth0 UP'].map((l,i)=><div key={i} style={{ opacity:1-i*0.25, lineHeight:1.7, textShadow:'0 0 4px rgba(0,255,0,0.5)' }}>{l}</div>)}<div style={{ position:'absolute', inset:0, pointerEvents:'none', background:'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.25) 2px,rgba(0,0,0,0.25) 4px)' }}/><span style={{ position:'absolute', bottom:2, left:7, width:5, height:9, background:g, animation:'fwBlink 0.8s steps(2) infinite' }}/></div>
   return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'100%', height:'100%' }}>{p[id]||p.terminal}</div>
 }
 function FwAnimPreview({ id }) {
   const [ping,setPing]=useState(false)
-  const map={ smooth:{d:'0.35s',e:'cubic-bezier(0.16,1,0.3,1)',info:'0.35s · elastic'}, snappy:{d:'0.12s',e:'cubic-bezier(0.4,0,0.2,1)',info:'0.12s · crisp'}, bouncy:{d:'0.45s',e:'cubic-bezier(0.34,1.56,0.64,1)',info:'0.45s · spring'}, expressive:{d:'0.5s',e:'cubic-bezier(0.22,1.5,0.36,1)',info:'0.5s · dramatic'}, reduced:{d:'0.2s',e:'cubic-bezier(0.4,0,0.2,1)',info:'0.2s · subtle'}, elastic:{d:'0.5s',e:'cubic-bezier(0.68,-0.55,0.27,1.55)',info:'0.5s · overshoot'}, cinematic:{d:'1.2s',e:'cubic-bezier(0.25,0.1,0.25,1)',info:'1.2s · dramatic'}, none:{d:'0s',e:'linear',info:'instant'} }
+  const map={ smooth:{d:'0.35s',e:'cubic-bezier(0.16,1,0.3,1)',info:'0.35s Â· elastic'}, snappy:{d:'0.12s',e:'cubic-bezier(0.4,0,0.2,1)',info:'0.12s Â· crisp'}, bouncy:{d:'0.45s',e:'cubic-bezier(0.34,1.56,0.64,1)',info:'0.45s Â· spring'}, expressive:{d:'0.5s',e:'cubic-bezier(0.22,1.5,0.36,1)',info:'0.5s Â· dramatic'}, reduced:{d:'0.2s',e:'cubic-bezier(0.4,0,0.2,1)',info:'0.2s Â· subtle'}, elastic:{d:'0.5s',e:'cubic-bezier(0.68,-0.55,0.27,1.55)',info:'0.5s Â· overshoot'}, cinematic:{d:'1.2s',e:'cubic-bezier(0.25,0.1,0.25,1)',info:'1.2s Â· dramatic'}, none:{d:'0s',e:'linear',info:'instant'} }
   const p=map[id]||map.smooth
-  return <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7, width:'100%', cursor:'pointer' }} title="Click to preview" onClick={()=>{setPing(false);requestAnimationFrame(()=>requestAnimationFrame(()=>setPing(true)))}}><div style={{ width:26, height:26, borderRadius:'50%', background:'rgba(0,212,255,0.18)', border:'2px solid var(--cyan)', transform:ping?'scale(1.5) translateY(-10px)':'scale(1) translateY(0)', opacity:id==='none'?(ping?0:1):1, transition:`transform ${p.d} ${p.e}, opacity ${p.d} ${p.e}`, boxShadow:'0 0 8px rgba(0,212,255,0.3)' }} onTransitionEnd={()=>setPing(false)}/><div style={{ fontFamily:_FM, fontSize:8, color:_MT, letterSpacing:1, textAlign:'center' }}>{p.info}</div></div>
+  return <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7, width:'100%', cursor:'pointer' }} title="Click to preview" onClick={()=>{setPing(false);requestAnimationFrame(()=>requestAnimationFrame(()=>setPing(true)))}}><div style={{ width:26, height:26, borderRadius:'50%', background:'color-mix(in srgb, var(--cyan) 18%, transparent)', border:'2px solid var(--cyan)', transform:ping?'scale(1.5) translateY(-10px)':'scale(1) translateY(0)', opacity:id==='none'?(ping?0:1):1, transition:`transform ${p.d} ${p.e}, opacity ${p.d} ${p.e}`, boxShadow:'0 0 8px color-mix(in srgb, var(--cyan) 30%, transparent)' }} onTransitionEnd={()=>setPing(false)}/><div style={{ fontFamily:_FM, fontSize:8, color:_MT, letterSpacing:1, textAlign:'center' }}>{p.info}</div></div>
 }
 function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
   const s = pkg.settings
@@ -187,7 +187,7 @@ function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
 
 function FwStyleCard({ item, isActive, onSelect, accentColor, category }) {
   return <div onClick={()=>onSelect(item.id)} style={{ background:isActive?`${accentColor}09`:_BG2, border:`2px solid ${isActive?accentColor:_BD}`, borderRadius:10, cursor:'pointer', overflow:'hidden', transition:'all 0.18s cubic-bezier(0.16,1,0.3,1)', boxShadow:isActive?`0 0 18px ${accentColor}28, 0 4px 16px rgba(0,0,0,0.3)`:'0 2px 8px rgba(0,0,0,0.2)', position:'relative', transform:isActive?'translateY(-2px)':'translateY(0)' }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.borderColor=`${accentColor}55`;e.currentTarget.style.transform='translateY(-2px)'}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.borderColor=_BD;e.currentTarget.style.transform='translateY(0)'}}}>
-    {isActive&&<div style={{ position:'absolute', top:7, right:7, zIndex:2, width:18, height:18, borderRadius:'50%', background:accentColor, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, color:'#000', fontWeight:900 }}>✓</div>}
+    {isActive&&<div style={{ position:'absolute', top:7, right:7, zIndex:2, width:18, height:18, borderRadius:'50%', background:accentColor, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, color:'#000', fontWeight:900 }}>âœ“</div>}
     <div style={{ height:82, background:_BG, borderBottom:`1px solid ${_BD}`, display:'flex', alignItems:'center', justifyContent:'center', padding:'10px 14px', overflow:'hidden' }}>
       {category==='menu'&&<FwMenuPreview id={item.id}/>}{category==='notify'&&<FwNotifyPreview id={item.id}/>}{category==='dialog'&&<FwDialogPreview id={item.id}/>}{category==='input'&&<FwInputPreview id={item.id}/>}{category==='surface'&&<FwSurfacePreview id={item.id}/>}{category==='loading'&&<FwLoadingPreview id={item.id}/>}{category==='animation'&&<FwAnimPreview id={item.id}/>}
     </div>
@@ -199,7 +199,7 @@ function FwCategorySection({ cat, draft, onSelect, isUnsaved }) {
   return <section style={{ marginBottom:48 }}>
     <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
       <div style={{ width:38, height:38, borderRadius:8, background:`${cat.color}18`, border:`1px solid ${cat.color}44`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>{cat.icon}</div>
-      <div style={{ flex:1, minWidth:0 }}><div style={{ fontFamily:_FD, fontSize:17, fontWeight:700, color:_TX, display:'flex', alignItems:'center', gap:8 }}>{cat.label}{isUnsaved&&<span style={_tag(cat.color)}>UNSAVED</span>}</div><div style={{ fontFamily:_FM, fontSize:9, color:_MT, marginTop:1 }}>{cat.styles.length} variants — active: <span style={{ color:cat.color }}>{activeId}</span></div></div>
+      <div style={{ flex:1, minWidth:0 }}><div style={{ fontFamily:_FD, fontSize:17, fontWeight:700, color:_TX, display:'flex', alignItems:'center', gap:8 }}>{cat.label}{isUnsaved&&<span style={_tag(cat.color)}>UNSAVED</span>}</div><div style={{ fontFamily:_FM, fontSize:9, color:_MT, marginTop:1 }}>{cat.styles.length} variants â€” active: <span style={{ color:cat.color }}>{activeId}</span></div></div>
     </div>
     <div style={{ display:'grid', gridTemplateColumns:`repeat(auto-fill,minmax(${cols}px,1fr))`, gap:10 }}>
       {cat.styles.map(item=><FwStyleCard key={item.id} item={item} isActive={activeId===item.id} onSelect={id=>onSelect(cat.configKey,id)} accentColor={cat.color} category={cat.id}/>)}
@@ -269,9 +269,9 @@ const LIGHT_THEME_IDS = ['light', 'cyber-light', 'paper', 'neumorph', 'macos', '
 
 const THEME_DEFS = [
   // -- Color variants ----------------------------------------------------------
-  { id: 'cyber-dark',  name: 'Cyber Dark',  tag: 'DARK',  type: 'color', desc: 'Default hacker aesthetic — deep black with neon green & cyan accents.',
-    bg: '#060a0f', bg2: '#0b1118', bg3: '#111a24', primary: '#00ff88', secondary: '#00d4ff', orange: '#ff6b35', text: '#c8d8e8', muted: '#6b8296', border: 'rgba(0,212,255,0.15)' },
-  { id: 'cyber-light', name: 'Cyber Light', tag: 'LIGHT', type: 'color', desc: 'Clean muted slate — cyber family light mode.',
+  { id: 'cyber-dark',  name: 'Cyber Dark',  tag: 'DARK',  type: 'color', desc: 'Default hacker aesthetic â€” deep black with neon green & cyan accents.',
+    bg: '#060a0f', bg2: '#0b1118', bg3: '#111a24', primary: '#00ff88', secondary: '#00d4ff', orange: '#ff6b35', text: '#c8d8e8', muted: '#6b8296', border: 'color-mix(in srgb, var(--cyan) 15%, transparent)' },
+  { id: 'cyber-light', name: 'Cyber Light', tag: 'LIGHT', type: 'color', desc: 'Clean muted slate â€” cyber family light mode.',
     bg: '#c8d4e0', bg2: '#bcc9d8', bg3: '#b0bece', primary: '#006e38', secondary: '#005d8f', orange: '#b84416', text: '#0a1520', muted: '#4a6478', border: 'rgba(0,93,143,0.28)' },
   { id: 'midnight',   name: 'Midnight',    tag: 'DARK',  type: 'color', desc: 'Deep violet & hot pink  moody and editorial.',
     bg: '#08051a', bg2: '#0e0a24', bg3: '#16102e', primary: '#a855f7', secondary: '#ec4899', orange: '#f97316', text: '#e2d9f3', muted: '#6b5a8a', border: 'rgba(168,85,247,0.18)' },
@@ -326,62 +326,62 @@ const THEME_DEFS = [
 
 const ANIM_CATEGORIES = [
   { id: 'ALL',        label: 'All',           color: 'var(--green)' },
-  { id: 'entrance',   label: '🎬 Entrance',    color: '#64b5f6' },
-  { id: 'attention',  label: '⚡ Attention',   color: '#ffb74d' },
-  { id: 'loading',    label: '⏳ Loading',     color: '#ce93d8' },
-  { id: 'text',       label: '📝 Text / Hero', color: '#80cbc4' },
-  { id: 'background', label: '🎨 Background',  color: '#ef9a9a' },
+  { id: 'entrance',   label: 'ðŸŽ¬ Entrance',    color: '#64b5f6' },
+  { id: 'attention',  label: 'âš¡ Attention',   color: '#ffb74d' },
+  { id: 'loading',    label: 'â³ Loading',     color: '#ce93d8' },
+  { id: 'text',       label: 'ðŸ“ Text / Hero', color: '#80cbc4' },
+  { id: 'background', label: 'ðŸŽ¨ Background',  color: '#ef9a9a' },
 ]
 
 // -- Background Animation -------------------------------------------------------
 const ANIMATION_PATTERNS = [
-  { id: 'none',          name: 'None',        icon: '∅', desc: 'No animated background',                preview: 'none' },
-  { id: 'aurora-ribbons',name: 'Ribbons',     icon: '⌁', desc: 'Slow drifting aurora ribbons',          preview: 'gradient' },
-  { id: 'contours',      name: 'Contours',    icon: '≋', desc: 'Animated hand-drawn flow lines',        preview: 'svg' },
-  { id: 'flow-grid',     name: 'Flow Grid',   icon: '⌗', desc: 'Moving technical grid and light sweep', preview: 'linear-gradient' },
-  { id: 'particle-field',name: 'Particles',   icon: '✦', desc: 'Floating star-like micro particles',    preview: 'radial' },
-  { id: 'nebula',        name: 'Nebula',      icon: '🌌', desc: 'Slow-morphing cosmic gas clouds',      preview: 'radial-gradient' },
-  { id: 'kaleidoscope',  name: 'Kaleidoscope',icon: '🕐', desc: 'Rotating geometric mandala',           preview: 'conic-gradient' },
-  { id: 'glow-orbs',     name: 'Glow Orbs',   icon: '💫', desc: 'Floating soft light spheres',          preview: 'radial-gradient' },
-  { id: 'gradient-mesh', name: 'Gradient Mesh',icon: '🎨', desc: 'Slow-morphing colored mesh gradient', preview: 'radial-gradient' },
-  { id: 'bokeh',         name: 'Bokeh',       icon: '🌫️', desc: 'Soft blurred light circles',           preview: 'radial-gradient' },
-  { id: 'shooting-stars',name: 'Shooting Stars', icon: '☄️', desc: 'Streaking light trails',             preview: 'linear-gradient' },
-  { id: 'circuit-glow',  name: 'Circuit Glow',icon: '🟢', desc: 'Animated circuit board traces',        preview: 'svg' },
-  { id: 'wave-lines',    name: 'Wave Lines',  icon: '〰️', desc: 'Layered flowing sine waves',           preview: 'svg' },
-  { id: 'cyber-grid',    name: 'Cyber Grid',  icon: '🔳', desc: 'Perspective grid moving toward viewer',preview: 'linear-gradient' },
-  { id: 'stardust',      name: 'Stardust',    icon: '🌟', desc: 'Slow-drifting twinkling starfield',    preview: 'radial' },
-  { id: 'light-beams',   name: 'Light Beams', icon: '🔦', desc: 'Rotating conic light beams',           preview: 'conic-gradient' },
-  { id: 'scan-sweep',    name: 'Scan Sweep',  icon: '📡', desc: 'Vertical light sweep over grid',       preview: 'linear-gradient' },
-  { id: 'hex-flow',      name: 'Hex Flow',    icon: '⬡', desc: 'Flowing hexagon field',                preview: 'linear-gradient' },
-  { id: 'matrix-rain',   name: 'Matrix Rain', icon: '🌧️', desc: 'Falling green code columns',           preview: 'grid' },
+  { id: 'none',          name: 'None',        icon: 'âˆ…', desc: 'No animated background',                preview: 'none' },
+  { id: 'aurora-ribbons',name: 'Ribbons',     icon: 'âŒ', desc: 'Slow drifting aurora ribbons',          preview: 'gradient' },
+  { id: 'contours',      name: 'Contours',    icon: 'â‰‹', desc: 'Animated hand-drawn flow lines',        preview: 'svg' },
+  { id: 'flow-grid',     name: 'Flow Grid',   icon: 'âŒ—', desc: 'Moving technical grid and light sweep', preview: 'linear-gradient' },
+  { id: 'particle-field',name: 'Particles',   icon: 'âœ¦', desc: 'Floating star-like micro particles',    preview: 'radial' },
+  { id: 'nebula',        name: 'Nebula',      icon: 'ðŸŒŒ', desc: 'Slow-morphing cosmic gas clouds',      preview: 'radial-gradient' },
+  { id: 'kaleidoscope',  name: 'Kaleidoscope',icon: 'ðŸ•', desc: 'Rotating geometric mandala',           preview: 'conic-gradient' },
+  { id: 'glow-orbs',     name: 'Glow Orbs',   icon: 'ðŸ’«', desc: 'Floating soft light spheres',          preview: 'radial-gradient' },
+  { id: 'gradient-mesh', name: 'Gradient Mesh',icon: 'ðŸŽ¨', desc: 'Slow-morphing colored mesh gradient', preview: 'radial-gradient' },
+  { id: 'bokeh',         name: 'Bokeh',       icon: 'ðŸŒ«ï¸', desc: 'Soft blurred light circles',           preview: 'radial-gradient' },
+  { id: 'shooting-stars',name: 'Shooting Stars', icon: 'â˜„ï¸', desc: 'Streaking light trails',             preview: 'linear-gradient' },
+  { id: 'circuit-glow',  name: 'Circuit Glow',icon: 'ðŸŸ¢', desc: 'Animated circuit board traces',        preview: 'svg' },
+  { id: 'wave-lines',    name: 'Wave Lines',  icon: 'ã€°ï¸', desc: 'Layered flowing sine waves',           preview: 'svg' },
+  { id: 'cyber-grid',    name: 'Cyber Grid',  icon: 'ðŸ”³', desc: 'Perspective grid moving toward viewer',preview: 'linear-gradient' },
+  { id: 'stardust',      name: 'Stardust',    icon: 'ðŸŒŸ', desc: 'Slow-drifting twinkling starfield',    preview: 'radial' },
+  { id: 'light-beams',   name: 'Light Beams', icon: 'ðŸ”¦', desc: 'Rotating conic light beams',           preview: 'conic-gradient' },
+  { id: 'scan-sweep',    name: 'Scan Sweep',  icon: 'ðŸ“¡', desc: 'Vertical light sweep over grid',       preview: 'linear-gradient' },
+  { id: 'hex-flow',      name: 'Hex Flow',    icon: 'â¬¡', desc: 'Flowing hexagon field',                preview: 'linear-gradient' },
+  { id: 'matrix-rain',   name: 'Matrix Rain', icon: 'ðŸŒ§ï¸', desc: 'Falling green code columns',           preview: 'grid' },
 ]
 
 // -- Grid Overlay ---------------------------------------------------------------
 const GRID_PATTERNS = [
-  { id: 'clean',         name: 'None',       icon: '∅', desc: 'No grid overlay',                      preview: 'none' },
-  { id: 'grid',          name: 'Grid',       icon: '▦', desc: 'Standard square grid',                 preview: 'var(--grid-line)' },
-  { id: 'dots',          name: 'Dots',       icon: '●', desc: 'Polka dot grid',                       preview: 'radial' },
-  { id: 'scanlines',     name: 'Scanlines',  icon: '▤', desc: 'Horizontal CRT scan lines',            preview: 'repeating-linear-gradient' },
-  { id: 'circuit',       name: 'Circuit',    icon: '⚡', desc: 'Intersecting diagonal traces',          preview: 'repeating-linear-gradient' },
-  { id: 'hexagons',      name: 'Hexagons',   icon: '⬡', desc: 'Honeycomb approximate grid',           preview: 'linear-gradient' },
-  { id: 'matrix',        name: 'Matrix',     icon: '🌧️', desc: 'Vertical rain columns',                preview: 'grid' },
-  { id: 'noise',         name: 'Noise',      icon: '▣', desc: 'Subtle film grain texture',            preview: 'url' },
-  { id: 'radial',        name: 'Radial',     icon: '◎', desc: 'Fine dot scattering',                  preview: 'radial' },
-  { id: 'waves',         name: 'Waves',      icon: '〰️', desc: 'Concentric ripple rings',              preview: 'radial-gradient' },
-  { id: 'paper-doc',     name: 'Paper Doc',  icon: '📄', desc: 'Horizontal ruled line surface',        preview: 'linear-gradient' },
-  { id: 'terminal',      name: 'Terminal',   icon: '💻', desc: 'Phosphor scanline surface',            preview: 'repeating-linear-gradient' },
-  { id: 'neon-stage',    name: 'Neon Stage', icon: '🎭', desc: 'Dual-axis neon glow grid',             preview: 'linear-gradient' },
-  { id: 'dashboard',     name: 'Dashboard',  icon: '📊', desc: 'Dense telemetry grid',                preview: 'linear-gradient' },
-  { id: 'blueprint',     name: 'Blueprint',  icon: '📐', desc: 'Engineering blueprint double grid',    preview: 'linear-gradient' },
-  { id: 'isometric',     name: 'Isometric',  icon: '📦', desc: 'Angled 3D tile grid',                 preview: 'linear-gradient' },
-  { id: 'rhombus',       name: 'Rhombus',    icon: '◆', desc: 'Diamond weave grid',                   preview: 'linear-gradient' },
-  { id: 'crosshatch',    name: 'Crosshatch', icon: '𝄳', desc: 'Tight diagonal hatch',                preview: 'repeating-linear-gradient' },
-  { id: 'weave',         name: 'Weave',      icon: '🕸️', desc: 'Interlocking woven bands',             preview: 'repeating-linear-gradient' },
-  { id: 'plus',          name: 'Plus',       icon: '✚', desc: 'Plus-sign tile pattern',               preview: 'linear-gradient' },
-  { id: 'pixel',         name: 'Pixel',      icon: '👾', desc: 'Blocky pixelated grid',               preview: 'linear-gradient' },
-  { id: 'corner',        name: 'Corner',     icon: '❐', desc: 'Bracket corner marks',                 preview: 'linear-gradient' },
-  { id: 'fiber',         name: 'Fiber',      icon: '🔹', desc: 'Fiber-optic dots on traces',          preview: 'linear-gradient' },
-  { id: 'polar',         name: 'Polar',      icon: '◎', desc: 'Concentric polar rings with axes',    preview: 'radial-gradient' },
+  { id: 'clean',         name: 'None',       icon: 'âˆ…', desc: 'No grid overlay',                      preview: 'none' },
+  { id: 'grid',          name: 'Grid',       icon: 'â–¦', desc: 'Standard square grid',                 preview: 'var(--grid-line)' },
+  { id: 'dots',          name: 'Dots',       icon: 'â—', desc: 'Polka dot grid',                       preview: 'radial' },
+  { id: 'scanlines',     name: 'Scanlines',  icon: 'â–¤', desc: 'Horizontal CRT scan lines',            preview: 'repeating-linear-gradient' },
+  { id: 'circuit',       name: 'Circuit',    icon: 'âš¡', desc: 'Intersecting diagonal traces',          preview: 'repeating-linear-gradient' },
+  { id: 'hexagons',      name: 'Hexagons',   icon: 'â¬¡', desc: 'Honeycomb approximate grid',           preview: 'linear-gradient' },
+  { id: 'matrix',        name: 'Matrix',     icon: 'ðŸŒ§ï¸', desc: 'Vertical rain columns',                preview: 'grid' },
+  { id: 'noise',         name: 'Noise',      icon: 'â–£', desc: 'Subtle film grain texture',            preview: 'url' },
+  { id: 'radial',        name: 'Radial',     icon: 'â—Ž', desc: 'Fine dot scattering',                  preview: 'radial' },
+  { id: 'waves',         name: 'Waves',      icon: 'ã€°ï¸', desc: 'Concentric ripple rings',              preview: 'radial-gradient' },
+  { id: 'paper-doc',     name: 'Paper Doc',  icon: 'ðŸ“„', desc: 'Horizontal ruled line surface',        preview: 'linear-gradient' },
+  { id: 'terminal',      name: 'Terminal',   icon: 'ðŸ’»', desc: 'Phosphor scanline surface',            preview: 'repeating-linear-gradient' },
+  { id: 'neon-stage',    name: 'Neon Stage', icon: 'ðŸŽ­', desc: 'Dual-axis neon glow grid',             preview: 'linear-gradient' },
+  { id: 'dashboard',     name: 'Dashboard',  icon: 'ðŸ“Š', desc: 'Dense telemetry grid',                preview: 'linear-gradient' },
+  { id: 'blueprint',     name: 'Blueprint',  icon: 'ðŸ“', desc: 'Engineering blueprint double grid',    preview: 'linear-gradient' },
+  { id: 'isometric',     name: 'Isometric',  icon: 'ðŸ“¦', desc: 'Angled 3D tile grid',                 preview: 'linear-gradient' },
+  { id: 'rhombus',       name: 'Rhombus',    icon: 'â—†', desc: 'Diamond weave grid',                   preview: 'linear-gradient' },
+  { id: 'crosshatch',    name: 'Crosshatch', icon: 'ð„³', desc: 'Tight diagonal hatch',                preview: 'repeating-linear-gradient' },
+  { id: 'weave',         name: 'Weave',      icon: 'ðŸ•¸ï¸', desc: 'Interlocking woven bands',             preview: 'repeating-linear-gradient' },
+  { id: 'plus',          name: 'Plus',       icon: 'âœš', desc: 'Plus-sign tile pattern',               preview: 'linear-gradient' },
+  { id: 'pixel',         name: 'Pixel',      icon: 'ðŸ‘¾', desc: 'Blocky pixelated grid',               preview: 'linear-gradient' },
+  { id: 'corner',        name: 'Corner',     icon: 'â', desc: 'Bracket corner marks',                 preview: 'linear-gradient' },
+  { id: 'fiber',         name: 'Fiber',      icon: 'ðŸ”¹', desc: 'Fiber-optic dots on traces',          preview: 'linear-gradient' },
+  { id: 'polar',         name: 'Polar',      icon: 'â—Ž', desc: 'Concentric polar rings with axes',    preview: 'radial-gradient' },
 ]
 
 // -- Custom theme builder -------------------------------------------------------
@@ -389,7 +389,7 @@ const DEFAULT_CUSTOM = {
   id: 'custom', name: 'My Theme', tag: 'DARK', type: 'color',
   bg: '#060a0f', bg2: '#0b1118', bg3: '#111a24',
   primary: '#00ff88', secondary: '#00d4ff', orange: '#ff6b35',
-  text: '#c8d8e8', muted: '#6b8296', border: 'rgba(0,212,255,0.15)',
+  text: '#c8d8e8', muted: '#6b8296', border: 'color-mix(in srgb, var(--cyan) 15%, transparent)',
   desc: 'My custom theme',
 }
 
@@ -428,11 +428,11 @@ function ThemeLibrary() {
     try { return JSON.parse(localStorage.getItem('tl_favorites') || '[]') } catch { return [] }
   })
   const notify = useNotify()
-  const toast  = notify           // alias — all toast.x() calls route to notify
+  const toast  = notify           // alias â€” all toast.x() calls route to notify
   const dlg    = useDialog()
   const isMobile = useIsMobile()
 
-  // ── Framework state (menu / notify / dialog only) ────────────────────────
+  // â”€â”€ Framework state (menu / notify / dialog only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [fwDraft, setFwDraft] = useState(() => ({
     menuStyle:      siteConfig?.menuStyle      || DEFAULT_FRAMEWORK.menuStyle,
     notifyStyle:    siteConfig?.notifyStyle    || DEFAULT_FRAMEWORK.notifyStyle,
@@ -473,7 +473,7 @@ function ThemeLibrary() {
   const handleFwSelect = useCallback((key, value) => setFwDraft(prev => ({ ...prev, [key]: value })), [])
   const handleFwNav    = useCallback((id) => setFwActive(id), [])
 
-  // Auto-save: called immediately on card click — no separate APPLY button needed
+  // Auto-save: called immediately on card click â€” no separate APPLY button needed
   const handleFwSelectAndSave = useCallback(async (key, value) => {
     const newDraft = { ...fwDraft, [key]: value }
     setFwDraft(newDraft)
@@ -498,7 +498,7 @@ function ThemeLibrary() {
         notifyPosition: newDraft.notifyPosition,
       }}))
       await refreshSiteConfig()
-      notify.success(`${key.replace('Style','').replace('Position',' position')} → ${value}`, { title: '✅ Auto-saved' })
+      notify.success(`${key.replace('Style','').replace('Position',' position')} â†’ ${value}`, { title: 'âœ… Auto-saved' })
     } catch (err) {
       notify.error(err?.response?.data?.error || 'Failed to save', { title: 'Error' })
     } finally { setFwSaving(false) }
@@ -541,7 +541,7 @@ function ThemeLibrary() {
   // -- Global theme tracking --
   const [globalThemeId, setGlobalThemeId] = useState(() => siteConfig?.globalTheme || '')
   const [savingGlobal, setSavingGlobal] = useState(null) // id of theme being saved
-  // -- Global mode is always ON — every action applies to all visitors --------
+  // -- Global mode is always ON â€” every action applies to all visitors --------
   const globalMode = true
   // -- Global appearance settings (loading screen, animations, layout) ------
   const [gAppearance, setGAppearance] = useState({
@@ -580,7 +580,7 @@ function ThemeLibrary() {
     savingPackage,
   ])
 
-  // ── Background Animation state ──────────────────────────────────────────
+  // â”€â”€ Background Animation state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [bgAnimation, setBgAnimation] = useState(() => {
     try {
       const c = localStorage.getItem('site-config-cache')
@@ -614,7 +614,7 @@ function ThemeLibrary() {
       clearSiteSettingsCache()
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { bgAnimation: id } }))
       await refreshSiteConfig()
-      notify.success(`Animation: ${ANIMATION_PATTERNS.find(p => p.id === id)?.name}`, { title: '🎨 Background Animation Set' })
+      notify.success(`Animation: ${ANIMATION_PATTERNS.find(p => p.id === id)?.name}`, { title: 'ðŸŽ¨ Background Animation Set' })
     } catch (err) {
       notify.error(err?.response?.data?.error || 'Failed to save background animation', { title: 'Error' })
       setBgAnimation(siteConfig?.bgAnimation || 'none')
@@ -632,14 +632,14 @@ function ThemeLibrary() {
       clearSiteSettingsCache()
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { gridPattern: id } }))
       await refreshSiteConfig()
-      notify.success(`Grid: ${GRID_PATTERNS.find(p => p.id === id)?.name}`, { title: '▦ Grid Overlay Set' })
+      notify.success(`Grid: ${GRID_PATTERNS.find(p => p.id === id)?.name}`, { title: 'â–¦ Grid Overlay Set' })
     } catch (err) {
       notify.error(err?.response?.data?.error || 'Failed to save grid overlay', { title: 'Error' })
       setGridPattern(siteConfig?.gridPattern || siteConfig?.backgroundPattern || 'grid')
     } finally { setSavingBg(false) }
   }
 
-  // -- Custom theme builder state (was missing — caused Builder tab crash) ---
+  // -- Custom theme builder state (was missing â€” caused Builder tab crash) ---
   const [custom, setCustom] = useState(DEFAULT_CUSTOM)
 
   const toggleFav = (id) => {
@@ -662,14 +662,14 @@ function ThemeLibrary() {
     const out = `[data-theme="${custom.id}"] {\n${css}\n}`
     navigator.clipboard.writeText(out).catch(() => {})
     setExported(true)
-    toast.success('CSS variables copied to clipboard', { title: '✅ Exported' })
+    toast.success('CSS variables copied to clipboard', { title: 'âœ… Exported' })
     setTimeout(() => setExported(false), 2500)
   }
 
   const exportCustomJSON = () => {
     const json = JSON.stringify(custom, null, 2)
     navigator.clipboard.writeText(json).catch(() => {})
-    toast.success('Theme JSON copied to clipboard', { title: '📋 JSON Exported' })
+    toast.success('Theme JSON copied to clipboard', { title: 'ðŸ“‹ JSON Exported' })
   }
 
   // What we actually render in the live-preview area
@@ -690,7 +690,7 @@ function ThemeLibrary() {
     })
     const t = THEME_DEFS.find(x => x.id === id)
     if (!globalMode) {
-      toast.success(`${t?.name} theme applied to your account`, { title: '🎨 My Theme' })
+      toast.success(`${t?.name} theme applied to your account`, { title: 'ðŸŽ¨ My Theme' })
     }
   }
 
@@ -727,7 +727,7 @@ function ThemeLibrary() {
       if (refreshSiteConfig) await refreshSiteConfig()
       setGlobalThemeId(newVal)
       const name = THEME_DEFS.find(x => x.id === newVal)?.name
-      toast.success(newVal ? `${name} set as global theme for all visitors` : 'Global theme cleared  users choose their own', { title: '⭐ Global Theme' })
+      toast.success(newVal ? `${name} set as global theme for all visitors` : 'Global theme cleared  users choose their own', { title: 'â­ Global Theme' })
     } catch {
       toast.error('Failed to update global theme')
     } finally {
@@ -743,7 +743,7 @@ function ThemeLibrary() {
       clearSiteSettingsCache()
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: gAppearance }))
       if (refreshSiteConfig) await refreshSiteConfig()
-      toast.success('Global appearance settings saved for all visitors', { title: '⭐ Global Settings' })
+      toast.success('Global appearance settings saved for all visitors', { title: 'â­ Global Settings' })
     } catch {
       toast.error('Failed to save appearance settings')
     } finally {
@@ -760,7 +760,7 @@ function ThemeLibrary() {
       clearSiteSettingsCache()
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: newGA }))
       if (refreshSiteConfig) await refreshSiteConfig()
-      toast.success('Global appearance updated', { title: '✅ Auto-saved' })
+      toast.success('Global appearance updated', { title: 'âœ… Auto-saved' })
     } catch {
       toast.error('Failed to save appearance')
     } finally { setSavingAppearance(false) }
@@ -860,13 +860,13 @@ function ThemeLibrary() {
     const pick = others[Math.floor(Math.random() * others.length)]
     setPendingTheme(pick.id)
     setPreviewTheme(pick.id)
-    toast.success(`Previewing ${pick.name}`, { title: '🎲 Random Theme' })
+    toast.success(`Previewing ${pick.name}`, { title: 'ðŸŽ² Random Theme' })
   }
 
   const copyAnimClass = (id) => {
     navigator.clipboard.writeText(id).catch(() => {})
     setCopiedAnim(id)
-    toast.success(`Class name "${id}" copied to clipboard`, { title: '📋 Copied' })
+    toast.success(`Class name "${id}" copied to clipboard`, { title: 'ðŸ“‹ Copied' })
     setTimeout(() => setCopiedAnim(null), 2000)
   }
 
@@ -915,7 +915,7 @@ function ThemeLibrary() {
 
   // tag badge colours
   const tagStyle = (tag) => {
-    if (tag === 'DARK')  return { bg: 'rgba(0,255,136,0.1)',   border: 'rgba(0,255,136,0.3)',   color: '#00ff88' }
+    if (tag === 'DARK')  return { bg: 'color-mix(in srgb, var(--green) 10%, transparent)',   border: 'color-mix(in srgb, var(--green) 30%, transparent)',   color: '#00ff88' }
     if (tag === 'LIGHT') return { bg: 'rgba(255,220,50,0.1)',  border: 'rgba(255,220,50,0.3)',  color: '#ffd700' }
     return                      { bg: 'rgba(168,85,247,0.1)',  border: 'rgba(168,85,247,0.3)',  color: '#c084fc' }
   }
@@ -1004,24 +1004,24 @@ function ThemeLibrary() {
 
       {/* Header */}
       <PageHeader
-        eyebrow="SYSTEM · APPEARANCE"
+        eyebrow="SYSTEM Â· APPEARANCE"
         title="Theme Library"
-        subtitle={`${THEME_DEFS.length} themes available — select then apply. Changes persist across sessions.`}
+        subtitle={`${THEME_DEFS.length} themes available â€” select then apply. Changes persist across sessions.`}
       />
 
       {/* -- Always-global banner -------------------------------------------- */}
-      <div style={{ marginBottom: 16, padding: '12px 16px', background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.25)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 20 }}>🌐</div>
+      <div style={{ marginBottom: 16, padding: '12px 16px', background: 'color-mix(in srgb, var(--cyan) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 20 }}>ðŸŒ</div>
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--cyan)', letterSpacing: 1 }}>
-            GLOBAL MODE — Changes affect ALL visitors
+            GLOBAL MODE â€” Changes affect ALL visitors
           </div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>
-            APPLY sets the global default theme for everyone. Use the ⚙️ GLOBAL SETTINGS tab to manage appearance, animations & layout.
+            APPLY sets the global default theme for everyone. Use the âš™ï¸ GLOBAL SETTINGS tab to manage appearance, animations & layout.
           </div>
         </div>
         {globalThemeId ? (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', padding: '4px 10px', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: 4 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', padding: '4px 10px', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 4 }}>
             Current global: <strong>{THEME_DEFS.find(t => t.id === globalThemeId)?.name || globalThemeId}</strong>
           </div>
         ) : (
@@ -1031,7 +1031,7 @@ function ThemeLibrary() {
         )}
       </div>
 
-      {/* -- Active theme banner — simplified, no pending state -- */}
+      {/* -- Active theme banner â€” simplified, no pending state -- */}
       <div style={{ marginBottom: 20, padding: '12px 16px', background: `${currentDef.primary}0e`, border: `1px solid ${currentDef.primary}33`, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 5 }}>
           {[currentDef.bg, currentDef.primary, currentDef.secondary, currentDef.orange].map((c, i) => (
@@ -1040,31 +1040,31 @@ function ThemeLibrary() {
         </div>
         <div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: currentDef.primary, letterSpacing: 1 }}>{currentDef.name}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2 }}>ACTIVE THEME — click any card to switch instantly</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2 }}>ACTIVE THEME â€” click any card to switch instantly</div>
         </div>
         <div style={{ marginLeft: 'auto' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', opacity: 0.6 }}>🌐 Changes apply to all visitors</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', opacity: 0.6 }}>ðŸŒ Changes apply to all visitors</span>
         </div>
       </div>
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 3, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24, flexWrap: 'wrap', width: 'fit-content', maxWidth: '100%' }}>
-        <TabBtn id="packages"   label="▧ PACKAGES" />
-        <TabBtn id="themes"     label="🎨 THEMES" />
-        <TabBtn id="animations" label="✨ ANIMATIONS" />
-        <TabBtn id="preview"    label="👁️ LIVE PREVIEW" />
-        <TabBtn id="compare"    label="⚖️ COMPARE" />
-        <TabBtn id="favorites"  label={`❤️ FAVORITES${favorites.length ? ` (${favorites.length})` : ''}`} />
-        <TabBtn id="builder"    label="🛠️ BUILDER" />
-        <TabBtn id="framework"  label="🧩 FRAMEWORK" />
-        <TabBtn id="backgrounds" label="🖼️ BACKGROUNDS" />
-        <TabBtn id="global"     label="⚙️ GLOBAL SETTINGS" />
+        <TabBtn id="packages"   label="â–§ PACKAGES" />
+        <TabBtn id="themes"     label="ðŸŽ¨ THEMES" />
+        <TabBtn id="animations" label="âœ¨ ANIMATIONS" />
+        <TabBtn id="preview"    label="ðŸ‘ï¸ LIVE PREVIEW" />
+        <TabBtn id="compare"    label="âš–ï¸ COMPARE" />
+        <TabBtn id="favorites"  label={`â¤ï¸ FAVORITES${favorites.length ? ` (${favorites.length})` : ''}`} />
+        <TabBtn id="builder"    label="ðŸ› ï¸ BUILDER" />
+        <TabBtn id="framework"  label="ðŸ§© FRAMEWORK" />
+        <TabBtn id="backgrounds" label="ðŸ–¼ï¸ BACKGROUNDS" />
+        <TabBtn id="global"     label="âš™ï¸ GLOBAL SETTINGS" />
       </div>
 
       {/* -- THEME PACKAGES TAB -- */}
       {activeTab === 'packages' && (
         <div>
-          <div style={{ marginBottom: 22, padding: '18px 20px', background: 'linear-gradient(135deg, rgba(0,255,136,.08), rgba(0,212,255,.06))', border: '1px solid rgba(0,212,255,.22)', borderRadius: 10 }}>
+          <div style={{ marginBottom: 22, padding: '18px 20px', background: 'linear-gradient(135deg, color-mix(in srgb, var(--green) 8%, transparent), color-mix(in srgb, var(--cyan) 6%, transparent))', border: '1px solid color-mix(in srgb, var(--cyan) 22%, transparent)', borderRadius: 10 }}>
             <div style={{ fontFamily: _FM, fontSize: 9, color: _G, letterSpacing: 3, marginBottom: 8 }}>THEME PACKAGES</div>
             <div style={{ fontFamily: _FD, fontSize: 24, fontWeight: 800, color: _TX, marginBottom: 6 }}>One click changes the whole UI system</div>
             <div style={{ fontFamily: _FM, fontSize: 10, color: _MT, lineHeight: 1.7, maxWidth: 920 }}>
@@ -1110,16 +1110,16 @@ function ThemeLibrary() {
                 onFocus={e => e.target.style.borderColor = 'var(--green)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
-              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.4 }}>⭐</span>
-              {themeSearch && <button onClick={() => setThemeSearch('')} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>✕</button>}
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.4 }}>â­</span>
+              {themeSearch && <button onClick={() => setThemeSearch('')} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>âœ•</button>}
             </div>
             <button onClick={randomTheme} title="Pick a random theme" style={{
               fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '8px 14px',
               background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)',
               color: '#c084fc', cursor: 'pointer', borderRadius: 6, transition: 'all 0.15s', flexShrink: 0,
-            }}>🎲 RANDOM</button>
+            }}>ðŸŽ² RANDOM</button>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1, flexShrink: 0 }}>
-              ⏎ navigate  <kbd style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '1px 5px', borderRadius: 3 }}>↵</kbd> apply
+              âŽ navigate  <kbd style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '1px 5px', borderRadius: 3 }}>â†µ</kbd> apply
             </div>
           </div>
 
@@ -1220,7 +1220,7 @@ function ThemeLibrary() {
                     {/* Favorite heart */}
                     <button onClick={e => { e.stopPropagation(); toggleFav(t.id) }} title={isFav(t.id) ? 'Remove favorite' : 'Add to favorites'}
                       style={{ position: 'absolute', bottom: 8, right: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, lineHeight: 1, opacity: isFav(t.id) ? 1 : 0.25, transition: 'opacity 0.2s', padding: 2 }}
-                    >{isFav(t.id) ? '○' : '○'}</button>
+                    >{isFav(t.id) ? 'â—‹' : 'â—‹'}</button>
                   </div>
 
                   {/* Info row */}
@@ -1228,8 +1228,8 @@ function ThemeLibrary() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, letterSpacing: 1, color: isSelected ? t.primary : isActive ? t.primary : t.text }}>{t.name}</span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, padding: '2px 6px', background: ts.bg, border: `1px solid ${ts.border}`, color: ts.color, borderRadius: 3 }}>{t.tag}</span>
-                      {isActive && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: t.primary, marginLeft: 'auto' }}>✅ ACTIVE</span>}
-                      {isSelected && !isActive && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: t.primary, marginLeft: 'auto' }}>⭐ SELECTED</span>}
+                      {isActive && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: t.primary, marginLeft: 'auto' }}>âœ… ACTIVE</span>}
+                      {isSelected && !isActive && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: t.primary, marginLeft: 'auto' }}>â­ SELECTED</span>}
                     </div>
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: t.muted, lineHeight: 1.6, margin: '0 0 8px' }}>{t.desc}</p>
                     <div style={{ display: 'flex', gap: 4 }}>
@@ -1242,7 +1242,7 @@ function ThemeLibrary() {
                   {/* Footer */}
                   <div style={{ padding: '8px 14px 10px', borderTop: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: isSelected || isActive ? t.primary : t.muted }}>
-                      {isActive ? '✅ Active theme' : isSelected ? '🖱 Click to apply' : '🖱 Click to apply instantly'}
+                      {isActive ? 'âœ… Active theme' : isSelected ? 'ðŸ–± Click to apply' : 'ðŸ–± Click to apply instantly'}
                     </span>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       {/* Set Global button */}
@@ -1261,7 +1261,7 @@ function ThemeLibrary() {
                         onMouseEnter={e => { if (globalThemeId !== t.id) { e.currentTarget.style.borderColor = t.primary; e.currentTarget.style.color = t.primary } }}
                         onMouseLeave={e => { if (globalThemeId !== t.id) { e.currentTarget.style.borderColor = `${t.muted}55`; e.currentTarget.style.color = t.muted } }}
                       >
-                        {savingGlobal === t.id ? '' : globalThemeId === t.id ? '🌐 GLOBAL' : '🌐 SET GLOBAL'}
+                        {savingGlobal === t.id ? '' : globalThemeId === t.id ? 'ðŸŒ GLOBAL' : 'ðŸŒ SET GLOBAL'}
                       </button>
                       <div style={{ display: 'flex', gap: 4 }}>
                         {[t.primary, t.secondary, t.orange].map((c, i) => (
@@ -1292,11 +1292,11 @@ function ThemeLibrary() {
         <div>
           {/* Info bar */}
           <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <span>All animations live in <code style={{ color: 'var(--green)', background: 'rgba(0,255,136,0.08)', padding: '1px 6px' }}>index.css</code> and inherit active theme colors. Click any card to select, then copy the class name.</span>
+            <span>All animations live in <code style={{ color: 'var(--green)', background: 'color-mix(in srgb, var(--green) 8%, transparent)', padding: '1px 6px' }}>index.css</code> and inherit active theme colors. Click any card to select, then copy the class name.</span>
             {selectedAnim && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span style={{ color: 'var(--green)' }}>Selected: <strong>{selectedAnim}</strong></span>
-                <button onClick={() => copyAnimClass(selectedAnim)} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '5px 12px', background: copiedAnim ? 'var(--green)' : 'transparent', border: `1px solid ${copiedAnim ? 'var(--green)' : 'var(--border)'}`, color: copiedAnim ? '#000' : 'var(--green)', cursor: 'pointer', borderRadius: 4, transition: 'all 0.2s' }}>{copiedAnim ? '✅ COPIED!' : '⭐ COPY CLASS'}</button>
+                <button onClick={() => copyAnimClass(selectedAnim)} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '5px 12px', background: copiedAnim ? 'var(--green)' : 'transparent', border: `1px solid ${copiedAnim ? 'var(--green)' : 'var(--border)'}`, color: copiedAnim ? '#000' : 'var(--green)', cursor: 'pointer', borderRadius: 4, transition: 'all 0.2s' }}>{copiedAnim ? 'âœ… COPIED!' : 'â­ COPY CLASS'}</button>
                 <button onClick={() => setSelectedAnim(null)} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 4 }}>?</button>
               </div>
             )}
@@ -1362,8 +1362,8 @@ function ThemeLibrary() {
                     {anim.id === 'glow-pulse'  && <div style={{ width: 42, height: 42, background: `${currentDef.primary}15`, border: `2px solid ${currentDef.primary}`, borderRadius: 6, animation: 'miniGlow 2s ease-in-out infinite', boxShadow: `0 0 14px ${currentDef.primary}66` }} />}
                     {anim.id === 'float'       && <div style={{ width: 38, height: 38, background: `${currentDef.secondary}22`, border: `1px solid ${currentDef.secondary}66`, borderRadius: 8, animation: 'miniFloat 2.5s ease-in-out infinite' }} />}
                     {anim.id === 'shake'       && <div style={{ width: 42, height: 14, background: `${currentDef.orange}25`, border: `1px solid ${currentDef.orange}66`, borderRadius: 3, animation: 'miniShake 1.2s ease-in-out infinite' }} />}
-                    {anim.id === 'wiggle'      && <div style={{ fontSize: 28, lineHeight: 1, animation: 'miniWiggle 1.4s ease-in-out infinite' }}>🌀</div>}
-                    {anim.id === 'heartbeat'   && <div style={{ fontSize: 26, lineHeight: 1, animation: 'miniHeartbeat 1.4s ease-in-out infinite' }}>🌀</div>}
+                    {anim.id === 'wiggle'      && <div style={{ fontSize: 28, lineHeight: 1, animation: 'miniWiggle 1.4s ease-in-out infinite' }}>ðŸŒ€</div>}
+                    {anim.id === 'heartbeat'   && <div style={{ fontSize: 26, lineHeight: 1, animation: 'miniHeartbeat 1.4s ease-in-out infinite' }}>ðŸŒ€</div>}
 
                     {/* Loading */}
                     {anim.id === 'spin'        && <div style={{ width: 38, height: 38, border: `3px solid ${currentDef.bg3}`, borderTopColor: currentDef.primary, borderRadius: '50%', animation: 'miniSpin 0.8s linear infinite' }} />}
@@ -1452,7 +1452,7 @@ function ThemeLibrary() {
                   {/* Class + copy */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5, width: '100%' }}>
                     <code style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: currentDef.primary, background: `${currentDef.primary}0d`, border: `1px solid ${currentDef.primary}28`, padding: '3px 8px', borderRadius: 3 }}>{anim.id}</code>
-                    <button onClick={(e) => { e.stopPropagation(); copyAnimClass(anim.id) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '4px 8px', background: copiedAnim === anim.id ? currentDef.primary : 'transparent', border: `1px solid ${copiedAnim === anim.id ? currentDef.primary : 'var(--border)'}`, color: copiedAnim === anim.id ? '#000' : 'var(--muted)', cursor: 'pointer', borderRadius: 3, transition: 'all 0.2s' }}>{copiedAnim === anim.id ? '✅ COPIED' : '⭐ COPY CLASS'}</button>
+                    <button onClick={(e) => { e.stopPropagation(); copyAnimClass(anim.id) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '4px 8px', background: copiedAnim === anim.id ? currentDef.primary : 'transparent', border: `1px solid ${copiedAnim === anim.id ? currentDef.primary : 'var(--border)'}`, color: copiedAnim === anim.id ? '#000' : 'var(--muted)', cursor: 'pointer', borderRadius: 3, transition: 'all 0.2s' }}>{copiedAnim === anim.id ? 'âœ… COPIED' : 'â­ COPY CLASS'}</button>
                   </div>
                   {isSelected && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: currentDef.primary, letterSpacing: 1 }}>SELECTED ?</div>}
                 </div>
@@ -1494,7 +1494,7 @@ function ThemeLibrary() {
               <div style={{ flex: 1, display: 'flex', gap: 16 }}>
                 {['Home','Blog','Tools','Forum'].map(n => <span key={n} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: displayDef.muted }}>{n}</span>)}
               </div>
-              <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${displayDef.primary}22`, border: `1px solid ${displayDef.primary}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>⭐</div>
+              <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${displayDef.primary}22`, border: `1px solid ${displayDef.primary}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>â­</div>
             </div>
             <div style={{ display: 'flex', minHeight: 320 }}>
               <div style={{ width: 150, background: displayDef.bg2, borderRight: `1px solid ${displayDef.border}`, padding: '14px 0', flexShrink: 0 }}>
@@ -1503,7 +1503,7 @@ function ThemeLibrary() {
                   <div key={item} style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 10, color: i === 0 ? displayDef.primary : displayDef.muted, background: i === 0 ? `${displayDef.primary}0d` : 'transparent', borderLeft: `2px solid ${i === 0 ? displayDef.primary : 'transparent'}` }}>{item}</div>
                 ))}
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 3, color: displayDef.muted, padding: '12px 12px 8px' }}>SYSTEM</div>
-                {['DB Monitor','Mail','🎨 Themes'].map(item => (
+                {['DB Monitor','Mail','ðŸŽ¨ Themes'].map(item => (
                   <div key={item} style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 10, color: item.includes('Themes') ? displayDef.primary : displayDef.muted }}>{item}</div>
                 ))}
               </div>
@@ -1550,7 +1550,7 @@ function ThemeLibrary() {
                   background: `linear-gradient(135deg, ${displayDef.primary}, ${displayDef.secondary})`,
                   border: 'none', color: '#000', cursor: 'pointer', borderRadius: 6, transition: 'all 0.15s',
                   boxShadow: `0 0 20px ${displayDef.primary}44`,
-                }}>✅ APPLY "{displayDef.name.toUpperCase()}"</button>
+                }}>âœ… APPLY "{displayDef.name.toUpperCase()}"</button>
                 <button onClick={() => setPreviewTheme(null)} style={{
                   fontFamily: 'var(--font-mono)', fontSize: 9, padding: '9px 16px',
                   background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6,
@@ -1596,7 +1596,7 @@ function ThemeLibrary() {
 
           {(!compareA || !compareB) ? (
             <div style={{ padding: 40, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', border: '1px dashed var(--border)', borderRadius: 8 }}>
-              {!compareA && !compareB ? 'ℹ️ Select A and B themes above to compare' : !compareA ? 'ℹ️ Select theme A' : 'ℹ️ Select theme B'}
+              {!compareA && !compareB ? 'â„¹ï¸ Select A and B themes above to compare' : !compareA ? 'â„¹ï¸ Select theme A' : 'â„¹ï¸ Select theme B'}
             </div>
           ) : (() => {
             const defA = THEME_DEFS.find(t => t.id === compareA)
@@ -1647,9 +1647,9 @@ function ThemeLibrary() {
                 {/* Apply */}
                 <button onClick={() => applyTheme(def.id)} disabled={theme === def.id}
                   style={{ marginTop: 10, width: '100%', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, padding: '8px',
-                    background: theme === def.id ? 'rgba(0,255,136,0.08)' : `linear-gradient(135deg, ${def.primary}, ${def.secondary})`,
+                    background: theme === def.id ? 'color-mix(in srgb, var(--green) 8%, transparent)' : `linear-gradient(135deg, ${def.primary}, ${def.secondary})`,
                     border: `1px solid ${def.primary}44`, color: theme === def.id ? 'var(--green)' : '#000', cursor: theme === def.id ? 'default' : 'pointer', borderRadius: 5, fontWeight: 700 }}>
-                  {theme === def.id ? '✅ ACTIVE' : `APPLY ${def.name.toUpperCase()}`}
+                  {theme === def.id ? 'âœ… ACTIVE' : `APPLY ${def.name.toUpperCase()}`}
                 </button>
               </div>
             )
@@ -1668,7 +1668,7 @@ function ThemeLibrary() {
         <div>
           {favorites.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 2 }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>⭐</div>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>â­</div>
               No favorites yet  hover a theme card and click ? to save it here.
             </div>
           ) : (
@@ -1706,13 +1706,13 @@ function ThemeLibrary() {
                         </div>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: t.primary, flex: 1 }}>{t.name}</span>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, padding: '2px 6px', background: ts.bg, border: `1px solid ${ts.border}`, color: ts.color, borderRadius: 3 }}>{t.tag}</span>
-                        <button onClick={e => { e.stopPropagation(); toggleFav(t.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 2 }}>⭐</button>
+                        <button onClick={e => { e.stopPropagation(); toggleFav(t.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 2 }}>â­</button>
                       </div>
                       <div style={{ padding: '8px 14px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: t.muted }}>{t.desc}</span>
                         {isActive
-                          ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: t.primary }}>✅ ACTIVE</span>
-                          : <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: t.muted }}>🖱 Click to apply</span>
+                          ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: t.primary }}>âœ… ACTIVE</span>
+                          : <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: t.muted }}>ðŸ–± Click to apply</span>
                         }
                       </div>
                     </div>
@@ -1767,13 +1767,13 @@ function ThemeLibrary() {
                 flex: 1, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '10px 16px',
                 background: `linear-gradient(135deg, ${custom.primary}, ${custom.secondary})`,
                 border: 'none', color: '#000', cursor: 'pointer', borderRadius: 6, fontWeight: 800,
-              }}>✅ APPLY PREVIEW</button>
+              }}>âœ… APPLY PREVIEW</button>
               <button onClick={exportCustom} style={{
                 flex: 1, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '10px 16px',
-                background: exported ? 'rgba(0,255,136,0.12)' : 'transparent',
+                background: exported ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
                 border: `1px solid ${exported ? 'var(--green)' : 'var(--border)'}`,
                 color: exported ? 'var(--green)' : 'var(--muted)', cursor: 'pointer', borderRadius: 6,
-              }}>{exported ? '✅ COPIED' : '⬇️ EXPORT CSS'}</button>
+              }}>{exported ? 'âœ… COPIED' : 'â¬‡ï¸ EXPORT CSS'}</button>
               <button onClick={exportCustomJSON} style={{
                 fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '10px 14px',
                 background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6,
@@ -1793,7 +1793,7 @@ function ThemeLibrary() {
               <div style={{ flex: 1, display: 'flex', gap: 16 }}>
                 {['Home', 'Blog', 'Tools', 'Forum'].map(n => <span key={n} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: custom.muted }}>{n}</span>)}
               </div>
-              <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${custom.primary}22`, border: `1px solid ${custom.primary}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>⭐</div>
+              <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${custom.primary}22`, border: `1px solid ${custom.primary}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>â­</div>
             </div>
             {/* Mockup content */}
             <div style={{ display: 'flex', minHeight: 280 }}>
@@ -1835,10 +1835,10 @@ function ThemeLibrary() {
         </div>
       )}
 
-      {/* ── FRAMEWORK TAB ── */}
+      {/* â”€â”€ FRAMEWORK TAB â”€â”€ */}
       {activeTab === 'framework' && (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {/* Status pills — show active values; saving spinner when busy */}
+          {/* Status pills â€” show active values; saving spinner when busy */}
           <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 24 }}>
             {FRAMEWORK_CATEGORIES.map(cat => {
               const val = fwDraft[cat.configKey]
@@ -1846,7 +1846,7 @@ function ThemeLibrary() {
                 <button key={cat.id} onClick={() => handleFwNav(cat.id)} style={{ fontFamily: _FM, fontSize: 8, letterSpacing: 1, padding: '5px 12px', borderRadius: 99, cursor: 'pointer', background: fwActive === cat.id ? `${cat.color}18` : 'transparent', border: `1px solid ${fwActive === cat.id ? cat.color + '66' : _BD}`, color: fwActive === cat.id ? cat.color : _MT, display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s' }}>
                   <span style={{ fontSize: 12 }}>{cat.icon}</span>
                   <span>{val}</span>
-                  {fwSaving && <span style={{ fontSize: 10 }}>⏳</span>}
+                  {fwSaving && <span style={{ fontSize: 10 }}>â³</span>}
                 </button>
               )
             })}
@@ -1854,14 +1854,14 @@ function ThemeLibrary() {
 
           {/* Two-column body */}
           <div style={{ display: 'flex', gap: 32 }}>
-            {/* Nav rail — desktop only */}
+            {/* Nav rail â€” desktop only */}
             {!isMobile && (
               <div style={{ position: 'sticky', top: 0, alignSelf: 'flex-start' }}>
                 <FwNavRail active={fwActive} onNav={handleFwNav} draft={fwDraft} siteConfig={siteConfig} />
               </div>
             )}
 
-            {/* Content — single active category */}
+            {/* Content â€” single active category */}
             <div style={{ flex: 1, minWidth: 0 }}>
               {/* Mobile tab strip */}
               {isMobile && (
@@ -1876,11 +1876,11 @@ function ThemeLibrary() {
                 <div key={cat.id} style={{ display: cat.id === fwActive ? 'block' : 'none' }}>
                   <FwCategorySection cat={cat} draft={fwDraft} onSelect={handleFwSelectAndSave} isUnsaved={fwSaving} />
 
-                  {/* Position picker — notify section only */}
+                  {/* Position picker â€” notify section only */}
                   {cat.id === 'notify' && (
                     <div style={{ marginBottom: 40 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
-                        <div style={{ width:38, height:38, borderRadius:8, background:'rgba(255,107,53,0.12)', border:'1px solid rgba(255,107,53,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📍</div>
+                        <div style={{ width:38, height:38, borderRadius:8, background:'rgba(255,107,53,0.12)', border:'1px solid rgba(255,107,53,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>ðŸ“</div>
                         <div>
                           <div style={{ fontFamily:_FD, fontSize:17, fontWeight:700, color:_TX }}>Toast Position</div>
                           <div style={{ fontFamily:_FM, fontSize:9, color:_MT, marginTop:1 }}>Where notifications appear on screen</div>
@@ -1901,7 +1901,7 @@ function ThemeLibrary() {
                               <div style={{ textAlign:'left' }}>
                                 <div style={{ fontFamily:_FM, fontSize:10, fontWeight:700, color: isActive ? 'rgba(255,107,53,0.9)' : _TX, letterSpacing:0.5 }}>{pos.label}</div>
                               </div>
-                              {isActive && <span style={{ marginLeft:4, fontFamily:_FM, fontSize:8, color:'rgba(255,107,53,0.9)' }}>✓</span>}
+                              {isActive && <span style={{ marginLeft:4, fontFamily:_FM, fontSize:8, color:'rgba(255,107,53,0.9)' }}>âœ“</span>}
                             </button>
                           )
                         })}
@@ -1919,7 +1919,7 @@ function ThemeLibrary() {
                     <div style={{ fontFamily: _FD, fontSize: 14, fontWeight: 600, color: _TX, marginBottom: 2 }}>Reset to Factory Defaults</div>
                     <div style={{ fontFamily: _FM, fontSize: 9, color: _MT }}>Restore all framework styles to defaults: cyber menus, cyber dialogs, cyber inputs and cyber-grid surfaces.</div>
                   </div>
-                  <button onClick={handleFwReset} style={{ flexShrink: 0, fontFamily: _FM, fontSize: 10, letterSpacing: 1, padding: '8px 18px', background: 'transparent', border: '1px solid rgba(255,71,87,0.4)', color: 'var(--red)', cursor: 'pointer', borderRadius: 6 }}>↺ RESET DEFAULTS</button>
+                  <button onClick={handleFwReset} style={{ flexShrink: 0, fontFamily: _FM, fontSize: 10, letterSpacing: 1, padding: '8px 18px', background: 'transparent', border: '1px solid rgba(255,71,87,0.4)', color: 'var(--red)', cursor: 'pointer', borderRadius: 6 }}>â†º RESET DEFAULTS</button>
                 </div>
               </div>
             </div>
@@ -1928,7 +1928,7 @@ function ThemeLibrary() {
           {/* Saving indicator replaces old sticky save bar */}
           {fwSaving && (
             <div style={{ position: 'sticky', bottom: 0, zIndex: 50, padding: '10px 0 4px', background: `linear-gradient(0deg, ${_BG} 60%, transparent)`, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: _FM, fontSize: 10, color: _G }}>● Saving…</span>
+              <span style={{ fontFamily: _FM, fontSize: 10, color: _G }}>â— Savingâ€¦</span>
             </div>
           )}
 
@@ -1950,10 +1950,10 @@ function ThemeLibrary() {
         const cardBtn = (p, active, previewClass, onSelect) => (
           <button key={p.id} onClick={() => { if (!savingBg) onSelect(p.id) }} disabled={savingBg}
             className="bg-card-btn"
-            style={{ padding: 0, background: active ? 'rgba(0,255,136,0.07)' : 'var(--bg2)', border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`, boxShadow: active ? '0 0 12px rgba(0,255,136,0.2)' : 'none', cursor: savingBg ? 'wait' : 'pointer', borderRadius: 8, overflow: 'hidden', transition: 'all 0.15s', textAlign: 'center' }}>
-            <div className={`${previewClass} ${p.id}`} style={{ background: 'var(--bg)', borderBottom: `1px solid ${active ? 'rgba(0,255,136,0.3)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {p.id === 'none' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: 'var(--muted)', opacity: 0.3 }}>—</span>}
-              {p.id === 'clean' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: 'var(--muted)', opacity: 0.3 }}>—</span>}
+            style={{ padding: 0, background: active ? 'color-mix(in srgb, var(--green) 7%, transparent)' : 'var(--bg2)', border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`, boxShadow: active ? '0 0 12px color-mix(in srgb, var(--green) 20%, transparent)' : 'none', cursor: savingBg ? 'wait' : 'pointer', borderRadius: 8, overflow: 'hidden', transition: 'all 0.15s', textAlign: 'center' }}>
+            <div className={`${previewClass} ${p.id}`} style={{ background: 'var(--bg)', borderBottom: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {p.id === 'none' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: 'var(--muted)', opacity: 0.3 }}>â€”</span>}
+              {p.id === 'clean' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: 'var(--muted)', opacity: 0.3 }}>â€”</span>}
             </div>
             <div style={{ padding: '7px 6px 8px' }}>
               <div style={{ fontSize: 20, marginBottom: 2, lineHeight: 1.2 }}>{p.icon}</div>
@@ -1968,11 +1968,11 @@ function ThemeLibrary() {
           <div>
             {/* ---- Background Animation ---- */}
             <div style={{ marginBottom: 20, padding: '14px 18px', background: 'rgba(168,85,247,0.06)', border: '1px solid rgba(168,85,247,0.25)', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <span style={{ fontSize: 22, flexShrink: 0 }}>🎨</span>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>ðŸŽ¨</span>
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--purple, #a855f7)', letterSpacing: 1, marginBottom: 4 }}>BACKGROUND ANIMATION</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7 }}>
-                  An animated backdrop behind the grid overlay. These are purely decorative CSS effects — zero JavaScript overhead.
+                  An animated backdrop behind the grid overlay. These are purely decorative CSS effects â€” zero JavaScript overhead.
                 </div>
               </div>
             </div>
@@ -1982,8 +1982,8 @@ function ThemeLibrary() {
             </div>
 
             {/* ---- Grid Overlay ---- */}
-            <div style={{ marginBottom: 20, padding: '14px 18px', background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.25)', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <span style={{ fontSize: 22, flexShrink: 0 }}>▦</span>
+            <div style={{ marginBottom: 20, padding: '14px 18px', background: 'color-mix(in srgb, var(--cyan) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>â–¦</span>
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--cyan)', letterSpacing: 1, marginBottom: 4 }}>GRID OVERLAY</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7 }}>
@@ -1998,8 +1998,8 @@ function ThemeLibrary() {
 
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
               {savingBg
-                ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)' }}>⏳ Applying…</div>
-                : <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>✅ Changes are saved and applied automatically when selected.</div>
+                ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)' }}>â³ Applyingâ€¦</div>
+                : <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>âœ… Changes are saved and applied automatically when selected.</div>
               }
             </div>
           </div>
@@ -2020,8 +2020,8 @@ function ThemeLibrary() {
         return (
           <div>
             {/* Info banner */}
-            <div style={{ marginBottom: 20, padding: '14px 18px', background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.25)', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <span style={{ fontSize: 22, flexShrink: 0 }}>⭐</span>
+            <div style={{ marginBottom: 20, padding: '14px 18px', background: 'color-mix(in srgb, var(--cyan) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>â­</span>
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--cyan)', letterSpacing: 1, marginBottom: 4 }}>GLOBAL APPEARANCE  affects every visitor</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7 }}>
@@ -2042,7 +2042,7 @@ function ThemeLibrary() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
                 <button
                   onClick={() => { setGlobalThemeId(''); applyGlobalTheme('__clear__') }}
-                  style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', transition: 'all 0.15s', background: !globalThemeId ? 'rgba(0,255,136,0.15)' : 'var(--bg3)', border: `1px solid ${!globalThemeId ? 'var(--green)' : 'var(--border)'}`, color: !globalThemeId ? 'var(--green)' : 'var(--muted)', borderRadius: 4 }}
+                  style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', transition: 'all 0.15s', background: !globalThemeId ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'var(--bg3)', border: `1px solid ${!globalThemeId ? 'var(--green)' : 'var(--border)'}`, color: !globalThemeId ? 'var(--green)' : 'var(--muted)', borderRadius: 4 }}
                 >user's choice</button>
                 {THEME_DEFS.map(t => {
                   const active = globalThemeId === t.id
@@ -2087,14 +2087,14 @@ function ThemeLibrary() {
                 />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>🤖 Roaming Robot</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>ðŸ¤– Roaming Robot</div>
                     {gAppearance.showRoamingRobot !== false
-                      ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '1px 6px', background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.3)', color: 'var(--green)', borderRadius: 3 }}>ACTIVE</span>
+                      ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '1px 6px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', borderRadius: 3 }}>ACTIVE</span>
                       : <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '1px 6px', background: 'rgba(112,112,160,0.1)', border: '1px solid rgba(112,112,160,0.3)', color: 'var(--muted)', borderRadius: 3 }}>HIDDEN</span>
                     }
                   </div>
                   <div style={T.sub}>
-                    The animated robot that roams public pages. Uses <code style={{ color: 'var(--cyan)', fontSize: 9 }}>requestAnimationFrame</code> + direct DOM updates — 
+                    The animated robot that roams public pages. Uses <code style={{ color: 'var(--cyan)', fontSize: 9 }}>requestAnimationFrame</code> + direct DOM updates â€” 
                     no React re-renders per frame. CSS-only animations (GPU-accelerated). Minimal performance impact on modern devices.
                     Disable if you notice lag on low-end or mobile devices.
                   </div>
@@ -2111,22 +2111,22 @@ function ThemeLibrary() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10, marginBottom: 6 }}>
                 {[
                   { id: 'terminal', label: 'Terminal',  icon: '>_',   desc: 'Boot sequence',      preview: 'terminal' },
-                  { id: 'minimal',  label: 'Minimal',   icon: '○',    desc: 'Clean spinner',      preview: 'minimal'  },
+                  { id: 'minimal',  label: 'Minimal',   icon: 'â—‹',    desc: 'Clean spinner',      preview: 'minimal'  },
                   { id: 'glitch',   label: 'Glitch',    icon: '',   desc: 'Glitch text',        preview: 'glitch'   },
-                  { id: 'splash',   label: 'Splash',    icon: '○',    desc: 'Brand reveal',       preview: 'splash'   },
-                  { id: 'matrix',   label: 'Matrix',    icon: '○',    desc: 'Matrix rain',        preview: 'matrix'   },
-                  { id: 'pulse',    label: 'Pulse',     icon: '○',    desc: 'Breathing ring',     preview: 'pulse'    },
-                  { id: 'cyber',    label: 'Cyber',     icon: '○',    desc: 'Hex grid boot',      preview: 'cyber'    },
-                  { id: 'bars',     label: 'Bars',      icon: '○',  desc: 'Progress bars',      preview: 'bars'     },
-                  { id: 'wave',     label: 'Wave',      icon: '○',    desc: 'Wave sweep',         preview: 'wave'     },
-                  { id: 'neon',     label: 'Neon',      icon: '○',    desc: 'Neon sign flicker',  preview: 'neon'     },
+                  { id: 'splash',   label: 'Splash',    icon: 'â—‹',    desc: 'Brand reveal',       preview: 'splash'   },
+                  { id: 'matrix',   label: 'Matrix',    icon: 'â—‹',    desc: 'Matrix rain',        preview: 'matrix'   },
+                  { id: 'pulse',    label: 'Pulse',     icon: 'â—‹',    desc: 'Breathing ring',     preview: 'pulse'    },
+                  { id: 'cyber',    label: 'Cyber',     icon: 'â—‹',    desc: 'Hex grid boot',      preview: 'cyber'    },
+                  { id: 'bars',     label: 'Bars',      icon: 'â—‹',  desc: 'Progress bars',      preview: 'bars'     },
+                  { id: 'wave',     label: 'Wave',      icon: 'â—‹',    desc: 'Wave sweep',         preview: 'wave'     },
+                  { id: 'neon',     label: 'Neon',      icon: 'â—‹',    desc: 'Neon sign flicker',  preview: 'neon'     },
                 ].map(s => {
                   const active = gAppearance.loadingScreenStyle === s.id
                   return (
                     <button key={s.id} className="ls-card" onClick={() => setGA('loadingScreenStyle', s.id)}
-                      style={{ padding: 0, background: active ? 'rgba(0,255,136,0.07)' : 'var(--bg2)', border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`, boxShadow: active ? '0 0 12px rgba(0,255,136,0.2)' : 'none', textAlign: 'center', overflow: 'hidden' }}>
+                      style={{ padding: 0, background: active ? 'color-mix(in srgb, var(--green) 7%, transparent)' : 'var(--bg2)', border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`, boxShadow: active ? '0 0 12px color-mix(in srgb, var(--green) 20%, transparent)' : 'none', textAlign: 'center', overflow: 'hidden' }}>
                       {/* Preview area */}
-                      <div style={{ height: 64, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${active ? 'rgba(0,255,136,0.3)' : 'var(--border)'}` }}>
+                      <div style={{ height: 64, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}` }}>
                         {s.id === 'terminal' && (
                           <div style={{ fontFamily: 'monospace', fontSize: 11, color: '#33ff33', textAlign: 'left', padding: '0 6px' }}>
                             <div style={{ opacity: 0.6, fontSize: 9 }}>boot v2.1</div>
@@ -2213,9 +2213,9 @@ function ThemeLibrary() {
                   const active = gAppearance.animationPreset === a.id
                   return (
                     <button key={a.id} className="ls-card" onClick={() => setGA('animationPreset', a.id)}
-                      style={{ padding: 0, background: active ? 'rgba(0,212,255,0.07)' : 'var(--bg2)', border: `2px solid ${active ? 'var(--cyan)' : 'var(--border)'}`, boxShadow: active ? '0 0 12px rgba(0,212,255,0.2)' : 'none', textAlign: 'center', overflow: 'hidden' }}>
+                      style={{ padding: 0, background: active ? 'color-mix(in srgb, var(--cyan) 7%, transparent)' : 'var(--bg2)', border: `2px solid ${active ? 'var(--cyan)' : 'var(--border)'}`, boxShadow: active ? '0 0 12px color-mix(in srgb, var(--cyan) 20%, transparent)' : 'none', textAlign: 'center', overflow: 'hidden' }}>
                       {/* Preview area */}
-                      <div style={{ height: 64, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: `1px solid ${active ? 'rgba(0,212,255,0.3)' : 'var(--border)'}`, overflow: 'hidden' }}>
+                      <div style={{ height: 64, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: `1px solid ${active ? 'color-mix(in srgb, var(--cyan) 30%, transparent)' : 'var(--border)'}`, overflow: 'hidden' }}>
                         {a.id === 'none' ? (
                           <div style={{ fontFamily: 'monospace', fontSize: 22, color: 'var(--muted)', letterSpacing: 2 }}></div>
                         ) : (
@@ -2272,8 +2272,8 @@ function ThemeLibrary() {
             {/* Auto-save indicator */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               {savingAppearance
-                ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)' }}>⏳ Saving…</div>
-                : <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>✅ Changes are saved automatically when you select an option above.</div>
+                ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)' }}>â³ Savingâ€¦</div>
+                : <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>âœ… Changes are saved automatically when you select an option above.</div>
               }
             </div>
           </div>

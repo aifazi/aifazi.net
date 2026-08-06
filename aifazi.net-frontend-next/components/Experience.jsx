@@ -5,14 +5,14 @@ import { useSplitTextReveal } from '../hooks/useSplitTextReveal'
 import { EditableList, EditableText } from '../context/EditContext'
 
 const DEFAULT_EXPERIENCE = [
-  { period: '2023 — Present', role: 'IT Infrastructure Manager (AMC Lead)', company: 'Al Qattara', desc: 'Overseeing the full IT asset register and AMC scope for Al Qattara. Managing critical infrastructure including VMware clusters, Cisco core switches, and Azure cloud resources. Leading major upgrades from EOL hardware to modern enterprise solutions.', tags: ['Infrastructure', 'AMC Management', 'Vendor Coordination', 'Azure'], active: true },
-  { period: '2022 — 2023', role: 'Senior Network Engineer', company: 'Self-Employed / Freelance', desc: 'Designing and deploying enterprise network infrastructure for clients across multiple industries. Specializing in firewall hardening, VPN architecture, and cloud migrations.', tags: ['Cisco', 'FortiGate', 'AWS', 'Docker'], active: false },
-  { period: '2020 — 2022', role: 'IT Infrastructure Specialist', company: 'Regional ISP', desc: 'Managed BGP backbone, implemented QoS policies, and maintained 99.9% uptime across a regional ISP network serving 50,000+ subscribers.', tags: ['BGP', 'MikroTik', 'Linux', 'OSPF'], active: false },
-  { period: '2018 — 2020', role: 'Network Administrator', company: 'Enterprise Technology Firm', desc: 'Administered Cisco-based LAN/WAN infrastructure, deployed VLAN segmentation across 3 offices, and led migration from legacy systems to virtualized stack.', tags: ['Cisco IOS', 'VMware', 'Windows Server', 'AD'], active: false },
+  { period: '2023 â€” Present', role: 'IT Infrastructure Manager (AMC Lead)', company: 'Al Qattara', desc: 'Overseeing the full IT asset register and AMC scope for Al Qattara. Managing critical infrastructure including VMware clusters, Cisco core switches, and Azure cloud resources. Leading major upgrades from EOL hardware to modern enterprise solutions.', tags: ['Infrastructure', 'AMC Management', 'Vendor Coordination', 'Azure'], active: true },
+  { period: '2022 â€” 2023', role: 'Senior Network Engineer', company: 'Self-Employed / Freelance', desc: 'Designing and deploying enterprise network infrastructure for clients across multiple industries. Specializing in firewall hardening, VPN architecture, and cloud migrations.', tags: ['Cisco', 'FortiGate', 'AWS', 'Docker'], active: false },
+  { period: '2020 â€” 2022', role: 'IT Infrastructure Specialist', company: 'Regional ISP', desc: 'Managed BGP backbone, implemented QoS policies, and maintained 99.9% uptime across a regional ISP network serving 50,000+ subscribers.', tags: ['BGP', 'MikroTik', 'Linux', 'OSPF'], active: false },
+  { period: '2018 â€” 2020', role: 'Network Administrator', company: 'Enterprise Technology Firm', desc: 'Administered Cisco-based LAN/WAN infrastructure, deployed VLAN segmentation across 3 offices, and led migration from legacy systems to virtualized stack.', tags: ['Cisco IOS', 'VMware', 'Windows Server', 'AD'], active: false },
 ]
 
 const EXP_FIELDS = [
-  { key: 'period', label: 'Period (e.g. 2022 — Present)' },
+  { key: 'period', label: 'Period (e.g. 2022 â€” Present)' },
   { key: 'role', label: 'Job Title' },
   { key: 'company', label: 'Company Name' },
   { key: 'desc', label: 'Description', type: 'textarea' },
@@ -51,11 +51,11 @@ function ExperienceItem({ job, i }) {
   }, [i])
   return (
     <div ref={ref} style={{ paddingLeft: 48, paddingBottom: 56, position: 'relative' }}>
-      <div style={{ position: 'absolute', left: -6, top: 4, width: 13, height: 13, borderRadius: '50%', background: job.active ? 'var(--green)' : 'var(--bg3)', border: `2px solid ${job.active ? 'var(--green)' : 'rgba(0,212,255,0.3)'}`, boxShadow: job.active ? '0 0 12px rgba(0,255,136,0.6)' : 'none' }} />
-      {job.active && <div style={{ position: 'absolute', left: -11, top: -1, width: 23, height: 23, borderRadius: '50%', border: '1px solid rgba(0,255,136,0.3)', animation: 'glow-pulse 2s ease-in-out infinite' }} />}
+      <div style={{ position: 'absolute', left: -6, top: 4, width: 13, height: 13, borderRadius: '50%', background: job.active ? 'var(--green)' : 'var(--bg3)', border: `2px solid ${job.active ? 'var(--green)' : 'color-mix(in srgb, var(--cyan) 30%, transparent)'}`, boxShadow: job.active ? '0 0 12px color-mix(in srgb, var(--green) 60%, transparent)' : 'none' }} />
+      {job.active && <div style={{ position: 'absolute', left: -11, top: -1, width: 23, height: 23, borderRadius: '50%', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', animation: 'glow-pulse 2s ease-in-out infinite' }} />}
 
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '28px 32px', transition: 'border-color 0.3s' }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,255,136,0.3)'}
+        onMouseEnter={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--green) 30%, transparent)'}
         onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
@@ -67,7 +67,7 @@ function ExperienceItem({ job, i }) {
               <EditableText contentKey={`exp.${i}.company`} defaultValue={job.company} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: job.active ? 'var(--green)' : 'var(--muted)', padding: '4px 10px', border: `1px solid ${job.active ? 'rgba(0,255,136,0.3)' : 'var(--border)'}`, background: job.active ? 'rgba(0,255,136,0.06)' : 'transparent', height: 'fit-content' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: job.active ? 'var(--green)' : 'var(--muted)', padding: '4px 10px', border: `1px solid ${job.active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, background: job.active ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent', height: 'fit-content' }}>
             <EditableText contentKey={`exp.${i}.period`} defaultValue={job.period} />
           </div>
         </div>

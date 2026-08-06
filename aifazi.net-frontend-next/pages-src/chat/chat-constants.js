@@ -4,7 +4,7 @@ export const T = {
   sidebar:   'rgba(10,12,18,0.95)',
   main:      'rgba(15,17,24,0.98)',
   bubble:    'rgba(30,34,48,0.9)',
-  bubbleOwn: 'rgba(0,255,136,0.1)',
+  bubbleOwn: 'color-mix(in srgb, var(--green) 10%, transparent)',
   input:     'rgba(22,26,38,0.95)',
   border:    'rgba(255,255,255,0.07)',
   accent:    '#00ff88',
@@ -37,7 +37,7 @@ export function parseJwt(t) {
 }
 
 export function getToken() {
-  // H4 — memory-first via the central API client (cookie auth covers the rest).
+  // H4 â€” memory-first via the central API client (cookie auth covers the rest).
   return getAuthToken()
 }
 

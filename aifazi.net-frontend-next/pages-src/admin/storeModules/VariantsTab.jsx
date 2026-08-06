@@ -101,7 +101,7 @@ export default function VariantsTab({ focusProductId }) {
     setStockBusy(v.id)
     try {
       await api.patch(`/store/admin/variants/${v.id}/stock`, { stock_qty: n })
-      toast.success(`${v.name} → ${n} in stock`, { title: 'Stock' })
+      toast.success(`${v.name} â†’ ${n} in stock`, { title: 'Stock' })
       load()
     } catch (err) { toast.error(err?.response?.data?.detail || 'Stock update failed', { title: 'Stock' }) }
     finally { setStockBusy(false) }
@@ -123,7 +123,7 @@ export default function VariantsTab({ focusProductId }) {
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>VARIANT NAME</label>
-              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Size M · Color Red" style={{ ...input, width: '100%' }} />
+              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Size M Â· Color Red" style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>SKU</label>
@@ -147,14 +147,14 @@ export default function VariantsTab({ focusProductId }) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'rgba(0,255,136,.12)', border: '1px solid rgba(0,255,136,.4)', color: G, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE VARIANT'}</button>
+            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? 'â€¦' : 'SAVE VARIANT'}</button>
             <button onClick={cancel} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>
           </div>
         </div>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-        <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 18px', background: 'rgba(0,255,136,.12)', border: '1px solid rgba(0,255,136,.4)', color: G, borderRadius: 6, cursor: 'pointer' }}>+ NEW VARIANT</button>
+        <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 18px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>+ NEW VARIANT</button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <select value={fProduct} onChange={e => setFProduct(e.target.value)} style={{ ...input, maxWidth: 260 }}>
             <option value="">All products</option>
@@ -178,21 +178,21 @@ export default function VariantsTab({ focusProductId }) {
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: out ? R : low ? Y : G, boxShadow: `0 0 8px ${out ? R : low ? Y : G}` }} />
               <div style={{ flex: 1, minWidth: 150 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{v.name}</div>
-                <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{pname(v.product_id)} · {v.sku || 'no sku'} · {money(v.price_cents)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{pname(v.product_id)} Â· {v.sku || 'no sku'} Â· {money(v.price_cents)}</div>
               </div>
               {Object.entries(v.attributes || {}).map(([k, val]) => (
-                <span key={k} style={{ fontFamily: MONO, fontSize: 9, padding: '2px 8px', borderRadius: 12, background: 'rgba(0,212,255,.08)', border: '1px solid rgba(0,212,255,.3)', color: C }}>{k}: {val}</span>
+                <span key={k} style={{ fontFamily: MONO, fontSize: 9, padding: '2px 8px', borderRadius: 12, background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C }}>{k}: {val}</span>
               ))}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: out ? R : low ? Y : 'var(--text)', minWidth: 46, textAlign: 'right' }}>{stock}</span>
                 {editing === v.id ? null : (
                   <>
                     <input type="number" value={stockQty} onChange={e => setStockQty(e.target.value)} style={{ ...input, width: 70, padding: '5px 8px' }} />
-                    <button onClick={() => setStock(v, stockQty)} disabled={stockBusy === v.id} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'rgba(0,255,136,.12)', border: '1px solid rgba(0,255,136,.4)', color: G, borderRadius: 6, cursor: 'pointer' }}>SET</button>
+                    <button onClick={() => setStock(v, stockQty)} disabled={stockBusy === v.id} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>SET</button>
                   </>
                 )}
               </div>
-              <button onClick={() => startEdit(v)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'rgba(0,212,255,.1)', border: '1px solid rgba(0,212,255,.4)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
+              <button onClick={() => startEdit(v)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
               <button onClick={() => remove(v)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
             </div>
           )

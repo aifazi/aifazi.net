@@ -1,8 +1,8 @@
 'use client'
 /**
- * BackendTools.jsx — All file tools wired to the Python backend (/api/file-tools)
- * Every tool uses the same consistent DropZone → options → Run → download flow.
- * No CDN libraries needed — all processing is server-side (PyMuPDF, Pillow, etc.)
+ * BackendTools.jsx â€” All file tools wired to the Python backend (/api/file-tools)
+ * Every tool uses the same consistent DropZone â†’ options â†’ Run â†’ download flow.
+ * No CDN libraries needed â€” all processing is server-side (PyMuPDF, Pillow, etc.)
  */
 import { useState, useRef, useCallback } from 'react'
 import { S, fmtBytes } from './shared.jsx'
@@ -10,7 +10,7 @@ import { Checkbox, Select, Slider } from '../../core/ui.jsx'
 
 const API = '/api/file-tools'
 
-// ── Shared internal helpers ────────────────────────────────────────────────────
+// â”€â”€ Shared internal helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function DropZone({ onFiles, accept = '*', multiple = false, files = [] }) {
   const [over, setOver] = useState(false)
@@ -29,13 +29,13 @@ function DropZone({ onFiles, accept = '*', multiple = false, files = [] }) {
         style={{
           border: `2px dashed ${over ? 'var(--green)' : 'var(--border)'}`,
           padding: '36px 24px', textAlign: 'center', cursor: 'pointer',
-          transition: 'all .2s', background: over ? 'rgba(0,255,136,.05)' : 'var(--bg3)',
+          transition: 'all .2s', background: over ? 'color-mix(in srgb, var(--green) 5%, transparent)' : 'var(--bg3)',
           borderRadius: 2,
         }}
       >
         <input ref={ref} type="file" accept={accept} multiple={multiple}
           style={{ display: 'none' }} onChange={e => handle(e.target.files)} />
-        <div style={{ fontSize: 32, marginBottom: 10 }}>📂</div>
+        <div style={{ fontSize: 32, marginBottom: 10 }}>ðŸ“‚</div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
           color: over ? 'var(--green)' : 'var(--muted)' }}>
           {over ? 'DROP FILES' : 'DROP FILES HERE OR CLICK TO BROWSE'}
@@ -56,7 +56,7 @@ function DropZone({ onFiles, accept = '*', multiple = false, files = [] }) {
                 color: 'var(--muted)', flexShrink: 0 }}>{fmtBytes(f.size)}</span>
               <button onClick={() => onFiles(files.filter((_, j) => j !== i))}
                 style={{ background: 'none', border: 'none', color: 'var(--red)',
-                  cursor: 'pointer', fontSize: 13, padding: '0 4px', flexShrink: 0 }}>✕</button>
+                  cursor: 'pointer', fontSize: 13, padding: '0 4px', flexShrink: 0 }}>âœ•</button>
             </div>
           ))}
         </div>
@@ -74,7 +74,7 @@ function Field({ label, children }) {
   )
 }
 
-function RunBtn({ onClick, loading, label = 'RUN →', disabled }) {
+function RunBtn({ onClick, loading, label = 'RUN â†’', disabled }) {
   return (
     <button onClick={onClick} disabled={loading || disabled}
       style={{
@@ -86,7 +86,7 @@ function RunBtn({ onClick, loading, label = 'RUN →', disabled }) {
         opacity: disabled && !loading ? 0.6 : 1,
         marginTop: 18, minWidth: 160,
       }}>
-      {loading ? '⏳ PROCESSING...' : label}
+      {loading ? 'â³ PROCESSING...' : label}
     </button>
   )
 }
@@ -101,7 +101,7 @@ function StatusBox({ error, success }) {
   return null
 }
 
-// Core API call — multipart form to backend, returns blob download
+// Core API call â€” multipart form to backend, returns blob download
 async function callTool(endpoint, formData, outName) {
   const res = await fetch(`${API}${endpoint}`, { method: 'POST', body: formData })
   if (!res.ok) {
@@ -115,7 +115,7 @@ async function callTool(endpoint, formData, outName) {
   setTimeout(() => URL.revokeObjectURL(url), 3000)
 }
 
-// JSON API call — for text-in/text-out tools
+// JSON API call â€” for text-in/text-out tools
 async function callJSON(endpoint, body) {
   const res = await fetch(`${API}${endpoint}`, {
     method: 'POST',
@@ -138,16 +138,16 @@ function useTool() {
   const [success, setSuccess] = useState('')
   const run = async (fn) => {
     setError(''); setSuccess(''); setLoading(true)
-    try { await fn(); setSuccess('Done — file downloaded!') }
+    try { await fn(); setSuccess('Done â€” file downloaded!') }
     catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }
   return { files, setFiles, loading, error, success, run }
 }
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // PDF TOOLS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function MergePDFB() {
   const { files, setFiles, loading, error, success, run } = useTool()
@@ -161,7 +161,7 @@ export function MergePDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" multiple files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={files.length < 2} label="MERGE →" />
+      <RunBtn onClick={go} loading={loading} disabled={files.length < 2} label="MERGE â†’" />
     </div>
   )
 }
@@ -181,7 +181,7 @@ export function SplitPDFB() {
         <input value={pages} onChange={e => setPages(e.target.value)} style={S.input} placeholder="1,3,5-7" />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="SPLIT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="SPLIT â†’" />
     </div>
   )
 }
@@ -197,7 +197,7 @@ export function CompressPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="COMPRESS →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="COMPRESS â†’" />
     </div>
   )
 }
@@ -217,13 +217,13 @@ export function RotatePDFB() {
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <Field label="Rotation angle">
         <Select value={angle} onChange={setAngle}
-          options={['90','180','270'].map(a => [a, `${a}°`])} />
+          options={['90','180','270'].map(a => [a, `${a}Â°`])} />
       </Field>
       <Field label="Pages (all or e.g. 1,3,5-7)">
         <input value={pages} onChange={e => setPages(e.target.value)} style={S.input} placeholder="all" />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="ROTATE →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="ROTATE â†’" />
     </div>
   )
 }
@@ -243,7 +243,7 @@ export function RemovePagesPDFB() {
         <input value={pages} onChange={e => setPages(e.target.value)} style={S.input} placeholder="2,4,6-8" />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !pages} label="REMOVE →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !pages} label="REMOVE â†’" />
     </div>
   )
 }
@@ -265,11 +265,11 @@ export function WatermarkPDFB() {
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <Field label="Watermark text"><input value={text} onChange={e => setText(e.target.value)} style={S.input} /></Field>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="Opacity (0–1)"><input type="number" min="0" max="1" step="0.05" value={opacity} onChange={e => setOpacity(e.target.value)} style={S.input} /></Field>
+        <Field label="Opacity (0â€“1)"><input type="number" min="0" max="1" step="0.05" value={opacity} onChange={e => setOpacity(e.target.value)} style={S.input} /></Field>
         <Field label="Angle (degrees)"><input type="number" value={angle} onChange={e => setAngle(e.target.value)} style={S.input} /></Field>
       </div>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !text} label="WATERMARK →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !text} label="WATERMARK â†’" />
     </div>
   )
 }
@@ -297,7 +297,7 @@ export function PageNumbersPDFB() {
         </Field>
       </div>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="ADD PAGE NUMBERS →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="ADD PAGE NUMBERS â†’" />
     </div>
   )
 }
@@ -313,7 +313,7 @@ export function ImagesToPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".jpg,.jpeg,.png,.webp,.bmp" multiple files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files.length} label="CREATE PDF →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files.length} label="CREATE PDF â†’" />
     </div>
   )
 }
@@ -329,12 +329,12 @@ export function PDFToImagesB() {
   return (
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
-      <Field label="DPI (72–300)">
+      <Field label="DPI (72â€“300)">
         <Select value={dpi} onChange={setDpi}
           options={['72','96','120','150','200','300'].map(d => [d, `${d} DPI`])} />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="EXPORT IMAGES →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="EXPORT IMAGES â†’" />
     </div>
   )
 }
@@ -355,7 +355,7 @@ export function ProtectPDFB() {
         <input type="password" value={pw} onChange={e => setPw(e.target.value)} style={S.input} placeholder="Enter password" />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !pw} label="PROTECT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !pw} label="PROTECT â†’" />
     </div>
   )
 }
@@ -375,7 +375,7 @@ export function UnlockPDFB() {
         <input type="password" value={pw} onChange={e => setPw(e.target.value)} style={S.input} placeholder="Optional" />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="UNLOCK →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="UNLOCK â†’" />
     </div>
   )
 }
@@ -399,7 +399,7 @@ export function OrganizePDFB() {
         Tip: Use comma-separated page numbers in the order you want them.
       </div>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !order} label="REORGANIZE →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !order} label="REORGANIZE â†’" />
     </div>
   )
 }
@@ -425,7 +425,7 @@ export function CropPDFB() {
         ))}
       </div>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CROP →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CROP â†’" />
     </div>
   )
 }
@@ -451,7 +451,7 @@ export function EditPDFMetaB() {
         ))}
       </div>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="SAVE METADATA →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="SAVE METADATA â†’" />
     </div>
   )
 }
@@ -476,7 +476,7 @@ export function PDFInfoB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <StatusBox error={error} />
-      <RunBtn onClick={run} loading={loading} disabled={!files[0]} label="INSPECT →" />
+      <RunBtn onClick={run} loading={loading} disabled={!files[0]} label="INSPECT â†’" />
       {info && (
         <div style={{ ...S.panel, marginTop: 18 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>PDF METADATA</div>
@@ -503,7 +503,7 @@ export function GrayscalePDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT â†’" />
     </div>
   )
 }
@@ -528,7 +528,7 @@ export function HeaderFooterPDFB() {
         <input value={footer} onChange={e => setFooter(e.target.value)} style={S.input} placeholder="Page {page}" />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0] || (!header && !footer)} label="APPLY →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0] || (!header && !footer)} label="APPLY â†’" />
     </div>
   )
 }
@@ -547,7 +547,7 @@ export function FlattenPDFB() {
         Flattening bakes form fields, annotations and overlays into static page content so they can't be edited.
       </p>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="FLATTEN →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="FLATTEN â†’" />
     </div>
   )
 }
@@ -609,7 +609,7 @@ export function SignPDFB() {
         </Field>
       </div>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !hasSig} label="SIGN PDF →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !hasSig} label="SIGN PDF â†’" />
     </div>
   )
 }
@@ -625,14 +625,14 @@ export function RepairPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="REPAIR →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="REPAIR â†’" />
     </div>
   )
 }
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // PDF CONVERT TOOLS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function PDFToWordB() {
   const { files, setFiles, loading, error, success, run } = useTool()
@@ -648,7 +648,7 @@ export function PDFToWordB() {
         Extracts the text from each page into a structured Word document. Images are not transferred.
       </p>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT â†’" />
     </div>
   )
 }
@@ -664,7 +664,7 @@ export function PDFToExcelB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT â†’" />
     </div>
   )
 }
@@ -685,7 +685,7 @@ export function PDFToJPGB() {
           options={['72','96','150','200','300'].map(d => [d, `${d} DPI`])} />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="EXPORT JPGs →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="EXPORT JPGs â†’" />
     </div>
   )
 }
@@ -701,7 +701,7 @@ export function WordToPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".docx" files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT â†’" />
     </div>
   )
 }
@@ -717,7 +717,7 @@ export function ExcelToPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".xlsx,.xls" files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT â†’" />
     </div>
   )
 }
@@ -733,7 +733,7 @@ export function CSVToPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".csv" files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT â†’" />
     </div>
   )
 }
@@ -749,7 +749,7 @@ export function JPGToPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".jpg,.jpeg,.png,.webp" multiple files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files.length} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files.length} label="CONVERT â†’" />
     </div>
   )
 }
@@ -765,7 +765,7 @@ export function HTMLToPDFB() {
     try {
       const fd = new FormData(); fd.append('html_content', html)
       await callTool('/convert/html-to-pdf', fd, 'output.pdf')
-      setSuccess('Done — file downloaded!')
+      setSuccess('Done â€” file downloaded!')
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }
@@ -777,7 +777,7 @@ export function HTMLToPDFB() {
           placeholder="<html><body><h1>Hello</h1></body></html>" />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!html.trim()} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!html.trim()} label="CONVERT â†’" />
     </div>
   )
 }
@@ -793,7 +793,7 @@ export function TextToPDFB() {
     try {
       const fd = new FormData(); fd.append('text', text)
       await callTool('/convert/text-to-pdf', fd, 'output.pdf')
-      setSuccess('Done — file downloaded!')
+      setSuccess('Done â€” file downloaded!')
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }
@@ -804,14 +804,14 @@ export function TextToPDFB() {
           style={{ ...S.input, resize: 'vertical' }} placeholder="# My Document&#10;&#10;Content here..." />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!text.trim()} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!text.trim()} label="CONVERT â†’" />
     </div>
   )
 }
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // IMAGE TOOLS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function CompressImageB() {
   const { files, setFiles, loading, error, success, run } = useTool()
@@ -828,7 +828,7 @@ export function CompressImageB() {
         <Slider min={10} max={95} step={5} value={Number(quality)} onChange={v => setQuality(String(v))} />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="COMPRESS →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="COMPRESS â†’" />
     </div>
   )
 }
@@ -856,7 +856,7 @@ export function ResizeImageB() {
       <Checkbox checked={keepAspect} onChange={setKeepAspect} label="Keep aspect ratio"
         style={{ fontSize: 10, color: 'var(--muted)', marginTop: 8 }} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="RESIZE →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="RESIZE â†’" />
     </div>
   )
 }
@@ -877,7 +877,7 @@ export function ConvertImageB() {
           options={['png','jpg','webp','bmp','gif','tiff'].map(f => [f, f.toUpperCase()])} />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files.length} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files.length} label="CONVERT â†’" />
     </div>
   )
 }
@@ -902,14 +902,14 @@ export function FlipImageB() {
           ]} />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="FLIP →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="FLIP â†’" />
     </div>
   )
 }
 
 export function ImageWatermarkB() {
   const { files, setFiles, loading, error, success, run } = useTool()
-  const [text, setText] = useState('© aifazi.net')
+  const [text, setText] = useState('Â© aifazi.net')
   const [opacity, setOpacity] = useState('0.3')
   const [pos, setPos] = useState('bottom-right')
   const go = () => run(async () => {
@@ -925,14 +925,14 @@ export function ImageWatermarkB() {
       <DropZone onFiles={setFiles} accept=".jpg,.jpeg,.png,.webp" files={files} />
       <Field label="Watermark text"><input value={text} onChange={e => setText(e.target.value)} style={S.input} /></Field>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="Opacity (0–1)"><input type="number" min="0.05" max="1" step="0.05" value={opacity} onChange={e => setOpacity(e.target.value)} style={S.input} /></Field>
+        <Field label="Opacity (0â€“1)"><input type="number" min="0.05" max="1" step="0.05" value={opacity} onChange={e => setOpacity(e.target.value)} style={S.input} /></Field>
         <Field label="Position">
           <Select value={pos} onChange={setPos}
             options={['bottom-right','bottom-left','bottom-center','top-right','top-left','center'].map(p => [p, p])} />
         </Field>
       </div>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !text} label="WATERMARK →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0] || !text} label="WATERMARK â†’" />
     </div>
   )
 }
@@ -959,12 +959,12 @@ export function ImageOCRB() {
     <div>
       <DropZone onFiles={setFiles} accept=".jpg,.jpeg,.png,.webp,.bmp,.tiff" files={files} />
       <StatusBox error={error} />
-      <RunBtn onClick={run} loading={loading} disabled={!files[0]} label="EXTRACT TEXT →" />
+      <RunBtn onClick={run} loading={loading} disabled={!files[0]} label="EXTRACT TEXT â†’" />
       {result && (
         <div style={{ ...S.panel, marginTop: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>EXTRACTED TEXT</span>
-            <button onClick={copy} style={{ ...S.btnSm, background: 'transparent', color: 'var(--cyan)', border: '1px solid rgba(0,212,255,.4)', fontSize: 9 }}>COPY</button>
+            <button onClick={copy} style={{ ...S.btnSm, background: 'transparent', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', fontSize: 9 }}>COPY</button>
           </div>
           <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, maxHeight: 400, overflowY: 'auto' }}>{result}</pre>
         </div>
@@ -973,9 +973,9 @@ export function ImageOCRB() {
   )
 }
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // DOCUMENT TOOLS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function DocxToTextB() {
   const [files, setFiles] = useState([])
@@ -1000,7 +1000,7 @@ export function DocxToTextB() {
     <div>
       <DropZone onFiles={setFiles} accept=".docx" files={files} />
       <StatusBox error={error} />
-      <RunBtn onClick={run} loading={loading} disabled={!files[0]} label="EXTRACT TEXT →" />
+      <RunBtn onClick={run} loading={loading} disabled={!files[0]} label="EXTRACT TEXT â†’" />
       {result && (
         <div style={{ ...S.panel, marginTop: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -1029,7 +1029,7 @@ export function XlsxToCsvB() {
         <input type="number" min="0" value={sheet} onChange={e => setSheet(e.target.value)} style={S.input} />
       </Field>
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="EXPORT CSV →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="EXPORT CSV â†’" />
     </div>
   )
 }
@@ -1045,14 +1045,14 @@ export function CsvToXlsxB() {
     <div>
       <DropZone onFiles={setFiles} accept=".csv" files={files} />
       <StatusBox error={error} success={success} />
-      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT →" />
+      <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="CONVERT â†’" />
     </div>
   )
 }
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // TEXT / DEV TOOLS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 export function TextStatsB() {
   const [text, setText] = useState('')
@@ -1072,10 +1072,10 @@ export function TextStatsB() {
     <div>
       <Field label="Paste your text">
         <textarea value={text} onChange={e => setText(e.target.value)} rows={8}
-          style={{ ...S.input, resize: 'vertical' }} placeholder="Paste any text here…" />
+          style={{ ...S.input, resize: 'vertical' }} placeholder="Paste any text hereâ€¦" />
       </Field>
       <StatusBox error={error} />
-      <RunBtn onClick={run} loading={loading} disabled={!text.trim()} label="ANALYSE →" />
+      <RunBtn onClick={run} loading={loading} disabled={!text.trim()} label="ANALYSE â†’" />
       {stats && (
         <div style={{ ...S.panel, marginTop: 16 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>TEXT STATISTICS</div>
@@ -1100,8 +1100,8 @@ export function TextStatsB() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {stats.top_words.map(([word, count]) => (
                   <span key={word} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '3px 10px',
-                    background: 'rgba(0,212,255,.08)', border: '1px solid rgba(0,212,255,.25)', color: 'var(--cyan)' }}>
-                    {word} <span style={{ opacity: 0.6 }}>×{count}</span>
+                    background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)', color: 'var(--cyan)' }}>
+                    {word} <span style={{ opacity: 0.6 }}>Ã—{count}</span>
                   </span>
                 ))}
               </div>
@@ -1134,14 +1134,14 @@ export function CompareTextB() {
       <DropZone onFiles={setFiles} accept=".txt,.md,.js,.ts,.jsx,.tsx,.py,.json,.csv,.html,.css" multiple files={files} />
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>Select 2 text files to compare.</div>
       <StatusBox error={error} />
-      <RunBtn onClick={run} loading={loading} disabled={files.length < 2} label="COMPARE →" />
+      <RunBtn onClick={run} loading={loading} disabled={files.length < 2} label="COMPARE â†’" />
       {diff && (
         <div style={{ ...S.panel, marginTop: 16 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 10 }}>DIFF RESULT</div>
           <pre style={{ fontFamily: 'monospace', fontSize: 12, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
             maxHeight: 500, overflowY: 'auto', margin: 0, lineHeight: 1.6 }}>
             {diff.diff?.map((line, i) => (
-              <span key={i} style={{ display: 'block', background: line.startsWith('+') ? 'rgba(0,255,136,.07)' : line.startsWith('-') ? 'rgba(255,71,87,.07)' : 'transparent', color: line.startsWith('+') ? 'var(--green)' : line.startsWith('-') ? '#ff4757' : 'var(--muted)' }}>
+              <span key={i} style={{ display: 'block', background: line.startsWith('+') ? 'color-mix(in srgb, var(--green) 7%, transparent)' : line.startsWith('-') ? 'rgba(255,71,87,.07)' : 'transparent', color: line.startsWith('+') ? 'var(--green)' : line.startsWith('-') ? '#ff4757' : 'var(--muted)' }}>
                 {line}
               </span>
             ))}
@@ -1172,12 +1172,12 @@ export function Base64ToolB() {
       <Field label="Input text or Base64 string">
         <textarea value={input} onChange={e => setInput(e.target.value)} rows={5}
           style={{ ...S.input, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
-          placeholder="Enter text to encode, or Base64 to decode…" />
+          placeholder="Enter text to encode, or Base64 to decodeâ€¦" />
       </Field>
       <StatusBox error={error} />
       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-        <button onClick={() => run('encode')} disabled={loading || !input.trim()} style={{ ...S.btn, background: 'var(--green)', color: '#000' }}>ENCODE →</button>
-        <button onClick={() => run('decode')} disabled={loading || !input.trim()} style={{ ...S.btnOut }}>DECODE →</button>
+        <button onClick={() => run('encode')} disabled={loading || !input.trim()} style={{ ...S.btn, background: 'var(--green)', color: '#000' }}>ENCODE â†’</button>
+        <button onClick={() => run('decode')} disabled={loading || !input.trim()} style={{ ...S.btnOut }}>DECODE â†’</button>
       </div>
       {output && (
         <div style={{ ...S.panel, marginTop: 16 }}>
@@ -1225,8 +1225,8 @@ export function JsonFormatterB() {
       </div>
       <StatusBox error={error} />
       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-        <button onClick={() => run('format')} disabled={loading || !input.trim()} style={{ ...S.btn }}>FORMAT →</button>
-        <button onClick={() => run('minify')} disabled={loading || !input.trim()} style={{ ...S.btnOut }}>MINIFY →</button>
+        <button onClick={() => run('format')} disabled={loading || !input.trim()} style={{ ...S.btn }}>FORMAT â†’</button>
+        <button onClick={() => run('minify')} disabled={loading || !input.trim()} style={{ ...S.btnOut }}>MINIFY â†’</button>
       </div>
       {output && (
         <div style={{ ...S.panel, marginTop: 16 }}>

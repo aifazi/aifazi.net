@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { Link, useLocation } from '@/lib/router-compat'
@@ -132,11 +132,11 @@ export default function FloatingNav() {
               onClick={() => { if (editCtx?.editingEnabled) editCtx.requestFinish(); else editCtx?.startEditing(); setExpanded(false) }}
               onMouseEnter={() => setHoveredIdx(999)} onMouseLeave={() => setHoveredIdx(-1)}
               style={{ display: 'flex', alignItems: 'center', gap: 0,
-                background: editCtx?.editingEnabled ? 'rgba(0,255,136,0.12)' : 'var(--bg)',
-                border: `1px solid ${hoveredIdx === 999 ? (editCtx?.editingEnabled ? 'rgba(0,255,136,0.8)' : 'rgba(0,212,255,0.6)') : (editCtx?.editingEnabled ? 'rgba(0,255,136,0.5)' : 'var(--border)')}`,
+                background: editCtx?.editingEnabled ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'var(--bg)',
+                border: `1px solid ${hoveredIdx === 999 ? (editCtx?.editingEnabled ? 'color-mix(in srgb, var(--green) 80%, transparent)' : 'color-mix(in srgb, var(--cyan) 60%, transparent)') : (editCtx?.editingEnabled ? 'color-mix(in srgb, var(--green) 50%, transparent)' : 'var(--border)')}`,
                 borderRadius: 24, padding: 0, height: 40, cursor: 'pointer', overflow: 'hidden', whiteSpace: 'nowrap',
                 transition: 'all 0.25s cubic-bezier(0.25,1,0.5,1)',
-                boxShadow: editCtx?.editingEnabled ? '0 4px 20px rgba(0,255,136,0.2)' : '0 2px 10px rgba(0,0,0,0.25)',
+                boxShadow: editCtx?.editingEnabled ? '0 4px 20px color-mix(in srgb, var(--green) 20%, transparent)' : '0 2px 10px rgba(0,0,0,0.25)',
                 animation: `floatNavItemIn 0.3s ease-out ${(NAV_ITEMS.length + 1) * 0.04}s both`,
               }}
             >
@@ -165,9 +165,9 @@ export default function FloatingNav() {
           background: expanded ? 'var(--green)' : 'var(--bg)',
           border: `1px solid ${expanded ? 'var(--green)' : 'var(--border)'}`, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: expanded ? '0 4px 24px rgba(0,255,136,0.3)' : '0 4px 18px rgba(0,0,0,0.25)',
+          boxShadow: expanded ? '0 4px 24px color-mix(in srgb, var(--green) 30%, transparent)' : '0 4px 18px rgba(0,0,0,0.25)',
           transition: 'all 0.25s cubic-bezier(0.25,1,0.5,1)', animation: 'floatNavSlideIn 0.4s ease-out', outline: 'none' }}
-        onMouseEnter={e => { if (!expanded) { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,255,136,0.2)' } }}
+        onMouseEnter={e => { if (!expanded) { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.boxShadow = '0 4px 24px color-mix(in srgb, var(--green) 20%, transparent)' } }}
         onMouseLeave={e => { if (!expanded) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = '0 4px 18px rgba(0,0,0,0.25)' } }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"

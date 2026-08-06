@@ -6,11 +6,11 @@ import { useDialog } from '../../../components/Dialog'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15', O = '#ff6b35'
-const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'â€”'
 const STAT_COLORS = { pending: Y, approved: G, rejected: R }
 
 function Stars({ n }) {
-  return <span style={{ color: Y, fontSize: 11, letterSpacing: 1 }}>{'★'.repeat(Math.max(0, Math.min(5, n || 0)))}{'☆'.repeat(5 - Math.max(0, Math.min(5, n || 0)))}</span>
+  return <span style={{ color: Y, fontSize: 11, letterSpacing: 1 }}>{'â˜…'.repeat(Math.max(0, Math.min(5, n || 0)))}{'â˜†'.repeat(5 - Math.max(0, Math.min(5, n || 0)))}</span>
 }
 
 export default function ReviewsTab() {
@@ -66,7 +66,7 @@ export default function ReviewsTab() {
   const editTestimonial = t => { setEditingT(t.id); setTestiForm({ author_name: t.author_name || '', role: t.role || '', content: t.content || '', rating: t.rating || 5, status: t.status || 'pending', display_order: t.display_order || 0 }) }
 
   const deleteTestimonial = async t => {
-    const ok = await confirm({ title: 'Delete Testimonial', message: `Delete testimonial from ${t.author_name || '—'}?`, variant: 'danger', confirmLabel: 'DELETE' })
+    const ok = await confirm({ title: 'Delete Testimonial', message: `Delete testimonial from ${t.author_name || 'â€”'}?`, variant: 'danger', confirmLabel: 'DELETE' })
     if (!ok) return
     try { await api.delete(`/store/admin/testimonials/${t.id}`); toast.success('Testimonial deleted', { title: 'Testimonials' }); if (editingT === t.id) setEditingT(null); load() }
     catch { toast.error('Delete failed') }
@@ -80,8 +80,8 @@ export default function ReviewsTab() {
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setTab('reviews')} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', background: tab === 'reviews' ? 'rgba(0,255,136,.12)' : 'transparent', color: tab === 'reviews' ? G : 'var(--muted)', border: `1px solid ${tab === 'reviews' ? 'rgba(0,255,136,.4)' : 'var(--border)'}` }}>PRODUCT REVIEWS ({reviews.length})</button>
-        <button onClick={() => setTab('testimonials')} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', background: tab === 'testimonials' ? 'rgba(0,212,255,.12)' : 'transparent', color: tab === 'testimonials' ? C : 'var(--muted)', border: `1px solid ${tab === 'testimonials' ? 'rgba(0,212,255,.4)' : 'var(--border)'}` }}>TESTIMONIALS ({testimonials.length})</button>
+        <button onClick={() => setTab('reviews')} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', background: tab === 'reviews' ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent', color: tab === 'reviews' ? G : 'var(--muted)', border: `1px solid ${tab === 'reviews' ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}` }}>PRODUCT REVIEWS ({reviews.length})</button>
+        <button onClick={() => setTab('testimonials')} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', background: tab === 'testimonials' ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'transparent', color: tab === 'testimonials' ? C : 'var(--muted)', border: `1px solid ${tab === 'testimonials' ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'var(--border)'}` }}>TESTIMONIALS ({testimonials.length})</button>
       </div>
 
       {tab === 'reviews' && (
@@ -90,7 +90,7 @@ export default function ReviewsTab() {
             <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)' }}>MODERATION QUEUE</div>
             <div style={{ flex: 1 }} />
             {[['all', `ALL (${reviews.length})`], ['pending', `PENDING (${counts.pending || 0})`], ['approved', `APPROVED (${counts.approved || 0})`], ['rejected', `REJECTED (${counts.rejected || 0})`]].map(([v, l]) => (
-              <button key={v} onClick={() => setFilter(v)} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '5px 10px', borderRadius: 20, cursor: 'pointer', background: filter === v ? 'rgba(0,255,136,.12)' : 'transparent', color: filter === v ? G : 'var(--muted)', border: `1px solid ${filter === v ? 'rgba(0,255,136,.4)' : 'var(--border)'}` }}>{l}</button>
+              <button key={v} onClick={() => setFilter(v)} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '5px 10px', borderRadius: 20, cursor: 'pointer', background: filter === v ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent', color: filter === v ? G : 'var(--muted)', border: `1px solid ${filter === v ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}` }}>{l}</button>
             ))}
           </div>
 
@@ -103,14 +103,14 @@ export default function ReviewsTab() {
                 <div key={r.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', marginBottom: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: `${col}14`, border: `1px solid ${col}44`, color: col }}>{r.status.toUpperCase()}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{r.username || '—'}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{r.username || 'â€”'}</span>
                     <Stars n={r.rating} />
                     <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{r.product_name || r.product_id}</span>
                     <div style={{ flex: 1 }} />
                     <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{fmt(r.created_at)}</span>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      {r.status !== 'approved' && <button onClick={() => setStatus(r, 'approved')} style={{ fontFamily: MONO, fontSize: 9, padding: '5px 10px', background: 'rgba(0,255,136,.1)', border: '1px solid rgba(0,255,136,.4)', color: G, borderRadius: 6, cursor: 'pointer' }}>✓ APPROVE</button>}
-                      {r.status !== 'rejected' && <button onClick={() => setStatus(r, 'rejected')} style={{ fontFamily: MONO, fontSize: 9, padding: '5px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>✕ REJECT</button>}
+                      {r.status !== 'approved' && <button onClick={() => setStatus(r, 'approved')} style={{ fontFamily: MONO, fontSize: 9, padding: '5px 10px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>âœ“ APPROVE</button>}
+                      {r.status !== 'rejected' && <button onClick={() => setStatus(r, 'rejected')} style={{ fontFamily: MONO, fontSize: 9, padding: '5px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>âœ• REJECT</button>}
                       <button onClick={() => deleteReview(r)} style={{ fontFamily: MONO, fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>DEL</button>
                     </div>
                   </div>
@@ -155,10 +155,10 @@ export default function ReviewsTab() {
             </div>
             <div style={{ marginTop: 10 }}>
               <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>CONTENT</label>
-              <textarea value={testiForm.content} onChange={e => setTestiForm({ ...testiForm, content: e.target.value })} placeholder="Amazing quality and lightning-fast delivery…" rows={3} style={{ ...input, width: '100%', resize: 'vertical' }} />
+              <textarea value={testiForm.content} onChange={e => setTestiForm({ ...testiForm, content: e.target.value })} placeholder="Amazing quality and lightning-fast deliveryâ€¦" rows={3} style={{ ...input, width: '100%', resize: 'vertical' }} />
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button onClick={saveTestimonial} disabled={savingT} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'rgba(0,212,255,.12)', border: '1px solid rgba(0,212,255,.4)', color: C, borderRadius: 6, cursor: savingT ? 'not-allowed' : 'pointer' }}>{savingT ? '…' : editingT ? 'UPDATE' : '+ CREATE'}</button>
+              <button onClick={saveTestimonial} disabled={savingT} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'color-mix(in srgb, var(--cyan) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: savingT ? 'not-allowed' : 'pointer' }}>{savingT ? 'â€¦' : editingT ? 'UPDATE' : '+ CREATE'}</button>
               {editingT && <button onClick={() => { setEditingT(null); setTestiForm({ author_name: '', role: '', content: '', rating: 5, status: 'pending', display_order: 0 }) }} style={{ fontFamily: MONO, fontSize: 10, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>}
             </div>
           </div>
@@ -170,12 +170,12 @@ export default function ReviewsTab() {
               <div key={t.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', marginBottom: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <Stars n={t.rating} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{t.author_name || '—'}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{t.author_name || 'â€”'}</span>
                   {t.role && <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{t.role}</span>}
                   <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: `${STAT_COLORS[t.status] || 'var(--muted)'}14`, border: `1px solid ${STAT_COLORS[t.status] || 'var(--muted)'}44`, color: STAT_COLORS[t.status] || 'var(--muted)' }}>{(t.status || 'pending').toUpperCase()}</span>
                   <div style={{ flex: 1 }} />
                   <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>order {t.display_order || 0}</span>
-                  <button onClick={() => editTestimonial(t)} style={{ fontFamily: MONO, fontSize: 9, padding: '5px 10px', background: 'rgba(0,212,255,.1)', border: '1px solid rgba(0,212,255,.4)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
+                  <button onClick={() => editTestimonial(t)} style={{ fontFamily: MONO, fontSize: 9, padding: '5px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
                   <button onClick={() => deleteTestimonial(t)} style={{ fontFamily: MONO, fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>DEL</button>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6, lineHeight: 1.5, fontStyle: 'italic' }}>"{t.content}"</div>

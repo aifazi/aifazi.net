@@ -1,6 +1,6 @@
 'use client'
 /**
- * WhitelistApply.jsx — Public whitelist application form for AIFAZI RP
+ * WhitelistApply.jsx â€” Public whitelist application form for AIFAZI RP
  * Requires site login (ForumContext). If Discord not linked, prompts to connect.
  * Discord ID/username auto-filled from the linked Discord account on the user's profile.
  */
@@ -22,11 +22,11 @@ const STAFF_ROLES = new Set(['admin', 'moderator', 'editor', 'chat'])
 
 const RULES = [
   'Stay in character at all times (IC vs OOC)',
-  'Value your life — no random deathmatch (RDM)',
+  'Value your life â€” no random deathmatch (RDM)',
   'No vehicle deathmatch (VDM)',
   'Respect all players and staff',
   'No exploiting bugs or using mods/cheats',
-  'New Life Rule (NLR) — forget events after death',
+  'New Life Rule (NLR) â€” forget events after death',
   'No metagaming (using OOC info in RP)',
   'Follow staff instructions',
 ]
@@ -49,7 +49,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, readOnly
     <input type={type} value={value} onChange={e => onChange && onChange(e.target.value)}
       placeholder={placeholder} disabled={disabled} readOnly={readOnly}
       style={{
-        background: readOnly ? 'rgba(0,255,136,0.04)' : 'rgba(255,255,255,0.04)',
+        background: readOnly ? 'color-mix(in srgb, var(--green) 4%, transparent)' : 'rgba(255,255,255,0.04)',
         border: `1px solid ${readOnly ? G + '30' : 'rgba(255,255,255,0.1)'}`,
         borderRadius: 8, padding: '10px 14px',
         color: readOnly ? G : 'var(--text)',
@@ -100,7 +100,7 @@ function DiscordIcon({ size = 20, fill = '#fff' }) {
   )
 }
 
-/* ── Login Gate ──────────────────────────────────────────────────────────── */
+/* â”€â”€ Login Gate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function LoginGate() {
   const loginHref = useFiveMLoginRoute('/whitelist')
   return (
@@ -114,7 +114,7 @@ function LoginGate() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 36,
       }}>
-        🔐
+        ðŸ”
       </div>
 
       <div>
@@ -134,7 +134,7 @@ function LoginGate() {
         fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: 2,
         textDecoration: 'none', transition: 'opacity 0.15s',
       }}>
-        SIGN IN / CREATE ACCOUNT →
+        SIGN IN / CREATE ACCOUNT â†’
       </a>
 
       <p style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
@@ -145,7 +145,7 @@ function LoginGate() {
   )
 }
 
-/* ── Discord Connect Gate ────────────────────────────────────────────────── */
+/* â”€â”€ Discord Connect Gate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function DiscordConnectGate({ username }) {
   const whitelistHref = useFiveMRoute('/whitelist')
   return (
@@ -195,7 +195,7 @@ function DiscordConnectGate({ username }) {
   )
 }
 
-/* ── Existing Application Gate ───────────────────────────────────────────── */
+/* â”€â”€ Existing Application Gate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function ExistingApplicationGate({ application }) {
   const status = application?.display_status || application?.status || 'submitted'
   const statusColor =
@@ -214,7 +214,7 @@ function ExistingApplicationGate({ application }) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 34,
       }}>
-        ⏳
+        â³
       </div>
 
       <div>
@@ -255,14 +255,14 @@ function ExistingApplicationGate({ application }) {
   )
 }
 
-/* ── Main Form ───────────────────────────────────────────────────────────── */
+/* â”€â”€ Main Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function WhitelistApply() {
   const { user, loading: authLoading } = useForum()
   const notify = useNotify()
   const pageConfig = usePageConfig('whitelist', {})
   const isStaffPreview = !!user && (user._staff || user.staff_account || STAFF_ROLES.has(user.role))
 
-  // Verify Discord link via API — user.discord_id from context may be stale
+  // Verify Discord link via API â€” user.discord_id from context may be stale
   // if the backend /me endpoint was not yet updated to return Discord fields.
   const [discordStatus, setDiscordStatus] = useState(null)
   const [discordLoading, setDiscordLoading] = useState(false)
@@ -340,12 +340,12 @@ export default function WhitelistApply() {
     return () => { cancelled = true }
   }, [user, isStaffPreview])
 
-  // Resolved Discord identity — prefer API response, fall back to context
+  // Resolved Discord identity â€” prefer API response, fall back to context
   const resolvedDiscordId       = discordStatus?.discord_id || user?.discord_id || null
   const resolvedDiscordUsername = user?.discord_username || discordStatus?.application?.discord_name || user?.username || ''
   const discordLinked           = isStaffPreview || (discordStatus?.has_discord ?? !!resolvedDiscordId)
 
-  // Resolved Steam identity — from /me endpoint (includes steam_hex computed server-side)
+  // Resolved Steam identity â€” from /me endpoint (includes steam_hex computed server-side)
   const resolvedSteamId  = user?.steam_id || null
   const resolvedSteamHex = user?.steam_hex || (resolvedSteamId
     ? (() => { try { return `steam:${BigInt(resolvedSteamId).toString(16)}` } catch { return '' } })()
@@ -376,7 +376,7 @@ export default function WhitelistApply() {
     if (form.fivem_id.trim() && !/^\d{1,8}$/.test(form.fivem_id.trim()))
       e.fivem_id = 'FiveM ID must be a number only (e.g. 4463431)'
     if (form.steam_hex.trim() && !/^(steam:)?1100001[0-9a-fA-F]{8}$/.test(form.steam_hex.trim()))
-      e.steam_hex = 'Invalid Steam hex — must be steam:1100001... with 8 hex chars'
+      e.steam_hex = 'Invalid Steam hex â€” must be steam:1100001... with 8 hex chars'
     if (!form.character_name.trim())     e.character_name = 'Required'
     if (!form.character_backstory.trim() || form.character_backstory.length < wlMin('character_backstory', 80))
       e.character_backstory = `Minimum ${wlMin('character_backstory', 80)} characters`
@@ -438,7 +438,7 @@ export default function WhitelistApply() {
       notify.success('Whitelist application submitted.', { title: 'Application' })
       setDone(true)
     } catch (err) {
-      // FastAPI 422 returns detail as an array of validation errors — normalise to string
+      // FastAPI 422 returns detail as an array of validation errors â€” normalise to string
       const detail = err?.response?.data?.detail
       const msg =
         Array.isArray(detail)
@@ -450,7 +450,7 @@ export default function WhitelistApply() {
     } finally { setSubmitting(false) }
   }
 
-  /* ── Loading ── */
+  /* â”€â”€ Loading â”€â”€ */
   if (authLoading) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
@@ -463,14 +463,14 @@ export default function WhitelistApply() {
     )
   }
 
-  /* ── Not logged in ── */
+  /* â”€â”€ Not logged in â”€â”€ */
   if (!user) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
       <main style={{ minHeight: '100vh', padding: '80px 20px 40px' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP — NEON OPS CITY</div>
+            <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP â€” NEON OPS CITY</div>
             <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--text)', margin: '0 0 8px', letterSpacing: 2 }}>{wlTitle.toUpperCase()}</h1>
           </div>
           <LoginGate />
@@ -480,7 +480,7 @@ export default function WhitelistApply() {
     )
   }
 
-  /* ── Logged in but Discord not linked ── */
+  /* â”€â”€ Logged in but Discord not linked â”€â”€ */
   if (!isStaffPreview && discordLoading && !discordStatus && !user?.discord_id) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
@@ -499,7 +499,7 @@ export default function WhitelistApply() {
       <main style={{ minHeight: '100vh', padding: '80px 20px 40px' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP — NEON OPS CITY</div>
+            <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP â€” NEON OPS CITY</div>
             <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--text)', margin: '0 0 8px', letterSpacing: 2 }}>{wlTitle.toUpperCase()}</h1>
           </div>
           <DiscordConnectGate username={user.username} />
@@ -509,14 +509,14 @@ export default function WhitelistApply() {
     )
   }
 
-  /* ── Already applied ── */
+  /* â”€â”€ Already applied â”€â”€ */
   if (!isStaffPreview && existingApp) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
       <main style={{ minHeight: '100vh', padding: '80px 20px 40px' }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP — NEON OPS CITY</div>
+            <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP â€” NEON OPS CITY</div>
             <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--text)', margin: '0 0 8px', letterSpacing: 2 }}>{wlTitle.toUpperCase()}</h1>
           </div>
           <ExistingApplicationGate application={existingApp} />
@@ -526,16 +526,16 @@ export default function WhitelistApply() {
     )
   }
 
-  /* ── Success ── */
+  /* â”€â”€ Success â”€â”€ */
   if (done) {
     return (
       <MotionPage animation={pageConfig.animation || 'fade-up'}>
       <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
         <div style={{ maxWidth: 520, textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>âœ…</div>
           <h2 style={{ fontFamily: 'var(--font-mono)', color: G, fontSize: 20, letterSpacing: 2, marginBottom: 12 }}>APPLICATION SUBMITTED</h2>
           <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
-            Your whitelist application has been received. Staff will review it within 24–48 hours.
+            Your whitelist application has been received. Staff will review it within 24â€“48 hours.
             Track your status on your profile page.
           </p>
           <a href="/profile" style={{
@@ -543,14 +543,14 @@ export default function WhitelistApply() {
             background: G + '15', border: '1px solid ' + G + '40',
             color: G, fontFamily: 'var(--font-mono)', fontSize: 12,
             letterSpacing: 2, textDecoration: 'none', borderRadius: 8,
-          }}>VIEW MY PROFILE →</a>
+          }}>VIEW MY PROFILE â†’</a>
         </div>
       </main>
       </MotionPage>
     )
   }
 
-  /* ── Form (logged in + Discord linked) ── */
+  /* â”€â”€ Form (logged in + Discord linked) â”€â”€ */
   return (
     <MotionPage animation={pageConfig.animation || 'fade-up'}>
     <main style={{ minHeight: '100vh', padding: '80px 20px 60px' }}>
@@ -558,7 +558,7 @@ export default function WhitelistApply() {
 
         {/* Header */}
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP — NEON OPS CITY</div>
+          <div style={{ fontSize: 11, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 3, marginBottom: 8 }}>AIFAZI RP â€” NEON OPS CITY</div>
           <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 28, color: 'var(--text)', margin: '0 0 8px', letterSpacing: 2 }}>{wlTitle.toUpperCase()}</h1>
           <p style={{ color: 'var(--muted)', fontSize: 13, margin: 0, lineHeight: 1.7 }}>
             {wlIntro}
@@ -567,7 +567,7 @@ export default function WhitelistApply() {
         </div>
 
         {checksLoading && (
-          <InfoBox color={C} icon="↻" title="SYNC CHECK RUNNING">
+          <InfoBox color={C} icon="â†»" title="SYNC CHECK RUNNING">
             Discord and previous application checks are refreshing in the background.
           </InfoBox>
         )}
@@ -579,7 +579,7 @@ export default function WhitelistApply() {
             ['03', 'Approval + Sync', 'Approved players sync to the server whitelist and queue priority system.'],
             ['04', 'First Join', 'Your first successful server connection marks the profile ACTIVE.'],
           ].map(([num, title, text]) => (
-            <div key={num} style={{ background:'rgba(0,212,255,0.045)', border:'1px solid rgba(0,212,255,0.18)', borderRadius:10, padding:'13px 14px' }}>
+            <div key={num} style={{ background:'color-mix(in srgb, var(--cyan) 4.5%, transparent)', border:'1px solid color-mix(in srgb, var(--cyan) 18%, transparent)', borderRadius:10, padding:'13px 14px' }}>
               <div style={{ color:C, fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:2, marginBottom:6 }}>{num}</div>
               <div style={{ color:'var(--text)', fontFamily:'var(--font-mono)', fontSize:12, marginBottom:5 }}>{title}</div>
               <div style={{ color:'var(--muted)', fontSize:12, lineHeight:1.55 }}>{text}</div>
@@ -589,17 +589,17 @@ export default function WhitelistApply() {
 
 
         {forms.length > 0 && (
-          <div id="applications" style={{ background:'rgba(0,212,255,0.035)', border:'1px solid rgba(0,212,255,0.18)', borderRadius:12, padding:18, display:'flex', flexDirection:'column', gap:12 }}>
+          <div id="applications" style={{ background:'color-mix(in srgb, var(--cyan) 3.5%, transparent)', border:'1px solid color-mix(in srgb, var(--cyan) 18%, transparent)', borderRadius:12, padding:18, display:'flex', flexDirection:'column', gap:12 }}>
             <div style={{ display:'flex', justifyContent:'space-between', gap:12, alignItems:'center', flexWrap:'wrap' }}>
               <div>
                 <div style={{ color:C, fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:3, marginBottom:5 }}>OTHER APPLICATIONS</div>
                 <div style={{ color:'var(--text)', fontFamily:'var(--font-mono)', fontSize:15 }}>Departments and staff forms</div>
               </div>
-              <a href="/forms" style={{ color:G, fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:1.5, textDecoration:'none' }}>VIEW ALL →</a>
+              <a href="/forms" style={{ color:G, fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:1.5, textDecoration:'none' }}>VIEW ALL â†’</a>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))', gap:10 }}>
               {forms.map(app => (
-                <a key={app.slug} href={`/forms/${app.slug}`} style={{ textDecoration:'none', border:'1px solid rgba(0,212,255,0.16)', background:'rgba(255,255,255,0.025)', borderRadius:9, padding:13 }}>
+                <a key={app.slug} href={`/forms/${app.slug}`} style={{ textDecoration:'none', border:'1px solid color-mix(in srgb, var(--cyan) 16%, transparent)', background:'rgba(255,255,255,0.025)', borderRadius:9, padding:13 }}>
                   <div style={{ color:'var(--text)', fontFamily:'var(--font-mono)', fontSize:12, marginBottom:6 }}>{app.title}</div>
                   <div style={{ color:'var(--muted)', fontSize:12, lineHeight:1.5 }}>{app.description || 'Open application form.'}</div>
                 </a>
@@ -627,14 +627,14 @@ export default function WhitelistApply() {
           )}
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{resolvedDiscordUsername}</div>
-            <div style={{ fontSize: 11, color: DISCORD_PURPLE, letterSpacing: 1 }}>DISCORD CONNECTED · ID: {resolvedDiscordId || '—'}</div>
+            <div style={{ fontSize: 11, color: DISCORD_PURPLE, letterSpacing: 1 }}>DISCORD CONNECTED Â· ID: {resolvedDiscordId || 'â€”'}</div>
           </div>
-          <div style={{ fontSize: 11, color: G, letterSpacing: 1, fontFamily: 'var(--font-mono)' }}>✓ VERIFIED</div>
+          <div style={{ fontSize: 11, color: G, letterSpacing: 1, fontFamily: 'var(--font-mono)' }}>âœ“ VERIFIED</div>
         </div>
 
         {/* Server rules */}
         <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '20px 24px' }}>
-          <div style={{ fontSize: 12, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 2, marginBottom: 14 }}>SERVER RULES — READ BEFORE APPLYING</div>
+          <div style={{ fontSize: 12, color: G, fontFamily: 'var(--font-mono)', letterSpacing: 2, marginBottom: 14 }}>SERVER RULES â€” READ BEFORE APPLYING</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '8px 24px' }}>
             {RULES.map((r, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, color: 'var(--muted)' }}>
@@ -646,19 +646,19 @@ export default function WhitelistApply() {
         </div>
 
         {/* FiveM ID guide */}
-        <InfoBox color={W} icon="🎮" title="HOW TO FIND YOUR FIVEM ID (OPTIONAL)">        
+        <InfoBox color={W} icon="ðŸŽ®" title="HOW TO FIND YOUR FIVEM ID (OPTIONAL)">        
           <ol style={{ margin: '8px 0 0', paddingLeft: 18, lineHeight: 2 }}>
             <li>Open <strong style={{ color: W }}>FiveM</strong> and connect to any server (or open the main menu)</li>
             <li>Press <strong style={{ color: W }}>F8</strong> to open the console</li>
             <li>Type <code style={{ background: 'rgba(255,159,67,0.12)', padding: '1px 6px', borderRadius: 4 }}>status</code> and press Enter</li>
-            <li>Find your name — the <strong style={{ color: W }}>first number</strong> in the row is your FiveM ID</li>
+            <li>Find your name â€” the <strong style={{ color: W }}>first number</strong> in the row is your FiveM ID</li>
           </ol>
           <p style={{ margin: '8px 0 0', fontSize: 12 }}>
-            Example: <code style={{ background: 'rgba(255,159,67,0.12)', padding: '1px 6px', borderRadius: 4 }}>4463431  Tanv33r  ...</code> → FiveM ID is <strong style={{ color: W }}>4463431</strong>
+            Example: <code style={{ background: 'rgba(255,159,67,0.12)', padding: '1px 6px', borderRadius: 4 }}>4463431  Tanv33r  ...</code> â†’ FiveM ID is <strong style={{ color: W }}>4463431</strong>
           </p>
         </InfoBox>
 
-        <InfoBox color={C} icon="🧭" title="WHAT STAFF LOOK FOR">
+        <InfoBox color={C} icon="ðŸ§­" title="WHAT STAFF LOOK FOR">
           <ul style={{ margin:'8px 0 0', paddingLeft:18, lineHeight:2 }}>
             <li>A character with believable motives, weaknesses, and goals.</li>
             <li>Clear understanding of RDM, VDM, NLR, metagaming, powergaming, and fail RP.</li>
@@ -670,7 +670,7 @@ export default function WhitelistApply() {
         {/* Form fields */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* Discord — read-only */}
+          {/* Discord â€” read-only */}
           <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 2, paddingBottom: 6, borderBottom: '1px solid rgba(255,255,255,0.07)' }}>DISCORD (AUTO-FILLED)</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <Field label="Discord ID" hint="Auto-filled from your linked Discord account">
@@ -684,11 +684,11 @@ export default function WhitelistApply() {
           {/* FiveM identifiers */}
           <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 2, paddingBottom: 6, borderBottom: '1px solid rgba(255,255,255,0.07)', marginTop: 8 }}>FIVEM IDENTIFIERS</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Field label="FiveM ID (Optional)" error={errors.fivem_id} hint="Numbers only — leave blank if you don't know it yet">
+            <Field label="FiveM ID (Optional)" error={errors.fivem_id} hint="Numbers only â€” leave blank if you don't know it yet">
               <Input value={form.fivem_id} onChange={v => set('fivem_id', v.replace(/\D/g, ''))} placeholder="4463431" disabled={submitting} />
             </Field>
             <Field label="Steam Hex (Optional)" error={errors.steam_hex}
-              hint={resolvedSteamHex ? 'Auto-filled from your linked Steam account' : 'From F8 console → status → your steam:1100001... value'}>
+              hint={resolvedSteamHex ? 'Auto-filled from your linked Steam account' : 'From F8 console â†’ status â†’ your steam:1100001... value'}>
               <Input
                 value={resolvedSteamHex || form.steam_hex}
                 onChange={resolvedSteamHex ? undefined : v => set('steam_hex', v)}
@@ -698,7 +698,7 @@ export default function WhitelistApply() {
               />
               {resolvedSteamHex && user?.steam_username && (
                 <span style={{ fontSize: 11, color: '#1b9cfc', letterSpacing: 1, marginTop: 2, fontFamily: 'var(--font-mono)' }}>
-                  ✓ Steam: {user.steam_username}
+                  âœ“ Steam: {user.steam_username}
                 </span>
               )}
             </Field>
@@ -710,7 +710,7 @@ export default function WhitelistApply() {
             <Input value={form.character_name} onChange={v => set('character_name', v)} placeholder={wlHint('character_name', 'e.g. Marcus Reyes')} disabled={submitting} />
           </Field>
           <Field label={wlLabel('character_backstory', 'Character Backstory')} required error={errors.character_backstory}
-            hint={`Minimum ${wlMin('character_backstory', 80)} characters — ${wlHint('character_backstory', 'origin, personality, motivations, how they ended up in Neon Ops City')}`}>
+            hint={`Minimum ${wlMin('character_backstory', 80)} characters â€” ${wlHint('character_backstory', 'origin, personality, motivations, how they ended up in Neon Ops City')}`}>
             <TextArea value={form.character_backstory} onChange={v => set('character_backstory', v)}
               placeholder={wlHint('character_backstory', "Your character's background story...")} rows={6} disabled={submitting} />
             <span style={{ fontSize: 11, color: form.character_backstory.length < wlMin('character_backstory', 80) ? '#ff4757' : G, textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
@@ -744,7 +744,7 @@ export default function WhitelistApply() {
           </div>
 
           <Field label={wlLabel('rule_scenario', 'Rules Scenario')} required error={errors.rule_scenario}
-            hint={`Minimum ${wlMin('rule_scenario', 60)} characters — ${wlHint('rule_scenario', 'explain what you would do if a scene goes wrong or another player breaks character.')}`}>
+            hint={`Minimum ${wlMin('rule_scenario', 60)} characters â€” ${wlHint('rule_scenario', 'explain what you would do if a scene goes wrong or another player breaks character.')}`}>
             <TextArea value={form.rule_scenario} onChange={v => set('rule_scenario', v)}
               placeholder={wlHint('rule_scenario', 'A player breaks character during an active scene. What do you do in the moment, and what do you do after the scene?')} rows={4} disabled={submitting} />
             <span style={{ fontSize: 11, color: form.rule_scenario.length < wlMin('rule_scenario', 60) ? '#ff4757' : G, textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
@@ -753,7 +753,7 @@ export default function WhitelistApply() {
           </Field>
 
           <Field label={wlLabel('extra_notes', 'Anything staff should know?')} error={errors.extra_notes}
-            hint={wlHint('extra_notes', 'Optional — previous bans, accessibility needs, schedule notes, or department interest.')}>
+            hint={wlHint('extra_notes', 'Optional â€” previous bans, accessibility needs, schedule notes, or department interest.')}>
             <TextArea value={form.extra_notes} onChange={v => set('extra_notes', v)}
               placeholder={wlHint('extra_notes', 'Optional notes for staff...')} rows={3} disabled={submitting} />
           </Field>
@@ -786,7 +786,7 @@ export default function WhitelistApply() {
         )}
 
         <button onClick={submit} disabled={submitting} style={{
-          padding: '14px 0', background: submitting ? 'rgba(0,255,136,0.06)' : G + '18',
+          padding: '14px 0', background: submitting ? 'color-mix(in srgb, var(--green) 6%, transparent)' : G + '18',
           border: '1px solid ' + G + '50', borderRadius: 10, color: G,
           fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: 2,
           cursor: submitting ? 'not-allowed' : 'pointer', transition: 'all 0.15s',

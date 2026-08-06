@@ -48,7 +48,7 @@ export default function StoreHeader() {
       position: 'sticky', top: 0, zIndex: 100,
       background: scrolled ? 'color-mix(in srgb, var(--bg) 94%, transparent)' : 'var(--bg)',
       backdropFilter: scrolled ? 'blur(16px)' : 'none',
-      borderBottom: `1px solid ${scrolled ? 'rgba(0,255,136,0.12)' : 'var(--border)'}`,
+      borderBottom: `1px solid ${scrolled ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'var(--border)'}`,
       transition: 'all 0.25s ease',
     }}>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 clamp(16px, 3vw, 32px)', display: 'flex', alignItems: 'center', height: 64, gap: 24 }}>
@@ -86,7 +86,7 @@ export default function StoreHeader() {
 
         {/* Search */}
         <form onSubmit={handleSearch} style={{ position: 'relative', flex: '0 1 280px', minWidth: 0 }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: 'var(--muted)', pointerEvents: 'none' }}>⌕</span>
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: 'var(--muted)', pointerEvents: 'none' }}>âŒ•</span>
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
@@ -107,7 +107,7 @@ export default function StoreHeader() {
           position: 'relative', background: 'none', border: 'none', cursor: 'pointer',
           padding: 8, color: 'var(--text)', fontSize: 20, textDecoration: 'none',
         }}>
-          🛒
+          ðŸ›’
           {cartCount > 0 && (
             <span style={{
               position: 'absolute', top: 0, right: -2,
@@ -140,10 +140,10 @@ export default function StoreHeader() {
         ) : (
           <Link to="/login" style={{
             fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700,
-            color: S, textDecoration: 'none', padding: '8px 16px', border: `1px solid rgba(0,255,136,0.3)`,
+            color: S, textDecoration: 'none', padding: '8px 16px', border: `1px solid color-mix(in srgb, var(--green) 30%, transparent)`,
             borderRadius: 999, transition: 'background 0.2s',
           }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,255,136,0.08)'}
+          onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 8%, transparent)'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             SIGN IN
           </Link>

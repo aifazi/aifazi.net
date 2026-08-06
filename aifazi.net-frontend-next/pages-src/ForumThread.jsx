@@ -8,7 +8,7 @@ import { notify } from '../core/notify.jsx'
 import { Card, Badge, NeonButton, Avatar, RoleBadge, timeAgo } from '../components/community'
 import { MediaAttachment, MediaUploader } from '../components/MediaPreview'
 
-const EMOJIS = ['👍', '❤️', '🔥', '😂', '😮']
+const EMOJIS = ['ðŸ‘', 'â¤ï¸', 'ðŸ”¥', 'ðŸ˜‚', 'ðŸ˜®']
 
 function Attachment({ file }) {
   return <MediaAttachment file={file} />
@@ -231,10 +231,10 @@ export default function ForumThread() {
   if (!thread) return (
     <div className="page-container community-page" style={{ zIndex: 1, position: 'relative' }}>
       <div className="forum-thread-empty">
-        <div className="forum-thread-empty-icon">🔍</div>
+        <div className="forum-thread-empty-icon">ðŸ”</div>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--text)', margin: '0 0 8px' }}>Thread not found</h2>
         <p style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'var(--font-mono)', marginBottom: 20 }}>It may have been deleted or moved.</p>
-        <Link to="/forum" style={{ display: 'inline-block', padding: '10px 22px', background: 'var(--green)', color: 'var(--bg)', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2 }}>← BACK TO FORUM</Link>
+        <Link to="/forum" style={{ display: 'inline-block', padding: '10px 22px', background: 'var(--green)', color: 'var(--bg)', borderRadius: 8, textDecoration: 'none', fontWeight: 700, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2 }}>â† BACK TO FORUM</Link>
       </div>
     </div>
   )
@@ -266,8 +266,8 @@ export default function ForumThread() {
         {/* Thread hero */}
         <Card accent style={{ padding: 'clamp(24px, 4vw, 40px)', marginBottom: 22 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-            {thread.pinned && <Badge tone="green" glow>📌 Pinned</Badge>}
-            {thread.locked && <Badge tone="red">🔒 Locked</Badge>}
+            {thread.pinned && <Badge tone="green" glow>ðŸ“Œ Pinned</Badge>}
+            {thread.locked && <Badge tone="red">ðŸ”’ Locked</Badge>}
             {category?.name && <Badge tone="cyan">{category.icon} {category.name}</Badge>}
           </div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, lineHeight: 1.12, fontSize: 'clamp(26px, 4.5vw, 46px)', color: 'var(--text)', margin: '0 0 16px' }}>{thread.title}</h1>
@@ -281,9 +281,9 @@ export default function ForumThread() {
             </div>
             <div style={{ flex: 1 }} />
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <span className="forum-thread-stats-chip">👁 {viewTotal}</span>
-              <span className="forum-thread-stats-chip">💬 {replyTotal}</span>
-              <span className="forum-thread-stats-chip">♥ {likeTotal}</span>
+              <span className="forum-thread-stats-chip">ðŸ‘ {viewTotal}</span>
+              <span className="forum-thread-stats-chip">ðŸ’¬ {replyTotal}</span>
+              <span className="forum-thread-stats-chip">â™¥ {likeTotal}</span>
             </div>
           </div>
         </Card>
@@ -329,15 +329,15 @@ export default function ForumThread() {
             <Reactions reactions={threadReactions} myReactions={myThreadReactions} onReact={handleReact} disabled={!user} size="lg" />
 
             {user && (
-              <NeonButton variant="ghost" size="sm" onClick={handleSubscribe} style={{ color: subscribed ? 'var(--cyan)' : undefined, borderColor: subscribed ? 'rgba(0,212,255,0.4)' : undefined }}>
-                {subscribed ? '🔔 Subscribed' : '🔔 Subscribe'}
+              <NeonButton variant="ghost" size="sm" onClick={handleSubscribe} style={{ color: subscribed ? 'var(--cyan)' : undefined, borderColor: subscribed ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : undefined }}>
+                {subscribed ? 'ðŸ”” Subscribed' : 'ðŸ”” Subscribe'}
               </NeonButton>
             )}
             <div style={{ flex: 1 }} />
             {(isAuthor || isAdmin) && (
               <>
-                {isAdmin && <NeonButton variant="ghost" size="sm" onClick={() => api.put(`/forum/threads/${id}`, { pinned: !thread.pinned }).then(r => setThread(r.data))}>{thread.pinned ? 'Unpin' : '📌 Pin'}</NeonButton>}
-                {isAdmin && <NeonButton variant="ghost" size="sm" onClick={() => api.put(`/forum/threads/${id}`, { locked: !thread.locked }).then(r => setThread(r.data))}>{thread.locked ? '🔓 Unlock' : '🔒 Lock'}</NeonButton>}
+                {isAdmin && <NeonButton variant="ghost" size="sm" onClick={() => api.put(`/forum/threads/${id}`, { pinned: !thread.pinned }).then(r => setThread(r.data))}>{thread.pinned ? 'Unpin' : 'ðŸ“Œ Pin'}</NeonButton>}
+                {isAdmin && <NeonButton variant="ghost" size="sm" onClick={() => api.put(`/forum/threads/${id}`, { locked: !thread.locked }).then(r => setThread(r.data))}>{thread.locked ? 'ðŸ”“ Unlock' : 'ðŸ”’ Lock'}</NeonButton>}
                 <NeonButton variant="danger" size="sm" onClick={handleDeleteThread}>Delete</NeonButton>
               </>
             )}
@@ -431,7 +431,7 @@ export default function ForumThread() {
           </Card>
         ) : (
           <Card style={{ marginTop: 32, textAlign: 'center', padding: 28 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)' }}>🔒 This thread is locked</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)' }}>ðŸ”’ This thread is locked</div>
           </Card>
         )}
       </div>

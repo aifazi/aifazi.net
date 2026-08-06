@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { Link, useLocation, useNavigate } from '@/lib/router-compat'
@@ -46,7 +46,7 @@ function ThemeToggle({ theme, onToggle }) {
         }
         .theme-pill:hover {
           border-color: var(--green);
-          box-shadow: 0 0 10px rgba(0,255,136,0.2), inset 0 0 8px rgba(0,255,136,0.04);
+          box-shadow: 0 0 10px color-mix(in srgb, var(--green) 20%, transparent), inset 0 0 8px color-mix(in srgb, var(--green) 4%, transparent);
         }
         [data-theme="light"] .theme-pill:hover {
           border-color: var(--cyan);
@@ -106,9 +106,9 @@ function ThemeToggle({ theme, onToggle }) {
         {/* Sliding knob */}
         <div className="theme-pill-knob" style={{
           left: isDark ? '2px' : '32px',
-          background: isDark ? 'rgba(0,255,136,0.15)' : 'rgba(212,136,0,0.15)',
+          background: isDark ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(212,136,0,0.15)',
           boxShadow: isDark
-            ? '0 0 8px rgba(0,255,136,0.35), inset 0 0 0 1px rgba(0,255,136,0.4)'
+            ? '0 0 8px color-mix(in srgb, var(--green) 35%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--green) 40%, transparent)'
             : '0 0 8px rgba(212,136,0,0.35), inset 0 0 0 1px rgba(212,136,0,0.4)',
         }}>
           {/* Moon in knob (dark mode) */}
@@ -520,7 +520,7 @@ export default function Navbar() {
               </div>
             ) : headerStyle === 'neon-band' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ padding: '4px 12px', borderRadius: 20, background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--green)', letterSpacing: 2 }}>AF</span>
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--muted)' }}>AIFAZI.NET</div>
@@ -557,8 +557,8 @@ export default function Navbar() {
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 7,
                 padding: '4px 12px', borderRadius: 20,
-                background: 'rgba(0,255,136,0.06)',
-                border: '1px solid rgba(0,255,136,0.22)',
+                background: 'color-mix(in srgb, var(--green) 6%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--green) 22%, transparent)',
               }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)', display: 'inline-block' }} />
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--green)', fontWeight: 700 }}>ADMIN PORTAL</span>
@@ -599,8 +599,8 @@ export default function Navbar() {
               {toolsOpen && (
                 <div style={{
                   position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
-                  marginTop: 12, background: 'var(--bg2)', border: '1px solid rgba(0,255,136,0.2)',
-                  boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 24px rgba(0,255,136,0.05)',
+                  marginTop: 12, background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--green) 20%, transparent)',
+                  boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 24px color-mix(in srgb, var(--green) 5%, transparent)',
                   minWidth: 180, zIndex: 200, animation: 'toolsDropdown 0.15s ease',
                 }}>
                   <div style={{ height: 2, background: 'linear-gradient(90deg, var(--green), var(--cyan))' }} />
@@ -611,7 +611,7 @@ export default function Navbar() {
                       color: 'var(--muted)', textDecoration: 'none',
                       transition: 'all 0.15s', borderBottom: '1px solid rgba(255,255,255,0.04)',
                     }}
-                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.background = 'rgba(0,255,136,0.04)' }}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 4%, transparent)' }}
                       onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.background = 'transparent' }}
                     >{label}</Link>
                   ))}
@@ -783,8 +783,8 @@ export default function Navbar() {
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 10, margin: '8px 24px 12px' }}>
-                <Link to={loginRoute} onClick={() => setMenuOpen(false)} style={{ flex: 1, display: 'block', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '11px 0', color: 'var(--green)', border: '1px solid rgba(0,255,136,0.35)', textDecoration: 'none', background: 'rgba(0,255,136,0.06)' }}>SIGN IN</Link>
-                <Link to={registerRoute} onClick={() => setMenuOpen(false)} style={{ flex: 1, display: 'block', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '11px 0', color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.35)', textDecoration: 'none', background: 'rgba(0,212,255,0.06)' }}>SIGN UP</Link>
+                <Link to={loginRoute} onClick={() => setMenuOpen(false)} style={{ flex: 1, display: 'block', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '11px 0', color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', textDecoration: 'none', background: 'color-mix(in srgb, var(--green) 6%, transparent)' }}>SIGN IN</Link>
+                <Link to={registerRoute} onClick={() => setMenuOpen(false)} style={{ flex: 1, display: 'block', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '11px 0', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', textDecoration: 'none', background: 'color-mix(in srgb, var(--cyan) 6%, transparent)' }}>SIGN UP</Link>
               </div>
             )}
             <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 14, borderTop: '1px solid var(--border)' }}>

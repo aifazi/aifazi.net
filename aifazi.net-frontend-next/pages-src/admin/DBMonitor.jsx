@@ -115,7 +115,7 @@ function SqlConsoleTab() {
           Run the <code style={{color:'var(--cyan)'}}>migration_db_console.sql</code> in Supabase SQL Editor first to create the <code style={{color:'var(--cyan)'}}>exec_sql</code> function.
         </div>
         <button onClick={() => navigator.clipboard.writeText("CREATE OR REPLACE FUNCTION exec_sql(sql_text text) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$ DECLARE result JSONB; BEGIN BEGIN EXECUTE format('SELECT COALESCE(json_agg(row_to_json(t)), ''[]''::json) FROM (%s) t', sql_text) INTO result; RETURN result; EXCEPTION WHEN OTHERS THEN BEGIN EXECUTE sql_text; RETURN json_build_object('ok', true)::jsonb; EXCEPTION WHEN OTHERS THEN RETURN json_build_object('error', SQLERRM)::jsonb; END; END; END; $$;")}
-          style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, padding:'8px 16px', background:'rgba(0,212,255,0.1)', border:'1px solid rgba(0,212,255,0.3)', color:'var(--cyan,#00d4ff)', cursor:'pointer' }}>COPY SQL</button>
+          style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, padding:'8px 16px', background:'color-mix(in srgb, var(--cyan) 10%, transparent)', border:'1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color:'var(--cyan,#00d4ff)', cursor:'pointer' }}>COPY SQL</button>
       </div>
     </div>
   )
@@ -326,9 +326,9 @@ function BackupTab() {
         ) : <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--muted)', textAlign:'center', padding:16 }}>
           {statsError ? (
             <>
-              <div style={{ color:'var(--red,#ff4757)', marginBottom:12 }}>Could not load stats{statsError ? ` — ${statsError}` : ''}.</div>
+              <div style={{ color:'var(--red,#ff4757)', marginBottom:12 }}>Could not load stats{statsError ? ` â€” ${statsError}` : ''}.</div>
               <button onClick={loadStats} style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, letterSpacing:1, padding:'8px 18px', background:'var(--green)', color:'#000', border:'none', cursor:'pointer', fontWeight:700 }}>
-                ↻ RETRY
+                â†» RETRY
               </button>
             </>
           ) : <div>Could not load stats.</div>}
@@ -386,8 +386,8 @@ function BackupTab() {
         <button onClick={downloadSql} disabled={downloading || (!options.schema && !options.data)}
           style={{
             width:'100%', padding:'14px 24px',
-            background: downloading ? 'rgba(0,212,255,0.05)' : 'rgba(0,212,255,0.12)',
-            border:`1px solid ${downloading ? 'rgba(0,212,255,0.2)' : 'rgba(0,212,255,0.5)'}`,
+            background: downloading ? 'color-mix(in srgb, var(--cyan) 5%, transparent)' : 'color-mix(in srgb, var(--cyan) 12%, transparent)',
+            border:`1px solid ${downloading ? 'color-mix(in srgb, var(--cyan) 20%, transparent)' : 'color-mix(in srgb, var(--cyan) 50%, transparent)'}`,
             color: downloading ? 'var(--muted)' : 'var(--cyan,#00d4ff)',
             fontFamily:'var(--font-mono,monospace)', fontSize:11, letterSpacing:2, fontWeight:700,
             cursor: downloading || (!options.schema && !options.data) ? 'not-allowed' : 'pointer',
@@ -407,8 +407,8 @@ function BackupTab() {
         <button onClick={downloadJson} disabled={downloadingJson}
           style={{
             width:'100%', padding:'14px 24px',
-            background: downloadingJson ? 'rgba(0,255,136,0.05)' : 'rgba(0,255,136,0.12)',
-            border:`1px solid ${downloadingJson ? 'rgba(0,255,136,0.2)' : 'rgba(0,255,136,0.5)'}`,
+            background: downloadingJson ? 'color-mix(in srgb, var(--green) 5%, transparent)' : 'color-mix(in srgb, var(--green) 12%, transparent)',
+            border:`1px solid ${downloadingJson ? 'color-mix(in srgb, var(--green) 20%, transparent)' : 'color-mix(in srgb, var(--green) 50%, transparent)'}`,
             color: downloadingJson ? 'var(--muted)' : 'var(--green,#00ff88)',
             fontFamily:'var(--font-mono,monospace)', fontSize:11, letterSpacing:2, fontWeight:700,
             cursor: downloadingJson ? 'not-allowed' : 'pointer',
@@ -417,7 +417,7 @@ function BackupTab() {
           {downloadingJson ? 'GENERATING JSON...' : 'DOWNLOAD JSON BACKUP'}
         </button>
         <div style={{ marginTop:14, fontFamily:'var(--font-mono,monospace)', fontSize:8, color:'var(--border)', lineHeight:1.8, padding:'10px 14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)' }}>
-          Includes discovered public tables · Passwords, tokens and nested secrets redacted · Store securely
+          Includes discovered public tables Â· Passwords, tokens and nested secrets redacted Â· Store securely
         </div>
       </div>
     </div>

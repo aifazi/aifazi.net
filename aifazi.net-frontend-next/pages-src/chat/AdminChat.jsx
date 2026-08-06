@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useState, useEffect, useRef, useCallback, useMemo, Component } from 'react'
 import { supabase } from '@/lib/supabase'
 import api, { getRole, getUsername, setEffectiveAccess } from '@/lib/api'
@@ -629,7 +629,7 @@ export default function AdminChat({ embedded=false }) {
       <div style={{ background:'rgba(20,23,34,0.98)', border:`1px solid ${T.border}`, borderRadius:16, padding:'36px 28px', textAlign:'center', maxWidth:320 }}>
         <div style={{ fontSize:38, marginBottom:10 }}>🔒</div>
         <h2 style={{ fontFamily:T.display, fontSize:18, color:T.text, margin:'0 0 16px' }}>Login Required</h2>
-        <a href="/login?next=/chat" style={{ display:'inline-block', padding:'10px 26px', background:'linear-gradient(135deg,rgba(0,255,136,0.9),rgba(0,212,255,0.9))', color:'#000', fontFamily:T.mono, fontSize:11, fontWeight:700, letterSpacing:2, textDecoration:'none', borderRadius:9 }}>Login →</a>
+        <a href="/login?next=/chat" style={{ display:'inline-block', padding:'10px 26px', background:'linear-gradient(135deg,color-mix(in srgb, var(--green) 90%, transparent),color-mix(in srgb, var(--cyan) 90%, transparent))', color:'#000', fontFamily:T.mono, fontSize:11, fontWeight:700, letterSpacing:2, textDecoration:'none', borderRadius:9 }}>Login →</a>
       </div>
     </div>
   )
@@ -719,15 +719,15 @@ export default function AdminChat({ embedded=false }) {
                   <div style={{ display:'flex', gap:6, alignItems:'center', flexShrink:0 }}>
                     {(room.type==='voice'||room.type==='video') && (
                       <button onClick={()=>joinCall(room)}
-                        style={{ padding:'4px 12px', border:`1px solid ${T.accent}`, borderRadius:7, background:'rgba(0,255,136,0.1)', color:T.accent, fontFamily:T.mono, fontSize:10, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+                        style={{ padding:'4px 12px', border:`1px solid ${T.accent}`, borderRadius:7, background:'color-mix(in srgb, var(--green) 10%, transparent)', color:T.accent, fontFamily:T.mono, fontSize:10, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
                         {room.type==='video'?'📹':'🔊'} JOIN
                       </button>
                     )}
                     {isAdmin && (
                       <div ref={adminMenuRef} style={{ position:'relative' }}>
                         <button onClick={()=>setShowAdminMenu(p=>!p)}
-                          style={{ padding:'4px 12px', border:`1px solid ${showAdminMenu?'rgba(0,255,136,0.45)':T.border}`,
-                            borderRadius:7, background:showAdminMenu?'rgba(0,255,136,0.1)':'transparent',
+                          style={{ padding:'4px 12px', border:`1px solid ${showAdminMenu?'color-mix(in srgb, var(--green) 45%, transparent)':T.border}`,
+                            borderRadius:7, background:showAdminMenu?'color-mix(in srgb, var(--green) 10%, transparent)':'transparent',
                             color:showAdminMenu?T.accent:T.muted, fontFamily:T.mono, fontSize:11,
                             cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
                           MOD <span style={{ fontSize:8, opacity:0.7 }}>{showAdminMenu?'▲':'▼'}</span>
@@ -776,7 +776,7 @@ export default function AdminChat({ embedded=false }) {
                       </div>
                     )}
                     <button onClick={()=>setShowOnline(p=>!p)}
-                      style={{ padding:'4px 10px', border:`1px solid ${showOnline?'rgba(0,255,136,0.4)':T.border}`, borderRadius:7, background:showOnline?'rgba(0,255,136,0.08)':'transparent', color:showOnline?T.accent:T.muted, fontFamily:T.mono, fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+                      style={{ padding:'4px 10px', border:`1px solid ${showOnline?'color-mix(in srgb, var(--green) 40%, transparent)':T.border}`, borderRadius:7, background:showOnline?'color-mix(in srgb, var(--green) 8%, transparent)':'transparent', color:showOnline?T.accent:T.muted, fontFamily:T.mono, fontSize:11, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
                       <span style={{ width:7, height:7, borderRadius:'50%', background:'#23d160', display:'inline-block' }}/>
                       {online.length}
                     </button>
@@ -799,7 +799,7 @@ export default function AdminChat({ embedded=false }) {
                   {typLabel && <div style={{ padding:'2px 18px 4px', fontFamily:T.mono, fontSize:10, color:T.muted, flexShrink:0, fontStyle:'italic' }}>{typLabel}</div>}
                   {editing && <EditBar msg={editing} onSave={saveEdit} onCancel={()=>setEditing(null)}/>}
                   {replyTo && (
-                    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'rgba(0,212,255,0.06)', borderTop:`1px solid rgba(0,212,255,0.15)`, flexShrink:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'color-mix(in srgb, var(--cyan) 6%, transparent)', borderTop:`1px solid color-mix(in srgb, var(--cyan) 15%, transparent)`, flexShrink:0 }}>
                       <div style={{ flex:1, fontFamily:T.mono, fontSize:10, color:T.muted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         <span style={{ color:T.accentB }}>{replyTo.sender}: </span>{replyTo.content}
                       </div>
@@ -827,11 +827,11 @@ export default function AdminChat({ embedded=false }) {
                       style={{ flex:1, background:'rgba(255,255,255,0.05)', border:`1px solid rgba(255,255,255,0.1)`,
                         color:T.text, fontFamily:T.display, fontSize:13, padding:'9px 14px', borderRadius:10,
                         outline:'none', minWidth:0, transition:'border-color 0.2s', opacity:isMutedByStaff?0.4:1 }}
-                      onFocus={e=>e.target.style.borderColor='rgba(0,255,136,0.4)'}
+                      onFocus={e=>e.target.style.borderColor='color-mix(in srgb, var(--green) 40%, transparent)'}
                       onBlur={e=>e.target.style.borderColor='rgba(255,255,255,0.1)'}/>
                     <button onClick={sendMsg} disabled={!input.trim()||isMutedByStaff}
                       style={{ height:36, padding:'0 16px', border:'none', borderRadius:9, flexShrink:0,
-                        background:input.trim()&&!isMutedByStaff?'linear-gradient(135deg,rgba(0,255,136,0.85),rgba(0,212,255,0.85))':'rgba(255,255,255,0.06)',
+                        background:input.trim()&&!isMutedByStaff?'linear-gradient(135deg,color-mix(in srgb, var(--green) 85%, transparent),color-mix(in srgb, var(--cyan) 85%, transparent))':'rgba(255,255,255,0.06)',
                         color:input.trim()&&!isMutedByStaff?'#000':T.muted, fontFamily:T.mono, fontSize:11, fontWeight:700,
                         cursor:input.trim()&&!isMutedByStaff?'pointer':'default', transition:'all 0.2s' }}>
                       Send ➤

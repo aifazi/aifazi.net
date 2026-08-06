@@ -92,7 +92,7 @@ function HeaderPreviewSVG({ id }) {
         <rect x="0" y="43" width="160" height="1" fill="#e8e8e8"/>
         <text x="12" y="26" fontFamily="monospace" fontSize="8" fill="#111" fontWeight="700" letterSpacing="2">TANVIR</text>
         {['About','Work','Blog','Contact'].map((l,i)=><text key={l} x={68+i*22} y="26" fontFamily="monospace" fontSize="5" fill="#888" letterSpacing="1">{l}</text>)}
-        <text x="150" y="26" fontFamily="monospace" fontSize="8" fill="#111">☰</text>
+        <text x="150" y="26" fontFamily="monospace" fontSize="8" fill="#111">â˜°</text>
       </svg>
     ),
     'neon-band': (
@@ -121,7 +121,7 @@ function HeaderPreviewSVG({ id }) {
       <svg viewBox="0 0 160 44" width="100%" height="100%">
         <rect width="160" height="44" fill="#070b12"/>
         <rect x="6" y="8" width="28" height="28" rx="7" fill="#0e1724" stroke="#38bdf855"/>
-        <text x="15" y="26" fontFamily="monospace" fontSize="8" fill="#38bdf8">⌘</text>
+        <text x="15" y="26" fontFamily="monospace" fontSize="8" fill="#38bdf8">âŒ˜</text>
         <rect x="42" y="10" width="70" height="24" rx="8" fill="#0b1220" stroke="#38bdf844"/>
         <text x="50" y="25" fontFamily="monospace" fontSize="5" fill="#64748b">Search / jump to...</text>
         {['Blog','Tools'].map((l,i)=><text key={l} x={120+i*18} y="25" fontFamily="monospace" fontSize="5" fill="#94a3b8">{l}</text>)}
@@ -163,7 +163,7 @@ function HeaderPreviewSVG({ id }) {
         <rect width="160" height="44" fill="#061018"/>
         <text x="62" y="16" fontFamily="monospace" fontSize="7" fill="#c8d8e8" letterSpacing="2">TANVIR</text>
         <rect x="34" y="24" width="92" height="14" rx="7" fill="#0b1118" stroke="#00d4ff44"/>
-        {['⌂','⌕','⚙','☰'].map((l,i)=><text key={l} x={47+i*21} y="34" fontFamily="monospace" fontSize="6" fill={i===1?'#00d4ff':'#6b8296'}>{l}</text>)}
+        {['âŒ‚','âŒ•','âš™','â˜°'].map((l,i)=><text key={l} x={47+i*21} y="34" fontFamily="monospace" fontSize="6" fill={i===1?'#00d4ff':'#6b8296'}>{l}</text>)}
       </svg>
     ),
     studio: (
@@ -276,7 +276,7 @@ function FooterPreviewSVG({ id }) {
       <svg viewBox="0 0 160 64" width="100%" height="100%">
         <rect width="160" height="64" fill="#070b12"/>
         <rect x="8" y="8" width="144" height="18" rx="7" fill="#0b1220" stroke="#38bdf844"/>
-        <text x="16" y="20" fontFamily="monospace" fontSize="5" fill="#64748b">⌘ quick links, search docs, contact...</text>
+        <text x="16" y="20" fontFamily="monospace" fontSize="5" fill="#64748b">âŒ˜ quick links, search docs, contact...</text>
         {['Status','Docs','Forum','Contact'].map((l,i)=><text key={l} x={14+i*34} y="43" fontFamily="monospace" fontSize="5" fill="#94a3b8">{l}</text>)}
         <rect x="8" y="54" width="144" height="1" fill="#38bdf833"/>
       </svg>
@@ -317,7 +317,7 @@ function FooterPreviewSVG({ id }) {
         <rect width="160" height="58" fill="#061018"/>
         <text x="12" y="20" fontFamily="monospace" fontSize="6" fill="#c8d8e8">TANVIR.DEV</text>
         <rect x="38" y="30" width="84" height="18" rx="9" fill="#0b1118" stroke="#00d4ff55"/>
-        {['⌂','✉','⌕','⚙'].map((l,i)=><circle key={l} cx={52+i*18} cy="39" r="6" fill={i===0?'#00d4ff33':'#ffffff08'} stroke="#00d4ff44"/>)}
+        {['âŒ‚','âœ‰','âŒ•','âš™'].map((l,i)=><circle key={l} cx={52+i*18} cy="39" r="6" fill={i===0?'#00d4ff33':'#ffffff08'} stroke="#00d4ff44"/>)}
       </svg>
     ),
     terminal: (
@@ -340,21 +340,21 @@ function PresetPicker({ presets, value, onChange, renderPreview, cols = 3 }) {
         const active = value === p.id
         return (
           <button key={p.id} onClick={() => onChange(p.id)} style={{
-            background: active ? 'rgba(0,255,136,0.07)' : 'var(--bg3)',
+            background: active ? 'color-mix(in srgb, var(--green) 7%, transparent)' : 'var(--bg3)',
             border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`,
             borderRadius: 7, cursor: 'pointer', padding: 0, overflow: 'hidden',
             transition: 'all 0.18s', textAlign: 'left',
-            boxShadow: active ? '0 0 12px rgba(0,255,136,0.18)' : 'none',
+            boxShadow: active ? '0 0 12px color-mix(in srgb, var(--green) 18%, transparent)' : 'none',
           }}>
-            {/* SVG preview box — compact */}
-            <div style={{ width: '100%', height: 52, background: '#000', overflow: 'hidden', borderBottom: `1px solid ${active ? 'rgba(0,255,136,0.3)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {/* SVG preview box â€” compact */}
+            <div style={{ width: '100%', height: 52, background: '#000', overflow: 'hidden', borderBottom: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {renderPreview(p.id)}
             </div>
             {/* Label */}
             <div style={{ padding: '6px 8px 7px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 0.5 }}>{p.name}</span>
-                {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, letterSpacing: 2, color: 'var(--green)', padding: '1px 4px', background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.3)', borderRadius: 2 }}>ACTIVE</span>}
+                {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, letterSpacing: 2, color: 'var(--green)', padding: '1px 4px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', borderRadius: 2 }}>ACTIVE</span>}
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', lineHeight: 1.4 }}>{p.desc}</div>
             </div>
@@ -403,7 +403,7 @@ function SiteSettings() {
     maintenanceMessage: '',
     maintenanceStyle: 'terminal',
     maintenanceStatus: 'MAINTENANCE',
-    maintenanceIcon: '○',
+    maintenanceIcon: 'â—‹',
     maintenanceReturnTime: '',
     maintenanceShowProgress: false,
     maintenanceProgress: 0,
@@ -452,7 +452,7 @@ function SiteSettings() {
     return () => window.removeEventListener('site-settings-updated', applyLiveSettings)
   }, [])
 
-  // Shared persist function — always uses latest cfg from ref
+  // Shared persist function â€” always uses latest cfg from ref
   const persist = useCallback(async (snapshot) => {
     setSaveStatus('saving')
     try {
@@ -468,13 +468,13 @@ function SiteSettings() {
     }
   }, [toast])
 
-  // Debounced save — used by text inputs (800 ms quiet period)
+  // Debounced save â€” used by text inputs (800 ms quiet period)
   const debouncedSave = useCallback((snapshot) => {
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => persist(snapshot), 800)
   }, [persist])
 
-  // Immediate save — used by toggles & pill/preset pickers
+  // Immediate save â€” used by toggles & pill/preset pickers
   const saveNow = useCallback((snapshot) => {
     if (timerRef.current) clearTimeout(timerRef.current)
     persist(snapshot)
@@ -533,7 +533,7 @@ function SiteSettings() {
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>SYSTEM</div>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, margin: 0 }}>Site Settings</h2>
-        <p style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6 }}>Site identity, social links and maintenance page. Theme, layout &amp; animation settings are in <strong style={{ color: 'var(--cyan)' }}>Theme Library → ⚙️ Global Settings</strong>.</p>
+        <p style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6 }}>Site identity, social links and maintenance page. Theme, layout &amp; animation settings are in <strong style={{ color: 'var(--cyan)' }}>Theme Library â†’ âš™ï¸ Global Settings</strong>.</p>
       </div>
 
       {/* -- Identity ------------------------------------------------------- */}
@@ -553,7 +553,7 @@ function SiteSettings() {
       <div style={T.card}>
         <div style={T.sec}>SOCIAL LINKS</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-          {[['twitter','🐦 Twitter/X'],['github','🐙 GitHub'],['linkedin','in LinkedIn']].map(([key, label]) => (
+          {[['twitter','ðŸ¦ Twitter/X'],['github','ðŸ™ GitHub'],['linkedin','in LinkedIn']].map(([key, label]) => (
             <div key={key}><label style={T.label}>{label}</label><input value={cfg[key] || ''} onChange={e => set(key, e.target.value)} placeholder="https://" style={T.inp} /></div>
           ))}
         </div>
@@ -587,16 +587,16 @@ function SiteSettings() {
         {/* Scope selector */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
           {[
-            ['global', '🌐 Global'],
-            ['store', '🛒 store.aifazi.net'],
-            ['fivem', '🎮 fivem.aifazi.net'],
+            ['global', 'ðŸŒ Global'],
+            ['store', 'ðŸ›’ store.aifazi.net'],
+            ['fivem', 'ðŸŽ® fivem.aifazi.net'],
           ].map(([key, label]) => (
             <button key={key} onClick={() => setMaintScope(key)}
               style={{
                 fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, fontWeight: 700,
                 padding: '8px 14px', borderRadius: 999, cursor: 'pointer',
                 border: `1px solid ${maintScope === key ? 'var(--green)' : 'var(--border)'}`,
-                background: maintScope === key ? 'rgba(0,255,136,0.1)' : 'transparent',
+                background: maintScope === key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent',
                 color: maintScope === key ? 'var(--green)' : 'var(--muted)',
               }}>{label}</button>
           ))}
@@ -643,7 +643,7 @@ function SiteSettings() {
           <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 16 }}>
             <div>
               <label style={T.label}>ICON / EMOJI</label>
-              <input value={sget('maintenanceIcon') || '○'} onChange={e => sset('maintenanceIcon', e.target.value)} placeholder="🚧" style={{ ...T.inp, fontSize: 20, textAlign: 'center' }} />
+              <input value={sget('maintenanceIcon') || 'â—‹'} onChange={e => sset('maintenanceIcon', e.target.value)} placeholder="ðŸš§" style={{ ...T.inp, fontSize: 20, textAlign: 'center' }} />
             </div>
             <div>
               <label style={T.label}>ESTIMATED RETURN TIME</label>
@@ -688,7 +688,7 @@ function SiteSettings() {
 
           {/* Live mini-preview chip */}
           <div style={{ padding: '10px 14px', background: 'var(--bg)', border: `1px solid ${accentColor}33`, borderRadius: 6, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 18 }}>{sget('maintenanceIcon') || '○'}</span>
+            <span style={{ fontSize: 18 }}>{sget('maintenanceIcon') || 'â—‹'}</span>
             <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: accentColor }}>{sget('maintenanceStatus') || 'MAINTENANCE'}</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', marginTop: 2 }}>{(sget('maintenanceMessage') || 'No message set').slice(0, 60)}</div>
@@ -710,7 +710,7 @@ function SiteSettings() {
         <div style={T.sec}>HEADER STYLE</div>
         <p style={{ ...T.sub, marginBottom: 14 }}>
           Header &amp; Footer styles, Global Theme, Loading Screen and Animation settings have been moved to the{' '}
-          <strong style={{ color: 'var(--cyan)' }}>Theme Library → ⚙️ Global Settings</strong> tab.
+          <strong style={{ color: 'var(--cyan)' }}>Theme Library â†’ âš™ï¸ Global Settings</strong> tab.
         </p>
       </div>
 
@@ -721,10 +721,10 @@ function SiteSettings() {
           padding: '9px 18px', borderRadius: 6,
           fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
           transition: 'all 0.2s',
-          background: saveStatus === 'saved'  ? 'rgba(0,255,136,0.08)'
+          background: saveStatus === 'saved'  ? 'color-mix(in srgb, var(--green) 8%, transparent)'
                     : saveStatus === 'error'  ? 'rgba(248,113,113,0.08)'
                     : 'rgba(255,255,255,0.04)',
-          border: `1px solid ${saveStatus === 'saved'  ? 'rgba(0,255,136,0.35)'
+          border: `1px solid ${saveStatus === 'saved'  ? 'color-mix(in srgb, var(--green) 35%, transparent)'
                               : saveStatus === 'error'  ? 'rgba(248,113,113,0.35)'
                               : 'var(--border)'}`,
           color: saveStatus === 'saved'  ? 'var(--green)'
@@ -732,9 +732,9 @@ function SiteSettings() {
                : 'var(--muted)',
         }}>
           {saveStatus === 'saving' && <span style={{ display: 'inline-block', width: 10, height: 10, border: '2px solid var(--muted)', borderTopColor: 'var(--cyan)', borderRadius: '50%', animation: 'tpSpin 0.7s linear infinite' }} />}
-          {saveStatus === 'saved'  && '✓'}
-          {saveStatus === 'error'  && '✕'}
-          {saveStatus === 'saving' ? 'SAVING…' : saveStatus === 'saved' ? 'SAVED' : 'SAVE FAILED'}
+          {saveStatus === 'saved'  && 'âœ“'}
+          {saveStatus === 'error'  && 'âœ•'}
+          {saveStatus === 'saving' ? 'SAVINGâ€¦' : saveStatus === 'saved' ? 'SAVED' : 'SAVE FAILED'}
         </div>
       )}
     </div>

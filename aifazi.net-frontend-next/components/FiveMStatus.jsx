@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 /**
  * FiveMStatus.jsx
  * Smart server status widget with 4 visual states:
@@ -16,10 +16,10 @@ import { useToast } from './Toast'
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  online:      { color: '#00ff88', label: 'ONLINE',      pulse: true,  glow: 'rgba(0,255,136,0.35)' },
+  online:      { color: '#00ff88', label: 'ONLINE',      pulse: true,  glow: 'color-mix(in srgb, var(--green) 35%, transparent)' },
   degraded:    { color: '#ff6b35', label: 'DEGRADED',    pulse: true,  glow: 'rgba(255,107,53,0.35)' },
   offline:     { color: '#ff4757', label: 'OFFLINE',     pulse: false, glow: 'rgba(255,71,87,0.2)'  },
-  maintenance: { color: '#00d4ff', label: 'MAINTENANCE', pulse: false, glow: 'rgba(0,212,255,0.3)'  },
+  maintenance: { color: '#00d4ff', label: 'MAINTENANCE', pulse: false, glow: 'color-mix(in srgb, var(--cyan) 30%, transparent)'  },
   loading:     { color: '#4a6070', label: 'LOADING…',    pulse: true,  glow: 'transparent'           },
 }
 

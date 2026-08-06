@@ -10,15 +10,15 @@ import { S, useIsMobile, PageHeader } from './shared'
 
 const STATUS_MAP = {
   open:          { color: '#ff6b35', bg: 'rgba(255,107,53,0.1)',  border: 'rgba(255,107,53,0.35)'  },
-  'in-progress': { color: '#00d4ff', bg: 'rgba(0,212,255,0.1)',  border: 'rgba(0,212,255,0.35)'   },
+  'in-progress': { color: '#00d4ff', bg: 'color-mix(in srgb, var(--cyan) 10%, transparent)',  border: 'color-mix(in srgb, var(--cyan) 35%, transparent)'   },
   pending:       { color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.35)'  },
-  resolved:      { color: '#00ff88', bg: 'rgba(0,255,136,0.1)',  border: 'rgba(0,255,136,0.35)'   },
+  resolved:      { color: '#00ff88', bg: 'color-mix(in srgb, var(--green) 10%, transparent)',  border: 'color-mix(in srgb, var(--green) 35%, transparent)'   },
   closed:        { color: '#5a7a95', bg: 'rgba(90,122,149,0.1)', border: 'rgba(90,122,149,0.35)'  },
 }
 const PRIORITY_MAP = { critical: '#ff4757', high: '#ff6b35', medium: '#ffd700', low: '#00ff88' }
 
 const tid  = t => t.id || t._id
-const tkid = t => t.ticket_id || t.ticketId || '—'
+const tkid = t => t.ticket_id || t.ticketId || 'â€”'
 const tcat = t => t.created_at || t.createdAt
 
 function StatusBadge({ status }) {
@@ -41,7 +41,7 @@ function PriorityBadge({ priority }) {
   )
 }
 
-// ── Message Bubble ─────────────────────────────────────────
+// â”€â”€ Message Bubble â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function MessageBubble({ msg }) {
   const isStaff = msg.author_type === 'staff'
   const isSystem = msg.author_type === 'system'
@@ -50,9 +50,9 @@ function MessageBubble({ msg }) {
     <div style={{ display: 'flex', justifyContent: isStaff ? 'flex-end' : 'flex-start', marginBottom: 10 }}>
       <div style={{
         maxWidth: '80%',
-        background: isSystem ? 'rgba(168,85,247,0.08)' : isStaff ? 'rgba(0,212,255,0.06)' : 'rgba(0,255,136,0.06)',
+        background: isSystem ? 'rgba(168,85,247,0.08)' : isStaff ? 'color-mix(in srgb, var(--cyan) 6%, transparent)' : 'color-mix(in srgb, var(--green) 6%, transparent)',
         border: `1px solid ${
-          isSystem ? 'rgba(168,85,247,0.2)' : isStaff ? 'rgba(0,212,255,0.2)' : 'rgba(0,255,136,0.2)'
+          isSystem ? 'rgba(168,85,247,0.2)' : isStaff ? 'color-mix(in srgb, var(--cyan) 20%, transparent)' : 'color-mix(in srgb, var(--green) 20%, transparent)'
         }`, borderRadius: 8, padding: '10px 14px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -77,7 +77,7 @@ function MessageBubble({ msg }) {
   )
 }
 
-// ── Ticket Detail View (inline, not a popup) ────────────────
+// â”€â”€ Ticket Detail View (inline, not a popup) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function TicketDetailView({ ticket, onBack, onSave }) {
   const toast = useToast()
   const [form, setForm] = useState({
@@ -133,7 +133,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
   const PRIORITIES = ['low', 'medium', 'high', 'critical']
 
   return (
-    <div style={{ background: 'var(--bg)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: 8 }}>
+    <div style={{ background: 'var(--bg)', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 8 }}>
       <div style={{ height: 2, background: 'linear-gradient(90deg, var(--cyan), var(--green))' }} />
 
       {/* Header */}
@@ -147,7 +147,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
         <button onClick={onBack} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
           background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer',
           borderRadius: 6, padding: '7px 14px' }}>
-          ← BACK TO LIST
+          â† BACK TO LIST
         </button>
       </div>
 
@@ -211,7 +211,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
             <button onClick={onBack} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '9px 14px', fontSize: 9 }}>CANCEL</button>
             <button onClick={handleSave} disabled={saving}
               style={{ ...S.btn(), padding: '9px 16px', fontSize: 9, opacity: saving ? 0.6 : 1 }}>
-              {saving ? 'SAVING...' : reply.trim() ? '✓ SAVE & REPLY' : '✓ SAVE'}
+              {saving ? 'SAVING...' : reply.trim() ? 'âœ“ SAVE & REPLY' : 'âœ“ SAVE'}
             </button>
           </div>
         </div>
@@ -220,7 +220,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
   )
 }
 
-// ── Settings Panel ─────────────────────────────────────────
+// â”€â”€ Settings Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function HelpDeskSettings() {
   const toast = useToast()
   const [config, setConfig] = useState(null)
@@ -291,7 +291,7 @@ function HelpDeskSettings() {
           actions={
             <button onClick={handleSave} disabled={saving}
               style={{ ...S.btn(), fontSize: 10, padding: '9px 20px', opacity: saving ? 0.6 : 1 }}>
-              {saving ? 'SAVING...' : '✓ SAVE ALL SETTINGS'}
+              {saving ? 'SAVING...' : 'âœ“ SAVE ALL SETTINGS'}
             </button>
           }
         />
@@ -303,7 +303,7 @@ function HelpDeskSettings() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {(config.statuses || ['open', 'in-progress', 'pending', 'resolved', 'closed']).map(s => (
             <span key={s} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 12px',
-              background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: 4, color: 'var(--cyan)' }}>
+              background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 4, color: 'var(--cyan)' }}>
               {s.replace('-', ' ').toUpperCase()}
             </span>
           ))}
@@ -317,7 +317,7 @@ function HelpDeskSettings() {
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--cyan)' }}>CATEGORIES</div>
-          <button onClick={addCategory} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, background: 'none', border: '1px solid rgba(0,212,255,0.3)', color: 'var(--cyan)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>+ ADD CATEGORY</button>
+          <button onClick={addCategory} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>+ ADD CATEGORY</button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {(config.categories || []).map((cat, i) => (
@@ -327,7 +327,7 @@ function HelpDeskSettings() {
                 cats[i] = e.target.value
                 set('categories', cats)
               }} style={{ ...inp, flex: 1 }} />
-              <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>âœ•</button>
             </div>
           ))}
         </div>
@@ -342,7 +342,7 @@ function HelpDeskSettings() {
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--cyan)' }}>PRIORITIES</div>
-          <button onClick={addPriority} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, background: 'none', border: '1px solid rgba(0,212,255,0.3)', color: 'var(--cyan)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>+ ADD PRIORITY</button>
+          <button onClick={addPriority} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>+ ADD PRIORITY</button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {(config.priorities || []).map((p, i) => (
@@ -372,7 +372,7 @@ function HelpDeskSettings() {
                   set('priorities', ps)
                 }} />
               <span style={{ width: 16, height: 16, borderRadius: '50%', background: p.color, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }} />
-              <button onClick={() => removePriority(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => removePriority(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>âœ•</button>
             </div>
           ))}
         </div>
@@ -437,13 +437,13 @@ function HelpDeskSettings() {
 
       <button onClick={handleSave} disabled={saving}
         style={{ ...S.btn(), fontSize: 11, padding: '12px 28px', opacity: saving ? 0.6 : 1, marginBottom: 40 }}>
-        {saving ? 'SAVING...' : '✓ SAVE ALL SETTINGS'}
+        {saving ? 'SAVING...' : 'âœ“ SAVE ALL SETTINGS'}
       </button>
     </div>
   )
 }
 
-// ── Main Panel ─────────────────────────────────────────────
+// â”€â”€ Main Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function HelpDeskPanel() {
   const toast = useToast()
   const { confirm } = useDialog()
@@ -493,7 +493,7 @@ export default function HelpDeskPanel() {
   useEffect(() => { load(1); loadStats() }, [fStatus, fPriority])
   useEffect(() => { if (!search) load(1) }, [search])
 
-  // ── Realtime sync (mount once, use refs) ────────────────────
+  // â”€â”€ Realtime sync (mount once, use refs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const sb = getSupabase()
     if (!sb) return
@@ -544,12 +544,12 @@ export default function HelpDeskPanel() {
     try {
       const res = await api.put(`/helpdesk/admin/tickets/${tid(ticket)}`, { status })
       setTickets(t => t.map(x => tid(x) === tid(ticket) ? res.data : x))
-      toast.success(`${tkid(ticket)} → ${status}`, { title: 'Updated' })
+      toast.success(`${tkid(ticket)} â†’ ${status}`, { title: 'Updated' })
     } catch (e) { toast.error(e.response?.data?.error || 'Update failed') }
   }
 
   const ago = d => {
-    if (!d) return '—'
+    if (!d) return 'â€”'
     const s = Math.floor((Date.now() - new Date(d)) / 1000)
     if (s < 60) return `${s}s ago`
     if (s < 3600) return `${Math.floor(s / 60)}m ago`
@@ -568,8 +568,8 @@ export default function HelpDeskPanel() {
   if (tab === 'settings') return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <button onClick={() => setTab('tickets')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--cyan)', background: 'none', border: '1px solid rgba(0,212,255,0.2)', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}>
-          ← BACK TO TICKETS
+        <button onClick={() => setTab('tickets')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--cyan)', background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}>
+          â† BACK TO TICKETS
         </button>
       </div>
       <HelpDeskSettings />
@@ -586,15 +586,15 @@ export default function HelpDeskPanel() {
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setTab('settings')}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px',
-                background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.3)', color: 'var(--cyan)',
+                background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)',
                 cursor: 'pointer', borderRadius: 6 }}>
-              ⚙ SETTINGS
+              âš™ SETTINGS
             </button>
             <button onClick={() => { load(1); loadStats() }}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px',
                 background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)',
                 cursor: 'pointer', borderRadius: 6 }}>
-              ↻ REFRESH
+              â†» REFRESH
             </button>
           </div>
         }
@@ -606,7 +606,7 @@ export default function HelpDeskPanel() {
             <div key={s.label} style={{ background: 'var(--bg2)', border: '1px solid var(--border)',
               borderTop: `2px solid ${s.color}`, borderRadius: 8, padding: '10px 16px', minWidth: 100 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value ?? '—'}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value ?? 'â€”'}</div>
             </div>
           ))}
         </div>
@@ -624,17 +624,17 @@ export default function HelpDeskPanel() {
               onKeyDown={e => e.key === 'Enter' && load(1)}
               placeholder="Search by name, email, subject, ID..."
               style={{ ...S.input, fontSize: 12, padding: '9px 12px 9px 30px', width: '100%', boxSizing: 'border-box' }} />
-            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, opacity: 0.4 }}>🔍</span>
+            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, opacity: 0.4 }}>ðŸ”</span>
             {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8,
               top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none',
-              color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>✕</button>}
+              color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>âœ•</button>}
           </div>
           <div style={{ display: 'flex', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
             {[['all', 'All'], ['open', 'Open'], ['in-progress', 'Active'], ['pending', 'Pending'], ['resolved', 'Resolved'], ['closed', 'Closed']].map(([v, l]) => (
               <button key={v} onClick={() => setFStatus(v)} style={{ fontFamily: 'var(--font-mono)', fontSize: 8,
                 letterSpacing: 1, padding: '7px 10px', cursor: 'pointer', border: 'none',
                 borderRight: '1px solid var(--border)',
-                background: fStatus === v ? 'rgba(0,212,255,0.12)' : 'transparent',
+                background: fStatus === v ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'transparent',
                 color: fStatus === v ? 'var(--cyan)' : 'var(--muted)' }}>{l}</button>
             ))}
           </div>
@@ -652,14 +652,14 @@ export default function HelpDeskPanel() {
             {(fStatus !== 'all' || fPriority !== 'all' || search) && (
               <button onClick={() => { setFStatus('all'); setFPriority('all'); setSearch('') }}
                 style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>
-                Clear filters →
+                Clear filters â†’
               </button>
             )}
           </div>
         ) : tickets.map(t => (
           <div key={tid(t)} style={{ ...S.card, cursor: 'pointer' }}
             onClick={() => openTicket(tid(t))}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,212,255,0.25)'; e.currentTarget.style.background = 'var(--bg)' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--cyan) 25%, transparent)'; e.currentTarget.style.background = 'var(--bg)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg2)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -670,18 +670,18 @@ export default function HelpDeskPanel() {
                   <StatusBadge status={t.status} />
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <span>👤 {t.name}</span>
+                  <span>ðŸ‘¤ {t.name}</span>
                   <span style={{ color: 'var(--cyan)' }}>{t.email}</span>
-                  <span style={{ textTransform: 'capitalize' }}>📂 {t.category}</span>
-                  <span>🕒 {ago(tcat(t))}</span>
-                  {t.responded_by && <span style={{ color: 'var(--green)' }}>✓ {t.responded_by}</span>}
-                  <span style={{ color: 'var(--muted)' }}>💬 {t.message_count || 0}</span>
+                  <span style={{ textTransform: 'capitalize' }}>ðŸ“‚ {t.category}</span>
+                  <span>ðŸ•’ {ago(tcat(t))}</span>
+                  {t.responded_by && <span style={{ color: 'var(--green)' }}>âœ“ {t.responded_by}</span>}
+                  <span style={{ color: 'var(--muted)' }}>ðŸ’¬ {t.message_count || 0}</span>
                 </div>
                 {t.internal_note && (
                   <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ffd700',
                     background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)',
                     padding: '3px 10px', borderRadius: 4, display: 'inline-block' }}>
-                    📝 {t.internal_note}
+                    ðŸ“ {t.internal_note}
                   </div>
                 )}
               </div>
@@ -690,13 +690,13 @@ export default function HelpDeskPanel() {
                 {t.status === 'open' && (
                   <button onClick={() => quickStatus(t, 'in-progress')}
                     style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '5px 10px',
-                      background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.3)',
+                      background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)',
                       color: '#00d4ff', cursor: 'pointer', borderRadius: 4 }}>START</button>
                 )}
                 {['open', 'in-progress', 'pending'].includes(t.status) && (
                   <button onClick={() => quickStatus(t, 'resolved')}
                     style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '5px 10px',
-                      background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.3)',
+                      background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)',
                       color: 'var(--green)', cursor: 'pointer', borderRadius: 4 }}>RESOLVE</button>
                 )}
                 <button onClick={() => handleDelete(tid(t), tkid(t))}
@@ -713,14 +713,14 @@ export default function HelpDeskPanel() {
             <button onClick={() => load(page - 1)} disabled={page <= 1}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent',
                 border: '1px solid var(--border)', color: page <= 1 ? 'var(--muted)' : 'var(--text)',
-                cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>← PREV</button>
+                cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>â† PREV</button>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: '7px 14px' }}>
               Page {page} of {pages}
             </span>
             <button onClick={() => load(page + 1)} disabled={page >= pages}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent',
                 border: '1px solid var(--border)', color: page >= pages ? 'var(--muted)' : 'var(--text)',
-                cursor: page >= pages ? 'not-allowed' : 'pointer' }}>NEXT →</button>
+                cursor: page >= pages ? 'not-allowed' : 'pointer' }}>NEXT â†’</button>
           </div>
         )}
       </>)}
