@@ -14,6 +14,7 @@ const LIGHT_THEME_LIST = [
   'terminal-light', 'neon-noir-light', 'aurora-light',
   'brutalist', 'paper', 'neumorph', 'macos', 'pastel', 'win95',
   'mario-light', 'minecraft-light', 'sonic-light', 'pacman-light',
+  'lava-light', 'toxic-light', 'ice',
 ]
 
 /** Escape JSON so it can never break out of an inline <script> (`</script>`). */

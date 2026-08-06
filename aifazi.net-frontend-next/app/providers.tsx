@@ -58,7 +58,7 @@ const VALID_THEMES = [
   'amber','amber-light',
   'rose','rose-light',
   'forest','forest-light',
-  'lava','toxic','ice',
+  'lava','lava-light','toxic','toxic-light','ice',
   'glass-dark','glass-light',
   'brutalist','brutalist-dark',
   'synthwave','synthwave-light',
@@ -81,6 +81,7 @@ const LIGHT_THEMES = [
   'rose-light','forest-light','glass-light','synthwave-light',
   'terminal-light','neon-noir-light','aurora-light',
   'mario-light','minecraft-light','sonic-light','pacman-light',
+  'lava-light','toxic-light',
   'ice',
   'brutalist','paper','neumorph','macos','pastel','win95',
 ]
@@ -95,6 +96,8 @@ const THEME_PAIRS: Record<string,string> = {
   'amber':'amber-light',       'amber-light':'amber',
   'rose':'rose-light',         'rose-light':'rose',
   'forest':'forest-light',     'forest-light':'forest',
+  'lava':'lava-light',          'lava-light':'lava',
+  'toxic':'toxic-light',        'toxic-light':'toxic',
   'glass-dark':'glass-light',  'glass-light':'glass-dark',
   'brutalist':'brutalist-dark','brutalist-dark':'brutalist',
   'synthwave':'synthwave-light','synthwave-light':'synthwave',
@@ -292,8 +295,16 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     if (pair && VALID_THEMES.includes(pair)) {
       setTheme(pair)
     } else {
-      // Fallback for any unlisted theme
-      setTheme(LIGHT_THEMES.includes(theme) ? 'cyber-dark' : 'cyber-light')
+      // No dedicated dark/light variant (e.g. ice). Flip to the user's
+      // last-used opposite-family theme instead of jumping to the cyber
+      // defaults, so the toggle never resets their design to 'default'.
+      const isLight = LIGHT_THEMES.includes(theme)
+      const last = localStorage.getItem(isLight ? 'last-dark-theme' : 'last-light-theme')
+      if (last && VALID_THEMES.includes(last) && LIGHT_THEMES.includes(last) !== isLight) {
+        setTheme(last)
+      } else {
+        setTheme(isLight ? 'cyber-dark' : 'cyber-light')
+      }
     }
   }
 
