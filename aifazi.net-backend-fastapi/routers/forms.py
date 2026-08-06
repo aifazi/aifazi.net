@@ -391,15 +391,8 @@ def _submission_public(row: dict) -> dict:
 
 
 def _notify_admin(icon: str, title: str, msg: str) -> None:
-    try:
-        supabase.table("admin_notifications").insert({
-            "icon": icon,
-            "title": title,
-            "msg": msg,
-            "created_at": _now(),
-        }).execute()
-    except Exception:
-        pass
+    from utils.admin_notify import notify_admin
+    notify_admin(icon, title, msg)
 
 
 @router.get("")

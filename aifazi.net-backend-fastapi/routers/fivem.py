@@ -881,6 +881,8 @@ async def apply_whitelist(body: WhitelistApply, user: dict = Depends(get_current
     }).execute()
     app = (res.data or [{}])[0]
     await _send_whitelist_email(app, "applied")
+    from utils.admin_notify import notify_admin
+    notify_admin('🎮', 'New Whitelist Application', f"{app.get('discord_name') or body.discord_name or user.get('username', 'Someone')} applied to whitelist")
     return {"message": "Application submitted!", "id": app.get("id")}
 
 @router.get("/whitelist/check/{identifier}")

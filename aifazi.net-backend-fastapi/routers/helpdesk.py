@@ -416,6 +416,9 @@ async def submit_ticket(body: TicketBody, user: dict | None = Depends(_optional_
     conf_text = _ticket_confirmation_text(body.name, tid, body.subject, body.priority, track_url)
     await queue_email(body.email, conf_subject, conf_html, conf_text, "ticket_confirmation")
 
+    from utils.admin_notify import notify_admin
+    notify_admin('🎫', f"New Ticket #{tid}", f"{body.name or 'Someone'} — {body.subject} ({body.category})")
+
     return {
         "message":         "Ticket submitted",
         "ticket_id":       tid,

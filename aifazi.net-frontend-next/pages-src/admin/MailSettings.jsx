@@ -228,7 +228,7 @@ function MailSettings() {
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button onClick={() => { setOutTab('brevo'); setSmtpBlocked(false) }} style={{ ...T.btn('primary'), background: '#0082ff' }}>
-              ? SWITCH TO BREVO
+              → SWITCH TO BREVO
             </button>
             <button onClick={() => { setOutTab('resend'); setSmtpBlocked(false) }} style={{ ...T.btn('secondary') }}>
               ? SWITCH TO RESEND
@@ -274,7 +274,7 @@ function MailSettings() {
                 }}>
                   {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: info.color }} />}
                   <div style={{ fontSize: 20, marginBottom: 8 }}>{info.icon}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: active ? info.color : 'var(--fg)', marginBottom: 4, letterSpacing: 1 }}>{info.name}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: active ? info.color : 'var(--text)', marginBottom: 4, letterSpacing: 1 }}>{info.name}</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', lineHeight: 1.6 }}>{info.desc}</div>
                   {info.link && <a href={info.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: info.color, textDecoration: 'none', display: 'block', marginTop: 6 }}>Get free key ?</a>}
                 </div>
@@ -289,7 +289,7 @@ function MailSettings() {
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#0082ff08', border: '1px solid #0082ff22' }}>
                 Brevo sends via their HTTP API  no SMTP port required. Works on all cloud hosts.<br/>
                 <strong style={{ color: '#64748b' }}>Free tier:</strong> 300 emails/day  Unlimited contacts
-                <a href="https://app.brevo.com" target="_blank" rel="noreferrer" style={{ color: '#0082ff', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Sign up free ?</a>
+                <a href="https://app.brevo.com" target="_blank" rel="noreferrer" style={{ color: '#0082ff', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Sign up free ↗</a>
               </div>
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
@@ -354,7 +354,7 @@ function MailSettings() {
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#00ff8808', border: '1px solid #00ff8822' }}>
                 Resend is a modern email API built for developers. Uses HTTPS  works on all hosts.<br/>
                 <strong style={{ color: '#64748b' }}>Free tier:</strong> 3,000 emails/month  100/day  1 custom domain
-                <a href="https://resend.com" target="_blank" rel="noreferrer" style={{ color: '#00ff88', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Sign up free ?</a>
+                <a href="https://resend.com" target="_blank" rel="noreferrer" style={{ color: '#00ff88', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Sign up free ↗</a>
               </div>
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
@@ -401,7 +401,7 @@ function MailSettings() {
             <div style={T.card}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#94a3b8', letterSpacing: 3, marginBottom: 16 }}>?🖥️ SMTP CONFIGURATION</div>
               <div style={{ padding: '10px 14px', background: '#ffd70008', border: '1px solid #ffd70022', marginBottom: 20, fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>
-                ? Most cloud hosts (Render, Railway, Vercel, etc.) block outbound SMTP ports 587 &amp; 465. If Test Connection fails, switch to Brevo or Resend.
+                ℹ️ Most cloud hosts (Render, Railway, Vercel, etc.) block outbound SMTP ports 587 &amp; 465. If Test Connection fails, switch to Brevo or Resend.
               </div>
 
               {/* Quick presets */}
@@ -413,7 +413,7 @@ function MailSettings() {
                       padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
                       cursor: 'pointer', transition: 'all 0.1s',
                       background: preset === k ? '#1e2d45' : 'transparent',
-                      color: preset === k ? 'var(--fg)' : '#334155',
+                      color: preset === k ? 'var(--text)' : '#334155',
                       border: `1px solid ${preset === k ? 'var(--border)' : 'var(--border)'}`,
                     }}>
                       {k.toUpperCase()}
@@ -526,7 +526,7 @@ function MailSettings() {
               }} />
             </div>
             <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--fg)', letterSpacing: 1 }}>ENABLE INCOMING MAIL</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', letterSpacing: 1 }}>ENABLE INCOMING MAIL</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>Fetch emails via IMAP/POP3</div>
             </div>
           </label>
@@ -668,7 +668,7 @@ function MailSettings() {
                     <div style={{ position: 'absolute', top: 3, left: cfg[field] ? 18 : 3, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 13, color: 'var(--fg)', marginBottom: 2 }}>{icon} {label}</div>
+                    <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 2 }}>{icon} {label}</div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#475569', lineHeight: 1.5 }}>{desc}</div>
                   </div>
                 </label>
@@ -694,7 +694,7 @@ function MailSettings() {
                     <div style={{ position: 'absolute', top: 3, left: cfg[field] ? 18 : 3, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 13, color: 'var(--fg)', marginBottom: 2 }}>{icon} {label}</div>
+                    <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 2 }}>{icon} {label}</div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#475569', lineHeight: 1.5 }}>{desc}</div>
                   </div>
                 </label>

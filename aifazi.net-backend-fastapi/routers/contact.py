@@ -42,6 +42,8 @@ async def submit(body: ContactBody):
                       subject or f"Re: {body.subject or 'Your message'}",
                       html or f"<p>Thanks {_esc(body.name)}, we received your message and will get back to you shortly.</p>",
                       purpose="contact_confirm")
+    from utils.admin_notify import notify_admin
+    notify_admin('📧', 'New Contact Message', f"{body.name or 'Someone'} — {body.subject or body.message[:60]}")
     return {"message": "Message sent", "id": res.data[0]["id"]}
 
 

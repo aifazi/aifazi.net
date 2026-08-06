@@ -11,8 +11,11 @@ Frontend log fields used: log.actor, log.action, log.target, log.details, log.cr
 Auth log fields: log.username, log.success, log.ip, log.userAgent, log.role, log.reason, log.createdAt
 """
 import logging
+import csv
+import io
+import json as _json
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from database import supabase
 from dependencies import require_staff
 from permissions import require_permission
@@ -117,6 +120,39 @@ async def list_auth_logs(
             "logs": [], "total": 0,
             "hint": "auth_logs table missing — visit /api/admin/audit/migrate"
         }
+
+
+@router.get("/export")
+async def export_logs(_: dict = Depends(require_permission("system.audit", "view"))):
+    """Stream the full audit log as CSV (paginated internally)."""
+    rows = []
+    page = 0
+    while True:
+        res = supabase.table("audit_logs").select("*").order("created_at", desc=True).range(page * 500, page * 500 + 499).execute()
+        data = res.data or []
+        rows.extend(data)
+        if len(data) < 500:
+            break
+        page += 1
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["created_at", "actor", "action", "target", "ip", "role", "user_agent", "details"])
+    for r in rows:
+        det = r.get("details") or r.get("meta")
+        try:
+            det_s = _json.dumps(det) if det is not None else ""
+        except Exception:
+            det_s = str(det) if det is not None else ""
+        w.writerow([
+            r.get("created_at", ""), r.get("actor") or r.get("username", ""),
+            r.get("action") or r.get("event", ""), r.get("target", ""),
+            r.get("ip", ""), r.get("role", ""), r.get("user_agent", ""), det_s,
+        ])
+    return Response(
+        content=buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="audit-log.csv"'},
+    )
 
 @router.post("")
 async def log_event(body: dict, _: dict = Depends(require_permission("system.audit", "create"))):

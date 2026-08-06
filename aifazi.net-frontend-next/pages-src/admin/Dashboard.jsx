@@ -223,6 +223,13 @@ function Dashboard({ onLogout }) {
       if (e.key === 'n') { setEditingPost(null); setView('editor') }
       if (e.key === 'm') setView('media')
       if (e.key === 'c') setView('communications')
+      if (e.key === 's') setView('store')
+      if (e.key === 'f') setView('fivem')
+      if (e.key === 'd') setView('db')
+      if (e.key === 'g') setView('settings')
+      if (e.key === 'a') setView('audit')
+      if (e.key === 'x') setView('helpdesk')
+      if (e.key === 'b') setView('backup')
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -592,10 +599,10 @@ function Dashboard({ onLogout }) {
                         {[
                           { label: '[+] New Post', action: () => { setEditingPost(null); setView('editor') }, color: 'var(--green)' },
                           { label: '[M] Media', action: () => setView('media'), color: 'var(--cyan)' },
-                          { label: '[S] Add Staff', action: () => { setView('staff'); setShowNewStaff(true) }, color: '#ffd700' },
-                          { label: '[D] DB Monitor', action: () => setView('db'), color: '#a78bfa' },
-                          { label: '[E] Mail & CDN', action: () => setView('delivery'), color: '#ff6b35' },
-                          { label: '[~] CDN', action: () => setView('cdn'), color: '#00d4ff' },
+                { label: 'Add Staff', action: () => { setView('staff'); setShowNewStaff(true) }, color: '#ffd700' },
+                { label: 'DB Monitor', action: () => setView('db'), color: '#a78bfa' },
+                { label: 'Mail & CDN', action: () => setView('delivery'), color: '#ff6b35' },
+                { label: 'CDN', action: () => setView('cdn'), color: '#00d4ff' },
                         ].map(btn => (
                           <button key={btn.label} onClick={btn.action} className="admin-quick-action" style={{
                             fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
@@ -705,7 +712,7 @@ function Dashboard({ onLogout }) {
                     placeholder="Search posts by title or category"
                     style={{ ...S.input, fontSize: 12, padding: '9px 12px 9px 32px' }}
                   />
-                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.4 }}>[S]</span>
+                  <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.5 }}>🔍</span>
                   {postSearch && <button onClick={() => setPostSearch('')} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>✕</button>}
                 </div>
                 <div style={{ display: 'flex', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
@@ -888,8 +895,8 @@ function Dashboard({ onLogout }) {
 
           {/*  REPLY MODAL — single contact OR bulk  */}
           {replyModal && (
-            <Modal open onClose={() => setReplyModal(null)} width={580} title="Reply">
-                {/* Header */}
+            <Modal open onClose={() => setReplyModal(null)} width={580}>
+                {/* Header (single — Modal adds no title bar here) */}
                 <div style={{ padding: '16px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>
@@ -907,7 +914,7 @@ function Dashboard({ onLogout }) {
                       </div>
                     )}
                   </div>
-                  <button onClick={() => setReplyModal(null)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>
+                  <button onClick={() => setReplyModal(null)} aria-label="Close reply" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>
                 </div>
 
                 {/* Templates */}
@@ -1167,7 +1174,7 @@ function Dashboard({ onLogout }) {
 
       {/*  Keyboard Shortcuts Modal  */}
       {showShortcuts && (
-        <Modal open onClose={() => setShowShortcuts(false)} width={500} title="Keyboard Shortcuts">
+        <Modal open onClose={() => setShowShortcuts(false)} width={500}>
             <div style={{ height: 2, background: 'linear-gradient(90deg, var(--green), var(--cyan))' }} />
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -1181,7 +1188,11 @@ function Dashboard({ onLogout }) {
                 ['H', 'Dashboard home'], ['P', 'Posts list'],
                 ['N', 'New post editor'], ['M', 'Media library'],
                 ['C', 'Contacts inbox'], ['K', 'Global search'],
-                ['?', 'This help panel'], ['ESC', 'Close modals'],
+                ['S', 'Store'], ['F', 'FiveM Server'],
+                ['D', 'DB Monitor'], ['G', 'Settings'],
+                ['A', 'Audit Log'], ['X', 'Help Desk'],
+                ['B', 'Backup & Export'], ['?', 'This help panel'],
+                ['ESC', 'Close modals'],
               ].map(([key, desc]) => (
                 <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                   <kbd style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, padding: '3px 8px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--green)', flexShrink: 0, minWidth: 36, textAlign: 'center' }}>{key}</kbd>

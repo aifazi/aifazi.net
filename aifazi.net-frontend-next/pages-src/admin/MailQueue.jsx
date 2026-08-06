@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import DOMPurify from 'isomorphic-dompurify'
 import api from '@/lib/api'
 import { Checkbox } from '../../core/ui.jsx'
+import { useDialog } from '../../components/Dialog'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { Btn as KitBtn, Badge as KitBadge } from './ui'
 
@@ -117,6 +118,7 @@ function DetailDrawer({ entry, onClose }) {
 }
 
 export default function MailQueue() {
+  const { confirm } = useDialog()
   const [emails, setEmails]       = useState([])
   const [loading, setLoading]     = useState(true)
   const [stats, setStats]         = useState(null)
@@ -178,6 +180,17 @@ export default function MailQueue() {
 
   const act = async (action, ids) => {
     const idArr = Array.isArray(ids) ? ids : [ids]
+    if (idArr.length > 1) {
+      const ok = await confirm({
+        title: `${action === 'cancel' ? 'Cancel' : 'Resend'} ${idArr.length} emails`,
+        message: action === 'cancel'
+          ? `Cancel ${idArr.length} queued emails? They will not be delivered.`
+          : `Re-queue ${idArr.length} emails for delivery?`,
+        variant: action === 'cancel' ? 'danger' : 'info',
+        confirmLabel: action === 'cancel' ? 'CANCEL' : 'RESEND',
+      })
+      if (!ok) return
+    }
     idArr.forEach(id => setActing(id))
     try {
       await api.post('/admin/mail/queue/action', { action, ids: idArr })

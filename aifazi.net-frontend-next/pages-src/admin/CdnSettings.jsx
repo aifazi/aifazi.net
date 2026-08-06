@@ -239,7 +239,7 @@ function CdnSettings() {
                   {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: info.color, borderRadius: '12px 12px 0 0' }} />}
                   <div style={{ fontSize: 22, marginBottom: 8 }}>{info.icon}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: active ? info.color : 'var(--fg)', letterSpacing: 1 }}>{info.name}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: active ? info.color : 'var(--text)', letterSpacing: 1 }}>{info.name}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '2px 7px', background: `${info.badgeColor}22`, color: info.badgeColor, border: `1px solid ${info.badgeColor}44` }}>{info.badge}</span>
                   </div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', lineHeight: 1.6 }}>{info.desc}</div>
@@ -596,7 +596,7 @@ function CdnSettings() {
                 { provider: 'Cloudinary',     type: 'Worker/Proxy',     target: 'res.cloudinary.com/<cloud>/' },
               ].map((row, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '130px 80px 1fr', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
-                  <span style={{ color: 'var(--fg)' }}>{row.provider}</span>
+                  <span style={{ color: 'var(--text)' }}>{row.provider}</span>
                   <span style={{ color: '#ffd700', fontSize: 9 }}>{row.type}</span>
                   <span style={{ color: '#475569' }}>{row.target}</span>
                 </div>

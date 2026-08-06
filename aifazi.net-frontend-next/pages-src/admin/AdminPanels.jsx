@@ -737,6 +737,8 @@ function AnnouncementsPanel() {
   }
 
   const remove = async id => {
+    const ok = await confirm({ title: 'Delete Announcement', message: 'This banner will be removed from every page. This cannot be undone.', variant: 'danger', confirmLabel: 'DELETE' })
+    if (!ok) return
     try {
       await api.delete('/admin/banners/' + id)
       setBanners(b => b.filter(x => (x._id || x.id) !== id))

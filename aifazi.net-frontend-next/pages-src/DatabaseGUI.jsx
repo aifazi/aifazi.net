@@ -1189,10 +1189,14 @@ function AuditLogTab({ token }) {
   return (
     <div>
       <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:3, color:"var(--border)", marginBottom:20 }}>AUDIT LOG</div>
-      <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+      <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
         <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filter by action keyword (e.g. login, ban, create)..."
-          style={{ flex:1, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
+          style={{ flex:1, minWidth:220, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
         {filter && <button onClick={() => { setFilter(""); setPage(1); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
+        <a href="/api/admin/audit/export" download
+          style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"9px 14px", background:"transparent", color:"var(--green)", border:"1px solid rgba(0,255,136,0.35)", cursor:"pointer", textDecoration:"none" }}>
+          ⬇ EXPORT CSV
+        </a>
       </div>
       {loading ? (
         <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)", letterSpacing:3 }}>LOADING...</div>
