@@ -137,6 +137,31 @@ const THEMES = [
     bg: '#050d1a', bg2: '#08142a', bg3: '#0c1c38', primary: '#64ffda', secondary: '#ff6fd8',
     text: '#cce8ff', muted: '#5a8099', border: 'rgba(100,255,218,0.2)',
   },
+  // ── GAME THEMES ────────────────────────────────────────────────────────────
+  {
+    id: 'mario', name: 'Mario', tag: 'GAME', type: 'design', style: 'mario',
+    desc: 'Warp-pipe red & coin gold',
+    bg: '#0a0d1c', bg2: '#10142a', bg3: '#161a36', primary: '#e52521', secondary: '#ffd700',
+    text: '#fdf6e3', muted: '#8a7f66', border: 'rgba(229,37,33,0.3)',
+  },
+  {
+    id: 'minecraft', name: 'Minecraft', tag: 'GAME', type: 'design', style: 'minecraft',
+    desc: 'Creeper green & blocky depth',
+    bg: '#141210', bg2: '#1d1a17', bg3: '#262219', primary: '#5ad427', secondary: '#2a9dd6',
+    text: '#d8d5c8', muted: '#6f6a5a', border: 'rgba(90,212,39,0.28)',
+  },
+  {
+    id: 'sonic', name: 'Sonic', tag: 'GAME', type: 'design', style: 'sonic',
+    desc: 'Speed blue & ring gold',
+    bg: '#070d2b', bg2: '#0c1440', bg3: '#111a54', primary: '#1e6fd9', secondary: '#f5d200',
+    text: '#e8f0ff', muted: '#5a6a9a', border: 'rgba(30,111,217,0.3)',
+  },
+  {
+    id: 'pacman', name: 'Pac-Man', tag: 'GAME', type: 'design', style: 'pacman',
+    desc: 'Arcade maze yellow & cyan',
+    bg: '#05030f', bg2: '#0a0718', bg3: '#100b24', primary: '#ffe000', secondary: '#00cfff',
+    text: '#f4f0ff', muted: '#5a5078', border: 'rgba(255,224,0,0.3)',
+  },
   // ── THEME PACKAGES ────────────────────────────────────────────────────────
   {
     id: 'pkg:holo-deck', name: 'Holo Deck', tag: 'STYLE', type: 'package', style: 'holo',

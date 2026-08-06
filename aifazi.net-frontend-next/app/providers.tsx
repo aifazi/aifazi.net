@@ -70,12 +70,17 @@ const VALID_THEMES = [
   'pastel','pastel-dark',
   'win95','win95-dark',
   'aurora','aurora-light',
+  'mario','mario-light',
+  'minecraft','minecraft-light',
+  'sonic','sonic-light',
+  'pacman','pacman-light',
 ]
 const LIGHT_THEMES = [
   'light','cyber-light',
   'midnight-light','crimson-light','ocean-light','amber-light',
   'rose-light','forest-light','glass-light','synthwave-light',
   'terminal-light','neon-noir-light','aurora-light',
+  'mario-light','minecraft-light','sonic-light','pacman-light',
   'ice',
   'brutalist','paper','neumorph','macos','pastel','win95',
 ]
@@ -101,6 +106,10 @@ const THEME_PAIRS: Record<string,string> = {
   'pastel':'pastel-dark',       'pastel-dark':'pastel',
   'win95':'win95-dark',         'win95-dark':'win95',
   'aurora':'aurora-light',      'aurora-light':'aurora',
+  'mario':'mario-light',        'mario-light':'mario',
+  'minecraft':'minecraft-light','minecraft-light':'minecraft',
+  'sonic':'sonic-light',        'sonic-light':'sonic',
+  'pacman':'pacman-light',      'pacman-light':'pacman',
 }
 
 function loadFontForTheme(themeId: string) {
@@ -113,6 +122,10 @@ function loadFontForTheme(themeId: string) {
     neumorph:   'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap',
     macos:      'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;700&display=swap',
     win95:      'https://fonts.googleapis.com/css2?family=VT323&display=swap',
+    mario:      'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap',
+    minecraft:  'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap',
+    sonic:      'https://fonts.googleapis.com/css2?family=VT323&display=swap',
+    pacman:     'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap',
   }
   const url = fontMap[themeId]
   if (!url) return

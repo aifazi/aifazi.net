@@ -13,6 +13,7 @@ const LIGHT_THEME_LIST = [
   'rose-light', 'forest-light', 'glass-light', 'synthwave-light',
   'terminal-light', 'neon-noir-light', 'aurora-light',
   'brutalist', 'paper', 'neumorph', 'macos', 'pastel', 'win95',
+  'mario-light', 'minecraft-light', 'sonic-light', 'pacman-light',
 ]
 
 /** Escape JSON so it can never break out of an inline <script> (`</script>`). */

@@ -264,7 +264,8 @@ const ANIMATIONS = [
 // -- Light theme IDs (used by smart toggle) ------------------------------------
 const LIGHT_THEME_IDS = ['light', 'cyber-light', 'paper', 'neumorph', 'macos', 'pastel', 'win95', 'brutalist',
   'midnight-light','crimson-light','ocean-light','amber-light','rose-light','forest-light',
-  'glass-light','synthwave-light','terminal-light','neon-noir-light','aurora-light']
+  'glass-light','synthwave-light','terminal-light','neon-noir-light','aurora-light',
+  'mario-light','minecraft-light','sonic-light','pacman-light']
 
 const THEME_DEFS = [
   // -- Color variants ----------------------------------------------------------
@@ -313,6 +314,14 @@ const THEME_DEFS = [
     bg: '#008080', bg2: '#c0c0c0', bg3: '#d4d0c8', primary: '#000080', secondary: '#ffffff', orange: '#804000', text: '#000000', muted: '#444444', border: '#808080' },
   { id: 'aurora',     name: 'Aurora',      tag: 'DARK',  type: 'design', desc: 'Northern lights  teal & pink gradient on deep navy.',
     bg: '#050d1a', bg2: '#08142a', bg3: '#0c1c38', primary: '#64ffda', secondary: '#ff6fd8', orange: '#f59e0b', text: '#cce8ff', muted: '#5a8099', border: 'rgba(100,255,218,0.2)' },
+  { id: 'mario',      name: 'Mario',       tag: 'GAME',  type: 'design', desc: 'Warp-pipe red & coin gold on starry navy.',
+    bg: '#0a0d1c', bg2: '#10142a', bg3: '#161a36', primary: '#e52521', secondary: '#ffd700', orange: '#f59e0b', text: '#fdf6e3', muted: '#8a7f66', border: 'rgba(229,37,33,0.3)' },
+  { id: 'minecraft',  name: 'Minecraft',   tag: 'GAME',  type: 'design', desc: 'Creeper green & water blue with blocky depth.',
+    bg: '#141210', bg2: '#1d1a17', bg3: '#262219', primary: '#5ad427', secondary: '#2a9dd6', orange: '#d97706', text: '#d8d5c8', muted: '#6f6a5a', border: 'rgba(90,212,39,0.28)' },
+  { id: 'sonic',      name: 'Sonic',       tag: 'GAME',  type: 'design', desc: 'Speed blue & ring gold on deep navy.',
+    bg: '#070d2b', bg2: '#0c1440', bg3: '#111a54', primary: '#1e6fd9', secondary: '#f5d200', orange: '#ff6b35', text: '#e8f0ff', muted: '#5a6a9a', border: 'rgba(30,111,217,0.3)' },
+  { id: 'pacman',     name: 'Pac-Man',     tag: 'GAME',  type: 'design', desc: 'Arcade maze yellow & cyan on void black.',
+    bg: '#05030f', bg2: '#0a0718', bg3: '#100b24', primary: '#ffe000', secondary: '#00cfff', orange: '#ff5c00', text: '#f4f0ff', muted: '#5a5078', border: 'rgba(255,224,0,0.3)' },
 ]
 
 const ANIM_CATEGORIES = [

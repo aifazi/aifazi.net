@@ -4707,6 +4707,91 @@ img, video, svg { max-width: 100%; height: auto; }
 .reaction-btn-lg { padding: 7px 13px; }
 .reaction-btn-lg .count { font-size: 12px; }
 
+/* ════════════ GAME THEMES — Mario / Minecraft / Sonic / Pac-Man ════════════ */
+[data-theme="mario"] {
+  --bg: #0a0d1c; --bg2: #10142a; --bg3: #161a36; --bg4: #1c2142;
+  --green: #e52521; --cyan: #ffd700;
+  --text: #fdf6e3; --text2: #d8c9a3; --muted: #8a7f66; --link: #5d94e8;
+  --border: rgba(229,37,33,0.30); --border2: rgba(255,215,0,0.14);
+  --glow: 0 0 20px rgba(229,37,33,0.4); --glow-cyan: 0 0 20px rgba(255,215,0,0.35);
+  --shadow-card: 0 8px 30px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,215,0,0.08);
+  --shadow-sm: 0 4px 14px rgba(0,0,0,0.4);
+  --nav-bg-scrolled: rgba(10,13,28,0.96); --nav-bg-top: rgba(10,13,28,0.72);
+  --grid-line: rgba(255,215,0,0.05); color-scheme: dark;
+}
+[data-theme="mario-light"] {
+  --bg: #f7f3e8; --bg2: #efe9d8; --bg3: #e7e0c9; --bg4: #dfd6bb;
+  --green: #c8102e; --cyan: #b8860b;
+  --text: #2a2430; --text2: #4a4438; --muted: #7a7266; --link: #1e6fd9;
+  --border: rgba(200,16,46,0.22); --border2: rgba(184,134,11,0.12);
+  --glow: 0 0 16px rgba(200,16,46,0.18); --glow-cyan: 0 0 16px rgba(184,134,11,0.15);
+  --shadow-card: 0 4px 14px rgba(0,0,0,0.10); --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+  --nav-bg-scrolled: rgba(247,243,232,0.96); --nav-bg-top: rgba(247,243,232,0.88);
+  --grid-line: rgba(200,16,46,0.04); color-scheme: light;
+}
+[data-theme="minecraft"] {
+  --bg: #141210; --bg2: #1d1a17; --bg3: #262219; --bg4: #2f2a1f;
+  --green: #5ad427; --cyan: #2a9dd6;
+  --text: #d8d5c8; --text2: #a8a593; --muted: #6f6a5a; --link: #2a9dd6;
+  --border: rgba(90,212,39,0.28); --border2: rgba(42,157,214,0.12);
+  --glow: 0 0 18px rgba(90,212,39,0.32); --glow-cyan: 0 0 18px rgba(42,157,214,0.3);
+  --shadow-card: 0 6px 0 #000, 0 12px 28px rgba(0,0,0,0.6);
+  --shadow-sm: 0 3px 0 #000;
+  --nav-bg-scrolled: rgba(20,18,16,0.97); --nav-bg-top: rgba(20,18,16,0.78);
+  --grid-line: rgba(90,212,39,0.04); color-scheme: dark;
+}
+[data-theme="minecraft-light"] {
+  --bg: #efe9df; --bg2: #e7e0d3; --bg3: #ddd5c4; --bg4: #d3c9b4;
+  --green: #3c8d16; --cyan: #1273a6;
+  --text: #2b2620; --text2: #554c3e; --muted: #7d7460; --link: #1273a6;
+  --border: rgba(60,141,22,0.22); --border2: rgba(18,115,166,0.12);
+  --glow: 0 0 14px rgba(60,141,22,0.16); --glow-cyan: 0 0 14px rgba(18,115,166,0.14);
+  --shadow-card: 0 3px 0 #b8b0a0, 0 6px 14px rgba(0,0,0,0.12); --shadow-sm: 0 2px 0 #b8b0a0;
+  --nav-bg-scrolled: rgba(239,233,223,0.96); --nav-bg-top: rgba(239,233,223,0.88);
+  --grid-line: rgba(60,141,22,0.04); color-scheme: light;
+}
+[data-theme="sonic"] {
+  --bg: #070d2b; --bg2: #0c1440; --bg3: #111a54; --bg4: #162168;
+  --green: #1e6fd9; --cyan: #f5d200;
+  --text: #e8f0ff; --text2: #b0c4f0; --muted: #5a6a9a; --link: #00bfff;
+  --border: rgba(30,111,217,0.30); --border2: rgba(245,210,0,0.14);
+  --glow: 0 0 20px rgba(30,111,217,0.45); --glow-cyan: 0 0 20px rgba(245,210,0,0.35);
+  --shadow-card: 0 8px 32px rgba(0,0,0,0.55); --shadow-sm: 0 4px 14px rgba(0,0,0,0.4);
+  --nav-bg-scrolled: rgba(7,13,43,0.97); --nav-bg-top: rgba(7,13,43,0.78);
+  --grid-line: rgba(0,191,255,0.05); color-scheme: dark;
+}
+[data-theme="sonic-light"] {
+  --bg: #eef3ff; --bg2: #e2e9fb; --bg3: #d4ddf4; --bg4: #c5d0ec;
+  --green: #0e5fc8; --cyan: #b89500;
+  --text: #17204a; --text2: #3a4a7a; --muted: #6a7aa8; --link: #0e5fc8;
+  --border: rgba(14,95,200,0.20); --border2: rgba(184,149,0,0.12);
+  --glow: 0 0 16px rgba(14,95,200,0.16); --glow-cyan: 0 0 16px rgba(184,149,0,0.14);
+  --shadow-card: 0 4px 14px rgba(0,0,0,0.10); --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+  --nav-bg-scrolled: rgba(238,243,255,0.96); --nav-bg-top: rgba(238,243,255,0.88);
+  --grid-line: rgba(14,95,200,0.04); color-scheme: light;
+}
+[data-theme="pacman"] {
+  --bg: #05030f; --bg2: #0a0718; --bg3: #100b24; --bg4: #160f30;
+  --green: #ffe000; --cyan: #00cfff;
+  --text: #f4f0ff; --text2: #c0b8e8; --muted: #5a5078; --link: #ff5c00;
+  --border: rgba(255,224,0,0.30); --border2: rgba(0,207,255,0.14);
+  --glow: 0 0 22px rgba(255,224,0,0.4); --glow-cyan: 0 0 22px rgba(0,207,255,0.4);
+  --shadow-card: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,224,0,0.06);
+  --shadow-sm: 0 4px 14px rgba(0,0,0,0.45);
+  --nav-bg-scrolled: rgba(5,3,15,0.97); --nav-bg-top: rgba(5,3,15,0.78);
+  --grid-line: rgba(255,224,0,0.05); color-scheme: dark;
+}
+[data-theme="pacman-light"] {
+  --bg: #f4f0e0; --bg2: #ece6d0; --bg3: #e2dabf; --bg4: #d7cdaa;
+  --green: #c9a800; --cyan: #007fa8;
+  --text: #241a00; --text2: #4a3c18; --muted: #7a6f4a; --link: #c94000;
+  --border: rgba(201,168,0,0.24); --border2: rgba(0,127,168,0.12);
+  --glow: 0 0 16px rgba(201,168,0,0.18); --glow-cyan: 0 0 16px rgba(0,127,168,0.14);
+  --shadow-card: 0 4px 14px rgba(0,0,0,0.10); --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+  --nav-bg-scrolled: rgba(244,240,224,0.96); --nav-bg-top: rgba(244,240,224,0.88);
+  --grid-line: rgba(201,168,0,0.04); color-scheme: light;
+}
+
 /* ════════════ KEYFRAMES (shared by store/admin skeletons) ════════════ */
 @keyframes skShimmer {
   0% { opacity: 0.35; }
