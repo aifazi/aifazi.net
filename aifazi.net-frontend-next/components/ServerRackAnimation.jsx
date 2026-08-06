@@ -1774,7 +1774,19 @@ function readGlobeTheme() {
   const textRgb    = read('--text',    '200,216,232', '10,21,32')
   const mutedRgb   = read('--muted',    '107,130,150', '74,100,120')
   const orangeRgb  = read('--orange',  '255,107,53',  '184,68,22')
-  return { cyanRgb, greenRgb, bgRgb, isLight, textRgb, mutedRgb, orangeRgb }
+  // Per-theme globe style (shape / animation personality), driven by data-theme.
+  const themeName = themeAttr.split('-')[0] // e.g. 'minecraft', 'terminal', 'pacman'
+  let globeStyle = 'network' // default: network arcs + dots
+  if (themeAttr.startsWith('minecraft')) globeStyle = 'pixel'
+  else if (themeAttr.startsWith('terminal')) globeStyle = 'scan'
+  else if (themeAttr.startsWith('pacman')) globeStyle = 'pacman'
+  else if (themeAttr.startsWith('sonic')) globeStyle = 'speed'
+  else if (themeAttr.startsWith('brutalist')) globeStyle = 'flat'
+  else if (themeAttr.startsWith('win95')) globeStyle = 'flat'
+  else if (themeAttr.startsWith('paper')) globeStyle = 'flat'
+  else if (themeAttr.startsWith('synthwave')) globeStyle = 'neon'
+  else if (themeAttr.startsWith('aurora')) globeStyle = 'aurora'
+  return { cyanRgb, greenRgb, bgRgb, isLight, textRgb, mutedRgb, orangeRgb, globeStyle }
 }
 
 const GLOBE_CITIES = [
@@ -2102,7 +2114,7 @@ function GlobeMode({ visibleRef }) {
       last = ts
 
       // â”€â”€ Globe colors â€” theme-synced via themeRef (updated on data-theme change) â”€â”€
-      const { cyanRgb, greenRgb, bgRgb, isLight, textRgb, mutedRgb, orangeRgb } = themeRef.current
+      const { cyanRgb, greenRgb, bgRgb, isLight, textRgb, mutedRgb, orangeRgb, globeStyle = 'network' } = themeRef.current
       const accentRgb = cyanRgb
 
       const dpr = window.devicePixelRatio || 1
@@ -2234,29 +2246,31 @@ function GlobeMode({ visibleRef }) {
         }
       })
 
-      // â”€â”€ Atmosphere halo (capped, theme-synced) â”€â”€
+      // â”€â”€ Atmosphere halo (capped, theme-synced) — skipped in flat themes
       const breathe = 1 + 0.03 * Math.sin(ts * 0.001)
       const maxDist  = Math.min(cx, cy, W - cx, H - cy) * 0.92
-      const atmoOuter = Math.min(R * 1.25 * breathe, maxDist)
-      const atmo = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, atmoOuter)
-      atmo.addColorStop(0,   `rgba(${cyanRgb},${isLight ? 0.12 : 0.18})`)
-      atmo.addColorStop(0.3, `rgba(${cyanRgb},${isLight ? 0.05 : 0.08})`)
-      atmo.addColorStop(0.7, `rgba(${cyanRgb},${isLight ? 0.02 : 0.03})`)
-      atmo.addColorStop(1,   `rgba(${cyanRgb},0)`)
-      ctx.beginPath()
-      ctx.arc(cx, cy, atmoOuter, 0, Math.PI * 2)
-      ctx.fillStyle = atmo
-      ctx.fill()
+      if (globeStyle !== 'flat') {
+        const atmoOuter = Math.min(R * 1.25 * breathe, maxDist)
+        const atmo = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, atmoOuter)
+        atmo.addColorStop(0,   `rgba(${cyanRgb},${isLight ? 0.12 : 0.18})`)
+        atmo.addColorStop(0.3, `rgba(${cyanRgb},${isLight ? 0.05 : 0.08})`)
+        atmo.addColorStop(0.7, `rgba(${cyanRgb},${isLight ? 0.02 : 0.03})`)
+        atmo.addColorStop(1,   `rgba(${cyanRgb},0)`)
+        ctx.beginPath()
+        ctx.arc(cx, cy, atmoOuter, 0, Math.PI * 2)
+        ctx.fillStyle = atmo
+        ctx.fill()
 
-      // â”€â”€ Secondary green atmosphere ring â”€â”€
-      const atmo2 = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, Math.min(R * 1.15 * breathe, maxDist))
-      atmo2.addColorStop(0, `rgba(${greenRgb},${isLight ? 0.06 : 0.08})`)
-      atmo2.addColorStop(0.5, `rgba(${greenRgb},${isLight ? 0.02 : 0.03})`)
-      atmo2.addColorStop(1, `rgba(${greenRgb},0)`)
-      ctx.beginPath()
-      ctx.arc(cx, cy, Math.min(R * 1.15 * breathe, maxDist), 0, Math.PI * 2)
-      ctx.fillStyle = atmo2
-      ctx.fill()
+        // â”€â”€ Secondary green atmosphere ring â”€â”€
+        const atmo2 = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, Math.min(R * 1.15 * breathe, maxDist))
+        atmo2.addColorStop(0, `rgba(${greenRgb},${isLight ? 0.06 : 0.08})`)
+        atmo2.addColorStop(0.5, `rgba(${greenRgb},${isLight ? 0.02 : 0.03})`)
+        atmo2.addColorStop(1, `rgba(${greenRgb},0)`)
+        ctx.beginPath()
+        ctx.arc(cx, cy, Math.min(R * 1.15 * breathe, maxDist), 0, Math.PI * 2)
+        ctx.fillStyle = atmo2
+        ctx.fill()
+      }
 
       // â”€â”€ Globe body â”€â”€
       const sphereGrad = ctx.createRadialGradient(cx - R*0.26, cy - R*0.26, 0, cx, cy, R)
@@ -2383,6 +2397,84 @@ function GlobeMode({ visibleRef }) {
       ctx.stroke()
       ctx.restore()
 
+      // â”€â”€ Per-theme globe overlay â”€â”€
+      if (globeStyle === 'scan') {
+        // Terminal: green horizontal scanline sweeping top-to-bottom
+        const scanT = (ts * 0.0002) % 1
+        const scanY = cy - R + scanT * R * 2
+        ctx.save()
+        ctx.strokeStyle = `rgba(${greenRgb},0.35)`
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(cx - R * 1.05, scanY)
+        ctx.lineTo(cx + R * 1.05, scanY)
+        ctx.stroke()
+        ctx.shadowBlur = 16
+        ctx.shadowColor = `rgba(${greenRgb},0.8)`
+        ctx.beginPath()
+        ctx.arc(cx, scanY, 2.2, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${greenRgb},0.9)`
+        ctx.fill()
+        ctx.restore()
+      } else if (globeStyle === 'pixel') {
+        // Minecraft: blocky pixel grid overlay on the sphere face
+        ctx.save()
+        const pxSize = Math.max(2.5, R * 0.028)
+        ctx.strokeStyle = `rgba(${greenRgb},0.06)`
+        ctx.lineWidth = 0.5
+        for (let gx = cx - R; gx <= cx + R; gx += pxSize) {
+          for (let gy = cy - R; gy <= cy + R; gy += pxSize) {
+            const dx = (gx - cx) / R, dy = (gy - cy) / R
+            if (dx * dx + dy * dy > 0.96) continue
+            ctx.strokeRect(gx, gy, pxSize, pxSize)
+          }
+        }
+        ctx.restore()
+      } else if (globeStyle === 'pacman') {
+        // Pac-Man: dotted maze ring around the equator
+        ctx.save()
+        for (let a = 0; a < Math.PI * 2; a += 0.12) {
+          const ringR = R * 1.22
+          const px = cx + Math.cos(a) * ringR
+          const py = cy - Math.sin(a) * ringR
+          const pulse = 0.5 + 0.5 * Math.sin(ts * 0.004 + a * 3)
+          ctx.beginPath()
+          ctx.arc(px, py, 1.6 + pulse * 1.2, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(${cyanRgb},${0.5 + pulse * 0.4})`
+          ctx.fill()
+        }
+        ctx.restore()
+      } else if (globeStyle === 'speed') {
+        // Sonic: speed streaks orbiting the equator
+        ctx.save()
+        const streakCount = 14
+        for (let i = 0; i < streakCount; i++) {
+          const off = ((ts * 0.0012) + i / streakCount) % 1
+          const a0 = off * Math.PI * 2
+          const a1 = a0 + 0.12
+          const ringR = R * 1.18
+          ctx.beginPath()
+          ctx.arc(cx, cy, ringR, a0, a1)
+          ctx.strokeStyle = `rgba(${cyanRgb},${0.4 - (i % 3) * 0.1})`
+          ctx.lineWidth = 2.5
+          ctx.lineCap = 'round'
+          ctx.stroke()
+        }
+        ctx.restore()
+      } else if (globeStyle === 'neon') {
+        // Synthwave: pulsing neon ring
+        ctx.save()
+        const neonA = 0.25 + 0.2 * Math.sin(ts * 0.002)
+        ctx.beginPath()
+        ctx.arc(cx, cy, R * 1.1, 0, Math.PI * 2)
+        ctx.strokeStyle = `rgba(${accentRgb},${neonA})`
+        ctx.lineWidth = 3
+        ctx.shadowBlur = 24
+        ctx.shadowColor = `rgba(${accentRgb},${neonA + 0.3})`
+        ctx.stroke()
+        ctx.restore()
+      }
+
       // â”€â”€ Connection arcs + packets â”€â”€
       GLOBE_CONNECTIONS.forEach(([a, b], i) => {
         const ca  = cities3D[a], cb = cities3D[b]
@@ -2490,14 +2582,27 @@ function GlobeMode({ visibleRef }) {
         ctx.save()
         ctx.shadowBlur  = isHub ? 18 : isHov ? 14 : 9
         ctx.shadowColor = `rgba(${cRGB},0.95)`
-        ctx.beginPath()
-        ctx.arc(pp.x, pp.y, nodeR, 0, Math.PI * 2)
+        // Pixel / Pac-Man themes: blocky nodes instead of circles
+        if (globeStyle === 'pixel' || globeStyle === 'pacman') {
+          const s2 = nodeR * 0.72
+          ctx.beginPath()
+          ctx.rect(pp.x - s2, pp.y - s2, s2 * 2, s2 * 2)
+        } else {
+          ctx.beginPath()
+          ctx.arc(pp.x, pp.y, nodeR, 0, Math.PI * 2)
+        }
         ctx.fillStyle = `rgba(${cRGB},${Math.min(1, alpha)})`
         ctx.fill()
         // Bright centre
         ctx.shadowBlur = 0
-        ctx.beginPath()
-        ctx.arc(pp.x, pp.y, nodeR * 0.38, 0, Math.PI * 2)
+        if (globeStyle === 'pixel' || globeStyle === 'pacman') {
+          const s3 = nodeR * 0.3
+          ctx.beginPath()
+          ctx.rect(pp.x - s3, pp.y - s3, s3 * 2, s3 * 2)
+        } else {
+          ctx.beginPath()
+          ctx.arc(pp.x, pp.y, nodeR * 0.38, 0, Math.PI * 2)
+        }
         ctx.fillStyle = `rgba(255,255,255,${alpha * 0.9})`
         ctx.fill()
         ctx.restore()
