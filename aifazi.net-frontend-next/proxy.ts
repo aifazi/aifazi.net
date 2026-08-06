@@ -265,6 +265,20 @@ function withCsp(response: NextResponse): NextResponse {
   return response
 }
 
+// Cross-subdomain CORS for redirects (aifazi.net ⇄ store/fivem subdomains).
+// RSC navigation fetches from aifazi.net to a redirected store.aifazi.net URL
+// are cross-origin — the 308 must carry ACAO or the browser blocks it.
+function withCors(response: NextResponse, origin: string): NextResponse {
+  const allow = origin && /^https:\/\/[a-z0-9-]*\.?aifazi\.net$/.test(origin)
+  if (allow) {
+    response.headers.set('Access-Control-Allow-Origin', origin)
+    response.headers.set('Access-Control-Allow-Credentials', 'true')
+    response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  }
+  return response
+}
+
 async function isAdminSessionValid(cookieValue: string | undefined, hostname = ''): Promise<boolean> {
   if (!cookieValue) return false
   if (cookieValue === '1') return false
@@ -304,13 +318,13 @@ export async function proxy(request: NextRequest) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.hostname = FIVEM_HOSTNAME
       redirectUrl.pathname = '/whitelist'
-      return NextResponse.redirect(redirectUrl, { status: 308 })
+      return withCors(NextResponse.redirect(redirectUrl, { status: 308 }), request.headers.get('origin') || '')
     }
     if (pathname === '/fivem' || pathname.startsWith('/fivem/')) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.hostname = FIVEM_HOSTNAME
       redirectUrl.pathname = pathname === '/fivem' ? '/' : pathname.replace(/^\/fivem/, '')
-      return NextResponse.redirect(redirectUrl, { status: 308 })
+      return withCors(NextResponse.redirect(redirectUrl, { status: 308 }), request.headers.get('origin') || '')
     }
   }
 
@@ -352,7 +366,8 @@ export async function proxy(request: NextRequest) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.hostname = STORE_HOSTNAME
       redirectUrl.pathname = pathname === '/store' ? '/' : pathname.replace(/^\/store/, '')
-      return NextResponse.redirect(redirectUrl, { status: 308 })
+      const res = NextResponse.redirect(redirectUrl, { status: 308 })
+      return withCors(res, request.headers.get('origin') || '')
     }
   }
 

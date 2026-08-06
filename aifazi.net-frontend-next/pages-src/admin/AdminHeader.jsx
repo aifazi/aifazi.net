@@ -351,23 +351,14 @@ export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed,
   const notifRef = useRef(null)
   const accent = ROLE_ACCENT[role] || C.accent
 
-  /* Stats polling */
+  /* Stats polling — visitor_sessions is fail-closed (migration 022); the count
+     is served ONLY by the backend API via service role. No anon-key fallback. */
   const loadVisitors = async () => {
     try {
       const v = await api.get('/admin/stats/visitors/live')
       if (typeof v?.data?.count === 'number') {
         setStats(p => ({ ...p, visitors: v.data.count }))
-        return
       }
-    } catch {}
-    // Supabase fallback: count sessions active in last 5 min
-    try {
-      const sb = getSupabase()
-      if (!sb) return
-      const since = new Date(Date.now() - 5 * 60 * 1000).toISOString()
-      const { count: c } = await sb.from('visitor_sessions')
-        .select('*', { count: 'exact', head: true }).gte('last_seen', since)
-      if (typeof c === 'number') setStats(p => ({ ...p, visitors: c }))
     } catch {}
   }
 
@@ -388,27 +379,6 @@ export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed,
   }, [])
   usePausableInterval(loadVisitors, 15000)
   usePausableInterval(loadGeneral, 30000)
-
-  /* Supabase realtime — instant visitor count updates */
-  useEffect(() => {
-    const sb = getSupabase()
-    if (!sb) return
-    const ch = sb
-      .channel('admin-header-visitors')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'visitor_sessions' }, async () => {
-        try {
-          const v = await api.get('/admin/stats/visitors/live')
-          if (typeof v?.data?.count === 'number') setStats(p => ({ ...p, visitors: v.data.count }))
-        } catch {
-          const since = new Date(Date.now() - 5 * 60 * 1000).toISOString()
-          const { count: c } = await sb.from('visitor_sessions')
-            .select('*', { count: 'exact', head: true }).gte('last_seen', since)
-          if (typeof c === 'number') setStats(p => ({ ...p, visitors: c }))
-        }
-      })
-      .subscribe()
-    return () => sb.removeChannel(ch)
-  }, [])
 
   /* ⌘K shortcut */
   useEffect(() => {
