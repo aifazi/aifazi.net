@@ -156,17 +156,27 @@ const DEFAULT_STATS = [
   { num: '99%', label: 'UPTIME',   color: 'var(--orange)', numKey: 'hero.stat2.num', labelKey: 'hero.stat2.label' },
 ]
 
-// Particle config is precomputed once — Math.random() must never run during render
-// or particles will teleport on every Hero re-render (e.g. on typewriter tick).
+// Particle config is precomputed once — but must be DETERMINISTIC: the server
+// renders this component during SSR and the client renders it again at
+// hydration. Module-level Math.random() produces different values on each,
+// which triggers React hydration error #419. Use a seeded PRNG instead.
 const PARTICLE_COUNT = 20
+function seededRandom(seed) {
+  let s = seed
+  return () => {
+    s = (s * 9301 + 49297) % 233280
+    return s / 233280
+  }
+}
+const _prng = seededRandom(42)
 const PARTICLE_CONFIGS = Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
-  width:    Math.random() * 3 + 1,
-  height:   Math.random() * 3 + 1,
-  left:     Math.random() * 100,
-  top:      Math.random() * 100,
-  drift:    (Math.random() - 0.5) * 80,
-  duration: 3 + Math.random() * 4,
-  delay:    Math.random() * 6,
+  width:    _prng() * 3 + 1,
+  height:   _prng() * 3 + 1,
+  left:     _prng() * 100,
+  top:      _prng() * 100,
+  drift:    (_prng() - 0.5) * 80,
+  duration: 3 + _prng() * 4,
+  delay:    _prng() * 6,
   colorIdx: i % 3,
 }))
 
