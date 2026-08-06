@@ -19,8 +19,8 @@ export function Btn({ onClick, children, color = 'var(--green)', disabled, dange
     ...(style || {}),
   }
   if (variant === 'outline') {
-    base.background = disabled ? 'rgba(255,255,255,0.03)' : `${color}18`
-    base.borderColor = disabled ? 'var(--border)' : `${color}44`
+    base.background = disabled ? 'rgba(255,255,255,0.03)' : `color-mix(in srgb, ${color} 18%, transparent)`
+    base.borderColor = disabled ? 'var(--border)' : `color-mix(in srgb, ${color} 44%, transparent)`
     base.color = danger ? '#ff4757' : color
   } else if (ghost) {
     base.background = 'transparent'
@@ -45,7 +45,8 @@ export function Badge({ children, color = 'var(--green)', tone, style }) {
   return (
     <span style={{
       fontFamily: MONO, fontSize: 8, letterSpacing: 1.5, padding: '3px 9px', borderRadius: 999,
-      background: `${c}14`, border: `1px solid ${c}40`, color: c, whiteSpace: 'nowrap', ...(style || {}),
+      background: `color-mix(in srgb, ${c} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${c} 40%, transparent)`,
+      color: c, whiteSpace: 'nowrap', ...(style || {}),
     }}>{children}</span>
   )
 }
@@ -107,13 +108,18 @@ export function RelTime({ iso, now }) {
 /* ── Pagination ─────────────────────────────────────────────────────────── */
 export function Pagination({ page, total, pageSize = 50, onChange, label }) {
   const pages = Math.max(1, Math.ceil((total || 0) / pageSize))
-  if (pages <= 1) return null
+  // Clamp to a real page: if the total shrank (delete/filter) and the user sits
+  // on a now-empty page, surface it so they can get back instead of a blank list.
+  const shown = Math.min(page, pages)
+  const clamped = shown !== page
+  if (clamped && onChange) onChange(shown)
+  if (pages <= 1 && shown <= 1) return null
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', padding: '10px 4px', flexWrap: 'wrap' }}>
       {label && <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginRight: 'auto' }}>{label}</span>}
-      <Btn variant="outline" small disabled={page <= 1} onClick={() => onChange(page - 1)}>← PREV</Btn>
-      <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{page} / {pages}</span>
-      <Btn variant="outline" small disabled={page >= pages} onClick={() => onChange(page + 1)}>NEXT →</Btn>
+      <Btn variant="outline" small disabled={shown <= 1} onClick={() => onChange(shown - 1)}>← PREV</Btn>
+      <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{shown} / {pages}</span>
+      <Btn variant="outline" small disabled={shown >= pages} onClick={() => onChange(shown + 1)}>NEXT →</Btn>
     </div>
   )
 }
@@ -121,6 +127,8 @@ export function Pagination({ page, total, pageSize = 50, onChange, label }) {
 /* ── Accessible Modal ───────────────────────────────────────────────────── */
 const ESC = 27
 let modalStack = 0
+let modalTopId = 0
+let savedBodyOverflow = ''
 
 /**
  * Accessible modal overlay: role="dialog", aria-modal, focus trap, Escape to
@@ -130,7 +138,7 @@ let modalStack = 0
  * props:
  *   open          boolean  — whether the modal is shown
  *   onClose       fn       — required; called on Escape/backdrop/close
- *   title         string   — used for aria-labelledby
+ *   title         string   — used as the accessible name (aria-labelledby)
  *   width         number|string — max-width of the panel (default 560)
  *   noBackdropClose bool   — require an explicit close (no click-outside)
  *   children      node     — panel content
@@ -145,11 +153,14 @@ export function Modal({ open, onClose, title, width = 560, noBackdropClose, chil
     if (!open) return
     const doc = document
     restoreRef.current = doc.activeElement
-    const prevOverflow = doc.body.style.overflow
-    doc.body.style.overflow = 'hidden'
+    modalTopId += 1
+    const myId = modalTopId
+    if (modalStack === 0) savedBodyOverflow = doc.body.style.overflow
     modalStack += 1
+    doc.body.style.overflow = 'hidden'
 
     const onKey = e => {
+      if (myId !== modalTopId) return // only the top-most modal handles keys
       if (e.keyCode === ESC || e.key === 'Escape') { e.stopPropagation(); onCloseRef.current(); return }
       if (e.key !== 'Tab') return
       // Focus trap
@@ -159,9 +170,10 @@ export function Modal({ open, onClose, title, width = 560, noBackdropClose, chil
       if (focusables.length === 0) return
       const first = focusables[0]
       const last = focusables[focusables.length - 1]
+      const inPanel = doc.activeElement === panel || panel.contains(doc.activeElement)
       if (e.shiftKey) {
-        if (doc.activeElement === first || !panel.contains(doc.activeElement)) { e.preventDefault(); last.focus() }
-      } else if (doc.activeElement === last || !panel.contains(doc.activeElement)) {
+        if (doc.activeElement === first || doc.activeElement === panel || !inPanel) { e.preventDefault(); last.focus() }
+      } else if (doc.activeElement === last || doc.activeElement === panel || !inPanel) {
         e.preventDefault(); first.focus()
       }
     }
@@ -171,7 +183,7 @@ export function Modal({ open, onClose, title, width = 560, noBackdropClose, chil
 
     return () => {
       modalStack = Math.max(0, modalStack - 1)
-      doc.body.style.overflow = modalStack > 0 ? 'hidden' : prevOverflow
+      if (modalStack === 0) doc.body.style.overflow = savedBodyOverflow
       doc.removeEventListener('keydown', onKey, true)
       cancelAnimationFrame(raf)
       // Restore focus to the element that opened the modal
@@ -180,10 +192,11 @@ export function Modal({ open, onClose, title, width = 560, noBackdropClose, chil
   }, [open])
 
   if (!open) return null
-  const titleId = typeof title === 'string' ? `modal-${title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}` : undefined
+  const name = typeof title === 'string' && title ? title : 'Dialog'
+  const titleId = typeof title === 'string' && title ? `modal-${title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}` : undefined
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby={titleId}
+    <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-label={titleId ? undefined : name}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div onClick={noBackdropClose ? undefined : onClose} aria-hidden="true"
         style={{ position: 'absolute', inset: 0, background: 'rgba(3,8,14,0.72)', backdropFilter: 'blur(3px)' }} />

@@ -1027,7 +1027,7 @@ function BansPanel() {
       {/* Filter tabs + Add button */}
       <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
         {[[true,'active bans',G],[false,'lifted bans',C]].map(([a,lbl,c])=>(
-          <button key={String(a)} onClick={()=>setFilter(a)}
+          <button key={String(a)} onClick={()=>{ setFilter(a); setBansPage(1) }}
             style={{background:filterActive===a?`${c}18`:BG2,border:`1px solid ${filterActive===a?c+'60':BD}`,
               color:filterActive===a?c:MUTED,borderRadius:6,padding:'6px 14px',
               fontSize:12,fontFamily:MONO,cursor:'pointer'}}>

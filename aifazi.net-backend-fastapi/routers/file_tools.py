@@ -234,7 +234,7 @@ async def crop_pdf(file: UploadFile = File(...),
 @router.post("/pdf/edit-meta")
 async def edit_meta(file: UploadFile = File(...), title: str = Form(""),
     author: str = Form(""), subject: str = Form(""), keywords: str = Form(""),
-    creator: str = Form("")):
+    creator: str = Form(""), _: dict = Depends(require_staff)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     doc.set_metadata({"title":title,"author":author,"subject":subject,
@@ -297,7 +297,8 @@ async def flatten_pdf(file: UploadFile = File(...), _: dict = Depends(require_st
 async def sign_pdf(file: UploadFile = File(...), name: str = Form(""),
     sig_image: Optional[UploadFile] = File(None),
     page: int = Form(0), x: float = Form(50), y: float = Form(700),
-    width: float = Form(200), height: float = Form(60)):
+    width: float = Form(200), height: float = Form(60),
+    _: dict = Depends(require_staff)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     if page >= doc.page_count: raise HTTPException(400, "Invalid page")

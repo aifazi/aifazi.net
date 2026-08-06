@@ -564,23 +564,39 @@ def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_user)):
         raise HTTPException(400, "Cart is empty")
     st = _stripe_client()
 
-    # Validate stock + build line items (variant-aware amounts)
+    # Coupon discount FIRST, so the Stripe line items can be priced to match
+    # order.total_cents (the webhook reconciliation compares session.amount_total
+    # to total_cents; charging full prices would make every coupon order fail).
+    coupon = _resolve_coupon(body.coupon_code, cart["subtotal_cents"], [i["product"]["id"] for i in cart["items"]], user_id=uid)
+    discount = coupon["discount_cents"] if coupon else 0
+    subtotal = cart["subtotal_cents"]
+
+    # Validate stock + build line items (variant-aware amounts), distributing the
+    # discount proportionally across items so Stripe charges exactly `total`.
     line_items = []
-    for item in cart["items"]:
+    remaining_discount = discount
+    for i, item in enumerate(cart["items"]):
         prod = item["product"]
         if prod["track_inventory"] and item["quantity"] > prod["stock_qty"]:
             raise HTTPException(400, f"Only {prod['stock_qty']} of {prod['name']} in stock")
-        price_id = _ensure_one_time_price(prod, amount_cents=item["unit_price_cents"], variant_id=item.get("variant_id"))
-        line_items.append({"price": price_id, "quantity": item["quantity"]})
+        qty = item["quantity"]
+        unit = item["unit_price_cents"]
+        line_total = unit * qty
+        discounted_unit = unit
+        if remaining_discount > 0:
+            share = round(line_total * discount / subtotal) if subtotal else 0
+            if i == len(cart["items"]) - 1:
+                share = remaining_discount  # last item absorbs rounding remainder
+            share = max(0, min(share, line_total, remaining_discount))
+            discounted_unit = max(0, round((line_total - share) / qty))
+            remaining_discount -= share
+        price_id = _ensure_one_time_price(prod, amount_cents=discounted_unit, variant_id=item.get("variant_id"))
+        line_items.append({"price": price_id, "quantity": qty})
 
     email = body.customer_email or _user_email(user)
 
-    # Coupon discount
-    coupon = _resolve_coupon(body.coupon_code, cart["subtotal_cents"], [i["product"]["id"] for i in cart["items"]], user_id=uid)
-    discount = coupon["discount_cents"] if coupon else 0
-
     order_no = _number("AFA")
-    total = cart["subtotal_cents"] - discount
+    total = max(0, subtotal - discount)
     order = supabase.table("store_orders").insert({
         "order_number": order_no,
         "user_id": uid,

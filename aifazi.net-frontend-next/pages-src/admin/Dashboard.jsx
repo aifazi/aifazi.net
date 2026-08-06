@@ -272,7 +272,7 @@ function Dashboard({ onLogout }) {
       if (auditLogs.length > 0) {
         setActivityFeed(auditLogs.map(l => ({
           id: l._id,
-          icon: l.action?.includes('delete') ? '[X]' : l.action?.includes('login') ? '[IN]' : l.action?.includes('create') ? '' : l.action?.includes('ban') ? '' : '',
+          icon: l.action?.includes('delete') ? '🗑' : l.action?.includes('login') ? '🔑' : l.action?.includes('create') ? '➕' : l.action?.includes('ban') ? '🚫' : '⚙️',
           text: `${l.actor || 'system'} — ${(l.action || '').replace(/_/g, ' ')}${l.target ? `  ${l.target}` : ''}`,
           time: l.createdAt,
         })))
@@ -888,7 +888,7 @@ function Dashboard({ onLogout }) {
 
           {/*  REPLY MODAL — single contact OR bulk  */}
           {replyModal && (
-            <Modal open onClose={() => setReplyModal(null)} width={580}>
+            <Modal open onClose={() => setReplyModal(null)} width={580} title="Reply">
                 {/* Header */}
                 <div style={{ padding: '16px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
@@ -1015,7 +1015,7 @@ function Dashboard({ onLogout }) {
                 : staff.map(s => (
                 <div key={s._id} style={{ ...S.card, display: 'flex', alignItems: 'center', gap: 12, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
                   <div style={{ width: 36, height: 36, borderRadius: '50%', background: ROLE_COLORS[s.role]?.bg, border: `1px solid ${ROLE_COLORS[s.role]?.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-                    {s.role === 'moderator' ? '' : s.role === 'chat' ? '' : ''}
+                    {(s.username || '?')[0].toUpperCase()}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{s.username}</div>
@@ -1086,7 +1086,7 @@ function Dashboard({ onLogout }) {
 
               {/* Edit staff modal */}
               {editingStaff && (
-                <Modal open onClose={() => setEditingStaff(null)} width={760}>
+                <Modal open onClose={() => setEditingStaff(null)} width={760} title="Edit Staff">
                   <div style={{ padding: isMobile ? 20 : 32 }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 20 }}> EDIT STAFF — {editingStaff.username}</div>
                     <form onSubmit={handleUpdateStaff} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1163,7 +1163,7 @@ function Dashboard({ onLogout }) {
 
       {/*  Keyboard Shortcuts Modal  */}
       {showShortcuts && (
-        <Modal open onClose={() => setShowShortcuts(false)} width={500}>
+        <Modal open onClose={() => setShowShortcuts(false)} width={500} title="Keyboard Shortcuts">
             <div style={{ height: 2, background: 'linear-gradient(90deg, var(--green), var(--cyan))' }} />
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
