@@ -176,12 +176,49 @@ function SettingsTab() {
   )
 }
 
+function ErrorsTab() {
+  const toast = useToast()
+  const [errors, setErrors] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/monitor/errors?limit=50').then(r => setErrors(r.data || [])).catch(() => toast.error('Could not load errors')).finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="loader" />
+  return (
+    <div>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C, marginBottom: 16 }}>RECENT ERRORS</div>
+      {errors.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)', fontFamily: MONO, fontSize: 12 }}>No errors captured yet.</div>
+      ) : (
+        <div style={{ display: 'grid', gap: 10 }}>
+          {errors.map(e => (
+            <div key={e.id} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', background: 'var(--bg2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: MONO, fontSize: 9, padding: '2px 8px', borderRadius: 999, background: `${R}1a`, border: `1px solid ${R}55`, color: R, fontWeight: 700 }}>{e.error_type || 'Error'}</span>
+                <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{e.source}</span>
+                <span style={{ flex: 1 }} />
+                <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>×{e.count}</span>
+                <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{e.last_seen ? new Date(e.last_seen).toLocaleString() : ''}</span>
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--text)', marginTop: 6 }}>{e.message}</div>
+              {(e.endpoint || e.url) && <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>{e.endpoint || e.url}</div>}
+              {e.stack && <pre style={{ fontSize: 9, color: 'var(--muted)', background: 'var(--bg3)', padding: 8, borderRadius: 6, marginTop: 6, overflow: 'auto', maxHeight: 120 }}>{e.stack.slice(0, 600)}</pre>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function MonitoringPanel() {
   const [tab, setTab] = useState('status')
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
-        {[['status', '📊 Status'], ['settings', '⚙️ Settings']].map(([k, l]) => (
+        {[['status', '📊 Status'], ['settings', '⚙️ Settings'], ['errors', '🚨 Errors']].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} style={{
             fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '8px 16px', cursor: 'pointer',
             background: tab === k ? 'var(--green)' : 'transparent', color: tab === k ? '#000' : 'var(--muted)',
@@ -189,7 +226,7 @@ export default function MonitoringPanel() {
           }}>{l}</button>
         ))}
       </div>
-      {tab === 'status' ? <StatusTab /> : <SettingsTab />}
+      {tab === 'status' ? <StatusTab /> : tab === 'settings' ? <SettingsTab /> : <ErrorsTab />}
     </div>
   )
 }

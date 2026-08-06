@@ -157,6 +157,7 @@ _OPEN_EXACT: set[str] = {
     "/api/cron/monitor",
     "/api/monitor/status",
     "/api/monitor/ping",
+    "/api/monitor/errors",
     # Store: Stripe webhook (signature verified inside route) + Lua subscription sync
     "/api/store/webhook",
     "/api/store/stripe/webhook",
@@ -607,6 +608,21 @@ async def health():
 async def global_exception_handler(request: Request, exc: Exception):
     if dsn:
         sentry_sdk.capture_exception(exc)
+    # Record + alert via the in-project monitor (Sentry-like, deduped email)
+    try:
+        import traceback
+        from routers.monitor import _record_error
+        await _record_error(
+            source="backend",
+            error_type=type(exc).__name__,
+            message=str(exc) or type(exc).__name__,
+            stack=traceback.format_exc(),
+            endpoint=str(request.url.path),
+            ip=request.client.host if request.client else "",
+            user_agent=request.headers.get("user-agent", "")[:300],
+        )
+    except Exception:
+        pass  # never let error-reporting break the response
     # Never leak internal details to clients in production
     msg = str(exc) if not _IS_PRODUCTION else "An unexpected error occurred."
     return JSONResponse(status_code=500, content={"error": msg})

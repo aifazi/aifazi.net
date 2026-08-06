@@ -388,6 +388,29 @@ def _default_template(purpose: str, v: dict, p: dict) -> tuple[str, str]:
         return subject, _email_shell(p, "Service down", body, "CHECK STATUS PAGE", v.get("status_url") or "#",
                                      f"Automated alert from {v.get('site_name', 'aifazi.net')} monitoring.", icon="🚨")
 
+    if purpose == "error_alert":
+        subject = f"[{v.get('site_name', 'aifazi.net')}] ⚠ {_esc(v.get('error_type', 'Error'))} — {_esc(v.get('message', ''))[:60]}"
+        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
+                f'A new error was captured from <strong>{_esc(v.get("source", "backend"))}</strong>.</p>'
+                f'<div style="background:{p["bg3"]};border:1px solid {p["border"]};border-radius:8px;padding:16px 20px;margin:0 0 16px;">'
+                f'<div style="color:{p["muted"]};font-size:11px;letter-spacing:2px;margin-bottom:6px;">TYPE</div>'
+                f'<div style="font-size:15px;font-weight:700;color:#ff4757;margin-bottom:10px;">{_esc(v.get("error_type", "Error"))}</div>'
+                f'<div style="color:{p["muted"]};font-size:11px;letter-spacing:2px;margin-bottom:4px;">MESSAGE</div>'
+                f'<div style="font-size:13px;color:{p["text"]};margin-bottom:10px;">{_esc(v.get("message", ""))}</div>'
+                f'<div style="color:{p["muted"]};font-size:11px;letter-spacing:2px;margin-bottom:4px;">LOCATION</div>'
+                f'<div style="font-size:12px;color:{p["muted"]};">{_esc(v.get("source", ""))} · {_esc(v.get("endpoint", ""))}</div>'
+                f'</div>')
+        return subject, _email_shell(p, "Error captured", body, icon="🚨")
+
+    if purpose == "error_digest":
+        subject = f"[{v.get('site_name', 'aifazi.net')}] Error digest — {_esc(v.get('error_count', 0))} in the last 24h"
+        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
+                f'{_esc(v.get("error_count", 0))} error{"s" if int(v.get("error_count", 0)) != 1 else ""} captured in the last 24 hours.</p>'
+                f'<div>{v.get("errors_html", "")}</div>')
+        return subject, _email_shell(p, "Error digest", body,
+                                     "VIEW ERROR LOGS", v.get("status_url") or "#",
+                                     "Automated digest from aifazi.net monitoring.", icon="📋")
+
     subject = f"[{v.get('site_name', 'aifazi.net')}] {purpose.replace('_', ' ').title()}"
     body = f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0;">Hi {_esc(v.get("username") or v.get("name") or "there")}, you have an update from {_esc(v.get("site_name", "aifazi.net"))}.</p>'
     return subject, _email_shell(p, "Update from the team", body, icon="📬")

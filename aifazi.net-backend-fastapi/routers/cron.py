@@ -71,4 +71,13 @@ async def cron_cleanup(request: Request):
     except Exception as e:
         logger.warning("cron_cleanup: monitor run failed: %s", e)
 
-    return {"status": "ok", "ran_at": datetime.now(timezone.utc).isoformat(), "mail": mail, "monitor": monitor_summary}
+    # Sentry-style daily error digest — email a summary of errors seen in the last 24h
+    digest_sent = False
+    try:
+        from routers.monitor import _send_error_digest
+        digest_sent = await _send_error_digest()
+    except Exception as e:
+        logger.warning("cron_cleanup: error digest failed: %s", e)
+
+    return {"status": "ok", "ran_at": datetime.now(timezone.utc).isoformat(),
+            "mail": mail, "monitor": monitor_summary, "digest_sent": digest_sent}

@@ -296,8 +296,142 @@ async def staff_checks(user: dict = Depends(require_staff), limit: int = 200):
         raise HTTPException(500, f"Could not read monitor history: {e}")
 
 
-# ── Staff: run now ────────────────────────────────────────────────────────────
-@router.post("/api/monitor/run")
+# ── Error capture (Sentry-like) ────────────────────────────────────────────────
+def _error_signature(error_type: str, message: str, endpoint: str) -> str:
+    return f"{error_type or 'Unknown'}:{str(message)[:120]}:{endpoint or ''}"
+
+
+def _error_recipients() -> list[str]:
+    """Alert recipients — same as uptime alerts (monitor settings)."""
+    return _alert_emails()
+
+
+async def _record_error(source: str, error_type: str, message: str, stack: str = "",
+                        endpoint: str = "", ip: str = "", user_agent: str = "", url: str = "") -> dict:
+    """Record an error, dedup + alert if it's new (or wasn't alerted in the last
+    ALERT_COOLDOWN_SECONDS window). Returns the saved row."""
+    sig = _error_signature(error_type, message, endpoint)
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        res = supabase.table("error_logs").select("id,count,last_seen,notified") \
+            .eq("signature", sig).limit(1).execute()
+        if res.data:
+            row = res.data[0]
+            # Update last_seen + count
+            supabase.table("error_logs").update({
+                "count": (row.get("count") or 0) + 1,
+                "last_seen": now,
+                "stack": (stack or "")[:2000],
+            }).eq("id", row["id"]).execute()
+            return {**row, "is_new": False}
+        # New error — insert + alert
+        row = {
+            "source": source, "error_type": error_type, "message": str(message)[:1000],
+            "stack": (stack or "")[:2000], "endpoint": endpoint or "", "ip": ip or "",
+            "user_agent": user_agent or "", "url": url or "", "signature": sig,
+            "first_seen": now, "last_seen": now, "count": 1, "notified": False,
+        }
+        ins = supabase.table("error_logs").insert(row).execute()
+        saved = ins.data[0] if ins.data else row
+        await _send_error_alert(saved)
+        return {**saved, "is_new": True}
+    except Exception as e:
+        logger.error("monitor: failed to record error: %s", e)
+        return {"error": str(e)}
+
+
+async def _send_error_alert(row: dict):
+    recipients = _error_recipients()
+    if not recipients:
+        logger.debug("monitor: error captured but no alert emails configured")
+        return
+    from utils.email_queue import queue_email
+    subject, html = await asyncio.to_thread(
+        lambda: __import__("utils.email", fromlist=["render_template"]).render_template(
+            "error_alert",
+            {"error_type": row.get("error_type") or "Error", "message": row.get("message", ""),
+             "endpoint": row.get("endpoint") or "", "source": row.get("source") or "backend",
+             "first_seen": row.get("first_seen") or _now(), "site_name": "aifazi.net"},
+        )
+    )
+    for to in recipients:
+        await queue_email(to=to, subject=subject, html=html, text="", purpose="error_alert")
+    try:
+        supabase.table("error_logs").update({"notified": True}).eq("id", row["id"]).execute()
+    except Exception:
+        pass
+
+
+# Public ingestion — frontend ErrorBoundary + window error/rejection handlers POST here.
+# Rate-limited by the global limiter. Keep it lightweight; no sensitive data.
+@router.post("/api/monitor/errors")
+async def ingest_error(body: dict, request: Request):
+    source = str(body.get("source", "frontend"))[:20]
+    error_type = str(body.get("error_type", "Error"))[:100]
+    message = str(body.get("message", "Unknown error"))[:1000]
+    stack = str(body.get("stack", ""))[:2000]
+    endpoint = str(body.get("endpoint", ""))[:200]
+    url = str(body.get("url", ""))[:500]
+    ip = request.client.host if request.client else ""
+    ua = request.headers.get("user-agent", "")[:300]
+    await _record_error(source=source, error_type=error_type, message=message,
+                        stack=stack, endpoint=endpoint, ip=ip, user_agent=ua, url=url)
+    return {"ok": True}
+
+
+# Staff: recent errors
+@router.get("/api/monitor/errors")
+async def staff_errors(user: dict = Depends(require_staff), limit: int = 100):
+    try:
+        res = supabase.table("error_logs").select("*") \
+            .order("last_seen", desc=True).limit(min(limit, 500)).execute()
+        return res.data or []
+    except Exception as e:
+        raise HTTPException(500, f"Could not read error logs: {e}")
+
+
+async def _send_error_digest() -> bool:
+    """Email a summary of errors seen in the last 24h (Sentry-style digest)."""
+    recipients = _error_recipients()
+    if not recipients:
+        return False
+    try:
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+        res = supabase.table("error_logs").select("error_type,message,count,source,endpoint,last_seen") \
+            .gte("last_seen", cutoff).order("last_seen", desc=True).limit(50).execute()
+        rows = res.data or []
+        if not rows:
+            return False
+        from utils.email_queue import queue_email
+        lines = "".join(
+            f'<div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:10px 12px;margin:6px 0;font-size:12px;color:#e5e7eb;">'
+            f'<span style="color:#ff4757;font-weight:700;">{_html(r.get("error_type") or "Error")}</span>'
+            f' — <span>{_html(str(r.get("message",""))[:140])}</span>'
+            f'<div style="color:#8b949e;font-size:11px;margin-top:4px;">'
+            f'{_html(r.get("source") or "")} · {_html(r.get("endpoint") or "")} · ×{r.get("count",1)} · {_html(r.get("last_seen") or "")}</div>'
+            f'</div>'
+            for r in rows
+        )
+        subject, html = await asyncio.to_thread(
+            lambda: __import__("utils.email", fromlist=["render_template"]).render_template(
+                "error_digest",
+                {"error_count": len(rows), "errors_html": lines, "site_name": "aifazi.net"},
+            )
+        )
+        for to in recipients:
+            await queue_email(to=to, subject=subject, html=html, text="", purpose="error_digest")
+        return True
+    except Exception as e:
+        logger.error("monitor: error digest failed: %s", e)
+        return False
+
+
+def _html(s) -> str:
+    import html as _h
+    return _h.escape(str(s or ""))
+
+
+# ── Staff: run now ────────────────────────────────────────────────────────────@router.post("/api/monitor/run")
 async def staff_run(user: dict = Depends(require_staff)):
     results = await _run_all_checks()
     return {"ran_at": _now(), "results": results}

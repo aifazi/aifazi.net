@@ -1,6 +1,24 @@
 'use client'
 import { Component } from 'react'
 
+function reportError(error, errorInfo) {
+  if (typeof window === 'undefined') return
+  try {
+    fetch('/api/monitor/errors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'frontend',
+        error_type: error?.name || 'Error',
+        message: error?.message || String(error),
+        stack: errorInfo?.componentStack || error?.stack || '',
+        endpoint: window.location.pathname,
+        url: window.location.href,
+      }),
+    }).catch(() => {})
+  } catch {}
+}
+
 export class ErrorBoundary extends Component {
   constructor(props) {
     super(props)
@@ -13,6 +31,7 @@ export class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught:', error, errorInfo)
+    reportError(error, errorInfo)
   }
 
   render() {
