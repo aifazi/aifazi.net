@@ -430,37 +430,99 @@ async def monitor_ping(request: Request):
 
 
 # ── Public status (sanitized — no secrets) ────────────────────────────────────
+def _uptime_in_window(rows: list[dict], since_iso: str) -> float | None:
+    """Percent of 'up' checks within a time window (None when no data)."""
+    sel = [r for r in rows if r.get("checked_at") and r["checked_at"] >= since_iso]
+    if not sel:
+        return None
+    up = sum(1 for r in sel if r.get("status") == "up")
+    return round(up / len(sel) * 100, 1)
+
+
+def _incidents_for(label: str, rows: list[dict]) -> list[dict]:
+    """Turn consecutive-down runs into incidents. rows are newest-first."""
+    inc = []
+    i = 0
+    n = len(rows)
+    while i < n:
+        if rows[i].get("status") != "down":
+            i += 1
+            continue
+        j = i
+        while j < n and rows[j].get("status") == "down":
+            j += 1
+        newest = rows[i].get("checked_at")   # most recent check in the run
+        oldest = rows[j - 1].get("checked_at")  # first check of the run
+        duration_s = 0
+        if newest and oldest:
+            duration_s = max(0, int((datetime.fromisoformat(newest) - datetime.fromisoformat(oldest)).total_seconds()))
+        inc.append({
+            "label": label,
+            "start": oldest,
+            "end": newest,
+            "duration_s": duration_s,
+            "ongoing": i == 0,  # the very latest check is still down
+        })
+        i = j
+    return inc
+
+
 @router.get("/api/monitor/status")
 async def public_status():
-    """Aggregated uptime + last-check per service for the public /status page."""
+    """Aggregated uptime + last-check per service (core + admin custom monitors)
+    for the public /status page, plus recent incident history."""
     now = datetime.now(timezone.utc)
+    cutoff = (now - timedelta(days=30)).isoformat()
     out = []
+    incidents: list[dict] = []
     try:
-        for svc in SERVICES:
+        services = [{"name": s["name"], "label": s["label"], "custom": False, "type": ""} for s in SERVICES]
+        for m in _get_custom_monitors(enabled_only=True):
+            services.append({
+                "name": f"custom:{m.get('id')}",
+                "label": m.get("name") or m.get("type", "monitor"),
+                "custom": True,
+                "type": m.get("type") or "website",
+            })
+
+        for svc in services:
             res = supabase.table("uptime_checks").select("status,latency_ms,detail,checked_at") \
-                .eq("service", svc["name"]).order("checked_at", desc=True).limit(500).execute()
+                .eq("service", svc["name"]).gte("checked_at", cutoff) \
+                .order("checked_at", desc=True).limit(1000).execute()
             rows = res.data or []
             if not rows:
-                out.append({"name": svc["name"], "label": svc["label"], "status": "unknown",
-                            "uptime_24h": None, "uptime_7d": None, "last": None})
+                out.append({**svc, "status": "unknown", "uptime_24h": None,
+                            "uptime_7d": None, "uptime_30d": None, "latency_avg_ms": None,
+                            "last_checked": None, "detail": None})
                 continue
             last = rows[0]
-            up_24h = sum(1 for r in rows if r.get("status") == "up") / len(rows) if rows else 0
+            up_rows = [r for r in rows if r.get("status") == "up"]
+            lat_avg = round(sum(r.get("latency_ms") or 0 for r in up_rows) / len(up_rows)) if up_rows else None
             out.append({
-                "name": svc["name"], "label": svc["label"],
+                **svc,
                 "status": last.get("status", "unknown"),
                 "latency_ms": last.get("latency_ms"),
                 "detail": last.get("detail"),
                 "last_checked": last.get("checked_at"),
-                "uptime_24h": round(up_24h * 100, 1),
+                "uptime_24h": _uptime_in_window(rows, (now - timedelta(hours=24)).isoformat()),
+                "uptime_7d": _uptime_in_window(rows, (now - timedelta(days=7)).isoformat()),
+                "uptime_30d": _uptime_in_window(rows, cutoff),
+                "latency_avg_ms": lat_avg,
             })
+            incidents.extend(_incidents_for(svc["label"], rows))
     except Exception as e:
         logger.error("monitor: public_status failed: %s", e)
-        return {"overall": "degraded", "services": []}
+        return {"overall": "degraded", "services": [], "incidents": []}
 
+    incidents.sort(key=lambda x: x.get("start") or "", reverse=True)
     overall = "operational" if all(s["status"] == "up" for s in out) else \
               ("degraded" if any(s["status"] == "up" for s in out) else "outage")
-    return {"overall": overall, "generated_at": now.isoformat(), "services": out}
+    return {
+        "overall": overall,
+        "generated_at": now.isoformat(),
+        "services": out,
+        "incidents": incidents[:12],
+    }
 
 
 # ── Staff: history ────────────────────────────────────────────────────────────
