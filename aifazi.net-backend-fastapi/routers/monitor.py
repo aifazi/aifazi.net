@@ -26,10 +26,9 @@ CRON_SECRET = os.getenv("CRON_SECRET", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 BACKEND_URL = os.getenv("BACKEND_URL", "https://api.aifazi.net").rstrip("/")
 
-# How many consecutive failures before we fire an email alert (avoids noise on
-# a single transient blip). Downtime stays recorded immediately regardless.
-ALERT_THRESHOLD = int(os.getenv("MONITOR_ALERT_THRESHOLD", "2"))
-ALERT_EMAILS = [e for e in os.getenv("MONITOR_ALERT_EMAILS", "").replace(";", ",").split(",") if e.strip()]
+# Defaults — overridden by admin settings stored in site_config.settings.monitor
+DEFAULT_ALERT_THRESHOLD = 2
+DEFAULT_ALERT_EMAILS = ""
 
 # Services to monitor — name maps to a human label + a check callable.
 SERVICES = [
@@ -39,6 +38,41 @@ SERVICES = [
     {"name": "email",       "label": "Email Service"},
     {"name": "fivem",       "label": "FiveM Server"},
 ]
+
+
+def _get_monitor_settings() -> dict:
+    """Read monitor settings from site_config.settings.monitor (admin-editable)."""
+    try:
+        res = supabase.table("site_config").select("settings").eq("key", "global").limit(1).execute()
+        if res.data:
+            settings = res.data[0].get("settings") or {}
+            return settings.get("monitor") or {}
+    except Exception:
+        pass
+    return {}
+
+
+def _alert_emails() -> list[str]:
+    cfg = _get_monitor_settings()
+    raw = cfg.get("alert_emails") or DEFAULT_ALERT_EMAILS
+    return [e.strip() for e in raw.replace(";", ",").split(",") if e.strip()]
+
+
+def _alert_threshold() -> int:
+    cfg = _get_monitor_settings()
+    try:
+        return max(1, int(cfg.get("alert_threshold", DEFAULT_ALERT_THRESHOLD)))
+    except (TypeError, ValueError):
+        return DEFAULT_ALERT_THRESHOLD
+
+
+def _enabled_services() -> list[str]:
+    cfg = _get_monitor_settings()
+    enabled = cfg.get("enabled_services")
+    if not enabled:
+        return [s["name"] for s in SERVICES]
+    valid = {s["name"] for s in SERVICES}
+    return [n for n in enabled if n in valid]
 
 
 def _now() -> str:
@@ -131,12 +165,13 @@ async def _last_fail_count(service: str) -> int:
                 break
         return count
     except Exception:
-        return ALERT_THRESHOLD  # if we can't read history, stay conservative
+        return _alert_threshold()  # if we can't read history, stay conservative
 
 
 async def _send_alert(service: str, detail: str):
-    if not ALERT_EMAILS:
-        logger.warning("monitor: service %s down but MONITOR_ALERT_EMAILS not set — skipping email", service)
+    recipients = _alert_emails()
+    if not recipients:
+        logger.warning("monitor: service %s down but no alert emails configured — skipping email", service)
         return
     from utils.email_queue import queue_email
     status_url = f"{FRONTEND_URL}/status"
@@ -147,14 +182,17 @@ async def _send_alert(service: str, detail: str):
              "checked_at": _now(), "site_name": "aifazi.net"},
         )
     )
-    for to in ALERT_EMAILS:
+    for to in recipients:
         await queue_email(to=to, subject=subject, html=html, text="", purpose="monitor_alert")
 
 
 # ── Run all checks + record + alert ────────────────────────────────────────────
 async def _run_all_checks() -> list[dict]:
     results = []
+    threshold = _alert_threshold()
     for svc in SERVICES:
+        if svc["name"] not in _enabled_services():
+            continue
         checker = CHECKERS.get(svc["name"])
         if not checker:
             continue
@@ -176,7 +214,7 @@ async def _run_all_checks() -> list[dict]:
 
         if status == "down":
             fails = await _last_fail_count(svc["name"])
-            if fails >= ALERT_THRESHOLD:
+            if fails >= threshold:
                 await _send_alert(svc["name"], detail)
 
     return results
@@ -248,3 +286,47 @@ async def staff_checks(user: dict = Depends(require_staff), limit: int = 200):
 async def staff_run(user: dict = Depends(require_staff)):
     results = await _run_all_checks()
     return {"ran_at": _now(), "results": results}
+
+
+# ── Staff: monitor settings (stored in site_config.settings.monitor) ──────────
+@router.get("/api/monitor/settings")
+async def staff_get_settings(user: dict = Depends(require_staff)):
+    cfg = _get_monitor_settings()
+    return {
+        "alert_emails": cfg.get("alert_emails", DEFAULT_ALERT_EMAILS),
+        "alert_threshold": cfg.get("alert_threshold", DEFAULT_ALERT_THRESHOLD),
+        "enabled_services": _enabled_services(),
+        "available_services": SERVICES,
+    }
+
+
+@router.put("/api/monitor/settings")
+async def staff_update_settings(body: dict, user: dict = Depends(require_staff)):
+    # Validate + sanitize
+    emails = str(body.get("alert_emails", "") or "")
+    try:
+        threshold = max(1, int(body.get("alert_threshold", DEFAULT_ALERT_THRESHOLD)))
+    except (TypeError, ValueError):
+        threshold = DEFAULT_ALERT_THRESHOLD
+    enabled = body.get("enabled_services")
+    valid = {s["name"] for s in SERVICES}
+    if not isinstance(enabled, list):
+        enabled = [s["name"] for s in SERVICES]
+    enabled = [n for n in enabled if n in valid]
+
+    monitor_cfg = {
+        "alert_emails": emails,
+        "alert_threshold": threshold,
+        "enabled_services": enabled,
+    }
+    try:
+        res = supabase.table("site_config").select("settings").eq("key", "global").limit(1).execute()
+        if not res.data:
+            supabase.table("site_config").insert({"key": "global", "settings": {"monitor": monitor_cfg}}).execute()
+        else:
+            existing = res.data[0].get("settings") or {}
+            existing["monitor"] = monitor_cfg
+            supabase.table("site_config").update({"settings": existing}).eq("key", "global").execute()
+    except Exception as e:
+        raise HTTPException(500, f"Could not save monitor settings: {e}")
+    return monitor_cfg

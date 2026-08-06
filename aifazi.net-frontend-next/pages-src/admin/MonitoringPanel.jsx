@@ -12,7 +12,7 @@ const O = 'var(--orange)'
 const STATUS_COLOR = { up: G, down: R, unknown: 'var(--muted)' }
 const STATUS_LABEL = { up: 'OPERATIONAL', down: 'DOWN', unknown: 'NO DATA' }
 
-export default function MonitoringPanel() {
+function StatusTab() {
   const toast = useToast()
   const [checks, setChecks] = useState([])
   const [running, setRunning] = useState(false)
@@ -33,7 +33,6 @@ export default function MonitoringPanel() {
     } catch { toast.error('Run failed') } finally { setRunning(false) }
   }
 
-  // Group latest per service
   const latest = {}
   const byService = {}
   for (const c of checks) {
@@ -43,9 +42,7 @@ export default function MonitoringPanel() {
   }
 
   const last24h = checks.filter(c => c.checked_at && Date.now() - new Date(c.checked_at).getTime() < 24 * 3600 * 1000)
-  const uptime24 = last24h.length
-    ? Math.round((last24h.filter(c => c.status === 'up').length / last24h.length) * 100)
-    : 0
+  const uptime24 = last24h.length ? Math.round((last24h.filter(c => c.status === 'up').length / last24h.length) * 100) : 0
 
   return (
     <div>
@@ -98,6 +95,101 @@ export default function MonitoringPanel() {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function SettingsTab() {
+  const toast = useToast()
+  const [cfg, setCfg] = useState(null)
+  const [emails, setEmails] = useState('')
+  const [threshold, setThreshold] = useState(2)
+  const [enabled, setEnabled] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/monitor/settings').then(r => {
+      const d = r.data
+      setCfg(d)
+      setEmails(d.alert_emails || '')
+      setThreshold(d.alert_threshold ?? 2)
+      const e = {}
+      ;(d.enabled_services || []).forEach(n => { e[n] = true })
+      setEnabled(e)
+    }).catch(() => toast.error('Could not load monitor settings')).finally(() => setLoading(false))
+  }, [])
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const list = Object.keys(enabled).filter(k => enabled[k])
+      const res = await api.put('/monitor/settings', { alert_emails: emails, alert_threshold: threshold, enabled_services: list })
+      toast.success('Settings saved')
+      setCfg(res.data)
+    } catch { toast.error('Save failed') } finally { setSaving(false) }
+  }
+
+  if (loading) return <div className="loader" />
+  if (!cfg) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)', fontFamily: MONO, fontSize: 12 }}>No settings.</div>
+
+  return (
+    <div>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C, marginBottom: 16 }}>MONITOR SETTINGS</div>
+
+      {/* Alert emails */}
+      <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 16, background: 'var(--bg2)', marginBottom: 12 }}>
+        <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>ALERT EMAILS</label>
+        <input value={emails} onChange={e => setEmails(e.target.value)} placeholder="admin@example.com, other@example.com"
+          style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 13, padding: '10px 12px', borderRadius: 8, outline: 'none' }} />
+        <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>Comma-separated. Sent via your configured email provider (Resend/Brevo/SMTP).</div>
+      </div>
+
+      {/* Threshold */}
+      <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 16, background: 'var(--bg2)', marginBottom: 12 }}>
+        <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>ALERT AFTER (CONSECUTIVE FAILURES)</label>
+        <input type="number" min="1" max="10" value={threshold} onChange={e => setThreshold(Number(e.target.value) || 2)}
+          style={{ width: 80, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13, padding: '8px 10px', borderRadius: 8, outline: 'none' }} />
+        <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>Avoids noisy alerts from single transient blips. Default 2.</div>
+      </div>
+
+      {/* Enabled services */}
+      <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 16, background: 'var(--bg2)', marginBottom: 12 }}>
+        <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 10 }}>MONITORED SERVICES</label>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {(cfg.available_services || []).map(s => (
+            <label key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--text)' }}>
+              <input type="checkbox" checked={!!enabled[s.name]} onChange={e => setEnabled(prev => ({ ...prev, [s.name]: e.target.checked }))}
+                style={{ accentColor: 'var(--green)', width: 16, height: 16 }} />
+              {s.label}
+              <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{s.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <button onClick={save} disabled={saving} style={{
+        fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '10px 24px', cursor: 'pointer',
+        background: saving ? 'var(--bg3)' : 'var(--green)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700,
+      }}>{saving ? 'SAVING…' : 'SAVE SETTINGS'}</button>
+    </div>
+  )
+}
+
+export default function MonitoringPanel() {
+  const [tab, setTab] = useState('status')
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+        {[['status', '📊 Status'], ['settings', '⚙️ Settings']].map(([k, l]) => (
+          <button key={k} onClick={() => setTab(k)} style={{
+            fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '8px 16px', cursor: 'pointer',
+            background: tab === k ? 'var(--green)' : 'transparent', color: tab === k ? '#000' : 'var(--muted)',
+            border: `1px solid ${tab === k ? 'var(--green)' : 'var(--border)'}`, borderRadius: 8, fontWeight: 700,
+          }}>{l}</button>
+        ))}
+      </div>
+      {tab === 'status' ? <StatusTab /> : <SettingsTab />}
     </div>
   )
 }
