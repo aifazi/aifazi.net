@@ -23,6 +23,7 @@ import { getSupabase } from '@/lib/supabase'
 import { MenuProvider } from '@/core/menu'
 import { NotifyProvider } from '@/core/notify'
 import { DialogProvider } from '@/core/dialog'
+import { loadFontForTheme as loadThemeFont } from '@/core/fonts'
 import { isAdmin as checkIsAdmin } from '@/lib/api'
 import { usePathname } from 'next/navigation'
 
@@ -116,26 +117,12 @@ const THEME_PAIRS: Record<string,string> = {
 }
 
 function loadFontForTheme(themeId: string) {
-  const fontMap: Record<string, string> = {
-    midnight:   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap',
-    ocean:      'https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&display=swap',
-    brutalist:  'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&display=swap',
-    synthwave:  'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap',
-    paper:      'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap',
-    neumorph:   'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap',
-    macos:      'https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;700&display=swap',
-    win95:      'https://fonts.googleapis.com/css2?family=VT323&display=swap',
-    mario:      'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap',
-    minecraft:  'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap',
-    sonic:      'https://fonts.googleapis.com/css2?family=VT323&display=swap',
-    pacman:     'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap',
-  }
-  const url = fontMap[themeId]
-  if (!url) return
-  if (document.querySelector(`link[href="${url}"]`)) return
-  const link = document.createElement('link')
-  link.rel = 'stylesheet'; link.href = url
-  document.head.appendChild(link)
+  // Delegate to the canonical font registry (core/fonts.js) so light/dark
+  // variants (e.g. pacman-light) resolve to their family's fonts and the
+  // loaded fonts match the globals.css personalities exactly. Keeps the
+  // registry in ONE place — this wrapper only guards against SSR.
+  if (typeof document === 'undefined') return
+  return loadThemeFont(themeId)
 }
 
 export function Providers({ children, isStoreDomain = false, isFiveMDomain = false, serverMaintenance = false, serverSubdomainMaintenance = {} }: {
