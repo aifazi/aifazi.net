@@ -20,10 +20,12 @@ export const f = {
 }
 
 // ── Theme → Google Fonts query registry ──────────────────────────────────────
-// null = system fonts only (no network request needed)
+// null = system fonts only (no network request needed).
+// Variants (`-light` / `-dark`) map to their family so they get the same fonts.
 const REGISTRY = {
   // Default theme (Rajdhani + Share Tech Mono + Space Mono) loaded in index.html
   'cyber-dark': null,
+  'cyber-light': null,
   light:        null,
 
   // Theme-specific fonts lazy-loaded on first use
@@ -41,9 +43,47 @@ const REGISTRY = {
   ocean:       'family=Raleway:wght@300;400;600;700;800&family=Fira+Code:wght@300;400;500;600',
   rose:        'family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500',
   win95:       null, // Tahoma / MS Sans Serif — system only
-  crimson:     null,
-  amber:       null,
-  forest:      null,
+
+  // Molten industrial
+  lava:        'family=Anton&family=Space+Mono:wght@400;700',
+  // Neon acid waste
+  toxic:       'family=Orbitron:wght@400;700;900&family=Share+Tech+Mono',
+  // Glacial frosted
+  ice:         'family=Raleway:wght@300;500;700&family=Fira+Code:wght@400;500',
+  // Eco jungle
+  forest:      'family=Poppins:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500',
+  // Gothic blood
+  crimson:     'family=Cinzel:wght@500;700;900&family=JetBrains+Mono:wght@400;500',
+  // Vintage gold
+  amber:       'family=Playfair+Display:wght@600;700;900&family=JetBrains+Mono:wght@400;500',
+
+  // Game themes — pixel / arcade
+  mario:       'family=Press+Start+2P&family=VT323',
+  minecraft:   'family=Silkscreen:wght@400;700&family=VT323',
+  sonic:       'family=Bungee&family=Space+Mono:wght@400;700',
+  pacman:      'family=Press+Start+2P&family=VT323',
+
+  // ── Family variants (bridge to base) ──
+  'terminal-light':    'family=VT323',
+  'synthwave-light':   'family=Orbitron:wght@400;600;700;900',
+  'brutalist-dark':    'family=Anton',
+  'neumorph-dark':     'family=Nunito:wght@300;400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400',
+  'macos-dark':        'family=JetBrains+Mono:wght@300;400;500;600',
+  'neon-noir-light':   'family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500;600',
+  'pastel-dark':       'family=Quicksand:wght@300;400;500;600;700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400',
+  'paper-dark':        'family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400',
+  'aurora-light':      'family=Raleway:wght@300;400;600;700;800&family=Fira+Code:wght@300;400;500;600',
+  'midnight-light':    'family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600',
+  'glass-light':       'family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;500',
+  'ocean-light':       'family=Raleway:wght@300;400;600;700;800&family=Fira+Code:wght@300;400;500;600',
+  'rose-light':        'family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500',
+  'forest-light':      'family=Poppins:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500',
+  'crimson-light':     'family=Cinzel:wght@500;700;900&family=JetBrains+Mono:wght@400;500',
+  'amber-light':       'family=Playfair+Display:wght@600;700;900&family=JetBrains+Mono:wght@400;500',
+  'mario-light':       'family=Press+Start+2P&family=VT323',
+  'minecraft-light':   'family=Silkscreen:wght@400;700&family=VT323',
+  'sonic-light':       'family=Bungee&family=Space+Mono:wght@400;700',
+  'pacman-light':      'family=Press+Start+2P&family=VT323',
 }
 
 const _loaded = new Set()
