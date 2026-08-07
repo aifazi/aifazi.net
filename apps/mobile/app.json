@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "aifazi",
-    "slug": "aifazi-mobile",
+    "slug": "fazi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -77,6 +77,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4cd9069e-469a-410f-90d3-942f4901470c"
+      }
+    },
+    "owner": "aifazi"
   }
 }
