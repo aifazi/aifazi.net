@@ -96,6 +96,17 @@ export function themeFontUrl(themeId) {
   return `https://fonts.googleapis.com/css2?${query}&display=swap`
 }
 
+// themeId → font stylesheet URL for every font-backed theme. Used by the FOUC
+// script so the active theme's typeface starts downloading during HTML parse
+// (before React hydrates) — eliminating first-paint FOUT on theme load/toggle.
+export function themeFontUrls() {
+  const out = {}
+  for (const [id, query] of Object.entries(REGISTRY)) {
+    if (query) out[id] = `https://fonts.googleapis.com/css2?${query}&display=swap`
+  }
+  return out
+}
+
 // Load Google Fonts for a theme (idempotent — safe to call multiple times).
 // Dedupes by URL, not theme id, so themes that share fonts (mario & pacman both
 // use Press Start 2P, lava & brutalist both use Anton, …) only download once.

@@ -24,6 +24,8 @@ function ThemeToggle({ theme, onToggle }) {
     'rose-light','forest-light','glass-light','synthwave-light',
     'terminal-light','neon-noir-light','aurora-light',
     'brutalist','paper','neumorph','macos','pastel','win95',
+    'lava-light','toxic-light',
+    'mario-light','minecraft-light','sonic-light','pacman-light',
   ])
   const isDark = !LIGHT_IDS.has(theme)
 
@@ -71,6 +73,18 @@ function ThemeToggle({ theme, onToggle }) {
           position: absolute;
           transition: transform 0.42s cubic-bezier(0.34,1.4,0.64,1), opacity 0.22s ease;
         }
+        /* Pop animation replays on every toggle (knob is remounted via key) */
+        .theme-pill-knob.pop {
+          animation: theme-knob-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes theme-knob-pop {
+          0%   { transform: scale(0.55) rotate(-35deg); }
+          55%  { transform: scale(1.28) rotate(10deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .theme-pill-knob.pop { animation: none; }
+        }
       `}</style>
 
       <button
@@ -103,8 +117,8 @@ function ThemeToggle({ theme, onToggle }) {
           </svg>
         </div>
 
-        {/* Sliding knob */}
-        <div className="theme-pill-knob" style={{
+        {/* Sliding knob — remounted on each toggle so the pop animation replays */}
+        <div key={isDark ? 'dark' : 'light'} className="theme-pill-knob pop" style={{
           left: isDark ? '2px' : '32px',
           background: isDark ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(212,136,0,0.15)',
           boxShadow: isDark

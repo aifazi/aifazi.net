@@ -6668,35 +6668,39 @@ img, video, svg { max-width: 100%; height: auto; }
   animation: none !important;
 }
 
-/* 2. Respect prefers-reduced-motion: kill the heavy per-theme background
-   animations (scanlines, grid drift, aurora orbs, border flows, blinks). */
+/* 2. Respect prefers-reduced-motion: disable ONLY the heavy full-screen /
+   decorative background animations (scanlines, grid drift, aurora orbs, border
+   flows, blinks). Micro-interactions — the theme toggle knob, hover fades —
+   intentionally KEEP their transitions so the UI doesn't feel dead. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  /* Hide full-screen animated overlays entirely — they serve no static purpose. */
   [data-theme="terminal"] .scanline,
   [data-theme="terminal"] body::after,
   [data-theme="terminal"] body::before,
+  [data-theme="terminal"] nav::after,
   [data-theme="synthwave"] body::before,
   [data-theme="synthwave"] body::after,
   [data-theme="synthwave"] nav::before,
+  [data-theme="synthwave"] footer::before,
   [data-theme="pastel"] body::after,
   [data-theme="pastel"] nav::after,
   [data-theme="pastel"] footer::before,
   [data-theme="aurora"] body::after,
+  [data-theme="aurora"] nav::before,
+  [data-theme="aurora"] footer::before,
   [data-theme="neon-noir"] body::before,
   [data-theme="neon-noir"] body::after,
   [data-theme="lava"] body::after,
   [data-theme="toxic"] body::after,
+  [data-theme="toxic"] .section-tag,
   [data-theme="minecraft"] body::after,
   [data-theme="pacman"] body::after,
+  [data-theme="pacman"] nav::after,
   [data-theme="sonic"] body::after {
     display: none !important;
+    animation: none !important;
   }
+  /* Keep the scanline element's static line hidden too (it exists for motion). */
+  .scanline { display: none !important; }
 }
 
 /* 3. Mobile perf: the heaviest full-screen animations are disabled on small
