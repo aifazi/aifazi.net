@@ -51,6 +51,10 @@ _BLOCKED_NETWORKS = [
 ]
 
 
+def _is_blocked_ip(ip_obj: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    return any(ip_obj in net for net in _BLOCKED_NETWORKS)
+
+
 def _host_blocked(host: str) -> tuple[bool, str]:
     """Return (blocked, reason) for a hostname/IP target. Resolves hostnames and
     rejects them if ANY resolved address falls into a blocked network."""
@@ -64,9 +68,34 @@ def _host_blocked(host: str) -> tuple[bool, str]:
         except Exception:
             return False, ""  # unresolved — let the checker report its own error
     for ip in candidates:
-        if any(ip in net for net in _BLOCKED_NETWORKS):
+        if _is_blocked_ip(ip):
             return True, str(ip)
     return False, ""
+
+
+def _resolve_safe_ip(host: str) -> str | None:
+    """Resolve host to a validated PUBLIC IP, or None if every candidate is
+    blocked / unresolvable. Used to PIN the connection: the resolved address is
+    validated once, then the request connects to that exact IP (with the Host
+    header rewritten) so a DNS-rebinding attacker can't swap the target between
+    the validation probe and the actual connect (the H20 TOCTOU fix)."""
+    try:
+        ip_obj = ipaddress.ip_address(host)
+        return None if _is_blocked_ip(ip_obj) else host
+    except ValueError:
+        try:
+            infos = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+        except Exception:
+            return None
+        for info in infos:
+            try:
+                ip_obj = ipaddress.ip_address(info[4][0])
+            except ValueError:
+                continue
+            if _is_blocked_ip(ip_obj):
+                return None
+            return info[4][0]
+        return None
 
 # Defaults — overridden by admin settings stored in site_config.settings.monitor
 DEFAULT_ALERT_THRESHOLD = 2
@@ -197,14 +226,60 @@ CHECKERS = {
 # Each returns (ok, latency_ms, detail). Runs inside the same run-all pass so
 # alerts + history reuse the existing uptime_checks machinery.
 
+async def _safe_http_get(url: str, timeout: float = 8.0, max_hops: int = 5) -> tuple[bool, float, str, str]:
+    """HTTP GET with SSRF-safe DNS pinning (replicates seo_proxy's H20 fix).
+
+    Resolves the host once, rejects private/loopback/link-local/metadata
+    addresses, then connects to the PINNED IP with the Host header rewritten so
+    SNI + virtual-host routing still works. Redirects are followed manually and
+    each hop is re-validated, so a DNS-rebinding attacker can't swap the target
+    to 169.254.169.254 (cloud metadata) or RFC1918 after the check.
+
+    Returns (ok, latency_ms, detail, body_text).
+    """
+    import httpx
+    from urllib.parse import urlparse
+    start = time.perf_counter()
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, verify=True) as client:
+        current = url
+        for _ in range(max_hops):
+            parsed = urlparse(current)
+            host = parsed.hostname or ""
+            if not host:
+                return False, 0, "invalid URL", ""
+            safe_ip = _resolve_safe_ip(host)
+            if safe_ip is None:
+                blocked, ip = _host_blocked(host)
+                return False, 0, (f"target resolves to blocked network ({ip})" if blocked else "target has no usable address"), ""
+            try:
+                port = parsed.port
+                if ":" in safe_ip:  # IPv6 literal
+                    netloc = f"[{safe_ip}]" if port is None else f"[{safe_ip}]:{port}"
+                else:
+                    netloc = safe_ip if port is None else f"{safe_ip}:{port}"
+                pinned_url = parsed._replace(netloc=netloc).geturl()
+                r = await client.get(pinned_url, headers={"Host": host, "User-Agent": "aifazi.net Monitor/1.0"})
+            except Exception as e:
+                lat = round((time.perf_counter() - start) * 1000)
+                return False, lat, type(e).__name__, ""
+            lat = round((time.perf_counter() - start) * 1000)
+            if r.status_code in (301, 302, 303, 307, 308):
+                location = r.headers.get("location")
+                if not location:
+                    return False, lat, f"redirect without location ({r.status_code})", ""
+                current = str(httpx.URL(current).join(location))
+                continue
+            ok = r.status_code < 500
+            return ok, lat, f"{r.status_code}", (r.text or "")[:200000]
+    return False, 0, "too many redirects", ""
+
+
 async def _check_website(m):
     url = m.get("target") or ""
     if not url.startswith(("http://", "https://")):
-        return False, 0, "target must be an http(s) URL"
-    blocked, ip = _host_blocked(url.split("/")[2].split(":")[0] if url.split("/")[2] else "")
-    if blocked:
-        return False, 0, f"target resolves to blocked network ({ip})"
-    return await _check_http(url)
+        return False, 0, "target must be an http(s) URL", ""
+    ok, lat, detail, _ = await _safe_http_get(url)
+    return ok, lat, detail
 
 
 async def _check_keyword(m):
@@ -214,47 +289,52 @@ async def _check_keyword(m):
         return False, 0, "target must be an http(s) URL"
     if not expected:
         return False, 0, "no keyword configured"
-    blocked, ip = _host_blocked(url.split("/")[2].split(":")[0] if url.split("/")[2] else "")
-    if blocked:
-        return False, 0, f"target resolves to blocked network ({ip})"
-    import httpx
+    ok, lat, detail, text = await _safe_http_get(url)
+    if not ok:
+        return ok, lat, detail
+    present = expected.lower() in (text or "").lower()
+    mode = m.get("mode") or "contains"
+    ok = present if mode == "contains" else not present
+    if ok:
+        return ok, lat, f"{'found' if present else 'missing'} '{expected}'"
+    return ok, lat, (f"expected '{expected}' present but missing" if mode == "contains" else f"keyword '{expected}' unexpectedly present")
+
+
+def _socket_connect(ip: str, port: int, display_host: str, timeout: float = 5.0) -> tuple[bool, float, str]:
     start = time.perf_counter()
     try:
-        async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
-            r = await client.get(url)
+        with socket.create_connection((ip, port), timeout=timeout):
             lat = round((time.perf_counter() - start) * 1000)
-            if r.status_code >= 500:
-                return False, lat, f"HTTP {r.status_code}"
-            present = expected.lower() in r.text.lower()
-            mode = m.get("mode") or "contains"
-            ok = present if mode == "contains" else not present
-            return ok, lat, f"{'found' if present else 'missing'} '{expected}'" if ok else \
-                   (f"expected '{expected}' present but missing" if mode == "contains" else f"keyword '{expected}' unexpectedly present")
+            return True, lat, f"connected to {display_host}:{port}"
     except Exception as e:
         lat = round((time.perf_counter() - start) * 1000)
         return False, lat, type(e).__name__
 
 
-def _socket_connect(host: str, port: int, timeout: float = 5.0) -> tuple[bool, float, str]:
-    start = time.perf_counter()
+def _parse_port(m) -> int | None:
     try:
-        with socket.create_connection((host, port), timeout=timeout):
-            lat = round((time.perf_counter() - start) * 1000)
-            return True, lat, f"connected to {host}:{port}"
-    except Exception as e:
-        lat = round((time.perf_counter() - start) * 1000)
-        return False, lat, type(e).__name__
+        port = int(m.get("port") or 0)
+    except (TypeError, ValueError):
+        return None
+    return port
+
+
+def _parse_interval(m, default: int = 60) -> int:
+    try:
+        return max(1, int(m.get("interval_seconds") or default))
+    except (TypeError, ValueError):
+        return default
 
 
 async def _check_ping(m):
     host = (m.get("target") or "").strip()
     if not host:
         return False, 0, "no host configured"
-    blocked, ip = _host_blocked(host)
-    if blocked:
-        return False, 0, f"target resolves to blocked network ({ip})"
-    # Prefer a subprocess ping; fall back to a TCP connect on 443 (serverless
-    # sandboxes often lack the ping binary or ICMP privileges).
+    safe_ip = _resolve_safe_ip(host)
+    if safe_ip is None:
+        return False, 0, "target resolves to a blocked network or has no usable address"
+    # Prefer a subprocess ping; fall back to a TCP connect on the PINNED IP
+    # (serverless sandboxes often lack the ping binary or ICMP privileges).
     import subprocess
     start = time.perf_counter()
     try:
@@ -267,18 +347,18 @@ async def _check_ping(m):
             return True, lat, "reachable"
     except Exception:
         pass
-    return await asyncio.to_thread(_socket_connect, host, 443)
+    return await asyncio.to_thread(_socket_connect, safe_ip, 443, host)
 
 
 async def _check_port(m):
     host = (m.get("target") or "").strip()
-    port = int(m.get("port") or 0)
-    if not host or not (1 <= port <= 65535):
+    port = _parse_port(m)
+    if not host or port is None or not (1 <= port <= 65535):
         return False, 0, "need host and a valid port"
-    blocked, ip = _host_blocked(host)
-    if blocked:
-        return False, 0, f"target resolves to blocked network ({ip})"
-    return await asyncio.to_thread(_socket_connect, host, port)
+    safe_ip = _resolve_safe_ip(host)
+    if safe_ip is None:
+        return False, 0, "target resolves to a blocked network or has no usable address"
+    return await asyncio.to_thread(_socket_connect, safe_ip, port, host)
 
 
 async def _check_cron(m):
@@ -286,7 +366,7 @@ async def _check_cron(m):
     job = (m.get("target") or "").strip()
     if not job:
         return False, 0, "no job name configured"
-    interval = int(m.get("interval_seconds") or 60) or 60
+    interval = _parse_interval(m, 60)
     try:
         res = supabase.table("job_heartbeats").select("last_run_at,last_status,last_detail") \
             .eq("job", job).limit(1).execute()
@@ -361,9 +441,12 @@ def record_job_heartbeat(job: str, status: str = "ok", detail: str = "") -> None
 # ── Alerting ───────────────────────────────────────────────────────────────────
 async def _last_fail_count(service: str) -> int:
     """Consecutive failures for a service, from the most recent rows."""
+    # Look at enough history to cover the configured threshold — the old hard
+    # limit(10) meant a threshold > 10 could never fire an alert.
+    limit = max(50, _alert_threshold())
     try:
         res = supabase.table("uptime_checks").select("status") \
-            .eq("service", service).order("checked_at", desc=True).limit(10).execute()
+            .eq("service", service).order("checked_at", desc=True).limit(limit).execute()
         count = 0
         for row in (res.data or []):
             if row.get("status") == "down":
@@ -429,12 +512,19 @@ async def _run_all_checks() -> list[dict]:
         checker = CUSTOM_CHECKERS.get(m.get("type"))
         if not checker:
             continue
-        ok, lat, detail = await checker(m)
-        status = "up" if ok else "down"
         service = f"custom:{m.get('id')}"
+        label = m.get("name") or m.get("type", "monitor")
+        # One malformed monitor (bad port / interval / target) must never take
+        # down the whole monitor run — record it as down with the exception.
+        try:
+            ok, lat, detail = await checker(m)
+        except Exception as e:
+            logger.error("monitor: custom check %s crashed: %s", service, e)
+            ok, lat, detail = False, 0, f"checker error: {type(e).__name__}"
+        status = "up" if ok else "down"
         row = {
             "service": service,
-            "label": m.get("name") or m.get("type", "monitor"),
+            "label": label,
             "status": status,
             "latency_ms": lat,
             "detail": str(detail)[:200],
@@ -448,7 +538,7 @@ async def _run_all_checks() -> list[dict]:
         if status == "down":
             fails = await _last_fail_count(service)
             if fails >= threshold:
-                await _send_alert(m.get("name") or service, str(detail))
+                await _send_alert(label, str(detail))
 
     return results
 
@@ -727,7 +817,8 @@ def _html(s) -> str:
     return _h.escape(str(s or ""))
 
 
-# ── Staff: run now ────────────────────────────────────────────────────────────@router.post("/api/monitor/run")
+# ── Staff: run now ────────────────────────────────────────────────────────────
+@router.post("/api/monitor/run")
 async def staff_run(user: dict = Depends(require_staff)):
     results = await _run_all_checks()
     return {"ran_at": _now(), "results": results}
