@@ -330,8 +330,8 @@ async def github_callback(code: str = None, state: str = None, error: str = None
 
     # 5. Redirect to frontend callback page with token
     try:
-        from routers.auth import make_token, _set_auth_cookies
-        refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
+        from routers.auth import make_refresh_token, _set_auth_cookies
+        refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
         try:
             supabase.table("users").update({
                 "refresh_token": refresh, "refresh_rotated_at": now, "last_seen": now,

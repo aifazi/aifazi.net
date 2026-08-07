@@ -74,9 +74,24 @@ if not COOKIE_DOMAIN:
 from utils.oauth_state import make_oauth_state, verify_oauth_state, _safe_relative_path
 
 def make_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
+    """Mint an ACCESS token. Carries `token_type: "access"` so it can never be
+    replayed as a refresh token (see /refresh + decode_token)."""
     if not SECRET:
         raise HTTPException(503, "PASETO_SECRET is not configured")
     data = payload.copy()
+    data["token_type"] = "access"
+    data["exp"] = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
+    return jwt.encode(data, SECRET, algorithm=ALGO)
+
+
+def make_refresh_token(payload: dict, expires_minutes: int = 60 * 24 * 7) -> str:
+    """Mint a REFRESH token. Distinguished from access tokens by
+    `token_type: "refresh"`; rejected by decode_token on access endpoints and
+    rotated server-side on every /refresh."""
+    if not SECRET:
+        raise HTTPException(503, "PASETO_SECRET is not configured")
+    data = payload.copy()
+    data["token_type"] = "refresh"
     data["exp"] = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
     return jwt.encode(data, SECRET, algorithm=ALGO)
 
@@ -314,7 +329,7 @@ bearer = CookieHTTPBearer(auto_error=False)
 
 def make_forum_token(user_id: str, username: str, role: str) -> str:
     exp = datetime.now(timezone.utc) + timedelta(days=7)
-    return jwt.encode({"id": user_id, "username": username, "role": role, "exp": exp}, SECRET, ALGO)
+    return jwt.encode({"id": user_id, "username": username, "role": role, "token_type": "access", "exp": exp}, SECRET, ALGO)
 
 def make_forum_2fa_token(user_id: str, username: str, role: str, provider: str = "password") -> str:
     exp = datetime.now(timezone.utc) + timedelta(minutes=5)
@@ -618,7 +633,7 @@ async def login(body: LoginBody, request: Request, response: Response):
             }).execute()
             forum_id = fu2.data[0]["id"] if fu2.data else None
         token = make_token({"username": ADMIN_USERNAME, "role": "admin", "id": forum_id})
-        refresh = make_token({"username": ADMIN_USERNAME, "role": "admin", "id": forum_id}, 60 * 24 * 7)
+        refresh = make_refresh_token({"username": ADMIN_USERNAME, "role": "admin", "id": forum_id}, 60 * 24 * 7)
         # H4 — persist the admin refresh token so /refresh can validate + rotate it.
         # (The admin token carries id=forum_id, so without this the refresh check
         # hits the users row, finds no stored token, and 401s after 24h.)
@@ -655,7 +670,7 @@ async def login(body: LoginBody, request: Request, response: Response):
 
             perms = normalize_permissions(staff.get("staff_permissions") or role_permissions(staff.get("role")))
             token   = make_token({"username": staff["username"], "role": staff["role"], "id": staff["id"], "permissions": perms})
-            refresh = make_token({"username": staff["username"], "role": staff["role"], "id": staff["id"], "permissions": perms}, 60 * 24 * 7)
+            refresh = make_refresh_token({"username": staff["username"], "role": staff["role"], "id": staff["id"], "permissions": perms}, 60 * 24 * 7)
 
             supabase.table("users").update({
                 "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
@@ -718,7 +733,7 @@ async def login(body: LoginBody, request: Request, response: Response):
     _record_user_activity(user["id"], user["username"], "login", f"IP: {client_ip}", client_ip)
     _upsert_forum_session(user["id"], user["username"], client_ip, user_agent)
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
-    refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
+    refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
     # H4 — persist the refresh token so /refresh can validate + rotate it.
     supabase.table("users").update({
         "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
@@ -746,6 +761,9 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
         raise HTTPException(401, "Invalid refresh token")
     if payload.get("purpose") not in (None, "auth") or payload.get("tfa_pending"):
         raise HTTPException(401, "Invalid refresh token")
+    # H4 — access tokens must never be replayed as refresh tokens.
+    if payload.get("token_type") == "access":
+        raise HTTPException(401, "Access token cannot be used as a refresh token")
 
     user_id = payload.get("id")
     username = payload.get("username")
@@ -786,7 +804,7 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
             raise HTTPException(401, "Invalid refresh token")
 
     new_access = make_token({k: v for k, v in payload.items() if k != "exp"})
-    new_refresh = make_token({k: v for k, v in payload.items() if k != "exp"}, 60 * 24 * 7)
+    new_refresh = make_refresh_token({k: v for k, v in payload.items() if k != "exp"}, 60 * 24 * 7)
     # H4/020 — rotate server-side so a leaked/stolen token is invalid after one use.
     if user_id:
         supabase.table("users").update({
@@ -850,7 +868,7 @@ async def session_migrate(request: Request, response: Response, creds: HTTPAutho
     if not user_id:
         raise HTTPException(400, "Token has no user id — re-login to migrate")
     token = make_forum_token(user_id, payload.get("username") or "", payload.get("role") or "user")
-    refresh = make_token({"id": user_id, "username": payload.get("username") or "", "role": payload.get("role") or "user"}, 60 * 24 * 7)
+    refresh = make_refresh_token({"id": user_id, "username": payload.get("username") or "", "role": payload.get("role") or "user"}, 60 * 24 * 7)
     try:
         supabase.table("users").update({
             "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
@@ -1230,7 +1248,28 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
             _audit(username, "2fa_failed", ip=ip)
             raise HTTPException(400, "Invalid code")
         token   = make_token({"username": username, "role": role})
-        refresh = make_token({"username": username, "role": role}, 60 * 24 * 7)
+        refresh = make_refresh_token({"username": username, "role": role}, 60 * 24 * 7)
+        # H4 — mint the admin tokens with the forum id so /refresh can validate
+        # + rotate + revoke them like any other account. Without id the refresh
+        # check skips the DB and a leaked token can never be invalidated.
+        forum_id = None
+        try:
+            fr = supabase.table("users").select("id").eq("username", ADMIN_USERNAME).limit(1).execute()
+            if fr.data:
+                forum_id = fr.data[0]["id"]
+        except Exception:
+            pass
+        token = make_token({"username": username, "role": role, "id": forum_id})
+        refresh = make_refresh_token({"username": username, "role": role, "id": forum_id}, 60 * 24 * 7)
+        if forum_id:
+            try:
+                supabase.table("users").update({
+                    "refresh_token": refresh,
+                    "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
+                    "last_seen": datetime.now(timezone.utc).isoformat(),
+                }).eq("id", forum_id).execute()
+            except Exception:
+                pass
         _audit(username, "admin_login_2fa", target="admin_panel", ip=ip)
         _set_auth_cookies(response, token, refresh)  # #1 #2
         return {"token": token, "user": {"username": username, "role": role}}
@@ -1243,7 +1282,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
             _audit(username, "2fa_failed", ip=ip)
             raise HTTPException(400, "Invalid code")
         token   = make_token({"username": s["username"], "role": s["role"], "id": s["id"]})
-        refresh = make_token({"username": s["username"], "role": s["role"], "id": s["id"]}, 60 * 24 * 7)
+        refresh = make_refresh_token({"username": s["username"], "role": s["role"], "id": s["id"]}, 60 * 24 * 7)
         supabase.table("users").update({
             "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
         }).eq("id", s["id"]).execute()
@@ -1882,7 +1921,7 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
         safe_partial = _urlparse.quote(partial, safe="")
         return _Redir(f"{front}/login#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
-    refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
+    refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
     try:
         supabase.table("users").update({
             "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()

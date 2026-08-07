@@ -23,6 +23,7 @@ if dsn.startswith("https://"):
                     environment=os.getenv("ENV", "production"))
 
 from utils.scheduler import scheduler, set_event_loop
+from utils.request_ip import client_ip
 
 log = logging.getLogger("main")
 
@@ -372,15 +373,12 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             return resp
 
         # ── 2. Rate limiting ───────────────────────────────────────────────────
-        # Client IP must NOT come from the user-supplied X-Forwarded-For: its
-        # first entry is attacker-controlled and lets one client rotate IPs to
-        # bypass the limiter. Vercel sets the authoritative `x-vercel-forwarded-for`;
-        # behind any other proxy the trusted value is the RIGHTMOST XFF entry
-        # (the one appended by the proxy). Fall back to the socket peer only if
-        # neither is present.
-        ip = (request.headers.get("x-vercel-forwarded-for", "")
-              or (request.headers.get("x-forwarded-for", "") or "").rsplit(",", 1)[-1].strip()
-              or (request.client.host if request.client else "unknown"))
+        # Client IP must NOT come from user-supplied X-Forwarded-For /
+        # x-vercel-forwarded-for: on the Railway origin a client can set those
+        # itself and rotate IPs to bypass the limiter and ip_bans. Only
+        # Cloudflare's CF-Connecting-IP (proved by CF-Ray) or the socket peer
+        # is trusted — see utils/request_ip.py.
+        ip = client_ip(request)
         now  = time.monotonic()
         _prune_rl_store(now)   # periodic cleanup — prevents memory growth
 

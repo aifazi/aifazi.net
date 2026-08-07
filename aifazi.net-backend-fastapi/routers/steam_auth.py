@@ -80,7 +80,7 @@ def _steam64_to_hex(steam64: str) -> str | None:
 
 def _make_forum_token(user_id: str, username: str, role: str) -> str:
     exp = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE)
-    return jwt.encode({"id": user_id, "username": username, "role": role, "exp": exp},
+    return jwt.encode({"id": user_id, "username": username, "role": role, "token_type": "access", "exp": exp},
                       JWT_SECRET, algorithm=JWT_ALGO)
 
 
@@ -391,8 +391,8 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     # H4 — also set HttpOnly auth cookies so the session survives without
     # localStorage; the fragment token stays as a legacy fallback.
     try:
-        from routers.auth import make_token, _set_auth_cookies
-        refresh = make_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
+        from routers.auth import make_refresh_token, _set_auth_cookies
+        refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
         try:
             supabase.table("users").update({
                 "refresh_token": refresh, "refresh_rotated_at": now, "last_seen": now,

@@ -103,6 +103,9 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     if data.get("purpose") == "admin_gate" or data.get("tfa_pending"):
         raise HTTPException(status_code=401, detail="Invalid auth token")
+    # H4 — refresh tokens are only valid for /refresh, never as access tokens.
+    if data.get("token_type") == "refresh":
+        raise HTTPException(status_code=401, detail="Invalid auth token")
     return data
 
 def get_current_user(

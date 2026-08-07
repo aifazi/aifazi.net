@@ -37,9 +37,8 @@ def _evict():
         del _sessions[next(iter(_sessions))]
 
 def _client_ip(request) -> str:
-    return (request.headers.get("x-vercel-forwarded-for", "")
-            or (request.headers.get("x-forwarded-for", "") or "").rsplit(",", 1)[-1].strip()
-            or (request.client.host if request.client else "unknown"))
+    from utils.request_ip import client_ip
+    return client_ip(request)
 
 def _require_session(request, session_id: str):
     sess = _sessions.get(session_id)
