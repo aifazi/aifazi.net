@@ -25,7 +25,6 @@ export default function CouponsTab() {
   const [cid, setCid] = useState('')
 
   const load = useCallback(() => {
-    setLoading(true)
     Promise.all([
       api.get('/store/admin/coupons').then(r => setCoupons(r.data || [])).catch(() => []),
       api.get('/store/admin/products').then(r => setProducts(r.data || [])).catch(() => []),

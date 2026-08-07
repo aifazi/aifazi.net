@@ -141,7 +141,6 @@ export function ProductsTab({ categories, onOpenVariants }) {
   const [stockUpdating, setStockUpdating] = useState(null)
 
   const load = useCallback(() => {
-    setLoading(true)
     api.get('/store/admin/products').then(r => setProducts(r.data || [])).catch(() => toast.error('Failed to load products'))
       .finally(() => setLoading(false))
   }, [toast])
@@ -356,7 +355,6 @@ export function CategoriesTab() {
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(() => {
-    setLoading(true)
     api.get('/store/admin/categories').then(r => setCats(r.data || [])).catch(() => toast.error('Failed to load categories'))
       .finally(() => setLoading(false))
   }, [toast])
@@ -441,7 +439,6 @@ export function OrdersTab() {
   const { confirm } = useDialog()
 
   const load = useCallback(() => {
-    setLoading(true)
     api.get('/store/admin/orders', { params: filter ? { status: filter } : {} })
       .then(r => setOrders(r.data || [])).catch(() => toast.error('Failed to load orders'))
       .finally(() => setLoading(false))
@@ -591,7 +588,6 @@ export function InvoicesTab() {
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(() => {
-    setLoading(true)
     api.get('/store/admin/invoices').then(r => setInvoices(r.data || [])).catch(() => toast.error('Failed to load invoices'))
       .finally(() => setLoading(false))
   }, [toast])
@@ -636,7 +632,6 @@ export function QuotesTab() {
   const [expanded, setExpanded] = useState({})
 
   const load = useCallback(() => {
-    setLoading(true)
     api.get('/store/admin/quotes').then(r => setQuotes(r.data || [])).catch(() => toast.error('Failed to load quotes'))
       .finally(() => setLoading(false))
   }, [toast])
@@ -705,7 +700,6 @@ export function PlansTab({ categories }) {
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(() => {
-    setLoading(true)
     api.get('/store/admin/plans').then(r => setPlans(r.data || [])).catch(() => toast.error('Failed to load plans'))
       .finally(() => setLoading(false))
   }, [toast])
@@ -855,7 +849,6 @@ export function SubscriptionsTab() {
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(() => {
-    setLoading(true)
     api.get('/store/admin/subscriptions').then(r => setSubs(r.data || [])).catch(() => toast.error('Failed to load subscriptions'))
       .finally(() => setLoading(false))
   }, [toast])
@@ -916,7 +909,6 @@ export default function StorePanel() {
   const [salesLoading, setSalesLoading] = useState(true)
 
   const loadSales = useCallback(() => {
-    setSalesLoading(true)
     api.get('/store/admin/sales').then(r => setSales(r.data || null)).catch(() => toast.error('Failed to load sales overview'))
       .finally(() => setSalesLoading(false))
   }, [toast])

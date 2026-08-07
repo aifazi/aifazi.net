@@ -2,6 +2,30 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Select, Slider } from '../../core/ui.jsx'
 
+// -- Shared top toolbar (works for both embed + native) ---------------------
+const Toolbar = ({ autoplay, onToggleAutoplay, muted, onToggleMuted, isEmbed, size, onSetSize }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 0 4px', flexWrap: 'wrap' }}>
+    {/* Autoplay toggle */}
+    <button onClick={onToggleAutoplay}
+      style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 10px', background: autoplay ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'var(--bg3)', border: `1px solid ${autoplay ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}`, color: autoplay ? 'var(--green)' : 'var(--muted)', borderRadius: 5, cursor: 'pointer' }}>
+      ▶ AUTO {autoplay ? 'ON' : 'OFF'}      </button>
+    {/* Mute toggle (embed) */}
+    {isEmbed && (
+      <button onClick={onToggleMuted}
+        style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 10px', background: muted ? 'rgba(255,71,87,0.12)' : 'var(--bg3)', border: `1px solid ${muted ? 'rgba(255,71,87,0.4)' : 'var(--border)'}`, color: muted ? '#ff4757' : 'var(--muted)', borderRadius: 5, cursor: 'pointer' }}>
+        {muted ? '🔇 MUTED' : '🔊 SOUND'}
+      </button>
+    )}
+    {/* Size selector */}
+    {['small','medium','large','cinema'].map(s => (
+      <button key={s} onClick={() => onSetSize(s)}
+        style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 8px', background: size === s ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'var(--bg3)', border: `1px solid ${size === s ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'var(--border)'}`, color: size === s ? 'var(--cyan)' : 'var(--muted)', borderRadius: 5, cursor: 'pointer', textTransform: 'uppercase' }}>
+        {s === 'small' ? 'SM' : s === 'medium' ? 'MD' : s === 'large' ? 'LG' : 'FULL'}
+      </button>
+    ))}
+  </div>
+)
+
 function VideoPlayer({ url }) {
   const videoRef = useRef(null)
   const containerRef = useRef(null)
@@ -97,34 +121,10 @@ function VideoPlayer({ url }) {
 
   const btnStyle = { background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', backdropFilter: 'blur(4px)', flexShrink: 0 }
 
-  // -- Shared top toolbar (works for both embed + native) ---------------------
-  const Toolbar = () => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 0 4px', flexWrap: 'wrap' }}>
-      {/* Autoplay toggle */}
-      <button onClick={() => setAutoplay(a => !a)}
-        style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 10px', background: autoplay ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'var(--bg3)', border: `1px solid ${autoplay ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}`, color: autoplay ? 'var(--green)' : 'var(--muted)', borderRadius: 5, cursor: 'pointer' }}>
-        ▶ AUTO {autoplay ? 'ON' : 'OFF'}      </button>
-      {/* Mute toggle (embed) */}
-      {isEmbed && (
-        <button onClick={() => setMuted(m => !m)}
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 10px', background: muted ? 'rgba(255,71,87,0.12)' : 'var(--bg3)', border: `1px solid ${muted ? 'rgba(255,71,87,0.4)' : 'var(--border)'}`, color: muted ? '#ff4757' : 'var(--muted)', borderRadius: 5, cursor: 'pointer' }}>
-          {muted ? '🔇 MUTED' : '🔊 SOUND'}
-        </button>
-      )}
-      {/* Size selector */}
-      {['small','medium','large','cinema'].map(s => (
-        <button key={s} onClick={() => setSize(s)}
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 8px', background: size === s ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'var(--bg3)', border: `1px solid ${size === s ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'var(--border)'}`, color: size === s ? 'var(--cyan)' : 'var(--muted)', borderRadius: 5, cursor: 'pointer', textTransform: 'uppercase' }}>
-          {s === 'small' ? 'SM' : s === 'medium' ? 'MD' : s === 'large' ? 'LG' : 'FULL'}
-        </button>
-      ))}
-    </div>
-  )
-
   // -- Embed (YouTube / Vimeo) ------------------------------------------------
   if (isEmbed) return (
     <div style={{ marginTop: 10 }}>
-      <Toolbar />
+      <Toolbar autoplay={autoplay} onToggleAutoplay={() => setAutoplay(a => !a)} muted={muted} onToggleMuted={() => setMuted(m => !m)} isEmbed={isEmbed} size={size} onSetSize={setSize} />
       <div key={`${autoplay}-${muted}`} style={{ position: 'relative', width: '100%', paddingTop: size === 'cinema' ? '56.25%' : undefined, background: '#000', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', ...(!heightStyle ? {} : { height: SIZE_MAP[size], paddingTop: 0 }) }}>
         <iframe
           src={getEmbedUrl()}
@@ -139,7 +139,7 @@ function VideoPlayer({ url }) {
   // -- Native video -----------------------------------------------------------
   return (
     <div style={{ marginTop: 10 }}>
-      <Toolbar />
+      <Toolbar autoplay={autoplay} onToggleAutoplay={() => setAutoplay(a => !a)} muted={muted} onToggleMuted={() => setMuted(m => !m)} isEmbed={isEmbed} size={size} onSetSize={setSize} />
       <div ref={containerRef} onMouseMove={showCtrl} onMouseLeave={() => playing && setShowControls(false)}
         style={{ position: 'relative', width: '100%', background: '#000', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', userSelect: 'none' }}>
         <video ref={videoRef} src={url} loop={loop} autoPlay={autoplay} muted={autoplay || muted}

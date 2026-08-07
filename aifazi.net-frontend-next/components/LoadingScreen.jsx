@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
 
 // ── Style: Terminal (original boot sequence) ──────────────────────────────────
 const BOOT_LINES = [
@@ -607,8 +607,7 @@ function CountdownLoader({ onComplete }) {
 
 // ── Root export ───────────────────────────────────────────────────────────────
 export default function LoadingScreen({ onComplete, style }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
   const s = style || (mounted ? localStorage.getItem('loading-style') : null) || 'terminal'
   return (
     <div style={{ position:'fixed', inset:0, zIndex:9999, background:'transparent', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>

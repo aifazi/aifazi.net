@@ -24,15 +24,12 @@ export default function FiveMLogin() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [nextHref, setNextHref] = useState('')
 
   const profileHref = useFiveMRoute('/profile')
   const homeHref = useFiveMRoute('/')
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    setNextHref(safeNext(params.get('next'), profileHref))
-  }, [profileHref])
+  const searchParams = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search)
+  const nextHref = safeNext(searchParams?.get('next') ?? null, profileHref)
 
   // Already signed in (site-wide session) — go to the FiveM profile.
   useEffect(() => {

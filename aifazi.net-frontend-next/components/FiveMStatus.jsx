@@ -67,9 +67,9 @@ export default function FiveMStatus({ expanded = false, adminMode = false }) {
   }, [])
 
   useEffect(() => {
-    fetchStatus()
+    const init = setTimeout(fetchStatus, 0)
     const timer = setInterval(fetchStatus, POLL_INTERVAL_MS)
-    return () => clearInterval(timer)
+    return () => { clearTimeout(init); clearInterval(timer) }
   }, [fetchStatus])
 
   const setOverride = async (override) => {

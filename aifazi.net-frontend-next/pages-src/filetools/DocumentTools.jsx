@@ -274,7 +274,7 @@ function ExcelPreview() {
             </table>
           </div>
           <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', marginTop:8, letterSpacing:1 }}>
-            {data.length} rows × {Math.max(...data.map(r => Array.isArray(r) ? r.length : 0))} columns in sheet "{sheet}"
+            {data.length} rows × {Math.max(...data.map(r => Array.isArray(r) ? r.length : 0))} columns in sheet &quot;{sheet}&quot;
           </div>
         </div>
       )}

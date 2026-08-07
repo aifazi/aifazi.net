@@ -43,12 +43,18 @@ function NavItem({ item, expanded, onHover, onLeave, delay }) {
 }
 
 export default function FloatingNav() {
-  const [hoveredIdx, setHoveredIdx] = useState(-1)
-  const [visible, setVisible]       = useState(false)
-  const [expanded, setExpanded]     = useState(false)
-  const [themePickerOpen, setThemePickerOpen] = useState(false)
   const location = useLocation()
   const editCtx  = useEdit()
+
+  // Hide on full-screen admin/chat pages; show everywhere else after scroll
+  const isFullScreen = /^\/(admin|chat|users\/chat)/.test(location.pathname)
+
+  const [hoveredIdx, setHoveredIdx] = useState(-1)
+  const [visible, setVisible]       = useState(() =>
+    typeof window === 'undefined' ? false : (!isFullScreen && window.scrollY > 200)
+  )
+  const [expanded, setExpanded]     = useState(false)
+  const [themePickerOpen, setThemePickerOpen] = useState(false)
 
   // Check if user can edit (admin/editor role or content.pages permission) —
   // consistent with EditContext. Reads the cached effective role so it works
@@ -62,16 +68,22 @@ export default function FloatingNav() {
     return () => { window.removeEventListener('auth-change', check); window.removeEventListener('storage', check) }
   }, [])
 
-  // Hide on full-screen admin/chat pages; show everywhere else after scroll
-  const isFullScreen = /^\/(admin|chat|users\/chat)/.test(location.pathname)
+  // Reset nav state when entering/leaving full-screen routes
+  const [prevFullScreen, setPrevFullScreen] = useState(isFullScreen)
+  if (prevFullScreen !== isFullScreen) {
+    setPrevFullScreen(isFullScreen)
+    if (isFullScreen) {
+      setVisible(false); setExpanded(false)
+    } else if (typeof window !== 'undefined') {
+      setVisible(window.scrollY > 200)
+    }
+  }
 
   useEffect(() => {
-    if (isFullScreen) { setVisible(false); setExpanded(false); return }
     const onScroll = () => setVisible(window.scrollY > 200)
-    onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [isFullScreen, location.pathname])
+  }, [])
 
   useEffect(() => {
     if (!expanded) return

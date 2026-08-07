@@ -964,6 +964,17 @@ function RoadmapPhase({ phase }) {
   )
 }
 
+const TabBtn = ({ id, label, active, onSelect }) => (
+  <button onClick={onSelect} style={{
+    fontFamily: C.fontMono, fontSize: 10, letterSpacing: 2, padding: '9px 18px',
+    background: active ? C.purple : 'transparent',
+    color: active ? '#000' : C.muted,
+    border: 'none', cursor: 'pointer',
+    borderBottom: `2px solid ${active ? C.purple : 'transparent'}`,
+    transition: 'all 0.15s', fontWeight: active ? 700 : 400,
+  }}>{label}</button>
+)
+
 /* ─── Main export ─── */
 export default function Changelog() {
   const [tab, setTab] = useState('changelog')
@@ -980,17 +991,6 @@ export default function Changelog() {
   })).filter(entry => !search || entry.changes.length > 0 || entry.title.toLowerCase().includes(search.toLowerCase()))
 
   const totalChanges = CHANGELOG.reduce((n, e) => n + e.changes.length, 0)
-
-  const TabBtn = ({ id, label }) => (
-    <button onClick={() => setTab(id)} style={{
-      fontFamily: C.fontMono, fontSize: 10, letterSpacing: 2, padding: '9px 18px',
-      background: tab === id ? C.purple : 'transparent',
-      color: tab === id ? '#000' : C.muted,
-      border: 'none', cursor: 'pointer',
-      borderBottom: `2px solid ${tab === id ? C.purple : 'transparent'}`,
-      transition: 'all 0.15s', fontWeight: tab === id ? 700 : 400,
-    }}>{label}</button>
-  )
 
   return (
     <div style={{ width: '100%', maxWidth: 900, paddingBottom: 64 }}>
@@ -1026,9 +1026,9 @@ export default function Changelog() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}`, marginBottom: 24 }}>
-        <TabBtn id="changelog" label="📋 CHANGELOG" />
-        <TabBtn id="roadmap"   label="🗺️ ROADMAP" />
-        <TabBtn id="todo"      label="✅ TO-DO" />
+        <TabBtn id="changelog" label="📋 CHANGELOG" active={tab === 'changelog'} onSelect={() => setTab('changelog')} />
+        <TabBtn id="roadmap"   label="🗺️ ROADMAP" active={tab === 'roadmap'} onSelect={() => setTab('roadmap')} />
+        <TabBtn id="todo"      label="✅ TO-DO" active={tab === 'todo'} onSelect={() => setTab('todo')} />
       </div>
 
       {/* ── CHANGELOG TAB ── */}
@@ -1059,7 +1059,7 @@ export default function Changelog() {
           {/* Version blocks */}
           {filtered.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', fontFamily: C.fontMono, fontSize: 11, color: C.muted }}>
-              No changes match "{search}"
+              No changes match &quot;{search}&quot;
             </div>
           ) : (
             filtered.map((entry, i) => <VersionBlock key={entry.version} entry={entry} isLatest={i === 0} />)

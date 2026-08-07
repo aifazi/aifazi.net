@@ -544,7 +544,7 @@ export function FlattenPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, margin: '12px 0 0' }}>
-        Flattening bakes form fields, annotations and overlays into static page content so they can't be edited.
+        Flattening bakes form fields, annotations and overlays into static page content so they can&apos;t be edited.
       </p>
       <StatusBox error={error} success={success} />
       <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="FLATTEN →" />

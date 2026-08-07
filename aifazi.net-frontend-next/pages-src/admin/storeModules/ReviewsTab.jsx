@@ -26,7 +26,6 @@ export default function ReviewsTab() {
   const [savingT, setSavingT] = useState(false)
 
   const load = useCallback(() => {
-    setLoading(true)
     Promise.all([
       api.get('/store/admin/reviews').then(r => setReviews(r.data || [])).catch(() => []),
       api.get('/store/admin/testimonials').then(r => setTestimonials(r.data || [])).catch(() => []),
@@ -178,7 +177,7 @@ export default function ReviewsTab() {
                   <button onClick={() => editTestimonial(t)} style={{ fontFamily: MONO, fontSize: 9, padding: '5px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
                   <button onClick={() => deleteTestimonial(t)} style={{ fontFamily: MONO, fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>DEL</button>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6, lineHeight: 1.5, fontStyle: 'italic' }}>"{t.content}"</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6, lineHeight: 1.5, fontStyle: 'italic' }}>&quot;{t.content}&quot;</div>
               </div>
             ))
           )}

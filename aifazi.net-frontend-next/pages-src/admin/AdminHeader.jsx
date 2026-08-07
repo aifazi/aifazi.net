@@ -104,11 +104,15 @@ function SearchModal({ onClose, setView }) {
   const [q, setQ] = useState('')
   const inputRef = useRef(null)
   const [cursor, setCursor] = useState(0)
+  const [prevQ, setPrevQ] = useState(q)
+  if (prevQ !== q) {
+    setPrevQ(q)
+    setCursor(0)
+  }
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50) }, [])
   const results = q
     ? SEARCH_NAV.filter(n => n.label.toLowerCase().includes(q.toLowerCase()) || n.group.toLowerCase().includes(q.toLowerCase()))
     : SEARCH_NAV
-  useEffect(() => { setCursor(0) }, [q])
   const handleKey = e => {
     if (e.key === 'ArrowDown') { e.preventDefault(); setCursor(c => Math.min(c + 1, results.length - 1)) }
     if (e.key === 'ArrowUp')   { e.preventDefault(); setCursor(c => Math.max(c - 1, 0)) }
@@ -374,8 +378,11 @@ export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed,
   }
 
   useEffect(() => {
-    loadVisitors()
-    loadGeneral()
+    const run = async () => {
+      await loadVisitors()
+      await loadGeneral()
+    }
+    run()
   }, [])
   usePausableInterval(loadVisitors, 15000)
   usePausableInterval(loadGeneral, 30000)

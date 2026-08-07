@@ -38,18 +38,26 @@ export default function ForumCategory() {
 
   useEffect(() => {
     if (!cat) return
-    setLoading(true)
-    api.get(`/forum/threads?category_id=${cat._id || cat.id}&page=${page}&search=${debouncedSearch}&sort=${sort}`)
-      .then(r => {
+    void (async () => {
+      setLoading(true)
+      try {
+        const r = await api.get(`/forum/threads?category_id=${cat._id || cat.id}&page=${page}&search=${debouncedSearch}&sort=${sort}`)
         const data = Array.isArray(r.data) ? r.data : (r.data?.threads || [])
         setThreads(data)
         setTotal(r.data?.total ?? data.length)
         setPages(r.data?.pages ?? Math.max(1, Math.ceil((r.data?.total ?? data.length) / 20)))
-      })
-      .finally(() => setLoading(false))
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [cat, page, debouncedSearch, sort])
 
-  useEffect(() => { setPage(1) }, [debouncedSearch, sort])
+  const filterKey = `${debouncedSearch}|${sort}`
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey)
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey)
+    setPage(1)
+  }
 
   if (!cat && !loading) return (
     <div className="page-container community-page" style={{ zIndex: 1, position: 'relative', textAlign: 'center', paddingTop: 120 }}>

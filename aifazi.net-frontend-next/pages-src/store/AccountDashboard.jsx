@@ -22,7 +22,7 @@ export default function AccountDashboard({ loginHref }) {
   const [section, setSection] = useState('overview')
 
   useEffect(() => {
-    if (!user) { setLoading(false); return }
+    if (!user) return
     Promise.all([
       api.get('/store/my-subscription').then(r => r.data || null).catch(() => null),
       api.get('/store/orders').then(r => r.data || []).catch(() => []),
@@ -302,7 +302,7 @@ export default function AccountDashboard({ loginHref }) {
                   {activeSub.plan_name} — Level {activeSub.plan_level || 0}
                 </div>
               ) : (
-                <div style={{ color: 'var(--muted)', fontSize: 14, marginTop: 6 }}>You don't have an active VIP subscription.</div>
+                <div style={{ color: 'var(--muted)', fontSize: 14, marginTop: 6 }}>You don&apos;t have an active VIP subscription.</div>
               )}
             </div>
             {activeSub && <Badge tone={activeSub.status === 'active' ? 'green' : activeSub.status === 'past_due' ? 'red' : 'orange'}>{activeSub.status?.toUpperCase()}</Badge>}

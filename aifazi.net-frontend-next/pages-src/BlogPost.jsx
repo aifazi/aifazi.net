@@ -253,26 +253,30 @@ function PostReactions({ slug, postId, initialReactions }) {
     setMyReactions(mine || [])
   }
 
-  useEffect(() => {
+  const uid = user?._id || user?.id
+  const [prevReactions, setPrevReactions] = useState(null)
+  const [prevUid, setPrevUid] = useState(null)
+  if (prevReactions !== initialReactions || prevUid !== uid) {
+    setPrevReactions(initialReactions)
+    setPrevUid(uid)
     const r = initialReactions
     if (r && typeof r === 'object' && !Array.isArray(r)) {
       const hasIds = Object.values(r).some(v => Array.isArray(v))
       if (hasIds) {
         const summary = {}
         const mine = []
-        const uid = user?._id || user?.id
         for (const [emoji, arr] of Object.entries(r)) {
           summary[emoji] = Array.isArray(arr) ? arr.length : arr
           if (uid && Array.isArray(arr) && arr.includes(uid)) mine.push(emoji)
         }
         applySummary(summary, mine)
-        return
+      } else {
+        applySummary(r, [])
       }
-      applySummary(r, [])
     } else {
       applySummary({}, [])
     }
-  }, [initialReactions, user?._id])
+  }
 
   const react = async (emoji) => {
     if (!user) { setNeedLogin(true); return }
@@ -365,7 +369,7 @@ function Comments({ slug, postId }) {
     }
   }
 
-  useEffect(() => { load() }, [slug])
+  useEffect(() => { void (async () => { await load() })() }, [slug])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -550,23 +554,28 @@ function RelatedPosts({ slug, currentId }) {
 function ContentMediaPreviews({ html }) {
   const [files, setFiles] = useState([])
 
-  useEffect(() => {
-    if (!html) { setFiles([]); return }
-    const docExts = /\.(pdf|docx?|xlsx?|csv|pptx?|rtf|odt|ods|zip|rar|7z|tar|gz|js|jsx|ts|tsx|py|sh|bash|html?|css|json|yaml|yml|go|rs|java|c|cpp|h|cs|php|rb|swift|kt|sql|xml|toml|ini|md)(?:$|[?#])/i
-    const seen = new Set()
-    const found = []
-    const links = Array.from(new DOMParser().parseFromString(html, 'text/html').querySelectorAll('a[href]'))
-    for (const a of links) {
-      const href = a.getAttribute('href') || ''
-      const text = a.textContent?.trim() || href.split('/').pop() || 'file'
-      if (!docExts.test(href)) continue
-      const key = href
-      if (seen.has(key)) continue
-      seen.add(key)
-      found.push({ url: href, original_name: text })
+  const [prevHtml, setPrevHtml] = useState(null)
+  if (prevHtml !== html) {
+    setPrevHtml(html)
+    if (!html) {
+      setFiles([])
+    } else {
+      const docExts = /\.(pdf|docx?|xlsx?|csv|pptx?|rtf|odt|ods|zip|rar|7z|tar|gz|js|jsx|ts|tsx|py|sh|bash|html?|css|json|yaml|yml|go|rs|java|c|cpp|h|cs|php|rb|swift|kt|sql|xml|toml|ini|md)(?:$|[?#])/i
+      const seen = new Set()
+      const found = []
+      const links = Array.from(new DOMParser().parseFromString(html, 'text/html').querySelectorAll('a[href]'))
+      for (const a of links) {
+        const href = a.getAttribute('href') || ''
+        const text = a.textContent?.trim() || href.split('/').pop() || 'file'
+        if (!docExts.test(href)) continue
+        const key = href
+        if (seen.has(key)) continue
+        seen.add(key)
+        found.push({ url: href, original_name: text })
+      }
+      setFiles(found)
     }
-    setFiles(found)
-  }, [html])
+  }
 
   if (!files.length) return null
   return (
@@ -607,7 +616,6 @@ export default function BlogPost({ initialPost }) {
   }, [])
 
   const fetchPost = async ({ quiet = false } = {}) => {
-    if (!quiet) setLoading(true)
     try {
       const res = await api.get(`/blog/${slug}`)
       setPost(res.data)
@@ -619,14 +627,21 @@ export default function BlogPost({ initialPost }) {
     }
   }
 
+  const [prevSlug, setPrevSlug] = useState(slug)
+  if (prevSlug !== slug) {
+    setPrevSlug(slug)
+    if (initialPost && initialPost.slug === slug) {
+      setLoading(false)
+    } else {
+      setLoading(true)
+    }
+  }
+
   useEffect(() => {
     // ISR-provided body already matches this slug — skip the initial fetch to
     // avoid a loader flash. Realtime (below) keeps edits in sync.
-    if (initialPost && initialPost.slug === slug) {
-      setLoading(false)
-      return
-    }
-    fetchPost()
+    if (initialPost && initialPost.slug === slug) return
+    void (async () => { await fetchPost() })()
   }, [slug])
 
   useEffect(() => {

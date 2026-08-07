@@ -31,7 +31,6 @@ export default function TerminalTab() {
   const [terminalErr, setTerminalErr] = useState('')
 
   const load = useCallback(() => {
-    setLoading(true)
     let terr = ''
     Promise.all([
       api.get('/store/admin/terminal/payments?limit=60').then(r => setPayments(r.data || [])).catch(() => []),

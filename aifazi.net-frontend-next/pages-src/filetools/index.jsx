@@ -333,7 +333,7 @@ export default function FileTools() {
                   <div style={{ textAlign:'center', padding:'80px 24px',
                     fontFamily:'var(--font-mono)', color:'var(--muted)', letterSpacing:2 }}>
                     <div style={{ fontSize:40, marginBottom:16 }}>🔍</div>
-                    <div style={{ fontSize:12 }}>NO TOOLS FOUND FOR "{search || cat}"</div>
+                    <div style={{ fontSize:12 }}>NO TOOLS FOUND FOR &quot;{search || cat}&quot;</div>
                   </div>
                 ) : (
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:10 }}>

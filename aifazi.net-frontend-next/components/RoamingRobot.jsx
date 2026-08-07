@@ -113,7 +113,8 @@ export default function RoamingRobot() {
   const [visible, setVisible] = useState(true)
   const [accent, setAccent]   = useState('#00ff88')
   const wrapperRef = useRef(null)   // direct DOM ref for position — no React re-render per frame
-  const posRef   = useRef({ x: 120, y: 120 })
+  const INITIAL_POS = { x: 120, y: 120 }
+  const posRef   = useRef({ ...INITIAL_POS })
   const dirRef   = useRef(1)
   const timerRef = useRef(null)
   const rafRef   = useRef(null)
@@ -231,7 +232,7 @@ export default function RoamingRobot() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div ref={wrapperRef} className="roaming-robot" style={{ position: 'fixed', left: posRef.current.x, top: posRef.current.y, width: 48, height: 64, zIndex: 9990, pointerEvents: 'none', userSelect: 'none', willChange: 'left, top' }}>
+      <div ref={wrapperRef} className="roaming-robot" style={{ position: 'fixed', left: INITIAL_POS.x, top: INITIAL_POS.y, width: 48, height: 64, zIndex: 9990, pointerEvents: 'none', userSelect: 'none', willChange: 'left, top' }}>
         {msg && <Bubble msg={msg} dir={dir} color={accent} />}
         <div style={{ cursor: 'pointer', pointerEvents: 'auto' }} title="Click to hide" onClick={() => setVisible(false)}>
           <RobotSVG state={state} dir={dir} color={accent} />

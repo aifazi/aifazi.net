@@ -5,7 +5,7 @@
  */
 'use client'
 
-import { useState, useEffect, useCallback, useRef, createContext, useContext, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, createContext, useContext, lazy, Suspense, useSyncExternalStore } from 'react'
 import { ForumProvider } from '@/context/ForumContext'
 // DiscordProvider removed — Discord is now integrated into the unified ForumContext/forum_auth system
 import { EditProvider } from '@/context/EditContext'
@@ -135,7 +135,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   const pathname = usePathname()
 
   const [loading, setLoading] = useState(false)
-  const [hydrated, setHydrated] = useState(false)
+  const hydrated = useSyncExternalStore(() => () => {}, () => true, () => false)
   const [isStoreSubdomain, setIsStoreSubdomain] = useState(() => {
     if (typeof document !== 'undefined') return document.documentElement.dataset.store === 'true'
     return false
@@ -159,13 +159,11 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
 
   const [theme, setThemeState] = useState(initTheme)
 
-  const [userPackage, setUserPackageState] = useState<{ id: string; settings: Record<string, any> } | null>(null)
-
-  // Restore the user's applied package (per-user override) from localStorage
-  useEffect(() => {
+  const [userPackage, setUserPackageState] = useState<{ id: string; settings: Record<string, any> } | null>(() => {
+    if (typeof window === 'undefined') return null
     const pkg = getUserPackage()
-    if (pkg?.id && pkg.settings) setUserPackageState(pkg)
-  }, [])
+    return pkg?.id && pkg.settings ? pkg : null
+  })
 
   // Cross-tab sync for the user package override
   useEffect(() => {
@@ -180,12 +178,9 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
 
   // Restore browser-only state after hydration (prevents SSR mismatch)
   useEffect(() => {
+    (async () => {
+    await Promise.resolve()
     const BUILD_ID = process.env.BUILD_ID || 'dev'
-
-    // Mark hydration complete BEFORE we read the config or check the
-    // loading state so the SSR-visible content never flashes before the
-    // loading screen (if one is needed) can render.
-    setHydrated(true)
 
     // FIX: Load the server-injected global config (#site-config-data, embedded in
     // the HTML by the root layout on every request) FIRST so the loading screen
@@ -261,6 +256,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
         // else: no media query support — keep default cyber-dark
       }
     }
+    })()
   }, [])
 
   const setTheme = (id: string) => {

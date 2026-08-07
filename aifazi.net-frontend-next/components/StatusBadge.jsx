@@ -21,10 +21,9 @@ function StatusLabel({ status }) {
 
 // ── Admin control widget (shown only to admins in admin panel) ────────────────
 export function StatusAdmin() {
-  const [current, setCurrent] = useState('available')
-  useEffect(() => {
-    setCurrent(localStorage.getItem('site-status') || 'available')
-  }, [])
+  const [current, setCurrent] = useState(() =>
+    typeof window === 'undefined' ? 'available' : (localStorage.getItem('site-status') || 'available')
+  )
   const [saving, setSaving]   = useState(false)
 
   const set = async (key) => {
@@ -80,11 +79,9 @@ export function StatusAdmin() {
 
 // ── Public badge (shown in hero / navbar) ─────────────────────────────────────
 export default function StatusBadge({ size = 'sm' }) {
-  const [statusKey, setStatusKey] = useState('available')
-
-  useEffect(() => {
-    setStatusKey(localStorage.getItem('site-status') || 'available')
-  }, [])
+  const [statusKey, setStatusKey] = useState(() =>
+    typeof window === 'undefined' ? 'available' : (localStorage.getItem('site-status') || 'available')
+  )
 
   useEffect(() => {
     const handler = (e) => setStatusKey(e.detail || 'available')

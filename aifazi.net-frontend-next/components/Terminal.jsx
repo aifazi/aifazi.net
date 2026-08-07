@@ -205,7 +205,7 @@ const COMMANDS = {
 function TypedLine({ text, onDone, instant = false }) {
   const [shown, setShown] = useState(instant ? text : '')
   useEffect(() => {
-    if (instant) { setShown(text); onDone?.(); return }
+    if (instant) { onDone?.(); return }
     if (!text) { onDone?.(); return }
     let i = 0
     const iv = setInterval(() => {

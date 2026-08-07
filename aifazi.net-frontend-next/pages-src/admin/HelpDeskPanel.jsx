@@ -4,6 +4,7 @@ import api from '@/lib/api'
 import { getSupabase } from '@/lib/supabase'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
+import { useNow } from '../../hooks/useNow'
 import { Select } from '../../core/ui.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader } from './shared'
@@ -80,6 +81,7 @@ function MessageBubble({ msg }) {
 // ── Ticket Detail View (inline, not a popup) ────────────────
 function TicketDetailView({ ticket, onBack, onSave }) {
   const toast = useToast()
+  const now = useNow()
   const [form, setForm] = useState({
     status: ticket.status,
     priority: ticket.priority,
@@ -228,7 +230,6 @@ function HelpDeskSettings() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    setLoading(true)
     api.get('/helpdesk/admin/settings')
       .then(r => setConfig(r.data || {}))
       .catch(() => setConfig({}))
@@ -463,7 +464,6 @@ export default function HelpDeskPanel() {
   const chanRef = useRef(null)
 
   const load = useCallback(async (p = 1) => {
-    setLoading(true)
     try {
       const params = new URLSearchParams({ page: p, limit: 20 })
       if (fStatus !== 'all') params.set('status', fStatus)
@@ -490,8 +490,16 @@ export default function HelpDeskPanel() {
   useEffect(() => { pageRef.current = page }, [page])
   useEffect(() => { selectedRef.current = selected }, [selected])
 
-  useEffect(() => { load(1); loadStats() }, [fStatus, fPriority])
-  useEffect(() => { if (!search) load(1) }, [search])
+  useEffect(() => {
+    const run = async () => {
+      await load(1)
+      await loadStats()
+    }
+    run()
+  }, [fStatus, fPriority])
+  useEffect(() => {
+    if (!search) { const run = async () => { await load(1) }; run() }
+  }, [search])
 
   // ── Realtime sync (mount once, use refs) ────────────────────
   useEffect(() => {
@@ -550,7 +558,7 @@ export default function HelpDeskPanel() {
 
   const ago = d => {
     if (!d) return '—'
-    const s = Math.floor((Date.now() - new Date(d)) / 1000)
+    const s = Math.floor((now - new Date(d)) / 1000)
     if (s < 60) return `${s}s ago`
     if (s < 3600) return `${Math.floor(s / 60)}m ago`
     if (s < 86400) return `${Math.floor(s / 3600)}h ago`

@@ -110,7 +110,7 @@ function ProjectPreview({ project }) {
         />
       ))}
       <div className="preview-terminal">
-        <span>// NUI</span>
+        <span>{'// NUI'}</span>
         <strong>WARDROBE LINK</strong>
       </div>
     </div>

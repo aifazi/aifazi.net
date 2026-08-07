@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import MailSettings from './MailSettings'
 import MailQueue from './MailQueue'
 import MailTemplates from './MailTemplates'
@@ -16,7 +16,11 @@ const TABS = [
 
 export default function Mail({ initialTab = 'queue' }) {
   const [tab, setTab] = useState(initialTab)
-  useEffect(() => setTab(initialTab), [initialTab])
+  const [prevInitialTab, setPrevInitialTab] = useState(initialTab)
+  if (prevInitialTab !== initialTab) {
+    setPrevInitialTab(initialTab)
+    setTab(initialTab)
+  }
 
   return (
     <div>

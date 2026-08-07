@@ -13,11 +13,24 @@ import api, { setAccessToken } from '@/lib/api'
 
 const GITHUB_LIGHT = '#00b4ff'
 
+const GITHUB_ERR_MSGS = {
+  '1':      'GitHub login verification failed. Please try again.',
+  'link':   'GitHub connect session expired. Please start from your profile again.',
+  'missing':'Your account could not be found. Please sign in again.',
+  'db':     'Database error during GitHub login.',
+  'banned': 'Your account has been banned.',
+  'state':  'GitHub login session expired. Please try again.',
+  'duplicate': 'This GitHub account is already linked to another user.',
+  'identity_locked': 'Your player identity is active. Contact an admin to change your GitHub.',
+  'email_unverified': 'An account with this email already exists but is not verified yet. Log in, verify your email, then link GitHub.',
+}
+
 export default function GitHubAuthCallback() {
   const searchParams = useSearchParams()
   const nav         = useRouter()
-  const [status, setStatus] = useState('Connecting GitHub account…')
-  const [error,  setError]  = useState('')
+  const githubErr = typeof window === 'undefined' ? null : (new URLSearchParams(window.location.hash.substring(1)).get('github_error') || searchParams?.get('github_error'))
+  const [status, setStatus] = useState(githubErr ? '' : 'Connecting GitHub account…')
+  const [error,  setError]  = useState(githubErr ? (GITHUB_ERR_MSGS[githubErr] || 'GitHub login failed. Please try again.') : '')
 
   useEffect(() => {
     // Try fragment first, then fall back to query param
@@ -33,19 +46,6 @@ export default function GitHubAuthCallback() {
     if (!isNewAccount) isNewAccount = searchParams?.get('new_account') === '1'
 
     if (githubErr) {
-      const msgs = {
-        '1':      'GitHub login verification failed. Please try again.',
-        'link':   'GitHub connect session expired. Please start from your profile again.',
-        'missing':'Your account could not be found. Please sign in again.',
-        'db':     'Database error during GitHub login.',
-        'banned': 'Your account has been banned.',
-        'state':  'GitHub login session expired. Please try again.',
-        'duplicate': 'This GitHub account is already linked to another user.',
-        'identity_locked': 'Your player identity is active. Contact an admin to change your GitHub.',
-        'email_unverified': 'An account with this email already exists but is not verified yet. Log in, verify your email, then link GitHub.',
-      }
-      setError(msgs[githubErr] || 'GitHub login failed. Please try again.')
-      setStatus('')
       setTimeout(() => nav.replace('/login?tab=signin'), 3000)
       return
     }
@@ -87,11 +87,9 @@ export default function GitHubAuthCallback() {
     window.history.replaceState(null, '', window.location.pathname)
 
     if (isNewAccount) {
-      setStatus('Account created! Setting up your profile…')
-      setTimeout(() => nav.replace('/profile?tab=edit&github_setup=1'), 900)
+      setTimeout(() => { setStatus('Account created! Setting up your profile…'); nav.replace('/profile?tab=edit&github_setup=1') }, 900)
     } else {
-      setStatus('GitHub connected! Redirecting…')
-      setTimeout(() => nav.replace(dest), 800)
+      setTimeout(() => { setStatus('GitHub connected! Redirecting…'); nav.replace(dest) }, 800)
     }
   }, [])
 

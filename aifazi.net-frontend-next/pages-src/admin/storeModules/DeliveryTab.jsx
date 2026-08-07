@@ -40,7 +40,13 @@ export default function DeliveryAdminTab() {
     } catch {}
   }
 
-  useEffect(() => { load(); loadAssignments() }, [])
+  useEffect(() => {
+    const run = async () => {
+      await load()
+      await loadAssignments()
+    }
+    run()
+  }, [])
 
   const handleAssign = async () => {
     if (!showAssign || !selectedOrder) return
@@ -82,7 +88,7 @@ export default function DeliveryAdminTab() {
               </button>
             </div>
           ))}
-          {agents.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 12 }}>No delivery agents. Staff members with the "moderator" role can access the delivery portal on the store.</div>}
+          {agents.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 12 }}>No delivery agents. Staff members with the &quot;moderator&quot; role can access the delivery portal on the store.</div>}
         </div>
       </div>
 

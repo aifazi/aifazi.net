@@ -23,12 +23,13 @@ export default function VariantsTab({ focusProductId }) {
   const [stockQty, setStockQty] = useState('')
   const [fProduct, setFProduct] = useState(focusProductId || '')
 
-  useEffect(() => {
+  const [prevFocus, setPrevFocus] = useState(focusProductId)
+  if (prevFocus !== focusProductId) {
+    setPrevFocus(focusProductId)
     if (focusProductId) setFProduct(focusProductId)
-  }, [focusProductId])
+  }
 
   const load = useCallback(() => {
-    setLoading(true)
     const q = fProduct ? `?product_id=${encodeURIComponent(fProduct)}` : ''
     Promise.all([
       api.get('/store/admin/products').then(r => setProducts(r.data || [])).catch(() => []),

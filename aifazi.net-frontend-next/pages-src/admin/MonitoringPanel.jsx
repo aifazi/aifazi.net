@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
+import { useNow } from '../../hooks/useNow'
 import { Modal, EmptyState } from './ui'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
@@ -36,7 +37,6 @@ function MonitorsTab() {
   const [testing, setTesting] = useState(null)
 
   const load = () => {
-    setLoading(true)
     api.get('/monitor/checks/config').then(r => setMonitors(r.data || [])).catch(() => toast.error('Could not load monitors'))
       .finally(() => setLoading(false))
   }
@@ -187,6 +187,7 @@ const inp = { width: '100%', boxSizing: 'border-box', background: 'var(--bg)', b
 
 function StatusTab() {
   const toast = useToast()
+  const now = useNow()
   const [checks, setChecks] = useState([])
   const [running, setRunning] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -214,7 +215,7 @@ function StatusTab() {
     if (!latest[c.service]) latest[c.service] = c
   }
 
-  const last24h = checks.filter(c => c.checked_at && Date.now() - new Date(c.checked_at).getTime() < 24 * 3600 * 1000)
+  const last24h = checks.filter(c => c.checked_at && now - new Date(c.checked_at).getTime() < 24 * 3600 * 1000)
   const uptime24 = last24h.length ? Math.round((last24h.filter(c => c.status === 'up').length / last24h.length) * 100) : 0
 
   return (

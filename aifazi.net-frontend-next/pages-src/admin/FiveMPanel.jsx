@@ -155,7 +155,6 @@ function ServerStatusPanel() {
   const [refreshing, setRefreshing] = useState(false)
 
   const load = useCallback(async () => {
-    setLoading(true)
     const [sRes, stRes] = await Promise.allSettled([
       api.get('/fivem/status'), api.get('/fivem/stats')
     ])
@@ -164,7 +163,10 @@ function ServerStatusPanel() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const run = async () => { await load() }
+    run()
+  }, [load])
   usePausableInterval(load, 15000)
 
   const refreshStatus = async () => {
@@ -251,7 +253,6 @@ function WhitelistPanel() {
   const [saving, setSaving]     = useState(false)
 
   const load = useCallback(async () => {
-    setLoading(true)
     const q = search.trim()
     const statusParam = filter ? `status=${encodeURIComponent(filter)}&` : ''
     const offset = (page - 1) * 50
@@ -272,18 +273,28 @@ function WhitelistPanel() {
     setLoading(false)
   }, [filter, search, page])
 
-  useEffect(() => { load() }, [load])
-  usePausableInterval(load, 15000)
-  useEffect(() => { setPage(1) }, [filter, search])
   useEffect(() => {
-    if (!selected) return
-    setPriorityForm({
-      tier: selected.priority_tier || 'None',
-      level: selected.priority_level || 0,
-      permanent: !selected.priority_expires_at,
-      expires_at: selected.priority_expires_at ? String(selected.priority_expires_at).slice(0, 16) : '',
-    })
-  }, [selected])
+    const run = async () => { await load() }
+    run()
+  }, [load])
+  usePausableInterval(load, 15000)
+  const [prevFilters, setPrevFilters] = useState(`${filter}|${search}`)
+  if (`${filter}|${search}` !== prevFilters) {
+    setPrevFilters(`${filter}|${search}`)
+    setPage(1)
+  }
+  const [prevSelected, setPrevSelected] = useState(selected)
+  if (prevSelected !== selected) {
+    setPrevSelected(selected)
+    if (selected) {
+      setPriorityForm({
+        tier: selected.priority_tier || 'None',
+        level: selected.priority_level || 0,
+        permanent: !selected.priority_expires_at,
+        expires_at: selected.priority_expires_at ? String(selected.priority_expires_at).slice(0, 16) : '',
+      })
+    }
+  }
 
   const priorityPayload = () => {
     const level = Number(priorityForm.level || 0)
@@ -691,7 +702,6 @@ function FormsPanel() {
   const notifyError = (message, title = 'Forms') => toast.error(message, { title })
 
   const loadForms = useCallback(async () => {
-    setLoading(true)
     try {
       const res = await api.get('/forms/admin/definitions')
       const rows = Array.isArray(res.data) ? res.data : (res.data?.forms || [])
@@ -713,12 +723,20 @@ function FormsPanel() {
     } catch { setSubmissions([]) }
   }, [selectedSlug, status])
 
-  useEffect(() => { loadForms() }, [loadForms])
   useEffect(() => {
-    const found = forms.find(f => f.slug === selectedSlug)
-    if (found) { setEditingSlug(found.slug); setForm(normalizeForm(found)) }
-  }, [selectedSlug, forms])
-  useEffect(() => { loadSubmissions() }, [loadSubmissions])
+    const run = async () => { await loadForms() }
+    run()
+  }, [loadForms])
+  const foundForm = forms.find(f => f.slug === selectedSlug)
+  const [prevFoundForm, setPrevFoundForm] = useState(foundForm)
+  if (prevFoundForm !== foundForm) {
+    setPrevFoundForm(foundForm)
+    if (foundForm) { setEditingSlug(foundForm.slug); setForm(normalizeForm(foundForm)) }
+  }
+  useEffect(() => {
+    const run = async () => { await loadSubmissions() }
+    run()
+  }, [loadSubmissions])
 
   const selectForm = slug => {
     setSelectedSlug(slug)
@@ -933,7 +951,6 @@ function BansPanel() {
   const [mode,        setMode]        = useState('player') // 'player' | 'manual'
 
   const loadBans = useCallback(async () => {
-    setLoading(true)
     try {
       const r = await api.get(`/fivem/bans?active=${filterActive}&limit=50&offset=${(bansPage - 1) * 50}`)
       setBans(r.data.bans||[])
@@ -958,7 +975,10 @@ function BansPanel() {
     }
   }, [whitelistQuery])
 
-  useEffect(() => { loadBans() }, [loadBans])
+  useEffect(() => {
+    const run = async () => { await loadBans() }
+    run()
+  }, [loadBans])
   useEffect(() => {
     if (!showAdd || mode !== 'player') return
     const t = setTimeout(loadWhitelistPlayers, 250)
@@ -1208,7 +1228,6 @@ function HistoryPanel() {
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
-    setLoading(true)
     try {
       const r = await api.get('/fivem/whitelist/history?limit=100')
       setHistory(r.data.history||[])
@@ -1216,7 +1235,10 @@ function HistoryPanel() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const run = async () => { await load() }
+    run()
+  }, [load])
   usePausableInterval(load, 15000)
 
   if (loading) return <div style={{color:MUTED,fontFamily:MONO,padding:20}}>loading…</div>

@@ -16,7 +16,6 @@ export default function StockLedgerTab() {
   const [filter, setFilter] = useState('all')
 
   const load = useCallback(() => {
-    setLoading(true)
     Promise.all([
       api.get('/store/admin/low-stock').then(r => setLow(r.data || [])).catch(() => []),
       api.get('/store/admin/stock-ledger').then(r => setLedger(r.data || [])).catch(() => []),

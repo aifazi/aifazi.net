@@ -11,11 +11,22 @@ import { handOffFiveMAuthCallback } from '@/lib/authCallbackHandoff'
 import { safeNextPath } from '@/lib/authRoutes'
 import api, { setAccessToken } from '@/lib/api'
 
+const DISCORD_ERR_MSGS = {
+  '1':      'Discord login was cancelled.',
+  '2':      'Failed to exchange Discord code. Please try again.',
+  '3':      'Failed to fetch your Discord profile.',
+  'db':     'Database error. Please try again.',
+  'banned': 'Your account has been banned.',
+  'cfg':    'Discord OAuth is not configured on the server.',
+  'email_unverified': 'An account with this email already exists but is not verified yet. Log in, verify your email, then link Discord.',
+}
+
 export default function DiscordAuthCallback() {
   const router       = useRouter()
   const searchParams = useSearchParams()
-  const [status, setStatus] = useState('Connecting your Discord account...')
-  const [error,  setError]  = useState('')
+  const discordErr = typeof window === 'undefined' ? null : (new URLSearchParams(window.location.hash.substring(1)).get('discord_error') || searchParams.get('discord_error'))
+  const [status, setStatus] = useState(discordErr ? '' : 'Connecting your Discord account...')
+  const [error,  setError]  = useState(discordErr ? (DISCORD_ERR_MSGS[discordErr] || 'Discord login failed. Please try again.') : '')
 
   useEffect(() => {
     // Try fragment first, then fall back to query param
@@ -30,17 +41,6 @@ export default function DiscordAuthCallback() {
     if (!err) err = searchParams.get('discord_error')
 
     if (err) {
-      const msgs = {
-        '1':      'Discord login was cancelled.',
-        '2':      'Failed to exchange Discord code. Please try again.',
-        '3':      'Failed to fetch your Discord profile.',
-        'db':     'Database error. Please try again.',
-        'banned': 'Your account has been banned.',
-        'cfg':    'Discord OAuth is not configured on the server.',
-        'email_unverified': 'An account with this email already exists but is not verified yet. Log in, verify your email, then link Discord.',
-      }
-      setError(msgs[err] || 'Discord login failed. Please try again.')
-      setStatus('')
       setTimeout(() => router.replace('/login'), 3000)
       return
     }
@@ -74,10 +74,9 @@ export default function DiscordAuthCallback() {
     window.dispatchEvent(new Event('auth-change'))
     // Clear the hash so the token doesn't linger in the URL
     window.history.replaceState(null, '', window.location.pathname)
-    setStatus('Discord connected! Redirecting...')
 
     // Small delay so ForumContext can hydrate
-    setTimeout(() => router.replace(dest), 800)
+    setTimeout(() => { setStatus('Discord connected! Redirecting...'); router.replace(dest) }, 800)
   }, [searchParams, router])
 
   return (

@@ -7,6 +7,7 @@ import { useDialog } from '../../components/Dialog'
 import { useIsMobile, PageHeader } from './shared'
 import { DateTimePicker } from '../../core/ui.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
+import { useNow } from '../../hooks/useNow'
 import { EmptyState, Pagination } from './ui'
 import { PAGE_ANIMATIONS } from '../../core/pageMotion.jsx'
 
@@ -121,6 +122,7 @@ export function PageContentPanel() {
 function ActiveSessionsPanel() {
   const toast = useToast()
   const { confirm } = useDialog()
+  const now = useNow()
   const [sessions, setSessions] = useState([])
   const [loading, setLoading]   = useState(true)
   const [revoking, setRevoking] = useState(null)
@@ -128,7 +130,6 @@ function ActiveSessionsPanel() {
   const [conflictInfo, setConflictInfo] = useState([])
 
   const load = async () => {
-    setLoading(true)
     try {
       const r = await api.get('/auth/sessions')
       setSessions(r.data?.sessions || [])
@@ -138,7 +139,8 @@ function ActiveSessionsPanel() {
 
   // Heartbeat every 30s — registers this session + detects conflicts
   useEffect(() => {
-    load()
+    const run = async () => { await load() }
+    run()
     const beat = async () => {
       try {
         const r = await api.post('/auth/sessions/heartbeat')
@@ -178,7 +180,7 @@ function ActiveSessionsPanel() {
 
   const ago = d => {
     if (!d) return '—'
-    const s = Math.floor((Date.now() - new Date(d)) / 1000)
+    const s = Math.floor((now - new Date(d)) / 1000)
     if (s < 60) return `${s}s ago`
     if (s < 3600) return `${Math.floor(s/60)}m ago`
     if (s < 86400) return `${Math.floor(s/3600)}h ago`
@@ -201,7 +203,7 @@ function ActiveSessionsPanel() {
       {/* Conflict warning banner */}
       {conflict && (
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#f87171', lineHeight: 1.7, padding: '10px 14px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 4, marginBottom: 14 }}>
-          ⚠️ <strong>{conflictInfo.length} other active session{conflictInfo.length > 1 ? 's' : ''} detected.</strong> Another device is currently logged in with the same account. If this wasn't you, revoke all other sessions immediately.
+          ⚠️ <strong>{conflictInfo.length} other active session{conflictInfo.length > 1 ? 's' : ''} detected.</strong> Another device is currently logged in with the same account. If this wasn&apos;t you, revoke all other sessions immediately.
           {conflictInfo.map((s, i) => <div key={i} style={{ marginTop: 4, opacity: 0.8 }}>→ IP: {s.ip} · Last active: {ago(s.last_active)}</div>)}
         </div>
       )}
@@ -654,7 +656,7 @@ function AnnouncementsPanel() {
   const [loading, setLoading] = useState(true)
   const [saving,  setSaving]  = useState(false)
   const [editId,  setEditId]  = useState(null)
-  const [nowTick, setNowTick] = useState(Date.now())
+  const [nowTick, setNowTick] = useState(() => Date.now())
   const [form, setForm]       = useState({ message: '', type: 'info', link: '', linkLabel: '', active: true, pinned: false, style: 'banner', scheduledAt: '', expiresAt: '' })
 
   const TYPES = [
@@ -1204,7 +1206,6 @@ function NewsletterPanel() {
   const { confirm } = useDialog()
 
   const loadSubs = useCallback((page = 1) => {
-    setLoading(true)
     api.get(`/newsletter/subscribers?page=${page}&page_size=50`)
       .then(r => { const d = r.data; const items = Array.isArray(d) ? d : (d?.items || []); setSubs(items); setSubsTotal(Array.isArray(d) ? items.length : (d?.total ?? items.length)); setSubsPage(page) })
       .catch(() => setSubs([]))
@@ -1362,21 +1363,24 @@ const STATUS_ACCENT = { MAINTENANCE:'#f59e0b', UPDATING:'#00d4ff', 'COMING SOON'
 
 // --- Stats Panel --------------------------------------------------------------
 function StatsPanel() {
+  const now = useNow()
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
   const isMobile = useIsMobile()
 
   const load = async () => {
-    setLoading(true); setError(null)
     try { const r = await api.get('/admin/stats'); setData(r.data) }
     catch { setError('Failed to load stats.') }
     finally { setLoading(false) }
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const run = async () => { await load() }
+    run()
+  }, [])
 
   const fmt = n => (n ?? '').toLocaleString?.() ?? n
-  const ago = d => { if (!d) return ''; const s = Math.floor((Date.now() - new Date(d)) / 1000); if (s < 60) return `${s}s ago`; if (s < 3600) return `${Math.floor(s/60)}m ago`; if (s < 86400) return `${Math.floor(s/3600)}h ago`; return `${Math.floor(s/86400)}d ago` }
+  const ago = d => { if (!d) return ''; const s = Math.floor((now - new Date(d)) / 1000); if (s < 60) return `${s}s ago`; if (s < 3600) return `${Math.floor(s/60)}m ago`; if (s < 86400) return `${Math.floor(s/3600)}h ago`; return `${Math.floor(s/86400)}d ago` }
 
   return (
     <div style={{ padding: isMobile ? 16 : 32 }}>
@@ -1484,6 +1488,7 @@ function StatsPanel() {
 
 // --- Audit Log Panel ----------------------------------------------------------
 function AuditPanel() {
+  const now = useNow()
   const [auditTab, setAuditTab] = useState('actions') // 'actions' | 'authlog'
   // ── Actions log state ──────────────────────────────────────────────────────
   const [logs, setLogs]       = useState([])
@@ -1504,7 +1509,6 @@ function AuditPanel() {
   const isMobile = useIsMobile()
 
   const load = async (p = 1) => {
-    setLoading(true)
     try {
       const r = await api.get(`/admin/audit?page=${p}&limit=50`)
       setLogs(r.data.logs || []); setTotal(r.data.total || 0); setPage(p)
@@ -1514,7 +1518,6 @@ function AuditPanel() {
 
   // #5 — Auth log loader
   const loadAuthLog = async (p = 1) => {
-    setAuthLoading(true)
     try {
       // Endpoint lives under the audit router: /api/admin/audit/auth-log
       const r = await api.get(`/admin/audit/auth-log?page=${p}&limit=50`)
@@ -1525,8 +1528,13 @@ function AuditPanel() {
     } finally { setAuthLoading(false) }
   }
 
-  useEffect(() => { load() }, [])
-  useEffect(() => { if (auditTab === 'authlog') loadAuthLog() }, [auditTab])
+  useEffect(() => {
+    const run = async () => { await load() }
+    run()
+  }, [])
+  useEffect(() => {
+    if (auditTab === 'authlog') { const run = async () => { await loadAuthLog() }; run() }
+  }, [auditTab])
 
   const purge = async () => {
     const ok = await confirm({ title: 'Purge Audit Logs', message: 'This will permanently delete all audit logs older than 90 days. This cannot be undone.', variant: 'danger', confirmLabel: 'PURGE' })
@@ -1540,7 +1548,7 @@ function AuditPanel() {
   }
 
   const ICON = a => a?.includes('delete') ? '🗑️' : a?.includes('login') ? '🔑' : a?.includes('create') ? '➕' : a?.includes('ban') ? '🚫' : a?.includes('update') ? '✏️' : '📋'
-  const ago = d => { if (!d) return ''; const s = Math.floor((Date.now() - new Date(d)) / 1000); if (s < 60) return `${s}s ago`; if (s < 3600) return `${Math.floor(s/60)}m ago`; if (s < 86400) return `${Math.floor(s/3600)}h ago`; return new Date(d).toLocaleDateString() }
+  const ago = d => { if (!d) return ''; const s = Math.floor((now - new Date(d)) / 1000); if (s < 60) return `${s}s ago`; if (s < 3600) return `${Math.floor(s/60)}m ago`; if (s < 86400) return `${Math.floor(s/3600)}h ago`; return new Date(d).toLocaleDateString() }
 
   return (
     <div style={{ padding: isMobile ? 16 : 32 }}>

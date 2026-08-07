@@ -425,7 +425,10 @@ function SiteSettings() {
   const timerRef = useRef(null)
   const cfgRef   = useRef(cfg)
   const lastLocalEditRef = useRef(0)
-  cfgRef.current = cfg
+
+  useEffect(() => {
+    cfgRef.current = cfg
+  }, [cfg])
 
   useEffect(() => {
     getSiteSettings({ fresh: true }).then(data => setCfg(p => ({ ...p, ...data }))).catch(() => {}).finally(() => setLoading(false))

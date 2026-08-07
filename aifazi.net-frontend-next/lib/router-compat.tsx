@@ -9,7 +9,7 @@
 'use client'
 
 import NextLink from 'next/link'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useCallback, useSyncExternalStore } from 'react'
 import { useRouter, usePathname, useParams as _useParams } from 'next/navigation'
 
 export { usePathname, useSearchParams } from 'next/navigation'
@@ -66,8 +66,7 @@ export function useNavigate() {
 /** Replaces react-router useLocation — hydration-safe via mounted pattern */
 export function useLocation() {
   const pathname = usePathname()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
 
   // SSR-safe defaults (always empty)
   let search = ''

@@ -25,7 +25,6 @@ export default function StoreOverview({ onNavigate }) {
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(() => {
-    setLoading(true)
     api.get('/store/admin/sales').then(r => setD(r.data || null)).catch(() => toast.error('Failed to load store overview'))
       .finally(() => setLoading(false))
   }, [toast])

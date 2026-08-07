@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from '@/lib/router-compat'
+import { useSearchParams, useNavigate } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
@@ -16,11 +16,12 @@ const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)', Y = 'var(--orange
 const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
 
 function useMobile(bp = 768) {
-  const [m, setM] = useState(false)
+  const [m, setM] = useState(() =>
+    typeof window === 'undefined' ? false : window.matchMedia(`(max-width:${bp}px)`).matches
+  )
   useEffect(() => {
     if (typeof window === 'undefined') return
     const q = window.matchMedia(`(max-width:${bp}px)`)
-    setM(q.matches)
     const fn = e => setM(e.matches)
     q.addEventListener('change', fn)
     return () => q.removeEventListener('change', fn)
@@ -30,6 +31,7 @@ function useMobile(bp = 768) {
 
 export default function StorePage({ fivem = false }) {
   const { user } = useForum()
+  const navigate = useNavigate()
   const searchParams = useSearchParams()
   const isMobile = useMobile()
   const [plans, setPlans] = useState([])
@@ -73,7 +75,7 @@ export default function StorePage({ fivem = false }) {
     api.get('/store/cart').then(r => setCart(r.data || { items: [], subtotal: 0, count: 0 })).catch(() => {})
   }
 
-  useEffect(() => { loadCart() }, [user])
+  useEffect(() => { void (async () => { await loadCart() })() }, [user])
 
   // Open cart drawer when item added
   const openCartAfterAdd = () => {
@@ -179,7 +181,7 @@ export default function StorePage({ fivem = false }) {
   if (user) TABS.push(['delivery', '🚚 Delivery'])
 
   const handleTabClick = (k) => {
-    if (k === 'profile') { window.location.href = '/profile'; return }
+    if (k === 'profile') { navigate('/profile'); return }
     setTabAndUrl(k); setError(''); setNotice('')
   }
 

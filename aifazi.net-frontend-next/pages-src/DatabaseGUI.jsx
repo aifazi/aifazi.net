@@ -146,11 +146,13 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
   const [tab, setTab]             = useState("quick");
   const [u, setU]                 = useState(normalizedUser);
 
-  useEffect(() => {
+  const [prevUser, setPrevUser] = useState(user);
+  if (prevUser !== user) {
+    setPrevUser(user);
     const next = normalizeUserDoc(user);
     setU(next);
     setNewRole(next.role || "user");
-  }, [user]);
+  }
 
   const run = async (label, path, body) => {
     setBusy(label);
@@ -459,8 +461,14 @@ function CollectionBrowser({ token, toast }) {
     finally { setLoading(false); }
   }, [coll, page, token, search]);
 
-  useEffect(() => { setPage(1); setSearch(""); }, [coll]);
-  useEffect(() => { load(); }, [load]);
+  const [prevColl, setPrevColl] = useState(coll);
+  if (prevColl !== coll) {
+    setPrevColl(coll);
+    setPage(1);
+    setSearch("");
+  }
+
+  useEffect(() => { void (async () => { await load() })() }, [load]);
 
   const del = async (id) => {
     const ok = await confirm({ title: 'Delete Document', message: 'This document will be permanently deleted. This cannot be undone.', variant: 'danger', confirmLabel: 'DELETE' });
@@ -887,7 +895,7 @@ function DbHealthTab({ token, toast }) {
     finally { setBusy(""); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { void (async () => { await load() })() }, []);
 
   const bytes = (b) => {
     if (!b) return "-";
@@ -1049,7 +1057,7 @@ function NewsletterTab({ token, toast }) {
     finally { setLoading(false); }
   }, [page, search, token]);
 
-  useEffect(() => { load(page, search); }, [page]);
+  useEffect(() => { void (async () => { await load(page, search) })() }, [page]);
 
   const toggle = async (sub) => {
     setBusy(sub._id);
@@ -1177,8 +1185,14 @@ function AuditLogTab({ token }) {
     finally { setLoading(false); }
   }, [page, filter, token]);
 
-  useEffect(() => { load(page); }, [page]);
-  useEffect(() => { setPage(1); load(1); }, [filter]);
+  const [prevFilter, setPrevFilter] = useState(filter);
+  if (prevFilter !== filter) {
+    setPrevFilter(filter);
+    setPage(1);
+  }
+
+  useEffect(() => { void (async () => { await load(page) })() }, [page]);
+  useEffect(() => { void (async () => { await load(1) })() }, [filter]);
 
   const pages = Math.ceil(total / 30) || 1;
   const ACTION_COLOR = { login:"var(--green,#00ff88)", logout:"var(--orange,#ff6b35)", create:"var(--cyan,#00d4ff)", delete:"var(--red,#ff4757)", ban:"var(--red,#ff4757)", unban:"var(--green,#00ff88)", role:"var(--yellow,#ffd700)", update:"var(--purple,#a78bfa)", verify:"var(--green,#00ff88)", password:"var(--orange,#ff6b35)", fail:"var(--red,#ff4757)", upload:"var(--cyan,#00d4ff)" };
@@ -1259,7 +1273,7 @@ function SessionsTab({ token, toast }) {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { void (async () => { await load() })() }, []);
 
   const revokeSession = async (id) => {
     setBusy(id);
@@ -1390,9 +1404,9 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
       setPulse(true); setTimeout(()=>setPulse(false), 600);
     } catch(e) { setError(e.message); }
     finally { setLoading(false); }
-  }, [token]);
+  }, [token, setStats]);
 
-  useEffect(()=>{ if(token) fetchStats(); }, [token]);
+  useEffect(()=>{ if(token) void (async () => { await fetchStats() })() }, [token]);
   useEffect(()=>{
     clearInterval(intervalRef.current);
     if (autoRefresh && token) intervalRef.current = setInterval(()=>fetchStats(), 30000);
@@ -1402,7 +1416,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
   if (!token) return (
     <div style={{ minHeight: _preloadToken ? "auto" : "100vh", background: _preloadToken ? "transparent" : "var(--bg)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--font-mono,monospace)", padding: 24 }}>
       <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:10, padding:"44px 40px", width:"100%", maxWidth:400 }}>
-        <div style={{ fontSize:9, letterSpacing:4, color:"var(--green,#00ff88)", marginBottom:10 }}>// AIFAZI.NET</div>
+        <div style={{ fontSize:9, letterSpacing:4, color:"var(--green,#00ff88)", marginBottom:10 }}>{'// AIFAZI.NET'}</div>
         <div style={{ fontSize:24, fontWeight:700, color:"var(--text)", marginBottom:6 }}>DB Monitor</div>
         <div style={{ fontSize:11, color:"var(--muted)", marginBottom:28, lineHeight:1.7 }}>Paste your admin JWT token to connect. Stored in memory only - clears on refresh.</div>
         <input type="password" value={tokenInput} onChange={e=>setTokenInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&tokenInput&&setToken(tokenInput)}

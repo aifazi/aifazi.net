@@ -20,6 +20,43 @@ function isValidIp(ip) {
   return /^(\d{1,3}\.){3}\d{1,3}$/.test(ip) && ip.split('.').every(o => parseInt(o) <= 255)
 }
 
+// ── Small presentational components ───────────────────────────────────────────
+const Row = ({ label, value, mono = true, color }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', flexShrink: 0 }}>{label}</span>
+    <span style={{ fontFamily: mono ? 'var(--font-mono)' : 'var(--font-display)', fontSize: 13, color: color || 'var(--green)', letterSpacing: mono ? 1 : 0, wordBreak: 'break-all', textAlign: 'right' }}>{value}</span>
+  </div>
+)
+
+const InfoCard = ({ icon, label, value, color, onClick }) => (
+  <div
+    onClick={onClick}
+    title={onClick ? 'Click to copy' : undefined}
+    style={{
+      background: 'var(--bg3)', border: '1px solid var(--border)',
+      padding: '14px 16px', cursor: onClick ? 'pointer' : 'default',
+      transition: 'border-color 0.15s',
+    }}
+    onMouseEnter={e => onClick && (e.currentTarget.style.borderColor = 'var(--green)')}
+    onMouseLeave={e => onClick && (e.currentTarget.style.borderColor = 'var(--border)')}
+  >
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
+      {icon} {label}
+    </div>
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: color || 'var(--text)', wordBreak: 'break-all', letterSpacing: 1 }}>
+      {value || '—'}
+    </div>
+  </div>
+)
+
+const Field = ({ label, value, onChange, placeholder, color }) => (
+  <div style={{ marginBottom: 12 }}>
+    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{label}</label>
+    <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      style={{ ...S.input, color: color || 'var(--text)', fontFamily: 'var(--font-mono)' }} />
+  </div>
+)
+
 // ── Subnet Calculator ─────────────────────────────────────────────────────────
 function SubnetCalc() {
   const [input, setInput] = useState('192.168.1.0/24')
@@ -64,13 +101,6 @@ function SubnetCalc() {
       hostPart:   ipBin.slice(cidr),
     })
   }
-
-  const Row = ({ label, value, mono = true, color }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', flexShrink: 0 }}>{label}</span>
-      <span style={{ fontFamily: mono ? 'var(--font-mono)' : 'var(--font-display)', fontSize: 13, color: color || 'var(--green)', letterSpacing: mono ? 1 : 0, wordBreak: 'break-all', textAlign: 'right' }}>{value}</span>
-    </div>
-  )
 
   return (
     <div>
@@ -262,9 +292,6 @@ function IpInfo() {
   const [mapId, setMapId]   = useState('ipmap-0')
   const lookupCount = useRef(0)
 
-  // Auto-load visitor IP on mount
-  useEffect(() => { doLookup('') }, [])
-
   const doLookup = async (target) => {
     setError(''); setResult(null)
     setLoading(true)
@@ -283,30 +310,12 @@ function IpInfo() {
     }
   }
 
+  // Auto-load visitor IP on mount
+  useEffect(() => { void (async () => { await doLookup('') })() }, [])
+
   const handleLookup = () => doLookup(ip.trim())
 
   const copy = (val) => navigator.clipboard.writeText(String(val)).then(() => notify.success('Copied!'))
-
-  const InfoCard = ({ icon, label, value, color, onClick }) => (
-    <div
-      onClick={onClick}
-      title={onClick ? 'Click to copy' : undefined}
-      style={{
-        background: 'var(--bg3)', border: '1px solid var(--border)',
-        padding: '14px 16px', cursor: onClick ? 'pointer' : 'default',
-        transition: 'border-color 0.15s',
-      }}
-      onMouseEnter={e => onClick && (e.currentTarget.style.borderColor = 'var(--green)')}
-      onMouseLeave={e => onClick && (e.currentTarget.style.borderColor = 'var(--border)')}
-    >
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
-        {icon} {label}
-      </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: color || 'var(--text)', wordBreak: 'break-all', letterSpacing: 1 }}>
-        {value || '—'}
-      </div>
-    </div>
-  )
 
   return (
     <div>
@@ -427,14 +436,6 @@ function IpConverter() {
       setLong(n.toString())
     }
   }
-
-  const Field = ({ label, value, onChange, placeholder, color }) => (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{label}</label>
-      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{ ...S.input, color: color || 'var(--text)', fontFamily: 'var(--font-mono)' }} />
-    </div>
-  )
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>

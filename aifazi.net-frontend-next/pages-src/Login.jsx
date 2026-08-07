@@ -233,10 +233,9 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = safeNextPath(searchParams?.get('next'))
-  const [fromForum, setFromForum] = useState(false)
-  useEffect(() => {
-    setFromForum(document.referrer.includes('/forum') || window.location.search.includes('from=forum'))
-  }, [])
+  const [fromForum, setFromForum] = useState(() =>
+    typeof window === 'undefined' ? false : (document.referrer.includes('/forum') || window.location.search.includes('from=forum'))
+  )
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword]     = useState('')
   const [showPass, setShowPass]     = useState(false)
@@ -484,6 +483,19 @@ function VerifyWaiting({ email, onSwitch }) {
   )
 }
 
+// Username status badge
+const UnStatus = ({ username, check, suggest, onSuggest }) => {
+  if (!username || username.length < 3) return null
+  if (check === 'checking') return <span className="auth-field-status">⏳ Checking…</span>
+  if (check === 'available') return <span className="auth-field-status auth-field-status-ok">✓ Available</span>
+  if (check === 'taken') return (
+    <span className="auth-field-status auth-field-status-bad">
+      ✗ Taken{suggest && <> — try <button type="button" onClick={() => onSuggest()} className="auth-link auth-link-cyan" style={{ fontSize: 10, textDecoration: 'underline' }}>{suggest}</button></>}
+    </span>
+  )
+  return null
+}
+
 // ── Sign Up ────────────────────────────────────────────────────────────────────
 function SignUp({ onSwitch, shake }) {
   const [form, setForm]     = useState({ username: '', email: '', password: '', confirm: '' })
@@ -560,24 +572,11 @@ function SignUp({ onSwitch, shake }) {
     <VerifyWaiting email={form.email} onSwitch={onSwitch} />
   )
 
-  // Username status badge
-  const UnStatus = () => {
-    if (!form.username || form.username.length < 3) return null
-    if (unCheck === 'checking') return <span className="auth-field-status">⏳ Checking…</span>
-    if (unCheck === 'available') return <span className="auth-field-status auth-field-status-ok">✓ Available</span>
-    if (unCheck === 'taken') return (
-      <span className="auth-field-status auth-field-status-bad">
-        ✗ Taken{unSuggest && <> — try <button type="button" onClick={() => set('username', unSuggest)} className="auth-link auth-link-cyan" style={{ fontSize: 10, textDecoration: 'underline' }}>{unSuggest}</button></>}
-      </span>
-    )
-    return null
-  }
-
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
       <ErrorBox msg={error} />
 
-      <FieldWrap label="Username" htmlFor="su-user" hint={<UnStatus />}>
+      <FieldWrap label="Username" htmlFor="su-user" hint={<UnStatus username={form.username} check={unCheck} suggest={unSuggest} onSuggest={() => set('username', unSuggest)} />}>
         <input id="su-user" type="text" placeholder="CoolUsername"
           value={form.username} onChange={e => set('username', e.target.value)}
           required minLength={3} maxLength={30} autoComplete="username"
@@ -603,7 +602,7 @@ function SignUp({ onSwitch, shake }) {
         <PassToggle show={showPass} onToggle={() => setShowPass(s => !s)} />
       </FieldWrap>
 
-      <FieldWrap label="Confirm Password" htmlFor="su-conf" hint={pwMatch && <span className="auth-field-status auth-field-status-bad">Passwords don't match</span>}>
+      <FieldWrap label="Confirm Password" htmlFor="su-conf" hint={pwMatch && <span className="auth-field-status auth-field-status-bad">Passwords don&apos;t match</span>}>
         <input id="su-conf" type={showConf ? 'text' : 'password'} placeholder="Repeat password"
           value={form.confirm} onChange={e => set('confirm', e.target.value)}
           required autoComplete={showConf ? 'off' : 'new-password'}
@@ -697,7 +696,7 @@ function ForgotPassword({ onSwitch, shake }) {
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
       <p className="auth-intro">
-        Enter your email address and we'll send you a link to reset your password.
+        Enter your email address and we&apos;ll send you a link to reset your password.
       </p>
       <ErrorBox msg={error} />
       <FieldWrap label="Email Address" htmlFor="fp-email">
@@ -901,8 +900,20 @@ export default function Login() {
   const router = useRouter()
   const rawTab = searchParams?.get('tab') || 'signin'
   const validTab = ['signin','register','forgot'].includes(rawTab) ? rawTab : 'signin'
-  const [tab, setTab] = useState(validTab)
-  const [twoFAChallenge, setTwoFAChallenge] = useState(null)
+  const [tab, setTab] = useState(searchParams?.get('discord_error') ? 'signin' : validTab)
+  const [twoFAChallenge, setTwoFAChallenge] = useState(() => {
+    if (typeof window === 'undefined') return null
+    const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''))
+    if (hash.get('twofa') !== 'forum') return null
+    const partial = hash.get('partial_token')
+    if (!partial) return null
+    return {
+      partial_token: partial,
+      username: hash.get('username') || 'user',
+      verify_path: '/auth/2fa/verify',
+      next: safeNextPath(hash.get('next')) || '/profile',
+    }
+  })
   const meta = twoFAChallenge
     ? { tag: 'TWO-FACTOR AUTH', title: 'Verify identity', sub: 'One more step to sign in' }
     : TAB_META[tab]
@@ -923,24 +934,14 @@ export default function Login() {
     window.dispatchEvent(new CustomEvent('discord-login-error', {
       detail: msgs[discordError] || 'Discord login failed. Please try again.'
     }))
-    setTab('signin')
   }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''))
-    if (hash.get('twofa') !== 'forum') return
-    const partial = hash.get('partial_token')
-    if (!partial) return
-    const next = safeNextPath(hash.get('next')) || '/profile'
-    setTwoFAChallenge({
-      partial_token: partial,
-      username: hash.get('username') || 'user',
-      verify_path: '/auth/2fa/verify',
-      next,
-    })
+    if (!twoFAChallenge) return
+    const next = twoFAChallenge.next
     window.history.replaceState({}, '', `/login?tab=signin&next=${encodeURIComponent(next)}`)
-  }, [])
+  }, [twoFAChallenge])
 
   // ── Already logged in? Redirect away from /login ───────────────────────────
   useEffect(() => {
@@ -994,21 +995,43 @@ export default function Login() {
   // the OAuth button event handlers on the live site.
   const particles = useMemo(
     () => {
+      const out = []
       let seed = 1337
-      const rnd = () => {
-        seed |= 0; seed = (seed + 0x6D2B79F5) | 0
+      for (let i = 0; i < 22; i++) {
+        seed = (seed + 0x6D2B79F5) | 0
         let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
         t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+        const r1 = ((t ^ (t >>> 14)) >>> 0) / 4294967296
+        seed = (seed + 0x6D2B79F5) | 0
+        t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+        const r2 = ((t ^ (t >>> 14)) >>> 0) / 4294967296
+        seed = (seed + 0x6D2B79F5) | 0
+        t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+        const r3 = ((t ^ (t >>> 14)) >>> 0) / 4294967296
+        seed = (seed + 0x6D2B79F5) | 0
+        t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+        const r4 = ((t ^ (t >>> 14)) >>> 0) / 4294967296
+        seed = (seed + 0x6D2B79F5) | 0
+        t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+        const r5 = ((t ^ (t >>> 14)) >>> 0) / 4294967296
+        seed = (seed + 0x6D2B79F5) | 0
+        t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+        const r6 = ((t ^ (t >>> 14)) >>> 0) / 4294967296
+        out.push({
+          left: r1 * 100,
+          top: r2 * 100,
+          size: 1.5 + r3 * 3.5,
+          dur: 11 + r4 * 14,
+          delay: r5 * 8,
+          alpha: 0.15 + r6 * 0.35,
+        })
       }
-      return Array.from({ length: 22 }, () => ({
-        left: rnd() * 100,
-        top: rnd() * 100,
-        size: 1.5 + rnd() * 3.5,
-        dur: 11 + rnd() * 14,
-        delay: rnd() * 8,
-        alpha: 0.15 + rnd() * 0.35,
-      }))
+      return out
     },
     []
   )

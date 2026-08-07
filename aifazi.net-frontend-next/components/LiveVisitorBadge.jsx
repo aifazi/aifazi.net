@@ -23,9 +23,9 @@ export default function LiveVisitorBadge({ style = {} }) {
   }
 
   useEffect(() => {
-    fetchCount()
+    const init = setTimeout(fetchCount, 0)
     const interval = setInterval(fetchCount, 30_000)
-    return () => clearInterval(interval)
+    return () => { clearTimeout(init); clearInterval(interval) }
   }, [])
 
   if (count === null) return null

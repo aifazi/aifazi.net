@@ -219,7 +219,7 @@ function KeywordDensity() {
 
           {result.targetResult && (
             <div style={{ background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', padding: '16px 20px', marginBottom: 20 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>TARGET: "{target.trim().toUpperCase()}"</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>TARGET: &quot;{target.trim().toUpperCase()}&quot;</div>
               <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
                 <div><span style={{ color: 'var(--muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>COUNT: </span><span style={{ color: 'var(--green)', fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{result.targetResult.count}</span></div>
                 <div><span style={{ color: 'var(--muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>DENSITY: </span><span style={{ color: densityColor(result.targetResult.density), fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{result.targetResult.density}%</span></div>
@@ -629,7 +629,7 @@ function RobotsTxtGenerator() {
   return (
     <div>
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16 }}>
-        Control which pages search engines can crawl. Place robots.txt in your site's root folder.
+        Control which pages search engines can crawl. Place robots.txt in your site&apos;s root folder.
       </p>
       <div style={{ marginBottom: 14 }}>
         <div style={S.fieldLabel}>SITEMAP URL (optional)</div>
@@ -689,7 +689,7 @@ export default function SeoTools() {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 12 }}>WEBMASTER TOOLS</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 48, fontWeight: 700, marginBottom: 12 }}>SEO Tools</h1>
           <p style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.7 }}>
-            Free tools to analyze, optimize, and improve your website's search engine performance. No sign-up required.
+            Free tools to analyze, optimize, and improve your website&apos;s search engine performance. No sign-up required.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 2, marginBottom: 32, overflowX: 'auto', paddingBottom: 4, flexWrap: 'wrap' }}>

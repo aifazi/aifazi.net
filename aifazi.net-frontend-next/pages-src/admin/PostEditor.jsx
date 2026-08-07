@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog, dialog } from '../../components/Dialog'
@@ -9,6 +9,22 @@ import VideoPlayer from './VideoPlayer'
 
 // ── Media URL helpers ─────────────────────────────────────────────────────────
 const SUPA_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '')
+
+const TOOLBAR = [
+  { label: 'B',   title: 'Bold',           type: 'exec', cmd: 'bold' },
+  { label: 'I',   title: 'Italic',          type: 'exec', cmd: 'italic' },
+  { label: 'U',   title: 'Underline',       type: 'exec', cmd: 'underline' },
+  { label: 'H2',  title: 'Heading 2',       type: 'exec', cmd: 'formatBlock', arg: '<h2>' },
+  { label: 'H3',  title: 'Heading 3',       type: 'exec', cmd: 'formatBlock', arg: '<h3>' },
+  { label: '¶',  title: 'Paragraph',       type: 'exec', cmd: 'formatBlock', arg: '<p>' },
+  { label: 'UL',  title: 'Bullet List',     type: 'exec', cmd: 'insertUnorderedList' },
+  { label: 'OL',  title: 'Numbered List',   type: 'exec', cmd: 'insertOrderedList' },
+  { label: '</>', title: 'Code',            type: 'insert', html: '<code>code</code>' },
+  { label: '{}', title: 'Code Block',      type: 'insert', html: '<pre><code>your code here</code></pre>' },
+  { label: '—',   title: 'Divider',         type: 'insert', html: '<hr/>' },
+  { label: '"',   title: 'Blockquote',      type: 'exec', cmd: 'formatBlock', arg: '<blockquote>' },
+  { label: '○',  title: 'Link',            type: 'link' },
+]
 
 // Primary URL: use whatever is stored in the DB (may include custom CDN domain)
 function resolveMediaUrl(file) {
@@ -116,7 +132,11 @@ function SlashMenu({ pos, query, onSelect, onClose }) {
   const grouped = query ? [{ group: 'RESULTS', items: filtered }] : SLASH_COMMANDS
   const flatFiltered = grouped.flatMap(g => g.items)
 
-  useEffect(() => { setActiveIdx(0) }, [query])
+  const [prevQuery, setPrevQuery] = useState(query)
+  if (prevQuery !== query) {
+    setPrevQuery(query)
+    setActiveIdx(0)
+  }
   useEffect(() => {
     const handler = e => {
       if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i+1, flatFiltered.length-1)) }
@@ -184,9 +204,9 @@ function RichEditor({ value, onChange }) {
   const [slashMenu, setSlashMenu] = useState(null)
   const isMobile = useIsMobile()
 
-  const exec = (cmd, val = null) => { document.execCommand(cmd, false, val); editorRef.current?.focus() }
-  const insert = html => { editorRef.current?.focus(); document.execCommand('insertHTML', false, html) }
-  const editorActions = { exec, insert }
+  const exec = useCallback((cmd, val = null) => { document.execCommand(cmd, false, val); editorRef.current?.focus() }, [])
+  const insert = useCallback(html => { editorRef.current?.focus(); document.execCommand('insertHTML', false, html) }, [])
+  const editorActions = useMemo(() => ({ exec, insert }), [exec, insert])
 
   const handleInput = () => { onChange(editorRef.current.innerHTML) }
   useEffect(() => {
@@ -237,27 +257,21 @@ function RichEditor({ value, onChange }) {
     setTimeout(() => { onChange(editorRef.current?.innerHTML || '') }, 50)
   }, [slashMenu, editorActions, onChange])
 
-  const tools = [
-    { label: 'B',   title: 'Bold',           action: () => exec('bold') },
-    { label: 'I',   title: 'Italic',          action: () => exec('italic') },
-    { label: 'U',   title: 'Underline',       action: () => exec('underline') },
-    { label: 'H2',  title: 'Heading 2',       action: () => exec('formatBlock', '<h2>') },
-    { label: 'H3',  title: 'Heading 3',       action: () => exec('formatBlock', '<h3>') },
-    { label: '¶',  title: 'Paragraph',       action: () => exec('formatBlock', '<p>') },
-    { label: 'UL',  title: 'Bullet List',     action: () => exec('insertUnorderedList') },
-    { label: 'OL',  title: 'Numbered List',   action: () => exec('insertOrderedList') },
-    { label: '</>', title: 'Code',            action: () => insert('<code>code</code>') },
-    { label: '{}', title: 'Code Block',      action: () => insert('<pre><code>your code here</code></pre>') },
-    { label: '—',   title: 'Divider',         action: () => insert('<hr/>') },
-    { label: '"',   title: 'Blockquote',      action: () => exec('formatBlock', '<blockquote>') },
-    { label: '○',  title: 'Link',            action: async () => { const url = await dialog.prompt({ title: 'Insert Link', placeholder: 'https://', variant: 'info', confirmLabel: 'INSERT' }); if (url) exec('createLink', url) } },
-  ]
+  const runTool = async t => {
+    if (t.type === 'link') {
+      const url = await dialog.prompt({ title: 'Insert Link', placeholder: 'https://', variant: 'info', confirmLabel: 'INSERT' })
+      if (url) exec('createLink', url)
+      return
+    }
+    if (t.type === 'insert') { insert(t.html); return }
+    exec(t.cmd, t.arg)
+  }
 
   return (
     <div style={{ border: '1px solid var(--border)', overflow: 'visible', position: 'relative' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, padding: 6, background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
-        {tools.map(t => (
-          <button key={t.label} title={t.title} onClick={t.action} type="button"
+        {TOOLBAR.map(t => (
+          <button key={t.label} title={t.title} onClick={() => runTool(t)} type="button"
             style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: isMobile ? '5px 7px' : '6px 10px', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 10%, transparent)'; e.currentTarget.style.color = 'var(--green)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg2)'; e.currentTarget.style.color = 'var(--text)' }}
@@ -296,16 +310,17 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
   const [dragOver, setDragOver] = useState(false)
   const [cdnConfig, setCdnConfig] = useState(null)   // ← CDN config from admin panel
   const fileInputRef = useRef()
+  const fetchFiles = async () => { try { const res = await api.get('/upload/media'); setFiles(res.data) } catch {} }
 
   useEffect(() => {
-    fetchFiles()
+    const run = async () => { await fetchFiles() }
+    run()
     // Fetch CDN proxy-config so MediaThumb can do provider-aware fallback.
     // /admin/cdn/proxy-config is a public endpoint — no auth required.
     api.get('/admin/cdn/proxy-config')
       .then(r => setCdnConfig(r.data || {}))
       .catch(() => setCdnConfig({}))
   }, [])
-  const fetchFiles = async () => { try { const res = await api.get('/upload/media'); setFiles(res.data) } catch {} }
 
   // #10 — shared upload logic used by both input change and drop
   const uploadFiles = async fileList => {

@@ -74,21 +74,17 @@ function FloatingToolbar({ position, onCommand, onClose }) {
   const [showColorMenu, setShowColorMenu] = useState(false)
   const [showLinkInput, setShowLinkInput] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
-  const [currentStyle, setCurrentStyle] = useState('Paragraph')
-  const ref = useRef()
-
-  // Detect current block style
-  useEffect(() => {
+  const [currentStyle, setCurrentStyle] = useState(() => {
+    if (typeof window === 'undefined') return 'Paragraph'
     const sel = window.getSelection()
-    if (!sel?.rangeCount) return
+    if (!sel?.rangeCount) return 'Paragraph'
     const el = sel.getRangeAt(0).commonAncestorContainer
     const block = el.nodeType === 3 ? el.parentElement : el
     const tag = block?.closest('h1,h2,h3,h4,h5,h6,p,code,blockquote')?.tagName?.toLowerCase()
-    if (tag) {
-      const found = TEXT_STYLES.find(s => s.tag === tag)
-      if (found) setCurrentStyle(found.label)
-    }
-  }, [])
+    const found = tag ? TEXT_STYLES.find(s => s.tag === tag) : undefined
+    return found ? found.label : 'Paragraph'
+  })
+  const ref = useRef()
 
   // NOTE: document.execCommand is deprecated and may be removed in future browsers.
   // Consider migrating to a maintained rich-text library (e.g. Tiptap, Quill, or ProseMirror)
@@ -460,8 +456,11 @@ export function EditableNumber({ contentKey, defaultValue, suffix = '', style })
   const { value, save, isAdmin } = useInlineEdit(contentKey, defaultValue)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(String(value))
-
-  useEffect(() => { setDraft(String(value)) }, [value])
+  const [prevValue, setPrevValue] = useState(value)
+  if (prevValue !== value) {
+    setPrevValue(value)
+    setDraft(String(value))
+  }
   if (!isAdmin) return <span style={style}>{value}{suffix}</span>
 
   const commit = () => {
@@ -611,8 +610,13 @@ export function EditableList({ contentKey, defaultValue, renderItem, fields, add
   const [items, setItems] = useState(value)
   const [editIdx, setEditIdx] = useState(null)
   const [draft, setDraft] = useState({})
-
-  useEffect(() => { setItems(value) }, [raw, defaultValue])
+  const [prevRaw, setPrevRaw] = useState(raw)
+  const [prevDefault, setPrevDefault] = useState(defaultValue)
+  if (prevRaw !== raw || prevDefault !== defaultValue) {
+    setPrevRaw(raw)
+    setPrevDefault(defaultValue)
+    setItems(value)
+  }
 
   if (!isAdmin) return <>{value.map((item, i) => renderItem(item, i))}</>
 
@@ -792,7 +796,7 @@ function SaveDiscardDialog({ pendingCount, onSave, onDiscard, saving }) {
       }}>
         {/* Header */}
         <div style={{ fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 6 }}>
-          // UNSAVED CHANGES
+          {'// UNSAVED CHANGES'}
         </div>
         <div style={{ fontSize: 18, fontWeight: 700, color: '#c8d8e8', marginBottom: 10, letterSpacing: 1 }}>
           Save your edits?
@@ -946,7 +950,7 @@ function PageAnimationFrame({ children, animationValue, editingEnabled }) {
 // ── Provider ──────────────────────────────────────────────────────────────────
 export function EditProvider({ children }) {
   const [content, setContent] = useState({})
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(() => (typeof window === 'undefined' ? false : checkCanEdit()))
   const [loading, setLoading] = useState(true)
   // ── new state ──
   const [editingEnabled, setEditingEnabled] = useState(false)
@@ -967,7 +971,6 @@ export function EditProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    setIsAdmin(checkCanEdit())
     api.get('/content').then(res => setContent(res.data)).catch(() => {}).finally(() => setLoading(false))
     const onAuth = () => setIsAdmin(checkCanEdit())
     window.addEventListener('storage', onAuth)

@@ -13,7 +13,7 @@ const TERMINAL_LINES = [
 ]
 
 function Particle({ index }) {
-  const style = {
+  const [style] = useState(() => ({
     position: 'absolute',
     width: Math.random() * 3 + 1 + 'px',
     height: Math.random() * 3 + 1 + 'px',
@@ -25,7 +25,7 @@ function Particle({ index }) {
     animation: `particle-rise ${2 + Math.random() * 3}s ease-out ${Math.random() * 4}s infinite`,
     opacity: 0.6,
     pointerEvents: 'none',
-  }
+  }))
   return <div style={style} />
 }
 
@@ -120,7 +120,7 @@ export default function NotFound() {
           animation: 'fadeUp 0.8s 0.4s ease both', opacity: 0,
           animationFillMode: 'forwards'
         }}>
-          The page you're looking for doesn't exist in the routing table.
+          The page you&apos;re looking for doesn&apos;t exist in the routing table.
           It may have been moved, deleted, or never deployed.
         </p>
 

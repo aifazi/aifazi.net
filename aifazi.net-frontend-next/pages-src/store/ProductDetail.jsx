@@ -20,18 +20,6 @@ export default function ProductDetail() {
   const [reviews, setReviews] = useState([])
   const [related, setRelated] = useState([])
 
-  useEffect(() => {
-    if (!slug) return
-    api.get(`/store/products/${slug}`).then(r => {
-      const p = r.data
-      setProduct(p)
-      loadReviews(p.id)
-      loadRelated(p.category, p.id)
-    }).catch(err => {
-      setError(err?.response?.status === 404 ? 'Product not found.' : 'Failed to load product.')
-    }).finally(() => setLoading(false))
-  }, [slug])
-
   const loadReviews = async (productId) => {
     try {
       const r = await api.get(`/store/products/${productId}/reviews`)
@@ -45,6 +33,18 @@ export default function ProductDetail() {
       setRelated((r.data || []).filter(p => p.id !== id).slice(0, 4))
     } catch { setRelated([]) }
   }
+
+  useEffect(() => {
+    if (!slug) return
+    api.get(`/store/products/${slug}`).then(r => {
+      const p = r.data
+      setProduct(p)
+      loadReviews(p.id)
+      loadRelated(p.category, p.id)
+    }).catch(err => {
+      setError(err?.response?.status === 404 ? 'Product not found.' : 'Failed to load product.')
+    }).finally(() => setLoading(false))
+  }, [slug])
 
   const addToCart = async () => {
     if (!user) {

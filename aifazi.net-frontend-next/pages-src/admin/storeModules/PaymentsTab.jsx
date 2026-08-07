@@ -21,7 +21,6 @@ export default function PaymentsTab() {
   const [refunding, setRefunding] = useState(null)
 
   const loadTxns = useCallback(() => {
-    setLoading(true)
     const q = kind === 'all' ? '' : `?kind=${kind}`
     api.get(`/store/admin/transactions${q}`).then(r => setTxns(r.data || [])).catch(() => toast.error('Failed to load transactions'))
       .finally(() => setLoading(false))

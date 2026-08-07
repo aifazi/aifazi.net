@@ -260,15 +260,22 @@ export default function Navbar() {
     } catch { return null }
   }, [])
 
-  const [adminAuth, setAdminAuth] = useState(null)
+  const [adminAuth, setAdminAuth] = useState(() => getAdminAuth())
 
   useEffect(() => {
-    setAdminAuth(getAdminAuth())
     const refresh = () => setAdminAuth(getAdminAuth())
     window.addEventListener('auth-change', refresh)
     window.addEventListener('storage', refresh)
     return () => { window.removeEventListener('auth-change', refresh); window.removeEventListener('storage', refresh) }
   }, [getAdminAuth])
+
+  // Reset active section + close mobile menu on route change
+  const [prevPathname, setPrevPathname] = useState(location.pathname)
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname)
+    if (location.pathname !== '/') setActiveSection('')
+    setMenuOpen(false)
+  }
 
   const handleAdminLogout = async () => {
     try { await api.post('/auth/logout') } catch {}
@@ -308,13 +315,9 @@ export default function Navbar() {
         })
       }
     }
-    // Reset active section when leaving homepage
-    if (location.pathname !== '/') setActiveSection('')
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [location.pathname])
-
-  useEffect(() => { setMenuOpen(false) }, [location.pathname])
 
   // Open terminal with backtick shortcut
   useEffect(() => {

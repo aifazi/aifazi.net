@@ -35,7 +35,10 @@ function MailSettings() {
     }
   }
 
-  useEffect(() => { fetchMailConfig() }, [])
+  useEffect(() => {
+    const run = async () => { await fetchMailConfig() }
+    run()
+  }, [])
 
   const set = (field, val) => setCfg(p => ({ ...p, [field]: val }))
 

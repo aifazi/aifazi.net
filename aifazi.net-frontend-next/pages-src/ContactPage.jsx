@@ -40,7 +40,7 @@ export default function ContactPage() {
           <div style={{ fontSize: 56, marginBottom: 16 }}>✅</div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, marginBottom: 12 }}>Message Sent!</h2>
           <p style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 13, marginBottom: 32 }}>
-            I'll get back to you soon.
+            I&apos;ll get back to you soon.
           </p>
           <button
             onClick={() => navigate(from)}

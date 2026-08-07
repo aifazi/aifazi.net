@@ -50,14 +50,13 @@ export default function Blog({ initialPosts }) {
   const [fetchError, setFetchError] = useState(false)
 
   const fetchPosts = async () => {
-    setLoading(true)
-    setFetchError(false)
     try {
       const params = { search }
       if (category && category !== 'All') params.category = category
       if (activeTag) params.tag = activeTag
       const res = await api.get('/blog', { params })
       const posts = res.data.posts || []
+      setFetchError(false)
       setPosts(posts)
       const tags = [...new Set(posts.flatMap(p => p.tags || []).filter(Boolean))].sort()
       setAllTags(tags)
@@ -72,7 +71,7 @@ export default function Blog({ initialPosts }) {
   const hasInitialData = !!(initialPosts && initialPosts.length)
   useEffect(() => {
     if (hasInitialData && !search && category === 'All' && !activeTag) return
-    fetchPosts()
+    void (async () => { await fetchPosts() })()
   }, [category, search, activeTag])
 
   useEffect(() => {
@@ -109,7 +108,7 @@ export default function Blog({ initialPosts }) {
       <div className="community-shell">
         {/* Banner */}
         <div className="community-banner">
-          <div className="community-banner-eyebrow">// BLOG</div>
+          <div className="community-banner-eyebrow">{'// BLOG'}</div>
           <h1 className="community-banner-title">Field Notes &<br /><em>Tech Insights</em></h1>
           <p className="community-banner-text">
             Networking deep-dives, security guides, infrastructure walkthroughs and lessons from the field.
@@ -182,7 +181,7 @@ export default function Blog({ initialPosts }) {
           <Card style={{ textAlign: 'center', padding: '80px 24px' }}>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--red)', letterSpacing: 2, marginBottom: 12 }}>SERVER UNAVAILABLE</p>
             <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 20 }}>The server may be waking up. Please wait 30 seconds and try again.</p>
-            <NeonButton variant="ghost" onClick={() => fetchPosts()}>RETRY</NeonButton>
+            <NeonButton variant="ghost" onClick={() => { setLoading(true); setFetchError(false); fetchPosts() }}>RETRY</NeonButton>
           </Card>
         ) : posts.length === 0 ? (
           <EmptyState icon="📭" title="No posts found" text={search ? 'No posts match your filters.' : 'Check back soon.'} />

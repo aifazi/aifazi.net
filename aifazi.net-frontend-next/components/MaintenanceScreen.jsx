@@ -90,7 +90,7 @@ function StyleTerminal({ message, status, icon, returnTime, showProgress, progre
           <div style={{ paddingLeft: 16, color: accentColor, animation: 'maint-blink 1.4s infinite' }}>{status}</div>
           <div><span style={{ color: 'var(--green)' }}>$</span> <span style={{ color: 'var(--cyan)' }}>uptime</span></div>
           <div style={{ paddingLeft: 16, color: 'var(--text)' }}>{Math.floor(elapsed / 60)}m {elapsed % 60}s</div>
-          <div><span style={{ color: 'var(--green)' }}>$</span> <span style={{ color: 'var(--cyan)' }}>echo{' '}</span><span style={{ color: 'var(--muted)' }}>"Working{'.'.repeat(dots)}"</span></div>
+          <div><span style={{ color: 'var(--green)' }}>$</span> <span style={{ color: 'var(--cyan)' }}>echo{' '}</span><span style={{ color: 'var(--muted)' }}>{'Working'}{'.'.repeat(dots)}{'"'}</span></div>
         </div>
       </div>
       {showProgress && <ProgressBar label="PROGRESS" value={progress} color={accentColor} />}
@@ -109,7 +109,7 @@ function StyleMinimal({ message, status, icon, returnTime, showProgress, progres
       <div style={{ fontSize: 64, marginBottom: 24 }}>{icon}</div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 6, color: accentColor, marginBottom: 16 }}>{status}</div>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px,6vw,56px)', fontWeight: 900, color: 'var(--text)', marginBottom: 16, letterSpacing: -2 }}>
-        We'll be<br />back soon
+        We&apos;ll be<br />back soon
       </h1>
       <p style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--muted)', marginBottom: 32 }}>{message}</p>
       {showProgress && (
@@ -126,7 +126,7 @@ function StyleCyber({ message, status, icon, returnTime, showProgress, progress,
   return (
     <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '24px', maxWidth: 640, width: '100%' }}>
       {/* Glowing title */}
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 8, color: accentColor, marginBottom: 8, opacity: 0.7 }}>// SYSTEM ALERT</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 8, color: accentColor, marginBottom: 8, opacity: 0.7 }}>{'// SYSTEM ALERT'}</div>
       <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(36px,6vw,68px)', fontWeight: 900, color: accentColor, textShadow: `0 0 20px ${accentColor}, 0 0 60px color-mix(in srgb, ${accentColor} 27%, transparent)`, marginBottom: 8, letterSpacing: -1, lineHeight: 1 }}>
         {icon} {status}
       </h1>

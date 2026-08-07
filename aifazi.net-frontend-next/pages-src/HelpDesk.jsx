@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
 import api from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { useForum } from '../context/ForumContext'
@@ -103,11 +103,9 @@ function TicketDetail({ ticketId, onBack, accessEmail = '' }) {
   const [loading, setLoading] = useState(true)
   const [reply, setReply] = useState('')
   const [sending, setSending] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const msgListRef = useRef(null)
   const [atBottom, setAtBottom] = useState(true)
-
-  useEffect(() => { setMounted(true) }, [])
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
 
   const fetchTicket = useCallback(async () => {
     try {
@@ -117,8 +115,7 @@ function TicketDetail({ ticketId, onBack, accessEmail = '' }) {
   }, [ticketId])
 
   useEffect(() => {
-    setLoading(true)
-    fetchTicket().finally(() => setLoading(false))
+    void (async () => { await fetchTicket() })().finally(() => setLoading(false))
   }, [fetchTicket])
 
   useEffect(() => {
@@ -296,9 +293,11 @@ function SubmitTicket({ onSuccess }) {
   const [sending, setSending] = useState(false)
   const [accountCreated, setAccountCreated] = useState(false)
 
-  useEffect(() => {
+  const [prevUser, setPrevUser] = useState(user)
+  if (prevUser !== user) {
+    setPrevUser(user)
     if (user) setForm(f => ({ ...f, name: user.username || f.name, email: user.email || f.email }))
-  }, [user])
+  }
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
@@ -414,15 +413,15 @@ const params = new URLSearchParams()
     } finally { setLoading(false) }
   }, [user, filterStatus, filterPriority, filterCategory])
 
-  useEffect(() => {
-    if (user?.email && !autoLoaded) {
-      setAutoLoaded(true)
-    }
-  }, [user?.email, autoLoaded])
+  const [prevEmail, setPrevEmail] = useState(user?.email)
+  if (prevEmail !== user?.email) {
+    setPrevEmail(user?.email)
+    if (user?.email && !autoLoaded) setAutoLoaded(true)
+  }
 
   useEffect(() => {
     if (!autoLoaded) return
-    loadTickets(user?.email || query)
+    void (async () => { await loadTickets(user?.email || query) })()
   }, [autoLoaded, loadTickets, query, user?.email])
 
   useEffect(() => {

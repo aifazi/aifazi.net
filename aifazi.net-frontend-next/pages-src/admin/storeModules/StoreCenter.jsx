@@ -91,10 +91,14 @@ export default function StoreCenter() {
   const [focusVariantProduct, setFocusVariantProduct] = useState(null)
 
   const visible = MODULES.filter(m => canViewModule(m.perm, m.always))
+  const [prevTabSig, setPrevTabSig] = useState(tab)
+  const [prevVisibleLen, setPrevVisibleLen] = useState(visible.length)
   // Fall back to a visible tab if current one is not permitted
-  useEffect(() => {
-    if (visible.length && !visible.some(m => m.key === tab)) setTab(visible[0].key)
-  }, [visible.length, tab])
+  if ((prevTabSig !== tab || prevVisibleLen !== visible.length) && visible.length && !visible.some(m => m.key === tab)) {
+    setPrevTabSig(tab)
+    setPrevVisibleLen(visible.length)
+    setTab(visible[0].key)
+  }
 
   useEffect(() => {
     api.get('/store/admin/categories').then(r => setCategories(r.data || [])).catch(() => {})

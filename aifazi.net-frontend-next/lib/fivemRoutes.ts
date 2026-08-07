@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 const FIVEM_HOSTNAME = 'fivem.aifazi.net'
 
@@ -15,8 +15,7 @@ export function fivemRoute(path = '/') {
 }
 
 export function useFiveMRoute(path = '/') {
-  const [onFiveMHost, setOnFiveMHost] = useState(false)
-  useEffect(() => setOnFiveMHost(isFiveMHost()), [])
+  const [onFiveMHost] = useState(() => (typeof window === 'undefined' ? false : isFiveMHost()))
 
   const cleanPath = path.startsWith('/') ? path : `/${path}`
   if (onFiveMHost) return cleanPath

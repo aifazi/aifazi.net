@@ -14,11 +14,20 @@ import api, { setAccessToken } from '@/lib/api'
 const STEAM_BLUE = '#1b2838'
 const STEAM_LIGHT = '#00b4ff'
 
+const STEAM_ERR_MSGS = {
+  '1':      'Steam login verification failed. Please try again.',
+  'link':   'Steam connect session expired. Please start from your profile again.',
+  'missing':'Your account could not be found. Please sign in again.',
+  'db':     'Database error during Steam login.',
+  'banned': 'Your account has been banned.',
+}
+
 export default function SteamAuthCallback() {
   const searchParams = useSearchParams()
   const nav         = useRouter()
-  const [status, setStatus] = useState('Connecting Steam account…')
-  const [error,  setError]  = useState('')
+  const steamErr = typeof window === 'undefined' ? null : (new URLSearchParams(window.location.hash.substring(1)).get('steam_error') || searchParams?.get('steam_error'))
+  const [status, setStatus] = useState(steamErr ? '' : 'Connecting Steam account…')
+  const [error,  setError]  = useState(steamErr ? (STEAM_ERR_MSGS[steamErr] || 'Steam login failed. Please try again.') : '')
 
   useEffect(() => {
     // Try fragment first, then fall back to query param
@@ -34,15 +43,6 @@ export default function SteamAuthCallback() {
     if (!isNewAccount) isNewAccount = searchParams?.get('new_account') === '1'
 
     if (steamErr) {
-      const msgs = {
-        '1':      'Steam login verification failed. Please try again.',
-        'link':   'Steam connect session expired. Please start from your profile again.',
-        'missing':'Your account could not be found. Please sign in again.',
-        'db':     'Database error during Steam login.',
-        'banned': 'Your account has been banned.',
-      }
-      setError(msgs[steamErr] || 'Steam login failed. Please try again.')
-      setStatus('')
       setTimeout(() => nav.replace('/login?tab=signin'), 3000)
       return
     }
@@ -84,11 +84,9 @@ export default function SteamAuthCallback() {
     window.history.replaceState(null, '', window.location.pathname)
 
     if (isNewAccount) {
-      setStatus('Account created! Setting up your profile…')
-      setTimeout(() => nav.replace('/profile?tab=edit&steam_setup=1'), 900)
+      setTimeout(() => { setStatus('Account created! Setting up your profile…'); nav.replace('/profile?tab=edit&steam_setup=1') }, 900)
     } else {
-      setStatus('Steam connected! Redirecting…')
-      setTimeout(() => nav.replace(dest), 800)
+      setTimeout(() => { setStatus('Steam connected! Redirecting…'); nav.replace(dest) }, 800)
     }
   }, [])
 

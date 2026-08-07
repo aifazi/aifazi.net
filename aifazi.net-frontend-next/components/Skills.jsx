@@ -61,8 +61,13 @@ function SkillBar({ pct }) {
   const [active, setActive] = useState(false)
 
   // Re-trigger animation whenever pct changes (e.g. after admin saves)
-  useEffect(() => {
+  const [prevPct, setPrevPct] = useState(pct)
+  if (prevPct !== pct) {
+    setPrevPct(pct)
     setActive(false)
+  }
+
+  useEffect(() => {
     const el = barRef.current
     if (!el) return
     const io = new IntersectionObserver(([e]) => {
@@ -337,9 +342,11 @@ export default function Skills() {
   const [cats, setCats] = useState(Array.isArray(rawCats) ? rawCats : DEFAULT_SKILLS)
 
   // Sync when rawCats changes (e.g. after admin saves or page loads content from API)
-  useEffect(() => {
+  const [prevRawCats, setPrevRawCats] = useState(rawCats)
+  if (prevRawCats !== rawCats) {
+    setPrevRawCats(rawCats)
     if (Array.isArray(rawCats) && rawCats.length) setCats(rawCats)
-  }, [rawCats])
+  }
 
   // Fallback: also try loading from dedicated /portfolio/skills endpoint
   useEffect(() => {

@@ -32,7 +32,6 @@ export default function CustomersTab() {
   const [noteBusy, setNoteBusy] = useState(false)
 
   const load = useCallback(() => {
-    setLoading(true)
     const q = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : ''
     api.get(`/store/admin/customers${q}`).then(r => setCustomers(r.data || []))
       .catch(() => toast.error('Failed to load customers'))

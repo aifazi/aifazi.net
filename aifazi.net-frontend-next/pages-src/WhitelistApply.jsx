@@ -272,71 +272,75 @@ export default function WhitelistApply() {
   const [whitelistDef,   setWhitelistDef]   = useState(null)
 
   useEffect(() => {
-    const cacheKey = 'aifazi_forms_cache_v1'
-    try {
-      const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null')
-      if (cached?.ts && Date.now() - cached.ts < 60000) setForms(cached.forms || [])
-    } catch {}
-    api.get('/forms/whitelist').then(r => setWhitelistDef(r.data)).catch(() => {})
-    api.get('/forms')
-      .then(r => {
-        const rows = r.data.forms || []
-        setForms(rows)
-        try { sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), forms: rows })) } catch {}
-      })
-      .catch(() => setForms([]))
+    void (async () => {
+      const cacheKey = 'aifazi_forms_cache_v1'
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null')
+        if (cached?.ts && Date.now() - cached.ts < 60000) setForms(cached.forms || [])
+      } catch {}
+      api.get('/forms/whitelist').then(r => setWhitelistDef(r.data)).catch(() => {})
+      api.get('/forms')
+        .then(r => {
+          const rows = r.data.forms || []
+          setForms(rows)
+          try { sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), forms: rows })) } catch {}
+        })
+        .catch(() => setForms([]))
+    })()
   }, [])
 
   useEffect(() => {
-    if (!user) { setDiscordLoading(false); setExistingApp(null); return }
-    if (isStaffPreview) {
-      setDiscordStatus({ has_discord: true, discord_id: null, staff_account: true, preview_only: true })
-      setExistingApp(null)
-      setDiscordLoading(false)
-      setChecksLoading(false)
-      return
-    }
-    const token = getAuthToken()
-    if (!token) { setDiscordLoading(false); setExistingApp(null); return }
     let cancelled = false
-    const headers = { Authorization: `Bearer ${token}` }
-    setChecksLoading(true)
-    setDiscordLoading(true)
-    const getWithTimeout = (request, fallback, timeoutMs = 7000) => {
-      let timer
-      const timeout = new Promise(resolve => {
-        timer = setTimeout(() => resolve({ data: fallback, timedOut: true }), timeoutMs)
-      })
-      return Promise.race([
-        request.catch(() => ({ data: fallback })),
-        timeout,
-      ]).finally(() => clearTimeout(timer))
-    }
-
-    // Run both checks independently so a slow whitelist lookup does not pin the whole page on LOADING.
-    Promise.allSettled([
-      getWithTimeout(
-        api.get('/auth/discord/whitelist-status', { headers }),
-        { has_discord: !!user.discord_id, discord_id: user.discord_id || null },
-      ),
-      getWithTimeout(
-        api.get('/fivem/whitelist/my-application', { headers }),
-        null,
-      ),
-    ]).then(results => {
-      if (cancelled) return
-      const discordRes = results[0]?.status === 'fulfilled'
-        ? results[0].value
-        : { data: { has_discord: !!user.discord_id, discord_id: user.discord_id || null } }
-      const appRes = results[1]?.status === 'fulfilled' ? results[1].value : { data: null }
-      setDiscordStatus(discordRes.data)
-      setExistingApp(appRes.data || discordRes.data?.application || null)
-    }).finally(() => {
-      if (!cancelled) {
+    void (async () => {
+      if (!user) { setDiscordLoading(false); setExistingApp(null); return }
+      if (isStaffPreview) {
+        setDiscordStatus({ has_discord: true, discord_id: null, staff_account: true, preview_only: true })
+        setExistingApp(null)
         setDiscordLoading(false)
         setChecksLoading(false)
+        return
       }
-    })
+      const token = getAuthToken()
+      if (!token) { setDiscordLoading(false); setExistingApp(null); return }
+      const headers = { Authorization: `Bearer ${token}` }
+      setChecksLoading(true)
+      setDiscordLoading(true)
+      const getWithTimeout = (request, fallback, timeoutMs = 7000) => {
+        let timer
+        const timeout = new Promise(resolve => {
+          timer = setTimeout(() => resolve({ data: fallback, timedOut: true }), timeoutMs)
+        })
+        return Promise.race([
+          request.catch(() => ({ data: fallback })),
+          timeout,
+        ]).finally(() => clearTimeout(timer))
+      }
+
+      // Run both checks independently so a slow whitelist lookup does not pin the whole page on LOADING.
+      Promise.allSettled([
+        getWithTimeout(
+          api.get('/auth/discord/whitelist-status', { headers }),
+          { has_discord: !!user.discord_id, discord_id: user.discord_id || null },
+        ),
+        getWithTimeout(
+          api.get('/fivem/whitelist/my-application', { headers }),
+          null,
+        ),
+      ]).then(results => {
+        if (cancelled) return
+        const discordRes = results[0]?.status === 'fulfilled'
+          ? results[0].value
+          : { data: { has_discord: !!user.discord_id, discord_id: user.discord_id || null } }
+        const appRes = results[1]?.status === 'fulfilled' ? results[1].value : { data: null }
+        setDiscordStatus(discordRes.data)
+        setExistingApp(appRes.data || discordRes.data?.application || null)
+      }).finally(() => {
+        if (!cancelled) {
+          setDiscordLoading(false)
+          setChecksLoading(false)
+        }
+      })
+    })()
     return () => { cancelled = true }
   }, [user, isStaffPreview])
 

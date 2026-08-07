@@ -5,14 +5,17 @@ export default function Cursor() {
   const dotRef  = useRef()
   const ringRef = useRef()
   const hidden  = useRef(false)
-  const [show, setShow] = useState(false)
+  const [show] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const isTouch        = window.matchMedia('(hover: none)').matches
+    return !(prefersReduced || isTouch)
+  })
 
   useEffect(() => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const isTouch        = window.matchMedia('(hover: none)').matches
     if (prefersReduced || isTouch) return
-
-    setShow(true)
 
     const pos   = { x: -200, y: -200 }
     const ring  = { x: -200, y: -200 }

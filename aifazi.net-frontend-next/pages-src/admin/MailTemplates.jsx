@@ -223,11 +223,15 @@ const [dirty,   setDirty]   = useState(false)
 const [saveError, setSaveError] = useState('')
   const textareaRef = useRef(null)
 
-  useEffect(() => {
+  const [prevPurposeId, setPrevPurposeId] = useState(purpose.id)
+  const [prevTemplate, setPrevTemplate] = useState(template)
+  if (prevPurposeId !== purpose.id || prevTemplate !== template) {
+    setPrevPurposeId(purpose.id)
+    setPrevTemplate(template)
     setSubject(template?.subject || DEFAULT_TEMPLATES[purpose.id]?.subject || `[{{site_name}}] ${purpose.label}`)
     setHtml(template?.html || DEFAULT_TEMPLATES[purpose.id]?.html || `<p>Hello {{username}},</p>\n<p>...</p>`)
     setDirty(false)
-  }, [purpose.id, template])
+  }
 
   const insertVar = (v) => {
     const ta = textareaRef.current; if (!ta) return

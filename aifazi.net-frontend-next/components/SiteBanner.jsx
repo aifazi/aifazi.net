@@ -512,17 +512,22 @@ export default function SiteBanner() {
   const bannerRef = useRef(null)
   const [spacerH,    setSpacerH]  = useState(0)
   const [banners,    setBanners]  = useState([])
-  const [dismissed,  setDismissed]= useState([])
+  const [dismissed,  setDismissed]= useState(() => {
+    if (typeof window === 'undefined') return []
+    try { return JSON.parse(sessionStorage.getItem('dismissedBanners') || '[]') } catch { return [] }
+  })
   const [maintenance,setMaint]    = useState(false)
   const [siteConfig, setSiteCfg]  = useState({})
-  const [isAdmin,    setIsAdmin]  = useState(false)
-  const [nowTick,    setNowTick]  = useState(Date.now())
+  const [isAdmin,    setIsAdmin]  = useState(() => {
+    try {
+      const t = getAuthToken()
+      if (t) { const p = JSON.parse(atob(t.split('.')[1])); return p.role === 'admin' }
+    } catch {}
+    return false
+  })
+  const [nowTick,    setNowTick]  = useState(() => Date.now())
 
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/login')
-
-  useEffect(() => {
-    try { setDismissed(JSON.parse(sessionStorage.getItem('dismissedBanners') || '[]')) } catch {}
-  }, [])
 
   const fetchBanners = () =>
     api.get('/admin/banners')
@@ -531,10 +536,6 @@ export default function SiteBanner() {
 
   useEffect(() => {
     const sb = getSupabase()
-    try {
-      const t = getAuthToken()
-      if (t) { const p = JSON.parse(atob(t.split('.')[1])); if (p.role === 'admin') setIsAdmin(true) }
-    } catch {}
 
     fetchBanners()
     api.get('/admin/site-settings').then(r => {

@@ -100,28 +100,6 @@ export default function ForumThread() {
       .finally(() => setLoading(false))
   }, [id])
 
-  useEffect(() => {
-    const handler = (e) => {
-      const { action, replyId } = e.detail
-      if (action === 'reply') {
-        replyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        replyRef.current?.focus()
-      } else if (action === 'edit' && replyId) {
-        const reply = replies.find(r => r._id === replyId)
-        if (reply) { setEditingReply(replyId); setEditText(reply.content) }
-      } else if (action === 'edit' && !replyId) {
-        setEditingThread(true)
-        setEditThreadText(thread?.content || '')
-      } else if (action === 'delete' && replyId) {
-        handleDeleteReply(replyId)
-      } else if (action === 'delete' && !replyId) {
-        handleDeleteThread()
-      }
-    }
-    document.addEventListener('forum-context-action', handler)
-    return () => document.removeEventListener('forum-context-action', handler)
-  }, [replies, userId, thread])
-
   const handleReact = async (emoji) => {
     if (!userId) return
     try {
@@ -200,6 +178,28 @@ export default function ForumThread() {
       setThread(t => ({ ...t, replyCount: Math.max(0, (t.replyCount ?? t.reply_count ?? replies.length) - 1) }))
     } catch (err) { notify.error(err.response?.data?.error || 'Failed to delete reply') }
   }
+
+  useEffect(() => {
+    const handler = (e) => {
+      const { action, replyId } = e.detail
+      if (action === 'reply') {
+        replyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        replyRef.current?.focus()
+      } else if (action === 'edit' && replyId) {
+        const reply = replies.find(r => r._id === replyId)
+        if (reply) { setEditingReply(replyId); setEditText(reply.content) }
+      } else if (action === 'edit' && !replyId) {
+        setEditingThread(true)
+        setEditThreadText(thread?.content || '')
+      } else if (action === 'delete' && replyId) {
+        handleDeleteReply(replyId)
+      } else if (action === 'delete' && !replyId) {
+        handleDeleteThread()
+      }
+    }
+    document.addEventListener('forum-context-action', handler)
+    return () => document.removeEventListener('forum-context-action', handler)
+  }, [replies, userId, thread])
 
   const handleEditReply = async (replyId) => {
     try {

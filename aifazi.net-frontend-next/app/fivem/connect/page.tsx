@@ -16,8 +16,10 @@ export default function FiveMConnect() {
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState('')
   const [userRole, setUserRole] = useState('')
-  const [cooldownUntil, setCooldownUntil] = useState(0)
-  const [now, setNow] = useState(Date.now())
+  const [cooldownUntil, setCooldownUntil] = useState(() =>
+    typeof window === 'undefined' ? 0 : Number(localStorage.getItem('fivem_connect_cooldown_until') || 0)
+  )
+  const [now, setNow] = useState(() => Date.now())
   const homeHref = useFiveMRoute('/')
   const loginHref = useFiveMLoginRoute('/connect')
   const whitelistHref = useFiveMRoute('/whitelist')
@@ -35,8 +37,6 @@ export default function FiveMConnect() {
   }, [user])
 
   useEffect(() => {
-    const saved = Number(localStorage.getItem('fivem_connect_cooldown_until') || 0)
-    if (saved > Date.now()) setCooldownUntil(saved)
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [])

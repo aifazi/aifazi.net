@@ -31,7 +31,6 @@ export default function InventoryTab() {
   const [note, setNote] = useState('')
 
   const load = useCallback(() => {
-    setLoading(true)
     const q = new URLSearchParams()
     if (search.trim()) q.set('search', search.trim())
     if (locFilter) q.set('location_id', locFilter)
@@ -43,7 +42,11 @@ export default function InventoryTab() {
   }, [search, locFilter])
 
   useEffect(() => { load() }, [load])
-  useEffect(() => { if (locFilter) setOpLoc(locFilter) }, [locFilter])
+  const [prevLocFilter, setPrevLocFilter] = useState(locFilter)
+  if (prevLocFilter !== locFilter) {
+    setPrevLocFilter(locFilter)
+    if (locFilter) setOpLoc(locFilter)
+  }
 
   const scan = async code => {
     try {

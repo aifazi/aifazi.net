@@ -29,13 +29,15 @@ function AuthLogTab() {
   const [page, setPage] = useState(1); const [loading, setLoading] = useState(false)
 
   const load = useCallback(async (p = 1) => {
-    setLoading(true)
     try { const r = await api.get(`/admin/audit/auth-log?page=${p}&limit=50`); setLogs(r.data.logs || []); setTotal(r.data.total || 0) }
     catch { setLogs([]); setTotal(0) }
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { load(page) }, [page])
+  useEffect(() => {
+    const run = async () => { await load(page) }
+    run()
+  }, [page])
 
   const pages = Math.ceil(total / 50) || 1
   const badge = (label, color) => (
@@ -238,8 +240,6 @@ function BackupTab() {
   })
 
   const loadStats = useCallback(async () => {
-    setLoading(true)
-    setStatsError('')
     try {
       const r = await api.get('/admin/backup/stats')
       setStats(r.data)
@@ -250,7 +250,10 @@ function BackupTab() {
     }
   }, [])
 
-  useEffect(() => { loadStats() }, [loadStats])
+  useEffect(() => {
+    const run = async () => { await loadStats() }
+    run()
+  }, [loadStats])
 
   const downloadSql = async () => {
     if (!options.schema && !options.data) {

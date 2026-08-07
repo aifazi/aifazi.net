@@ -92,7 +92,17 @@ export default function NetworkSim({ embedded }) {
   const [histIdx, setHistIdx] = useState(-1)
   const [mode, setMode] = useState('user')
   const [configMode, setConfigMode] = useState(null)
-  const [savedHistory, setSavedHistory] = useState([])
+  const [savedHistory, setSavedHistory] = useState(() => {
+    if (typeof window === 'undefined') return []
+    const token = getAuthToken()
+    if (token) {
+      try {
+        const stored = localStorage.getItem('network-sim-history')
+        if (stored) return JSON.parse(stored)
+      } catch {}
+    }
+    return []
+  })
   const inputRef = useRef(null)
   const bottomRef = useRef(null)
 
@@ -101,16 +111,6 @@ export default function NetworkSim({ embedded }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [lines])
-
-  useEffect(() => {
-    const token = getAuthToken()
-    if (token) {
-      try {
-        const stored = localStorage.getItem('network-sim-history')
-        if (stored) setSavedHistory(JSON.parse(stored))
-      } catch {}
-    }
-  }, [])
 
   useEffect(() => {
     if (savedHistory.length > 0) {

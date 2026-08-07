@@ -24,7 +24,6 @@ export default function AnalyticsTab() {
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(() => {
-    setLoading(true)
     api.get('/store/admin/sales').then(r => setD(r.data || null)).catch(() => toast.error('Failed to load analytics'))
       .finally(() => setLoading(false))
   }, [toast])

@@ -91,12 +91,12 @@ function EmailSentScreen({ email, onResend, resending, resent, type = 'verify' }
       </p>
 
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '16px 20px', marginBottom: 24, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
-        💡 Check your spam folder if you don't see it in a few minutes.
+        💡 Check your spam folder if you don&apos;t see it in a few minutes.
       </div>
 
       {!isReset && (
         <div style={{ marginBottom: 16 }}>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Didn't receive it?</p>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Didn&apos;t receive it?</p>
           {resent
             ? <SuccessBox msg="Email resent! Check your inbox." />
             : (
@@ -222,6 +222,39 @@ export function ForumLogin() {
   )
 }
 
+// Username status indicator
+const UnStatus = ({ username, check, suggest, onSuggest }) => {
+  if (!username || username.length < 3) return null
+  if (check === 'checking') return (
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 6, letterSpacing: 1 }}>
+      ⏳ Checking availability…
+    </div>
+  )
+  if (check === 'available') return (
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', marginTop: 6, letterSpacing: 1 }}>
+      ✓ Available
+    </div>
+  )
+  if (check === 'taken') return (
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>
+      ✗ Username taken
+      {suggest && (
+        <span>
+          {' — try '}
+          <button
+            type="button"
+            onClick={() => onSuggest()}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 10, padding: 0, textDecoration: 'underline' }}
+          >
+            {suggest}
+          </button>
+        </span>
+      )}
+    </div>
+  )
+  return null
+}
+
 // ─── ForumRegister ────────────────────────────────────────────────────────────
 export function ForumRegister() {
   const navigate  = useNavigate()
@@ -311,39 +344,6 @@ export function ForumRegister() {
     } finally { setResending(false) }
   }
 
-  // Username status indicator
-  const UnStatus = () => {
-    if (!form.username || form.username.length < 3) return null
-    if (unCheck === 'checking') return (
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 6, letterSpacing: 1 }}>
-        ⏳ Checking availability…
-      </div>
-    )
-    if (unCheck === 'available') return (
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', marginTop: 6, letterSpacing: 1 }}>
-        ✓ Available
-      </div>
-    )
-    if (unCheck === 'taken') return (
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>
-        ✗ Username taken
-        {unSuggest && (
-          <span>
-            {' — try '}
-            <button
-              type="button"
-              onClick={() => { set('username', unSuggest) }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 10, padding: 0, textDecoration: 'underline' }}
-            >
-              {unSuggest}
-            </button>
-          </span>
-        )}
-      </div>
-    )
-    return null
-  }
-
   if (registered) {
     return (
       <PageWrap>
@@ -379,7 +379,7 @@ export function ForumRegister() {
                 : 'var(--border)'
             }}
           />
-          <UnStatus />
+          <UnStatus username={form.username} check={unCheck} suggest={unSuggest} onSuggest={() => set('username', unSuggest)} />
         </div>
         <div>
           <label style={labelStyle}>EMAIL</label>
@@ -408,7 +408,7 @@ export function ForumRegister() {
           />
           {form.confirm.length > 0 && form.confirm !== form.password && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>
-              Passwords don't match
+              Passwords don&apos;t match
             </div>
           )}
         </div>
@@ -466,13 +466,13 @@ export function ForumRegister() {
 export function VerifyEmail() {
   const { login }  = useForum()
   const navigate   = useNavigate()
-  const [status, setStatus] = useState('loading') // 'loading' | 'success' | 'error'
-  const [message, setMessage] = useState('')
+  // Token comes as ?token= query param in the email link
+  const token = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('token')
+  const [status, setStatus] = useState(token ? 'loading' : 'error')
+  const [message, setMessage] = useState(token ? '' : 'No token provided.')
 
   useEffect(() => {
-    // Token comes as ?token= query param in the email link
-    const token = new URLSearchParams(window.location.search).get('token')
-    if (!token) { setStatus('error'); setMessage('No token provided.'); return }
+    if (!token) return
     api.get(`/auth/verify-email?token=${token}`)
       .then(res => {
         setStatus('success')
@@ -483,7 +483,7 @@ export function VerifyEmail() {
         setStatus('error')
         setMessage(err.response?.data?.detail || err.response?.data?.error || 'Verification failed or link expired.')
       })
-  }, [])
+  }, [token])
 
   return (
     <PageWrap>
@@ -585,7 +585,7 @@ export function ForgotPassword() {
           If an account matches <strong style={{ color: 'var(--text)' }}>{identifier}</strong>, a reset link has been sent. It expires in&nbsp;1&nbsp;hour.
         </p>
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '14px 18px', marginBottom: 28, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
-          💡 Check your spam folder if you don't see it.
+          💡 Check your spam folder if you don&apos;t see it.
         </div>
         <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
       </div>
@@ -603,7 +603,7 @@ export function ForgotPassword() {
           If <strong style={{ color: 'var(--text)' }}>{findEmail}</strong> is registered, your username has been sent to that address.
         </p>
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '14px 18px', marginBottom: 28, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
-          💡 Check your spam folder if you don't see it.
+          💡 Check your spam folder if you don&apos;t see it.
         </div>
         <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
       </div>
@@ -625,7 +625,7 @@ export function ForgotPassword() {
       {tab === 'reset' && (
         <div>
           <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
-            Enter your <strong style={{ color: 'var(--text)' }}>email address or username</strong> and we'll send a password reset link to your registered email.
+            Enter your <strong style={{ color: 'var(--text)' }}>email address or username</strong> and we&apos;ll send a password reset link to your registered email.
           </p>
           <form onSubmit={handleReset} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
@@ -648,7 +648,7 @@ export function ForgotPassword() {
           </form>
           <div style={{ marginTop: 20, textAlign: 'center' }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>
-              Don't know your username?{' '}
+              Don&apos;t know your username?{' '}
               <button onClick={() => setTab('find')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1, padding: 0 }}>
                 Find it here
               </button>
@@ -661,7 +661,7 @@ export function ForgotPassword() {
       {tab === 'find' && (
         <div>
           <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7, marginBottom: 24 }}>
-            Enter the <strong style={{ color: 'var(--text)' }}>email address</strong> you registered with and we'll send your username to that inbox.
+            Enter the <strong style={{ color: 'var(--text)' }}>email address</strong> you registered with and we&apos;ll send your username to that inbox.
           </p>
           <form onSubmit={handleFind} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
@@ -771,7 +771,7 @@ export function ResetPassword() {
           <label style={labelStyle}>CONFIRM PASSWORD</label>
           <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required placeholder="Repeat password" style={{ ...inputStyle, borderColor: confirm.length > 0 && confirm !== password ? 'rgba(255,71,87,0.6)' : 'var(--border)' }} />
           {confirm.length > 0 && confirm !== password && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>Passwords don't match</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>Passwords don&apos;t match</div>
           )}
         </div>
 

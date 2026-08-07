@@ -39,8 +39,8 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
 
   // Debounced search
   useEffect(() => {
-    if (!query.trim() || query.length < 2) { setSearchResults([]); return }
     clearTimeout(searchRef.current)
+    if (!query.trim() || query.length < 2) return
     searchRef.current = setTimeout(async () => {
       setSearching(true)
       try {
@@ -110,7 +110,11 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
     if (open) setTimeout(() => inputRef.current?.focus(), 50)
   }, [open])
 
-  useEffect(() => { setSelected(0) }, [query])
+  const [prevQuery, setPrevQuery] = useState(query)
+  if (prevQuery !== query) {
+    setPrevQuery(query)
+    setSelected(0)
+  }
 
   const handleKey = (e) => {
     if (e.key === 'ArrowDown') { e.preventDefault(); setSelected(s => Math.min(s + 1, flat.length - 1)) }
@@ -211,7 +215,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
           ))}
           {flat.length === 0 && (
             <div style={{ padding: '32px 18px', textAlign: 'center', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-              No results for "{query}"
+              No results for &quot;{query}&quot;
             </div>
           )}
         </div>

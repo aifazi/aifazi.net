@@ -166,48 +166,61 @@ export default function AnimationPicker() {
   const [category, setCategory]   = useState('All')
   const [selected, setSelected]   = useState(null)
   const [params, setParams]       = useState({ duration: 0.9, delay: 0, easing: 'ease' })
-  const [mounted, setMounted]     = useState(false)
+  const [mounted, setMounted]     = useState(() => open)
   const [previewKey, setPreviewKey] = useState(0)
 
   // Sync open state for mount/unmount
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (prevOpen !== open) {
+    setPrevOpen(open)
+    if (open) setMounted(true)
+  }
+
   useEffect(() => {
-    if (open) { setMounted(true) }
-    else { const t = setTimeout(() => setMounted(false), 360); return () => clearTimeout(t) }
-  }, [open])
+    if (open || !mounted) return
+    const t = setTimeout(() => setMounted(false), 360)
+    return () => clearTimeout(t)
+  }, [open, mounted])
 
   // When target changes, pre-select current animation
-  useEffect(() => {
-    if (!target) return
-    const rawCurrent = target.currentAnim
-    const cur = typeof rawCurrent === 'string'
-      ? rawCurrent
-      : (typeof rawCurrent?.value === 'string' ? rawCurrent.value : '')
-    if (!cur || cur === 'none') { setSelected(ANIMATION_LIBRARY.find(a => a.id === 'none')); return }
-    const gsapCurrent = parseGsapAnimationValue(cur)
-    if (gsapCurrent) {
-      const match = ANIMATION_LIBRARY.find(a => a.id === gsapCurrent.id)
-      if (match) {
-        setSelected(match)
-        setParams({
-          duration: gsapCurrent.duration ?? match.defaults?.duration ?? 0.9,
-          delay: gsapCurrent.delay ?? match.defaults?.delay ?? 0,
-          easing: gsapCurrent.ease ?? match.defaults?.ease ?? 'power3.out',
-        })
+  const [prevTarget, setPrevTarget] = useState(target)
+  if (prevTarget !== target) {
+    setPrevTarget(target)
+    if (target) {
+      const rawCurrent = target.currentAnim
+      const cur = typeof rawCurrent === 'string'
+        ? rawCurrent
+        : (typeof rawCurrent?.value === 'string' ? rawCurrent.value : '')
+      if (!cur || cur === 'none') {
+        setSelected(ANIMATION_LIBRARY.find(a => a.id === 'none'))
+      } else {
+        const gsapCurrent = parseGsapAnimationValue(cur)
+        if (gsapCurrent) {
+          const match = ANIMATION_LIBRARY.find(a => a.id === gsapCurrent.id)
+          if (match) {
+            setSelected(match)
+            setParams({
+              duration: gsapCurrent.duration ?? match.defaults?.duration ?? 0.9,
+              delay: gsapCurrent.delay ?? match.defaults?.delay ?? 0,
+              easing: gsapCurrent.ease ?? match.defaults?.ease ?? 'power3.out',
+            })
+          }
+        } else {
+          // Try to match by animation name
+          const match = ANIMATION_LIBRARY.find(a => {
+            const dashedId = a.id.replace(/([A-Z])/g, '-$1').toLowerCase()
+            const cssName = typeof a.css === 'string' ? a.css.split(' ')[0] : ''
+            return cur.includes(dashedId) || (cssName && cur.includes(cssName))
+          })
+          if (match) setSelected(match)
+          // Parse duration and delay if present
+          const parts = cur.split(' ')
+          if (parts[1]) setParams(p => ({ ...p, duration: parseFloat(parts[1]) || 0.9 }))
+          if (parts[3]) setParams(p => ({ ...p, delay:    parseFloat(parts[3]) || 0 }))
+        }
       }
-      return
     }
-    // Try to match by animation name
-    const match = ANIMATION_LIBRARY.find(a => {
-      const dashedId = a.id.replace(/([A-Z])/g, '-$1').toLowerCase()
-      const cssName = typeof a.css === 'string' ? a.css.split(' ')[0] : ''
-      return cur.includes(dashedId) || (cssName && cur.includes(cssName))
-    })
-    if (match) setSelected(match)
-    // Parse duration and delay if present
-    const parts = cur.split(' ')
-    if (parts[1]) setParams(p => ({ ...p, duration: parseFloat(parts[1]) || 0.9 }))
-    if (parts[3]) setParams(p => ({ ...p, delay:    parseFloat(parts[3]) || 0 }))
-  }, [target])
+  }
 
   // Esc to close
   useEffect(() => {

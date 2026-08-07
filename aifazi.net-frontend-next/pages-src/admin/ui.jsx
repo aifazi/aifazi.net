@@ -147,7 +147,10 @@ export function Modal({ open, onClose, title, width = 560, noBackdropClose, chil
   const panelRef = useRef(null)
   const restoreRef = useRef(null)
   const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose // keep latest without re-running the effect
+
+  useEffect(() => {
+    onCloseRef.current = onClose // keep latest without re-running the effect
+  }, [onClose])
 
   useEffect(() => {
     if (!open) return

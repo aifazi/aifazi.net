@@ -68,8 +68,18 @@ function clearCachedUser() {
 }
 
 export function ForumProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(() => {
+    if (typeof window === 'undefined') return null
+    const token = getStoredToken()
+    const cached = readCachedUser()
+    return cached || (token ? userFromToken(token) : null)
+  })
+  const [loading, setLoading] = useState(() => {
+    if (typeof window === 'undefined') return true
+    const token = getStoredToken()
+    const cached = readCachedUser()
+    return cached || (token ? userFromToken(token) : null) ? false : true
+  })
   const [profileLoading, setProfileLoading] = useState(false)
   const hydrateRef = useRef(null)
 
@@ -84,15 +94,12 @@ export function ForumProvider({ children }) {
 
     const cached = readCachedUser()
     const optimistic = cached || (token ? userFromToken(token) : null)
-    if (optimistic) {
-      setUser(optimistic)
-      setLoading(false)
-    }
 
     if (hydrateRef.current?.token === (token || '')) return hydrateRef.current.promise
 
-    setProfileLoading(true)
     const promise = (async () => {
+      await Promise.resolve()
+      setProfileLoading(true)
       // 1) Cookie session — no Authorization header, HttpOnly auth_token cookie.
       let cookieUser = null
       try {

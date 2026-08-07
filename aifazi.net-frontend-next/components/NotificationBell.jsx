@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from '@/lib/router-compat'
 import api from '@/lib/api'
+import { useNow } from '@/hooks/useNow'
 import {
   subscribeToPush,
   unsubscribeFromPush,
@@ -9,22 +10,71 @@ import {
   getPushPermission,
 } from '@/lib/webPush.js'
 
+/* ── push CTA chip rendered inside the dropdown footer ──────────────────── */
+const PushCTA = ({ pushState, onEnable, onDisable }) => {
+  if (pushState === 'unsupported') return null
+
+  if (pushState === 'granted') return (
+    <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>
+        🔔 Push notifications ON
+      </span>
+      <button onClick={onDisable}
+        style={{ background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
+          fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1,
+          padding: '3px 9px', borderRadius: 4, transition: 'all 0.15s' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff4757'; e.currentTarget.style.color = '#ff4757' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}>
+        DISABLE
+      </button>
+    </div>
+  )
+
+  if (pushState === 'denied') return (
+    <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', letterSpacing: 1 }}>
+        🔕 Notifications blocked — enable in browser settings
+      </span>
+    </div>
+  )
+
+  if (pushState === 'loading') return (
+    <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)',
+      fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>
+      ⏳ Requesting permission…
+    </div>
+  )
+
+  // 'default' — show enable button
+  return (
+    <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
+      <button onClick={onEnable}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 7, padding: '8px 14px', borderRadius: 5, cursor: 'pointer', transition: 'all 0.18s',
+          background: 'color-mix(in srgb, var(--green) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)',
+          color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10,
+          letterSpacing: 1.5, fontWeight: 700 }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 14%, transparent)'; e.currentTarget.style.boxShadow = '0 0 12px color-mix(in srgb, var(--green) 15%, transparent)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 7%, transparent)'; e.currentTarget.style.boxShadow = 'none' }}>
+        🔔 ENABLE NOTIFICATIONS
+      </button>
+    </div>
+  )
+}
+
 export default function NotificationBell({ forumUser }) {
   const [notifications, setNotifications] = useState([])
   const [open,          setOpen]          = useState(false)
   const [loading,       setLoading]       = useState(false)
   // 'default' | 'granted' | 'denied' | 'unsupported' | 'loading'
-  const [pushState,     setPushState]     = useState('unsupported')
+  const [pushState,     setPushState]     = useState(() =>
+    typeof window === 'undefined' || !isPushSupported() ? 'unsupported' : getPushPermission()
+  )
   const dropdownRef = useRef(null)
+  const now = useNow()
 
   const unreadCount = notifications.filter(n => !n.read).length
-
-  /* ── init push-state from browser ─────────────────────────────────────── */
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!isPushSupported()) { setPushState('unsupported'); return }
-    setPushState(getPushPermission())   // 'default' | 'granted' | 'denied'
-  }, [])
 
   /* ── notification fetch ────────────────────────────────────────────────── */
   const fetchNotifications = async () => {
@@ -37,9 +87,9 @@ export default function NotificationBell({ forumUser }) {
   }
 
   useEffect(() => {
-    fetchNotifications()
+    const init = setTimeout(fetchNotifications, 0)
     const interval = setInterval(fetchNotifications, 30000)
-    return () => clearInterval(interval)
+    return () => { clearTimeout(init); clearInterval(interval) }
   }, [forumUser])
 
   /* ── close on outside click ───────────────────────────────────────────── */
@@ -86,7 +136,7 @@ export default function NotificationBell({ forumUser }) {
   }
 
   const formatTime = date => {
-    const diff = Date.now() - new Date(date).getTime()
+    const diff = now - new Date(date).getTime()
     const mins = Math.floor(diff / 60000)
     if (mins < 1)  return 'just now'
     if (mins < 60) return `${mins}m ago`
@@ -96,59 +146,6 @@ export default function NotificationBell({ forumUser }) {
   }
 
   if (!forumUser || forumUser._staff) return null
-
-  /* ── push CTA chip rendered inside the dropdown footer ──────────────────── */
-  const PushCTA = () => {
-    if (pushState === 'unsupported') return null
-
-    if (pushState === 'granted') return (
-      <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>
-          🔔 Push notifications ON
-        </span>
-        <button onClick={handleDisablePush}
-          style={{ background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
-            fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1,
-            padding: '3px 9px', borderRadius: 4, transition: 'all 0.15s' }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff4757'; e.currentTarget.style.color = '#ff4757' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}>
-          DISABLE
-        </button>
-      </div>
-    )
-
-    if (pushState === 'denied') return (
-      <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', letterSpacing: 1 }}>
-          🔕 Notifications blocked — enable in browser settings
-        </span>
-      </div>
-    )
-
-    if (pushState === 'loading') return (
-      <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)',
-        fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>
-        ⏳ Requesting permission…
-      </div>
-    )
-
-    // 'default' — show enable button
-    return (
-      <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
-        <button onClick={handleEnablePush}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            gap: 7, padding: '8px 14px', borderRadius: 5, cursor: 'pointer', transition: 'all 0.18s',
-            background: 'color-mix(in srgb, var(--green) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)',
-            color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10,
-            letterSpacing: 1.5, fontWeight: 700 }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 14%, transparent)'; e.currentTarget.style.boxShadow = '0 0 12px color-mix(in srgb, var(--green) 15%, transparent)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 7%, transparent)'; e.currentTarget.style.boxShadow = 'none' }}>
-          🔔 ENABLE NOTIFICATIONS
-        </button>
-      </div>
-    )
-  }
 
   return (
     <div ref={dropdownRef} style={{ position: 'relative' }}>
@@ -243,7 +240,7 @@ export default function NotificationBell({ forumUser }) {
           </div>
 
           {/* Push CTA footer */}
-          <PushCTA />
+          <PushCTA pushState={pushState} onEnable={handleEnablePush} onDisable={handleDisablePush} />
         </div>
       )}
     </div>

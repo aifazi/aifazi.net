@@ -33,8 +33,14 @@ export function MediaPreviews({ text, onMediaClick, right }) {
   const [decrypted, setDecrypted] = useState(isEncrypted(text) ? text : null)
   const resolvedText = decrypted === null ? text : decrypted
 
+  const [prevText, setPrevText] = useState(text)
+  if (prevText !== text) {
+    setPrevText(text)
+    if (!text || !isEncrypted(text)) setDecrypted(null)
+  }
+
   useEffect(() => {
-    if (!text || !isEncrypted(text)) { setDecrypted(null); return }
+    if (!text || !isEncrypted(text)) return
     const key = getRoomKey()
     decryptText(text.slice(ENCRYPTED_PREFIX.length), key).then(setDecrypted).catch(() => setDecrypted(text))
   }, [text])

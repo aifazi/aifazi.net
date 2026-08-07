@@ -407,6 +407,18 @@ function ColorRow({ label, value, onChange }) {
   )
 }
 
+function TabBtn({ id, label, active, onSelect }) {
+  return (
+    <button onClick={onSelect} style={{
+      fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '9px 16px',
+      background: active ? 'var(--green)' : 'transparent',
+      color: active ? '#000' : 'var(--muted)',
+      border: 'none', cursor: 'pointer', borderRadius: 8,
+      transition: 'all 0.15s', fontWeight: active ? 700 : 400,
+    }}>{label}</button>
+  )
+}
+
 function ThemeLibrary() {
   const { theme, setTheme, siteConfig, refreshSiteConfig } = useTheme()
   const [activeTab, setActiveTab] = useState('packages')
@@ -446,14 +458,14 @@ function ThemeLibrary() {
   const [savingPackage, setSavingPackage] = useState(null)
   const [fwActive, setFwActive]   = useState('menu')
 
-  // ── Applying UX: preview-before-apply, per-part application, undo ────────
-  const [applyTarget, setApplyTarget] = useState(null)   // package pending confirmation
-  const [applyParts, setApplyParts]   = useState({ appearance: true, framework: true, backgrounds: true })
-  const [lastSnapshot, setLastSnapshot] = useState(null) // siteConfig before the last apply
-  const toggleApplyPart = key => setApplyParts(p => ({ ...p, [key]: !p[key] }))
-
-  useEffect(() => {
-    if (!siteConfig || fwSaving || savingPackage) return
+  // P2 — sync fwDraft when siteConfig style fields change
+  const fwSyncKey = siteConfig ? [
+    siteConfig.menuStyle, siteConfig.notifyStyle, siteConfig.notifyPosition,
+    siteConfig.dialogStyle, siteConfig.inputStyle, siteConfig.surfaceStyle,
+  ].join('\u0001') : null
+  const [prevFwSyncKey, setPrevFwSyncKey] = useState(fwSyncKey)
+  if (siteConfig && !fwSaving && !savingPackage && fwSyncKey !== prevFwSyncKey) {
+    setPrevFwSyncKey(fwSyncKey)
     setFwDraft(prev => ({
       ...prev,
       menuStyle:      siteConfig.menuStyle      || DEFAULT_FRAMEWORK.menuStyle,
@@ -463,16 +475,13 @@ function ThemeLibrary() {
       inputStyle:     siteConfig.inputStyle     || DEFAULT_FRAMEWORK.inputStyle,
       surfaceStyle:   siteConfig.surfaceStyle   || DEFAULT_FRAMEWORK.surfaceStyle,
     }))
-  }, [
-    siteConfig?.menuStyle,
-    siteConfig?.notifyStyle,
-    siteConfig?.notifyPosition,
-    siteConfig?.dialogStyle,
-    siteConfig?.inputStyle,
-    siteConfig?.surfaceStyle,
-    fwSaving,
-    savingPackage,
-  ])
+  }
+
+  // ── Applying UX: preview-before-apply, per-part application, undo ────────
+  const [applyTarget, setApplyTarget] = useState(null)   // package pending confirmation
+  const [applyParts, setApplyParts]   = useState({ appearance: true, framework: true, backgrounds: true })
+  const [lastSnapshot, setLastSnapshot] = useState(null) // siteConfig before the last apply
+  const toggleApplyPart = key => setApplyParts(p => ({ ...p, [key]: !p[key] }))
 
   const fwHasChanges = FRAMEWORK_CATEGORIES.some(
     cat => fwDraft[cat.configKey] !== (siteConfig?.[cat.configKey] || DEFAULT_FRAMEWORK[cat.configKey])
@@ -563,8 +572,15 @@ function ThemeLibrary() {
   const [savingAppearance, setSavingAppearance] = useState(false)
   const [loadingGlobal, setLoadingGlobal]       = useState(false)
 
-  useEffect(() => {
-    if (!siteConfig || savingAppearance || savingPackage) return
+  // P2 — sync gAppearance when siteConfig appearance fields change
+  const gAppSyncKey = siteConfig ? [
+    siteConfig.loadingScreenStyle, siteConfig.animationPreset, siteConfig.lockTheme,
+    siteConfig.headerStyle, siteConfig.footerStyle, siteConfig.followOsTheme,
+    siteConfig.showRoamingRobot,
+  ].join('\u0001') : null
+  const [prevGAppSyncKey, setPrevGAppSyncKey] = useState(gAppSyncKey)
+  if (siteConfig && !savingAppearance && !savingPackage && gAppSyncKey !== prevGAppSyncKey) {
+    setPrevGAppSyncKey(gAppSyncKey)
     setGAppearance(prev => ({
       ...prev,
       loadingScreenStyle: siteConfig.loadingScreenStyle || 'terminal',
@@ -575,17 +591,7 @@ function ThemeLibrary() {
       followOsTheme:      !!siteConfig.followOsTheme,
       showRoamingRobot:   siteConfig.showRoamingRobot   !== false,
     }))
-  }, [
-    siteConfig?.loadingScreenStyle,
-    siteConfig?.animationPreset,
-    siteConfig?.lockTheme,
-    siteConfig?.headerStyle,
-    siteConfig?.footerStyle,
-    siteConfig?.followOsTheme,
-    siteConfig?.showRoamingRobot,
-    savingAppearance,
-    savingPackage,
-  ])
+  }
 
   // ── Background Animation state ──────────────────────────────────────────
   const [bgAnimation, setBgAnimation] = useState(() => {
@@ -604,11 +610,14 @@ function ThemeLibrary() {
   })
   const [savingBg, setSavingBg] = useState(false)
 
-  useEffect(() => {
-    if (savingBg || savingPackage) return
+  // P2 — sync bgAnimation/gridPattern when siteConfig bg fields change
+  const bgSyncKey = siteConfig ? [siteConfig.bgAnimation, siteConfig.gridPattern, siteConfig.backgroundPattern].join('\u0001') : null
+  const [prevBgSyncKey, setPrevBgSyncKey] = useState(bgSyncKey)
+  if (siteConfig && !savingBg && !savingPackage && bgSyncKey !== prevBgSyncKey) {
+    setPrevBgSyncKey(bgSyncKey)
     setBgAnimation(siteConfig?.bgAnimation || 'none')
     setGridPattern(siteConfig?.gridPattern || siteConfig?.backgroundPattern || 'grid')
-  }, [siteConfig?.bgAnimation, siteConfig?.gridPattern, siteConfig?.backgroundPattern, savingBg, savingPackage])
+  }
 
   const handleAnimationSelect = async (id) => {
     setBgAnimation(id)
@@ -920,10 +929,13 @@ function ThemeLibrary() {
     return true
   })
 
-  useEffect(() => {
-    if (savingGlobal || savingPackage) return
-    setGlobalThemeId(siteConfig?.globalTheme || '')
-  }, [siteConfig?.globalTheme, savingGlobal, savingPackage])
+  // P2 — sync globalThemeId when siteConfig.globalTheme changes
+  const globalThemeVal = siteConfig?.globalTheme || ''
+  const [prevGlobalTheme, setPrevGlobalTheme] = useState(globalThemeVal)
+  if (siteConfig && !savingGlobal && !savingPackage && globalThemeVal !== prevGlobalTheme) {
+    setPrevGlobalTheme(globalThemeVal)
+    setGlobalThemeId(globalThemeVal)
+  }
 
   // -- Keyboard nav in themes tab -------------------------------------------
   useEffect(() => {
@@ -955,16 +967,6 @@ function ThemeLibrary() {
     if (tag === 'LIGHT') return { bg: 'rgba(255,220,50,0.1)',  border: 'rgba(255,220,50,0.3)',  color: '#ffd700' }
     return                      { bg: 'rgba(168,85,247,0.1)',  border: 'rgba(168,85,247,0.3)',  color: '#c084fc' }
   }
-
-  const TabBtn = ({ id, label }) => (
-    <button onClick={() => { setActiveTab(id); setFocusedIdx(-1) }} style={{
-      fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '9px 16px',
-      background: activeTab === id ? 'var(--green)' : 'transparent',
-      color: activeTab === id ? '#000' : 'var(--muted)',
-      border: 'none', cursor: 'pointer', borderRadius: 8,
-      transition: 'all 0.15s', fontWeight: activeTab === id ? 700 : 400,
-    }}>{label}</button>
-  )
 
   const FilterBtn = ({ value, label, active, onClick, activeColor = 'var(--green)' }) => (
     <button onClick={onClick} style={{
@@ -1085,16 +1087,16 @@ function ThemeLibrary() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 3, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24, flexWrap: 'wrap', width: 'fit-content', maxWidth: '100%' }}>
-        <TabBtn id="packages"   label="▧ PACKAGES" />
-        <TabBtn id="themes"     label="🎨 THEMES" />
-        <TabBtn id="animations" label="✨ ANIMATIONS" />
-        <TabBtn id="preview"    label="👁️ LIVE PREVIEW" />
-        <TabBtn id="compare"    label="⚖️ COMPARE" />
-        <TabBtn id="favorites"  label={`❤️ FAVORITES${favorites.length ? ` (${favorites.length})` : ''}`} />
-        <TabBtn id="builder"    label="🛠️ BUILDER" />
-        <TabBtn id="framework"  label="🧩 FRAMEWORK" />
-        <TabBtn id="backgrounds" label="🖼️ BACKGROUNDS" />
-        <TabBtn id="global"     label="⚙️ GLOBAL SETTINGS" />
+        <TabBtn id="packages"   label="▧ PACKAGES" active={activeTab === 'packages'} onSelect={() => { setActiveTab('packages'); setFocusedIdx(-1) }} />
+        <TabBtn id="themes"     label="🎨 THEMES" active={activeTab === 'themes'} onSelect={() => { setActiveTab('themes'); setFocusedIdx(-1) }} />
+        <TabBtn id="animations" label="✨ ANIMATIONS" active={activeTab === 'animations'} onSelect={() => { setActiveTab('animations'); setFocusedIdx(-1) }} />
+        <TabBtn id="preview"    label="👁️ LIVE PREVIEW" active={activeTab === 'preview'} onSelect={() => { setActiveTab('preview'); setFocusedIdx(-1) }} />
+        <TabBtn id="compare"    label="⚖️ COMPARE" active={activeTab === 'compare'} onSelect={() => { setActiveTab('compare'); setFocusedIdx(-1) }} />
+        <TabBtn id="favorites"  label={`❤️ FAVORITES${favorites.length ? ` (${favorites.length})` : ''}`} active={activeTab === 'favorites'} onSelect={() => { setActiveTab('favorites'); setFocusedIdx(-1) }} />
+        <TabBtn id="builder"    label="🛠️ BUILDER" active={activeTab === 'builder'} onSelect={() => { setActiveTab('builder'); setFocusedIdx(-1) }} />
+        <TabBtn id="framework"  label="🧩 FRAMEWORK" active={activeTab === 'framework'} onSelect={() => { setActiveTab('framework'); setFocusedIdx(-1) }} />
+        <TabBtn id="backgrounds" label="🖼️ BACKGROUNDS" active={activeTab === 'backgrounds'} onSelect={() => { setActiveTab('backgrounds'); setFocusedIdx(-1) }} />
+        <TabBtn id="global"     label="⚙️ GLOBAL SETTINGS" active={activeTab === 'global'} onSelect={() => { setActiveTab('global'); setFocusedIdx(-1) }} />
       </div>
 
       {/* -- THEME PACKAGES TAB -- */}
@@ -1644,7 +1646,7 @@ function ThemeLibrary() {
                   background: `linear-gradient(135deg, ${displayDef.primary}, ${displayDef.secondary})`,
                   border: 'none', color: '#000', cursor: 'pointer', borderRadius: 6, transition: 'all 0.15s',
                   boxShadow: `0 0 20px ${displayDef.primary}44`,
-                }}>✅ APPLY "{displayDef.name.toUpperCase()}"</button>
+                }}>✅ APPLY &quot;{displayDef.name.toUpperCase()}&quot;</button>
                 <button onClick={() => setPreviewTheme(null)} style={{
                   fontFamily: 'var(--font-mono)', fontSize: 9, padding: '9px 16px',
                   background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6,
@@ -2119,7 +2121,7 @@ function ThemeLibrary() {
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--cyan)', letterSpacing: 1, marginBottom: 4 }}>GLOBAL APPEARANCE  affects every visitor</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7 }}>
-                  Changes here are saved to the backend and apply site-wide. Individual user theme preferences are only overridden when "Lock Theme" is enabled.
+                  Changes here are saved to the backend and apply site-wide. Individual user theme preferences are only overridden when &quot;Lock Theme&quot; is enabled.
                   To change site identity, social links or maintenance settings use the <strong style={{ color: 'var(--text)' }}>Site Settings</strong> panel.
                 </div>
               </div>
@@ -2129,7 +2131,7 @@ function ThemeLibrary() {
             <div style={T.card}>
               <div style={T.sec}>GLOBAL DEFAULT THEME</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 12, lineHeight: 1.6 }}>
-                Sets the default theme shown to all new visitors. Select <em>user's choice</em> to let each visitor pick their own.
+                Sets the default theme shown to all new visitors. Select <em>user&apos;s choice</em> to let each visitor pick their own.
                 {globalThemeId && <span style={{ color: 'var(--cyan)', marginLeft: 8 }}>Currently: <strong>{THEME_DEFS.find(t=>t.id===globalThemeId)?.name || globalThemeId}</strong></span>}
               </div>
 
@@ -2137,7 +2139,7 @@ function ThemeLibrary() {
                 <button
                   onClick={() => { setGlobalThemeId(''); applyGlobalTheme('__clear__') }}
                   style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', transition: 'all 0.15s', background: !globalThemeId ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'var(--bg3)', border: `1px solid ${!globalThemeId ? 'var(--green)' : 'var(--border)'}`, color: !globalThemeId ? 'var(--green)' : 'var(--muted)', borderRadius: 4 }}
-                >user's choice</button>
+                >&gt;user&apos;s choice</button>
                 {THEME_DEFS.map(t => {
                   const active = globalThemeId === t.id
                   return (
@@ -2330,7 +2332,7 @@ function ThemeLibrary() {
                   )
                 })}
               </div>
-              <div style={T.sub}>Controls motion intensity site-wide. "none" disables all transitions.</div>
+              <div style={T.sub}>Controls motion intensity site-wide. &quot;none&quot; disables all transitions.</div>
             </div>
 
             {/* -- Header Style ---------------------------------------------- */}

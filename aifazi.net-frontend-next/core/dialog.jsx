@@ -44,6 +44,11 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
   const v = VARIANTS[variant] || VARIANTS.danger
   const titleId    = `dlg-title-${entry.id}`
 
+  const resolve = useCallback((value) => {
+    setLeaving(true)
+    setTimeout(() => onResolve(value), 300)
+  }, [onResolve])
+
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true))
     // Focus input for prompts, confirm button otherwise; remember where we came
@@ -83,11 +88,6 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
       }
     }
   }, [])
-
-  const resolve = useCallback((value) => {
-    setLeaving(true)
-    setTimeout(() => onResolve(value), 300)
-  }, [onResolve])
 
   const handlePromptSubmit = () => {
     const val = inputVal.trim()

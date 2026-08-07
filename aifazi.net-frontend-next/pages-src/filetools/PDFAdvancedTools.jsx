@@ -85,7 +85,7 @@ function UnlockPDF() {
     <div>
       <div style={{ ...S.panel, padding:'12px 16px', marginBottom:16 }}>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--orange)', letterSpacing:2 }}>
-          ⚠ Only works on PDFs where you know the password or that are protected with restrictions only (no user password). Do not use to bypass security you don't own.
+          ⚠ Only works on PDFs where you know the password or that are protected with restrictions only (no user password). Do not use to bypass security you don&apos;t own.
         </div>
       </div>
       <DropZone accept=".pdf" onFiles={([f]) => { setFile(f); setErr(''); setMsg('') }} label="Drop protected PDF to unlock" />
@@ -1028,7 +1028,7 @@ function HTMLToPDF() {
     <div>
       <div style={{ ...S.panel, padding:'12px 16px', marginBottom:16 }}>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--orange)', letterSpacing:1 }}>
-          ⚡ Renders your HTML in a hidden frame and opens the system print dialog. Select "Save as PDF" as the destination. Works with full CSS styling.
+          ⚡ Renders your HTML in a hidden frame and opens the system print dialog. Select &quot;Save as PDF&quot; as the destination. Works with full CSS styling.
         </div>
       </div>
       <DropZone accept=".html,.htm" onFiles={loadFile} label="Drop HTML file or paste below" />

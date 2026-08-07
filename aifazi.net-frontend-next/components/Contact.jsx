@@ -97,7 +97,7 @@ export default function Contact() {
                 <div style={{ width: 40, height: 40, borderRadius: 8, background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>✓</div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2 }}>MESSAGE SENT</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text)', marginTop: 2 }}>I'll get back to you soon.</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--text)', marginTop: 2 }}>I&apos;ll get back to you soon.</div>
                 </div>
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>

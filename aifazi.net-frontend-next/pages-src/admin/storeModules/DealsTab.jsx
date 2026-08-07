@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
+import { useNow } from '../../../hooks/useNow'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15', O = '#ff6b35'
@@ -14,6 +15,7 @@ const EMPTY = { product_id: '', name: '', subtitle: '', discount_percent: 10, st
 export default function DealsTab() {
   const toast = useToast()
   const { confirm } = useDialog()
+  const now = useNow()
   const [deals, setDeals] = useState([])
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -22,7 +24,6 @@ export default function DealsTab() {
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(() => {
-    setLoading(true)
     Promise.all([
       api.get('/store/admin/deals').then(r => setDeals(r.data || [])).catch(() => []),
       api.get('/store/admin/products').then(r => setProducts(r.data || [])).catch(() => []),
@@ -74,8 +75,6 @@ export default function DealsTab() {
   }
 
   const input = { background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '9px 12px', fontFamily: MONO, fontSize: 12, outline: 'none', boxSizing: 'border-box' }
-
-  const now = Date.now()
 
   return (
     <div>

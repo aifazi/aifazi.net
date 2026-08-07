@@ -203,7 +203,7 @@ function GlitchToast({ toast, v, leaving, dismiss }) {
       background: v.bg, border: `1px solid ${v.color}`,
       animation: leaving ? 'ntfy-fadeOut .25s ease forwards' : 'ntfy-glitchIn .3s steps(4) both',
     }}>
-      <div style={{ fontFamily:t.fontMono, fontSize:9, letterSpacing:3, marginBottom:4, opacity:.6, color:v.color }}>// {v.label} — {ts()}</div>
+      <div style={{ fontFamily:t.fontMono, fontSize:9, letterSpacing:3, marginBottom:4, opacity:.6, color:v.color }}>{'//'} {v.label} {'—'} {ts()}</div>
       {/* main text */}
       <div style={{ fontFamily:t.fontMono, fontSize:12, letterSpacing:1, color:v.color, position:'relative', zIndex:1 }}>{text}</div>
       {/* chromatic aberration layers */}
@@ -416,10 +416,14 @@ function ToastItem({ toast, onRemove, notifyStyle }) {
 export function NotifyProvider({ children, position = 'bottom-right', maxToasts = 6, notifyStyle = 'cyber' }) {
   const [toasts, setToasts] = useState([])
   const [livePosition, setLivePosition] = useState(position)
+  const [prevPosition, setPrevPosition] = useState(position)
+  if (prevPosition !== position) {
+    setPrevPosition(position)
+    setLivePosition(position)
+  }
 
   // Keep module-level override in sync with current prop + live events
   useEffect(() => { _liveNotifyStyle = notifyStyle }, [notifyStyle])
-  useEffect(() => { setLivePosition(position) }, [position])
   useEffect(() => {
     const h = (e) => {
       if (e?.detail?.notifyStyle)   _liveNotifyStyle = e.detail.notifyStyle

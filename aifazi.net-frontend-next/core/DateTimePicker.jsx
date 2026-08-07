@@ -48,18 +48,18 @@ export default function DateTimePicker({
   const [hour,  setHour]  = useState(parsed ? (parsed.getHours() % 12 || 12) : 12)
   const [min,   setMin]   = useState(parsed ? parsed.getMinutes() : 0)
   const [ampm,  setAmpm]  = useState(parsed ? (parsed.getHours() >= 12 ? 'PM' : 'AM') : 'AM')
+  const [prevValue, setPrevValue] = useState(value)
 
-  // Sync state when value prop changes externally
-  useEffect(() => {
-    const d = parseValue(value)
-    if (!d) {
+  if (prevValue !== value) {
+    setPrevValue(value)
+    if (parsed) {
+      setMonth(parsed.getMonth()); setYear(parsed.getFullYear()); setSelDate(parsed)
+      setHour(parsed.getHours() % 12 || 12); setMin(parsed.getMinutes())
+      setAmpm(parsed.getHours() >= 12 ? 'PM' : 'AM')
+    } else {
       setSelDate(null)
-      return
     }
-    setMonth(d.getMonth()); setYear(d.getFullYear()); setSelDate(d)
-    setHour(d.getHours() % 12 || 12); setMin(d.getMinutes())
-    setAmpm(d.getHours() >= 12 ? 'PM' : 'AM')
-  }, [value])
+  }
 
   // Close on outside click
   useEffect(() => {

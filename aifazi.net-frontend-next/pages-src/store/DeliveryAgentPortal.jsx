@@ -121,8 +121,15 @@ export default function DeliveryAgentPortal() {
   const [showScanner, setShowScanner] = useState(false)
   const [updating, setUpdating] = useState('')
 
+  const loadAssignments = async () => {
+    try {
+      const r = await api.get('/store/delivery/assignments/me')
+      setAssignments(r.data || [])
+    } catch { setAssignments([]) }
+  }
+
   useEffect(() => {
-    if (!user) { setLoading(false); return }
+    if (!user) return
     api.get('/store/delivery/agents/me').then(r => {
       setAgent(r.data)
       loadAssignments()
@@ -131,13 +138,6 @@ export default function DeliveryAgentPortal() {
       else setError('Failed to load agent profile.')
     }).finally(() => setLoading(false))
   }, [user])
-
-  const loadAssignments = async () => {
-    try {
-      const r = await api.get('/store/delivery/assignments/me')
-      setAssignments(r.data || [])
-    } catch { setAssignments([]) }
-  }
 
   const updateStatus = async (assignment, newStatus) => {
     setUpdating(assignment.id)

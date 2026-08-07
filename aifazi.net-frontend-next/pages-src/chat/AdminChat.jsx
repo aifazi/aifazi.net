@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useRef, useCallback, useMemo, Component } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo, Component, useSyncExternalStore } from 'react'
 import { supabase } from '@/lib/supabase'
 import api, { getRole, getUsername, setEffectiveAccess } from '@/lib/api'
 import { useNotify }  from '../../core/notify.jsx'
@@ -37,15 +37,23 @@ export default function AdminChat({ embedded=false }) {
   const [roomBans, setRoomBans] = useState([])
 
   // Keep me in sync with token changes
+  const [prevToken, setPrevToken] = useState(token)
+  if (prevToken !== token) {
+    setPrevToken(token)
+    if (token) {
+      const name = getUsername() || parseJwt(token)?.username
+      if (name) setMe(name)
+    }
+  }
   useEffect(() => {
     const t = getToken()
     if (t) {
       const name = getUsername() || parseJwt(t)?.username
-      if (name) { setMe(name); meRef.current = name }
+      if (name) meRef.current = name
     }
   }, [token])
 
-  const [mounted, setMounted] = useState(false)
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
   // H4 — access token is memory-only, so on a fresh page load getToken() is null
   // even for a cookie-session user. Gate on the /auth/me result instead of the
   // in-memory token: 'loading' → nothing, 'ok' → chat, 'no' → login screen.
@@ -80,13 +88,22 @@ export default function AdminChat({ embedded=false }) {
   const [userSearch, setUserSearch] = useState(null)
 
   // Fetch room encryption key for text messages (cached per room)
-  useEffect(() => {
-    if (!room || (room.type === 'voice' || room.type === 'video')) { setRoomKey(''); setRoomKeyModule(''); return }
-    const cached = _roomKeyCache[room.id]
-    if (cached) {
-      setRoomKey(cached); setRoomKeyModule(cached)
-      return
+  const [prevRoom, setPrevRoom] = useState(room)
+  if (prevRoom !== room) {
+    setPrevRoom(room)
+    if (!room || (room.type === 'voice' || room.type === 'video')) {
+      setRoomKey(''); setRoomKeyModule('')
+    } else if (_roomKeyCache[room.id]) {
+      setRoomKey(_roomKeyCache[room.id]); setRoomKeyModule(_roomKeyCache[room.id])
     }
+    if (room) { // Reset unread for current room
+      setUnread(prev => { const n={...prev}; delete n[room.id]; return n })
+    }
+  }
+  useEffect(() => {
+    if (!room || (room.type === 'voice' || room.type === 'video')) return
+    const cached = _roomKeyCache[room.id]
+    if (cached) return
     api.get(`/chat/rooms/${room.id}/encryption-key`).then(r => {
       const key = r.data?.encryption_key || ''
       setRoomKey(key); setRoomKeyModule(key)
@@ -106,7 +123,7 @@ export default function AdminChat({ embedded=false }) {
   const roomIdRef = useRef(null)
   const oldestRef = useRef(null)
 
-  useEffect(() => { setMounted(true); meRef.current = me }, [me])
+  useEffect(() => { meRef.current = me }, [me])
 
   // ── Fetch real role from server immediately on mount ────────────────────
   useEffect(() => {
@@ -264,9 +281,6 @@ export default function AdminChat({ embedded=false }) {
     if (!room || !supabase) return
     roomIdRef.current = room.id
 
-    // Reset unread for current room
-    setUnread(prev => { const n={...prev}; delete n[room.id]; return n })
-
     const msgSub = supabase
       .channel(`chat:${room.id}`)
       .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_messages', filter:`room_id=eq.${room.id}` },
@@ -336,6 +350,12 @@ export default function AdminChat({ embedded=false }) {
   }, [room?.id, me])
 
   // ── Join voice/video room ─────────────────────────────────────────────────
+  const leaveCall = useCallback(() => {
+    setCallRoom(null)
+    setCanScreenShare(false)
+    setCallParticipants([])
+  }, [])
+
   const joinCall = useCallback(async (r) => {
     // Leave any existing call first
     if (callRoom) leaveCall()
@@ -361,12 +381,6 @@ export default function AdminChat({ embedded=false }) {
       else notify.error('Cannot join voice channel — check connection')
     }
   }, [isAdmin, callRoom])
-
-  const leaveCall = useCallback(() => {
-    setCallRoom(null)
-    setCanScreenShare(false)
-    setCallParticipants([])
-  }, [])
 
   const togMute = () => setMuted(m => !m)
   const togCam = () => setCamOff(c => !c)

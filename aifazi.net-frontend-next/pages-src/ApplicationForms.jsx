@@ -68,23 +68,27 @@ function Field({ field, value, onChange, error, disabled }) {
 
 export function ApplicationFormsIndex() {
   const notify = useNotify()
-  const [forms, setForms] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [forms, setForms] = useState(() => {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('aifazi_forms_cache_v1') || 'null')
+      if (cached?.ts && Date.now() - cached.ts < 60000) return cached.forms || []
+    } catch {}
+    return []
+  })
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem('aifazi_forms_cache_v1') || 'null')
+      if (cached?.ts && Date.now() - cached.ts < 60000) return false
+    } catch {}
+    return true
+  })
 
   useEffect(() => {
-    const cacheKey = 'aifazi_forms_cache_v1'
-    try {
-      const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null')
-      if (cached?.ts && Date.now() - cached.ts < 60000) {
-        setForms(cached.forms || [])
-        setLoading(false)
-      }
-    } catch {}
     api.get('/forms')
       .then(r => {
         const rows = r.data.forms || []
         setForms(rows)
-        try { sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), forms: rows })) } catch {}
+        try { sessionStorage.setItem('aifazi_forms_cache_v1', JSON.stringify({ ts: Date.now(), forms: rows })) } catch {}
       })
       .catch(() => {
         setForms([])
@@ -134,31 +138,38 @@ export function ApplicationFormPage({ slug }) {
   const [answers, setAnswers] = useState({})
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(true)
-  const [contextLoading, setContextLoading] = useState(false)
   const [gate, setGate] = useState(null)
   const [prefilled, setPrefilled] = useState(false)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
   const isStaffPreview = !!user && (user._staff || user.staff_account || STAFF_ROLES.has(user.role))
+  const contextLoading = !gate
 
-  useEffect(() => {
+  const [prevSlug, setPrevSlug] = useState(slug)
+  if (prevSlug !== slug) {
+    setPrevSlug(slug)
     setLoading(true)
     setGate(null)
     setPrefilled(false)
     setAnswers({})
     setErrors({})
     setMsg(null)
+  }
+
+  useEffect(() => {
     api.get(`/forms/${slug}`).then(r => setFormDef(r.data)).catch(() => setFormDef(null)).finally(() => setLoading(false))
   }, [slug])
 
+  const previewGate = !!user && !!formDef && isStaffPreview && !prefilled
+  const [prevPreviewGate, setPrevPreviewGate] = useState(previewGate)
+  if (previewGate && !prevPreviewGate) {
+    setPrevPreviewGate(true)
+    setGate({ approved:true, message:'Admin preview mode', whitelist:null })
+    setPrefilled(true)
+  }
+
   useEffect(() => {
     if (!user || !formDef || prefilled) return
-    if (isStaffPreview) {
-      setGate({ approved:true, message:'Admin preview mode', whitelist:null })
-      setPrefilled(true)
-      return
-    }
-    setContextLoading(true)
     api.get(`/forms/${slug}/context`)
       .then(r => {
         const nextForm = r.data.form || formDef
@@ -188,7 +199,6 @@ export function ApplicationFormPage({ slug }) {
         })
       })
       .finally(() => {
-        setContextLoading(false)
         setPrefilled(true)
       })
   }, [user, formDef, slug, prefilled, isStaffPreview])

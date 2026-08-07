@@ -14,7 +14,10 @@ import { useEffect, useRef } from 'react'
  */
 export function usePausableInterval(fn, delay) {
   const cbRef = useRef(fn)
-  cbRef.current = fn
+
+  useEffect(() => {
+    cbRef.current = fn
+  }, [fn])
 
   useEffect(() => {
     if (!delay) return

@@ -21,7 +21,10 @@ export default function StoreHeader() {
     } catch { setCartCount(0) }
   }, [user])
 
-  useEffect(() => { fetchCart() }, [fetchCart])
+  useEffect(() => {
+    const t = setTimeout(fetchCart, 0)
+    return () => clearTimeout(t)
+  }, [fetchCart])
 
   // Listen for cart updates
   useEffect(() => {

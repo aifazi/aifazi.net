@@ -1140,7 +1140,7 @@ function ThemeCard({ t, isActive, isSelected, onSelect }) {
 export default function ThemePicker({ open, onClose }) {
   const { theme, setTheme, siteConfig, refreshSiteConfig, isAdmin, userPackage, applyUserPackage, clearUserPackage } = useTheme()
   const isThemeLocked = !!(siteConfig?.lockTheme && siteConfig?.globalTheme)
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(() => open)
   const [pending, setPending] = useState(null)
   const [activeCategory, setActiveCategory] = useState('overview')
   const [filter, setFilter] = useState('ALL')
@@ -1167,9 +1167,12 @@ export default function ThemePicker({ open, onClose }) {
   const [savedGlobal, setSavedGlobal] = useState(false)
 
   // Sync globalDraft with siteConfig whenever panel opens
-  useEffect(() => {
-    if (showAdminPanel && siteConfig) {
-      setGlobalDraft({
+  const [prevPanelOpen, setPrevPanelOpen] = useState(showAdminPanel)
+  const [prevDraftCfg, setPrevDraftCfg] = useState(siteConfig)
+  if ((prevPanelOpen !== showAdminPanel || prevDraftCfg !== siteConfig) && showAdminPanel && siteConfig) {
+    setPrevPanelOpen(showAdminPanel)
+    setPrevDraftCfg(siteConfig)
+    setGlobalDraft({
         globalTheme:             siteConfig.globalTheme             || '',
         lockTheme:               siteConfig.lockTheme               || false,
         loadingScreenStyle:      siteConfig.loadingScreenStyle      || 'terminal',
@@ -1187,8 +1190,7 @@ export default function ThemePicker({ open, onClose }) {
         headerStyle:             siteConfig.headerStyle             || 'cyber',
         footerStyle:             siteConfig.footerStyle             || 'cyber',
       })
-    }
-  }, [showAdminPanel, siteConfig])
+  }
 
   const saveGlobalSettings = async () => {
     setSavingGlobal(true); setSavedGlobal(false)
@@ -1204,10 +1206,20 @@ export default function ThemePicker({ open, onClose }) {
     finally { setSavingGlobal(false) }
   }
 
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (prevOpen !== open) {
+    setPrevOpen(open)
+    if (open) {
+      setMounted(true)
+      setPending(null)
+    }
+  }
+
   useEffect(() => {
-    if (open) { setMounted(true); setPending(null) }
-    else { const t = setTimeout(() => setMounted(false), 380); return () => clearTimeout(t) }
-  }, [open])
+    if (open || !mounted) return
+    const t = setTimeout(() => setMounted(false), 380)
+    return () => clearTimeout(t)
+  }, [open, mounted])
 
   useEffect(() => {
     const handler = e => { if (e.key === 'Escape') onClose() }

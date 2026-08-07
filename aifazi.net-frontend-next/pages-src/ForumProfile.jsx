@@ -5,6 +5,7 @@ import api, { ensureAdminGate } from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { Select, useDialog } from '../core/ui.jsx'
 import { useToast } from '../components/Toast'
+import { useNow } from '../hooks/useNow'
 import FiveMStatus from '@/components/FiveMStatus'
 import { getSupabase } from '@/lib/supabase'
 
@@ -217,7 +218,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
       })
   }, [ticketId])
 
-  useEffect(() => { loadTicket(false) }, [loadTicket])
+  useEffect(() => { void (async () => { await loadTicket(false) })() }, [loadTicket])
 
   useEffect(() => {
     const refresh = () => loadTicket(true)
@@ -397,6 +398,11 @@ function MyTicketsTab({ user, initialTicketId, onTicketViewChange }) {
   const [catFilter, setCatFilter] = useState('all')
   const [sortBy, setSortBy]     = useState('newest')
   const [viewTicketId, setViewTicketId] = useState(initialTicketId || null)
+  const [prevInitialTicketId, setPrevInitialTicketId] = useState(initialTicketId || null)
+  if (prevInitialTicketId !== (initialTicketId || null)) {
+    setPrevInitialTicketId(initialTicketId || null)
+    setViewTicketId(initialTicketId || null)
+  }
 
   const loadTickets = useCallback(() => {
     if (!user?.email) { setLoading(false); return }
@@ -406,11 +412,7 @@ function MyTicketsTab({ user, initialTicketId, onTicketViewChange }) {
       .finally(() => setLoading(false))
   }, [user?.email])
 
-  useEffect(() => { loadTickets() }, [loadTickets])
-
-  useEffect(() => {
-    setViewTicketId(initialTicketId || null)
-  }, [initialTicketId])
+  useEffect(() => { void (async () => { await loadTickets() })() }, [loadTickets])
 
   // Auto-sync polling
   useEffect(() => {
@@ -544,15 +546,20 @@ function ActivityTab({ user }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!user?.id && !user?._id) { setLoading(false); return }
-    const uid = user.id || user._id
-    Promise.all([
-      api.get(`/forum/users/${uid}/threads?limit=10`).catch(() => ({ data: [] })),
-      api.get(`/forum/users/${uid}/replies?limit=10`).catch(() => ({ data: [] })),
-    ]).then(([t, r]) => {
-      setThreads(Array.isArray(t.data) ? t.data : t.data?.threads || [])
-      setReplies(Array.isArray(r.data) ? r.data : r.data?.replies || [])
-    }).finally(() => setLoading(false))
+    void (async () => {
+      if (!user?.id && !user?._id) { setLoading(false); return }
+      const uid = user.id || user._id
+      try {
+        const [t, r] = await Promise.all([
+          api.get(`/forum/users/${uid}/threads?limit=10`).catch(() => ({ data: [] })),
+          api.get(`/forum/users/${uid}/replies?limit=10`).catch(() => ({ data: [] })),
+        ])
+        setThreads(Array.isArray(t.data) ? t.data : t.data?.threads || [])
+        setReplies(Array.isArray(r.data) ? r.data : r.data?.replies || [])
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [user?.id, user?._id])
 
   if (loading) return <div style={{ padding: '40px 0', textAlign: 'center', ...M, fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADING…</div>
@@ -597,28 +604,35 @@ function ProfileEditTab({ user, onUpdate }) {
   const [usernameCheck, setUsernameCheck] = useState({ state: 'idle', msg: '' })
   const [emailCheck, setEmailCheck] = useState({ state: 'idle', msg: '' })
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
-
-  // Sync form when real user data arrives (e.g. after /auth/me resolves)
-  useEffect(() => {
-    if (!user?.email) return
-    setForm(p => {
-      const next = { username: user?.username || '', email: user?.pending_email ? user.email : (user?.email || ''), bio: user?.bio || '', avatar: user?.avatar || '' }
-      if (p.username === next.username && p.email === next.email && p.bio === next.bio && p.avatar === next.avatar) return p
-      return next
-    })
-  }, [user?.email, user?.pending_email])
-
-  useEffect(() => {
-    const username = (form.username || '').trim()
-    if (!username || username.toLowerCase() === String(user?.username || '').toLowerCase()) {
-      setUsernameCheck({ state: 'idle', msg: '' })
-      return
+  const userKey = `${user?.email ?? ''}|${user?.pending_email ?? ''}`
+  const [prevUserKey, setPrevUserKey] = useState(userKey)
+  if (prevUserKey !== userKey) {
+    setPrevUserKey(userKey)
+    if (user?.email) {
+      setForm(p => {
+        const next = { username: user?.username || '', email: user?.pending_email ? user.email : (user?.email || ''), bio: user?.bio || '', avatar: user?.avatar || '' }
+        if (p.username === next.username && p.email === next.email && p.bio === next.bio && p.avatar === next.avatar) return p
+        return next
+      })
     }
-    if (username.length < 3) {
-      setUsernameCheck({ state: 'error', msg: 'Username must be at least 3 characters.' })
-      return
-    }
-    setUsernameCheck({ state: 'checking', msg: 'Checking username...' })
+  }
+
+  const username = (form.username || '').trim()
+  const usernameState = !username || username.toLowerCase() === String(user?.username || '').toLowerCase()
+    ? 'idle'
+    : username.length < 3
+      ? 'short'
+      : 'checking'
+  const [prevUsernameState, setPrevUsernameState] = useState(usernameState)
+  if (prevUsernameState !== usernameState) {
+    setPrevUsernameState(usernameState)
+    if (usernameState === 'idle') setUsernameCheck({ state: 'idle', msg: '' })
+    else if (usernameState === 'short') setUsernameCheck({ state: 'error', msg: 'Username must be at least 3 characters.' })
+    else setUsernameCheck({ state: 'checking', msg: 'Checking username...' })
+  }
+
+  useEffect(() => {
+    if (usernameState === 'idle' || usernameState === 'short') return
     const timer = setTimeout(() => {
       api.get(`/auth/check-username?username=${encodeURIComponent(username)}`)
         .then(r => {
@@ -629,20 +643,25 @@ function ProfileEditTab({ user, onUpdate }) {
         .catch(() => setUsernameCheck({ state: 'error', msg: 'Could not check username.' }))
     }, 350)
     return () => clearTimeout(timer)
-  }, [form.username, user?.username])
+  }, [username, usernameState])
+
+  const email = (form.email || '').trim()
+  const currentEmail = String(user?.email || '').trim().toLowerCase()
+  const emailState = !email || email.toLowerCase() === currentEmail
+    ? 'idle'
+    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+      ? 'invalid'
+      : 'checking'
+  const [prevEmailState, setPrevEmailState] = useState(emailState)
+  if (prevEmailState !== emailState) {
+    setPrevEmailState(emailState)
+    if (emailState === 'idle') setEmailCheck({ state: 'idle', msg: '' })
+    else if (emailState === 'invalid') setEmailCheck({ state: 'error', msg: 'Enter a valid email address.' })
+    else setEmailCheck({ state: 'checking', msg: 'Checking email...' })
+  }
 
   useEffect(() => {
-    const email = (form.email || '').trim()
-    const current = String(user?.email || '').trim().toLowerCase()
-    if (!email || email.toLowerCase() === current) {
-      setEmailCheck({ state: 'idle', msg: '' })
-      return
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailCheck({ state: 'error', msg: 'Enter a valid email address.' })
-      return
-    }
-    setEmailCheck({ state: 'checking', msg: 'Checking email...' })
+    if (emailState === 'idle' || emailState === 'invalid') return
     const timer = setTimeout(() => {
       api.get(`/auth/check-email?email=${encodeURIComponent(email)}`)
         .then(r => {
@@ -653,7 +672,7 @@ function ProfileEditTab({ user, onUpdate }) {
         .catch(err => setEmailCheck({ state: 'error', msg: err?.response?.data?.detail || 'Could not check email.' }))
     }, 350)
     return () => clearTimeout(timer)
-  }, [form.email, user?.email])
+  }, [email, emailState])
 
   const save = async e => {
     e.preventDefault()
@@ -720,6 +739,7 @@ function ProfileEditTab({ user, onUpdate }) {
 
 function ProfileSessionsPanel({ staffAccount }) {
   const dialog = useDialog()
+  const now = useNow()
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [revoking, setRevoking] = useState('')
@@ -731,7 +751,7 @@ function ProfileSessionsPanel({ staffAccount }) {
     finally { setLoading(false) }
   }, [base])
   useEffect(() => {
-    load()
+    void (async () => { await load() })()
     const beat = setInterval(() => api.post(`${base}/heartbeat`).then(load).catch(() => {}), 30000)
     api.post(`${base}/heartbeat`).then(load).catch(() => {})
     return () => clearInterval(beat)
@@ -745,7 +765,7 @@ function ProfileSessionsPanel({ staffAccount }) {
   }
   const ago = d => {
     if (!d) return '—'
-    const sec = Math.floor((Date.now() - new Date(d).getTime()) / 1000)
+    const sec = Math.floor((now - new Date(d).getTime()) / 1000)
     if (sec < 60) return `${sec}s ago`
     if (sec < 3600) return `${Math.floor(sec/60)}m ago`
     if (sec < 86400) return `${Math.floor(sec/3600)}h ago`
@@ -912,7 +932,19 @@ function SecurityTab({ user }) {
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState(null)
-  const [oauthStatus, setOauthStatus] = useState(null)
+  const [oauthStatus, setOauthStatus] = useState(() => {
+    if (typeof window === 'undefined') return null
+    const params = new URLSearchParams(window.location.search)
+    const provider = params.get('discord_error') ? 'Discord' : params.get('steam_error') ? 'Steam' : params.get('github_error') ? 'GitHub' : ''
+    if (!provider) return null
+    const err = params.get('discord_error') || params.get('steam_error') || params.get('github_error')
+    const messages = {
+      duplicate: `${provider} is already linked to another user.`,
+      link: `${provider} connect session expired. Please try again.`,
+      identity_locked: 'Your active FiveM identity is locked. Contact staff to change OAuth accounts.',
+    }
+    return { type: 'error', msg: messages[err] || `${provider} connect failed.` }
+  })
   const [oauthLoading, setOauthLoading] = useState('')
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
   const identityLocked = !!user?.active_identity_locked
@@ -936,7 +968,7 @@ function SecurityTab({ user }) {
     setOauthStatus(null)
     try {
       const r = await api.get(`${oauthApiBase(provider)}/connect-url?dest=${encodeURIComponent('/profile?tab=security')}`)
-      window.location.href = r.data.url
+      window.location.assign(r.data.url)
     } catch (err) {
       setOauthStatus({ type: 'error', msg: err?.response?.data?.detail || `Could not start ${provider} connect.` })
       setOauthLoading('')
@@ -967,16 +999,10 @@ function SecurityTab({ user }) {
   }
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const provider = params.get('discord_error') ? 'Discord' : params.get('steam_error') ? 'Steam' : params.get('github_error') ? 'GitHub' : ''
     if (!provider) return
-    const err = params.get('discord_error') || params.get('steam_error') || params.get('github_error')
-    const messages = {
-      duplicate: `${provider} is already linked to another user.`,
-      link: `${provider} connect session expired. Please try again.`,
-      identity_locked: 'Your active FiveM identity is locked. Contact staff to change OAuth accounts.',
-    }
-    setOauthStatus({ type: 'error', msg: messages[err] || `${provider} connect failed.` })
     window.history.replaceState({}, '', window.location.pathname + '?tab=security')
   }, [])
 
@@ -1059,7 +1085,7 @@ function SecurityTab({ user }) {
           <Inp label="CONFIRM NEW PASSWORD" id="sec-conf" type="password" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} autoComplete="new-password"
             style={{ borderColor: form.confirmPassword && form.confirmPassword !== form.newPassword ? CLRS.red : undefined }} />
           {form.confirmPassword && form.confirmPassword !== form.newPassword && (
-            <div style={{ ...M, fontSize: 9, color: CLRS.red }}>⚠  Passwords don't match</div>
+            <div style={{ ...M, fontSize: 9, color: CLRS.red }}>⚠  Passwords don&apos;t match</div>
           )}
           {status && <StatusMsg msg={status.msg} type={status.type} />}
           <Btn type="submit" disabled={saving}>{saving ? 'SAVING…' : 'CHANGE PASSWORD'}</Btn>
@@ -1176,24 +1202,36 @@ function FiveMTab({ user }) {
   const [status, setStatus]   = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState('')
-  const [actionStatus, setActionStatus] = useState(null)
+  const [actionStatus, setActionStatus] = useState(() => {
+    if (typeof window === 'undefined') return null
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('discord_error') === 'duplicate') return { type: 'error', msg: 'That Discord account is already linked to another user.' }
+    if (params.get('discord_error') === 'link') return { type: 'error', msg: 'Discord connect session expired. Please start from your profile again.' }
+    if (params.get('discord_error') === 'identity_locked' || params.get('steam_error') === 'identity_locked') return { type: 'error', msg: 'Your player identity is active. Contact an admin or open a ticket to change Discord or Steam.' }
+    if (params.get('steam_error') === 'duplicate') return { type: 'error', msg: 'That Steam account is already linked to another user.' }
+    return null
+  })
   const [actionLoading, setActionLoading] = useState('')
   const [formSubmissions, setFormSubmissions] = useState([])
   const [formsLoading, setFormsLoading] = useState(false)
 
   useEffect(() => {
-    setFormsLoading(true)
-    api.get('/auth/discord/whitelist-status')
-      .then(r => setStatus(r.data))
-      .catch(err => {
+    void (async () => {
+      setFormsLoading(true)
+      try {
+        const r = await api.get('/auth/discord/whitelist-status')
+        setStatus(r.data)
+      } catch (err) {
         const code = err?.response?.status
         if (code === 401) {
           setError('Session expired. Please sign in again.')
         } else if (code !== 404) {
           setError(err?.response?.data?.detail || 'Could not load whitelist status.')
         }
-      })
-      .finally(() => setLoading(false))
+      } finally {
+        setLoading(false)
+      }
+    })()
     api.get('/forms/my-submissions')
       .then(r => setFormSubmissions(Array.isArray(r.data) ? r.data : (r.data?.submissions || [])))
       .catch(() => setFormSubmissions([]))
@@ -1201,24 +1239,9 @@ function FiveMTab({ user }) {
   }, [])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
-    if (params.get('discord_error') === 'duplicate') {
-      setActionStatus({ type: 'error', msg: 'That Discord account is already linked to another user.' })
-      window.history.replaceState({}, '', window.location.pathname)
-      return
-    }
-    if (params.get('discord_error') === 'link') {
-      setActionStatus({ type: 'error', msg: 'Discord connect session expired. Please start from your profile again.' })
-      window.history.replaceState({}, '', window.location.pathname)
-      return
-    }
-    if (params.get('discord_error') === 'identity_locked' || params.get('steam_error') === 'identity_locked') {
-      setActionStatus({ type: 'error', msg: 'Your player identity is active. Contact an admin or open a ticket to change Discord or Steam.' })
-      window.history.replaceState({}, '', window.location.pathname)
-      return
-    }
-    if (params.get('steam_error') === 'duplicate') {
-      setActionStatus({ type: 'error', msg: 'That Steam account is already linked to another user.' })
+    if (params.get('discord_error') === 'duplicate' || params.get('discord_error') === 'link' || params.get('discord_error') === 'identity_locked' || params.get('steam_error') === 'identity_locked' || params.get('steam_error') === 'duplicate') {
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])
@@ -1672,7 +1695,10 @@ function OrdersDocumentsTab({ user }) {
       .catch(() => setDocs([]))
       .finally(() => setDocsLoading(false))
   }
-  useEffect(() => { loadOrders(); loadDocs() }, [user?.id])
+  useEffect(() => {
+    void (async () => { await loadOrders() })()
+    void (async () => { await loadDocs() })()
+  }, [user?.id])
 
   const openDetail = async (o) => {
     try {
@@ -1882,15 +1908,20 @@ export default function ForumProfile() {
   useEffect(() => {
     if (forumLoading) return
     if (!ctxUser) { navigate('/login?tab=signin&next=%2Fprofile'); return }
-    setUser(ctxUser)
-    setLoading(false)
-    // Load tickets for overview
-    if (ctxUser.email && loadedTicketsForRef.current !== ctxUser.email) {
-      loadedTicketsForRef.current = ctxUser.email
-      api.get('/helpdesk/tickets/mine')
-        .then(r => setTickets(Array.isArray(r.data) ? r.data : []))
-        .catch(() => { loadedTicketsForRef.current = null })
-    }
+    void (async () => {
+      setUser(ctxUser)
+      setLoading(false)
+      // Load tickets for overview
+      if (ctxUser.email && loadedTicketsForRef.current !== ctxUser.email) {
+        loadedTicketsForRef.current = ctxUser.email
+        try {
+          const r = await api.get('/helpdesk/tickets/mine')
+          setTickets(Array.isArray(r.data) ? r.data : [])
+        } catch {
+          loadedTicketsForRef.current = null
+        }
+      }
+    })()
   }, [ctxUser, forumLoading, navigate])
 
   const updateProfileUrl = useCallback((nextTab, ticketId) => {

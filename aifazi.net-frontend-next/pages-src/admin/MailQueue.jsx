@@ -145,7 +145,7 @@ export default function MailQueue() {
   }, [])
 
   const fetchQueue = useCallback(async (isSync=false) => {
-    if (isSync) setSyncing(true); else setLoading(true)
+    if (isSync) setSyncing(true)
     try {
       const params = new URLSearchParams({
         page, limit: PER_PAGE,
@@ -174,7 +174,13 @@ export default function MailQueue() {
     } finally { setProcessingStale(false) }
   }
 
-  useEffect(() => { fetchQueue(); fetchStats() }, [fetchQueue, fetchStats])
+  useEffect(() => {
+    const run = async () => {
+      await fetchQueue()
+      await fetchStats()
+    }
+    run()
+  }, [fetchQueue, fetchStats])
 
   usePausableInterval(() => { fetchQueue(true); fetchStats() }, 15000)
 

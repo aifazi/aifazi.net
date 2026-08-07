@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef, memo } from 'react'
+import { useEffect, useState, useRef, useSyncExternalStore, memo } from 'react'
 // GSAP lazy-loaded to avoid SSR crash — static top-level import of gsap causes
 // ReferenceError: window is not defined during Next.js server-side rendering.
 import dynamic from 'next/dynamic'
@@ -240,14 +240,10 @@ export default function Hero() {
   const [wordIdx, setWordIdx] = useState(0)
   const [displayed, setDisplayed] = useState('')
   const [deleting, setDeleting] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
   const heroLeftRef = useRef(null)
   const statsRef   = useRef(null)   // ref for the stats strip counter animation
   const rackRef    = useRef(null)   // ref for the server rack panel slide-in
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   useEffect(() => {
     const word = wordList[wordIdx % wordList.length]
@@ -259,8 +255,10 @@ export default function Hero() {
     } else if (deleting && displayed.length > 0) {
       timeout = setTimeout(() => setDisplayed(displayed.slice(0, -1)), 40)
     } else if (deleting && displayed.length === 0) {
-      setDeleting(false)
-      setWordIdx((wordIdx + 1) % wordList.length)
+      timeout = setTimeout(() => {
+        setDeleting(false)
+        setWordIdx((wordIdx + 1) % wordList.length)
+      }, 0)
     }
     return () => clearTimeout(timeout)
   }, [displayed, deleting, wordIdx, wordList])
@@ -394,7 +392,7 @@ export default function Hero() {
           color: 'var(--cyan)', letterSpacing: 3, marginBottom: 36, minHeight: 28,
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          <span style={{ color: 'color-mix(in srgb, var(--cyan) 35%, transparent)', fontWeight: 300 }}>// </span>
+          <span style={{ color: 'color-mix(in srgb, var(--cyan) 35%, transparent)', fontWeight: 300 }}>{'// '}</span>
           <span style={{ color: 'var(--cyan)', textShadow: '0 0 18px color-mix(in srgb, var(--cyan) 50%, transparent)' }}>{displayed}</span>
           <span style={{ display: 'inline-block', width: 2, height: '1.2em', background: 'var(--cyan)', animation: 'blink 0.9s infinite', verticalAlign: 'middle', boxShadow: '0 0 8px var(--cyan)' }} />
         </div>

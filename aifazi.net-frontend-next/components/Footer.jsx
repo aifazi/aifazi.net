@@ -547,8 +547,7 @@ export default function Footer() {
   const location  = useLocation()
 
   // FiveM-aware footer — active on /fivem/* routes and the fivem.aifazi.net host
-  const [isFiveMHostState, setIsFiveMHostState] = useState(false)
-  useEffect(() => setIsFiveMHostState(isFiveMHost()), [])
+  const [isFiveMHostState] = useState(() => isFiveMHost())
   const isFiveM = location.pathname.startsWith('/fivem') || isFiveMHostState
 
   useEffect(() => {

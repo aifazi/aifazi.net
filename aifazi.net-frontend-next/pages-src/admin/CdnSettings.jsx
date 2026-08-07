@@ -5,6 +5,31 @@ import { Select } from '../../core/ui.jsx'
 import { S, useIsMobile, PageHeader } from './shared'
 import { Icon } from './icons'
 
+// -- Masked secret field renderer ------------------------------------------
+const SecretField = ({ label, placeholder, help, value, onChange, T }) => {
+  const val = value || ''
+  const isMaskedVal = val && (val.includes('') || val.includes('...'))
+  return (
+    <div>
+      <label style={T.label}>{label} <span style={{ color: '#ff4757' }}>*</span></label>
+      {isMaskedVal ? (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ ...T.inp, flex: 1, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: '#00ff88', fontSize: 10 }}>✓</span>
+            <span style={{ letterSpacing: 2 }}>{val}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', marginLeft: 4 }}>SAVED</span>
+          </div>
+          <button type="button" onClick={() => onChange('')} style={{ ...T.btn('ghost'), padding: '11px 14px', fontSize: 9 }}>CHANGE</button>
+        </div>
+      ) : (
+        <input type="password" value={val} onChange={e => onChange(e.target.value)}
+          placeholder={placeholder} style={T.inp} autoComplete="new-password" />
+      )}
+      {help && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>{help}</div>}
+    </div>
+  )
+}
+
 function CdnSettings() {
   const [cfg, setCfg]           = useState(null)
   const [loading, setLoading]   = useState(true)
@@ -134,31 +159,6 @@ function CdnSettings() {
   }
 
   const activeProvider = PROVIDERS[cfg.provider] || PROVIDERS.cloudinary
-
-  // -- Masked secret field renderer ------------------------------------------
-  const SecretField = ({ label, field, placeholder, help }) => {
-    const val = cfg[field] || ''
-    const isMaskedVal = val && (val.includes('') || val.includes('...'))
-    return (
-      <div>
-        <label style={T.label}>{label} <span style={{ color: '#ff4757' }}>*</span></label>
-        {isMaskedVal ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ ...T.inp, flex: 1, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: '#00ff88', fontSize: 10 }}>✓</span>
-              <span style={{ letterSpacing: 2 }}>{val}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', marginLeft: 4 }}>SAVED</span>
-            </div>
-            <button type="button" onClick={() => set(field, '')} style={{ ...T.btn('ghost'), padding: '11px 14px', fontSize: 9 }}>CHANGE</button>
-          </div>
-        ) : (
-          <input type="password" value={val} onChange={e => set(field, e.target.value)}
-            placeholder={placeholder} style={T.inp} autoComplete="new-password" />
-        )}
-        {help && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>{help}</div>}
-      </div>
-    )
-  }
 
   return (
     <div style={{ maxWidth: 820, paddingBottom: 60 }}>
@@ -298,7 +298,7 @@ function CdnSettings() {
                     <label style={T.label}>API Key <span style={{ color: '#ff4757' }}>*</span></label>
                     <input value={cfg.cloudinaryApiKey || ''} onChange={e => set('cloudinaryApiKey', e.target.value)} placeholder="123456789012345" style={T.inp} />
                   </div>
-                  <SecretField label="API Secret" field="cloudinaryApiSecret" placeholder="" help="Never share this. Shown once in Cloudinary." />
+                  <SecretField label="API Secret" placeholder="" help="Never share this. Shown once in Cloudinary." value={cfg.cloudinaryApiSecret} onChange={v => set('cloudinaryApiSecret', v)} T={T} />
                 </div>
                 <div>
                   <label style={T.label}>Upload Folder</label>
@@ -321,14 +321,14 @@ function CdnSettings() {
                 <div>
                   <label style={T.label}>Account ID <span style={{ color: '#ff4757' }}>*</span></label>
                   <input value={cfg.r2AccountId || ''} onChange={e => set('r2AccountId', e.target.value)} placeholder="abcdef1234567890abcdef1234567890" style={T.inp} />
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Found in Cloudflare Dashboard ? right sidebar "Account ID"</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Found in Cloudflare Dashboard ? right sidebar &quot;Account ID&quot;</div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>Access Key ID <span style={{ color: '#ff4757' }}>*</span></label>
                     <input value={cfg.r2AccessKeyId || ''} onChange={e => set('r2AccessKeyId', e.target.value)} placeholder="R2 access key ID" style={T.inp} />
                   </div>
-                  <SecretField label="Secret Access Key" field="r2SecretAccessKey" placeholder="R2 secret key" help="Shown once on token creation." />
+                  <SecretField label="Secret Access Key" placeholder="R2 secret key" help="Shown once on token creation." value={cfg.r2SecretAccessKey} onChange={v => set('r2SecretAccessKey', v)} T={T} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
@@ -359,7 +359,7 @@ function CdnSettings() {
                     <label style={T.label}>Key ID (applicationKeyId) <span style={{ color: '#ff4757' }}>*</span></label>
                     <input value={cfg.b2KeyId || ''} onChange={e => set('b2KeyId', e.target.value)} placeholder="0012345abc..." style={T.inp} />
                   </div>
-                  <SecretField label="Application Key" field="b2AppKey" placeholder="K001xxxxxxxxxxxx" help="Shown once on key creation." />
+                  <SecretField label="Application Key" placeholder="K001xxxxxxxxxxxx" help="Shown once on key creation." value={cfg.b2AppKey} onChange={v => set('b2AppKey', v)} T={T} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
@@ -407,7 +407,7 @@ function CdnSettings() {
                     <label style={T.label}>Public Key <span style={{ color: '#ff4757' }}>*</span></label>
                     <input value={cfg.imagekitPublicKey || ''} onChange={e => set('imagekitPublicKey', e.target.value)} placeholder="public_xxxxxxxxxxxx" style={T.inp} />
                   </div>
-                  <SecretField label="Private Key" field="imagekitPrivateKey" placeholder="private_xxxxxxxxxxxx" help="Keep secret  used for authenticated uploads." />
+                  <SecretField label="Private Key" placeholder="private_xxxxxxxxxxxx" help="Keep secret  used for authenticated uploads." value={cfg.imagekitPrivateKey} onChange={v => set('imagekitPrivateKey', v)} T={T} />
                 </div>
                 <div>
                   <label style={T.label}>Upload Folder</label>
@@ -431,7 +431,7 @@ function CdnSettings() {
                     <label style={T.label}>Storage Zone Name <span style={{ color: '#ff4757' }}>*</span></label>
                     <input value={cfg.bunnyStorageZone || ''} onChange={e => set('bunnyStorageZone', e.target.value)} placeholder="my-portfolio-zone" style={T.inp} />
                   </div>
-                  <SecretField label="Storage Access Key" field="bunnyAccessKey" placeholder="xxxx-xxxx-xxxx-xxxx" help="Shown in Storage ? FTP & API Access." />
+                  <SecretField label="Storage Access Key" placeholder="xxxx-xxxx-xxxx-xxxx" help="Shown in Storage ? FTP & API Access." value={cfg.bunnyAccessKey} onChange={v => set('bunnyAccessKey', v)} T={T} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
@@ -478,7 +478,7 @@ function CdnSettings() {
                 placeholder="https://cdn.aifazi.net"
                 style={{ ...T.inp, borderColor: cfg.customDomain ? 'var(--green)' : undefined }} />
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>
-                Include the scheme (https://). Leave blank to use the provider's default URL.
+                Include the scheme (https://). Leave blank to use the provider&apos;s default URL.
               </div>
             </div>
 

@@ -208,7 +208,10 @@ function Dashboard({ onLogout }) {
       else setSessionWarning(false)
     } catch {}
   }
-  useEffect(() => { checkExpiry() }, [])
+  useEffect(() => {
+    const run = async () => { await checkExpiry() }
+    run()
+  }, [])
   usePausableInterval(checkExpiry, 30000)
 
   // Keyboard shortcuts
@@ -234,13 +237,6 @@ function Dashboard({ onLogout }) {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
-
-  useEffect(() => {
-    if (view === 'home') fetchDashStats()
-    if (view === 'content' || view === 'posts') fetchPosts()
-    if (view === 'communications' || view === 'contacts') fetchContacts()
-    if (view === 'staff') fetchStaff()
-  }, [view])
 
   const fetchDashStats = async () => {
     try {
@@ -290,7 +286,7 @@ function Dashboard({ onLogout }) {
   // the user navigates away from the dashboard.
   usePausableInterval(fetchDashStats, view === 'home' ? 60000 : null)
 
-  const fetchStaff    = async () => { setLoading(true); try { const r = await api.get('/auth/staff'); setStaff(r.data) } catch {} finally { setLoading(false) } }
+  const fetchStaff    = async () => { try { const r = await api.get('/auth/staff'); setStaff(r.data) } catch {} finally { setLoading(false) } }
   const searchStaffUsers = async q => {
     setStaffUserQuery(q)
     if (!q || q.trim().length < 2) { setStaffUserResults([]); return }
@@ -303,9 +299,8 @@ function Dashboard({ onLogout }) {
     setNewStaff(p => ({ ...p, mode:'existing', forum_user_id:u.id, username:u.username || '', email:u.email || '', password:'' }))
     setStaffUserResults([]); setStaffUserQuery(`${u.username} · ${u.email || ''}`)
   }
-  const fetchPosts    = async () => { setLoading(true); try { const r = await api.get('/blog/admin/all'); const d = r.data; setPosts(Array.isArray(d) ? d : (d?.posts || [])) } catch {} finally { setLoading(false) } }
+  const fetchPosts    = async () => { try { const r = await api.get('/blog/admin/all'); const d = r.data; setPosts(Array.isArray(d) ? d : (d?.posts || [])) } catch {} finally { setLoading(false) } }
   const fetchContacts = async (page = 1) => {
-    setContactsLoading(true)
     try {
       const r = await api.get(`/contact?page=${page}&page_size=50`)
       const raw = r.data
@@ -316,6 +311,16 @@ function Dashboard({ onLogout }) {
     } catch { setContacts([]); setContactsTotal(0) }
     finally { setContactsLoading(false) }
   }
+
+  useEffect(() => {
+    const run = async () => {
+      if (view === 'home') await fetchDashStats()
+      if (view === 'content' || view === 'posts') await fetchPosts()
+      if (view === 'communications' || view === 'contacts') await fetchContacts()
+      if (view === 'staff') await fetchStaff()
+    }
+    run()
+  }, [view])
 
   const handleCreateStaff = async e => {
     e.preventDefault(); setStaffSaving(true)
@@ -954,7 +959,7 @@ function Dashboard({ onLogout }) {
                       style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, padding: '10px 12px', outline: 'none', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.7 }} />
                     {replyModal === 'bulk' && (
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', marginTop: 4, letterSpacing: 1 }}>
-                        TIP: Use <span style={{ color: 'var(--cyan)' }}>{'{{name}}'}</span> to personalise — it will be replaced with each contact's name.
+                        TIP: Use <span style={{ color: 'var(--cyan)' }}>{'{{name}}'}</span> to personalise — it will be replaced with each contact&apos;s name.
                       </div>
                     )}
                   </div>

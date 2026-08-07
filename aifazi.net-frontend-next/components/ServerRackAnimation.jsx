@@ -30,9 +30,11 @@ export default function ServerRackAnimation() {
   const containerRef = useRef(null)
 
   // Keep local mode in sync when the backend value changes (e.g. after another admin saves)
-  useEffect(() => {
+  const [prevSavedMode, setPrevSavedMode] = useState(savedMode)
+  if (prevSavedMode !== savedMode) {
+    setPrevSavedMode(savedMode)
     if (typeof savedMode === 'string' && savedMode !== mode) setMode(savedMode)
-  }, [savedMode]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   useEffect(() => {
     const el = containerRef.current
@@ -641,40 +643,7 @@ const SERVERS_MON = [
   { name:'SRV-06', role:'Job Queue'     },
 ]
 
-function MonitorMode({ tick, visibleRef }) {
-  const [metrics, setMetrics] = useState(() => SERVERS_MON.map(() => ({
-    cpu: 20 + Math.random() * 50,
-    mem: 30 + Math.random() * 45,
-    disk: 40 + Math.random() * 40,
-    net: Math.random() * 100,
-    history: Array.from({ length: 20 }, () => 20 + Math.random() * 60),
-    temp: 40 + Math.random() * 30,
-    status: 'OK',
-  })))
-  const [selected, setSelected] = useState(0)
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (!visibleRef.current) return
-      setMetrics(prev => prev.map((m, i) => {
-        const newCpu = Math.max(5, Math.min(98, m.cpu + (Math.random() - 0.48) * 12))
-        const newMem = Math.max(10, Math.min(95, m.mem + (Math.random() - 0.49) * 5))
-        const newNet = Math.max(0, Math.min(100, m.net + (Math.random() - 0.5) * 20))
-        return {
-          ...m, cpu: newCpu, mem: newMem, net: newNet,
-          temp: Math.max(35, Math.min(90, m.temp + (Math.random() - 0.49) * 3)),
-          history: [...m.history.slice(1), newCpu],
-          status: newCpu > 90 ? 'WARN' : newMem > 85 ? 'WARN' : 'OK',
-        }
-      }))
-    }, 600)
-    return () => clearInterval(id)
-  }, [])
-
-  const sel = metrics[selected]
-  const srv = SERVERS_MON[selected]
-
-  function MiniSparkline({ history, color, x, y, w = 60, h = 20 }) {
+function MiniSparkline({ history, color, x, y, w = 60, h = 20 }) {
     const max = 100, step = w / (history.length - 1)
     const d = history.map((v, i) => `${i === 0 ? 'M' : 'L'}${x + i * step},${y + h - (v / max) * h}`).join(' ')
     const area = d + ` L${x + w},${y + h} L${x},${y + h} Z`
@@ -712,6 +681,39 @@ function MonitorMode({ tick, visibleRef }) {
       </g>
     )
   }
+
+function MonitorMode({ tick, visibleRef }) {
+  const [metrics, setMetrics] = useState(() => SERVERS_MON.map(() => ({
+    cpu: 20 + Math.random() * 50,
+    mem: 30 + Math.random() * 45,
+    disk: 40 + Math.random() * 40,
+    net: Math.random() * 100,
+    history: Array.from({ length: 20 }, () => 20 + Math.random() * 60),
+    temp: 40 + Math.random() * 30,
+    status: 'OK',
+  })))
+  const [selected, setSelected] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (!visibleRef.current) return
+      setMetrics(prev => prev.map((m, i) => {
+        const newCpu = Math.max(5, Math.min(98, m.cpu + (Math.random() - 0.48) * 12))
+        const newMem = Math.max(10, Math.min(95, m.mem + (Math.random() - 0.49) * 5))
+        const newNet = Math.max(0, Math.min(100, m.net + (Math.random() - 0.5) * 20))
+        return {
+          ...m, cpu: newCpu, mem: newMem, net: newNet,
+          temp: Math.max(35, Math.min(90, m.temp + (Math.random() - 0.49) * 3)),
+          history: [...m.history.slice(1), newCpu],
+          status: newCpu > 90 ? 'WARN' : newMem > 85 ? 'WARN' : 'OK',
+        }
+      }))
+    }, 600)
+    return () => clearInterval(id)
+  }, [])
+
+  const sel = metrics[selected]
+  const srv = SERVERS_MON[selected]
 
   return (
     <SvgWrap viewBox="0 0 900 480">
@@ -770,7 +772,7 @@ function MonitorMode({ tick, visibleRef }) {
         <MiniSparkline history={sel.history} color="var(--cyan)" x={272} y={215} w={170} h={60}/>
         {/* Net sparkline */}
         <text x="460" y="210" fontSize="6" letterSpacing="2" fontFamily="monospace" fill="var(--muted)">NET I/O</text>
-        <MiniSparkline history={sel.history.map(v => v * 0.7 + Math.random() * 15)} color="var(--green)" x={460} y={215} w={170} h={60}/>
+        <MiniSparkline history={sel.history.map(v => v * 0.7 + ((v * 7.13) % 1) * 15)} color="var(--green)" x={460} y={215} w={170} h={60}/>
         {/* Stats grid */}
         {[
           { label:'UPTIME',  value: `${(tick * 0.06 + 12).toFixed(1)}h` },
@@ -1348,7 +1350,11 @@ function AvatarMode({ visibleRef }) {
   const [activeFilter, setActiveFilter] = useState(savedFilter || 'normal')
 
   // Sync saved filter
-  useEffect(() => { if (savedFilter) setActiveFilter(savedFilter) }, [savedFilter])
+  const [prevSavedFilter, setPrevSavedFilter] = useState(savedFilter)
+  if (prevSavedFilter !== savedFilter) {
+    setPrevSavedFilter(savedFilter)
+    if (savedFilter) setActiveFilter(savedFilter)
+  }
 
   const FILTERS = [
     { id: 'normal',    label: 'NORMAL',    css: 'none' },
@@ -1798,6 +1804,12 @@ const GLOBE_CONNECTIONS = [
   [11,7],[0,3],[9,8],[2,6],[9,1],[4,6],
 ]
 
+// Computed once at module load (deterministic per visit) so render stays pure.
+const GLOBE_PACKETS = GLOBE_CONNECTIONS.map(() => ({
+  t:     Math.random(),
+  speed: 0.003 + Math.random() * 0.003,
+}))
+
 const GLOBE_MIN_ZOOM = 0.55
 const GLOBE_MAX_ZOOM = 1.35
 const GLOBE_BASE_RATIO = 0.36
@@ -1832,10 +1844,7 @@ function GlobeMode({ visibleRef }) {
     mouseY:   0,
     zoom:     1.0,          // scroll-to-zoom / pinch-zoom multiplier, capped to keep edges visible
     pinch:    null,         // { dist0, zoom0 } for two-finger pinch
-    packets: GLOBE_CONNECTIONS.map(() => ({
-      t:     Math.random(),
-      speed: 0.003 + Math.random() * 0.003,
-    })),
+    packets:  GLOBE_PACKETS,
   })
 
   useEffect(() => { visitorRef.current = visitor }, [visitor])
@@ -1921,14 +1930,14 @@ function GlobeMode({ visibleRef }) {
   // ── React to theme changes ──
   useEffect(() => {
     themeRef.current = readGlobeTheme()
-    setThemeKey(k => k + 1)
     const el = document.documentElement
     const obs = new MutationObserver(() => {
       themeRef.current = readGlobeTheme()
       setThemeKey(k => k + 1)
     })
     obs.observe(el, { attributes: true, attributeFilter: ['data-theme'] })
-    return () => obs.disconnect()
+    const init = setTimeout(() => setThemeKey(k => k + 1), 0)
+    return () => { clearTimeout(init); obs.disconnect() }
   }, [])
 
   // ── Resize (DPR-aware) ────────────────────────────────────────────────────
