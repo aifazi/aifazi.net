@@ -16,11 +16,14 @@ import { xchacha20poly1305 } from '@noble/ciphers/chacha'
 const CDN_HOSTNAME        = 'cdn.aifazi.net'
 const FIVEM_HOSTNAME      = 'fivem.aifazi.net'
 const STORE_HOSTNAME      = 'store.aifazi.net'
+const STATUS_HOSTNAME     = 'status.aifazi.net'
 const ROOT_HOSTNAMES      = new Set(['aifazi.net', 'www.aifazi.net'])
 const FIVEM_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/forms', '/chat']
 const FIVEM_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml'])
 const STORE_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/login', '/profile', '/forms', '/blog', '/contact', '/privacy', '/tools']
 const STORE_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico'])
+const STATUS_SHARED_PREFIXES = ['/api', '/auth', '/login', '/admin']
+const STATUS_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico'])
 const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET   || ''
 const PASETO_SECRET       = process.env.PASETO_SECRET || process.env.JWT_SECRET || ''
 const JWT_SECRET          = process.env.JWT_SECRET || ''
@@ -410,6 +413,27 @@ export async function proxy(request: NextRequest) {
     rewriteUrl.pathname = `/store${pathname}`
     const { headers } = secureRequest(request)
     headers.set('x-store-domain', 'true')
+    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
+  }
+
+  // ── 5b. status.aifazi.net → /status page (monitor) ──────────────────────
+  if (hostname === STATUS_HOSTNAME) {
+    const origin = request.headers.get('origin') || ''
+    if (
+      STATUS_SHARED_PATHS.has(pathname) ||
+      STATUS_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
+    ) {
+      const { headers } = secureRequest(request)
+      headers.set('x-status-domain', 'true')
+      if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
+        headers.set('X-Internal-Token', INTERNAL_API_SECRET)
+      }
+      return withCors(withCsp(NextResponse.next({ request: { headers } })), origin)
+    }
+    const rewriteUrl = request.nextUrl.clone()
+    rewriteUrl.pathname = `/status${pathname === '/' || pathname === '' ? '/' : pathname}`
+    const { headers } = secureRequest(request)
+    headers.set('x-status-domain', 'true')
     return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
   }
 
