@@ -168,23 +168,38 @@ async def list_transactions(kind: str | None = None, limit: int = 300, _: dict =
 
 @router.post("/orders/{order_id}/refund")
 async def refund_order(order_id: str, staff: dict = Depends(REFUND)):
-    res = supabase.table("store_orders").select("*").eq("id", order_id).limit(1).execute()
-    if not res.data:
-        raise HTTPException(404, "Order not found")
-    order = res.data[0]
-    if order.get("status") != "paid":
-        raise HTTPException(400, "Only paid orders can be refunded")
+    now = _now()
+    # Atomic claim: only ONE concurrent refund proceeds. The conditional update
+    # flips paid → refunded; a second caller (double-click / Stripe retry) claims
+    # 0 rows and aborts, so inventory is restocked and the transaction/invoice
+    # are written exactly once.
+    claimed = supabase.table("store_orders").update({
+        "status": "refunded", "updated_at": now,
+    }).eq("id", order_id).eq("status", "paid").execute()
+    if not claimed.data:
+        existing = supabase.table("store_orders").select("id,status").eq("id", order_id).limit(1).execute()
+        if not existing.data:
+            raise HTTPException(404, "Order not found")
+        if existing.data[0].get("status") != "paid":
+            raise HTTPException(400, "Order is already refunded or not in a refundable state")
+        raise HTTPException(409, "Refund already in progress")
+    order = claimed.data[0]
 
     payment_intent_id = order.get("payment_intent_id") or order.get("stripe_payment_intent_id")
 
     # Reverse the payment at Stripe FIRST. Only if that succeeds (or there is
-    # nothing to reverse) do we flip local state — otherwise the customer stays
-    # charged while the admin panel claims the order is refunded.
+    # nothing to reverse) do we keep the local 'refunded' state — otherwise the
+    # claim is reverted and the customer stays charged while the admin panel
+    # would have claimed the order was refunded.
     if payment_intent_id:
         try:
             from routers.store import _stripe_client
             _stripe_client().Refund.create(payment_intent=payment_intent_id)
         except Exception as exc:
+            try:
+                supabase.table("store_orders").update({"status": "paid", "updated_at": now}).eq("id", order_id).execute()
+            except Exception:
+                pass
             raise HTTPException(502, f"Stripe refund failed: {exc}")
 
     # Record refund transaction
@@ -196,10 +211,6 @@ async def refund_order(order_id: str, staff: dict = Depends(REFUND)):
         "currency": order.get("currency") or "usd",
         "stripe_payment_intent_id": payment_intent_id,
     }).execute()
-
-    supabase.table("store_orders").update({
-        "status": "refunded", "updated_at": _now(),
-    }).eq("id", order_id).execute()
 
     actor = staff.get("username") or staff.get("id") or "staff"
     try:

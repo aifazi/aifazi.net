@@ -138,10 +138,17 @@ def _categories() -> list[dict]:
 
 
 def _ensure_stripe_price(plan: dict) -> str:
-    """Idempotently create (or look up) the Stripe recurring Price for a plan."""
-    if plan.get("stripe_price_id"):
-        return plan["stripe_price_id"]
+    """Idempotently create (or look up) the Stripe recurring Price for a plan.
+
+    The lookup key bakes in the CURRENT amount + interval, so editing a plan's
+    price_cents/interval creates a fresh Price. The old cached stripe_price_id is
+    deliberately NOT reused — it points at the previous amount and would silently
+    keep charging customers the stale price forever.
+    """
     st = _stripe_client()
+    amount = int(plan.get("price_cents") or 0)
+    interval = plan.get("interval") or "month"
+    lookup = f"aifazi-{plan['slug']}-{interval}-{amount}"
 
     # Product (idempotent via lookup_key)
     product_id = plan.get("stripe_product_id")
@@ -159,18 +166,18 @@ def _ensure_stripe_price(plan: dict) -> str:
         product_id = product.id
         supabase.table("store_plans").update({"stripe_product_id": product_id}).eq("id", plan["id"]).execute()
 
-    # Recurring price (idempotent via lookup_key)
-    existing_price = st.Price.list(lookup_keys=[f"aifazi-{plan['slug']}-monthly"], limit=1)
+    # Recurring price (idempotent via lookup_key that includes amount+interval)
+    existing_price = st.Price.list(lookup_keys=[lookup], limit=1)
     if existing_price.data:
         price = existing_price.data[0]
     else:
         price = st.Price.create(
             currency="usd",
-            unit_amount=int(plan.get("price_cents") or 0),
-            recurring={"interval": plan.get("interval") or "month"},
+            unit_amount=amount,
+            recurring={"interval": interval},
             product=product_id,
-            metadata={"plan_slug": plan["slug"]},
-            lookup_key=f"aifazi-{plan['slug']}-monthly",
+            metadata={"plan_slug": plan["slug"], "interval": interval, "amount_cents": amount},
+            lookup_key=lookup,
         )
     supabase.table("store_plans").update({"stripe_price_id": price.id}).eq("id", plan["id"]).execute()
     return price.id

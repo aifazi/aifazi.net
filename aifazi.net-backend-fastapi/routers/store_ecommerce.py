@@ -435,6 +435,12 @@ def get_cart(user: dict = Depends(get_current_user)):
             price = variant["price_cents"]
         else:
             price = int(prod.get("price_cents") or 0)
+        # Apply an active flash deal so the price shown in the cart equals the
+        # price actually charged at checkout (deals were displayed but never
+        # applied — customers saw a deal price and were charged full price).
+        deal = _active_deal_for(prod.get("id") or "")
+        if deal:
+            price = max(0, round(price * (100 - int(deal.get("discount_percent") or 0)) / 100))
         items.append({
             "id": r.get("id"),
             "variant_id": vid,
@@ -575,6 +581,7 @@ def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_user)):
     # discount proportionally across items so Stripe charges exactly `total`.
     line_items = []
     remaining_discount = discount
+    charged_total = 0
     for i, item in enumerate(cart["items"]):
         prod = item["product"]
         if prod["track_inventory"] and item["quantity"] > prod["stock_qty"]:
@@ -592,24 +599,31 @@ def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_user)):
             remaining_discount -= share
         price_id = _ensure_one_time_price(prod, amount_cents=discounted_unit, variant_id=item.get("variant_id"))
         line_items.append({"price": price_id, "quantity": qty})
+        charged_total += discounted_unit * qty
+
+    # total_cents MUST equal the sum of the actual Stripe line items. Per-unit
+    # rounding (discounted_unit * qty) can drift a cent from (line_total - share),
+    # so the webhook reconciliation (charged vs recorded) failed and left paid
+    # coupon orders stuck at 'pending' forever.
+    total = charged_total
+    actual_discount = max(0, subtotal - total)
 
     email = body.customer_email or _user_email(user)
 
     order_no = _number("AFA")
-    total = max(0, subtotal - discount)
     order = supabase.table("store_orders").insert({
         "order_number": order_no,
         "user_id": uid,
         "status": "pending",
         "subtotal_cents": cart["subtotal_cents"],
-        "discount_cents": discount,
+        "discount_cents": actual_discount,
         "tax_cents": 0,
         "shipping_cents": 0,
         "total_cents": total,
         "currency": "usd",
         "coupon_id": (coupon or {}).get("id"),
         "coupon_code": (coupon or {}).get("code"),
-        "coupon_discount_cents": discount,
+        "coupon_discount_cents": actual_discount,
         "customer_name": body.customer_name or user.get("username") or "",
         "customer_email": email,
         "shipping_address": body.shipping_address or {},
@@ -680,10 +694,10 @@ def _ensure_one_time_price(product: dict, amount_cents: int | None = None, varia
     if existing.data:
         return existing.data[0].id
     prod_id = product.get("id")
-    # Product lookup by metadata
-    prod_list = _stripe_client().Product.list(limit=100)
+    # Product lookup by metadata — page through ALL Stripe products, not just the
+    # first 100, or past-100 products get a duplicate created on every checkout.
     stripe_prod = None
-    for candidate in prod_list.data:
+    for candidate in _stripe_client().Product.list(limit=100).auto_paging_iter():
         meta = candidate.to_dict().get("metadata") or {}
         if meta.get("store_product_id") == prod_id:
             stripe_prod = candidate
@@ -989,10 +1003,12 @@ def _mark_order_paid(order_id: str, payment_intent_id: str | None,
     order = res.data[0]
     if order.get("status") == "paid":
         return
-    # Amount reconciliation: never fulfil an order for less than it recorded.
-    # With allow_promotion_codes disabled the charged amount should always equal
-    # total_cents; a mismatch means a price bug or an attacker-influenced charge.
-    if paid_amount_cents is not None and int(paid_amount_cents) != int(order.get("total_cents") or 0):
+    # Amount reconciliation: never fulfil an order for materially less than it
+    # recorded. With allow_promotion_codes disabled the charged amount should
+    # equal total_cents; a small (±5¢) tolerance absorbs per-unit price rounding
+    # on multi-quantity coupon orders, while a genuine undercharge (price bug or
+    # attacker-influenced charge) is still caught.
+    if paid_amount_cents is not None and abs(int(paid_amount_cents) - int(order.get("total_cents") or 0)) > 5:
         log.warning("order %s paid amount mismatch: charged=%s recorded=%s — NOT fulfilling",
                     order.get("order_number"), paid_amount_cents, order.get("total_cents"))
         try:
