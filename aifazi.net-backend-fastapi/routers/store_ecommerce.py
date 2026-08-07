@@ -849,16 +849,24 @@ async def download_content(token: str):
     if not res.data:
         raise HTTPException(404, "Download not found")
     d = res.data[0]
-    used = int(d.get("downloads_used") or 0)
-    allowed = int(d.get("downloads_allowed") or 5)
-    if used >= allowed:
-        raise HTTPException(403, "Download limit reached")
-    supabase.table("store_downloads").update({"downloads_used": used + 1}).eq("id", d["id"]).execute()
+    # Resolve the file BEFORE consuming quota — a row without a usable file must
+    # not burn a download (the old code incremented first, so a bad record
+    # silently ate the buyer's allowance).
     file_url = d.get("file_url") or ""
     if not file_url:
         raise HTTPException(404, "File is not available")
     if not file_url.startswith(("http://", "https://")):
         file_url = f"{SUPABASE_URL}/storage/v1/object/public/{STORE_FILES_BUCKET}/{file_url.lstrip('/')}"
+    # Atomic claim: the RPC increments ONLY while downloads_used < downloads_allowed
+    # (single UPDATE, so parallel requests can't both slip past the limit).
+    try:
+        inc = supabase.rpc("increment_download_used", {"p_row_id": d["id"]}).execute()
+        if not inc.data:
+            raise HTTPException(403, "Download limit reached")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(503, "Download limit could not be checked")
     return RedirectResponse(file_url)
 
 

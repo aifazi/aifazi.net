@@ -437,18 +437,17 @@ async def _upsert_subscription(sub: dict, user_id: str | None = None) -> None:
         return
     customer = sub.get("customer")
     payload = await _subscription_payload(sub)
-    existing = supabase.table("user_subscriptions").select("id").eq("stripe_subscription_id", sub_id).limit(1).execute()
-    if existing.data:
-        supabase.table("user_subscriptions").update({**payload, "stripe_customer_id": customer}).eq("id", existing.data[0]["id"]).execute()
-        return
-    if not user_id:
-        return
-    supabase.table("user_subscriptions").insert({
-        **payload,
-        "user_id": user_id,
-        "stripe_customer_id": customer,
-        "stripe_subscription_id": sub_id,
-    }).execute()
+    payload["stripe_subscription_id"] = sub_id  # required by on_conflict upsert
+    payload["stripe_customer_id"] = customer
+    if user_id:
+        payload["user_id"] = user_id
+    # Atomic upsert on the natural key (unique constraint from 013_store.sql).
+    # The old read-then-insert raced on concurrent Stripe webhook delivery
+    # (created + updated + checkout.completed) and produced duplicate rows.
+    try:
+        supabase.table("user_subscriptions").upsert(payload, on_conflict="stripe_subscription_id").execute()
+    except Exception as e:
+        logger.error("upsert_subscription failed for %s: %s", sub_id, e)
 
 
 async def _handle_checkout_completed(session: dict) -> None:

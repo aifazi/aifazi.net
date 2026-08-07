@@ -374,7 +374,8 @@ async def list_replies(thread_id: str, page: int = 1, limit: int = 50):
 @router.post("/threads/{thread_id}/replies")
 async def create_reply(thread_id: str, body: ReplyBody, user: dict = Depends(require_forum_user)):
     uid = _require_user_id(user)
-    t = supabase.table("forum_threads").select("locked,reply_count,author_id").eq("id", thread_id).single().execute().data
+    t_res = supabase.table("forum_threads").select("locked,reply_count,author_id,category_id").eq("id", thread_id).limit(1).execute()
+    t = t_res.data[0] if t_res.data else None
     if not t:
         raise HTTPException(404, "Thread not found")
     if t["locked"] and user.get("role") not in ("admin","moderator"):

@@ -123,6 +123,21 @@ async def get_livekit_token(
     if not r:
         raise HTTPException(404, "Room not found")
 
+    # Mirror chat._ensure_room_access: a user banned from the room must not get
+    # a voice token either (the old path only checked private/role gates, so a
+    # banned user could still join the voice channel).
+    banned = (
+        supabase.table("chat_bans")
+        .select("id")
+        .eq("room_id", room_id)
+        .eq("username", username)
+        .limit(1)
+        .execute()
+        .data
+    )
+    if banned:
+        raise HTTPException(403, "You are banned from this channel")
+
     if r.get("is_private"):
         allowed = r.get("allowed_users") or []
         if username not in allowed and role not in ("admin", "moderator"):

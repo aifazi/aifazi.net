@@ -23,6 +23,15 @@ def set_event_loop(loop: asyncio.AbstractEventLoop):
     _loop = loop
 
 
+def _log_newsletter_failure(fut: asyncio.Future):
+    """The scheduler's newsletter fan-out runs on a thread; surface any failure
+    instead of silently dropping the un-awaited Future."""
+    try:
+        fut.result()
+    except Exception as e:
+        logger.error("Newsletter send for auto-published post failed: %s", e, exc_info=True)
+
+
 async def _send_newsletter_for_post(post: dict):
     from routers.newsletter import send_newsletter_for_post
     await send_newsletter_for_post(post)
@@ -49,8 +58,11 @@ def auto_publish_posts():
             }).eq("id", post["id"]).execute()
             logger.info(f"📅 Auto-published: \"{post['title']}\"")
             # FIX #10: use run_coroutine_threadsafe instead of deprecated get_event_loop()
+            # The Future is NOT awaited by the scheduler, so attach a done-callback
+            # that logs failures (they were previously swallowed silently).
             if _loop and _loop.is_running():
-                asyncio.run_coroutine_threadsafe(_send_newsletter_for_post(post), _loop)
+                fut = asyncio.run_coroutine_threadsafe(_send_newsletter_for_post(post), _loop)
+                fut.add_done_callback(_log_newsletter_failure)
     except Exception as e:
         logger.error(f"Scheduler error: {e}")
 

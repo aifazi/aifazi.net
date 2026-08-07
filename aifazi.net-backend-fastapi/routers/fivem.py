@@ -2916,24 +2916,27 @@ async def check_connect_session(body: ConnectSessionRequest, request: Request):
                 return {"allowed": False, "reason": f"You are banned: {row.get('reason') or 'No reason provided'}"}
 
         # H17 — atomic single-use consumption: prepend `.eq("used", False)` so only ONE
-            # of two racing connect attempts can flip the row (the second update
-            # affects 0 rows and we detect that to refuse entry). Previous code
-            # had no `used=False` predicate, allowing a token to be redeemed twice
-            # in a parallel player double-click race.
-            consume_res = (
-                supabase.table("fivem_connect_tokens")
-                .update({"used": True})
-                .eq("token_id", token_row["token_id"])
-                .eq("used", False)
-                .execute()
-            )
-            consume_count = len(consume_res.data or [])
-            if consume_count == 0:
-                # Token was claimed between our check above and this UPDATE; another
-                # concurrent request already granted entry on it. Reject this one
-                # and keep scanning subsequent unused tokens (rare — only happens
-                # on rapid double-connect).
-                continue
+        # of two racing connect attempts can flip the row (the second update
+        # affects 0 rows and we detect that to refuse entry). Previous code
+        # had no `used=False` predicate, allowing a token to be redeemed twice
+        # in a parallel player double-click race. This MUST run for every user,
+        # not only those with ban identifiers (it was accidentally nested under
+        # `if ban_filters:` before, so users with no ban filters could reuse a
+        # token indefinitely).
+        consume_res = (
+            supabase.table("fivem_connect_tokens")
+            .update({"used": True})
+            .eq("token_id", token_row["token_id"])
+            .eq("used", False)
+            .execute()
+        )
+        consume_count = len(consume_res.data or [])
+        if consume_count == 0:
+            # Token was claimed between our check above and this UPDATE; another
+            # concurrent request already granted entry on it. Reject this one
+            # and keep scanning subsequent unused tokens (rare — only happens
+            # on rapid double-connect).
+            continue
         if matched_whitelist:
             updates = {"last_played_at": _now()}
             if body.player_name:

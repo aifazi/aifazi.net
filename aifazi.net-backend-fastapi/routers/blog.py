@@ -118,7 +118,8 @@ async def create_comment(post_id_or_slug: str, body: CommentBody, user: dict = D
 
 @router.delete("/comments/{comment_id}")
 async def delete_comment(comment_id: str, user: dict = Depends(get_current_user)):
-    c = supabase.table("blog_comments").select("id,author_id").eq("id", comment_id).single().execute().data
+    cres = supabase.table("blog_comments").select("id,author_id").eq("id", comment_id).limit(1).execute()
+    c = cres.data[0] if cres.data else None
     if not c:
         raise HTTPException(404, "Comment not found")
     uid = user.get("id") or user.get("sub")
@@ -135,11 +136,11 @@ class ReactBody(BaseModel):
 async def react_post(slug: str, body: ReactBody, user: dict = Depends(get_current_user)):
     if not body.emoji or len(body.emoji) > 8:
         raise HTTPException(400, "Invalid emoji")
-    res = supabase.table("posts").select("id,reactions").eq("slug", slug).single().execute()
-    if not res.data:
+    res = supabase.table("posts").select("id,reactions").eq("slug", slug).limit(1).execute()
+    post = res.data[0] if res.data else None
+    if not post:
         raise HTTPException(404, "Post not found")
     uid = user.get("id") or user.get("sub")
-    post = res.data
     reactions = post.get("reactions") or {}
     users = reactions.get(body.emoji, [])
     if uid in users:
@@ -158,10 +159,10 @@ async def react_post(slug: str, body: ReactBody, user: dict = Depends(get_curren
 # ── Related posts (same category, newest first) ────────────────────────────────
 @router.get("/{slug}/related")
 async def related_posts(slug: str, limit: int = 3):
-    res = supabase.table("posts").select("id,title,slug,excerpt,cover_image,category,created_at").eq("slug", slug).single().execute()
-    if not res.data:
+    res = supabase.table("posts").select("id,title,slug,excerpt,cover_image,category,created_at").eq("slug", slug).limit(1).execute()
+    post = res.data[0] if res.data else None
+    if not post:
         raise HTTPException(404, "Post not found")
-    post = res.data
     related = supabase.table("posts") \
         .select("id,title,slug,excerpt,cover_image,category,created_at,views") \
         .eq("category", post.get("category","")).eq("published", True).neq("id", post["id"]) \
@@ -215,20 +216,20 @@ async def list_posts(
 # ── Get post by slug ── AFTER specific routes ───────────────────────────────────
 @router.get("/{slug}")
 async def get_post(slug: str):
-    res = supabase.table("posts").select("*").eq("slug", slug).single().execute()
+    res = supabase.table("posts").select("*").eq("slug", slug).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Post not found")
-    return res.data
+    return res.data[0]
 
 # ── Increment views ─────────────────────────────────────────────────────────────
 @router.post("/{slug}/view")
 async def increment_views(slug: str):
-    res = supabase.table("posts").select("id,views").eq("slug", slug).single().execute()
-    if not res.data:
+    res = supabase.table("posts").select("id,views").eq("slug", slug).limit(1).execute()
+    post = res.data[0] if res.data else None
+    if not post:
         raise HTTPException(404, "Post not found")
-    post = res.data
-    supabase.table("posts").update({"views": post["views"] + 1}).eq("id", post["id"]).execute()
-    return {"views": post["views"] + 1}
+    supabase.table("posts").update({"views": (post.get("views") or 0) + 1}).eq("id", post["id"]).execute()
+    return {"views": (post.get("views") or 0) + 1}
 
 # ── Create post (staff only) ────────────────────────────────────────────────────
 @router.post("")

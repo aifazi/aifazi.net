@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from database import supabase
 from dependencies import require_staff
 from utils.email import send_email
-from utils.email_queue import dispatch_pending, queue_email
+from utils.email_queue import dispatch_pending
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -199,20 +199,17 @@ async def bulk_action(body: BulkActionBody, _: dict = Depends(require_staff)):
         elif body.action == "resend":
             if item["status"] == "cancelled":
                 continue
-            supabase.table("mail_queue").update({"status": "resent"}).eq("id", item["id"]).execute()
-            result = await queue_email(
-                item["to_email"],
-                item.get("subject", ""),
-                item.get("html", ""),
-                item.get("text", ""),
-                item.get("purpose", "resend"),
-                item.get("recipient_name", ""),
-            )
+            # Re-pend the SAME row so dispatch_pending retries it. The old code
+            # marked it 'resent' (a terminal state nothing ever reclaims) AND
+            # queued a duplicate new row — the original sat orphaned forever and
+            # a failed resend was never retried.
+            supabase.table("mail_queue").update({
+                "status": "pending",
+                "error_msg": None,
+                "retry_count": 0,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("id", item["id"]).execute()
             done += 1
-            if result.get("ok"):
-                sent += 1
-            else:
-                failed += 1
 
     return {
         "message": f"{body.action.upper()} processed for {done} email(s)",
@@ -234,14 +231,23 @@ async def resend_item(queue_id: str, _: dict = Depends(require_staff)):
         raise HTTPException(400, "Email already sent successfully")
     if item.get("status") == "cancelled":
         raise HTTPException(400, "Cannot resend a cancelled email")
-    supabase.table("mail_queue").update({"status": "resent"}).eq("id", queue_id).execute()
-    result = await queue_email(
+    # Re-pend the SAME row, then send inline against it — send_email(queue_id=...)
+    # updates the existing row (sending→sent/failed), so we never leave an
+    # orphaned 'resent' row or duplicate it.
+    supabase.table("mail_queue").update({
+        "status": "pending",
+        "error_msg": None,
+        "retry_count": 0,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", queue_id).execute()
+    result = await send_email(
         item["to_email"],
         item.get("subject", ""),
         item.get("html", ""),
         item.get("text", ""),
         item.get("purpose", "resend"),
         item.get("recipient_name", ""),
+        queue_id=queue_id,
     )
     if not result.get("ok"):
         raise HTTPException(502, f"Resend failed: {result.get('error', 'unknown error')}")

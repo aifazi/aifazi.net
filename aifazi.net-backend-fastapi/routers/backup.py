@@ -223,6 +223,24 @@ async def backup_stats(_: dict = Depends(require_staff)):
     return {"collections": collections, "totalRecords": total, "tableCount": len(tables), "errors": errors}
 
 
+def _fetch_all_rows(table: str, page_size: int = 1000, max_rows: int = 200000) -> list[dict]:
+    """Fetch ALL rows for a table, paging past PostgREST's 1000-row default cap.
+    Without paging, backups silently truncated every table to 1000 rows."""
+    out: list[dict] = []
+    start = 0
+    while True:
+        res = supabase.table(table).select("*").range(start, start + page_size - 1).execute()
+        rows = res.data or []
+        out.extend(rows)
+        if len(rows) < page_size:
+            break
+        start += page_size
+        if len(out) >= max_rows:
+            logging.getLogger(__name__).warning("backup: %s exceeds %d rows — truncated at %d", table, max_rows, len(out))
+            break
+    return out
+
+
 @router.get("")
 async def backup(_: dict = Depends(require_admin)):
     data = {}
@@ -230,8 +248,8 @@ async def backup(_: dict = Depends(require_admin)):
     tables = _discover_tables()
     for table in tables:
         try:
-            res = supabase.table(table).select("*").execute()
-            data[table] = [_redact_row(r) for r in (res.data or [])]
+            res = _fetch_all_rows(table)
+            data[table] = [_redact_row(r) for r in res]
         except Exception as e:
             data[table] = {"error": str(e)}
             errors[table] = str(e)
@@ -277,8 +295,7 @@ async def export_sql(
 
         if include_data:
             try:
-                res = supabase.table(table).select("*").execute()
-                rows = res.data or []
+                rows = _fetch_all_rows(table)
             except Exception as e:
                 lines.append(f"-- {table}: failed to fetch data ({e})\n")
                 continue

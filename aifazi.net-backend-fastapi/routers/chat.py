@@ -18,10 +18,11 @@ from datetime import datetime, timezone
 from html import escape
 import re
 import os
+import asyncio
 import threading
 import time
 from utils.email import send_email, render_template
-from utils.email_queue import queue_email
+from utils.email_queue import queue_email, queue_email_bulk
 
 router = APIRouter()
 
@@ -170,7 +171,16 @@ async def _notify_chat_user(user_row: dict, subject: str, html: str, text: str, 
     if email:
         await queue_email(email, subject, html, text, purpose, user_row.get("username") or "")
 
-async def _queue_chat_message_notifications(room: dict, room_id: str, sender: dict, content: str):
+def _queue_chat_message_notifications_sync(room: dict, room_id: str, sender: dict, content: str):
+    """Sync fan-out, run in a worker thread (see the async wrapper below).
+
+    Previously send_message awaited one inline SMTP email (15s timeout) + one
+    template render (DB read) PER recipient, so a message in a 20-member room
+    stalled the request for minutes. Now: the template is rendered once, the
+    notifications insert is batched into a single write, and emails go through
+    the insert-only mail queue (drained by dispatch_pending) — no blocking I/O
+    on the event loop at all.
+    """
     sender_name = sender.get("username") or "Someone"
     mentions = {m.lower() for m in re.findall(r"@([A-Za-z0-9_.-]{2,40})", content)}
     recipients: dict[str, dict] = {}
@@ -210,18 +220,43 @@ async def _queue_chat_message_notifications(room: dict, room_id: str, sender: di
       </div>
     </div>
     """
-    for row in recipients.values():
+    # Render the email template ONCE per message (was once per recipient → N+1 DB reads).
+    subject, html = None, None
+    try:
         subject, html = render_template("chat_message", {
             "site_name": "aifazi.net",
-            "username": row.get("username") or "there",
+            "username": "there",
             "sender_name": sender_name,
             "room_name": room_name,
             "message_preview": snippet,
             "chat_url": link,
         })
-        subject = subject or fallback_subject
-        html = html or fallback_html
-        await _notify_chat_user(row, subject, html, text, f"{sender_name} posted in {room_name}", link, "chat_message")
+    except Exception:
+        subject, html = None, None
+    subject = subject or fallback_subject
+    html = html or fallback_html
+
+    # Batch-insert notifications in a single write.
+    notif_rows = [
+        {"user_id": row.get("id"), "type": "chat_message",
+         "message": f"{sender_name} posted in {room_name}", "link": link}
+        for row in recipients.values() if row.get("id")
+    ]
+    if notif_rows:
+        try:
+            supabase.table("notifications").insert(notif_rows).execute()
+        except Exception:
+            pass
+
+    # Insert-only bulk email (drained by dispatch_pending) — no inline SMTP.
+    for row in recipients.values():
+        email = (row.get("email") or "").strip()
+        if email:
+            queue_email_bulk(email, subject, html, text, "chat_message", row.get("username") or "")
+
+
+async def _queue_chat_message_notifications(room: dict, room_id: str, sender: dict, content: str):
+    await asyncio.to_thread(_queue_chat_message_notifications_sync, room, room_id, sender, content)
 
 class RoomBody(BaseModel):
     name: str

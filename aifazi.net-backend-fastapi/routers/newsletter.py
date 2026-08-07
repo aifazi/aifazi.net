@@ -12,6 +12,7 @@ from database import supabase
 from dependencies import require_staff
 from utils.email import render_template
 from utils.email_queue import queue_email_bulk
+import asyncio
 router = APIRouter()
 
 class SubBody(BaseModel):
@@ -59,22 +60,37 @@ async def list_subs_public(page: int = Query(1, ge=1), page_size: int = Query(50
 
 @router.post("/send")
 async def send_campaign(body: CampaignBody, _: dict = Depends(require_staff)):
-    res = supabase.table("newsletter_subs").select("email").eq("status", "active").limit(5000).execute()
-    emails = [r["email"] for r in (res.data or [])]
-    for email in emails:
+    # Render the template ONCE (it doesn't vary per recipient), then run the
+    # insert-only fan-out in a worker thread so a large list never blocks the
+    # event loop (previously: render + DB insert per subscriber, synchronously).
+    def _render():
         subject, html = render_template("newsletter_broadcast", {
             "site_name": "aifazi.net",
             "subject": body.subject,
             "body": body.html,
             "unsubscribe_link": "https://aifazi.net/newsletter/unsubscribe",
         })
-        queue_email_bulk(email, subject or body.subject, html or body.html, body.text, "newsletter_broadcast")
-    return {"message": f"Queued {len(emails)} newsletter emails (delivered via next process-pending run)"}
+        return subject or body.subject, html or body.html
+    subject, html = await asyncio.to_thread(_render)
+    count = await asyncio.to_thread(_queue_to_active, subject, html, body.text, "newsletter_broadcast")
+    return {"message": f"Queued {count} newsletter emails (delivered via next process-pending run)"}
+
+
+def _queue_to_active(subject: str, html: str, text: str = "", purpose: str = "newsletter_broadcast", limit: int = 5000) -> int:
+    """Sync fan-out to every active subscriber via the insert-only mail queue.
+    Call from asyncio.to_thread — thousands of inserts must not run on the event
+    loop. Returns the number queued."""
+    res = supabase.table("newsletter_subs").select("email").eq("status", "active").limit(limit).execute()
+    emails = [r["email"] for r in (res.data or [])]
+    for email in emails:
+        queue_email_bulk(email, subject, html, text, purpose)
+    return len(emails)
+
 
 async def send_newsletter_for_post(post: dict):
-    """Called by scheduler when a post is auto-published."""
-    res = supabase.table("newsletter_subs").select("email").eq("status", "active").limit(5000).execute()
-    for sub in (res.data or []):
+    """Called by scheduler when a post is auto-published. Runs the whole fan-out
+    off the event loop (template render + thousands of queue inserts)."""
+    def _work():
         post_url = f"https://aifazi.net/blog/{post['slug']}"
         subject, html = render_template("newsletter_post", {
             "site_name": "aifazi.net",
@@ -83,10 +99,11 @@ async def send_newsletter_for_post(post: dict):
             "post_url": post_url,
             "unsubscribe_link": "https://aifazi.net/newsletter/unsubscribe",
         })
-        queue_email_bulk(
-            sub["email"],
+        fallback = f"<h2>{post['title']}</h2><p>{post.get('excerpt','')}</p><a href='{post_url}'>Read more</a>"
+        _queue_to_active(
             subject or f"New post: {post['title']}",
-            html or f"<h2>{post['title']}</h2><p>{post.get('excerpt','')}</p><a href='{post_url}'>Read more</a>",
+            html or fallback,
             "",
             "newsletter_post",
         )
+    await asyncio.to_thread(_work)
