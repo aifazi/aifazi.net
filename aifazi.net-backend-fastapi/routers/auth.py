@@ -32,11 +32,17 @@ async def _hash_async(pw: str) -> str:
     return await asyncio.to_thread(_hash, pw)
 
 def _verify(pw: str, hashed: str) -> bool:
+    # Empty / non-bcrypt hashes (social-only accounts, legacy rows, plaintext
+    # leftovers) must fail cleanly as a wrong password — NOT raise, which turned
+    # a login attempt into a confusing "Password verification failed (bcrypt
+    # error): Invalid salt" 500 for accounts that simply have no password set.
+    if not hashed or not hashed.startswith(("$2a$", "$2b$", "$2y$")):
+        return False
     try:
         return _bcrypt.checkpw(pw.encode('utf-8'), hashed.encode('utf-8'))
     except Exception as exc:
         log.error("bcrypt._verify FAILED — this is the login bug: %s", exc, exc_info=True)
-        raise HTTPException(500, f"Password verification failed (bcrypt error): {exc}")
+        return False
 
 async def _verify_async(pw: str, hashed: str) -> bool:
     return await asyncio.to_thread(_verify, pw, hashed)
