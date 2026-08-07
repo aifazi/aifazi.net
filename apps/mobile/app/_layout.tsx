@@ -22,6 +22,7 @@ function RootNav() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="call" options={{ headerShown: false }} />
         <Stack.Screen name="auth/login" options={{ headerShown: true, title: 'Sign In' }} />
         <Stack.Screen name="auth/register" options={{ headerShown: true, title: 'Create Account' }} />
       </Stack>

@@ -8,9 +8,22 @@
     "scheme": "aifazi",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "aifazi uses the microphone for voice and video calls.",
+        "NSCameraUsageDescription": "aifazi uses the camera for video calls and screen share.",
+        "NSScreenCaptureUsageDescription": "aifazi shares your screen during calls."
+      }
     },
     "android": {
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "RECORD_AUDIO",
+        "CAMERA",
+        "MODIFY_AUDIO_SETTINGS",
+        "BLUETOOTH"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
