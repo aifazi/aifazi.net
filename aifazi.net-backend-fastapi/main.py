@@ -460,6 +460,9 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         response.headers["X-Content-Type-Options"]  = "nosniff"
         response.headers["X-Frame-Options"]         = "DENY"
+        # X-Robots-Tag so the API host is never indexed even without Vercel (Railway)
+        if host == API_HOSTNAME:
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
         # X-XSS-Protection is deprecated (Chrome removed the auditor in 2019); the
         # auditor itself was a source of XSS bypasses on legacy engines. Rely on our
         # strict CSP + DOMPurify on the frontend instead.

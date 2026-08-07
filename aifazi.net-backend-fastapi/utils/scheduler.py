@@ -6,6 +6,7 @@ import asyncio
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from database import supabase
 from datetime import datetime, timezone
 
@@ -52,3 +53,15 @@ def auto_publish_posts():
                 asyncio.run_coroutine_threadsafe(_send_newsletter_for_post(post), _loop)
     except Exception as e:
         logger.error(f"Scheduler error: {e}")
+
+
+# FIX #11 (Railway): In-process daily cleanup so the daily maintenance (token
+# purge, mail queue drain, monitor checks, error digest) runs without a Vercel
+# cron on persistent deployments. Mirrors the `0 3 * * *` vercel.json schedule.
+@scheduler.scheduled_job(CronTrigger(hour=3, minute=0, timezone="UTC"))
+async def daily_cleanup():
+    try:
+        from routers.cron import run_cleanup
+        await run_cleanup()
+    except Exception as e:
+        logger.error(f"Daily cleanup error: {e}")

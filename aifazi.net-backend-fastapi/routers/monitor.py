@@ -13,7 +13,7 @@ Alerts are sent via the existing mail queue (Resend/Brevo/SMTP) using the
 `monitor_alert` template when a service transitions to DOWN (or is still down
 after a configurable consecutive-failure threshold).
 """
-import os, hmac, asyncio, logging, time, socket
+import os, hmac, asyncio, logging, time, socket, ipaddress
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Request, HTTPException, Depends, Query
 from pydantic import BaseModel
@@ -26,6 +26,47 @@ logger = logging.getLogger("monitor")
 CRON_SECRET = os.getenv("CRON_SECRET", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 BACKEND_URL = os.getenv("BACKEND_URL", "https://api.aifazi.net").rstrip("/")
+
+# ── H20 — SSRF blocklist for admin-configured monitor targets ────────────────
+# Custom website/keyword/ping/port/dns monitors let staff point at arbitrary
+# hosts. Those hosts must NEVER resolve into private, loopback, link-local, or
+# cloud-metadata space (the backend would otherwise be a SSRF pivot).
+_BLOCKED_NETWORKS = [
+    ipaddress.ip_network("0.0.0.0/8"),        # "this host" / unspecified
+    ipaddress.ip_network("10.0.0.0/8"),       # RFC1918
+    ipaddress.ip_network("100.64.0.0/10"),    # CGNAT
+    ipaddress.ip_network("127.0.0.0/8"),      # loopback
+    ipaddress.ip_network("169.254.0.0/16"),   # link-local + AWS/GCP/Azure IMDS
+    ipaddress.ip_network("172.16.0.0/12"),    # RFC1918
+    ipaddress.ip_network("192.0.0.0/24"),     # IETF protocol assignments
+    ipaddress.ip_network("192.168.0.0/16"),   # RFC1918
+    ipaddress.ip_network("198.18.0.0/15"),    # benchmark testing
+    ipaddress.ip_network("224.0.0.0/4"),      # multicast
+    ipaddress.ip_network("240.0.0.0/4"),      # reserved
+    ipaddress.ip_network("::/128"),           # IPv6 unspecified
+    ipaddress.ip_network("::1/128"),          # IPv6 loopback
+    ipaddress.ip_network("fc00::/7"),         # IPv6 ULA
+    ipaddress.ip_network("fe80::/10"),        # IPv6 link-local
+    ipaddress.ip_network("ff00::/8"),         # IPv6 multicast
+]
+
+
+def _host_blocked(host: str) -> tuple[bool, str]:
+    """Return (blocked, reason) for a hostname/IP target. Resolves hostnames and
+    rejects them if ANY resolved address falls into a blocked network."""
+    try:
+        host_ip = ipaddress.ip_address(host)
+        candidates = [host_ip]
+    except ValueError:
+        try:
+            infos = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            candidates = [ipaddress.ip_address(info[4][0]) for info in infos]
+        except Exception:
+            return False, ""  # unresolved — let the checker report its own error
+    for ip in candidates:
+        if any(ip in net for net in _BLOCKED_NETWORKS):
+            return True, str(ip)
+    return False, ""
 
 # Defaults — overridden by admin settings stored in site_config.settings.monitor
 DEFAULT_ALERT_THRESHOLD = 2
@@ -160,6 +201,9 @@ async def _check_website(m):
     url = m.get("target") or ""
     if not url.startswith(("http://", "https://")):
         return False, 0, "target must be an http(s) URL"
+    blocked, ip = _host_blocked(url.split("/")[2].split(":")[0] if url.split("/")[2] else "")
+    if blocked:
+        return False, 0, f"target resolves to blocked network ({ip})"
     return await _check_http(url)
 
 
@@ -170,6 +214,9 @@ async def _check_keyword(m):
         return False, 0, "target must be an http(s) URL"
     if not expected:
         return False, 0, "no keyword configured"
+    blocked, ip = _host_blocked(url.split("/")[2].split(":")[0] if url.split("/")[2] else "")
+    if blocked:
+        return False, 0, f"target resolves to blocked network ({ip})"
     import httpx
     start = time.perf_counter()
     try:
@@ -203,6 +250,9 @@ async def _check_ping(m):
     host = (m.get("target") or "").strip()
     if not host:
         return False, 0, "no host configured"
+    blocked, ip = _host_blocked(host)
+    if blocked:
+        return False, 0, f"target resolves to blocked network ({ip})"
     # Prefer a subprocess ping; fall back to a TCP connect on 443 (serverless
     # sandboxes often lack the ping binary or ICMP privileges).
     import subprocess
@@ -225,6 +275,9 @@ async def _check_port(m):
     port = int(m.get("port") or 0)
     if not host or not (1 <= port <= 65535):
         return False, 0, "need host and a valid port"
+    blocked, ip = _host_blocked(host)
+    if blocked:
+        return False, 0, f"target resolves to blocked network ({ip})"
     return await asyncio.to_thread(_socket_connect, host, port)
 
 
@@ -253,6 +306,9 @@ async def _check_dns(m):
     expected = (m.get("expected") or "").strip()
     if not host:
         return False, 0, "no hostname configured"
+    blocked, ip = _host_blocked(host)
+    if blocked:
+        return False, 0, f"target resolves to blocked network ({ip})"
     start = time.perf_counter()
     try:
         infos = await asyncio.to_thread(socket.getaddrinfo, host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)

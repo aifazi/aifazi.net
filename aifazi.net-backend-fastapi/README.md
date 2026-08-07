@@ -46,7 +46,8 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
   - [Cron](#cron)
 - [Background Scheduler](#background-scheduler)
 - [Deployment](#deployment)
-  - [Render (recommended)](#render-recommended)
+  - [Railway (recommended)](#railway-recommended)
+  - [Render](#render-recommended)
   - [Vercel (serverless)](#vercel-serverless)
 - [Dependencies](#dependencies)
 
@@ -78,9 +79,10 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
 ├── database.py             # Supabase client (service role)
 ├── dependencies.py         # JWT auth helpers / FastAPI dependencies
 ├── requirements.txt
-├── Dockerfile
-├── render.yaml             # Render deployment config
-├── vercel.json             # Vercel serverless config
+├── Dockerfile               # Production image (Railway)
+├── railway.json             # Railway deployment config
+├── render.yaml              # Render deployment config
+├── vercel.json              # Vercel serverless config
 ├── .env.example
 │
 ├── routers/                # One file per feature area
@@ -614,7 +616,33 @@ On Vercel (serverless), the scheduler is disabled; scheduled publishing is handl
 
 ## Deployment
 
-### Render (recommended)
+### Railway (recommended)
+
+A production `Dockerfile` and `railway.json` are included for Railway. Because
+Railway runs a **persistent** process (no `VERCEL` env var set), the background
+APScheduler starts in `lifespan()` — so the 2-minute auto-publisher **and** the
+daily cleanup job run in-process (no Vercel cron needed).
+
+```bash
+# Deploy from the Railway dashboard: New Service → Deploy from repo → Railway.
+# The repo must include the backend (Dockerfile is at aifazi.net-backend-fastapi/).
+railway up
+```
+
+Add all environment variables in the Railway dashboard (the `.env.example` list).
+Do **not** set `VERCEL`. Runtime:
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+Security headers (`X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy`, `Strict-Transport-Security`, CSP) and the
+`X-Robots-Tag: noindex, nofollow` for the API host are emitted by the FastAPI
+middleware in `main.py`, so they apply on Railway too (they were previously only
+guaranteed by `vercel.json`).
+
+### Render
 
 A `render.yaml` is included. Create a new Render service from the repository and add all required environment variables in the Render dashboard (marked `sync: false`).
 

@@ -44,6 +44,12 @@ def _auth(request: Request):
 @router.get("/api/cron/cleanup")
 async def cron_cleanup(request: Request):
     _auth(request)
+    return await run_cleanup()
+
+
+async def run_cleanup() -> dict:
+    """Daily cleanup shared by the Vercel cron endpoint AND the in-process
+    APScheduler job (Railway), so both deployments stay in sync."""
     cutoff = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
 
     from routers.monitor import record_job_heartbeat
