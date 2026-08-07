@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
-import api, { getAuthToken } from '@/lib/api'
+import api, { getAuthToken, getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess } from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { Checkbox, Select } from '../core/ui.jsx'
 
@@ -599,6 +599,8 @@ export default function ForumAdmin({ embedded = false }) {
   const [threads, setThreads] = useState([])
   const [replies, setReplies] = useState([])
   const [loading, setLoading] = useState(false)
+  const [authed,   setAuthed]   = useState(embedded)
+  const [checking, setChecking] = useState(!embedded)
 
   const [userSearch,   setUserSearch]   = useState('')
   const [threadSearch, setThreadSearch] = useState('')
@@ -622,19 +624,6 @@ export default function ForumAdmin({ embedded = false }) {
   const [editingCat, setEditingCat] = useState(null)
   const [catSaving,  setCatSaving]  = useState(false)
   const [catPermsTab, setCatPermsTab] = useState('roles')
-
-  useEffect(() => {
-    const token = getAuthToken()
-    if (!token && !embedded) { navigate('/admin'); return }
-    loadStats()
-    loadCats()
-  }, [])
-
-  useEffect(() => {
-    if (tab === 'users')   loadUsers()
-    if (tab === 'threads') loadThreads()
-    if (tab === 'replies') loadReplies()
-  }, [tab, userSearch, threadSearch, replySearch, userPage, threadPage, replyPage])
 
   const loadStats   = () => api.get('/forum/admin/stats').then(r => setStats(r.data)).catch(() => {})
   const loadCats    = () => api.get('/forum/categories').then(r => setCats(r.data)).catch(() => {})
@@ -680,6 +669,35 @@ export default function ForumAdmin({ embedded = false }) {
       .catch(() => { setReplies([]); setReplyTotal(0) })
       .finally(() => setLoading(false))
   }
+
+  useEffect(() => {
+    const token = getAuthToken()
+    if (embedded) { loadStats(); loadCats(); return }
+    if (!token) { navigate('/admin'); return }
+    const verify = async () => {
+      try {
+        const verified = await api.get('/auth/verify')
+        setEffectiveAccess(verified.data?.user)
+        const role = verified.data?.user?.role || getRole()
+        if ((role === 'user' || !role) && !hasStaffAccess()) { navigate('/admin'); setChecking(false); return }
+        setAuthed(true)
+        setChecking(false)
+        loadStats()
+        loadCats()
+      } catch {
+        clearAuthTokens()
+        navigate('/login?next=/forum/admin', { replace: true })
+        setChecking(false)
+      }
+    }
+    verify()
+  }, [])
+
+  useEffect(() => {
+    if (tab === 'users')   void (async () => { await loadUsers() })()
+    if (tab === 'threads') void (async () => { await loadThreads() })()
+    if (tab === 'replies') void (async () => { await loadReplies() })()
+  }, [tab, userSearch, threadSearch, replySearch, userPage, threadPage, replyPage])
 
   // ── Category actions ──
   const saveCategory = async () => {
@@ -776,6 +794,9 @@ export default function ForumAdmin({ embedded = false }) {
     { key: 'threads',    label: `🗨 Threads${tab === 'threads' ? ` (${threadTotal})` : ''}` },
     { key: 'replies',    label: `💬 Replies${tab === 'replies' ? ` (${replyTotal})` : ''}` },
   ]
+
+  if (checking) return <div className="page-container"><div className="loader" /></div>
+  if (!authed) return null
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: embedded ? '24px 24px 80px' : '100px 24px 80px', position: 'relative', zIndex: 1 }}>

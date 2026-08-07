@@ -20,7 +20,7 @@ const nextConfig = {
   // ── Performance ────────────────────────────────────────────
   compress: true,
   poweredByHeader: false,
-  reactStrictMode: process.env.NODE_ENV === 'development',
+  reactStrictMode: true,
   productionBrowserSourceMaps: false,
 
   // ── Webpack ────────────────────────────────────────────────

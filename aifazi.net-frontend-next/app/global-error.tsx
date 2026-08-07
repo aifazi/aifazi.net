@@ -2,12 +2,15 @@
 import { useEffect, useState } from 'react'
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const [stack, setStack] = useState('')
+  const [stack, setStack] = useState(() => (process.env.NODE_ENV !== 'production' ? (error.stack || '') : ''))
+  const [prevError, setPrevError] = useState(error)
+  if (prevError !== error) {
+    setPrevError(error)
+    if (process.env.NODE_ENV !== 'production') setStack(error.stack || '')
+  }
+
   useEffect(() => {
     console.error('GlobalError caught:', error)
-    // Only show the stack trace to developers — it can leak internal
-    // component paths / env details to end users.
-    if (process.env.NODE_ENV !== 'production') setStack(error.stack || '')
   }, [error])
 
   return (

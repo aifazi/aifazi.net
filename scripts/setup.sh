@@ -68,7 +68,10 @@ fi
 
 # 3. Warn on placeholder/weak values (non-fatal)
 grep -q "REPLACE_ME" .env.local && echo " ⚠ WARNING: .env.local still has REPLACE_ME placeholders — features will fail until filled."
-grep -q "ADMIN_PASSWORD=tanvir123" .env.local && echo " ⚠ WARNING: ADMIN_PASSWORD is the weak default (tanvir123). Set a real password."
+grep -qiE "^ADMIN_PASSWORD=(password|passw0rd|admin|administrator|test|123456|tanvir123|changeme)" .env.local && echo "  ⚠ WARNING: ADMIN_PASSWORD is a common/weak default. Set a strong random password."
+if grep -q "ADMIN_PASSWORD=" .env.local && [ "$(grep 'ADMIN_PASSWORD=' .env.local | cut -d= -f2-)" = "$(grep 'ADMIN_USERNAME=' .env.local | cut -d= -f2-)" ] && [ -n "$(grep 'ADMIN_PASSWORD=' .env.local | cut -d= -f2-)" ]; then
+  echo "  ⚠ WARNING: ADMIN_PASSWORD matches ADMIN_USERNAME. Set a distinct strong password."
+fi
 
 # 4. Build and start all services
 echo " Building and starting services..."

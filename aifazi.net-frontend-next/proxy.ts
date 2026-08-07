@@ -414,7 +414,9 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── 6. Admin route protection ─────────────────────────────────────────────
-  if (pathname.toLowerCase().startsWith('/admin')) {
+  const isAdminRoute = pathname.toLowerCase().startsWith('/admin') ||
+    pathname.toLowerCase() === '/forum/admin' || pathname.toLowerCase().startsWith('/forum/admin/')
+  if (isAdminRoute) {
     const sessionCookie = request.cookies.get('admin_session')?.value
     if (!sessionCookie || !(await isAdminSessionValid(sessionCookie, hostname))) {
       const loginUrl = new URL('/login', request.url)
