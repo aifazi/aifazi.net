@@ -657,7 +657,7 @@ async def login(body: LoginBody, request: Request, response: Response):
             partial = make_token({"username": ADMIN_USERNAME, "role": "admin", "id": forum_id, "tfa_pending": True}, 5)
             return {"requires_2fa": True, "partial_token": partial}
         _set_auth_cookies(response, token, refresh)
-        return {"token": token, "user": {"username": ADMIN_USERNAME, "role": "admin"}}
+        return {"token": token, "refreshToken": refresh, "user": {"username": ADMIN_USERNAME, "role": "admin"}}
 
     # ── 2. Staff login (by username) ──────────────────────────────────────────
     if body.username:
@@ -689,7 +689,7 @@ async def login(body: LoginBody, request: Request, response: Response):
                 partial = make_token({"username": staff["username"], "role": staff["role"], "id": staff["id"], "tfa_pending": True}, 5)
                 return {"requires_2fa": True, "partial_token": partial}
             _set_auth_cookies(response, token, refresh)
-            return {"token": token, "user": {"username": staff["username"], "role": staff["role"], "permissions": perms}}
+            return {"token": token, "refreshToken": refresh, "user": {"username": staff["username"], "role": staff["role"], "permissions": perms}}
 
     # ── 3. Forum login (by email or username) ─────────────────────────────────
     identifier = body.email or body.username or ""
@@ -747,6 +747,7 @@ async def login(body: LoginBody, request: Request, response: Response):
     _set_auth_cookies(response, token, refresh)
     return {
         "token": token,
+        "refreshToken": refresh,
         "user": {
             "id": user["id"], "username": user["username"],
             "email": user["email"], "role": user.get("role", "user"),
@@ -819,7 +820,7 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
             "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", user_id).execute()
     _set_auth_cookies(response, new_access, new_refresh)  # rotate both cookies
-    return {"token": new_access}
+    return {"token": new_access, "refreshToken": new_refresh}
 
 # ── Logout ──────────────────────────────────────────────────────────────────────
 @router.post("/logout")
@@ -1278,7 +1279,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
                 pass
         _audit(username, "admin_login_2fa", target="admin_panel", ip=ip)
         _set_auth_cookies(response, token, refresh)  # #1 #2
-        return {"token": token, "user": {"username": username, "role": role}}
+        return {"token": token, "refreshToken": refresh, "user": {"username": username, "role": role}}
     else:
         res = supabase.table("users").select("*").eq("id", user_id).execute()
         if not res.data:
@@ -1294,7 +1295,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
         }).eq("id", s["id"]).execute()
         _audit(username, "staff_login_2fa", target="admin_panel", ip=ip)
         _set_auth_cookies(response, token, refresh)  # #1 #2
-        return {"token": token, "user": {"username": username, "role": role}}
+        return {"token": token, "refreshToken": refresh, "user": {"username": username, "role": role}}
 
 # -- Config check -- � verify Vercel env vars (protected by CRON_SECRET) ----------
 @router.get("/config-check")

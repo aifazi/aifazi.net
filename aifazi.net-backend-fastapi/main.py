@@ -174,6 +174,10 @@ _OPEN_GET_PREFIXES: tuple[str, ...] = (
     "/api/seo-proxy",
     "/api/admin/banners",
     "/api/admin/site-settings",
+    # Forum reads (threads/replies/categories) are public content — opened for
+    # the mobile app and direct clients. Staff-only forum GETs stay JWT-gated
+    # inside the routes themselves.
+    "/api/forum",
     "/api/pdf-editor/page",
     "/api/pdf-editor/thumb",
     "/api/pdf-editor/info",
