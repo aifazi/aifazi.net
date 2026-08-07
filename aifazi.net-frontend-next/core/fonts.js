@@ -86,24 +86,35 @@ const REGISTRY = {
   'pacman-light':      'family=Press+Start+2P&family=VT323',
 }
 
-const _loaded = new Set()
+const _loadedUrls = new Set()
 
-// Load Google Fonts for a theme (idempotent — safe to call multiple times)
+// URL for a theme's font stylesheet ('' if the theme uses system fonts only).
+// Safe to call server-side — no DOM access.
+export function themeFontUrl(themeId) {
+  const query = REGISTRY[themeId]
+  if (!query) return ''
+  return `https://fonts.googleapis.com/css2?${query}&display=swap`
+}
+
+// Load Google Fonts for a theme (idempotent — safe to call multiple times).
+// Dedupes by URL, not theme id, so themes that share fonts (mario & pacman both
+// use Press Start 2P, lava & brutalist both use Anton, …) only download once.
 export function loadFontForTheme(themeId) {
   if (typeof document === 'undefined') return
-  const query = REGISTRY[themeId]
-  if (!query || _loaded.has(themeId)) return
-  _loaded.add(themeId)
+  const url = themeFontUrl(themeId)
+  if (!url || _loadedUrls.has(url)) return
+  _loadedUrls.add(url)
   const link = Object.assign(document.createElement('link'), {
-    rel:  'stylesheet',
-    href: `https://fonts.googleapis.com/css2?${query}&display=swap`,
+    rel: 'stylesheet',
+    href: url,
   })
   document.head.appendChild(link)
 }
 
 // Check if fonts for a theme are already loaded
 export function isFontLoaded(themeId) {
-  return _loaded.has(themeId) || !REGISTRY[themeId]
+  const url = themeFontUrl(themeId)
+  return !url || _loadedUrls.has(url)
 }
 
 // All registered theme IDs

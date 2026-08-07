@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 
 import { Providers } from './providers'
 import { getSiteConfigServer } from '@/lib/siteSettingsServer'
+import { themeFontUrl } from '@/core/fonts'
 import './globals.css'
 
 // Light themes (mirrors LIGHT_THEMES in app/providers.tsx) — used to set
@@ -110,10 +111,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* Always-on UI font (covers cyber-dark / system-font themes) */}
         <link
           href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
           rel="stylesheet"
         />
+        {/* The admin's global theme's display font is injected server-side so the
+            first paint already uses the right typeface (no FOUT on page load).
+            themeFontUrl() returns '' for system-font themes, so nothing extra
+            is loaded for cyber-dark / win95 / etc. */}
+        {(() => {
+          const url = themeFontUrl(serverTheme)
+          return url ? (
+            <>
+              <link rel="preload" as="style" href={url} />
+              <link rel="stylesheet" href={url} />
+            </>
+          ) : null
+        })()}
       </head>
       <body suppressHydrationWarning>
         <div className="scanline" />
