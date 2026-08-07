@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router'
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native'
-import { RTCView } from 'react-native-webrtc'
+import { RTCView } from '@livekit/react-native-webrtc'
 import { useLiveKitCall } from '@/src/lib/livekit'
 import { useTheme } from '@/src/theme'
 

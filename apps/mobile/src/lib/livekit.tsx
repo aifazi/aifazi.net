@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { registerGlobals } from '@livekit/react-native'
 import { Room, RoomEvent } from 'livekit-client'
-import { MediaStream } from 'react-native-webrtc'
+import { MediaStream } from '@livekit/react-native-webrtc'
 import { api } from './api'
 
 // Registers react-native-webrtc globals so livekit-client works on RN.
