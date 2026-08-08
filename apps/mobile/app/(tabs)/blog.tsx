@@ -1,5 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native'
+import { useRouter } from 'expo-router'
+import type { Href } from 'expo-router'
+import { useFocusEffect } from 'expo-router'
+import { Image as ExpoImage } from 'expo-image'
 import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
@@ -8,24 +12,54 @@ import { api } from '@/src/lib/api'
 interface Post {
   id: string
   title: string
+  slug: string
   excerpt?: string
+  cover_image?: string
   author_name?: string
+  category?: string
   created_at?: string
+  views?: number
+  published?: boolean
+}
+
+function fmtDate(iso?: string) {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })
+  } catch {
+    return ''
+  }
 }
 
 export default function BlogScreen() {
   const { theme } = useTheme()
   const c = theme.colors
+  const router = useRouter()
   const [posts, setPosts] = useState<Post[]>([])
+  const [cats, setCats] = useState<string[]>([])
+  const [cat, setCat] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
+  const load = useCallback(() => {
     api
-      .get('/blog', { params: { limit: 20 } })
-      .then((r) => setPosts(Array.isArray(r.data) ? r.data : r.data?.posts ?? []))
+      .get('/blog', { params: cat ? { category: cat, limit: 20 } : { limit: 20 } })
+      .then((r) => setPosts((r.data?.posts ?? []) as Post[]))
       .catch((e) => setError(e?.response?.data?.detail || 'Could not load blog'))
       .finally(() => setLoading(false))
+  }, [cat])
+
+  useFocusEffect(
+    useCallback(() => {
+      load()
+    }, [load]),
+  )
+
+  useEffect(() => {
+    api
+      .get('/blog/meta/categories')
+      .then((r) => setCats((r.data?.categories ?? []) as string[]))
+      .catch(() => setCats([]))
   }, [])
 
   if (loading) {
@@ -39,31 +73,66 @@ export default function BlogScreen() {
   return (
     <Screen scroll={false}>
       <Title>Blog</Title>
-      {error ? (
-        <Muted>{error}</Muted>
-      ) : (
-        <FlatList
-          data={posts}
-          keyExtractor={(p) => p.id}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity>
-              <Card>
-                <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }}>{item.title}</Text>
-                {item.excerpt ? (
-                  <Text style={{ color: c.text2, fontSize: 12, marginTop: 6 }} numberOfLines={3}>
-                    {item.excerpt}
-                  </Text>
-                ) : null}
-                <View style={{ marginTop: 6 }}>
-                  <Muted>{item.author_name ?? ''}</Muted>
-                </View>
-              </Card>
+      {cats.length > 0 ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+          <TouchableOpacity
+            onPress={() => setCat('')}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: cat === '' ? c.accent : c.border,
+              backgroundColor: cat === '' ? c.accent2 : 'transparent',
+            }}
+          >
+            <Text style={{ color: cat === '' ? '#001018' : c.text, fontSize: 12, fontWeight: '700' }}>All</Text>
+          </TouchableOpacity>
+          {cats.map((x) => (
+            <TouchableOpacity
+              key={x}
+              onPress={() => setCat(x)}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: cat === x ? c.accent : c.border,
+                backgroundColor: cat === x ? c.accent2 : 'transparent',
+              }}
+            >
+              <Text style={{ color: cat === x ? '#001018' : c.text, fontSize: 12, fontWeight: '700' }}>{x}</Text>
             </TouchableOpacity>
-          )}
-          ListEmptyComponent={<Muted>No posts yet.</Muted>}
-        />
-      )}
+          ))}
+        </View>
+      ) : null}
+      {error ? <Muted>{error}</Muted> : null}
+
+      <FlatList
+        data={posts}
+        keyExtractor={(p) => p.id}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <TouchableOpacity onPress={() => router.push(`/blog-post?slug=${encodeURIComponent(item.slug)}` as Href)}>
+            <Card>
+              {item.cover_image ? (
+                <ExpoImage source={{ uri: item.cover_image }} style={{ width: '100%', height: 150, borderRadius: 8, marginBottom: 10 }} contentFit="cover" transition={150} />
+              ) : null}
+              <Text style={{ color: c.text, fontSize: 15, fontWeight: '800' }} numberOfLines={2}>{item.title}</Text>
+              {item.excerpt ? (
+                <Text style={{ color: c.text2, fontSize: 12, marginTop: 6, lineHeight: 17 }} numberOfLines={3}>{item.excerpt}</Text>
+              ) : null}
+              <View style={{ flexDirection: 'row', marginTop: 8, gap: 10 }}>
+                <Muted>{item.author_name ?? 'Admin'}</Muted>
+                <Muted>{fmtDate(item.created_at)}</Muted>
+                {item.category ? <Muted>{item.category}</Muted> : null}
+                {item.views ? <Muted>👁 {item.views}</Muted> : null}
+              </View>
+            </Card>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={<Muted>No posts yet.</Muted>}
+      />
     </Screen>
   )
 }

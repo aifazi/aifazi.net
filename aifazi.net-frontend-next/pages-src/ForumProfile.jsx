@@ -600,6 +600,7 @@ function ProfileEditTab({ user, onUpdate }) {
   const toast = useToast()
   const [form, setForm] = useState({ username: user?.username || '', email: user?.email || '', bio: user?.bio || '', avatar: user?.avatar || '' })
   const [saving, setSaving] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
   const [status, setStatus] = useState(null)
   const [usernameCheck, setUsernameCheck] = useState({ state: 'idle', msg: '' })
   const [emailCheck, setEmailCheck] = useState({ state: 'idle', msg: '' })
@@ -693,6 +694,25 @@ function ProfileEditTab({ user, onUpdate }) {
     } finally { setSaving(false) }
   }
 
+  const onAvatarUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarUploading(true); setStatus(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await api.post('/auth/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const newUrl = res.data?.url
+      if (newUrl) {
+        set('avatar', newUrl)
+        onUpdate?.({ ...form, avatar: newUrl })
+        setStatus({ type: 'success', msg: 'Avatar uploaded. Save changes to keep it.' })
+      }
+    } catch (err) {
+      setStatus({ type: 'error', msg: err?.response?.data?.detail || 'Avatar upload failed.' })
+    } finally { setAvatarUploading(false); e.target.value = '' }
+  }
+
   return (
     <SectionCard title="Edit Profile" tag="PROFILE">
       <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 500 }}>
@@ -727,6 +747,22 @@ function ProfileEditTab({ user, onUpdate }) {
               transition: 'border-color 0.15s' }}
             onFocus={e => e.target.style.borderColor = 'var(--cyan)'}
             onBlur={e => e.target.style.borderColor = 'var(--border)'} />
+        </div>
+        <div>
+          <label htmlFor="pf-avatar" style={{ ...M, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>AVATAR</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            {form.avatar ? (
+              <img src={form.avatar} alt="avatar" onError={e => { e.currentTarget.style.display = 'none' }}
+                style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', ...M, fontSize: 20, color: 'var(--muted)', flexShrink: 0 }}>?</div>
+            )}
+            <label htmlFor="pf-avatar-file" style={{ ...M, fontSize: 9, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: '#000', background: 'var(--green)', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              {avatarUploading ? 'UPLOADING…' : '⤒ UPLOAD IMAGE'}
+            </label>
+            <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>JPEG · PNG · GIF · WebP, max 5 MB,<br />or paste a URL below</span>
+          </div>
+          <input id="pf-avatar-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={onAvatarUpload} />
         </div>
         <Inp label="AVATAR URL" id="pf-avatar" value={form.avatar} onChange={e => set('avatar', e.target.value)} placeholder="https://…/avatar.png" />
         {status && <StatusMsg msg={status.msg} type={status.type} />}

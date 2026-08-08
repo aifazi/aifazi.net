@@ -1,111 +1,360 @@
-import { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
-import { Screen } from '@/src/components/Screen'
-import { Card, Title, Muted, Btn } from '@/src/components/ui'
+import { useEffect, useState, useCallback } from 'react'
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet } from 'react-native'
+import { useRouter } from 'expo-router'
+import type { Href } from 'expo-router'
+import { Image as ExpoImage } from 'expo-image'
+import { useFocusEffect } from 'expo-router'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { Btn } from '@/src/components/ui'
 
 interface StatusService {
   name: string
-  label: string
+  label?: string
   status: string
-  uptime_24h?: number | null
+  uptime_24h?: number
+}
+
+interface Product {
+  id: string
+  name: string
+  slug: string
+  price?: string | number
+  price_cents?: number
+  image_url?: string
+  on_sale?: boolean
+  compare_at?: string | number
+  category?: string
+}
+
+interface Thread {
+  id: string
+  title: string
+  replyCount?: number
+  author?: { username: string }
+  category?: { name?: string; icon?: string; color?: string }
+}
+
+interface Post {
+  id: string
+  title: string
+  excerpt?: string
+  cover_image?: string
+  author_name?: string
+  slug: string
+  category?: string
+}
+
+interface Project {
+  id: string
+  name?: string
+  title?: string
+  description?: string
+  image_url?: string
+  status?: string
+  display_order?: number
+}
+
+interface MonitorStatus {
+  overall?: string
+  services?: Array<{
+    name: string
+    label?: string
+    status: string
+    uptime_24h?: number
+  }>
+}
+
+function fmtPrice(p?: Product) {
+  const n = p?.price_cents ?? 0
+  if (!n) return '$0.00'
+  return `$${(n / 100).toFixed(2)}`
 }
 
 export default function HomeScreen() {
-  const { theme, cycleTheme } = useTheme()
+  const { theme } = useTheme()
   const c = theme.colors
-  const { user } = useAuth()
-  const [status, setStatus] = useState<{ overall?: string; services?: StatusService[] } | null>(null)
+  const router = useRouter()
+  const { user, isAuthed } = useAuth()
+  const [mon, setMon] = useState<MonitorStatus>({})
+  const [products, setProducts] = useState<Product[]>([])
+  const [threads, setThreads] = useState<Thread[]>([])
+  const [posts, setPosts] = useState<Post[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(() => {
     api
       .get('/monitor/status')
-      .then((r) => setStatus(r.data))
-      .catch(() => setStatus(null))
+      .then((r) => setMon((r.data ?? {}) as MonitorStatus))
+      .catch(() => {})
+    api
+      .get('/store/products', { params: { limit: 6 } })
+      .then((r) => setProducts((r.data ?? []) as Product[]))
+      .catch(() => setProducts([]))
+    api
+      .get('/forum/threads', { params: { limit: 5 } })
+      .then((r) => setThreads((r.data?.threads ?? []) as Thread[]))
+      .catch(() => setThreads([]))
+    api
+      .get('/blog', { params: { limit: 5 } })
+      .then((r) => setPosts((r.data?.posts ?? []) as Post[]))
+      .catch(() => setPosts([]))
+    api
+      .get('/portfolio/projects')
+      .then((r) => setProjects((r.data ?? []) as Project[]))
+      .catch(() => setProjects([]))
       .finally(() => setLoading(false))
   }, [])
 
-  const overall = status?.overall ?? 'unknown'
+  useFocusEffect(
+    useCallback(() => {
+      load()
+    }, [load]),
+  )
+
+  const overall = mon.overall || 'operational'
   const overallColor = overall === 'operational' ? c.accent : overall === 'outage' ? c.danger : c.accent2
 
+  const tiles = [
+    { label: 'Store', icon: '🛍️', href: '/store' as Href, tint: '#ff6b35' },
+    { label: 'Projects', icon: '🚀', href: '/projects' as Href, tint: '#00d4ff' },
+    { label: 'Forum', icon: '💬', href: '/forum' as Href, tint: '#00ff88' },
+    { label: 'Blog', icon: '📝', href: '/blog' as Href, tint: '#facc15' },
+    { label: 'Chat', icon: '🗨️', href: '/chat' as Href, tint: '#a78bfa' },
+    { label: 'Profile', icon: '👤', href: '/profile' as Href, tint: '#f472b6' },
+  ]
+
   return (
-    <Screen>
-      <View style={styles.row}>
-        <Title>aifazi.net</Title>
-        <TouchableOpacity onPress={cycleTheme} style={[styles.themeBtn, { borderColor: c.border }]}>
-          <Text style={{ color: c.text, fontSize: 12, fontFamily: theme.mono ? 'monospace' : undefined }}>
-            {theme.name}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <Muted>Community platform — mobile client</Muted>
-
-      {user && (
-        <Card style={{ marginTop: 12 }}>
-          <Text style={{ color: c.text, fontWeight: '700' }}>Welcome back, {user.username}!</Text>
-          <Muted>{user.email ?? user.role ?? 'member'}</Muted>
-        </Card>
-      )}
-
-      <View style={{ marginTop: 8 }}>
-        <Card>
-          <View style={styles.row}>
-            <Text style={{ color: c.text, fontSize: 14, fontWeight: '800' }}>System status</Text>
-            {loading ? (
-              <ActivityIndicator color={c.accent} />
-            ) : (
-              <Text style={{ color: overallColor, fontWeight: '800', textTransform: 'uppercase', fontSize: 12 }}>
-                {overall}
+    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <Text style={{ color: c.text, fontSize: 24, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined, letterSpacing: theme.mono ? 1 : 0 }}>
+          aifazi.net
+        </Text>
+        {isAuthed ? (
+          <TouchableOpacity onPress={() => router.push('/profile' as Href)}>
+            <View style={[styles.avatar, { backgroundColor: c.accent2 }]}>
+              <Text style={{ color: '#001018', fontWeight: '800', fontSize: 14 }}>
+                {(user?.username || '?').slice(0, 1).toUpperCase()}
               </Text>
-            )}
-          </View>
-          {!loading && status?.services?.length ? (
-            <View style={{ marginTop: 10 }}>
-              {status.services.map((s) => (
-                <View key={s.name} style={styles.row}>
-                  <Text style={{ color: c.text2, fontSize: 13 }}>{s.label}</Text>
-                  <View style={styles.row}>
-                    <View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor:
-                          s.status === 'up' ? c.accent : s.status === 'down' ? c.danger : c.muted,
-                      }}
-                    />
-                    {s.uptime_24h != null && (
-                      <Text style={{ color: c.muted, fontSize: 11, marginLeft: 6 }}>
-                        {s.uptime_24h}%
-                      </Text>
-                    )}
-                  </View>
-                </View>
-              ))}
             </View>
-          ) : null}
-        </Card>
+          </TouchableOpacity>
+        ) : (
+          <Btn title="Sign in" onPress={() => router.push('/profile' as Href)} style={{ paddingVertical: 7, paddingHorizontal: 12 }} />
+        )}
       </View>
+      <Text style={{ color: c.muted, fontSize: 12, marginBottom: 16 }}>
+        Community platform — mobile client{isAuthed && user ? ` · hi ${user.username}` : ''}
+      </Text>
 
-      <View style={{ marginTop: 20 }}>
-        <Card>
-          <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }}>Coming next</Text>
-          <Muted>Forum threads · Blog · LiveKit voice/video · Push notifications</Muted>
-        </Card>
-      </View>
-    </Screen>
+      {loading ? (
+        <ActivityIndicator color={c.accent} style={{ marginTop: 30 }} />
+      ) : (
+        <>
+          <View style={[styles.grid, { marginBottom: 18 }]}>
+            {tiles.map((t) => (
+              <TouchableOpacity
+                key={t.label}
+                onPress={() => router.push(t.href)}
+                style={[styles.tile, { borderColor: c.border, backgroundColor: c.bg2 }]}
+              >
+                <Text style={{ fontSize: 24 }}>{t.icon}</Text>
+                <Text style={{ color: c.text, fontSize: 13, fontWeight: '800', marginTop: 6 }}>{t.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={[styles.card, { borderColor: c.border, backgroundColor: c.bg2 }]}>
+            <View style={styles.cardHeader}>
+              <Text style={{ color: c.text, fontSize: 13, fontWeight: '800' }}>Server status</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: overallColor }} />
+                <Text style={{ color: overallColor, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' }}>{overall}</Text>
+              </View>
+            </View>
+            {mon.services ? (
+              <View style={{ marginTop: 8 }}>
+                {mon.services.slice(0, 6).map((s) => (
+                  <View key={s.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}>
+                    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: s.status === 'up' || s.status === 'operational' ? c.accent : s.status === 'down' || s.status === 'outage' ? c.danger : c.accent2 }} />
+                    <Text style={{ color: c.text2, fontSize: 12, flex: 1 }} numberOfLines={1}>{s.label || s.name}</Text>
+                    <Text style={{ color: c.muted, fontSize: 11 }}>{s.uptime_24h != null ? `${s.uptime_24h}%` : ''}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            <TouchableOpacity onPress={() => router.push('/' as Href)} disabled style={{ marginTop: 10, alignSelf: 'flex-start' }}>
+              <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>Detailed status →</Text>
+            </TouchableOpacity>
+          </View>
+
+          {projects.length > 0 ? (
+            <>
+              <SectionTitle title="Our projects" onMore={() => router.push('/projects')} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
+                {projects.map((p) => (
+                  <TouchableOpacity
+                    key={p.id}
+                    onPress={() => router.push('/projects' as Href)}
+                    style={[styles.projectTile, { borderColor: c.border, backgroundColor: c.bg3 }]}
+                  >
+                    {p.image_url ? (
+                      <ExpoImage source={{ uri: p.image_url }} style={{ width: '100%', height: 70, borderTopLeftRadius: 10, borderTopRightRadius: 10 }} contentFit="cover" />
+                    ) : (
+                      <View style={{ height: 56, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 20 }}>🚀</Text>
+                      </View>
+                    )}
+                    <Text style={{ color: c.text, fontSize: 12, fontWeight: '700', padding: 8 }} numberOfLines={2}>
+                      {p.name || p.title}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          ) : null}
+
+          {products.length > 0 ? (
+            <>
+              <SectionTitle title="Store picks" onMore={() => router.push('/store')} />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
+                {products.slice(0, 6).map((p) => (
+                  <TouchableOpacity
+                    key={p.id}
+                    onPress={() => router.push(`/store-item?slug=${encodeURIComponent(p.slug)}` as Href)}
+                    style={[styles.productTile, { borderColor: c.border, backgroundColor: c.bg2 }]}
+                  >
+                    {p.image_url ? (
+                      <ExpoImage source={{ uri: p.image_url }} style={{ width: '100%', height: 70, borderTopLeftRadius: 10, borderTopRightRadius: 10 }} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.productArt, { backgroundColor: c.bg3 }]}>
+                        <Text style={{ fontSize: 22 }}>🛍️</Text>
+                      </View>
+                    )}
+                    <View style={{ padding: 8 }}>
+                      <Text style={{ color: c.text, fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{p.name}</Text>
+                      <Text style={{ color: c.accent, fontSize: 12, fontWeight: '800', marginTop: 2 }}>{fmtPrice(p)}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          ) : null}
+
+          {threads.length > 0 ? (
+            <>
+              <SectionTitle title="Forum threads" onMore={() => router.push('/forum')} />
+              <View style={{ marginBottom: 18 }}>
+                {threads.slice(0, 4).map((t) => (
+                  <TouchableOpacity
+                    key={t.id}
+                    onPress={() => router.push(`/forum-thread?id=${t.id}` as Href)}
+                    style={[styles.listRow, { borderBottomColor: c.border }]}
+                  >
+                    <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
+                      {t.category?.icon ? `${t.category.icon} ` : ''}{t.title}
+                    </Text>
+                    <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }}>
+                      {t.author?.username || '—'} · 💬 {t.replyCount ?? 0}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          ) : null}
+
+          {posts.length > 0 ? (
+            <>
+              <SectionTitle title="Blog" onMore={() => router.push('/blog')} />
+              <View>
+                {posts.slice(0, 4).map((p) => (
+                  <TouchableOpacity
+                    key={p.id}
+                    onPress={() => router.push(`/blog-post?slug=${encodeURIComponent(p.slug)}` as Href)}
+                    style={[styles.listRow, { borderBottomColor: c.border }]}
+                  >
+                    <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>{p.title}</Text>
+                    <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                      {p.author_name ?? ''}{p.category ? ` · ${p.category}` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          ) : null}
+        </>
+      )}
+    </ScrollView>
+  )
+}
+
+function SectionTitle({ title, onMore }: { title: string; onMore: () => void }) {
+  const { theme } = useTheme()
+  const c = theme.colors
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+      <Text style={{ color: c.text, fontSize: 15, fontWeight: '800' }}>{title}</Text>
+      <TouchableOpacity onPress={onMore} hitSlop={8}>
+        <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>See all →</Text>
+      </TouchableOpacity>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  themeBtn: {
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  tile: {
+    width: '30%',
+    aspectRatio: 1,
+    borderRadius: 12,
     borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  card: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 18,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  projectTile: {
+    width: 150,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginRight: 10,
+    overflow: 'hidden',
+  },
+  productTile: {
+    width: 140,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginRight: 10,
+    overflow: 'hidden',
+  },
+  productArt: {
+    height: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listRow: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
   },
 })

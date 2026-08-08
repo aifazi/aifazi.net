@@ -86,11 +86,16 @@ export default function AdminChat({ embedded=false }) {
   const [callParticipants, setCallParticipants] = useState([])
   const [roomKey, setRoomKey] = useState('')
   const [userSearch, setUserSearch] = useState(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQ, setSearchQ] = useState('')
+  const [searchResults, setSearchResults] = useState(null)
+  const searchRef = useRef(null)
 
   // Fetch room encryption key for text messages (cached per room)
   const [prevRoom, setPrevRoom] = useState(room)
   if (prevRoom !== room) {
     setPrevRoom(room)
+    setSearchOpen(false); setSearchQ(''); setSearchResults(null)
     if (!room || (room.type === 'voice' || room.type === 'video')) {
       setRoomKey(''); setRoomKeyModule('')
     } else if (_roomKeyCache[room.id]) {
@@ -411,6 +416,16 @@ export default function AdminChat({ embedded=false }) {
     try { await api.delete(`/chat/messages/${id}`) } catch {}
   }, [dlgConfirm])
 
+  const sendCallText = useCallback(async (text) => {
+    if (!room || !text.trim()) return
+    try {
+      const encrypted = roomKey ? ENCRYPTED_PREFIX + await encryptText(text.trim(), roomKey) : text.trim()
+      await api.post(`/chat/rooms/${room.id}/messages`, { content: encrypted, type: 'text' })
+    } catch (err) {
+      notify.error(err.response?.data?.detail || 'Send failed')
+    }
+  }, [room?.id, roomKey, notify])
+
   const batchDelMsgs = useCallback(async ids => {
     const ok = await dlgConfirm({ title:`Delete ${ids.length} messages?`, message:'This cannot be undone.', confirmLabel:'DELETE ALL', variant:'danger' })
     if (!ok) return
@@ -482,6 +497,27 @@ export default function AdminChat({ embedded=false }) {
     setInput(e.target.value)
     if (e.target.value.trim()) broadcastTyping()
   }
+
+  // ── Message search ─────────────────────────────────────────────────────────
+  const runSearch = useCallback(async (q) => {
+    if (!room || !q.trim()) { setSearchResults(null); return }
+    try {
+      const r = await api.get(`/chat/rooms/${room.id}/search`, { params: { q: q.trim() } })
+      setSearchResults(r.data || [])
+    } catch { setSearchResults([]) }
+  }, [room?.id])
+
+  const onSearchInput = useCallback((v) => {
+    setSearchQ(v)
+    if (searchRef.current) clearTimeout(searchRef.current)
+    const q = v.trim()
+    if (!q) { setSearchResults(null); return }
+    searchRef.current = setTimeout(() => runSearch(q), 400)
+  }, [runSearch])
+
+  const clearSearch = useCallback(() => {
+    setSearchQ(''); setSearchResults(null)
+  }, [])
   const onScroll = useCallback(() => {
     if (!listRef.current) return
     if (listRef.current.scrollTop < 80 && hasMore && !loadingMore) {
@@ -703,7 +739,8 @@ export default function AdminChat({ embedded=false }) {
             <VoiceErrorBoundary>
               <VoicePanel room={callRoom} onLeave={leaveCall} muted={muted} camOff={camOff}
                 onMute={togMute} onCam={togCam} onScreen={()=>{}} canScreenShare={canScreenShare}
-                me={me} onParticipantsChange={setCallParticipants} />
+                me={me} isAdmin={isAdmin} msgs={msgs} onSendMsg={sendCallText}
+                onParticipantsChange={setCallParticipants} />
             </VoiceErrorBoundary>
           ) : (
             <>
@@ -794,6 +831,11 @@ export default function AdminChat({ embedded=false }) {
                       <span style={{ width:7, height:7, borderRadius:'50%', background:'#23d160', display:'inline-block' }}/>
                       {online.length}
                     </button>
+                    <button onClick={()=>{ const next=!searchOpen; setSearchOpen(next); if(!next){setSearchQ('');setSearchResults(null)} }}
+                      title="Search messages"
+                      style={{ padding:'4px 10px', border:`1px solid ${searchOpen?'color-mix(in srgb, var(--cyan) 40%, transparent)':T.border}`, borderRadius:7, background:searchOpen?'color-mix(in srgb, var(--cyan) 8%, transparent)':'transparent', color:searchOpen?T.accentB:T.muted, fontFamily:T.mono, fontSize:11, cursor:'pointer' }}>
+                      🔍
+                    </button>
                   </div>
                 </> : <div style={{ fontFamily:T.mono, fontSize:11, color:T.muted }}>Select a channel</div>}
               </div>
@@ -808,8 +850,26 @@ export default function AdminChat({ embedded=false }) {
 
               {room ? (
                 <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
+                  {searchOpen && (
+                    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'color-mix(in srgb, var(--cyan) 8%, transparent)', borderBottom:`1px solid color-mix(in srgb, var(--cyan) 20%, transparent)`, flexShrink:0 }}>
+                      <span style={{ fontSize:12 }}>🔍</span>
+                      <input autoFocus value={searchQ} onChange={e=>onSearchInput(e.target.value)}
+                        onKeyDown={e=>{ if(e.key==='Escape'){clearSearch();setSearchOpen(false)} }}
+                        placeholder={`Search #${room.name}…`}
+                        style={{ flex:1, background:'rgba(0,0,0,0.35)', border:`1px solid ${T.border}`, color:T.text, fontFamily:T.mono, fontSize:12, padding:'6px 10px', borderRadius:8, outline:'none', minWidth:0 }}
+                        onFocus={e=>e.target.style.borderColor='color-mix(in srgb, var(--cyan) 40%, transparent)'}
+                        onBlur={e=>e.target.style.borderColor=T.border}/>
+                      <button onClick={()=>{clearSearch();setSearchOpen(false)}} style={{ padding:'2px 8px', border:`1px solid ${T.border}`, borderRadius:6, background:'transparent', color:T.muted, cursor:'pointer', fontSize:12 }}>✕</button>
+                    </div>
+                  )}
+                  {searchResults !== null && (
+                    <div style={{ padding:'4px 14px', fontFamily:T.mono, fontSize:10, color:T.accentB, background:'color-mix(in srgb, var(--cyan) 6%, transparent)', flexShrink:0, display:'flex', alignItems:'center', gap:6 }}>
+                      <span>{searchResults.length} match{searchResults.length===1?'':'es'} for “{searchQ}”</span>
+                      <button onClick={clearSearch} style={{ background:'none', border:'none', color:T.accent, cursor:'pointer', fontFamily:T.mono, fontSize:10, textDecoration:'underline' }}>back to channel</button>
+                    </div>
+                  )}
                   {loadingMore && <div style={{ textAlign:'center', padding:'4px', fontFamily:T.mono, fontSize:10, color:T.muted, flexShrink:0 }}>Loading older messages…</div>}
-                  <ChatMessageList msgs={msgs} me={me} isAdmin={isAdmin} onDel={delMsg} onReply={setReplyTo} onEdit={setEditing} onReact={react} onMediaClick={setMediaViewer} elRef={listRef} onScroll={onScroll} onMention={handleMention} muteUser={muteUser} unmuteUser={unmuteUser} kickUser={kickUser} banUser={banUser} unbanUser={unbanUser} roomMutes={roomMutes} roomBans={roomBans} onBatchDel={batchDelMsgs}/>
+                  <ChatMessageList msgs={searchResults !== null ? searchResults : msgs} me={me} isAdmin={isAdmin} onDel={delMsg} onReply={setReplyTo} onEdit={setEditing} onReact={react} onMediaClick={setMediaViewer} elRef={listRef} onScroll={searchResults !== null ? undefined : onScroll} onMention={handleMention} muteUser={muteUser} unmuteUser={unmuteUser} kickUser={kickUser} banUser={banUser} unbanUser={unbanUser} roomMutes={roomMutes} roomBans={roomBans} onBatchDel={batchDelMsgs}/>
                   {typLabel && <div style={{ padding:'2px 18px 4px', fontFamily:T.mono, fontSize:10, color:T.muted, flexShrink:0, fontStyle:'italic' }}>{typLabel}</div>}
                   {editing && <EditBar msg={editing} onSave={saveEdit} onCancel={()=>setEditing(null)}/>}
                   {replyTo && (

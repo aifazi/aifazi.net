@@ -21,6 +21,8 @@ import os
 import asyncio
 import threading
 import time
+import base64
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from utils.email import send_email, render_template
 from utils.email_queue import queue_email, queue_email_bulk
 
@@ -144,14 +146,14 @@ def _room_access(room: dict) -> dict:
     return {"mode": "mixed", "roles": roles, "users": users}
 
 def _get_room_or_404(room_id: str) -> dict:
-    room = (
+    res = (
         supabase.table("chat_rooms")
         .select("id,name,is_private,read_only,allowed_roles,allowed_users,speak_roles,screen_share_roles,type,slow_mode")
         .eq("id", room_id)
-        .single()
+        .limit(1)
         .execute()
-        .data
     )
+    room = res.data[0] if (res.data or []) else None
     if not room:
         raise HTTPException(404, "Room not found")
     return room
@@ -558,6 +560,98 @@ async def get_messages(
         _set_cached_history(room_id, rows)
     return rows
 
+def _decrypt_aesgcm(cipher_b64: str, key_b64: str) -> str | None:
+    """Decrypt a message payload (12-byte IV + AES-GCM ciphertext, base64)."""
+    if not key_b64 or not cipher_b64:
+        return None
+    try:
+        key = base64.b64decode(key_b64)
+        combined = base64.b64decode(cipher_b64)
+        if len(combined) < 12:
+            return None
+        iv, ct = combined[:12], combined[12:]
+        return AESGCM(key).decrypt(iv, ct, None).decode("utf-8", errors="replace")
+    except Exception:
+        return None
+
+
+@router.get("/rooms/{room_id}/search")
+async def search_messages(
+    room_id: str,
+    q: str = Query(..., min_length=1, max_length=200),
+    limit: int = Query(50, ge=1, le=200),
+    user: dict = Depends(get_current_user),
+):
+    """Search a channel's message history (decrypts messages server-side using the
+    room key so encrypted channels are searchable too)."""
+    room = _ensure_room_access(room_id, user)
+    _require_room_perm(room, user, "read_messages")
+    query = q.strip().lower()
+    if not query:
+        return []
+
+    keyrow = supabase.table("chat_rooms").select("encryption_key").eq("id", room_id).limit(1).execute().data
+    room_key = (keyrow[0].get("encryption_key") or "") if keyrow else ""
+
+    res = (
+        supabase.table("chat_messages")
+        .select("id,room_id,sender,role,type,content,file_name,file_size,reply_to,reactions,created_at,edited")
+        .eq("room_id", room_id)
+        .order("created_at", desc=True)
+        .limit(5000)
+        .execute()
+    )
+    matches = []
+    for m in res.data or []:
+        text = m.get("content") or ""
+        if text.startswith("ENC:"):
+            dec = _decrypt_aesgcm(text[4:], room_key)
+            plain = dec or ""
+        else:
+            plain = text
+        hay = f"{plain} {m.get('sender') or ''} {m.get('file_name') or ''}".lower()
+        if query in hay:
+            matches.append(m)
+            if len(matches) >= limit:
+                break
+    return matches
+
+
+# ── Typing presence (in-memory TTL, mirrors the history/throttle caches) ──────
+# Best-effort, single-instance: when the API scales to multiple workers this
+# should move to Redis. The web app already gets typing via Supabase Realtime
+# broadcast; this REST variant powers the mobile clients (which poll).
+_TYPING_TTL = 6.0
+_typing_lock = threading.Lock()
+_typing: dict[tuple[str, str], float] = {}
+
+
+@router.post("/rooms/{room_id}/typing")
+async def set_typing(room_id: str, user: dict = Depends(get_current_user)):
+    """Heartbeat that this user is typing in a room (expires after ~6s)."""
+    _ensure_room_access(room_id, user)
+    with _typing_lock:
+        _typing[(room_id, user["username"])] = time.monotonic()
+    return {"ok": True}
+
+
+@router.get("/rooms/{room_id}/typing")
+async def get_typing(room_id: str, user: dict = Depends(get_current_user)):
+    """Users currently typing in a room (excluding the caller)."""
+    _ensure_room_access(room_id, user)
+    now = time.monotonic()
+    names = []
+    with _typing_lock:
+        for (rid, uname), ts in list(_typing.items()):
+            if rid != room_id:
+                continue
+            if now - ts > _TYPING_TTL:
+                _typing.pop((rid, uname), None)
+                continue
+            if uname != user["username"]:
+                names.append(uname)
+    return names
+
 @router.post("/rooms/{room_id}/messages")
 async def send_message(
     room_id: str,
@@ -629,7 +723,8 @@ async def edit_message(
     if not content or len(content) > 4000:
         raise HTTPException(400, "Invalid content")
 
-    msg = supabase.table("chat_messages").select("sender,room_id").eq("id", msg_id).single().execute().data
+    res = supabase.table("chat_messages").select("sender,room_id").eq("id", msg_id).limit(1).execute()
+    msg = res.data[0] if (res.data or []) else None
     if not msg:
         raise HTTPException(404, "Message not found")
     room = _get_room_or_404(msg["room_id"]) if msg.get("room_id") else None
@@ -657,7 +752,8 @@ async def toggle_reaction(
     if not body.emoji or len(body.emoji) > 16 or not _EMOJI_RE.match(body.emoji):
         raise HTTPException(400, "Invalid emoji")
 
-    msg = supabase.table("chat_messages").select("reactions,room_id").eq("id", msg_id).single().execute().data
+    res = supabase.table("chat_messages").select("reactions,room_id").eq("id", msg_id).limit(1).execute()
+    msg = res.data[0] if (res.data or []) else None
     if not msg:
         raise HTTPException(404, "Message not found")
     if msg.get("room_id"):
@@ -687,7 +783,8 @@ async def delete_message(
     user: dict = Depends(get_current_user),
 ):
     """Owners can delete their own messages; staff/managers (manage_messages) can delete any."""
-    msg = supabase.table("chat_messages").select("sender,room_id").eq("id", msg_id).single().execute().data
+    res = supabase.table("chat_messages").select("sender,room_id").eq("id", msg_id).limit(1).execute()
+    msg = res.data[0] if (res.data or []) else None
     if not msg:
         raise HTTPException(404, "Message not found")
 

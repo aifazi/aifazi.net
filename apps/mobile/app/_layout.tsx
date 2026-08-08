@@ -24,6 +24,11 @@ function RootNav() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="call" options={{ headerShown: false }} />
         <Stack.Screen name="chat-room" options={{ headerShown: false }} />
+        <Stack.Screen name="store" options={{ headerShown: false }} />
+        <Stack.Screen name="store-item" options={{ headerShown: false }} />
+        <Stack.Screen name="projects" options={{ headerShown: false }} />
+        <Stack.Screen name="forum-thread" options={{ headerShown: false }} />
+        <Stack.Screen name="blog-post" options={{ headerShown: false }} />
         <Stack.Screen name="auth/login" options={{ headerShown: true, title: 'Sign In' }} />
         <Stack.Screen name="auth/register" options={{ headerShown: true, title: 'Create Account' }} />
       </Stack>

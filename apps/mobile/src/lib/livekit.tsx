@@ -1,23 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { registerGlobals } from '@livekit/react-native'
 import { Room, RoomEvent } from 'livekit-client'
-import { MediaStream } from '@livekit/react-native-webrtc'
+import { registerGlobals, mediaDevices, streamUrl } from './lk-native'
 import { api } from './api'
 
-// Registers react-native-webrtc globals so livekit-client works on RN.
-// Safe to call once at module load (idempotent).
+// Registers react-native-webrtc globals so livekit-client works on RN
+// (native); no-op on web. Safe to call once at module load (idempotent).
 registerGlobals()
-
-// Wrap an RN MediaStream's toURL() so RTCView can render it. Casts to any —
-// the react-native-webrtc type surface can be awkward under Expo's TS setup.
-function streamUrl(tracks: any[]): string | null {
-  try {
-    const s: any = new MediaStream(tracks)
-    return typeof s?.toURL === 'function' ? (s.toURL() as string) : null
-  } catch {
-    return null
-  }
-}
 
 export interface LKInfo {
   room: string
@@ -187,13 +175,21 @@ export function useLiveKitCall(roomId: string | null) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId])
 
+  const setMic = useCallback(async (on: boolean) => {
+    const room = roomRef.current
+    if (!room) return
+    try {
+      await room.localParticipant.setMicrophoneEnabled(on)
+    } finally {
+      setMuted(!on)
+    }
+  }, [])
+
   const toggleMute = useCallback(async () => {
     const room = roomRef.current
     if (!room) return
-    const on = !room.localParticipant.isMicrophoneEnabled
-    await room.localParticipant.setMicrophoneEnabled(on)
-    setMuted(!on)
-  }, [])
+    await setMic(!room.localParticipant.isMicrophoneEnabled)
+  }, [setMic])
 
   const toggleCam = useCallback(async () => {
     const room = roomRef.current
@@ -211,6 +207,52 @@ export function useLiveKitCall(roomId: string | null) {
     setScreenActive(on)
   }, [])
 
+  const setMutedOnly = useCallback((on: boolean) => setMuted(!on), [])
+
+  const listDevices = useCallback(async (kind: 'audioinput' | 'audiooutput' | 'videoinput') => {
+    try {
+      const list: Array<{ kind: string; deviceId: string; label?: string }> =
+        (await mediaDevices.enumerateDevices()) as Array<{ kind: string; deviceId: string; label?: string }>
+      return list.filter((d) => d.kind === kind).map((d) => ({ id: d.deviceId, label: d.label || kind }))
+    } catch {
+      return []
+    }
+  }, [])
+
+  const switchMicDevice = useCallback(async (deviceId: string) => {
+    const room = roomRef.current
+    if (!room) return
+    try {
+      await room.switchActiveDevice('audioinput', deviceId)
+    } catch {}
+  }, [])
+
+  const switchSpeakerDevice = useCallback(async (deviceId: string) => {
+    const room = roomRef.current
+    if (!room) return
+    try {
+      await room.switchActiveDevice('audiooutput', deviceId)
+    } catch {}
+  }, [])
+
+  const muteParticipant = useCallback(
+    async (identity: string) => {
+      if (!info) return
+      await api.post('/chat/livekit/admin/mute', { room_id: info.room, identity })
+      refresh()
+    },
+    [info, refresh],
+  )
+
+  const kickParticipant = useCallback(
+    async (identity: string) => {
+      if (!info) return
+      await api.post('/chat/livekit/admin/kick', { room_id: info.room, identity })
+      refresh()
+    },
+    [info, refresh],
+  )
+
   return {
     status,
     error,
@@ -222,9 +264,16 @@ export function useLiveKitCall(roomId: string | null) {
     screenUrl,
     localVideoUrl,
     canScreenShare: !!info?.canScreenShare,
+    setMic,
+    setMutedOnly,
     toggleMute,
     toggleCam,
     toggleScreen,
+    listDevices,
+    switchMicDevice,
+    switchSpeakerDevice,
+    muteParticipant,
+    kickParticipant,
     leave,
   }
 }

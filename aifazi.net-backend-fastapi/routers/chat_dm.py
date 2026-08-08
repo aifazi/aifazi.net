@@ -526,19 +526,20 @@ async def edit_dm_message(msg_id: str, body: DMEditBody, user: dict = Depends(ge
     content = (body.content or "").strip()
     if not content or len(content) > 4000:
         raise HTTPException(400, "Invalid content")
-    msg = supabase.table("dm_messages").select("id,sender,thread_id").eq("id", msg_id).single().execute()
-    if not msg.data:
+    res = supabase.table("dm_messages").select("id,sender,thread_id").eq("id", msg_id).limit(1).execute()
+    msg = res.data[0] if (res.data or []) else None
+    if not msg:
         raise HTTPException(404, "Message not found")
-    if msg.data["sender"] != user["username"]:
+    if msg["sender"] != user["username"]:
         raise HTTPException(403, "Not your message")
-    _get_thread(msg.data["thread_id"], user)
+    _get_thread(msg["thread_id"], user)
     res = (
         supabase.table("dm_messages")
         .update({"content": content, "edited": True, "edited_at": _now()})
         .eq("id", msg_id)
         .execute()
     )
-    _bump_thread(msg.data["thread_id"])
+    _bump_thread(msg["thread_id"])
     return res.data[0]
 
 
@@ -546,11 +547,12 @@ async def edit_dm_message(msg_id: str, body: DMEditBody, user: dict = Depends(ge
 async def toggle_dm_reaction(msg_id: str, body: DMReactBody, user: dict = Depends(get_current_user)):
     if not body.emoji or len(body.emoji) > 16 or not _EMOJI_RE.match(body.emoji):
         raise HTTPException(400, "Invalid emoji")
-    msg = supabase.table("dm_messages").select("id,thread_id,reactions").eq("id", msg_id).single().execute()
-    if not msg.data:
+    res = supabase.table("dm_messages").select("id,thread_id,reactions").eq("id", msg_id).limit(1).execute()
+    msg = res.data[0] if (res.data or []) else None
+    if not msg:
         raise HTTPException(404, "Message not found")
-    _get_thread(msg.data["thread_id"], user)
-    reactions = msg.data.get("reactions") or {}
+    _get_thread(msg["thread_id"], user)
+    reactions = msg.get("reactions") or {}
     users = [u for u in reactions.get(body.emoji, []) if u]
     uname = user["username"]
     users = [u for u in users if u != uname] if uname in users else users + [uname]
@@ -564,12 +566,13 @@ async def toggle_dm_reaction(msg_id: str, body: DMReactBody, user: dict = Depend
 
 @router.delete("/dm/messages/{msg_id}")
 async def delete_dm_message(msg_id: str, user: dict = Depends(get_current_user)):
-    msg = supabase.table("dm_messages").select("id,sender,thread_id").eq("id", msg_id).single().execute()
-    if not msg.data:
+    res = supabase.table("dm_messages").select("id,sender,thread_id").eq("id", msg_id).limit(1).execute()
+    msg = res.data[0] if (res.data or []) else None
+    if not msg:
         raise HTTPException(404, "Message not found")
-    if msg.data["sender"] != user["username"]:
+    if msg["sender"] != user["username"]:
         raise HTTPException(403, "Not your message")
-    _get_thread(msg.data["thread_id"], user)
+    _get_thread(msg["thread_id"], user)
     supabase.table("dm_messages").delete().eq("id", msg_id).execute()
     return {"message": "Deleted"}
 

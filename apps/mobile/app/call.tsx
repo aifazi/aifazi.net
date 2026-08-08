@@ -1,8 +1,24 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocalSearchParams } from 'expo-router'
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native'
-import { RTCView } from '@livekit/react-native-webrtc'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native'
+import VideoStream from '@/src/components/VideoStream'
 import { useLiveKitCall } from '@/src/lib/livekit'
 import { useTheme } from '@/src/theme'
+import { useAuth } from '@/src/lib/auth'
+import { api } from '@/src/lib/api'
+import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
 
 function Tile({
   label,
@@ -33,7 +49,7 @@ function Tile({
       ]}
     >
       {showVideo ? (
-        <RTCView streamURL={videoUrl} objectFit="cover" mirror={isSelf} style={styles.tileVideo} />
+        <VideoStream streamURL={videoUrl} objectFit="cover" mirror={isSelf} style={styles.tileVideo} />
       ) : (
         <View style={styles.avatarWrap}>
           <Text style={{ fontSize: 28, color: c.text2 }}>{label.slice(0, 1).toUpperCase() || '?'}</Text>
@@ -54,13 +70,33 @@ function Tile({
   )
 }
 
+interface CallMessage {
+  id: string
+  sender: string
+  content?: string
+  created_at?: string
+}
+
+const POLL_MS = 4000
+
+function fmtTime(iso?: string) {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
+}
+
 export default function CallScreen() {
   const { room, name } = useLocalSearchParams<{ room: string; name?: string }>()
   const { theme } = useTheme()
   const c = theme.colors
+  const { user } = useAuth()
   const {
     status,
     error,
+    info,
     participants,
     muted,
     camOff,
@@ -68,14 +104,105 @@ export default function CallScreen() {
     screenUrl,
     localVideoUrl,
     canScreenShare,
+    setMic,
     toggleMute,
     toggleCam,
     toggleScreen,
+    listDevices,
+    switchMicDevice,
+    switchSpeakerDevice,
+    muteParticipant,
+    kickParticipant,
     leave,
   } = useLiveKitCall(room ?? null)
 
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatMsgs, setChatMsgs] = useState<CallMessage[]>([])
+  const [chatText, setChatText] = useState('')
+  const [chatSending, setChatSending] = useState(false)
+  const [roomKey, setRoomKey] = useState('')
+  const chatPoll = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const [pttActive, setPttActive] = useState(false)
+  const pttHolding = useRef(false)
+
+  const [devices, setDevices] = useState<{ mic: { id: string; label: string }[]; speaker: { id: string; label: string }[] }>({ mic: [], speaker: [] })
+  const [devOpen, setDevOpen] = useState(false)
+
+  const isStaff = user?.role === 'admin' || user?.role === 'moderator'
   const roomName = name || 'Call'
   const count = participants.length + 1
+
+  useEffect(() => {
+    if (!room) return
+    api
+      .get(`/chat/rooms/${room}/encryption-key`)
+      .then((r) => setRoomKey((r.data?.encryption_key ?? '') as string))
+      .catch(() => setRoomKey(''))
+  }, [room])
+
+  const loadChat = useCallback(async (silent = false) => {
+    if (!room) return
+    try {
+      const r = await api.get(`/chat/rooms/${room}/messages`, { params: { limit: 50 } })
+      setChatMsgs((r.data ?? []) as CallMessage[])
+    } catch (e: any) {
+      if (!silent) Alert.alert('Chat', e?.response?.data?.detail || 'Could not load chat')
+    }
+  }, [room])
+
+  useEffect(() => {
+    if (!chatOpen) return
+    loadChat()
+    chatPoll.current = setInterval(() => loadChat(true), POLL_MS)
+    return () => {
+      if (chatPoll.current) clearInterval(chatPoll.current)
+    }
+  }, [chatOpen, loadChat])
+
+  const openDevices = useCallback(async () => {
+    const [mic, speaker] = await Promise.all([listDevices('audioinput'), listDevices('audiooutput')])
+    setDevices({ mic, speaker })
+    setDevOpen(true)
+  }, [listDevices])
+
+  const sendChat = async () => {
+    const content = chatText.trim()
+    if (!content || !room) return
+    setChatSending(true)
+    try {
+      const payload = roomKey ? `ENC:${encryptText(content, roomKey)}` : content
+      await api.post(`/chat/rooms/${room}/messages`, { content: payload, type: 'text' })
+      setChatText('')
+      await loadChat(true)
+    } catch (e: any) {
+      Alert.alert('Chat', e?.response?.data?.detail || 'Failed to send')
+    } finally {
+      setChatSending(false)
+    }
+  }
+
+  const pttPressIn = () => {
+    pttHolding.current = true
+    setPttActive(true)
+    setMic(true)
+  }
+  const pttPressOut = () => {
+    pttHolding.current = false
+    setPttActive(false)
+    setMic(false)
+  }
+
+  const modAlert = (title: string, body: string, onConfirm: () => Promise<void>) => {
+    Alert.alert(title, body, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Confirm',
+        style: 'destructive',
+        onPress: () => onConfirm().catch(() => Alert.alert(title, 'Action failed')),
+      },
+    ])
+  }
 
   if (status === 'connecting') {
     return (
@@ -106,12 +233,91 @@ export default function CallScreen() {
         <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>
           {roomName}
         </Text>
-        <Text style={{ color: c.muted, fontSize: 11 }}>{count} participant{count !== 1 ? 's' : ''}</Text>
+        <Text style={{ color: c.muted, fontSize: 11 }}>
+          {count} participant{count !== 1 ? 's' : ''}
+        </Text>
+        <TouchableOpacity onPress={() => setChatOpen((v) => !v)} hitSlop={10} style={{ marginLeft: 10 }}>
+          <Text style={{ fontSize: 16, opacity: chatOpen ? 1 : 0.55 }}>💬</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={openDevices} hitSlop={10} style={{ marginLeft: 8 }}>
+          <Text style={{ fontSize: 16, opacity: 0.8 }}>⚙️</Text>
+        </TouchableOpacity>
       </View>
+
+      {chatOpen ? (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={[styles.chatPane, { borderBottomColor: c.border }]}>
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ padding: 10, paddingBottom: 12 }}
+              ref={(ref) => ref?.scrollToEnd?.({ animated: false })}
+              onContentSizeChange={() => {}}
+            >
+              {chatMsgs.length === 0 ? (
+                <Text style={{ color: c.muted, fontSize: 12, textAlign: 'center', marginTop: 20 }}>
+                  No chat yet. Say something!
+                </Text>
+              ) : (
+                chatMsgs.map((m) => {
+                  const mine = m.sender === user?.username
+                  const body = decryptIfEncrypted(m.content ?? '', roomKey)
+                  return (
+                    <View key={m.id} style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
+                      <View
+                        style={[
+                          styles.chatBubble,
+                          {
+                            backgroundColor: mine ? c.accent2 : c.bg2,
+                            borderColor: mine ? c.accent2 : c.border,
+                          },
+                        ]}
+                      >
+                        {!mine ? (
+                          <Text style={{ color: c.accent2, fontSize: 10, fontWeight: '700', marginBottom: 2 }}>
+                            {m.sender}
+                          </Text>
+                        ) : null}
+                        <Text style={{ color: mine ? '#001018' : c.text, fontSize: 13, lineHeight: 18 }}>
+                          {body || (m.content?.startsWith('ENC:') ? '(encrypted)' : m.content)}
+                        </Text>
+                        <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: 9, marginTop: 2 }}>
+                          {fmtTime(m.created_at)}
+                        </Text>
+                      </View>
+                    </View>
+                  )
+                })
+              )}
+            </ScrollView>
+            <View style={[styles.chatInputRow, { borderTopColor: c.border, backgroundColor: c.bg2 }]}>
+              <TextInput
+                value={chatText}
+                onChangeText={setChatText}
+                placeholder="Type in-call chat…"
+                placeholderTextColor={c.muted}
+                multiline
+                style={[
+                  styles.chatInput,
+                  { backgroundColor: c.bg, color: c.text, borderColor: c.border, fontFamily: theme.mono ? 'monospace' : undefined },
+                ]}
+              />
+              <TouchableOpacity
+                onPress={sendChat}
+                disabled={chatSending || !chatText.trim()}
+                style={[styles.chatSend, { backgroundColor: c.accent, opacity: chatSending || !chatText.trim() ? 0.5 : 1 }]}
+              >
+                <Text style={{ color: theme.dark ? '#000' : '#fff', fontWeight: '800', fontSize: 12 }}>
+                  {chatSending ? '…' : 'Send'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      ) : null}
 
       {screenUrl ? (
         <View style={[styles.screen, { borderBottomColor: c.border }]}>
-          <RTCView streamURL={screenUrl} objectFit="contain" style={StyleSheet.absoluteFill} />
+          <VideoStream streamURL={screenUrl} objectFit="contain" style={StyleSheet.absoluteFill} />
           <View style={styles.screenTag}>
             <Text style={{ color: '#fff', fontSize: 9 }}>🖥 Screen Share</Text>
           </View>
@@ -121,13 +327,45 @@ export default function CallScreen() {
       <ScrollView contentContainerStyle={styles.grid} style={{ flex: 1 }}>
         <Tile label="You" videoUrl={localVideoUrl} isSelf muted={muted} camOff={camOff} />
         {participants.map((p) => (
-          <Tile key={p.identity} label={p.displayName} videoUrl={p.videoUrl} speaking={p.isSpeaking} muted={!p.isMicOn} camOff={!p.isCamOn} />
+          <TouchableOpacity
+            key={p.identity}
+            activeOpacity={isStaff ? 0.7 : 1}
+            onLongPress={
+              isStaff
+                ? () => {
+                    Alert.alert(p.displayName, 'Participant actions', [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Mute mic',
+                        onPress: () => modAlert('Mute', `Mute ${p.displayName}'s microphone?`, () => muteParticipant(p.identity)),
+                      },
+                      {
+                        text: 'Kick',
+                        style: 'destructive',
+                        onPress: () => modAlert('Kick', `Kick ${p.displayName} from the call?`, () => kickParticipant(p.identity)),
+                      },
+                    ])
+                  }
+                : undefined
+            }
+          >
+            <Tile label={p.displayName} videoUrl={p.videoUrl} speaking={p.isSpeaking} muted={!p.isMicOn} camOff={!p.isCamOn} />
+          </TouchableOpacity>
         ))}
       </ScrollView>
 
       <View style={[styles.controls, { borderTopColor: c.border }]}>
+        <TouchableOpacity
+          onPress={pttPressIn}
+          onPressOut={pttPressOut}
+          onLongPress={pttPressIn}
+          delayLongPress={120}
+          style={[styles.ctl, { backgroundColor: pttActive ? c.accent : 'rgba(255,255,255,0.12)' }]}
+        >
+          <Text style={{ fontSize: 16 }}>{pttActive ? '🎙️' : '🎤'}</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={toggleMute} style={[styles.ctl, { backgroundColor: muted ? c.danger : 'rgba(255,255,255,0.12)' }]}>
-          <Text style={{ fontSize: 16 }}>{muted ? '🔇' : '🎤'}</Text>
+          <Text style={{ fontSize: 16 }}>{muted ? '🔇' : '🔊'}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={toggleCam} style={[styles.ctl, { backgroundColor: camOff ? c.danger : 'rgba(255,255,255,0.12)' }]}>
           <Text style={{ fontSize: 16 }}>{camOff ? '📷' : '📸'}</Text>
@@ -135,7 +373,7 @@ export default function CallScreen() {
         {canScreenShare && (
           <TouchableOpacity
             onPress={toggleScreen}
-            style={[styles.ctl, { backgroundColor: screenActive ? 'color-mix(in srgb, var(--green) 18%, transparent)' : 'rgba(255,255,255,0.12)', borderColor: screenActive ? c.accent : 'transparent', borderWidth: screenActive ? 2 : 0 }]}
+            style={[styles.ctl, { backgroundColor: screenActive ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.12)' }]}
           >
             <Text style={{ fontSize: 16 }}>🖥</Text>
           </TouchableOpacity>
@@ -144,6 +382,51 @@ export default function CallScreen() {
           <Text style={{ fontSize: 16 }}>❌</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal visible={devOpen} transparent animationType="slide" onRequestClose={() => setDevOpen(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: c.bg2, borderColor: c.border }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }}>Audio devices</Text>
+              <TouchableOpacity onPress={() => setDevOpen(false)} hitSlop={10}>
+                <Text style={{ color: c.danger, fontWeight: '700' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700', marginBottom: 4 }}>MICROPHONE</Text>
+            {devices.mic.length === 0 ? (
+              <Text style={{ color: c.muted, fontSize: 12, marginBottom: 8 }}>No devices found</Text>
+            ) : (
+              devices.mic.map((d) => (
+                <TouchableOpacity
+                  key={d.id}
+                  onPress={() => switchMicDevice(d.id)}
+                  style={[styles.devRow, { borderColor: c.border, backgroundColor: c.bg }]}
+                >
+                  <Text style={{ color: c.text, fontSize: 13 }} numberOfLines={1}>
+                    🎙 {d.label}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
+            <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700', marginBottom: 4, marginTop: 10 }}>SPEAKER</Text>
+            {devices.speaker.length === 0 ? (
+              <Text style={{ color: c.muted, fontSize: 12, marginBottom: 8 }}>No devices found</Text>
+            ) : (
+              devices.speaker.map((d) => (
+                <TouchableOpacity
+                  key={d.id}
+                  onPress={() => switchSpeakerDevice(d.id)}
+                  style={[styles.devRow, { borderColor: c.border, backgroundColor: c.bg }]}
+                >
+                  <Text style={{ color: c.text, fontSize: 13 }} numberOfLines={1}>
+                    🔊 {d.label}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -158,6 +441,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
+  },
+  chatPane: {
+    maxHeight: '45%',
+    borderBottomWidth: 1,
+  },
+  chatBubble: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    maxWidth: '90%',
+  },
+  chatInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    padding: 8,
+    borderTopWidth: 1,
+  },
+  chatInput: {
+    flex: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    maxHeight: 80,
+    fontSize: 13,
+  },
+  chatSend: {
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
   },
   screen: { height: 200, backgroundColor: '#000', borderBottomWidth: 1, position: 'relative' },
   screenTag: { position: 'absolute', bottom: 8, left: 12, backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 3 },
@@ -202,5 +518,23 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    padding: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderWidth: 1,
+  },
+  devRow: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 6,
   },
 })

@@ -16,9 +16,11 @@ import secrets
 import base64
 import json
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 import jwt  # PyJWT — LiveKit access tokens are standard HS256 JWTs
+import httpx
 from database import supabase
 from dependencies import get_current_user, require_staff, require_admin
 from routers.chat import _ensure_room_access, _role_allowed
@@ -249,3 +251,104 @@ async def rotate_encryption_key(
         "rotated_at": datetime.now(timezone.utc).isoformat(),
         "warning": "Messages sent before this rotation will not be decryptable with the new key. Inform users to rejoin.",
     }
+
+
+# ── LiveKit participant moderation (staff) ─────────────────────────────────────
+# Uses the LiveKit Cloud REST API (HTTP Basic auth with the API key/secret).
+# Works on LiveKit Cloud (wss://*.livekit.cloud). Muting a remote participant
+# requires muting each published microphone track by SID.
+
+_LK_CLOUD_API = "https://api.livekit.cloud"
+
+
+def _lk_headers() -> dict:
+    cred = base64.b64encode(f"{LIVEKIT_KEY}:{LIVEKIT_SECRET}".encode()).decode()
+    return {"Authorization": f"Basic {cred}", "Content-Type": "application/json"}
+
+
+def _lk_configured() -> bool:
+    if not LIVEKIT_KEY or not LIVEKIT_SECRET:
+        raise HTTPException(503, "LiveKit not configured")
+    return True
+
+
+async def _lk_list_participants(room_id: str) -> list[dict]:
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.get(f"{_LK_CLOUD_API}/v1/rooms/{quote(room_id, safe='')}/participants", headers=_lk_headers())
+        if r.status_code != 200:
+            raise HTTPException(502, "Could not reach LiveKit to list participants")
+        return (r.json() or {}).get("participants", []) or []
+
+
+def _lk_tracks(p: dict) -> list[dict]:
+    state_tracks = ((p.get("state") or {}).get("tracks") or [])
+    pubs = (p.get("publishers") or [])
+    return state_tracks or pubs
+
+
+class LkParticipantBody(BaseModel):
+    room_id: str
+    identity: str
+
+
+@router.get("/livekit/admin/room/{room_id}/participants")
+async def lk_admin_participants(room_id: str, _: dict = Depends(require_staff)):
+    """List participants currently in a voice/video room, with track info."""
+    _lk_configured()
+    parts = await _lk_list_participants(room_id)
+    out = []
+    for p in parts:
+        meta = {}
+        try:
+            meta = json.loads(p.get("metadata") or "{}")
+        except Exception:
+            pass
+        tracks = []
+        for t in _lk_tracks(p):
+            tracks.append({
+                "sid": t.get("sid"),
+                "source": t.get("source"),
+                "kind": t.get("kind"),
+                "muted": bool(t.get("muted")),
+            })
+        out.append({
+            "identity": p.get("identity"),
+            "name": p.get("name"),
+            "username": meta.get("username") or p.get("identity"),
+            "role": meta.get("role") or "member",
+            "tracks": tracks,
+        })
+    return out
+
+
+@router.post("/livekit/admin/mute")
+async def lk_admin_mute(body: LkParticipantBody, _: dict = Depends(require_staff)):
+    """Force-mute a participant's microphone in a room."""
+    _lk_configured()
+    parts = await _lk_list_participants(body.room_id)
+    target = next((p for p in parts if p.get("identity") == body.identity), None)
+    if not target:
+        raise HTTPException(404, "Participant is not in this room")
+    async with httpx.AsyncClient(timeout=10) as client:
+        for t in _lk_tracks(target):
+            if t.get("source") == "microphone" and t.get("sid"):
+                await client.post(
+                    f"{_LK_CLOUD_API}/v1/rooms/{quote(body.room_id, safe='')}/mutePublishedTrack",
+                    json={"identity": body.identity, "track_sid": t["sid"], "muted": True},
+                    headers=_lk_headers(),
+                )
+    return {"ok": True, "identity": body.identity, "room_id": body.room_id}
+
+
+@router.post("/livekit/admin/kick")
+async def lk_admin_kick(body: LkParticipantBody, _: dict = Depends(require_staff)):
+    """Disconnect a participant from a room."""
+    _lk_configured()
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.delete(
+            f"{_LK_CLOUD_API}/v1/rooms/{quote(body.room_id, safe='')}/participants/{quote(body.identity, safe='')}",
+            headers=_lk_headers(),
+        )
+        if r.status_code not in (200, 204):
+            raise HTTPException(502, "Could not disconnect participant")
+    return {"ok": True, "identity": body.identity, "room_id": body.room_id}

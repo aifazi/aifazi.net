@@ -6,7 +6,7 @@ FIX #5: bcrypt errors are no longer silently swallowed — logged and surfaced a
 """
 import os, re, secrets, asyncio, bcrypt as _bcrypt, pyotp, qrcode, io, base64, hmac as _hmac, logging, urllib.parse as _urlparse
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, File
 from fastapi.responses import RedirectResponse as _Redir
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
@@ -1586,6 +1586,79 @@ async def update_profile(body: ProfileBody, creds: HTTPAuthorizationCredentials 
         await _queue_activation_email(email, verify_url)
     _record_user_activity(user_id, username, "profile_update")
     return {"ok": True, "email_verification_sent": email_changed, "user": {"_id": user["id"], "id": user["id"], "username": user["username"], "email": user.get("email"), "pending_email": user.get("pending_email") or None, "email_verified": user.get("email_verified", False), "role": (access or {}).get("role") or user.get("role", "user"), "avatar": user.get("avatar") or "", "bio": user.get("bio") or "", "_staff": bool(access), "staff_account": bool(access), "permissions": normalize_permissions((access or {}).get("permissions"))}}
+
+_AVATAR_MAX_BYTES = 5 * 1024 * 1024  # 5 MB
+_AVATAR_MAGIC = [
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"GIF87a", "image/gif"),
+    (b"GIF89a", "image/gif"),
+    (b"RIFF", "image/webp"),
+]
+
+@router.post("/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+):
+    """Upload a profile avatar image (image/jpeg|png|gif|webp, max 5 MB).
+
+    Reuses the shared CDN media upload (upload_media) so avatars land in the
+    active provider, then points users.avatar at the public URL.
+    """
+    payload = _get_forum_user(creds)
+    if not payload:
+        raise HTTPException(401, "Not authenticated")
+
+    content = await file.read()
+    if len(content) > _AVATAR_MAX_BYTES:
+        raise HTTPException(413, "Avatar image must be 5 MB or smaller")
+    if not content:
+        raise HTTPException(400, "Empty file")
+
+    mimetype = ''
+    for magic, mime in _AVATAR_MAGIC:
+        if content.startswith(magic):
+            if magic == b"RIFF" and len(content) >= 12:
+                mimetype = "image/webp" if content[8:12] == b"WEBP" else ''
+            else:
+                mimetype = mime
+            break
+    if not mimetype:
+        raise HTTPException(415, "Avatar must be a JPEG, PNG, GIF, or WebP image (SVG is not allowed)")
+
+    user_id = payload.get("id")
+    access = resolve_staff_access(payload)
+    if access and access.get("role") == "admin" and not user_id:
+        admin_name = os.getenv("ADMIN_USERNAME", "admin")
+        raise HTTPException(400, "Admin avatars are configured in the staff profile settings")
+    if access and access.get("staff_id") and not access.get("forum_user_id"):
+        target_id = access["staff_id"]
+        col = "profile_avatar"
+    else:
+        if not user_id:
+            raise HTTPException(400, "A user profile is required")
+        target_id = user_id
+        col = "avatar"
+
+    safe = (file.filename or 'img').replace('\\', '/').rsplit('/', 1)[-1].replace('..', '').replace('/', '_')[:60] or 'img'
+    filename = f"avatar_{secrets.token_hex(8)}_{safe}"
+    from routers.cdn_upload import upload_media
+    url, storage_path, provider = await upload_media(
+        content, filename, mimetype, folder="avatars"
+    )
+
+    res = supabase.table("users").update({col: url[:500]}).eq("id", target_id).execute()
+    if not res.data:
+        raise HTTPException(404, "User not found")
+
+    return {
+        "ok": True,
+        "url": url,
+        "storage_path": storage_path,
+        "provider": provider,
+        "user": {"_id": res.data[0]["id"], "id": res.data[0]["id"], "username": res.data[0].get("username"), "avatar": res.data[0].get("avatar") or ""},
+    }
 
 @router.post("/change-password")
 async def change_password(body: ChangePasswordBody, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):

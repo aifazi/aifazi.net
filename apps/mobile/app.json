@@ -27,15 +27,7 @@
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_MEDIA_PROJECTION",
         "WAKE_LOCK",
-        "SYSTEM_ALERT_WINDOW",
-        "android.permission.ACCESS_NETWORK_STATE",
-        "android.permission.CAMERA",
-        "android.permission.INTERNET",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.SYSTEM_ALERT_WINDOW",
-        "android.permission.WAKE_LOCK",
-        "android.permission.BLUETOOTH"
+        "SYSTEM_ALERT_WINDOW"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -93,6 +85,12 @@
         "projectId": "4cd9069e-469a-410f-90d3-942f4901470c"
       }
     },
-    "owner": "aifazi"
+    "owner": "aifazi",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4cd9069e-469a-410f-90d3-942f4901470c"
+    }
   }
 }
