@@ -31,6 +31,7 @@ const Changelog = dynamic(() => import('./Changelog').then(m => m.default || m),
 const FiveMPanel = dynamic(() => import('./FiveMPanel').then(m => m.default || m), { ssr: false })
 const StoreCenter = dynamic(() => import('./storeModules/StoreCenter').then(m => m.default || m), { ssr: false })
 const MonitoringPanel = dynamic(() => import('./MonitoringPanel').then(m => m.default || m), { ssr: false })
+const ChatPanel = dynamic(() => import('./ChatPanel').then(m => m.default || m), { ssr: false })
 
 function StatsGrid({ dashStats, isMobile, setView }) {
   const ref = useStaggerIn('.stat-card', { stagger: 80, distance: 16, duration: 480 })
@@ -84,6 +85,7 @@ const NAV_PERMISSION = {
   home:'home', posts:'content.posts', editor:'content.editor', media:'content.media', pages:'content.pages', themes:'content.themes',
   content:['content.posts', 'content.editor', 'community.forum'], communications:['community.contacts', 'community.newsletter'],
   contacts:'community.contacts', staff:'community.staff', forum:'community.forum', chat:'community.chat', newsletter:'community.newsletter',
+  'chat-admin':'community.chat',
   db:'system.db', delivery:['system.mail', 'system.cdn'], mail:'system.mail', cdn:'system.cdn',
   helpdesk:'support.helpdesk', store:'store', fivem:'fivem.status', changelog:'changelog',
   monitoring:'system.monitor',
@@ -451,6 +453,7 @@ function Dashboard({ onLogout }) {
     { key: 'communications', label: 'Communications', group: 'COMMUNITY', icon: '📧',  badge: null, aliases: ['contacts', 'newsletter'] },
     { key: 'staff',        label: 'Staff',         group: 'COMMUNITY',  icon: '👥',  badge: null },
     { key: 'chat',         label: 'Chat',          group: 'COMMUNITY',  icon: '🗨️',  badge: null },
+    { key: 'chat-admin',   label: 'Chat Mgmt',     group: 'COMMUNITY',  icon: '🛠️',  badge: null },
     { key: 'db',           label: 'DB Monitor',    group: 'SYSTEM',     icon: '🗄️',     badge: null },
     { key: 'stats',        label: 'Analytics',     group: 'SYSTEM',     icon: '📈', badge: null },
     { key: 'audit',        label: 'Audit Log',     group: 'SYSTEM',     icon: '🛡️', badge: null },
@@ -1131,6 +1134,13 @@ function Dashboard({ onLogout }) {
           {(view === 'delivery' || view === 'mail' || view === 'cdn') && adminUser && (
             <PanelErrorBoundary label="Mail & CDN">
               <Mail initialTab={view === 'cdn' ? 'cdn' : 'queue'} />
+            </PanelErrorBoundary>
+          )}
+
+          {/* CHAT MANAGEMENT */}
+          {view === 'chat-admin' && adminUser && (
+            <PanelErrorBoundary label="Chat Management">
+              <ChatPanel />
             </PanelErrorBoundary>
           )}
 
