@@ -43,6 +43,7 @@ export default function StoreScreen() {
   const [cats, setCats] = useState<StoreCat[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [cat, setCat] = useState<string>('')
+  const [cartCount, setCartCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
 
@@ -57,6 +58,7 @@ export default function StoreScreen() {
   useFocusEffect(
     useCallback(() => {
       load()
+      api.get('/store/cart').then((r) => setCartCount(r.data?.count ?? 0)).catch(() => {})
     }, [load]),
   )
 
@@ -69,7 +71,15 @@ export default function StoreScreen() {
 
   return (
     <Screen scroll={false}>
-      <Title>Store</Title>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Title>Store</Title>
+        <TouchableOpacity
+          onPress={() => router.push('/store-cart' as Href)}
+          style={{ marginBottom: 12, paddingHorizontal: 12, paddingVertical: 8, borderRadius: theme.mono ? 0 : 8, backgroundColor: c.bg2, borderWidth: 1, borderColor: c.border }}
+        >
+          <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }}>🛒 {cartCount > 0 ? `(${cartCount})` : ''}</Text>
+        </TouchableOpacity>
+      </View>
       {cats.length > 0 ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
           <TouchableOpacity

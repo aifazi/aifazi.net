@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Btn, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
+import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 
 interface Variant {
@@ -52,6 +53,8 @@ export default function StoreItemScreen() {
   const [variant, setVariant] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const [adding, setAdding] = useState(false)
+  const { isAuthed } = useAuth()
 
   const load = useCallback(() => {
     if (!slug) return
@@ -96,6 +99,37 @@ export default function StoreItemScreen() {
   const priceCents = activeVariant?.price_cents ?? p.price_cents ?? 0
   const compareCents = activeVariant ? null : p.compare_at_cents ?? null
   const displayImage = activeVariant?.image_url || p.image_url
+
+  const addToCart = async () => {
+    if (!p) return
+    if (!isAuthed) {
+      Alert.alert('Login required', 'Create an account or sign in to add items to your cart.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign in', onPress: () => router.push('/auth/login') },
+      ])
+      return
+    }
+    if (!p.in_stock && !activeVariant?.in_stock) {
+      Alert.alert('Out of stock', `${p.name} is currently out of stock.`)
+      return
+    }
+    setAdding(true)
+    try {
+      await api.post('/store/cart', {
+        product_id: p.id,
+        quantity: 1,
+        variant_id: variant || null,
+      })
+      Alert.alert('Added to cart', `${p.name} is in your cart.`, [
+        { text: 'Keep shopping', style: 'cancel' },
+        { text: 'View cart', onPress: () => router.push('/store-cart') },
+      ])
+    } catch (e: any) {
+      Alert.alert('Could not add to cart', e?.response?.data?.detail || e?.message || 'Try again.')
+    } finally {
+      setAdding(false)
+    }
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
@@ -159,7 +193,7 @@ export default function StoreItemScreen() {
 
         {p.description ? <Text style={{ color: c.text2, fontSize: 13, lineHeight: 19, marginBottom: 14 }}>{p.description}</Text> : null}
 
-        <Btn title="Add to cart" onPress={() => {}} />
+        <Btn title={adding ? 'Adding…' : 'Add to cart'} onPress={addToCart} disabled={adding} />
 
         <Text style={{ color: c.text, fontSize: 14, fontWeight: '800', marginTop: 22, marginBottom: 8 }}>Reviews</Text>
         {reviews.length === 0 ? (
