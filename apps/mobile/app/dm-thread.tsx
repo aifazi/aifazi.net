@@ -9,6 +9,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -161,6 +162,33 @@ export default function DMThreadScreen() {
 
   const isMine = (m: DMMessage) => m.sender === user?.username
 
+  const openMenu = () => {
+    if (!peer) return
+    Alert.alert(peer, 'Direct message options', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Block user', style: 'destructive', onPress: () => blockPeer() },
+    ])
+  }
+
+  const blockPeer = async () => {
+    if (!peer) return
+    Alert.alert('Block user', `Stop ${peer} from messaging you? Existing DMs are kept.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Block',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.post('/chat/dm/blocks', { username: peer })
+            Alert.alert('Blocked', `You've blocked ${peer}.`, [{ text: 'OK', onPress: () => router.back() }])
+          } catch (e: any) {
+            setErr(e?.response?.data?.detail || 'Could not block user')
+          }
+        },
+      },
+    ])
+  }
+
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
       <View style={[styles.header, { borderBottomColor: c.border }]}>
@@ -170,6 +198,9 @@ export default function DMThreadScreen() {
         <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>
           {peer || 'Direct message'}
         </Text>
+        <TouchableOpacity onPress={openMenu} hitSlop={10}>
+          <Text style={{ color: c.muted, fontSize: 18 }}>⋯</Text>
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView

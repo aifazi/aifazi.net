@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native'
+import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle } from 'react-native'
 import { useTheme } from '@/src/theme'
 
 export function Btn({
@@ -45,7 +45,19 @@ export function Btn({
   )
 }
 
-export function Card({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+export function Card({
+  children,
+  style,
+  title,
+  subtitle,
+  headerRight,
+}: {
+  children: ReactNode
+  style?: ViewStyle
+  title?: string
+  subtitle?: string
+  headerRight?: ReactNode
+}) {
   const { theme } = useTheme()
   const c = theme.colors
   return (
@@ -62,6 +74,17 @@ export function Card({ children, style }: { children: ReactNode; style?: ViewSty
         style,
       ]}
     >
+      {title ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined }}>
+              {title}
+            </Text>
+            {subtitle ? <Muted>{subtitle}</Muted> : null}
+          </View>
+          {headerRight ?? null}
+        </View>
+      ) : null}
       {children}
     </View>
   )
@@ -86,10 +109,13 @@ export function Title({ children }: { children: ReactNode }) {
   )
 }
 
-export function Muted({ children }: { children: ReactNode }) {
+export function Muted({ children, style, numberOfLines }: { children: ReactNode; style?: TextStyle; numberOfLines?: number }) {
   const { theme } = useTheme()
   return (
-    <Text style={{ color: theme.colors.muted, fontSize: 12, fontFamily: theme.mono ? 'monospace' : undefined }}>
+    <Text
+      numberOfLines={numberOfLines}
+      style={[{ color: theme.colors.muted, fontSize: 12, fontFamily: theme.mono ? 'monospace' : undefined }, style]}
+    >
       {children}
     </Text>
   )

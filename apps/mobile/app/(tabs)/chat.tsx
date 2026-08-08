@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, TextInput, SectionList } from 'react-native'
+import { useState, useCallback } from 'react'
+import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, SectionList } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
+import { useFocusEffect } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
@@ -13,6 +14,10 @@ interface Room {
   name: string
   type: string
   description?: string
+  emoji?: string
+  is_private?: boolean
+  read_only?: boolean
+  access?: { mode: string; roles: string[]; users: string[] }
 }
 
 interface DMThread {
@@ -22,6 +27,7 @@ interface DMThread {
   peer_role?: string
   last_message?: string
   last_message_at?: string
+  unread?: number
 }
 
 function roomIcon(type: string) {
@@ -30,20 +36,49 @@ function roomIcon(type: string) {
   return '💬'
 }
 
+function Avatar({ name, size = 30 }: { name?: string; size?: number }) {
+  const { theme } = useTheme()
+  const c = theme.colors
+  const initial = (name || '?').slice(0, 1).toUpperCase()
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: c.accent2,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Text style={{ color: '#001018', fontWeight: '800', fontSize: size * 0.45 }}>{initial}</Text>
+    </View>
+  )
+}
+
+function AccessBadge({ room }: { room: Room }) {
+  const { theme } = useTheme()
+  const c = theme.colors
+  const mode = room.access?.mode ?? (room.is_private ? 'users' : 'public')
+  if (mode === 'public') return null
+  const icon = mode === 'users' ? '🔒' : mode === 'roles' ? '🛡️' : '🔐'
+  return <Text style={{ fontSize: 13 }}>{icon}</Text>
+}
+
 export default function ChatScreen() {
   const { theme } = useTheme()
   const c = theme.colors
-  const { isAuthed } = useAuth()
+  const { isAuthed, user } = useAuth()
   const router = useRouter()
   const [rooms, setRooms] = useState<Room[]>([])
   const [dms, setDms] = useState<DMThread[]>([])
+  const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
-  const [showNewDm, setShowNewDm] = useState(false)
-  const [dmTarget, setDmTarget] = useState('')
-  const [dmBusy, setDmBusy] = useState(false)
 
-  useEffect(() => {
+  const isStaff = user?.role === 'admin' || user?.role === 'moderator'
+
+  const load = useCallback(() => {
     if (!isAuthed) {
       setLoading(false)
       return
@@ -58,8 +93,18 @@ export default function ChatScreen() {
       .get('/chat/dm/threads')
       .then((r) => setDms((r.data ?? []) as DMThread[]))
       .catch(() => setDms([]))
+    api
+      .get('/chat/dm/requests')
+      .then((r) => setRequests((r.data ?? []) as any[]))
+      .catch(() => setRequests([]))
       .finally(() => setLoading(false))
   }, [isAuthed])
+
+  useFocusEffect(
+    useCallback(() => {
+      load()
+    }, [load]),
+  )
 
   const open = (room: Room) => {
     const params = `room=${room.id}&name=${encodeURIComponent(room.name)}`
@@ -69,24 +114,6 @@ export default function ChatScreen() {
 
   const openDm = (dm: DMThread) => {
     router.push(`/dm-thread?thread_id=${dm.id}&peer=${encodeURIComponent(dm.peer)}` as Href)
-  }
-
-  const startDm = async () => {
-    const target = dmTarget.trim()
-    if (!target) return
-    setDmBusy(true)
-    try {
-      const r = await api.post('/chat/dm/threads', { username: target })
-      const t = (r.data ?? {}) as DMThread
-      setDmTarget('')
-      setShowNewDm(false)
-      router.push(`/dm-thread?thread_id=${t.id}&peer=${encodeURIComponent(t.peer)}` as Href)
-      api.get('/chat/dm/threads').then((x) => setDms((x.data ?? []) as DMThread[])).catch(() => setDms([]))
-    } catch (e: any) {
-      setErr(e?.response?.data?.detail || 'Could not start DM')
-    } finally {
-      setDmBusy(false)
-    }
   }
 
   if (!isAuthed) {
@@ -102,92 +129,113 @@ export default function ChatScreen() {
 
   return (
     <Screen scroll={false}>
-      <Title>Chat rooms</Title>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Title>Chat rooms</Title>
+        {isStaff ? (
+          <TouchableOpacity onPress={() => router.push('/channel-manage' as Href)} hitSlop={8}>
+            <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>Manage ⚙</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
       {loading ? (
         <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
-      ) : err && rooms.length === 0 && dms.length === 0 ? (
-        <Muted>{err}</Muted>
       ) : (
-        <FlatList
-          data={rooms}
-          keyExtractor={(item) => item.name}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text style={{ color: c.text, fontSize: 16, fontWeight: '800' }}>Direct messages</Text>
-                <TouchableOpacity onPress={() => setShowNewDm((v) => !v)} hitSlop={8}>
-                  <Text style={{ color: c.accent, fontWeight: '700' }}>{showNewDm ? 'Cancel' : '+ New'}</Text>
-                </TouchableOpacity>
-              </View>
-              {showNewDm ? (
+        <SectionList
+          sections={[
+            {
+              title: 'Direct messages',
+              data: dms as any[],
+              headerExtra: (
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TouchableOpacity onPress={() => router.push('/dm-new' as Href)} hitSlop={8}>
+                    <Text style={{ color: c.accent, fontWeight: '700' }}>+ New</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => router.push('/dm-requests' as Href)} hitSlop={8}>
+                    <Text style={{ color: c.accent, fontWeight: '700' }}>
+                      Requests{requests.length > 0 ? ` (${requests.length})` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ),
+              renderItem: ({ item }: { item: DMThread }) => (
                 <Card>
-                  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                    <TextInput
-                      value={dmTarget}
-                      onChangeText={setDmTarget}
-                      placeholder="username"
-                      placeholderTextColor={c.muted}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      style={{
-                        flex: 1,
-                        backgroundColor: c.bg,
-                        color: c.text,
-                        borderColor: c.border,
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        paddingHorizontal: 10,
-                        paddingVertical: 8,
-                        fontSize: 14,
-                      }}
-                    />
+                  <TouchableOpacity onPress={() => openDm(item)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Avatar name={item.peer} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+                        {item.peer}
+                      </Text>
+                      {item.last_message ? <Muted numberOfLines={1}>{item.last_message}</Muted> : null}
+                    </View>
+                    {item.unread ? (
+                      <View
+                        style={{
+                          backgroundColor: c.accent,
+                          borderRadius: 10,
+                          paddingHorizontal: 7,
+                          paddingVertical: 2,
+                          minWidth: 20,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ color: theme.dark ? '#000' : '#fff', fontSize: 11, fontWeight: '800' }}>
+                          {item.unread}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                </Card>
+              ),
+              empty: dms.length === 0 ? <Muted>No DMs yet — tap “+ New” to message someone.</Muted> : null,
+            },
+            {
+              title: 'Rooms',
+              data: rooms as any[],
+              renderItem: ({ item }: { item: Room }) => (
+                <Card>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Text style={{ fontSize: 16 }}>{item.emoji || roomIcon(item.type)}</Text>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                        <AccessBadge room={item} />
+                        {item.read_only ? <Text style={{ color: c.muted, fontSize: 11 }}>🔇</Text> : null}
+                      </View>
+                      {item.description ? <Muted numberOfLines={1}>{item.description}</Muted> : null}
+                    </View>
                     <Btn
-                      title={dmBusy ? '…' : 'Start'}
-                      onPress={startDm}
-                      disabled={dmBusy || !dmTarget.trim()}
+                      title={item.type === 'text' ? 'Open' : 'Join'}
+                      onPress={() => open(item)}
                       style={{ paddingVertical: 8, paddingHorizontal: 14 }}
                     />
                   </View>
                 </Card>
-              ) : null}
-              {dms.length === 0 ? (
-                <Muted>No DMs yet — tap “+ New” to message someone.</Muted>
-              ) : (
-                dms.map((dm) => (
-                  <Card key={dm.id}>
-                    <TouchableOpacity onPress={() => openDm(dm)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                      <Text style={{ fontSize: 16 }}>👤</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }}>{dm.peer}</Text>
-                        {dm.last_message ? <Muted>{dm.last_message}</Muted> : null}
-                      </View>
-                    </TouchableOpacity>
-                  </Card>
-                ))
-              )}
-              <Text style={{ color: c.text, fontSize: 16, fontWeight: '800', marginTop: 20, marginBottom: 8 }}>
-                Rooms
-              </Text>
+              ),
+              empty: rooms.length === 0 ? <Muted>{err || 'No chat rooms yet.'}</Muted> : null,
+            },
+          ] as any}
+          keyExtractor={(item: any) => item.id}
+          stickySectionHeadersEnabled={false}
+          renderSectionHeader={({ section }) => (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginTop: section.title === 'Direct messages' ? 0 : 20,
+                marginBottom: 8,
+              }}
+            >
+              <Text style={{ color: c.text, fontSize: 16, fontWeight: '800' }}>{section.title}</Text>
+              {section.headerExtra ?? null}
             </View>
-          }
-          renderItem={({ item }) => (
-            <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Text style={{ fontSize: 16 }}>{roomIcon(item.type)}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }}>{item.name}</Text>
-                  {item.description ? <Muted>{item.description}</Muted> : null}
-                </View>
-                <Btn
-                  title={item.type === 'text' ? 'Open' : 'Join'}
-                  onPress={() => open(item)}
-                  style={{ paddingVertical: 8, paddingHorizontal: 14 }}
-                />
-              </View>
-            </Card>
           )}
-          ListEmptyComponent={<Muted>No chat rooms yet.</Muted>}
+          renderSectionFooter={({ section }: any) =>
+            section.empty ? <View style={{ paddingBottom: 4 }}>{section.empty}</View> : null
+          }
         />
       )}
     </Screen>

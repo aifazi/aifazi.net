@@ -11,6 +11,15 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
   const txtChs = rooms.filter(r => r.type !== 'voice' && r.type !== 'video')
   const vcChs = rooms.filter(r => r.type === 'voice' || r.type === 'video')
 
+  const accessIcon = (r) => {
+    const a = r.access
+    if (r.is_private && !a?.roles?.length && !a?.users?.length) return '🔒'
+    if (a?.mode === 'mixed') return '🔐'
+    if (a?.mode === 'users') return '👤'
+    if (a?.mode === 'roles') return '🛡️'
+    return null
+  }
+
   const handleChannelCtx = (e, r) => {
     e.preventDefault()
     e.stopPropagation()
@@ -50,6 +59,7 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
                       fontFamily: T.display, fontSize: 13 }}>
                     <span style={{ fontSize: 14 }}>{r.type === 'video' ? '📹' : '🔊'}</span>
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                    {accessIcon(r) && <span style={{ fontSize: 10, flexShrink: 0 }}>{accessIcon(r)}</span>}
                     {people.length > 0 && <span style={{ fontFamily: T.mono, fontSize: 9, color: T.accent }}>{people.length}</span>}
                     {callRoom?.id === r.id && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#23d160', flexShrink: 0 }} />}
                   </button>
@@ -83,6 +93,7 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
               fontFamily: T.display, fontSize: 13 }}>
             <span style={{ fontSize: 12 }}>{r.emoji || '#'}</span>
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+            {accessIcon(r) && <span style={{ fontSize: 10, flexShrink: 0 }}>{accessIcon(r)}</span>}
             {unread[r.id] > 0 && <span style={{ background: T.accent, color: '#000', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, fontFamily: T.mono }}>{unread[r.id]}</span>}
           </button>
         ))}

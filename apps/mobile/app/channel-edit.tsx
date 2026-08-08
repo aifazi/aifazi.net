@@ -1,0 +1,630 @@
+import { useEffect, useState, useCallback } from 'react'
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Switch,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from 'react-native'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { Card, Muted, Btn } from '@/src/components/ui'
+import { useTheme } from '@/src/theme'
+import { useAuth } from '@/src/lib/auth'
+import { api } from '@/src/lib/api'
+
+const PLATFORM_ROLES = ['member', 'admin', 'moderator', 'editor', 'chat']
+const ROOM_PERMS = [
+  'read_messages',
+  'send_messages',
+  'manage_messages',
+  'manage_members',
+  'manage_roles',
+  'voice_speak',
+  'voice_screen_share',
+]
+const TYPES = ['text', 'voice', 'video']
+const MODES: { key: string; label: string }[] = [
+  { key: 'public', label: 'Public' },
+  { key: 'roles', label: 'Roles' },
+  { key: 'users', label: 'Users' },
+  { key: 'mixed', label: 'Mixed' },
+  { key: 'closed', label: 'Closed' },
+]
+
+interface CustomRole {
+  id: string
+  name: string
+  color: string
+  permissions: string[]
+}
+interface Member {
+  username: string
+  role: string
+  joined_at?: string | null
+}
+
+function toggle<T>(arr: T[], v: T): T[] {
+  return arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]
+}
+
+export default function ChannelEditScreen() {
+  const { room_id } = useLocalSearchParams<{ room_id?: string }>()
+  const router = useRouter()
+  const { theme } = useTheme()
+  const c = theme.colors
+  const { user } = useAuth()
+  const isStaff = user?.role === 'admin' || user?.role === 'moderator'
+
+  const [loading, setLoading] = useState(!!room_id)
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState('')
+
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [emoji, setEmoji] = useState('#')
+  const [color, setColor] = useState('#00ff88')
+  const [type, setType] = useState('text')
+  const [slowMode, setSlowMode] = useState('0')
+  const [readOnly, setReadOnly] = useState(false)
+
+  const [mode, setMode] = useState('public')
+  const [allowedRoles, setAllowedRoles] = useState<string[]>([])
+  const [allowedUsers, setAllowedUsers] = useState<string[]>([])
+  const [speakRoles, setSpeakRoles] = useState<string[]>([])
+  const [screenShareRoles, setScreenShareRoles] = useState<string[]>([])
+
+  const [roles, setRoles] = useState<CustomRole[]>([])
+  const [members, setMembers] = useState<Member[]>([])
+  const [roleEditor, setRoleEditor] = useState<CustomRole | null>(null)
+  const [searchQ, setSearchQ] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [inviteQ, setInviteQ] = useState('')
+  const [inviteResults, setInviteResults] = useState<any[]>([])
+
+  const load = useCallback(async () => {
+    if (!room_id) return
+    try {
+      const [roomsR, rolesR, membersR] = await Promise.all([
+        api.get('/chat/rooms'),
+        api.get(`/chat/rooms/${room_id}/roles`),
+        api.get(`/chat/rooms/${room_id}/members`),
+      ])
+      const room = (roomsR.data ?? []).find((r: any) => r.id === room_id)
+      if (room) {
+        setName(room.name ?? '')
+        setDescription(room.description ?? '')
+        setEmoji(room.emoji ?? '#')
+        setColor(room.color ?? '#00ff88')
+        setType(room.type ?? 'text')
+        setSlowMode(String(room.slow_mode ?? 0))
+        setReadOnly(!!room.read_only)
+        const ar = room.allowed_roles ?? []
+        const au = room.allowed_users ?? []
+        setAllowedRoles(ar)
+        setAllowedUsers(au)
+        setSpeakRoles(room.speak_roles ?? (room.type !== 'text' ? ar : []))
+        setScreenShareRoles(room.screen_share_roles ?? [])
+        setMode(room.is_private && !ar.length && !au.length ? 'closed' : !ar.length && !au.length ? 'public' : ar.length && au.length ? 'mixed' : ar.length ? 'roles' : 'users')
+      }
+      setRoles((rolesR.data ?? []) as CustomRole[])
+      setMembers((membersR.data ?? []) as Member[])
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not load room')
+    } finally {
+      setLoading(false)
+    }
+  }, [room_id])
+
+  useEffect(() => {
+    if (room_id) load()
+  }, [room_id, load])
+
+  const changeMode = (m: string) => {
+    setMode(m)
+    if (m === 'public') {
+      setAllowedRoles([])
+      setAllowedUsers([])
+    } else if (m === 'roles') {
+      setAllowedUsers([])
+    } else if (m === 'users') {
+      setAllowedRoles([])
+    } else if (m === 'closed') {
+      setAllowedRoles([])
+      setAllowedUsers([])
+    }
+  }
+
+  const doSearch = async (q: string, setQ: (v: string) => void, setRes: (r: any[]) => void) => {
+    setQ(q)
+    if (!q.trim()) {
+      setRes([])
+      return
+    }
+    try {
+      const r = await api.get('/chat/users/search', { params: { q: q.trim() } })
+      setRes(r.data ?? [])
+    } catch {
+      setRes([])
+    }
+  }
+
+  const save = async () => {
+    if (!name.trim()) {
+      setErr('Channel name is required')
+      return
+    }
+    setSaving(true)
+    setErr('')
+    const body = {
+      name: name.trim(),
+      description,
+      color,
+      emoji: emoji || '#',
+      is_private: mode === 'closed',
+      allowed_users: allowedUsers,
+      allowed_roles: allowedRoles,
+      speak_roles: type === 'text' ? [] : speakRoles,
+      screen_share_roles: type === 'text' ? [] : screenShareRoles,
+      type,
+      slow_mode: parseInt(slowMode || '0', 10) || 0,
+      read_only: readOnly,
+    }
+    try {
+      if (room_id) await api.put(`/chat/rooms/${room_id}`, body)
+      else await api.post('/chat/rooms', body)
+      Alert.alert('Saved', 'Channel updated.', [{ text: 'OK', onPress: () => router.back() }])
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not save channel')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const removeRoom = async () => {
+    if (!room_id) return
+    Alert.alert('Delete channel', `Delete "${name}"? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.delete(`/chat/rooms/${room_id}`)
+            router.back()
+          } catch (e: any) {
+            setErr(e?.response?.data?.detail || 'Could not delete channel')
+          }
+        },
+      },
+    ])
+  }
+
+  const saveRole = async () => {
+    if (!roleEditor || !room_id || !roleEditor.name.trim()) return
+    const body = { name: roleEditor.name.trim(), color: roleEditor.color, permissions: roleEditor.permissions }
+    try {
+      if (!roleEditor.id) await api.post(`/chat/rooms/${room_id}/roles`, body)
+      else await api.put(`/chat/rooms/${room_id}/roles/${roleEditor.id}`, body)
+      setRoleEditor(null)
+      const r = await api.get(`/chat/rooms/${room_id}/roles`)
+      setRoles(r.data ?? [])
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not save role')
+    }
+  }
+
+  const deleteRole = async (r: CustomRole) => {
+    if (!room_id) return
+    try {
+      await api.delete(`/chat/rooms/${room_id}/roles/${r.id}`)
+      setRoles((prev) => prev.filter((x) => x.id !== r.id))
+      setRoleEditor(null)
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not delete role')
+    }
+  }
+
+  const changeMemberRole = (m: Member) => {
+    if (!room_id) return
+    const opts = [...roles.map((r) => r.name), 'member', 'moderator']
+    Alert.alert(`Role for ${m.username}`, 'Choose a role', [
+      ...opts.map((r) => ({
+        text: r,
+        onPress: async () => {
+          try {
+            await api.patch(`/chat/rooms/${room_id}/members/${encodeURIComponent(m.username)}/role`, { name: r })
+            setMembers((prev) => prev.map((x) => (x.username === m.username ? { ...x, role: r } : x)))
+          } catch (e: any) {
+            setErr(e?.response?.data?.detail || 'Could not change role')
+          }
+        },
+      })),
+      { text: 'Cancel', style: 'cancel' },
+    ])
+  }
+
+  const removeMember = (m: Member) => {
+    if (!room_id) return
+    Alert.alert('Remove member', `Remove ${m.username} from this channel?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.post(`/chat/rooms/${room_id}/kick`, { username: m.username })
+            setMembers((prev) => prev.filter((x) => x.username !== m.username))
+          } catch (e: any) {
+            setErr(e?.response?.data?.detail || 'Could not remove member')
+          }
+        },
+      },
+    ])
+  }
+
+  const invite = async (username: string) => {
+    if (!room_id) return
+    try {
+      await api.post(`/chat/rooms/${room_id}/invite`, { username, role: 'member' })
+      setInviteQ('')
+      setInviteResults([])
+      const r = await api.get(`/chat/rooms/${room_id}/members`)
+      setMembers(r.data ?? [])
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not invite user')
+    }
+  }
+
+  if (!isStaff) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
+        <Muted style={{ textAlign: 'center', marginTop: 40 }}>Staff only.</Muted>
+      </SafeAreaView>
+    )
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          borderBottomWidth: 1,
+          borderBottomColor: c.border,
+        }}
+      >
+        <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
+          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+        </TouchableOpacity>
+        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }}>
+          {room_id ? 'Edit channel' : 'New channel'}
+        </Text>
+        <Btn title="Save" onPress={save} disabled={saving} style={{ paddingVertical: 7, paddingHorizontal: 14 }} />
+      </View>
+
+      {loading ? (
+        <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
+      ) : (
+        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 60 }}>
+          {err ? <Muted style={{ marginBottom: 10 }}>{err}</Muted> : null}
+
+          <Card title="Details">
+            <View style={{ gap: 8 }}>
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="Channel name"
+                placeholderTextColor={c.muted}
+                style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10 }}
+              />
+              <TextInput
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Description"
+                placeholderTextColor={c.muted}
+                style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10 }}
+              />
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TextInput
+                  value={emoji}
+                  onChangeText={setEmoji}
+                  placeholder="👑"
+                  placeholderTextColor={c.muted}
+                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10, width: 70, textAlign: 'center' }}
+                />
+                <TextInput
+                  value={color}
+                  onChangeText={setColor}
+                  placeholder="#00ff88"
+                  placeholderTextColor={c.muted}
+                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10, flex: 1 }}
+                />
+              </View>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                {TYPES.map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    onPress={() => setType(t)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 8,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: type === t ? c.accent : c.border,
+                      backgroundColor: type === t ? c.accent2 : 'transparent',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: type === t ? '#001018' : c.text, fontWeight: '700', fontSize: 13 }}>
+                      {t === 'text' ? '💬 Text' : t === 'voice' ? '🔊 Voice' : '📹 Video'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ color: c.text, width: 100, fontSize: 13 }}>Slow mode (s)</Text>
+                <TextInput
+                  value={slowMode}
+                  onChangeText={setSlowMode}
+                  keyboardType="number-pad"
+                  placeholderTextColor={c.muted}
+                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 8, flex: 1 }}
+                />
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={{ color: c.text, fontSize: 13 }}>Read-only (staff + privileged can post)</Text>
+                <Switch value={readOnly} onValueChange={setReadOnly} trackColor={{ true: c.accent }} />
+              </View>
+            </View>
+          </Card>
+
+          <Card title="Who can access" subtitle="Roles and/or users can open this channel">
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+              {MODES.map((m) => (
+                <TouchableOpacity
+                  key={m.key}
+                  onPress={() => changeMode(m.key)}
+                  style={{
+                    paddingVertical: 7,
+                    paddingHorizontal: 12,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: mode === m.key ? c.accent : c.border,
+                    backgroundColor: mode === m.key ? c.accent2 : 'transparent',
+                  }}
+                >
+                  <Text style={{ color: mode === m.key ? '#001018' : c.text, fontWeight: '700', fontSize: 12 }}>{m.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {(mode === 'roles' || mode === 'mixed') && (
+              <View style={{ marginBottom: 10 }}>
+                <Muted style={{ marginBottom: 6 }}>Platform roles allowed</Muted>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {PLATFORM_ROLES.map((r) => {
+                    const on = allowedRoles.includes(r)
+                    return (
+                      <TouchableOpacity
+                        key={r}
+                        onPress={() => setAllowedRoles((prev) => toggle(prev, r))}
+                        style={{
+                          paddingVertical: 6,
+                          paddingHorizontal: 10,
+                          borderRadius: 14,
+                          borderWidth: 1,
+                          borderColor: on ? c.accent : c.border,
+                          backgroundColor: on ? c.accent2 : 'transparent',
+                        }}
+                      >
+                        <Text style={{ color: on ? '#001018' : c.text, fontWeight: '700', fontSize: 12 }}>{r}</Text>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              </View>
+            )}
+
+            {(mode === 'users' || mode === 'mixed') && (
+              <View style={{ marginBottom: 10 }}>
+                <Muted style={{ marginBottom: 6 }}>Allowed users</Muted>
+                <TextInput
+                  value={searchQ}
+                  onChangeText={(q) => doSearch(q, setSearchQ, setSearchResults)}
+                  placeholder="Search users…"
+                  placeholderTextColor={c.muted}
+                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 8 }}
+                />
+                {searchResults.map((u) => (
+                  <TouchableOpacity
+                    key={u.username}
+                    onPress={() => {
+                      setAllowedUsers((prev) => (prev.includes(u.username) ? prev : [...prev, u.username]))
+                      setSearchResults([])
+                      setSearchQ('')
+                    }}
+                    style={{ paddingVertical: 6 }}
+                  >
+                    <Text style={{ color: c.text, fontSize: 13 }}>
+                      {u.username}
+                      {u.role ? <Text style={{ color: c.muted }}> · {u.role}</Text> : null} ＋
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                {allowedUsers.length > 0 && (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {allowedUsers.map((u) => (
+                      <TouchableOpacity
+                        key={u}
+                        onPress={() => setAllowedUsers((prev) => prev.filter((x) => x !== u))}
+                        style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 14, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg2 }}
+                      >
+                        <Text style={{ color: c.text, fontWeight: '700', fontSize: 12 }}>✕ {u}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {type !== 'text' && (
+              <View style={{ marginBottom: 6 }}>
+                <Muted style={{ marginBottom: 6 }}>Speak permissions (leave empty = same as access)</Muted>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {PLATFORM_ROLES.map((r) => {
+                    const on = speakRoles.includes(r)
+                    return (
+                      <TouchableOpacity
+                        key={r}
+                        onPress={() => setSpeakRoles((prev) => toggle(prev, r))}
+                        style={{
+                          paddingVertical: 6,
+                          paddingHorizontal: 10,
+                          borderRadius: 14,
+                          borderWidth: 1,
+                          borderColor: on ? c.accent : c.border,
+                          backgroundColor: on ? c.accent2 : 'transparent',
+                        }}
+                      >
+                        <Text style={{ color: on ? '#001018' : c.text, fontWeight: '700', fontSize: 12 }}>{r}</Text>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              </View>
+            )}
+          </Card>
+
+          {room_id ? (
+            <>
+              <Card
+                title="Custom roles"
+                subtitle="Permissions that can be assigned to members"
+                headerRight={
+                  <Btn
+                    title="+ Role"
+                    onPress={() => setRoleEditor({ id: '', name: '', color: '#00ff88', permissions: [] })}
+                    style={{ paddingVertical: 6, paddingHorizontal: 10 }}
+                  />
+                }
+              >
+                {roles.map((r) => (
+                  <View key={r.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 }}>
+                    <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: r.color }} />
+                    <TouchableOpacity onPress={() => setRoleEditor(r)} style={{ flex: 1 }}>
+                      <Text style={{ color: c.text, fontSize: 13 }}>{r.name}</Text>
+                    </TouchableOpacity>
+                    <Text style={{ color: c.muted, fontSize: 11 }}>{(r.permissions ?? []).length} perms</Text>
+                    <TouchableOpacity onPress={() => deleteRole(r)} hitSlop={8}>
+                      <Text style={{ color: c.danger, fontSize: 12 }}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {roles.length === 0 ? <Muted>No custom roles yet.</Muted> : null}
+              </Card>
+
+              {roleEditor ? (
+                <Card title={roleEditor.id === '' ? 'New role' : `Edit ${roleEditor.name}`}>
+                  <View style={{ gap: 8 }}>
+                    <TextInput
+                      value={roleEditor.name}
+                      onChangeText={(v) => setRoleEditor((p) => (p ? { ...p, name: v } : p))}
+                      placeholder="Role name"
+                      placeholderTextColor={c.muted}
+                      style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10 }}
+                    />
+                    <TextInput
+                      value={roleEditor.color}
+                      onChangeText={(v) => setRoleEditor((p) => (p ? { ...p, color: v } : p))}
+                      placeholder="#00ff88"
+                      placeholderTextColor={c.muted}
+                      style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10 }}
+                    />
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                      {ROOM_PERMS.map((p) => {
+                        const on = (roleEditor.permissions ?? []).includes(p)
+                        return (
+                          <TouchableOpacity
+                            key={p}
+                            onPress={() =>
+                              setRoleEditor((prev) => {
+                                if (!prev) return prev
+                                const perms = prev.permissions ?? []
+                                return { ...prev, permissions: perms.includes(p) ? perms.filter((x) => x !== p) : [...perms, p] }
+                              })
+                            }
+                            style={{
+                              paddingVertical: 5,
+                              paddingHorizontal: 8,
+                              borderRadius: 12,
+                              borderWidth: 1,
+                              borderColor: on ? c.accent : c.border,
+                              backgroundColor: on ? c.accent2 : 'transparent',
+                            }}
+                          >
+                            <Text style={{ color: on ? '#001018' : c.text, fontWeight: '700', fontSize: 11 }}>{p}</Text>
+                          </TouchableOpacity>
+                        )
+                      })}
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <Btn title="Save role" onPress={saveRole} style={{ flex: 1 }} />
+                      <Btn title="Cancel" onPress={() => setRoleEditor(null)} style={{ flex: 1, backgroundColor: c.border }} />
+                    </View>
+                  </View>
+                </Card>
+              ) : null}
+
+              <Card
+                title="Members"
+                subtitle={`${members.length} total`}
+                headerRight={
+                  <Btn title="Invite" onPress={() => {}} style={{ paddingVertical: 6, paddingHorizontal: 10 }} />
+                }
+              >
+                <TextInput
+                  value={inviteQ}
+                  onChangeText={(q) => doSearch(q, setInviteQ, setInviteResults)}
+                  placeholder="Search users to invite…"
+                  placeholderTextColor={c.muted}
+                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 8 }}
+                />
+                {inviteResults.map((u) => (
+                  <TouchableOpacity key={u.username} onPress={() => invite(u.username)} style={{ paddingVertical: 6 }}>
+                    <Text style={{ color: c.text, fontSize: 13 }}>
+                      {u.username}
+                      {u.role ? <Text style={{ color: c.muted }}> · {u.role}</Text> : null} ＋
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                {members.map((m) => (
+                  <View key={m.username} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: c.border }}>
+                    <Text style={{ color: c.text, fontSize: 13, flex: 1 }} numberOfLines={1}>{m.username}</Text>
+                    <TouchableOpacity onPress={() => changeMemberRole(m)} hitSlop={8}>
+                      <Text style={{ color: c.accent, fontWeight: '700', fontSize: 12 }}>{m.role || 'member'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => removeMember(m)} hitSlop={8}>
+                      <Text style={{ color: c.danger, fontSize: 12 }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {members.length === 0 ? <Muted>No members yet.</Muted> : null}
+              </Card>
+
+              <TouchableOpacity onPress={removeRoom} style={{ marginTop: 16, alignItems: 'center' }}>
+                <Text style={{ color: c.danger, fontWeight: '700' }}>Delete channel</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
+        </ScrollView>
+      )}
+    </SafeAreaView>
+  )
+}
