@@ -132,9 +132,14 @@ export default function ChatScreen() {
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Title>Chat rooms</Title>
         {isStaff ? (
-          <TouchableOpacity onPress={() => router.push('/channel-manage' as Href)} hitSlop={8}>
-            <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>Manage ⚙</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 14 }}>
+            <TouchableOpacity onPress={() => router.push('/chat-admin' as Href)} hitSlop={8}>
+              <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>Admin</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/channel-manage' as Href)} hitSlop={8}>
+              <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>Manage ⚙</Text>
+            </TouchableOpacity>
+          </View>
         ) : null}
       </View>
 
