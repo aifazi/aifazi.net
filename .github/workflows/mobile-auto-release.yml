@@ -1,0 +1,83 @@
+name: Mobile Auto-Release (APK on every mobile commit)
+
+# Every push to apps/mobile/** on main bumps the release tag by one patch and
+# creates a GitHub release. The "published release" event then fires the
+# existing .github/workflows/mobile-release-build.yml, which builds the APK +
+# AAB via EAS and uploads them to the release. The in-app updater then sees
+# the newer tag and offers the update.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/mobile/**"
+
+concurrency:
+  group: mobile-auto-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Auto-release mobile build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Find the next version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s extglob
+
+          # Gather all existing vX.Y.Z release tags and pick the highest
+          # (sort -V handles multi-digit components correctly, unlike <string>).
+          VAS=$(gh release list --limit 100 --json tagName -q '.[].tagName' 2>/dev/null || true)
+          CANDIDATES=""
+          for T in $VAS; do
+            case "$T" in
+              v+([0-9]).+([0-9]).+([0-9]))
+                CANDIDATES="$CANDIDATES ${T#v}"
+                ;;
+            esac
+          done
+          HIGHEST="0.0.0"
+          if [ -n "$CANDIDATES" ]; then
+            HIGHEST=$(printf '%s\n' $CANDIDATES | grep -v '^$' | sort -V | tail -n 1)
+          fi
+
+          IFS=. read -r MAJ MIN PAT <<< "$HIGHEST"
+          PAT=$((PAT + 1))
+          NEXT="${MAJ}.${MIN}.${PAT}"
+          echo "highest=$HIGHEST" >> "$GITHUB_OUTPUT"
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "Latest release tag is v$HIGHEST -> auto-releasing v$NEXT"
+
+      - name: Collect change notes
+        id: notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LAST_TAG="v${{ steps.version.outputs.highest }}"
+          if [[ "$LAST_TAG" == "v0.0.0" ]] || ! gh release view "$LAST_TAG" >/dev/null 2>&1; then
+            RANGE="HEAD"
+          else
+            RANGE="$LAST_TAG..HEAD"
+          fi
+          LOG=$(git log --oneline --no-decorate "$RANGE" -- apps/mobile 2>/dev/null | head -n 40)
+          if [ -z "$LOG" ]; then
+            LOG="Mobile update pushed to main."
+          fi
+          printf '%s\n' "$LOG" > /tmp/notes.txt
+          echo "notes written"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ steps.version.outputs.next }}" --title "v${{ steps.version.outputs.next }}" --notes-file /tmp/notes.txt
