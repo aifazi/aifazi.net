@@ -22,7 +22,7 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import RedirectResponse, Response, StreamingResponse
 
 log = logging.getLogger("mobile_release")
 
@@ -87,40 +87,45 @@ async def mobile_release_latest() -> dict:
 
 @router.get("/release/download")
 async def mobile_release_download() -> Response:
-    """Stream the latest APK. Proxies the private-repo asset through the server."""
-    async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
+    """Redirect the client to GitHub's signed CDN URL for the latest APK.
+
+    The private-repo asset must be fetched through the API endpoint, which
+    302-redirects to a pre-signed CDN URL (browser_download_url 404s without
+    auth). We capture that URL server-side and 307-redirect the client to it,
+    so the 150MB APK streams from GitHub's CDN instead of proxying through us.
+    """
+    async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=False) as client:
         release = await _latest_release_json(client)
         asset = _apk_asset(release)
         asset_id = asset.get("id")
         if not asset_id:
             raise HTTPException(status_code=404, detail="APK asset has no id")
-        # Private-repo assets must be fetched through the API endpoint, which
-        # 302-redirects to a signed CDN URL (browser_download_url 404s without
-        # auth). follow_redirects=True follows that redirect chain.
+
         url = f"{GITHUB_API}/repos/{GITHUB_REPO}/releases/assets/{asset_id}"
         headers = _headers()
         headers["Accept"] = "application/octet-stream"
 
-        upstream = client.build_request("GET", url, headers=headers)
-        resp = await client.send(upstream, stream=True)
+        resp = await client.get(url, headers=headers)
+        if resp.status_code == 302:
+            location = resp.headers.get("location")
+            if location:
+                return RedirectResponse(location, status_code=307)
+            raise HTTPException(status_code=502, detail="GitHub did not provide a download URL")
         if resp.status_code != 200:
-            await resp.aclose()
             log.warning("GitHub asset download -> %s", resp.status_code)
-            raise HTTPException(status_code=502, detail="Could not download APK from GitHub")
+            raise HTTPException(status_code=502, detail="Could not reach GitHub CDN")
 
+        # Older tokenless flows may get the body directly; stream it.
         headers = {"Content-Type": "application/vnd.android.package-archive"}
-        if asset.get("size"):
-            headers["Content-Length"] = str(asset["size"])
+        body = resp.content
 
         async def _stream():
-            try:
-                async for chunk in resp.aiter_bytes(chunk_size=64 * 1024):
-                    yield chunk
-            finally:
-                await resp.aclose()
+            for chunk in _chunks(body):
+                yield chunk
 
-        return StreamingResponse(
-            _stream(),
-            headers=headers,
-            media_type="application/vnd.android.package-archive",
-        )
+        return StreamingResponse(_stream(), headers=headers, media_type="application/vnd.android.package-archive")
+
+
+def _chunks(data: bytes, size: int = 64 * 1024):
+    for i in range(0, len(data), size):
+        yield data[i:i + size]
