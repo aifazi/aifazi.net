@@ -92,6 +92,7 @@ const SEARCH_NAV = [
   { key:'communications',icon:'mail',     label:'Communications', group:'Community'  },
   { key:'staff',         icon:'users',    label:'Staff',          group:'Community'  },
   { key:'chat',          icon:'chat',     label:'Live Chat',      group:'Community'  },
+  { key:'chat-admin',    icon:'chat',     label:'Chat Mgmt',      group:'Community'  },
   { key:'db',            icon:'database', label:'DB Monitor',     group:'System'     },
   { key:'delivery',      icon:'send',     label:'Mail & CDN',     group:'System'     },
   { key:'backup',        icon:'database', label:'Backup',         group:'System'     },
