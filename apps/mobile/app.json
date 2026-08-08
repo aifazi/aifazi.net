@@ -27,7 +27,6 @@
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_MEDIA_PROJECTION",
         "WAKE_LOCK",
-        "SYSTEM_ALERT_WINDOW",
         "REQUEST_INSTALL_PACKAGES"
       ],
       "adaptiveIcon": {

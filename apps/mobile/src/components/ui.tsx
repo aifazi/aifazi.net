@@ -128,6 +128,9 @@ export function Field({
   secure = false,
   placeholder,
   autoCapitalize = 'none',
+  keyboardType,
+  maxLength,
+  autoFocus,
 }: {
   label: string
   value: string
@@ -135,6 +138,9 @@ export function Field({
   secure?: boolean
   placeholder?: string
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'number-pad'
+  maxLength?: number
+  autoFocus?: boolean
 }) {
   const { theme } = useTheme()
   const c = theme.colors
@@ -159,6 +165,9 @@ export function Field({
         placeholderTextColor={c.muted}
         autoCapitalize={autoCapitalize}
         autoCorrect={false}
+        keyboardType={keyboardType}
+        maxLength={maxLength}
+        autoFocus={autoFocus}
         style={{
           backgroundColor: c.bg,
           color: c.text,

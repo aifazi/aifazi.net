@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, SectionList } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, SectionList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { useFocusEffect } from 'expo-router'
@@ -55,6 +55,7 @@ export default function ChatScreen() {
   const [dms, setDms] = useState<DMThread[]>([])
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [err, setErr] = useState('')
 
   const isStaff = user?.role === 'admin' || user?.role === 'moderator'
@@ -62,6 +63,7 @@ export default function ChatScreen() {
   const load = useCallback(() => {
     if (!isAuthed) {
       setLoading(false)
+      setRefreshing(false)
       return
     }
     api
@@ -78,8 +80,13 @@ export default function ChatScreen() {
       .get('/chat/dm/requests')
       .then((r) => setRequests((r.data ?? []) as any[]))
       .catch(() => setRequests([]))
-      .finally(() => setLoading(false))
+      .finally(() => { setLoading(false); setRefreshing(false) })
   }, [isAuthed])
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true)
+    load()
+  }, [load])
 
   useFocusEffect(
     useCallback(() => {
@@ -128,6 +135,9 @@ export default function ChatScreen() {
         <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
       ) : (
         <SectionList
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
+          }
           sections={[
             {
               title: 'Direct messages',

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { useFocusEffect } from 'expo-router'
@@ -39,6 +39,7 @@ export default function BlogScreen() {
   const [cats, setCats] = useState<string[]>([])
   const [cat, setCat] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
 
   const load = useCallback(() => {
@@ -46,8 +47,13 @@ export default function BlogScreen() {
       .get('/blog', { params: cat ? { category: cat, limit: 20 } : { limit: 20 } })
       .then((r) => setPosts((r.data?.posts ?? []) as Post[]))
       .catch((e) => setError(e?.response?.data?.detail || 'Could not load blog'))
-      .finally(() => setLoading(false))
+      .finally(() => { setLoading(false); setRefreshing(false) })
   }, [cat])
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true)
+    load()
+  }, [load])
 
   useFocusEffect(
     useCallback(() => {
@@ -112,6 +118,9 @@ export default function BlogScreen() {
         data={posts}
         keyExtractor={(p) => p.id}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
+        }
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => router.push(`/blog-post?slug=${encodeURIComponent(item.slug)}` as Href)}>
             <Card>

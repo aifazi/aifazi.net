@@ -10,6 +10,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  AppState,
 } from 'react-native'
 import VideoStream from '@/src/components/VideoStream'
 import { useLiveKitCall } from '@/src/lib/livekit'
@@ -124,7 +125,6 @@ export default function CallScreen() {
   const chatPoll = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [pttActive, setPttActive] = useState(false)
-  const pttHolding = useRef(false)
 
   const isStaff = user?.role === 'admin' || user?.role === 'moderator'
   const roomName = name || 'Call'
@@ -152,8 +152,18 @@ export default function CallScreen() {
     if (!chatOpen) return
     loadChat()
     chatPoll.current = setInterval(() => loadChat(true), POLL_MS)
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        if (!chatPoll.current) chatPoll.current = setInterval(() => loadChat(true), POLL_MS)
+        loadChat(true)
+      } else if (chatPoll.current) {
+        clearInterval(chatPoll.current)
+        chatPoll.current = null
+      }
+    })
     return () => {
       if (chatPoll.current) clearInterval(chatPoll.current)
+      sub.remove()
     }
   }, [chatOpen, loadChat])
 
@@ -197,12 +207,10 @@ export default function CallScreen() {
   }
 
   const pttPressIn = () => {
-    pttHolding.current = true
     setPttActive(true)
     setMic(true)
   }
   const pttPressOut = () => {
-    pttHolding.current = false
     setPttActive(false)
     setMic(false)
   }

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { useFocusEffect } from 'expo-router'
@@ -45,6 +45,7 @@ export default function StoreScreen() {
   const [cat, setCat] = useState<string>('')
   const [cartCount, setCartCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [err, setErr] = useState('')
 
   const load = useCallback(() => {
@@ -52,8 +53,13 @@ export default function StoreScreen() {
       .get('/store/products', { params: cat ? { category: cat, limit: 50 } : { limit: 50 } })
       .then((r) => setProducts((r.data ?? []) as Product[]))
       .catch((e) => setErr(e?.response?.data?.detail || 'Could not load store'))
-      .finally(() => setLoading(false))
+      .finally(() => { setLoading(false); setRefreshing(false) })
   }, [cat])
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true)
+    load()
+  }, [load])
 
   useFocusEffect(
     useCallback(() => {
@@ -125,6 +131,9 @@ export default function StoreScreen() {
           data={products}
           keyExtractor={(p) => p.id}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
+          }
           ListEmptyComponent={<Muted>No products yet.</Muted>}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => router.push(`/store-item?slug=${encodeURIComponent(item.slug)}` as Href)}>

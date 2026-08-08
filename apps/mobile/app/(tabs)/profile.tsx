@@ -883,7 +883,7 @@ function EditTab() {
 export default function ProfileScreen() {
   const { theme } = useTheme()
   const c = theme.colors
-  const { user, loading, isAuthed, login, refresh } = useAuth()
+  const { user, loading, isAuthed, login, verify2FA, refresh } = useAuth()
   const router = useRouter()
   const [tab, setTab] = useState<TabId>('overview')
 
@@ -892,6 +892,8 @@ export default function ProfileScreen() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [twoFA, setTwoFA] = useState<{ partialToken: string; username: string } | null>(null)
+  const [twoFACode, setTwoFACode] = useState('')
 
   useEffect(() => {
     if (user) setTab('overview')
@@ -909,11 +911,59 @@ export default function ProfileScreen() {
     const submit = async () => {
       setErr(''); setBusy(true)
       try {
-        await login(identifier.trim(), password)
-        setPassword(''); setIdentifier('')
+        const res = await login(identifier.trim(), password)
+        if (res.requires2fa) {
+          setTwoFA({ partialToken: res.partialToken || '', username: res.username || identifier })
+          setTwoFACode('')
+        } else {
+          setPassword(''); setIdentifier('')
+        }
       } catch (e: any) {
         setErr(e?.response?.data?.detail || e?.message || 'Login failed')
       } finally { setBusy(false) }
+    }
+
+    const submit2FA = async () => {
+      if (!twoFA) return
+      setErr(''); setBusy(true)
+      try {
+        await verify2FA(twoFA.partialToken, twoFACode)
+        setTwoFA(null); setTwoFACode(''); setIdentifier(''); setPassword('')
+      } catch (e: any) {
+        setErr(e?.response?.data?.detail || e?.message || 'Invalid code')
+      } finally { setBusy(false) }
+    }
+
+    if (twoFA) {
+      return (
+        <Screen scroll={false}>
+          <Title>Profile</Title>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            <Card>
+              <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }}>Two-factor authentication</Text>
+              <Muted style={{ marginTop: 4 }}>
+                Enter the 6-digit code from your authenticator app{twoFA.username ? ` for @${twoFA.username}` : ''}.
+              </Muted>
+              <View style={{ marginTop: 12 }}>
+                <Field
+                  label="Authenticator code"
+                  value={twoFACode}
+                  onChangeText={setTwoFACode}
+                  placeholder="000000"
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  autoFocus
+                />
+              </View>
+              {err ? <Muted>{err}</Muted> : null}
+              <Btn title={busy ? 'Verifying…' : 'Verify'} onPress={submit2FA} disabled={busy || twoFACode.length < 6} />
+              <View style={{ marginTop: 12 }}>
+                <Btn title="Back" variant="ghost" onPress={() => { setTwoFA(null); setErr('') }} />
+              </View>
+            </Card>
+          </ScrollView>
+        </Screen>
+      )
     }
 
     return (

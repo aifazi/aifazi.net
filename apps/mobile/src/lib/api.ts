@@ -9,6 +9,18 @@ const REFRESH_KEY = 'aifazi_refresh_token'
 let accessToken: string | null = null
 let refreshPromise: Promise<string | null> | null = null
 
+type AuthClearedListener = () => void
+const authClearedListeners = new Set<AuthClearedListener>()
+
+export function onAuthCleared(listener: AuthClearedListener): () => void {
+  authClearedListeners.add(listener)
+  return () => authClearedListeners.delete(listener)
+}
+
+function emitAuthCleared() {
+  authClearedListeners.forEach((l) => l())
+}
+
 export const api = axios.create({ baseURL: `${API_BASE}/api`, timeout: 15000 })
 
 api.interceptors.request.use(async (config) => {
@@ -76,6 +88,7 @@ export async function clearAuthTokens() {
   accessToken = null
   await SecureStore.deleteItemAsync(TOKEN_KEY)
   await SecureStore.deleteItemAsync(REFRESH_KEY)
+  emitAuthCleared()
 }
 
 export async function getAccessToken() {

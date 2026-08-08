@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { useFocusEffect } from 'expo-router'
@@ -58,6 +58,7 @@ export default function ForumScreen() {
   const [categories, setCategories] = useState<Category[]>([])
   const [cat, setCat] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
 
   const load = useCallback(() => {
@@ -65,8 +66,13 @@ export default function ForumScreen() {
       .get('/forum/threads', { params: cat ? { category_id: cat, limit: 25 } : { limit: 25 } })
       .then((r) => setThreads(((r.data?.threads ?? r.data ?? []) as Thread[])))
       .catch((e) => setError(e?.response?.data?.detail || 'Could not load forum'))
-      .finally(() => setLoading(false))
+      .finally(() => { setLoading(false); setRefreshing(false) })
   }, [cat])
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true)
+    load()
+  }, [load])
 
   useFocusEffect(
     useCallback(() => {
@@ -141,6 +147,9 @@ export default function ForumScreen() {
         data={threads}
         keyExtractor={(t) => t.id || t._id}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
+        }
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => router.push(`/forum-thread?id=${encodeURIComponent(item.id)}` as Href)}>
             <Card>

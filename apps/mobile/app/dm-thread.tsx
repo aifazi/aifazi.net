@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
+  AppState,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -182,6 +183,7 @@ export default function DMThreadScreen() {
   const [editText, setEditText] = useState('')
   const [replying, setReplying] = useState<DMMessage | null>(null)
   const listRef = useRef<FlatList<DMMessage>>(null)
+  const stick = useRef(true)
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -211,8 +213,18 @@ export default function DMThreadScreen() {
   useEffect(() => {
     load()
     pollTimer.current = setInterval(() => load(true), POLL_MS)
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        if (!pollTimer.current) pollTimer.current = setInterval(() => load(true), POLL_MS)
+        load(true)
+      } else if (pollTimer.current) {
+        clearInterval(pollTimer.current)
+        pollTimer.current = null
+      }
+    })
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current)
+      sub.remove()
     }
   }, [load])
 
@@ -396,7 +408,14 @@ export default function DMThreadScreen() {
             data={messages}
             keyExtractor={(m) => m.id}
             contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
-            onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+            onContentSizeChange={() => {
+              if (stick.current) listRef.current?.scrollToEnd({ animated: true })
+            }}
+            onScroll={({ nativeEvent }) => {
+              const { layoutMeasurement, contentOffset, contentSize } = nativeEvent
+              stick.current = contentSize.height - (contentOffset.y + layoutMeasurement.height) < 80
+            }}
+            scrollEventThrottle={100}
             ListEmptyComponent={
               <Text style={{ color: c.muted, textAlign: 'center', marginTop: 40, fontSize: 13 }}>
                 No messages yet. Say hi!

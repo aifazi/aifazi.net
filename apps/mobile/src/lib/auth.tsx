@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useCallback, useState, ReactNode } from 'react'
-import { api, setAuthTokens, clearAuthTokens, getAccessToken } from './api'
+import { api, setAuthTokens, clearAuthTokens, getAccessToken, onAuthCleared } from './api'
 
 export interface AuthUser {
   id?: string
@@ -25,11 +25,18 @@ export interface UploadAvatarFile {
   type?: string
 }
 
+export interface LoginResult {
+  requires2fa: boolean
+  partialToken?: string
+  username?: string
+}
+
 interface AuthCtx {
   user: AuthUser | null
   loading: boolean
   isAuthed: boolean
-  login: (identifier: string, password: string) => Promise<void>
+  login: (identifier: string, password: string) => Promise<LoginResult>
+  verify2FA: (partialToken: string, code: string) => Promise<void>
   register: (username: string, email: string, password: string) => Promise<string>
   logout: () => Promise<void>
   refresh: () => Promise<void>
@@ -50,7 +57,8 @@ const Ctx = createContext<AuthCtx>({
   user: null,
   loading: true,
   isAuthed: false,
-  login: async () => {},
+  login: async () => ({ requires2fa: false }),
+  verify2FA: async () => {},
   register: async () => '',
   logout: async () => {},
   refresh: async () => {},
@@ -92,11 +100,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refresh()
   }, [refresh])
 
+  useEffect(() => {
+    // If the token store is cleared while we're "logged in" (401 → refresh failed
+    // → interceptor cleared storage), drop the stale user so screens route to login.
+    return onAuthCleared(() => setUser(null))
+  }, [])
+
   const login = useCallback(
     async (identifier: string, password: string) => {
       const res = await api.post('/auth/login', { username: identifier, password })
-      const { token, refreshToken } = res.data ?? {}
+      const data = res.data ?? {}
+      // 2FA users get a challenge instead of a token — surface it so the UI can
+      // show a code step instead of failing with "no token returned".
+      if (data.requires_2fa) {
+        return {
+          requires2fa: true,
+          partialToken: data.partial_token as string,
+          username: data?.user?.username || identifier,
+        }
+      }
+      const { token, refreshToken } = data
       if (!token) throw new Error('Login failed — no token returned')
+      await setAuthTokens(token, refreshToken ?? '')
+      await refresh()
+      return { requires2fa: false }
+    },
+    [refresh],
+  )
+
+  const verify2FA = useCallback(
+    async (partialToken: string, code: string) => {
+      const res = await api.post('/auth/2fa/verify', {
+        partial_token: partialToken,
+        code: code.replace(/\s/g, ''),
+      })
+      const { token, refreshToken } = res.data ?? {}
+      if (!token) throw new Error('2FA verification failed — no token returned')
       await setAuthTokens(token, refreshToken ?? '')
       await refresh()
     },
@@ -187,6 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         isAuthed: !!user,
         login,
+        verify2FA,
         register,
         logout,
         refresh,

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
@@ -84,6 +84,7 @@ export default function HomeScreen() {
   const [posts, setPosts] = useState<Post[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   const load = useCallback(() => {
     api
@@ -106,8 +107,13 @@ export default function HomeScreen() {
       .get('/portfolio/projects')
       .then((r) => setProjects((r.data ?? []) as Project[]))
       .catch(() => setProjects([]))
-      .finally(() => setLoading(false))
+      .finally(() => { setLoading(false); setRefreshing(false) })
   }, [])
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true)
+    load()
+  }, [load])
 
   useFocusEffect(
     useCallback(() => {
@@ -128,7 +134,13 @@ export default function HomeScreen() {
   ]
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: c.bg }}
+      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
+      }
+    >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         <Text style={{ color: c.text, fontSize: 24, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined, letterSpacing: theme.mono ? 1 : 0 }}>
           aifazi.net
