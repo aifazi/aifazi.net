@@ -64,7 +64,7 @@ def _apk_asset(release: dict) -> dict:
     raise HTTPException(status_code=404, detail="No APK attached to the latest release")
 
 
-@router.get("/api/mobile/release/latest")
+@router.get("/release/latest")
 async def mobile_release_latest() -> dict:
     async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
         release = await _latest_release_json(client)
@@ -85,7 +85,7 @@ async def mobile_release_latest() -> dict:
     }
 
 
-@router.get("/api/mobile/release/download")
+@router.get("/release/download")
 async def mobile_release_download() -> Response:
     """Stream the latest APK. Proxies the private-repo asset through the server."""
     async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
