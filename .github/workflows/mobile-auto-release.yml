@@ -81,3 +81,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "v${{ steps.version.outputs.next }}" --title "v${{ steps.version.outputs.next }}" --notes-file /tmp/notes.txt
+
+      # Events fired with GITHUB_TOKEN don't trigger other workflows, so a
+      # release created above won't re-key mobile-release-build.yml on its own.
+      # Dispatch it explicitly with the new tag so the APK/AAB get built and
+      # attached to this release.
+      - name: Dispatch release build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run "Mobile Release Build" --ref main -f "tag=v${{ steps.version.outputs.next }}"
