@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ThemeProvider, useTheme } from '@/src/theme'
 import { AuthProvider } from '@/src/lib/auth'
+import { OverlayProvider } from '@/src/components/overlay'
 
 export { ErrorBoundary } from 'expo-router'
 
@@ -29,8 +30,8 @@ function RootNav() {
         <Stack.Screen name="projects" options={{ headerShown: false }} />
         <Stack.Screen name="forum-thread" options={{ headerShown: false }} />
         <Stack.Screen name="blog-post" options={{ headerShown: false }} />
-        <Stack.Screen name="auth/login" options={{ headerShown: true, title: 'Sign In' }} />
-        <Stack.Screen name="auth/register" options={{ headerShown: true, title: 'Create Account' }} />
+        <Stack.Screen name="auth/login" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/register" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={theme.dark ? 'light' : 'dark'} />
     </>
@@ -42,7 +43,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <RootNav />
+          <OverlayProvider>
+            <RootNav />
+          </OverlayProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

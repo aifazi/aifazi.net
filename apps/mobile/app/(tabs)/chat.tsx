@@ -5,6 +5,7 @@ import type { Href } from 'expo-router'
 import { useFocusEffect } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted, Btn } from '@/src/components/ui'
+import { Avatar } from '@/src/components/Avatar'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -34,26 +35,6 @@ function roomIcon(type: string) {
   if (type === 'video') return '📹'
   if (type === 'voice') return '🔊'
   return '💬'
-}
-
-function Avatar({ name, size = 30 }: { name?: string; size?: number }) {
-  const { theme } = useTheme()
-  const c = theme.colors
-  const initial = (name || '?').slice(0, 1).toUpperCase()
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: c.accent2,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text style={{ color: '#001018', fontWeight: '800', fontSize: size * 0.45 }}>{initial}</Text>
-    </View>
-  )
 }
 
 function AccessBadge({ room }: { room: Room }) {
@@ -166,7 +147,7 @@ export default function ChatScreen() {
               renderItem: ({ item }: { item: DMThread }) => (
                 <Card>
                   <TouchableOpacity onPress={() => openDm(item)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Avatar name={item.peer} />
+                    <Avatar name={item.peer} avatar={item.peer_avatar} size={30} />
                     <View style={{ flex: 1 }}>
                       <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
                         {item.peer}

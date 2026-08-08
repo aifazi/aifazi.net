@@ -9,6 +9,7 @@ export interface ReleaseInfo {
   tag: string
   version: string
   apkUrl?: string
+  apkSize?: number
   publishedAt?: string
   notes?: string
 }
@@ -17,6 +18,7 @@ interface BackendRelease {
   tag?: string
   version?: string
   apk_url?: string
+  asset_size?: number
   published_at?: string
   notes?: string
   asset_name?: string
@@ -67,6 +69,7 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
       tag: data.tag,
       version: data.version || data.tag.replace(/^v/i, ''),
       apkUrl: data.apk_url,
+      apkSize: data.asset_size,
       publishedAt: data.published_at,
       notes: data.notes,
     }
@@ -105,6 +108,7 @@ export interface InstallProgress {
 export async function downloadAndInstall(
   apkUrl: string,
   onProgress?: (p: InstallProgress) => void,
+  expectedSize?: number,
 ): Promise<void> {
   const dest = new File(Paths.cache, 'aifazi-update.apk')
   if (dest.exists) dest.delete()
@@ -122,6 +126,28 @@ export async function downloadAndInstall(
   const file = await task.downloadAsync()
   if (!file || !file.exists) {
     throw new Error('Download failed')
+  }
+
+  // Guard against a truncated/corrupt download. The backend usually tells us the
+  // exact byte size of the APK; if the downloaded file is smaller, surface a
+  // clear error instead of handing Android a broken package (which produces the
+  // "There was a problem parsing the package" message at install time).
+  if (expectedSize && file.size !== expectedSize) {
+    dest.delete()
+    throw new Error(`Download incomplete (got ${file.size} of ${expectedSize} bytes) — please retry`)
+  }
+
+  // Sanity: every APK is a ZIP archive, so it must start with "PK\x03\x04".
+  // Use a 4-byte slice — reading the whole file defeats the size guard above.
+  try {
+    const head = await file.slice(0, 4).text()
+    if (!head.startsWith('PK')) {
+      dest.delete()
+      throw new Error('Downloaded file is not a valid APK')
+    }
+  } catch {
+    dest.delete()
+    throw new Error('Downloaded file is not a valid APK')
   }
 
   await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {

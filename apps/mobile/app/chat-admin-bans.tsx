@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert, TextInput } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, TextInput } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { useOverlay } from '@/src/components/overlay'
 
 interface Ban {
   id: string
@@ -42,6 +43,7 @@ export default function ChatAdminBansScreen() {
   const [showBan, setShowBan] = useState(false)
   const [banQ, setBanQ] = useState('')
   const [banResults, setBanResults] = useState<UserResult[]>([])
+  const { confirm, menu } = useOverlay()
 
   const isStaff = user?.role === 'admin' || user?.role === 'moderator'
 
@@ -72,52 +74,39 @@ export default function ChatAdminBansScreen() {
     }
   }
 
-  const unban = (b: Ban) => {
-    Alert.alert('Unban', `Unban ${b.username} from ${b.room_name || 'this channel'}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Unban',
-        onPress: async () => {
-          try {
-            await api.delete(`/chat/rooms/${b.room_id}/ban/${encodeURIComponent(b.username)}`)
-            setBans((prev) => prev.filter((x) => x.id !== b.id))
-          } catch (e: any) {
-            setErr(e?.response?.data?.detail || 'Could not unban')
-          }
-        },
-      },
-    ])
+  const unban = async (b: Ban) => {
+    const ok = await confirm({ title: 'Unban', message: `Unban ${b.username} from ${b.room_name || 'this channel'}?`, confirmText: 'Unban' })
+    if (!ok) return
+    try {
+      await api.delete(`/chat/rooms/${b.room_id}/ban/${encodeURIComponent(b.username)}`)
+      setBans((prev) => prev.filter((x) => x.id !== b.id))
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not unban')
+    }
   }
 
-  const pickRoom = (u: UserResult) => {
-    Alert.alert(`Ban ${u.username}`, 'Choose a channel', [
-      ...rooms.map((room) => ({
-        text: `${room.emoji || '💬'} ${room.name}`,
-        onPress: () => banUser(u, room),
-      })),
-      { text: 'Cancel', style: 'cancel' },
-    ])
+  const pickRoom = async (u: UserResult) => {
+    const picked = await menu({
+      title: `Ban ${u.username}`,
+      options: rooms.map((room) => ({ value: room.id, label: `${room.emoji || '💬'} ${room.name}` })),
+    })
+    if (!picked) return
+    const room = rooms.find((r) => r.id === picked)
+    if (room) banUser(u, room)
   }
 
   const banUser = async (u: UserResult, room: Room) => {
-    Alert.alert(`Ban ${u.username}`, `Ban from ${room.name}? Reason (optional):`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Ban',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.post(`/chat/rooms/${room.id}/ban`, { username: u.username, reason: '' })
-            setShowBan(false)
-            setBanQ('')
-            setBanResults([])
-            load()
-          } catch (e: any) {
-            setErr(e?.response?.data?.detail || 'Could not ban')
-          }
-        },
-      },
-    ])
+    const ok = await confirm({ title: `Ban ${u.username}`, message: `Ban from ${room.name}? Reason (optional):`, confirmText: 'Ban', destructive: true })
+    if (!ok) return
+    try {
+      await api.post(`/chat/rooms/${room.id}/ban`, { username: u.username, reason: '' })
+      setShowBan(false)
+      setBanQ('')
+      setBanResults([])
+      load()
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not ban')
+    }
   }
 
   if (!isStaff) {

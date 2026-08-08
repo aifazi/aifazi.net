@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle } from 'react-native'
+import { Text, TextInput, View, TouchableOpacity, Animated, StyleSheet, ViewStyle, TextStyle } from 'react-native'
 import { useTheme } from '@/src/theme'
 
 export function Btn({
@@ -185,3 +185,54 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 })
+
+/**
+ * Fully themed switch — replaces the native RN <Switch>. Draws the track and
+ * thumb from theme colors so it matches everywhere (no default OS chrome).
+ */
+export function Toggle({
+  value,
+  onValueChange,
+  disabled = false,
+}: {
+  value: boolean
+  onValueChange: (v: boolean) => void
+  disabled?: boolean
+}) {
+  const { theme } = useTheme()
+  const c = theme.colors
+  const accent = value ? c.accent : c.border
+  const thumb = value ? c.bg : c.muted
+  return (
+    <TouchableOpacity
+      onPress={() => !disabled && onValueChange(!value)}
+      disabled={disabled}
+      activeOpacity={0.8}
+      style={{
+        width: 48,
+        height: 28,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: accent,
+        backgroundColor: value ? `${c.accent}18` : c.bg3,
+        opacity: disabled ? 0.5 : 1,
+        padding: 2,
+        justifyContent: 'center',
+      }}
+    >
+      <View
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 11,
+          backgroundColor: thumb,
+          alignSelf: value ? 'flex-end' : 'flex-start',
+          shadowColor: '#000',
+          shadowOpacity: 0.3,
+          shadowRadius: 2,
+          shadowOffset: { width: 0, height: 1 },
+        }}
+      />
+    </TouchableOpacity>
+  )
+}

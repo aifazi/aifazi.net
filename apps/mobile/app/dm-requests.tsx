@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
+import { Avatar } from '@/src/components/Avatar'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 
@@ -112,20 +113,7 @@ export default function DMRequestsScreen() {
           renderItem={({ item }) => (
             <Card>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 15,
-                    backgroundColor: c.accent2,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ color: '#001018', fontWeight: '800', fontSize: 13 }}>
-                    {item.sender.slice(0, 1).toUpperCase()}
-                  </Text>
-                </View>
+                <Avatar name={item.sender} avatar={item.avatar} size={30} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }}>{item.sender}</Text>
                   {item.role ? <Muted>{item.role}</Muted> : null}

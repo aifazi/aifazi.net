@@ -9,18 +9,18 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   Animated,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { askImageSource, pickDocument, type PickedFile } from '@/src/lib/media'
+import { askImageSourceAsync, pickDocument, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
-import { showMessageActions, showEmojiPicker, useSwipeToReply } from '@/src/lib/chat-actions'
+import { useMessageActions, useSwipeToReply } from '@/src/lib/chat-actions'
+import { useOverlay } from '@/src/components/overlay'
 
 interface DMMessage {
   id: string
@@ -167,6 +167,9 @@ export default function DMThreadScreen() {
   const { theme } = useTheme()
   const c = theme.colors
   const { user } = useAuth()
+  const overlay = useOverlay()
+  const { confirm, menu, alert } = overlay
+  const { showMessageActions, showEmojiPicker } = useMessageActions()
 
   const [messages, setMessages] = useState<DMMessage[]>([])
   const [loading, setLoading] = useState(true)
@@ -280,11 +283,10 @@ export default function DMThreadScreen() {
     }
   }
 
-  const confirmDelete = (id: string) => {
-    Alert.alert('Delete message', 'Delete this message?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteMsg(id) },
-    ])
+  const confirmDelete = async (id: string) => {
+    const ok = await confirm({ title: 'Delete message', message: 'Delete this message?', confirmText: 'Delete', destructive: true })
+    if (!ok) return
+    deleteMsg(id)
   }
 
   const onLongPress = (m: DMMessage) => {
@@ -297,8 +299,9 @@ export default function DMThreadScreen() {
     })
   }
 
-  const pickImage = () => {
-    askImageSource((f) => uploadFile(f, 'image'))
+  const pickImage = async () => {
+    const f = await askImageSourceAsync(overlay)
+    if (f) uploadFile(f, 'image')
   }
 
   const pickDoc = () => {
@@ -336,31 +339,26 @@ export default function DMThreadScreen() {
 
   const isMine = (m: DMMessage) => m.sender === user?.username
 
-  const openMenu = () => {
+  const openMenu = async () => {
     if (!peer) return
-    Alert.alert(peer, 'Direct message options', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Block user', style: 'destructive', onPress: () => blockPeer() },
-    ])
+    const picked = await menu({
+      title: peer,
+      options: [{ value: 'block', label: 'Block user', destructive: true }],
+    })
+    if (picked === 'block') blockPeer()
   }
 
   const blockPeer = async () => {
     if (!peer) return
-    Alert.alert('Block user', `Stop ${peer} from messaging you? Existing DMs are kept.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Block',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.post('/chat/dm/blocks', { username: peer })
-            Alert.alert('Blocked', `You've blocked ${peer}.`, [{ text: 'OK', onPress: () => router.back() }])
-          } catch (e: any) {
-            setErr(e?.response?.data?.detail || 'Could not block user')
-          }
-        },
-      },
-    ])
+    const ok = await confirm({ title: 'Block user', message: `Stop ${peer} from messaging you? Existing DMs are kept.`, confirmText: 'Block', destructive: true })
+    if (!ok) return
+    try {
+      await api.post('/chat/dm/blocks', { username: peer })
+      await alert({ message: `You've blocked ${peer}.` })
+      router.back()
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not block user')
+    }
   }
 
   return (

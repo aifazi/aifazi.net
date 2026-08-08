@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, Alert, Linking, FlatList } from 'react-native'
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, Linking, FlatList } from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
 import { useRouter } from 'expo-router'
-import { pickLibraryImage, takeCameraPhoto, pickDocument, type PickedFile } from '@/src/lib/media'
+import { pickLibraryImage, takeCameraPhoto, pickDocument, askImageSourceAsync, type PickedFile } from '@/src/lib/media'
 import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted, Btn, Field } from '@/src/components/ui'
+import { Avatar, BUILTIN_AVATARS, BUILTIN_AVATAR_ICONS } from '@/src/components/Avatar'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { THEME_IDS, THEMES } from '@/src/themes'
 import { checkForUpdate, downloadAndInstall, type UpdateCheck } from '@/src/lib/updates'
+import { useOverlay } from '@/src/components/overlay'
 
 function fmtDate(iso?: string) {
   if (!iso) return ''
@@ -97,9 +99,13 @@ function AppUpdatesCard() {
     if (!check?.release?.apkUrl) return
     setDownloading(true); setError(''); setProgress(0)
     try {
-      await downloadAndInstall(check.release.apkUrl, (p) => setProgress(Math.round(p.fraction * 100)))
-    } catch {
-      setError('Download or install failed. Make sure unknown apps are allowed for aifazi.')
+      await downloadAndInstall(check.release.apkUrl, (p) => setProgress(Math.round(p.fraction * 100)), check.release.apkSize)
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message.includes('Download incomplete')
+          ? e.message
+          : 'Download or install failed. Make sure unknown apps are allowed for aifazi.',
+      )
     } finally {
       setDownloading(false)
     }
@@ -146,6 +152,7 @@ function OverviewTab({ goEdit }: { goEdit: () => void }) {
   const c = theme.colors
   const { user, logout, refresh } = useAuth()
   const router = useRouter()
+  const { confirm } = useOverlay()
 
   const linked: { label: string; value?: string }[] = [
     { label: 'Discord', value: user?.discord_username },
@@ -153,19 +160,18 @@ function OverviewTab({ goEdit }: { goEdit: () => void }) {
     { label: 'GitHub', value: user?.github_username },
   ].filter((x) => x.value)
 
+  const logOut = async () => {
+    const ok = await confirm({ title: 'Log out', message: 'Sign out of your account?', confirmText: 'Log out', destructive: true })
+    if (!ok) return
+    logout()
+    refresh()
+  }
+
   return (
     <ScrollView keyboardShouldPersistTaps="handled">
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          {user?.avatar ? (
-            <ExpoImage source={{ uri: user.avatar }} style={{ width: 64, height: 64, borderRadius: 32 }} contentFit="cover" transition={150} />
-          ) : (
-            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: c.accent2, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#001018', fontWeight: '800', fontSize: 26 }}>
-                {(user?.username || '?').slice(0, 1).toUpperCase()}
-              </Text>
-            </View>
-          )}
+          <Avatar name={user?.username} avatar={user?.avatar} size={64} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: c.text, fontSize: 18, fontWeight: '900' }}>{user?.username}</Text>
             <Text style={{ color: c.accent2, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginTop: 2 }}>
@@ -191,12 +197,7 @@ function OverviewTab({ goEdit }: { goEdit: () => void }) {
           <Btn
             title="Log out"
             variant="danger"
-            onPress={() =>
-              Alert.alert('Log out', 'Sign out of your account?', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Log out', style: 'destructive', onPress: () => { logout(); refresh() } },
-              ])
-            }
+            onPress={logOut}
           />
         </View>
       </Card>
@@ -519,6 +520,8 @@ interface Doc {
 function DocumentsTab() {
   const { theme } = useTheme()
   const c = theme.colors
+  const overlay = useOverlay()
+  const { menu, toast, confirm } = overlay
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -534,12 +537,17 @@ function DocumentsTab() {
   useEffect(() => { load() }, [load])
 
   const pick = async () => {
-    Alert.alert('Upload document', 'Choose a source', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Take photo', onPress: () => takeCameraPhoto().then((f) => f && upload(f)) },
-      { text: 'Photo library', onPress: () => pickLibraryImage().then((f) => f && upload(f)) },
-      { text: 'File (PDF, DOCX, ZIP…)', onPress: () => pickDocument().then((f) => f && upload(f)) },
-    ])
+    const source = await menu({
+      title: 'Upload document',
+      options: [
+        { value: 'camera', label: 'Take photo' },
+        { value: 'library', label: 'Photo library' },
+        { value: 'file', label: 'File (PDF, DOCX, ZIP…)' },
+      ],
+    })
+    if (source === 'camera') { const f = await takeCameraPhoto({}, overlay); if (f) upload(f) }
+    else if (source === 'library') { const f = await pickLibraryImage({}, overlay); if (f) upload(f) }
+    else if (source === 'file') { const f = await pickDocument(); if (f) upload(f) }
   }
 
   const upload = async (file: PickedFile) => {
@@ -550,27 +558,25 @@ function DocumentsTab() {
       fd.append('name', file.name)
       fd.append('category', 'other')
       await api.post('/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      Alert.alert('Uploaded', 'Document uploaded successfully.')
+      toast('Document uploaded successfully.', 'success')
       load()
     } catch (e: any) {
-      Alert.alert('Upload failed', e?.response?.data?.detail || e?.message || 'Could not upload.')
+      toast(e?.response?.data?.detail || e?.message || 'Could not upload.', 'error')
     } finally {
       setUploading(false)
     }
   }
 
-  const remove = (id?: string) => {
+  const remove = async (id?: string) => {
     if (!id) return
-    Alert.alert('Delete document', 'Delete this document?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          api.delete(`/documents/${id}`).then(() => load()).catch((e) => Alert.alert('Delete failed', e?.response?.data?.detail || 'Could not delete.'))
-        },
-      },
-    ])
+    const ok = await confirm({ title: 'Delete document', message: 'Delete this document?', confirmText: 'Delete', destructive: true })
+    if (!ok) return
+    try {
+      await api.delete(`/documents/${id}`)
+      load()
+    } catch (e: any) {
+      toast(e?.response?.data?.detail || 'Could not delete.', 'error')
+    }
   }
 
   if (loading) {
@@ -611,6 +617,7 @@ function SecurityTab() {
     changePassword, deleteAccount, listSessions, revokeSession, revokeAllSessions,
     get2FAStatus, setup2FA, confirm2FA, disable2FA, logout,
   } = useAuth()
+  const { confirm } = useOverlay()
   const [cur, setCur] = useState('')
   const [next, setNext] = useState('')
   const [busy, setBusy] = useState(false)
@@ -674,11 +681,10 @@ function SecurityTab() {
     } finally { setBusy(false) }
   }
 
-  const del = () => {
-    Alert.alert('Delete account', 'This permanently deletes your account and all data. This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete account', style: 'destructive', onPress: onDelete },
-    ])
+  const del = async () => {
+    const ok = await confirm({ title: 'Delete account', message: 'This permanently deletes your account and all data. This cannot be undone.', confirmText: 'Delete account', destructive: true })
+    if (!ok) return
+    onDelete()
   }
 
   const onDelete = async () => {
@@ -773,6 +779,7 @@ function EditTab() {
   const { theme } = useTheme()
   const c = theme.colors
   const { user, updateProfile, refresh, uploadAvatar } = useAuth()
+  const overlay = useOverlay()
   const [username, setUsername] = useState(user?.username ?? '')
   const [bio, setBio] = useState(user?.bio ?? '')
   const [avatar, setAvatar] = useState(user?.avatar ?? '')
@@ -792,11 +799,34 @@ function EditTab() {
   }
 
   const pickAvatar = async () => {
-    Alert.alert('Avatar', 'Choose a source', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Take photo', onPress: () => takeCameraPhoto({ allowsEditing: true, aspect: [1, 1] }).then((f) => f && uploadAvatarPhoto(f)) },
-      { text: 'Photo library', onPress: () => pickLibraryImage({ allowsEditing: true, aspect: [1, 1] }).then((f) => f && uploadAvatarPhoto(f)) },
-    ])
+    const picked = await overlay.menu({
+      title: 'Avatar source',
+      options: [
+        { value: 'upload', label: 'Upload a photo', icon: '📷' },
+        { value: 'builtin', label: 'Choose a built-in icon', icon: '🎨' },
+      ],
+    })
+    if (picked === 'upload') {
+      const f = await askImageSourceAsync(overlay)
+      if (f) uploadAvatarPhoto(f)
+    } else if (picked === 'builtin') {
+      chooseBuiltinAvatar()
+    }
+  }
+
+  const chooseBuiltinAvatar = async () => {
+    const picked = await overlay.menu({
+      title: 'Built-in avatar icons',
+      options: BUILTIN_AVATARS.map((a) => ({
+        value: a.key,
+        label: a.icon + '  ' + a.label,
+        icon: a.icon,
+      })),
+    })
+    if (picked && BUILTIN_AVATAR_ICONS[picked]) {
+      setAvatar(`avatar:${picked}`)
+      setSaveMsg('Icon selected. Save changes to keep it.')
+    }
   }
 
   const uploadAvatarPhoto = async (file: PickedFile) => {
@@ -818,14 +848,13 @@ function EditTab() {
     <ScrollView keyboardShouldPersistTaps="handled">
       <Card title="Edit Profile">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 }}>
-          {avatar ? (
-            <ExpoImage source={{ uri: avatar }} style={{ width: 56, height: 56, borderRadius: 28 }} contentFit="cover" transition={150} />
-          ) : (
-            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: c.bg3, borderWidth: 1, borderColor: c.border, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: c.muted, fontSize: 20 }}>?</Text>
-            </View>
-          )}
-          <Btn title={uploading ? 'Uploading…' : '⤒ Upload image'} variant="ghost" onPress={pickAvatar} disabled={uploading} />
+          <Avatar name={username} avatar={avatar} size={56} />
+          <View style={{ flex: 1, gap: 8 }}>
+            <Btn title={uploading ? 'Uploading…' : '📷 Set avatar'} variant="ghost" onPress={pickAvatar} disabled={uploading} />
+            {avatar?.startsWith('avatar:') ? (
+              <Btn title="✕ Remove built-in icon" variant="ghost" onPress={() => { setAvatar(''); setSaveMsg('Icon cleared. Save changes to keep it.') }} />
+            ) : null}
+          </View>
         </View>
 
         <Field label="Username" value={username} onChangeText={setUsername} autoCapitalize="none" />

@@ -7,11 +7,9 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-  Modal,
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native'
 import VideoStream from '@/src/components/VideoStream'
 import { useLiveKitCall } from '@/src/lib/livekit'
@@ -19,6 +17,7 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
+import { useOverlay } from '@/src/components/overlay'
 
 function Tile({
   label,
@@ -93,6 +92,7 @@ export default function CallScreen() {
   const { theme } = useTheme()
   const c = theme.colors
   const { user } = useAuth()
+  const { alert, confirm, menu, toast } = useOverlay()
   const {
     status,
     error,
@@ -126,9 +126,6 @@ export default function CallScreen() {
   const [pttActive, setPttActive] = useState(false)
   const pttHolding = useRef(false)
 
-  const [devices, setDevices] = useState<{ mic: { id: string; label: string }[]; speaker: { id: string; label: string }[] }>({ mic: [], speaker: [] })
-  const [devOpen, setDevOpen] = useState(false)
-
   const isStaff = user?.role === 'admin' || user?.role === 'moderator'
   const roomName = name || 'Call'
   const count = participants.length + 1
@@ -147,7 +144,7 @@ export default function CallScreen() {
       const r = await api.get(`/chat/rooms/${room}/messages`, { params: { limit: 50 } })
       setChatMsgs((r.data ?? []) as CallMessage[])
     } catch (e: any) {
-      if (!silent) Alert.alert('Chat', e?.response?.data?.detail || 'Could not load chat')
+      if (!silent) alert({ message: e?.response?.data?.detail || 'Could not load chat' })
     }
   }, [room])
 
@@ -161,10 +158,27 @@ export default function CallScreen() {
   }, [chatOpen, loadChat])
 
   const openDevices = useCallback(async () => {
-    const [mic, speaker] = await Promise.all([listDevices('audioinput'), listDevices('audiooutput')])
-    setDevices({ mic, speaker })
-    setDevOpen(true)
-  }, [listDevices])
+    const kind = await menu({
+      title: 'Audio devices',
+      options: [
+        { value: 'mic', label: '🎙 Microphone' },
+        { value: 'speaker', label: '🔊 Speaker' },
+      ],
+    })
+    if (!kind) return
+    const [devices] = await Promise.all([listDevices(kind === 'mic' ? 'audioinput' : 'audiooutput')])
+    if (devices.length === 0) {
+      toast('No devices found', 'info')
+      return
+    }
+    const id = await menu({
+      title: kind === 'mic' ? 'Select microphone' : 'Select speaker',
+      options: devices.map((d) => ({ value: d.id, label: d.label, icon: kind === 'mic' ? '🎙' : '🔊' })),
+    })
+    if (!id) return
+    if (kind === 'mic') switchMicDevice(id)
+    else switchSpeakerDevice(id)
+  }, [listDevices, switchMicDevice, switchSpeakerDevice, menu, toast])
 
   const sendChat = async () => {
     const content = chatText.trim()
@@ -176,7 +190,7 @@ export default function CallScreen() {
       setChatText('')
       await loadChat(true)
     } catch (e: any) {
-      Alert.alert('Chat', e?.response?.data?.detail || 'Failed to send')
+      alert({ message: e?.response?.data?.detail || 'Failed to send' })
     } finally {
       setChatSending(false)
     }
@@ -193,15 +207,14 @@ export default function CallScreen() {
     setMic(false)
   }
 
-  const modAlert = (title: string, body: string, onConfirm: () => Promise<void>) => {
-    Alert.alert(title, body, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Confirm',
-        style: 'destructive',
-        onPress: () => onConfirm().catch(() => Alert.alert(title, 'Action failed')),
-      },
-    ])
+  const modAlert = async (title: string, body: string, onConfirm: () => Promise<void>) => {
+    const ok = await confirm({ title, message: body, confirmText: 'Confirm', destructive: true })
+    if (!ok) return
+    try {
+      await onConfirm()
+    } catch {
+      alert({ message: 'Action failed' })
+    }
   }
 
   if (status === 'connecting') {
@@ -333,18 +346,17 @@ export default function CallScreen() {
             onLongPress={
               isStaff
                 ? () => {
-                    Alert.alert(p.displayName, 'Participant actions', [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Mute mic',
-                        onPress: () => modAlert('Mute', `Mute ${p.displayName}'s microphone?`, () => muteParticipant(p.identity)),
-                      },
-                      {
-                        text: 'Kick',
-                        style: 'destructive',
-                        onPress: () => modAlert('Kick', `Kick ${p.displayName} from the call?`, () => kickParticipant(p.identity)),
-                      },
-                    ])
+                    void (async () => {
+                      const picked = await menu({
+                        title: p.displayName,
+                        options: [
+                          { value: 'mute', label: 'Mute mic' },
+                          { value: 'kick', label: 'Kick', destructive: true },
+                        ],
+                      })
+                      if (picked === 'mute') modAlert('Mute', `Mute ${p.displayName}'s microphone?`, () => muteParticipant(p.identity))
+                      else if (picked === 'kick') modAlert('Kick', `Kick ${p.displayName} from the call?`, () => kickParticipant(p.identity))
+                    })()
                   }
                 : undefined
             }
@@ -382,51 +394,6 @@ export default function CallScreen() {
           <Text style={{ fontSize: 16 }}>❌</Text>
         </TouchableOpacity>
       </View>
-
-      <Modal visible={devOpen} transparent animationType="slide" onRequestClose={() => setDevOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: c.bg2, borderColor: c.border }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-              <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }}>Audio devices</Text>
-              <TouchableOpacity onPress={() => setDevOpen(false)} hitSlop={10}>
-                <Text style={{ color: c.danger, fontWeight: '700' }}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700', marginBottom: 4 }}>MICROPHONE</Text>
-            {devices.mic.length === 0 ? (
-              <Text style={{ color: c.muted, fontSize: 12, marginBottom: 8 }}>No devices found</Text>
-            ) : (
-              devices.mic.map((d) => (
-                <TouchableOpacity
-                  key={d.id}
-                  onPress={() => switchMicDevice(d.id)}
-                  style={[styles.devRow, { borderColor: c.border, backgroundColor: c.bg }]}
-                >
-                  <Text style={{ color: c.text, fontSize: 13 }} numberOfLines={1}>
-                    🎙 {d.label}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            )}
-            <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700', marginBottom: 4, marginTop: 10 }}>SPEAKER</Text>
-            {devices.speaker.length === 0 ? (
-              <Text style={{ color: c.muted, fontSize: 12, marginBottom: 8 }}>No devices found</Text>
-            ) : (
-              devices.speaker.map((d) => (
-                <TouchableOpacity
-                  key={d.id}
-                  onPress={() => switchSpeakerDevice(d.id)}
-                  style={[styles.devRow, { borderColor: c.border, backgroundColor: c.bg }]}
-                >
-                  <Text style={{ color: c.text, fontSize: 13 }} numberOfLines={1}>
-                    🔊 {d.label}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
-        </View>
-      </Modal>
     </View>
   )
 }
@@ -518,23 +485,5 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    padding: 16,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    borderWidth: 1,
-  },
-  devRow: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 6,
   },
 })

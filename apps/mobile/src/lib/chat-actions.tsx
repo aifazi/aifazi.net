@@ -1,6 +1,7 @@
-import { useRef } from 'react'
+import { useRef, useCallback } from 'react'
 import type { ReactNode } from 'react'
-import { Alert, Animated, PanResponder, GestureResponderEvent, PanResponderGestureState } from 'react-native'
+import { Animated, PanResponder, GestureResponderEvent, PanResponderGestureState } from 'react-native'
+import { useOverlay, MenuOption } from '@/src/components/overlay'
 
 export interface MessageActions {
   isMine: boolean
@@ -16,24 +17,40 @@ const QUICK_EMOJIS = ['👍', '❤️', '🔥', '😂', '🎉', '😮', '👀', 
  * Long-press action menu for a chat message. Shows Reply / React always,
  * plus Edit + Delete when the message is the user's own.
  */
-export function showMessageActions(a: MessageActions) {
-  const buttons: any[] = [
-    { text: 'Cancel', style: 'cancel' },
-    { text: '💬 Reply', onPress: a.onReply },
-    { text: '😀 React', onPress: a.onReact },
-  ]
-  if (a.isMine) {
-    if (a.onEdit) buttons.push({ text: '✏️ Edit', onPress: a.onEdit })
-    if (a.onDelete) buttons.push({ text: '🗑 Delete', style: 'destructive', onPress: a.onDelete })
-  }
-  Alert.alert('Message', 'Choose an action', buttons)
-}
+export function useMessageActions() {
+  const { menu } = useOverlay()
 
-/** Quick emoji picker for reactions. */
-export function showEmojiPicker(onPick: (emoji: string) => void) {
-  const flat: any[] = QUICK_EMOJIS.map((e) => ({ text: e, onPress: () => onPick(e) }))
-  flat.push({ text: 'Cancel', style: 'cancel' })
-  Alert.alert('React', 'Pick an emoji', flat, { cancelable: true })
+  const showMessageActions = useCallback(
+    async (a: MessageActions) => {
+      const options: MenuOption[] = [
+        { value: 'reply', label: '💬 Reply' },
+        { value: 'react', label: '😀 React' },
+      ]
+      if (a.isMine) {
+        if (a.onEdit) options.push({ value: 'edit', label: '✏️ Edit' })
+        if (a.onDelete) options.push({ value: 'delete', label: '🗑 Delete', destructive: true })
+      }
+      const picked = await menu({ title: 'Message', options })
+      if (picked === 'reply') a.onReply()
+      else if (picked === 'react') a.onReact()
+      else if (picked === 'edit') a.onEdit?.()
+      else if (picked === 'delete') a.onDelete?.()
+    },
+    [menu],
+  )
+
+  const showEmojiPicker = useCallback(
+    async (onPick: (emoji: string) => void) => {
+      const picked = await menu({
+        title: 'React',
+        options: QUICK_EMOJIS.map((e) => ({ value: e, label: e, icon: e })),
+      })
+      if (picked) onPick(picked)
+    },
+    [menu],
+  )
+
+  return { showMessageActions, showEmojiPicker }
 }
 
 export interface SwipeToReplyOptions {

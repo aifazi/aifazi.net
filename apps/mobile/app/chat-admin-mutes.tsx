@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { useOverlay } from '@/src/components/overlay'
 
 interface Mute {
   id: string
@@ -26,6 +27,7 @@ export default function ChatAdminMutesScreen() {
   const [mutes, setMutes] = useState<Mute[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const { confirm } = useOverlay()
 
   const isStaff = user?.role === 'admin' || user?.role === 'moderator'
 
@@ -41,22 +43,15 @@ export default function ChatAdminMutesScreen() {
     if (isStaff) load()
   }, [isStaff, load])
 
-  const lift = (m: Mute) => {
-    Alert.alert('Lift mute', `Unmute ${m.username} in ${m.room_name || 'this channel'}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Unmute',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.delete(`/chat/rooms/${m.room_id}/mute/${encodeURIComponent(m.username)}`)
-            setMutes((prev) => prev.filter((x) => x.id !== m.id))
-          } catch (e: any) {
-            setErr(e?.response?.data?.detail || 'Could not unmute')
-          }
-        },
-      },
-    ])
+  const lift = async (m: Mute) => {
+    const ok = await confirm({ title: 'Lift mute', message: `Unmute ${m.username} in ${m.room_name || 'this channel'}?`, confirmText: 'Unmute', destructive: true })
+    if (!ok) return
+    try {
+      await api.delete(`/chat/rooms/${m.room_id}/mute/${encodeURIComponent(m.username)}`)
+      setMutes((prev) => prev.filter((x) => x.id !== m.id))
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not unmute')
+    }
   }
 
   if (!isStaff) {

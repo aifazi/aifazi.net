@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { useOverlay } from '@/src/components/overlay'
 
 interface Member {
   id: string
@@ -34,6 +35,7 @@ export default function ChatAdminMembersScreen() {
   const [roles, setRoles] = useState<CustomRole[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const { confirm, menu } = useOverlay()
 
   const isStaff = user?.role === 'admin' || user?.role === 'moderator'
 
@@ -53,41 +55,31 @@ export default function ChatAdminMembersScreen() {
     if (isStaff) load()
   }, [isStaff, load])
 
-  const changeRole = (m: Member) => {
+  const changeRole = async (m: Member) => {
     const roomRoles = roles.filter((r) => r.room_id === m.room_id).map((r) => r.name)
     const opts = [...new Set([...roomRoles, ...PLATFORM_ROLES])]
-    Alert.alert(`Role for ${m.username}`, m.room_name ? `In ${m.room_name}` : 'Choose a role', [
-      ...opts.map((r) => ({
-        text: r,
-        onPress: async () => {
-          try {
-            await api.patch(`/chat/rooms/${m.room_id}/members/${encodeURIComponent(m.username)}/role`, { name: r })
-            setMembers((prev) => prev.map((x) => (x.id === m.id ? { ...x, role: r } : x)))
-          } catch (e: any) {
-            setErr(e?.response?.data?.detail || 'Could not change role')
-          }
-        },
-      })),
-      { text: 'Cancel', style: 'cancel' },
-    ])
+    const picked = await menu({
+      title: `Role for ${m.username}`,
+      options: opts.map((r) => ({ value: r, label: r })),
+    })
+    if (!picked) return
+    try {
+      await api.patch(`/chat/rooms/${m.room_id}/members/${encodeURIComponent(m.username)}/role`, { name: picked })
+      setMembers((prev) => prev.map((x) => (x.id === m.id ? { ...x, role: picked } : x)))
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not change role')
+    }
   }
 
-  const kick = (m: Member) => {
-    Alert.alert('Kick member', `Kick ${m.username} from ${m.room_name || 'this channel'}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Kick',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.post(`/chat/rooms/${m.room_id}/kick`, { username: m.username })
-            setMembers((prev) => prev.filter((x) => x.id !== m.id))
-          } catch (e: any) {
-            setErr(e?.response?.data?.detail || 'Could not kick member')
-          }
-        },
-      },
-    ])
+  const kick = async (m: Member) => {
+    const ok = await confirm({ title: 'Kick member', message: `Kick ${m.username} from ${m.room_name || 'this channel'}?`, confirmText: 'Kick', destructive: true })
+    if (!ok) return
+    try {
+      await api.post(`/chat/rooms/${m.room_id}/kick`, { username: m.username })
+      setMembers((prev) => prev.filter((x) => x.id !== m.id))
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not kick member')
+    }
   }
 
   if (!isStaff) {

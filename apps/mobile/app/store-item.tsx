@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -7,6 +7,7 @@ import { Btn, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { useOverlay } from '@/src/components/overlay'
 
 interface Variant {
   id: string
@@ -55,6 +56,7 @@ export default function StoreItemScreen() {
   const [err, setErr] = useState('')
   const [adding, setAdding] = useState(false)
   const { isAuthed } = useAuth()
+  const { confirm, alert, toast } = useOverlay()
 
   const load = useCallback(() => {
     if (!slug) return
@@ -103,14 +105,12 @@ export default function StoreItemScreen() {
   const addToCart = async () => {
     if (!p) return
     if (!isAuthed) {
-      Alert.alert('Login required', 'Create an account or sign in to add items to your cart.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign in', onPress: () => router.push('/auth/login') },
-      ])
+      const goLogin = await confirm({ title: 'Login required', message: 'Create an account or sign in to add items to your cart.', confirmText: 'Sign in', cancelText: 'Cancel' })
+      if (goLogin) router.push('/auth/login')
       return
     }
     if (!p.in_stock && !activeVariant?.in_stock) {
-      Alert.alert('Out of stock', `${p.name} is currently out of stock.`)
+      alert({ message: `${p.name} is currently out of stock.` })
       return
     }
     setAdding(true)
@@ -120,12 +120,9 @@ export default function StoreItemScreen() {
         quantity: 1,
         variant_id: variant || null,
       })
-      Alert.alert('Added to cart', `${p.name} is in your cart.`, [
-        { text: 'Keep shopping', style: 'cancel' },
-        { text: 'View cart', onPress: () => router.push('/store-cart') },
-      ])
+      toast(`${p.name} added to cart`, 'success')
     } catch (e: any) {
-      Alert.alert('Could not add to cart', e?.response?.data?.detail || e?.message || 'Try again.')
+      toast(e?.response?.data?.detail || e?.message || 'Could not add to cart', 'error')
     } finally {
       setAdding(false)
     }

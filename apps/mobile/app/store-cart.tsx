@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image as ExpoImage } from 'expo-image'
 import { Btn, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { useOverlay } from '@/src/components/overlay'
 
 interface CartItem {
   id: string
@@ -27,6 +28,7 @@ export default function StoreCartScreen() {
   const router = useRouter()
   const { theme } = useTheme()
   const c = theme.colors
+  const { toast, confirm, alert } = useOverlay()
   const [cart, setCart] = useState<Cart>({ items: [], subtotal_cents: 0, count: 0 })
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -52,50 +54,36 @@ export default function StoreCartScreen() {
       const r = await api.patch(`/store/cart/${item.id}`, { quantity: qty })
       setCart((r.data ?? cart) as Cart)
     } catch (e: any) {
-      Alert.alert('Could not update', e?.response?.data?.detail || 'Try again.')
+      toast(e?.response?.data?.detail || 'Could not update', 'error')
     } finally {
       setBusy(false)
     }
   }
 
-  const remove = (item: CartItem) => {
-    Alert.alert('Remove item', `Remove ${item.product.name} from your cart?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const r = await api.delete(`/store/cart/${item.id}`)
-            setCart((r.data ?? cart) as Cart)
-          } catch (e: any) {
-            Alert.alert('Could not remove', e?.response?.data?.detail || 'Try again.')
-          }
-        },
-      },
-    ])
+  const remove = async (item: CartItem) => {
+    const ok = await confirm({ title: 'Remove item', message: `Remove ${item.product.name} from your cart?`, confirmText: 'Remove', destructive: true })
+    if (!ok) return
+    try {
+      const r = await api.delete(`/store/cart/${item.id}`)
+      setCart((r.data ?? cart) as Cart)
+    } catch (e: any) {
+      toast(e?.response?.data?.detail || 'Could not remove', 'error')
+    }
   }
 
-  const clear = () => {
-    Alert.alert('Clear cart', 'Remove all items?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Clear',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const r = await api.post('/store/cart/clear')
-            setCart((r.data ?? { items: [], subtotal_cents: 0, count: 0 }) as Cart)
-          } catch (e: any) {
-            Alert.alert('Could not clear', e?.response?.data?.detail || 'Try again.')
-          }
-        },
-      },
-    ])
+  const clear = async () => {
+    const ok = await confirm({ title: 'Clear cart', message: 'Remove all items?', confirmText: 'Clear', destructive: true })
+    if (!ok) return
+    try {
+      const r = await api.post('/store/cart/clear')
+      setCart((r.data ?? { items: [], subtotal_cents: 0, count: 0 }) as Cart)
+    } catch (e: any) {
+      toast(e?.response?.data?.detail || 'Could not clear', 'error')
+    }
   }
 
-  const checkout = () => {
-    Alert.alert('Checkout', 'Web checkout is coming soon to the mobile app. For now, complete your order on the website.', [{ text: 'OK' }])
+  const checkout = async () => {
+    await alert({ message: 'Web checkout is coming soon to the mobile app. For now, complete your order on the website.' })
   }
 
   return (

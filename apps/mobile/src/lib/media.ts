@@ -1,6 +1,6 @@
-import { Alert } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import * as DocumentPicker from 'expo-document-picker'
+import type { OverlayApi } from '@/src/components/overlay'
 
 export interface PickedFile {
   uri: string
@@ -47,10 +47,10 @@ export interface PickOptions {
   aspect?: [number, number]
 }
 
-export async function pickLibraryImage(opts: PickOptions = {}): Promise<PickedFile | null> {
+export async function pickLibraryImage(opts: PickOptions = {}, overlay?: OverlayApi): Promise<PickedFile | null> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
   if (!perm.granted) {
-    Alert.alert('Permission required', 'Allow access to your photo library to pick images.')
+    overlay?.alert({ message: 'Allow access to your photo library to pick images.' })
     return null
   }
   const res = await ImagePicker.launchImageLibraryAsync({
@@ -70,10 +70,10 @@ export async function pickLibraryImage(opts: PickOptions = {}): Promise<PickedFi
   }
 }
 
-export async function takeCameraPhoto(opts: PickOptions = {}): Promise<PickedFile | null> {
+export async function takeCameraPhoto(opts: PickOptions = {}, overlay?: OverlayApi): Promise<PickedFile | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync()
   if (!perm.granted) {
-    Alert.alert('Permission required', 'Allow access to the camera to take a photo.')
+    overlay?.alert({ message: 'Allow access to the camera to take a photo.' })
     return null
   }
   const res = await ImagePicker.launchCameraAsync({
@@ -109,13 +109,18 @@ export async function pickDocument(): Promise<PickedFile | null> {
 }
 
 /**
- * Prompts the user for an image source (camera or library) and returns the
- * picked file, or null if cancelled/denied.
+ * Asks the user via the overlay menu for an image source (camera or library)
+ * and returns the picked file, or null if cancelled/denied.
  */
-export function askImageSource(onFile: (f: PickedFile) => void): void {
-  Alert.alert('Add image', 'Choose a source', [
-    { text: 'Cancel', style: 'cancel' },
-    { text: 'Take photo', onPress: () => takeCameraPhoto().then((f) => f && onFile(f)) },
-    { text: 'Photo library', onPress: () => pickLibraryImage().then((f) => f && onFile(f)) },
-  ])
+export async function askImageSourceAsync(overlay: OverlayApi): Promise<PickedFile | null> {
+  const source = await overlay.menu({
+    title: 'Add image',
+    options: [
+      { value: 'camera', label: '📷 Take photo' },
+      { value: 'library', label: '🖼 Photo library' },
+    ],
+  })
+  if (source === 'camera') return takeCameraPhoto({}, overlay)
+  if (source === 'library') return pickLibraryImage({}, overlay)
+  return null
 }

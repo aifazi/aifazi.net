@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -8,6 +8,7 @@ import { MarkdownText } from '@/src/components/markdown'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { useOverlay } from '@/src/components/overlay'
 
 interface Comment {
   _id?: string
@@ -47,6 +48,7 @@ export default function BlogPostScreen() {
   const { theme } = useTheme()
   const { user, isAuthed } = useAuth()
   const c = theme.colors
+  const { alert, confirm } = useOverlay()
   const [post, setPost] = useState<PostDetail | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,27 +87,23 @@ export default function BlogPostScreen() {
       const r = await api.get(`/blog/comments/${encodeURIComponent(slug)}`)
       setComments((r.data ?? []) as Comment[])
     } catch (e: any) {
-      Alert.alert('Could not comment', e?.response?.data?.detail || e?.message || 'Login required to comment.')
+      alert({ message: e?.response?.data?.detail || e?.message || 'Login required to comment.' })
     } finally {
       setPosting(false)
     }
   }
 
-  const deleteComment = (cm: Comment) => {
+  const deleteComment = async (cm: Comment) => {
     const id = cm._id || cm.id
     if (!id) return
-    Alert.alert('Delete comment', 'Delete this comment?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          api.delete(`/blog/comments/${id}`)
-            .then(() => setComments((prev) => prev.filter((x) => (x._id || x.id) !== id)))
-            .catch((e) => Alert.alert('Delete failed', e?.response?.data?.detail || 'Could not delete.'))
-        },
-      },
-    ])
+    const ok = await confirm({ title: 'Delete comment', message: 'Delete this comment?', confirmText: 'Delete', destructive: true })
+    if (!ok) return
+    try {
+      await api.delete(`/blog/comments/${id}`)
+      setComments((prev) => prev.filter((x) => (x._id || x.id) !== id))
+    } catch (e: any) {
+      alert({ message: e?.response?.data?.detail || 'Could not delete.' })
+    }
   }
 
   if (loading) {

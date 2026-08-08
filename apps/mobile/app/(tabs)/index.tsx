@@ -8,6 +8,7 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { Btn } from '@/src/components/ui'
+import { Avatar } from '@/src/components/Avatar'
 
 interface StatusService {
   name: string
@@ -134,11 +135,7 @@ export default function HomeScreen() {
         </Text>
         {isAuthed ? (
           <TouchableOpacity onPress={() => router.push('/profile' as Href)}>
-            <View style={[styles.avatar, { backgroundColor: c.accent2 }]}>
-              <Text style={{ color: '#001018', fontWeight: '800', fontSize: 14 }}>
-                {(user?.username || '?').slice(0, 1).toUpperCase()}
-              </Text>
-            </View>
+            <Avatar name={user?.username} avatar={user?.avatar} size={34} />
           </TouchableOpacity>
         ) : (
           <Btn title="Sign in" onPress={() => router.push('/profile' as Href)} style={{ paddingVertical: 7, paddingHorizontal: 12 }} />

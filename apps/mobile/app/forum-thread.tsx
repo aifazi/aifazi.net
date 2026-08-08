@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Btn, Muted } from '@/src/components/ui'
@@ -7,6 +7,7 @@ import { MarkdownText } from '@/src/components/markdown'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { useOverlay } from '@/src/components/overlay'
 
 interface ThreadAuthor {
   username: string
@@ -48,6 +49,7 @@ export default function ForumThreadScreen() {
   const { theme } = useTheme()
   const c = theme.colors
   const { isAuthed, user } = useAuth()
+  const { confirm } = useOverlay()
   const [thread, setThread] = useState<ThreadDetail | null>(null)
   const [replies, setReplies] = useState<Reply[]>([])
   const [text, setText] = useState('')
@@ -125,19 +127,15 @@ export default function ForumThreadScreen() {
     }
   }
 
-  const deleteReply = (r: Reply) => {
-    Alert.alert('Delete reply', 'Delete this reply?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          api.delete(`/forum/replies/${r.id}`)
-            .then(() => setReplies((prev) => prev.filter((x) => x.id !== r.id && x._id !== r.id)))
-            .catch((e) => setErr(e?.response?.data?.detail || 'Failed to delete reply'))
-        },
-      },
-    ])
+  const deleteReply = async (r: Reply) => {
+    const ok = await confirm({ title: 'Delete reply', message: 'Delete this reply?', confirmText: 'Delete', destructive: true })
+    if (!ok) return
+    try {
+      await api.delete(`/forum/replies/${r.id}`)
+      setReplies((prev) => prev.filter((x) => x.id !== r.id && x._id !== r.id))
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Failed to delete reply')
+    }
   }
 
   if (loading) {

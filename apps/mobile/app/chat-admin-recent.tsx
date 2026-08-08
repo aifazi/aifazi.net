@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { useOverlay } from '@/src/components/overlay'
 
 interface Msg {
   id: string
@@ -28,6 +29,7 @@ export default function ChatAdminRecentScreen() {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const { menu, alert } = useOverlay()
 
   const isStaff = user?.role === 'admin' || user?.role === 'moderator'
 
@@ -43,11 +45,12 @@ export default function ChatAdminRecentScreen() {
     if (isStaff) load()
   }, [isStaff, load])
 
-  const show = (m: Msg) => {
-    Alert.alert('Message', `${m.sender} · ${m.room_name || '—'}`, [
-      { text: 'Close', style: 'cancel' },
-      { text: 'Copy ID', onPress: () => Alert.alert('Message ID', m.id) },
-    ])
+  const show = async (m: Msg) => {
+    const picked = await menu({
+      title: `${m.sender} · ${m.room_name || '—'}`,
+      options: [{ value: 'copy', label: 'Copy ID' }],
+    })
+    if (picked === 'copy') alert({ message: m.id })
   }
 
   if (!isStaff) {

@@ -11,18 +11,18 @@ import {
   Platform,
   Linking,
   Pressable,
-  Alert,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { askImageSource, pickDocument, type PickedFile } from '@/src/lib/media'
+import { askImageSourceAsync, pickDocument, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
-import { showMessageActions, showEmojiPicker, SwipeReplyRow } from '@/src/lib/chat-actions'
+import { useMessageActions, SwipeReplyRow } from '@/src/lib/chat-actions'
 import { MarkdownText } from '@/src/components/markdown'
+import { useOverlay } from '@/src/components/overlay'
 
 interface ChatMessage {
   id: string
@@ -86,6 +86,9 @@ export default function ChatRoomScreen() {
   const { theme } = useTheme()
   const c = theme.colors
   const { user } = useAuth()
+  const overlay = useOverlay()
+  const { confirm } = overlay
+  const { showMessageActions, showEmojiPicker } = useMessageActions()
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loading, setLoading] = useState(true)
@@ -223,11 +226,10 @@ export default function ChatRoomScreen() {
     }
   }
 
-  const confirmDelete = (id: string) => {
-    Alert.alert('Delete message', 'Delete this message?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteMsg(id) },
-    ])
+  const confirmDelete = async (id: string) => {
+    const ok = await confirm({ title: 'Delete message', message: 'Delete this message?', confirmText: 'Delete', destructive: true })
+    if (!ok) return
+    deleteMsg(id)
   }
 
   const startEdit = (m: ChatMessage) => {
@@ -259,8 +261,9 @@ export default function ChatRoomScreen() {
     Linking.openURL(url).catch(() => setErr('Could not open link'))
   }
 
-  const pickImage = () => {
-    askImageSource((f) => uploadFile(f, 'image'))
+  const pickImage = async () => {
+    const f = await askImageSourceAsync(overlay)
+    if (f) uploadFile(f, 'image')
   }
 
   const pickDoc = () => {

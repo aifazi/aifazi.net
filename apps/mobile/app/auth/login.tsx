@@ -1,20 +1,25 @@
 import { useState } from 'react'
-import { View, Alert, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
 import { Title, Muted, Btn, Field } from '@/src/components/ui'
 import { useAuth } from '@/src/lib/auth'
+import { useTheme } from '@/src/theme'
+import { useOverlay } from '@/src/components/overlay'
 
 export default function LoginScreen() {
   const { login } = useAuth()
   const router = useRouter()
+  const { theme } = useTheme()
+  const c = theme.colors
+  const { alert } = useOverlay()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
 
   const submit = async () => {
     if (!identifier.trim() || !password) {
-      Alert.alert('Missing fields', 'Enter your username/email and password.')
+      alert({ message: 'Enter your username/email and password.' })
       return
     }
     setBusy(true)
@@ -22,7 +27,7 @@ export default function LoginScreen() {
       await login(identifier.trim(), password)
       router.back()
     } catch (e: any) {
-      Alert.alert('Login failed', e?.response?.data?.detail || e?.message || 'Please try again.')
+      alert({ message: e?.response?.data?.detail || e?.message || 'Please try again.' })
     } finally {
       setBusy(false)
     }
@@ -31,6 +36,11 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <Screen>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
+            <Text style={{ color: c.text, fontSize: 18, fontFamily: theme.mono ? 'monospace' : undefined }}>←</Text>
+          </TouchableOpacity>
+        </View>
         <Title>Sign in</Title>
         <Muted>Welcome back to aifazi.net</Muted>
         <View style={{ marginTop: 18 }}>

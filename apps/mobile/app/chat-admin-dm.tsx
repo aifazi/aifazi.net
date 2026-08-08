@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { useOverlay } from '@/src/components/overlay'
 
 interface DMRequest {
   id: string
@@ -49,6 +50,7 @@ export default function ChatAdminDMScreen() {
   const [blocks, setBlocks] = useState<DMBlock[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const { confirm } = useOverlay()
 
   const isStaff = user?.role === 'admin' || user?.role === 'moderator'
 
@@ -72,21 +74,14 @@ export default function ChatAdminDMScreen() {
     if (isStaff) load()
   }, [isStaff, load])
 
-  const act = (title: string, body: string, onConfirm: () => Promise<void>) => {
-    Alert.alert(title, body, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Confirm',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await onConfirm()
-          } catch (e: any) {
-            setErr(e?.response?.data?.detail || 'Action failed')
-          }
-        },
-      },
-    ])
+  const act = async (title: string, body: string, onConfirm: () => Promise<void>) => {
+    const ok = await confirm({ title, message: body, confirmText: 'Confirm', destructive: true })
+    if (!ok) return
+    try {
+      await onConfirm()
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Action failed')
+    }
   }
 
   const accept = (r: DMRequest) =>

@@ -4,17 +4,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Switch,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Card, Muted, Btn } from '@/src/components/ui'
+import { Card, Muted, Btn, Toggle } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { useOverlay } from '@/src/components/overlay'
 
 const PLATFORM_ROLES = ['member', 'admin', 'moderator', 'editor', 'chat']
 const ROOM_PERMS = [
@@ -58,6 +57,7 @@ export default function ChannelEditScreen() {
   const c = theme.colors
   const { user } = useAuth()
   const isStaff = user?.role === 'admin' || user?.role === 'moderator'
+  const { alert, confirm, menu } = useOverlay()
 
   const [loading, setLoading] = useState(!!room_id)
   const [saving, setSaving] = useState(false)
@@ -176,7 +176,8 @@ export default function ChannelEditScreen() {
     try {
       if (room_id) await api.put(`/chat/rooms/${room_id}`, body)
       else await api.post('/chat/rooms', body)
-      Alert.alert('Saved', 'Channel updated.', [{ text: 'OK', onPress: () => router.back() }])
+      await alert({ message: 'Channel updated.' })
+      router.back()
     } catch (e: any) {
       setErr(e?.response?.data?.detail || 'Could not save channel')
     } finally {
@@ -186,21 +187,14 @@ export default function ChannelEditScreen() {
 
   const removeRoom = async () => {
     if (!room_id) return
-    Alert.alert('Delete channel', `Delete "${name}"? This cannot be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.delete(`/chat/rooms/${room_id}`)
-            router.back()
-          } catch (e: any) {
-            setErr(e?.response?.data?.detail || 'Could not delete channel')
-          }
-        },
-      },
-    ])
+    const ok = await confirm({ title: 'Delete channel', message: `Delete "${name}"? This cannot be undone.`, confirmText: 'Delete', destructive: true })
+    if (!ok) return
+    try {
+      await api.delete(`/chat/rooms/${room_id}`)
+      router.back()
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not delete channel')
+    }
   }
 
   const saveRole = async () => {
@@ -228,42 +222,32 @@ export default function ChannelEditScreen() {
     }
   }
 
-  const changeMemberRole = (m: Member) => {
+  const changeMemberRole = async (m: Member) => {
     if (!room_id) return
     const opts = [...roles.map((r) => r.name), 'member', 'moderator']
-    Alert.alert(`Role for ${m.username}`, 'Choose a role', [
-      ...opts.map((r) => ({
-        text: r,
-        onPress: async () => {
-          try {
-            await api.patch(`/chat/rooms/${room_id}/members/${encodeURIComponent(m.username)}/role`, { name: r })
-            setMembers((prev) => prev.map((x) => (x.username === m.username ? { ...x, role: r } : x)))
-          } catch (e: any) {
-            setErr(e?.response?.data?.detail || 'Could not change role')
-          }
-        },
-      })),
-      { text: 'Cancel', style: 'cancel' },
-    ])
+    const picked = await menu({
+      title: `Role for ${m.username}`,
+      options: opts.map((r) => ({ value: r, label: r })),
+    })
+    if (!picked) return
+    try {
+      await api.patch(`/chat/rooms/${room_id}/members/${encodeURIComponent(m.username)}/role`, { name: picked })
+      setMembers((prev) => prev.map((x) => (x.username === m.username ? { ...x, role: picked } : x)))
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not change role')
+    }
   }
 
-  const removeMember = (m: Member) => {
+  const removeMember = async (m: Member) => {
     if (!room_id) return
-    Alert.alert('Remove member', `Remove ${m.username} from this channel?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.post(`/chat/rooms/${room_id}/kick`, { username: m.username })
-            setMembers((prev) => prev.filter((x) => x.username !== m.username))
-          } catch (e: any) {
-            setErr(e?.response?.data?.detail || 'Could not remove member')
-          }
-        },
-      },
-    ])
+    const ok = await confirm({ title: 'Remove member', message: `Remove ${m.username} from this channel?`, confirmText: 'Remove', destructive: true })
+    if (!ok) return
+    try {
+      await api.post(`/chat/rooms/${room_id}/kick`, { username: m.username })
+      setMembers((prev) => prev.filter((x) => x.username !== m.username))
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not remove member')
+    }
   }
 
   const invite = async (username: string) => {
@@ -380,7 +364,7 @@ export default function ChannelEditScreen() {
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={{ color: c.text, fontSize: 13 }}>Read-only (staff + privileged can post)</Text>
-                <Switch value={readOnly} onValueChange={setReadOnly} trackColor={{ true: c.accent }} />
+                <Toggle value={readOnly} onValueChange={setReadOnly} />
               </View>
             </View>
           </Card>
