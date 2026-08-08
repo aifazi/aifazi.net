@@ -86,7 +86,7 @@ jobs:
           BUILD_ID="${{ steps.build.outputs.build_id }}"
           echo "Build ID: $BUILD_ID"
           for i in $(seq 1 240); do
-            STATUS=$(eas build:view "$BUILD_ID" --json --non-interactive 2>/dev/null | jq -r '.status')
+            STATUS=$(eas build:view "$BUILD_ID" --json 2>/dev/null | jq -r '.status')
             echo "Attempt $i: status=$STATUS"
             if [ "$STATUS" = "FINISHED" ]; then
               echo "Build finished."
@@ -107,7 +107,7 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           BUILD_ID="${{ steps.build.outputs.build_id }}"
-          URL=$(eas build:view "$BUILD_ID" --json --non-interactive 2>/dev/null | jq -r '.artifacts.applicationArchiveUrl // .artifacts.buildUrl')
+          URL=$(eas build:view "$BUILD_ID" --json 2>/dev/null | jq -r '.artifacts.applicationArchiveUrl // .artifacts.buildUrl')
           if [ -z "$URL" ] || [ "$URL" = "null" ]; then
             echo "No artifact URL found for build $BUILD_ID" >&2
             exit 1
