@@ -184,7 +184,7 @@ export default function HomeScreen() {
                 ))}
               </View>
             ) : null}
-            <TouchableOpacity onPress={() => router.push('/' as Href)} disabled style={{ marginTop: 10, alignSelf: 'flex-start' }}>
+            <TouchableOpacity onPress={() => router.push('/status' as Href)} hitSlop={8} style={{ marginTop: 10, alignSelf: 'flex-start' }}>
               <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>Detailed status →</Text>
             </TouchableOpacity>
           </View>
