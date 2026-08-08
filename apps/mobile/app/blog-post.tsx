@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Muted } from '@/src/components/ui'
 import { MarkdownText } from '@/src/components/markdown'
 import { useTheme } from '@/src/theme'
+import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 
 interface Comment {
@@ -13,7 +14,7 @@ interface Comment {
   id?: string
   content: string
   createdAt?: string
-  author?: { username: string; avatar?: string }
+  author?: { _id?: string; username: string; avatar?: string }
 }
 
 interface PostDetail {
@@ -44,11 +45,14 @@ export default function BlogPostScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>()
   const router = useRouter()
   const { theme } = useTheme()
+  const { user, isAuthed } = useAuth()
   const c = theme.colors
   const [post, setPost] = useState<PostDetail | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const [commentText, setCommentText] = useState('')
+  const [posting, setPosting] = useState(false)
 
   const load = useCallback(() => {
     if (!slug) return
@@ -68,6 +72,41 @@ export default function BlogPostScreen() {
     // bump views best-effort
     if (slug) api.post(`/blog/${encodeURIComponent(slug)}/view`).catch(() => {})
   }, [load, slug])
+
+  const canModerate = user?.role === 'admin' || user?.role === 'moderator'
+
+  const submitComment = async () => {
+    const content = commentText.trim()
+    if (!content || posting || !slug) return
+    setPosting(true)
+    try {
+      await api.post(`/blog/comments/${encodeURIComponent(slug)}`, { content })
+      setCommentText('')
+      const r = await api.get(`/blog/comments/${encodeURIComponent(slug)}`)
+      setComments((r.data ?? []) as Comment[])
+    } catch (e: any) {
+      Alert.alert('Could not comment', e?.response?.data?.detail || e?.message || 'Login required to comment.')
+    } finally {
+      setPosting(false)
+    }
+  }
+
+  const deleteComment = (cm: Comment) => {
+    const id = cm._id || cm.id
+    if (!id) return
+    Alert.alert('Delete comment', 'Delete this comment?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          api.delete(`/blog/comments/${id}`)
+            .then(() => setComments((prev) => prev.filter((x) => (x._id || x.id) !== id)))
+            .catch((e) => Alert.alert('Delete failed', e?.response?.data?.detail || 'Could not delete.'))
+        },
+      },
+    ])
+  }
 
   if (loading) {
     return (
@@ -133,11 +172,46 @@ export default function BlogPostScreen() {
         ) : (
           comments.map((cm) => (
             <View key={cm._id || cm.id || cm.content} style={{ paddingVertical: 10, borderTopWidth: 1, borderTopColor: c.border }}>
-              <Text style={{ color: c.accent2, fontSize: 12, fontWeight: '700' }}>{cm.author?.username ?? 'anonymous'}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ color: c.accent2, fontSize: 12, fontWeight: '700', flex: 1 }}>{cm.author?.username ?? 'anonymous'}</Text>
+                {(canModerate || cm.author?._id === user?.id || cm.author?._id === user?._id) && (
+                  <TouchableOpacity onPress={() => deleteComment(cm)} hitSlop={8}>
+                    <Text style={{ color: c.danger, fontSize: 12 }}>Delete</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               <Text style={{ color: c.text2, fontSize: 13, marginTop: 2 }}>{cm.content}</Text>
             </View>
           ))
         )}
+
+        <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 12 }}>
+          <Text style={{ color: c.text, fontSize: 13, fontWeight: '800', marginBottom: 8 }}>{isAuthed ? 'Add a comment' : 'Login to comment'}</Text>
+          {isAuthed ? (
+            <>
+              <TextInput
+                value={commentText}
+                onChangeText={setCommentText}
+                placeholder="Write a comment…"
+                placeholderTextColor={c.muted}
+                multiline
+                editable={!posting}
+                style={{ backgroundColor: c.bg, borderColor: c.border, color: c.text, borderWidth: 1, borderRadius: theme.mono ? 0 : 8, paddingHorizontal: 12, paddingVertical: 9, minHeight: 60, fontSize: 14, fontFamily: theme.mono ? 'monospace' : undefined, textAlignVertical: 'top' }}
+              />
+              <TouchableOpacity
+                onPress={submitComment}
+                disabled={posting || !commentText.trim()}
+                style={{ marginTop: 8, alignSelf: 'flex-end', backgroundColor: c.accent, paddingVertical: 9, paddingHorizontal: 18, borderRadius: theme.mono ? 0 : 8, opacity: posting || !commentText.trim() ? 0.5 : 1 }}
+              >
+                <Text style={{ color: theme.dark ? '#000' : '#fff', fontWeight: '700', fontSize: 13 }}>{posting ? 'Posting…' : 'Post comment'}</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity onPress={() => router.push('/auth/login')}>
+              <Text style={{ color: c.accent2, fontSize: 13 }}>Sign in to join the discussion →</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   )
