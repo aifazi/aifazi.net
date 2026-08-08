@@ -151,6 +151,84 @@ def _ensure_room_access(room_id: str, user: dict) -> dict:
         raise HTTPException(403, "You are banned from this channel")
     return room
 
+# ── Room role permissions (RBAC) ─────────────────────────────────────────────
+# chat_room_roles stores per-room custom roles with a `permissions` list, but the
+# permissions were never enforced at the API layer — the /roles CRUD wrote them
+# and nothing read them back. `chat_members.role` names a custom role (or a
+# built-in: member/moderator/admin). Resolve the effective permission set here
+# and gate message actions on it. TTL-cached (single-process, mirrors the
+# history cache) so sends don't hammer Postgres.
+_ROLE_PERMS = {
+    "read_messages", "send_messages", "manage_messages",
+    "manage_members", "manage_roles", "voice_speak", "voice_screen_share",
+}
+_MEMBER_DEFAULT_PERMS = {"read_messages", "send_messages"}
+_PERM_TTL = 30.0
+_perm_lock = threading.Lock()
+_perm_cache: dict[tuple[str, str], tuple[float, set[str]]] = {}
+
+
+def _resolve_room_permissions(room_id: str, user: dict) -> set[str]:
+    """Effective permission set for `user` in `room_id`.
+
+    Global admins/moderators get everything (platform staff). Members without a
+    custom role keep the baseline read+send. Members holding a custom role
+    defined in chat_room_roles get exactly that role's permission list (default
+    deny for anything not listed)."""
+    role = user.get("role") or "member"
+    if role in ("admin", "moderator"):
+        return set(_ROLE_PERMS)
+    uname = (user.get("username") or "").lower()
+    key = (str(room_id), uname)
+    with _perm_lock:
+        entry = _perm_cache.get(key)
+        if entry and time.monotonic() - entry[0] < _PERM_TTL:
+            return entry[1]
+
+    perms = set(_MEMBER_DEFAULT_PERMS)
+    try:
+        member = (
+            supabase.table("chat_members")
+            .select("role")
+            .eq("room_id", room_id)
+            .ilike("username", uname)
+            .limit(1)
+            .execute()
+            .data
+        )
+    except Exception:
+        member = []
+    if member and member[0].get("role"):
+        role_name = member[0]["role"]
+        if role_name == "moderator":
+            perms |= {"manage_messages", "manage_members"}
+        elif role_name == "admin":
+            perms |= _ROLE_PERMS
+        else:
+            # Custom role → its permissions are authoritative (deny-by-default).
+            try:
+                r = (
+                    supabase.table("chat_room_roles")
+                    .select("permissions")
+                    .eq("room_id", room_id)
+                    .eq("name", role_name)
+                    .limit(1)
+                    .execute()
+                    .data
+                )
+            except Exception:
+                r = []
+            if r and isinstance(r[0].get("permissions"), list):
+                perms = {p for p in r[0]["permissions"] if p in _ROLE_PERMS}
+    with _perm_lock:
+        _perm_cache[key] = (time.monotonic(), perms)
+    return perms
+
+
+def _require_room_perm(room: dict, user: dict, perm: str) -> None:
+    if perm not in _resolve_room_permissions(room["id"], user):
+        raise HTTPException(403, "You don't have permission to do this in this channel")
+
 def _chat_link(room_id: str) -> str:
     base = (os.getenv("FRONTEND_URL") or os.getenv("SITE_URL") or "https://aifazi.net").rstrip("/")
     return f"{base}/chat?room={room_id}"
@@ -432,7 +510,8 @@ async def get_messages(
     before: str | None = None,
     user: dict = Depends(get_current_user),
 ):
-    _ensure_room_access(room_id, user)
+    room = _ensure_room_access(room_id, user)
+    _require_room_perm(room, user, "read_messages")
     # Cache hit path — only for the "latest messages" fetch (no cursor).
     if not before:
         cached = _get_cached_history(room_id, limit)
@@ -461,6 +540,7 @@ async def send_message(
 ):
     """Send a message — open to any authenticated user (admin, staff, chat, forum)."""
     room = _ensure_room_access(room_id, user)
+    _require_room_perm(room, user, "send_messages")
     if room.get("read_only") and user.get("role") not in ("admin", "moderator"):
         raise HTTPException(403, "This channel is read only")
     # Enforce mute
@@ -526,8 +606,12 @@ async def edit_message(
     msg = supabase.table("chat_messages").select("sender,room_id").eq("id", msg_id).single().execute().data
     if not msg:
         raise HTTPException(404, "Message not found")
-    if msg["sender"] != user["username"] and user.get("role") != "admin":
-        raise HTTPException(403, "Not your message")
+    room = _get_room_or_404(msg["room_id"]) if msg.get("room_id") else None
+    if msg["sender"] != user["username"]:
+        if user.get("role") != "admin" and not (room and "manage_messages" in _resolve_room_permissions(room["id"], user)):
+            raise HTTPException(403, "Not your message")
+    elif room:
+        _require_room_perm(room, user, "send_messages")
 
     res = supabase.table("chat_messages").update({
         "content":   content,
@@ -550,6 +634,9 @@ async def toggle_reaction(
     msg = supabase.table("chat_messages").select("reactions,room_id").eq("id", msg_id).single().execute().data
     if not msg:
         raise HTTPException(404, "Message not found")
+    if msg.get("room_id"):
+        room = _get_room_or_404(msg["room_id"])
+        _require_room_perm(room, user, "read_messages")
 
     reactions = msg.get("reactions") or {}
     users = list(reactions.get(body.emoji, []))
@@ -573,13 +660,17 @@ async def delete_message(
     msg_id: str,
     user: dict = Depends(get_current_user),
 ):
-    """Owners can delete their own messages; staff/admin can delete any."""
+    """Owners can delete their own messages; staff/managers (manage_messages) can delete any."""
     msg = supabase.table("chat_messages").select("sender,room_id").eq("id", msg_id).single().execute().data
     if not msg:
         raise HTTPException(404, "Message not found")
 
     is_staff = user.get("role") in ("admin", "moderator")
-    if msg["sender"] != user["username"] and not is_staff:
+    can_manage = False
+    if msg.get("room_id") and not is_staff:
+        room = _get_room_or_404(msg["room_id"])
+        can_manage = "manage_messages" in _resolve_room_permissions(room["id"], user)
+    if msg["sender"] != user["username"] and not is_staff and not can_manage:
         raise HTTPException(403, "Not your message")
 
     supabase.table("chat_messages").delete().eq("id", msg_id).execute()
@@ -589,8 +680,8 @@ async def delete_message(
 
 @router.post("/messages/bulk-delete")
 async def bulk_delete_messages(body: BulkDeleteBody, user: dict = Depends(get_current_user)):
-    """Delete multiple messages. Staff/admin can delete any; regular users can
-    only delete their own messages."""
+    """Delete multiple messages. Staff/managers (manage_messages) can delete any;
+    regular users can only delete their own messages."""
     ids = list(dict.fromkeys(body.message_ids))[:100]
     if not ids:
         raise HTTPException(400, "No messages provided")
@@ -598,13 +689,21 @@ async def bulk_delete_messages(body: BulkDeleteBody, user: dict = Depends(get_cu
     res = supabase.table("chat_messages").select("id,room_id,sender").in_("id", ids).execute()
     rows = res.data or []
     is_staff = user.get("role") in ("admin", "moderator")
+    manage_rooms: dict[str, bool] = {}
     deletable: list[str] = []
     room_ids: set[str] = set()
     for m in rows:
-        if is_staff or m.get("sender") == user.get("username"):
+        can_manage = False
+        rid = m.get("room_id")
+        if rid and not is_staff:
+            if rid not in manage_rooms:
+                room = _get_room_or_404(rid)
+                manage_rooms[rid] = "manage_messages" in _resolve_room_permissions(room["id"], user)
+            can_manage = manage_rooms[rid]
+        if is_staff or can_manage or m.get("sender") == user.get("username"):
             deletable.append(m["id"])
-            if m.get("room_id"):
-                room_ids.add(m["room_id"])
+            if rid:
+                room_ids.add(rid)
     if deletable:
         supabase.table("chat_messages").delete().in_("id", deletable).execute()
     for rid in room_ids:

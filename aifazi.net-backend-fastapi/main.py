@@ -538,7 +538,7 @@ app.add_middleware(SecurityMiddleware)
 from routers import (
     auth, blog, upload, contact, content,
     forum, notifications,
-    chat, chat_ai, chat_livekit,
+    chat, chat_ai, chat_livekit, chat_dm, chat_url_preview,
     helpdesk, newsletter, banners,
     site_settings, email_settings, cdn_settings,
     search, stats, audit, backup, admin_actions,
@@ -578,6 +578,8 @@ app.include_router(forum.router,          prefix="/api/forum")
 app.include_router(chat_ai.router,        prefix="/api/chat/ai")
 app.include_router(chat_livekit.router,  prefix="/api/chat")
 app.include_router(chat.router,           prefix="/api/chat")
+app.include_router(chat_dm.router,        prefix="/api/chat")
+app.include_router(chat_url_preview.router, prefix="/api/chat")
 app.include_router(audit.router,          prefix="/api/admin/audit")
 app.include_router(stats.router,          prefix="/api/admin/stats")
 app.include_router(stats.router,          prefix="/api/stats")

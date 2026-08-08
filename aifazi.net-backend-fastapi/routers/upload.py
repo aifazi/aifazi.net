@@ -9,7 +9,7 @@ All providers save a record in the `media` table after upload.
 import os, uuid, mimetypes, base64
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from database import supabase
-from dependencies import require_staff
+from dependencies import require_staff, get_current_user
 from routers.cdn_upload import get_cdn_config as _get_cdn_config, _upload_r2, _delete_r2
 import httpx
 
@@ -18,6 +18,15 @@ router = APIRouter()
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_BUCKET = "media"
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB hard cap
+
+# Member-facing chat/media uploads are more conservative than the staff library:
+# images + short-form media only, capped at 10 MB.
+CHAT_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
+CHAT_ALLOWED_MIMETYPES = {
+    "image/jpeg", "image/png", "image/gif", "image/webp",
+    "video/mp4", "video/webm",
+    "audio/mpeg", "audio/ogg", "audio/wav",
+}
 
 ALLOWED_MIMETYPES = {
     "image/jpeg", "image/png", "image/gif", "image/webp",
@@ -127,6 +136,30 @@ def _save_media(filename: str, original_name: str, mimetype: str, size: int, url
         "provider":      provider,
     }).execute()
     return row.data[0] if row.data else {}
+
+
+async def _upload_to_provider(content: bytes, filename: str, mimetype: str, cfg: dict) -> tuple[str, str, str]:
+    """Dispatch to the active CDN provider. Returns (public_url, storage_path, provider)."""
+    provider = (cfg.get("provider") or cfg.get("activeProvider") or "supabase").lower()
+    custom_domain = cfg.get("customDomain", "").strip().rstrip("/")
+
+    if provider == "cloudinary":
+        public_url, storage_path = await _upload_cloudinary(content, filename, mimetype, cfg)
+        if custom_domain and "res.cloudinary.com" in public_url:
+            cloud = cfg.get("cloudinaryCloudName", "").strip()
+            public_url = public_url.replace(f"https://res.cloudinary.com/{cloud}", custom_domain)
+    elif provider == "r2":
+        public_url, storage_path = _upload_r2(content, filename, mimetype, cfg, "media")
+    elif provider == "b2":
+        public_url, storage_path = await _upload_b2(content, filename, mimetype, cfg)
+    elif provider == "imagekit":
+        public_url, storage_path = await _upload_imagekit(content, filename, mimetype, cfg)
+    elif provider == "bunny":
+        public_url, storage_path = await _upload_bunny(content, filename, mimetype, cfg)
+    else:
+        provider = "supabase"
+        public_url, storage_path = await _upload_supabase(content, filename, mimetype)
+    return public_url, storage_path, provider
 
 
 # ── provider upload functions ──────────────────────────────────────────────────
@@ -321,39 +354,7 @@ async def upload_file(
     filename = _safe_storage_filename(filename)  # M11 — strip traversal/separators
 
     cfg      = _get_cdn_config()
-    # Frontend saves as 'provider'; fall back to 'activeProvider' for compat
-    provider = (cfg.get("provider") or cfg.get("activeProvider") or "supabase").lower()
-
-    public_url   = ""
-    storage_path = ""
-
-    custom_domain = cfg.get("customDomain", "").strip().rstrip("/")
-
-    if provider == "cloudinary":
-        public_url, storage_path = await _upload_cloudinary(content, filename, mimetype, cfg)
-        # Rewrite to custom domain if set: replace res.cloudinary.com/<cloud>/
-        if custom_domain and "res.cloudinary.com" in public_url:
-            cloud = cfg.get("cloudinaryCloudName", "").strip()
-            public_url = public_url.replace(
-                f"https://res.cloudinary.com/{cloud}", custom_domain
-            )
-
-    elif provider == "r2":
-            public_url, storage_path = _upload_r2(content, filename, mimetype, cfg, "media")
-
-    elif provider == "b2":
-        public_url, storage_path = await _upload_b2(content, filename, mimetype, cfg)
-
-    elif provider == "imagekit":
-        public_url, storage_path = await _upload_imagekit(content, filename, mimetype, cfg)
-
-    elif provider == "bunny":
-        public_url, storage_path = await _upload_bunny(content, filename, mimetype, cfg)
-
-    else:
-        # Default: Supabase Storage
-        provider = "supabase"
-        public_url, storage_path = await _upload_supabase(content, filename, mimetype)
+    public_url, storage_path, provider = await _upload_to_provider(content, filename, mimetype, cfg)
 
     # Save record to media table
     media = _save_media(
@@ -405,21 +406,8 @@ async def upload_multiple(
 
         filename = file.filename or f"upload_{uuid.uuid4()}"
         filename = _safe_storage_filename(filename)  # M11 — strip traversal/separators
-        provider = (cfg.get("provider") or cfg.get("activeProvider") or "supabase").lower()
-
-        if provider == "cloudinary":
-            public_url, storage_path = await _upload_cloudinary(content, filename, mimetype, cfg)
-        elif provider == "r2":
-            public_url, storage_path = _upload_r2(content, filename, mimetype, cfg, "media")
-        elif provider == "b2":
-            public_url, storage_path = await _upload_b2(content, filename, mimetype, cfg)
-        elif provider == "imagekit":
-            public_url, storage_path = await _upload_imagekit(content, filename, mimetype, cfg)
-        elif provider == "bunny":
-            public_url, storage_path = await _upload_bunny(content, filename, mimetype, cfg)
-        else:
-            provider = "supabase"
-            public_url, storage_path = await _upload_supabase(content, filename, mimetype)
+        cfg = _get_cdn_config()
+        public_url, storage_path, provider = await _upload_to_provider(content, filename, mimetype, cfg)
 
         media = _save_media(
             filename=filename, original_name=file.filename or filename,
@@ -432,6 +420,71 @@ async def upload_multiple(
             "provider": provider, "id": media.get("id"),
         })
     return results
+
+
+@router.post("/chat")
+async def upload_chat_media(
+    file: UploadFile = File(...),
+    room_id: str = "",
+    thread_id: str = "",
+    user: dict = Depends(get_current_user),
+):
+    """Member-facing media upload for chat rooms and DMs.
+
+    Unlike the staff library upload, this only requires that the caller can
+    actually post in the target conversation:
+      * room_id    → must pass _ensure_room_access + have `send_messages`
+      * thread_id  → must be a participant of that DM thread
+    The file is validated (magic bytes + allow-list) and routed to the same
+    active CDN provider; the media row is tagged with the conversation for
+    later cleanup/audit.
+    """
+    if not room_id and not thread_id:
+        raise HTTPException(400, "room_id or thread_id required")
+
+    if room_id:
+        from routers.chat import _ensure_room_access, _require_room_perm
+        room = _ensure_room_access(room_id, user)
+        _require_room_perm(room, user, "send_messages")
+    else:
+        from routers.chat_dm import _get_thread
+        _get_thread(thread_id, user)
+
+    content = await file.read()
+    if len(content) > CHAT_UPLOAD_MAX_BYTES:
+        raise HTTPException(413, f"Chat media limit is {CHAT_UPLOAD_MAX_BYTES // 1024 // 1024} MB")
+
+    mimetype = file.content_type or mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
+    sniffed = _sniff_mimetype(content, mimetype)
+    if sniffed not in CHAT_ALLOWED_MIMETYPES:
+        raise HTTPException(415, f"File type '{sniffed}' is not allowed in chat")
+    mimetype = sniffed
+
+    filename = _safe_storage_filename(file.filename or f"chat_{uuid.uuid4()}")
+
+    cfg = _get_cdn_config()
+    public_url, storage_path, provider = await _upload_to_provider(content, filename, mimetype, cfg)
+
+    media = _save_media(
+        filename=filename,
+        original_name=file.filename or filename,
+        mimetype=mimetype,
+        size=len(content),
+        url=public_url,
+        storage_path=storage_path,
+        provider=provider,
+    )
+
+    return {
+        "url": public_url,
+        "filename": filename,
+        "size": len(content),
+        "mimetype": mimetype,
+        "provider": provider,
+        "id": media.get("id"),
+        "room_id": room_id,
+        "thread_id": thread_id,
+    }
 
 
 @router.delete("/media/{media_id}")   # alias: frontend calls DELETE /upload/media/{id}

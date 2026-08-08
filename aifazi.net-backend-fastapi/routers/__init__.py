@@ -2,7 +2,7 @@
 from . import (
     auth, blog, upload, contact, content,
     forum, notifications,
-    chat, chat_ai, chat_livekit,
+    chat, chat_ai, chat_livekit, chat_dm, chat_url_preview,
     helpdesk, newsletter, banners,
     site_settings, email_settings, cdn_settings,
     search, stats, audit, backup,
