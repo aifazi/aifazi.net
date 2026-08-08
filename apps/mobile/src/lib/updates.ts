@@ -2,6 +2,7 @@ import { File, Paths } from 'expo-file-system'
 import * as IntentLauncher from 'expo-intent-launcher'
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
+import { Platform } from 'react-native'
 
 const RELEASE_API = 'https://api.aifazi.net/api/mobile/release/latest'
 
@@ -152,6 +153,39 @@ export async function downloadAndInstall(
 
   await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
     data: file.contentUri,
-    flags: 0x00000001, // FLAG_GRANT_READ_URI_PERMISSION
+    flags: 0x00000001 | 0x00000040, // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
   })
+}
+
+/**
+ * Deep-link to the per-app "Install unknown apps" toggle on Android 8+.
+ * Once the user flips this ON for aifazi, Android silently allows subsequent
+ * installs from this app and drops the "install blocked / unknown source"
+ * warning. Opening this screen is the only legitimate code-side step that can
+ * reduce that prompt — the OS itself can't be bypassed from JS.
+ */
+export async function openInstallSettings(): Promise<void> {
+  if (Platform.OS !== 'android') return
+  const pkg = getApplicationId()
+  if (!pkg) return
+  try {
+    await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.MANAGE_UNKNOWN_APP_SOURCES, {
+      data: `package:${pkg}`,
+    })
+  } catch {
+    // Fall back to the app details page if the direct toggle isn't available
+    try {
+      await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.APPLICATION_DETAILS_SETTINGS, {
+        data: `package:${pkg}`,
+      })
+    } catch {}
+  }
+}
+
+function getApplicationId(): string | null {
+  try {
+    return Application.applicationId
+  } catch {
+    return null
+  }
 }

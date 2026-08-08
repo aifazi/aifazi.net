@@ -10,7 +10,7 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { THEME_IDS, THEMES } from '@/src/themes'
-import { checkForUpdate, downloadAndInstall, type UpdateCheck } from '@/src/lib/updates'
+import { checkForUpdate, downloadAndInstall, openInstallSettings, type UpdateCheck } from '@/src/lib/updates'
 import { useOverlay } from '@/src/components/overlay'
 
 function fmtDate(iso?: string) {
@@ -104,7 +104,7 @@ function AppUpdatesCard() {
       setError(
         e instanceof Error && e.message.includes('Download incomplete')
           ? e.message
-          : 'Download or install failed. Make sure unknown apps are allowed for aifazi.',
+          : 'Install was blocked. Open settings to allow aifazi to install apps.',
       )
     } finally {
       setDownloading(false)
@@ -139,7 +139,14 @@ function AppUpdatesCard() {
           </View>
         </>
       )}
-      {error ? <Muted style={{ color: c.danger, marginTop: 8 }}>{error}</Muted> : null}
+      {error ? (
+        <>
+          <Muted style={{ color: c.danger, marginTop: 8 }}>{error}</Muted>
+          <View style={{ marginTop: 8 }}>
+            <Btn title="Open settings to allow installs" variant="ghost" onPress={() => openInstallSettings()} />
+          </View>
+        </>
+      ) : null}
     </Card>
   )
 }
