@@ -1,0 +1,22 @@
+# EAS ignore — controls what gets uploaded to EAS Build/Update servers.
+# When this file exists, it REPLACES .gitignore for deciding project files.
+# The mobile app lives in apps/mobile; exclude the rest of the monorepo so
+# only the app's files are packaged for builds and OTA updates.
+
+# ignore everything in the repo root except what we re-include below
+/*
+!/apps
+/apps/*
+!/apps/mobile
+
+# re-include only the mobile app's contents
+!/apps/mobile/**
+/apps/mobile/.claude
+/apps/mobile/.vscode
+/apps/mobile/.expo
+/apps/mobile/node_modules
+/apps/mobile/dist
+/apps/mobile/web-build
+/apps/mobile/build
+/apps/mobile/android
+/apps/mobile/ios
