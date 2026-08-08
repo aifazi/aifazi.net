@@ -3,8 +3,7 @@ import * as IntentLauncher from 'expo-intent-launcher'
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
 
-const GITHUB_REPO = 'aifazi/aifazi.net'
-const GITHUB_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`
+const RELEASE_API = 'https://api.aifazi.net/api/mobile/release/latest'
 
 export interface ReleaseInfo {
   tag: string
@@ -14,11 +13,13 @@ export interface ReleaseInfo {
   notes?: string
 }
 
-interface GitHubRelease {
-  tag_name?: string
+interface BackendRelease {
+  tag?: string
+  version?: string
+  apk_url?: string
   published_at?: string
-  body?: string
-  assets?: { name?: string; browser_download_url?: string }[]
+  notes?: string
+  asset_name?: string
 }
 
 export function getInstalledVersion(): string {
@@ -53,22 +54,21 @@ export function compareVersions(a: string, b: string): number {
 
 export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
   try {
-    const res = await fetch(GITHUB_API, {
+    const res = await fetch(RELEASE_API, {
       headers: {
-        Accept: 'application/vnd.github+json',
+        Accept: 'application/json',
         'User-Agent': 'aifazi-mobile',
       },
     })
     if (!res.ok) return null
-    const data = (await res.json()) as GitHubRelease
-    if (!data.tag_name) return null
-    const apk = (data.assets || []).find((a) => a.name?.toLowerCase().endsWith('.apk'))
+    const data = (await res.json()) as BackendRelease
+    if (!data.tag) return null
     return {
-      tag: data.tag_name,
-      version: data.tag_name.replace(/^v/i, ''),
-      apkUrl: apk?.browser_download_url,
+      tag: data.tag,
+      version: data.version || data.tag.replace(/^v/i, ''),
+      apkUrl: data.apk_url,
       publishedAt: data.published_at,
-      notes: data.body,
+      notes: data.notes,
     }
   } catch {
     return null

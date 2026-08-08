@@ -564,6 +564,7 @@ from routers import (
     github_auth,
     db_console,
     monitor,
+    mobile_release,
 )
 
 app.include_router(auth.router,           prefix="/api/auth")
@@ -622,6 +623,7 @@ app.include_router(discord_auth.router,   prefix="/api/discord")
 app.include_router(steam_auth.router,     prefix="/api/forum/auth/steam")
 app.include_router(github_auth.router,    prefix="/api/forum/auth/github")
 app.include_router(db_console.router,    prefix="/api/admin/db")
+app.include_router(mobile_release.router, prefix="/api/mobile")
 
 @app.get("/api/health")
 async def health():
