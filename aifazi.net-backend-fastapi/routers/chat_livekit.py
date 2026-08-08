@@ -21,7 +21,7 @@ from pydantic import BaseModel
 import jwt  # PyJWT — LiveKit access tokens are standard HS256 JWTs
 from database import supabase
 from dependencies import get_current_user, require_staff, require_admin
-from routers.chat import _ensure_room_access
+from routers.chat import _ensure_room_access, _role_allowed
 
 log = logging.getLogger("chat_livekit")
 router = APIRouter()
@@ -138,14 +138,9 @@ async def get_livekit_token(
     if banned:
         raise HTTPException(403, "You are banned from this channel")
 
-    if r.get("is_private"):
-        allowed = r.get("allowed_users") or []
-        if username not in allowed and role not in ("admin", "moderator"):
-            raise HTTPException(403, "You do not have access to this channel")
-
-    allowed_roles = r.get("allowed_roles") or []
-    if allowed_roles and role not in allowed_roles and role not in ("admin", "moderator"):
-        raise HTTPException(403, f"Only {', '.join(allowed_roles)} can join this voice channel")
+    # Same access gate as text chat: roles + per-user allowlist.
+    if not _role_allowed(r, user):
+        raise HTTPException(403, "You do not have access to this channel")
 
     can_publish = True
     can_screen_share = role in ("admin", "moderator")

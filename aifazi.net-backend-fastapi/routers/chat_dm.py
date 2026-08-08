@@ -126,6 +126,103 @@ def _bump_thread(thread_id: str) -> None:
         pass
 
 
+# ── Blocks + message requests (stranger control) ─────────────────────────────
+
+def _blocked_by(blocker: str, blocked: str) -> bool:
+    """True if `blocker` has blocked `blocked` (case-insensitive)."""
+    res = (
+        supabase.table("dm_blocks")
+        .select("blocked")
+        .eq("blocker", (blocker or "").strip().lower())
+        .eq("blocked", (blocked or "").strip().lower())
+        .limit(1)
+        .execute()
+    )
+    return bool(res.data)
+
+
+def _accepted_request(a: str, b: str) -> dict | None:
+    """An ACCEPTED dm_request between the pair, in either direction."""
+    pa, pb = (a or "").strip().lower(), (b or "").strip().lower()
+    res = (
+        supabase.table("dm_requests")
+        .select("id,sender,recipient,status")
+        .eq("status", "accepted")
+        .in_("sender", [pa, pb])
+        .limit(50)
+        .execute()
+    )
+    for r in (res.data or []):
+        if {r.get("sender"), r.get("recipient")} == {pa, pb}:
+            return r
+    return None
+
+
+def _pending_request(a: str, b: str) -> dict | None:
+    pa, pb = (a or "").strip().lower(), (b or "").strip().lower()
+    res = (
+        supabase.table("dm_requests")
+        .select("id,sender,recipient,status")
+        .eq("status", "pending")
+        .in_("sender", [pa, pb])
+        .limit(50)
+        .execute()
+    )
+    for r in (res.data or []):
+        if {r.get("sender"), r.get("recipient")} == {pa, pb}:
+            return r
+    return None
+
+
+def _thread_id_for(a: str, b: str) -> str | None:
+    """Find the existing thread id for a pair (no creation)."""
+    pa, pb = _canonical(a, b)
+    res = (
+        supabase.table("dm_threads")
+        .select("id")
+        .eq("party_a", pa)
+        .eq("party_b", pb)
+        .limit(1)
+        .execute()
+    )
+    return res.data[0]["id"] if res.data else None
+
+
+def _touch_read(thread_id: str, username: str) -> None:
+    """Record that `username` has read `thread_id` up to now."""
+    try:
+        supabase.table("dm_read_state").upsert(
+            {"thread_id": thread_id, "username": (username or "").lower(), "last_read_at": _now()},
+            on_conflict="thread_id,username",
+        ).execute()
+    except Exception:
+        pass
+
+
+def _unread_count(thread_id: str, username: str) -> int:
+    """Messages in `thread_id` from the peer that `username` hasn't read yet."""
+    try:
+        rs = (
+            supabase.table("dm_read_state")
+            .select("last_read_at")
+            .eq("thread_id", thread_id)
+            .eq("username", (username or "").lower())
+            .limit(1)
+            .execute()
+        )
+    except Exception:
+        rs = None
+    last_read_at = (rs.data[0].get("last_read_at") if rs and rs.data else None)
+    q = supabase.table("dm_messages").select("id", count="exact").eq("thread_id", thread_id).neq("sender", username)
+    if last_read_at:
+        q = q.gt("created_at", last_read_at)
+    try:
+        res = q.execute()
+        return int(res.count or 0)
+    except Exception:
+        return 0
+
+
 # ── Models ────────────────────────────────────────────────────────────────────
 
 class StartThreadBody(BaseModel):
@@ -179,6 +276,7 @@ async def list_threads(user: dict = Depends(get_current_user)):
             "last_message": preview,
             "last_message_at": t.get("last_message_at"),
             "created_at": t.get("created_at"),
+            "unread": _unread_count(tid, uname),
         }
     out = sorted(merged.values(), key=lambda x: (x.get("last_message_at") or ""), reverse=True)
     peers = [t["peer"] for t in out]
@@ -196,7 +294,7 @@ async def list_threads(user: dict = Depends(get_current_user)):
 
 @router.post("/dm/threads")
 async def start_thread(body: StartThreadBody, user: dict = Depends(get_current_user)):
-    """Create or fetch the 1:1 thread between the caller and `username`."""
+    """Open an existing DM thread. Brand-new threads require an accepted request."""
     my_name = (user.get("username") or "").strip()
     target_name = (body.username or "").strip()
     if not target_name:
@@ -204,10 +302,17 @@ async def start_thread(body: StartThreadBody, user: dict = Depends(get_current_u
     if my_name.lower() == target_name.lower():
         raise HTTPException(400, "You can't DM yourself")
     target = _get_user(target_name)
-    thread_id = _get_or_create_thread_id(my_name, target["username"])
+    peer = target["username"]
+    if _blocked_by(my_name, peer) or _blocked_by(peer, my_name):
+        raise HTTPException(403, "Direct messages are not available with this user")
+    thread_id = _thread_id_for(my_name, peer)
+    if not thread_id:
+        if not _accepted_request(my_name, peer):
+            raise HTTPException(403, "You need to send this user a message request first")
+        thread_id = _get_or_create_thread_id(my_name, peer)
     return {
         "id": thread_id,
-        "peer": target["username"],
+        "peer": peer,
         "peer_avatar": target.get("avatar") or "",
         "peer_role": target.get("role") or "",
         "encryption_key": _get_thread(thread_id, user).get("encryption_key") or "",
@@ -221,6 +326,139 @@ async def dm_encryption_key(thread_id: str, user: dict = Depends(get_current_use
         "thread_id": thread["id"],
         "encryption_key": thread.get("encryption_key") or "",
     }
+
+
+# ── DM requests + blocks ──────────────────────────────────────────────────────
+
+@router.post("/dm/requests")
+async def send_dm_request(body: StartThreadBody, user: dict = Depends(get_current_user)):
+    """Ask to message a user. Blocked/self targets are rejected up front."""
+    my_name = (user.get("username") or "").strip()
+    target_name = (body.username or "").strip()
+    if not target_name:
+        raise HTTPException(400, "Username required")
+    if my_name.lower() == target_name.lower():
+        raise HTTPException(400, "You can't DM yourself")
+    target = _get_user(target_name)
+    peer = target["username"]
+    if _blocked_by(peer, my_name):
+        raise HTTPException(403, "This user can't receive messages from you right now")
+    if _blocked_by(my_name, peer):
+        raise HTTPException(400, "You've blocked this user — unblock them first")
+    existing = _pending_request(my_name, peer) or _accepted_request(my_name, peer)
+    if existing:
+        if existing["status"] == "accepted":
+            return {
+                "ok": True,
+                "status": "accepted",
+                "request_id": existing["id"],
+                "peer": peer,
+                "thread_id": _get_or_create_thread_id(my_name, peer),
+            }
+        return {"ok": True, "status": "pending", "request_id": existing["id"], "peer": peer}
+    row = (
+        supabase.table("dm_requests")
+        .insert({"sender": my_name, "recipient": peer, "status": "pending"})
+        .execute()
+    )
+    return {"ok": True, "status": "pending", "request_id": row.data[0]["id"], "peer": peer}
+
+
+@router.get("/dm/requests")
+async def list_dm_requests(user: dict = Depends(get_current_user)):
+    """Incoming pending message requests (with sender info)."""
+    uname = (user.get("username") or "").lower()
+    res = (
+        supabase.table("dm_requests")
+        .select("*")
+        .eq("recipient", uname)
+        .eq("status", "pending")
+        .order("created_at", desc=True)
+        .limit(50)
+        .execute()
+    )
+    rows = res.data or []
+    senders = list({r.get("sender") or "" for r in rows if r.get("sender")})
+    if senders:
+        u = supabase.table("users").select("username,avatar,role").in_("username", senders).execute()
+        meta = {row["username"]: row for row in (u.data or [])}
+        for r in rows:
+            m = meta.get(r.get("sender") or "", {})
+            r["avatar"] = m.get("avatar") or ""
+            r["role"] = m.get("role") or ""
+    return rows
+
+
+@router.post("/dm/requests/{request_id}/accept")
+async def accept_dm_request(request_id: str, user: dict = Depends(get_current_user)):
+    """Accept an incoming request — opens the thread between the pair."""
+    res = supabase.table("dm_requests").select("*").eq("id", request_id).single().execute()
+    if not res.data:
+        raise HTTPException(404, "Request not found")
+    req = res.data
+    if (req.get("recipient") or "").lower() != (user.get("username") or "").lower():
+        raise HTTPException(403, "Not your request")
+    if req.get("status") != "pending":
+        raise HTTPException(400, "Request already handled")
+    supabase.table("dm_requests").update({"status": "accepted"}).eq("id", request_id).execute()
+    thread_id = _get_or_create_thread_id(req["sender"], req["recipient"])
+    return {"ok": True, "thread_id": thread_id, "peer": req["sender"]}
+
+
+@router.post("/dm/requests/{request_id}/reject")
+async def reject_dm_request(request_id: str, user: dict = Depends(get_current_user)):
+    res = supabase.table("dm_requests").select("*").eq("id", request_id).single().execute()
+    if not res.data:
+        raise HTTPException(404, "Request not found")
+    req = res.data
+    if (req.get("recipient") or "").lower() != (user.get("username") or "").lower():
+        raise HTTPException(403, "Not your request")
+    if req.get("status") != "pending":
+        raise HTTPException(400, "Request already handled")
+    supabase.table("dm_requests").update({"status": "rejected"}).eq("id", request_id).execute()
+    return {"ok": True}
+
+
+@router.post("/dm/blocks")
+async def block_user(body: StartThreadBody, user: dict = Depends(get_current_user)):
+    """Block a user from messaging you. Cancels pending requests both ways."""
+    my_name = (user.get("username") or "").strip()
+    target_name = (body.username or "").strip()
+    if not target_name or my_name.lower() == target_name.lower():
+        raise HTTPException(400, "Invalid user")
+    _get_user(target_name)
+    pa, pb = _canonical(my_name, target_name)
+    supabase.table("dm_blocks").upsert(
+        {"blocker": my_name.lower(), "blocked": target_name.lower()},
+        on_conflict="blocker,blocked",
+    ).execute()
+    try:
+        supabase.table("dm_requests").update({"status": "rejected"})\
+            .in_("sender", [pa, pb]).in_("recipient", [pa, pb]).eq("status", "pending").execute()
+    except Exception:
+        pass
+    return {"blocked": target_name}
+
+
+@router.delete("/dm/blocks/{username}")
+async def unblock_user(username: str, user: dict = Depends(get_current_user)):
+    supabase.table("dm_blocks").delete()\
+        .eq("blocker", (user.get("username") or "").lower())\
+        .eq("blocked", (username or "").lower()).execute()
+    return {"unblocked": username}
+
+
+@router.get("/dm/blocks")
+async def list_blocks(user: dict = Depends(get_current_user)):
+    res = (
+        supabase.table("dm_blocks")
+        .select("blocked,created_at")
+        .eq("blocker", (user.get("username") or "").lower())
+        .order("created_at", desc=True)
+        .limit(100)
+        .execute()
+    )
+    return res.data or []
 
 
 # ── Messages ──────────────────────────────────────────────────────────────────
@@ -240,12 +478,16 @@ async def get_dm_messages(
         .limit(limit)
         .execute()
     )
+    _touch_read(thread_id, user["username"])
     return list(reversed(res.data or []))
 
 
 @router.post("/dm/threads/{thread_id}/messages")
 async def send_dm_message(thread_id: str, body: DMMessageBody, user: dict = Depends(get_current_user)):
-    _get_thread(thread_id, user)
+    thread = _get_thread(thread_id, user)
+    peer = _peer_of(thread, user)
+    if _blocked_by(user["username"], peer) or _blocked_by(peer, user["username"]):
+        raise HTTPException(403, "Direct messages are not available with this user")
     _check_dm_throttle(user)
     content = (body.content or "").strip()
     if not content:
@@ -275,6 +517,7 @@ async def send_dm_message(thread_id: str, body: DMMessageBody, user: dict = Depe
         .execute()
     )
     _bump_thread(thread_id)
+    _touch_read(thread_id, user["username"])
     return row.data[0]
 
 

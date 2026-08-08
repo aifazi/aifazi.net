@@ -102,24 +102,46 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 def _role_allowed(room: dict, user: dict) -> bool:
+    """Channel access gate — roles + per-user allowlist.
+
+    A user can see/join a channel if ANY of these hold:
+      * platform admin/moderator (staff are always in)
+      * their username (or user id) is listed in `allowed_users`
+      * their platform role is listed in `allowed_roles`
+    Otherwise the channel is CLOSED to them — EXCEPT a channel that restricts
+    nobody (allowed_roles and allowed_users both empty) is public, unless it is
+    explicitly marked private.
+    """
     role = user.get("role") or "member"
     if role in ("admin", "moderator"):
         return True
-    # H1 — a private room restricted to a user allowlist must NOT be readable by
-    # anyone just because allowed_roles is empty. Enforce membership explicitly,
-    # matching the voice gate in chat_livekit.py (empty allowlist => deny all).
     allowed_roles = room.get("allowed_roles") or []
     allowed_users = room.get("allowed_users") or []
-    is_private = bool(room.get("is_private"))
-    if is_private:
+    if allowed_users:
         username = (user.get("username") or "").lower()
         user_id = (user.get("id") or user.get("sub") or "").lower()
         allow_names = {str(u).lower() for u in allowed_users}
         allow_ids = {str(u).lower() for u in allowed_users}
         if username in allow_names or user_id in allow_ids:
             return True
+    if role in allowed_roles:
+        return True
+    if room.get("is_private"):
         return False
-    return not allowed_roles or role in allowed_roles
+    return not allowed_roles and not allowed_users
+
+
+def _room_access(room: dict) -> dict:
+    """Describe how a channel gates access, for the management/room UIs."""
+    roles = room.get("allowed_roles") or []
+    users = room.get("allowed_users") or []
+    if not roles and not users:
+        return {"mode": "public", "roles": [], "users": []}
+    if roles and not users:
+        return {"mode": "roles", "roles": roles, "users": []}
+    if users and not roles:
+        return {"mode": "users", "roles": [], "users": users}
+    return {"mode": "mixed", "roles": roles, "users": users}
 
 def _get_room_or_404(room_id: str) -> dict:
     room = (
@@ -384,10 +406,14 @@ class KickBanBody(BaseModel):
 @router.get("/rooms")
 async def list_rooms(user: dict = Depends(get_current_user)):
     res = supabase.table("chat_rooms").select(
-        "id,name,description,color,emoji,is_private,read_only,slow_mode,type,allowed_roles,speak_roles,screen_share_roles"
+        "id,name,description,color,emoji,is_private,read_only,slow_mode,type,allowed_roles,allowed_users,speak_roles,screen_share_roles"
     ).limit(200).execute()
-    rooms = res.data or []
-    return [room for room in rooms if _role_allowed(room, user)]
+    out = []
+    for room in (res.data or []):
+        if not _role_allowed(room, user):
+            continue
+        out.append({**room, "access": _room_access(room)})
+    return out
 
 @router.post("/rooms")
 async def create_room(body: RoomBody, _: dict = Depends(require_staff)):
