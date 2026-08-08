@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, Alert, Linking, FlatList } from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
 import { useRouter } from 'expo-router'
-import * as ImagePicker from 'expo-image-picker'
+import { pickLibraryImage, takeCameraPhoto, pickDocument, type PickedFile } from '@/src/lib/media'
 import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted, Btn, Field } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
@@ -534,23 +534,20 @@ function DocumentsTab() {
   useEffect(() => { load() }, [load])
 
   const pick = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!perm.granted) {
-      Alert.alert('Permission required', 'Allow access to your photo library to upload files.')
-      return
-    }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 0.9,
-      selectionLimit: 1,
-    })
-    if (res.canceled || !res.assets?.length) return
-    const asset = res.assets[0]
+    Alert.alert('Upload document', 'Choose a source', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Take photo', onPress: () => takeCameraPhoto().then((f) => f && upload(f)) },
+      { text: 'Photo library', onPress: () => pickLibraryImage().then((f) => f && upload(f)) },
+      { text: 'File (PDF, DOCX, ZIP…)', onPress: () => pickDocument().then((f) => f && upload(f)) },
+    ])
+  }
+
+  const upload = async (file: PickedFile) => {
     setUploading(true)
     try {
       const fd = new FormData()
-      fd.append('file', { uri: asset.uri, name: asset.fileName || 'upload.jpg', type: asset.mimeType || 'image/jpeg' } as any)
+      fd.append('file', { uri: file.uri, name: file.name, type: file.mimeType } as any)
+      fd.append('name', file.name)
       fd.append('category', 'other')
       await api.post('/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       Alert.alert('Uploaded', 'Document uploaded successfully.')
@@ -795,25 +792,20 @@ function EditTab() {
   }
 
   const pickAvatar = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!perm.granted) {
-      Alert.alert('Permission required', 'Allow access to your photo library to pick an avatar.')
-      return
-    }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    })
-    if (res.canceled || !res.assets?.length) return
-    const asset = res.assets[0]
+    Alert.alert('Avatar', 'Choose a source', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Take photo', onPress: () => takeCameraPhoto({ allowsEditing: true, aspect: [1, 1] }).then((f) => f && uploadAvatarPhoto(f)) },
+      { text: 'Photo library', onPress: () => pickLibraryImage({ allowsEditing: true, aspect: [1, 1] }).then((f) => f && uploadAvatarPhoto(f)) },
+    ])
+  }
+
+  const uploadAvatarPhoto = async (file: PickedFile) => {
     setUploading(true); setSaveMsg('')
     try {
       const url = await uploadAvatar({
-        uri: asset.uri,
-        name: asset.fileName || 'avatar.jpg',
-        type: asset.mimeType || 'image/jpeg',
+        uri: file.uri,
+        name: file.name || 'avatar.jpg',
+        type: file.mimeType || 'image/jpeg',
       })
       setAvatar(url)
       setSaveMsg('Avatar uploaded. Save changes to keep it.')

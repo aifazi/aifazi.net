@@ -14,7 +14,7 @@ import {
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import * as ImagePicker from 'expo-image-picker'
+import { askImageSource, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
@@ -250,27 +250,18 @@ export default function ChatRoomScreen() {
     Linking.openURL(url).catch(() => setErr('Could not open link'))
   }
 
-  const pickImage = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!perm.granted) {
-      setErr('Photo library permission is required to share images')
-      return
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 0.8,
-      selectionLimit: 1,
-    })
-    if (result.canceled || !result.assets?.length) return
-    const asset = result.assets[0]
+  const pickImage = () => {
+    askImageSource((f) => uploadImage(f))
+  }
+
+  const uploadImage = async (file: PickedFile) => {
     setUploading(true)
     try {
       const form = new FormData()
       form.append('file', {
-        uri: asset.uri,
-        name: asset.fileName ?? 'photo.jpg',
-        type: asset.mimeType ?? 'image/jpeg',
+        uri: file.uri,
+        name: file.name ?? 'photo.jpg',
+        type: file.mimeType ?? 'image/jpeg',
       } as any)
       const up = await api.post(`/upload/chat?room_id=${room}`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -281,8 +272,8 @@ export default function ChatRoomScreen() {
       await api.post(`/chat/rooms/${room}/messages`, {
         content: url,
         type: 'image',
-        file_name: asset.fileName ?? 'photo.jpg',
-        file_size: String(asset.fileSize ?? 0),
+        file_name: file.name ?? 'photo.jpg',
+        file_size: String(file.size ?? 0),
       })
       await load(true)
     } catch (e: any) {
