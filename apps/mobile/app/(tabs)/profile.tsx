@@ -9,6 +9,7 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { THEME_IDS, THEMES } from '@/src/themes'
+import { checkForUpdate, downloadAndInstall, type UpdateCheck } from '@/src/lib/updates'
 
 function fmtDate(iso?: string) {
   if (!iso) return ''
@@ -66,6 +67,74 @@ function Chip({ text, tone }: { text: string; tone?: string }) {
     <View style={{ borderWidth: 1, borderColor: color + '66', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
       <Text style={{ color, fontSize: 9, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>{text}</Text>
     </View>
+  )
+}
+
+/* ─── App updates ────────────────────────────────────────────────────────── */
+function AppUpdatesCard() {
+  const { theme } = useTheme()
+  const c = theme.colors
+  const [check, setCheck] = useState<UpdateCheck | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [error, setError] = useState('')
+
+  const runCheck = async () => {
+    setBusy(true); setError('')
+    try {
+      setCheck(await checkForUpdate())
+    } catch {
+      setError('Could not check for updates.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  useEffect(() => { runCheck() }, [])
+
+  const install = async () => {
+    if (!check?.release?.apkUrl) return
+    setDownloading(true); setError(''); setProgress(0)
+    try {
+      await downloadAndInstall(check.release.apkUrl, (p) => setProgress(Math.round(p.fraction * 100)))
+    } catch {
+      setError('Download or install failed. Make sure unknown apps are allowed for aifazi.')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  return (
+    <Card title="App updates">
+      {busy ? (
+        <ActivityIndicator color={c.accent} />
+      ) : !check ? (
+        <Muted>No update information.</Muted>
+      ) : check.updateAvailable ? (
+        <>
+          <Muted>Version {check.latest} is available (you have {check.installed}).</Muted>
+          {check.release?.notes ? <Muted style={{ marginTop: 4 }} numberOfLines={2}>{check.release.notes}</Muted> : null}
+          {downloading ? (
+            <View style={{ marginTop: 10 }}>
+              <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>Downloading… {progress}%</Text>
+            </View>
+          ) : (
+            <View style={{ marginTop: 10 }}>
+              <Btn title="Download & install" onPress={install} />
+            </View>
+          )}
+        </>
+      ) : (
+        <>
+          <Muted>You're on the latest version ({check.installed}).</Muted>
+          <View style={{ marginTop: 10 }}>
+            <Btn title="Check again" variant="ghost" onPress={runCheck} disabled={busy} />
+          </View>
+        </>
+      )}
+      {error ? <Muted style={{ color: c.danger, marginTop: 8 }}>{error}</Muted> : null}
+    </Card>
   )
 }
 
@@ -145,6 +214,8 @@ function OverviewTab({ goEdit }: { goEdit: () => void }) {
           ))}
         </View>
       </Card>
+
+      <AppUpdatesCard />
     </ScrollView>
   )
 }
