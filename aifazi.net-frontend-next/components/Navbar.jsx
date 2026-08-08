@@ -364,6 +364,7 @@ export default function Navbar() {
     { type: 'route',   to: '/blog',             label: 'Blog'       },
     { type: 'route',   to: '/forum',            label: 'Forum'      },
     { type: 'route',   to: '/store',            label: 'Store'      },
+    { type: 'route',   to: '/app',              label: 'App'        },
     { type: 'contact',                          label: 'Contact'    },
   ]
 

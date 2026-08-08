@@ -620,6 +620,7 @@ export default function Footer() {
   const platformLinks = [
     { label: 'Blog',          to: '/blog'           },
     { label: 'Forum',         to: '/forum'          },
+    { label: 'Mobile App',    to: '/app'            },
     { label: 'Network Tools', to: '/tools/network'  },
     { label: 'File Tools',    to: '/tools/files'    },
     { label: 'SEO Tools',     to: '/tools/seo'      },
