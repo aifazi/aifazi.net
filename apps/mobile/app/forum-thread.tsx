@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Btn, Muted } from '@/src/components/ui'
@@ -16,6 +16,8 @@ interface ThreadAuthor {
 
 interface ReplyAuthor {
   username?: string
+  _id?: string
+  role?: string
 }
 
 interface Reply {
@@ -50,6 +52,8 @@ export default function ForumThreadScreen() {
   const [replies, setReplies] = useState<Reply[]>([])
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
   const [liked, setLiked] = useState(false)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
@@ -94,6 +98,46 @@ export default function ForumThreadScreen() {
     } finally {
       setSending(false)
     }
+  }
+
+  const canModerate = user?.role === 'admin' || user?.role === 'moderator'
+  const isOwnReply = (r: Reply) => r.author?._id === user?.id || r.author?._id === user?._id
+  const canManageReply = (r: Reply) => canModerate || isOwnReply(r)
+
+  const startEdit = (r: Reply) => {
+    setEditingId(r.id)
+    setEditText(r.content)
+  }
+
+  const saveEdit = async () => {
+    const content = editText.trim()
+    if (!editingId || !content) return
+    setSending(true)
+    try {
+      await api.put(`/forum/replies/${editingId}`, { content })
+      setEditingId(null)
+      setEditText('')
+      load()
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Failed to edit reply')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const deleteReply = (r: Reply) => {
+    Alert.alert('Delete reply', 'Delete this reply?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          api.delete(`/forum/replies/${r.id}`)
+            .then(() => setReplies((prev) => prev.filter((x) => x.id !== r.id && x._id !== r.id)))
+            .catch((e) => setErr(e?.response?.data?.detail || 'Failed to delete reply'))
+        },
+      },
+    ])
   }
 
   if (loading) {
@@ -157,8 +201,45 @@ export default function ForumThreadScreen() {
           ) : (
             replies.map((r) => (
               <View key={r._id || r.id} style={{ paddingVertical: 10, borderTopWidth: 1, borderTopColor: c.border }}>
-                <Text style={{ color: c.accent2, fontSize: 12, fontWeight: '700' }}>{r.author?.username ?? 'anonymous'}</Text>
-                <MarkdownText content={r.content} color={c.text2} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={{ color: c.accent2, fontSize: 12, fontWeight: '700', flex: 1 }}>{r.author?.username ?? 'anonymous'}</Text>
+                  {canManageReply(r) ? (
+                    <>
+                      {editingId === r.id ? (
+                        <>
+                          <TouchableOpacity onPress={saveEdit} disabled={sending || !editText.trim()} hitSlop={8}>
+                            <Text style={{ color: c.accent2, fontSize: 12, fontWeight: '700' }}>Save</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => { setEditingId(null); setEditText('') }} hitSlop={8}>
+                            <Text style={{ color: c.muted, fontSize: 12 }}>Cancel</Text>
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        <>
+                          <TouchableOpacity onPress={() => startEdit(r)} hitSlop={8}>
+                            <Text style={{ color: c.accent2, fontSize: 12 }}>Edit</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => deleteReply(r)} hitSlop={8}>
+                            <Text style={{ color: c.danger, fontSize: 12 }}>Delete</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </>
+                  ) : null}
+                </View>
+                {editingId === r.id ? (
+                  <TextInput
+                    value={editText}
+                    onChangeText={setEditText}
+                    placeholder="Edit reply…"
+                    placeholderTextColor={c.muted}
+                    multiline
+                    editable={!sending}
+                    style={{ marginTop: 6, backgroundColor: c.bg, borderColor: c.border, color: c.text, borderWidth: 1, borderRadius: theme.mono ? 0 : 8, paddingHorizontal: 12, paddingVertical: 9, minHeight: 60, fontSize: 14, fontFamily: theme.mono ? 'monospace' : undefined, textAlignVertical: 'top' }}
+                  />
+                ) : (
+                  <MarkdownText content={r.content} color={c.text2} />
+                )}
               </View>
             ))
           )}

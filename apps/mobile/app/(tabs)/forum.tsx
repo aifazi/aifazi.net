@@ -7,6 +7,7 @@ import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { useAuth } from '@/src/lib/auth'
 
 interface ThreadAuthor {
   username: string
@@ -52,6 +53,7 @@ export default function ForumScreen() {
   const { theme } = useTheme()
   const c = theme.colors
   const router = useRouter()
+  const { isAuthed } = useAuth()
   const [threads, setThreads] = useState<Thread[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [cat, setCat] = useState<string>('')
@@ -89,7 +91,15 @@ export default function ForumScreen() {
 
   return (
     <Screen scroll={false}>
-      <Title>Forum</Title>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Title>Forum</Title>
+        <TouchableOpacity
+          onPress={() => router.push(isAuthed ? '/forum-new' : '/auth/login')}
+          style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: theme.mono ? 0 : 8, backgroundColor: c.accent, marginBottom: 12 }}
+        >
+          <Text style={{ color: theme.dark ? '#000' : '#fff', fontSize: 13, fontWeight: '700' }}>+ New thread</Text>
+        </TouchableOpacity>
+      </View>
       {categories.length > 0 ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
           <TouchableOpacity
