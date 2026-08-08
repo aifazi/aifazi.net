@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
+import type { Href } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
@@ -12,6 +13,12 @@ interface Room {
   name: string
   type: string
   description?: string
+}
+
+function roomIcon(type: string) {
+  if (type === 'video') return '📹'
+  if (type === 'voice') return '🔊'
+  return '💬'
 }
 
 export default function ChatScreen() {
@@ -31,9 +38,7 @@ export default function ChatScreen() {
     api
       .get('/chat/rooms')
       .then((r) =>
-        setRooms(
-          ((r.data ?? []) as Room[]).filter((x) => x.type === 'voice' || x.type === 'video'),
-        ),
+        setRooms(((r.data ?? []) as Room[]).filter((x) => x.type === 'text' || x.type === 'voice' || x.type === 'video')),
       )
       .catch((e) => setErr(e?.response?.data?.detail || 'Could not load rooms'))
       .finally(() => setLoading(false))
@@ -44,18 +49,21 @@ export default function ChatScreen() {
       <Screen>
         <Title>Chat</Title>
         <Card>
-          <Muted>Sign in on the Profile tab to join voice/video rooms.</Muted>
+          <Muted>Sign in on the Profile tab to join rooms.</Muted>
         </Card>
       </Screen>
     )
   }
 
-  const join = (room: Room) =>
-    router.push(`/call?room=${room.id}&name=${encodeURIComponent(room.name)}`)
+  const open = (room: Room) => {
+    const params = `room=${room.id}&name=${encodeURIComponent(room.name)}`
+    if (room.type === 'text') router.push(`/chat-room?${params}` as Href)
+    else router.push(`/call?${params}` as Href)
+  }
 
   return (
     <Screen scroll={false}>
-      <Title>Call rooms</Title>
+      <Title>Chat rooms</Title>
       {loading ? (
         <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
       ) : err ? (
@@ -68,20 +76,20 @@ export default function ChatScreen() {
           renderItem={({ item }) => (
             <Card>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Text style={{ fontSize: 16 }}>{item.type === 'video' ? '📹' : '🔊'}</Text>
+                <Text style={{ fontSize: 16 }}>{roomIcon(item.type)}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }}>{item.name}</Text>
                   {item.description ? <Muted>{item.description}</Muted> : null}
                 </View>
                 <Btn
-                  title="Join"
-                  onPress={() => join(item)}
+                  title={item.type === 'text' ? 'Open' : 'Join'}
+                  onPress={() => open(item)}
                   style={{ paddingVertical: 8, paddingHorizontal: 14 }}
                 />
               </View>
             </Card>
           )}
-          ListEmptyComponent={<Muted>No voice/video rooms yet.</Muted>}
+          ListEmptyComponent={<Muted>No chat rooms yet.</Muted>}
         />
       )}
     </Screen>

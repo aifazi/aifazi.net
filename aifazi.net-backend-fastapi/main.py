@@ -434,22 +434,46 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
 
         # ── 3. Internal token gate ─────────────────────────────────────────────
+        # Web frontend injects X-Internal-Token (see Next.js middleware). The
+        # mobile app cannot embed that shared secret, so it authenticates with a
+        # regular PASETO access token instead — route-level dependencies
+        # (get_current_user / require_staff / require_permission) still enforce
+        # per-endpoint authorization, so a valid bearer is equivalent here to
+        # coming through the proxy with the internal secret.
         is_open = (
             path in _OPEN_EXACT or
             (method == "GET" and any(path.startswith(p) for p in _OPEN_GET_PREFIXES))
         )
         if not is_open:
-            if not INTERNAL_API_SECRET:
-                return JSONResponse(
-                    status_code=503,
-                    content={"error": "Internal API gate is not configured."},
-                )
-            submitted = request.headers.get("X-Internal-Token", "")
-            if not hmac.compare_digest(submitted, INTERNAL_API_SECRET):
-                return JSONResponse(
-                    status_code=403,
-                    content={"error": "Direct API access is not permitted."},
-                )
+            # Valid PASETO access token → authenticated first-party client (mobile app).
+            auth_header = request.headers.get("authorization", "")
+            valid_bearer = False
+            if auth_header.lower().startswith("bearer "):
+                try:
+                    from dependencies import decode_token as _decode_access
+                    _decode_access(auth_header[7:].strip())
+                    valid_bearer = True
+                except Exception:
+                    valid_bearer = False
+            if not valid_bearer:
+                if not INTERNAL_API_SECRET:
+                    return JSONResponse(
+                        status_code=503,
+                        content={"error": "Internal API gate is not configured."},
+                    )
+                if auth_header.startswith("Bearer "):
+                    # A bearer was supplied but rejected → explicit 401 so the
+                    # client can refresh/re-auth rather than a confusing 403.
+                    return JSONResponse(
+                        status_code=401,
+                        content={"error": "Invalid or expired token"},
+                    )
+                submitted = request.headers.get("X-Internal-Token", "")
+                if not hmac.compare_digest(submitted, INTERNAL_API_SECRET):
+                    return JSONResponse(
+                        status_code=403,
+                        content={"error": "Direct API access is not permitted."},
+                    )
 
         # ── 4. Call next + attach headers ─────────────────────────────────────
         response = await call_next(request)
