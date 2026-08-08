@@ -10,15 +10,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Animated,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { askImageSource, type PickedFile } from '@/src/lib/media'
+import { askImageSource, pickDocument, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
+import { showMessageActions, showEmojiPicker, useSwipeToReply } from '@/src/lib/chat-actions'
 
 interface DMMessage {
   id: string
@@ -29,6 +31,7 @@ interface DMMessage {
   file_name?: string
   file_size?: string
   reply_to?: { id: string; sender: string; content: string } | null
+  reactions?: Record<string, string[]>
   created_at?: string
   edited?: boolean
 }
@@ -42,6 +45,120 @@ function fmtTime(iso?: string) {
   } catch {
     return ''
   }
+}
+
+interface RowProps {
+  mine: boolean
+  c: any
+  theme: any
+  item: DMMessage
+  threadKey: string
+  isImage: boolean
+  replyContent: string
+  reactions: [string, string[]][]
+  onReply: () => void
+  onReact: () => void
+  onEdit: () => void
+  onDelete: () => void
+  onToggleReact: (emoji: string) => void
+  onLongPress: () => void
+}
+
+function MessageRow(props: RowProps) {
+  const { mine, c, theme, item, threadKey, isImage, replyContent, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress } = props
+  const { pan, panHandlers } = useSwipeToReply({ onReply })
+
+  return (
+    <View style={{ marginBottom: 10 }}>
+      <Animated.View style={{ alignItems: mine ? 'flex-end' : 'flex-start', transform: [{ translateX: pan.x }] }} {...panHandlers}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onLongPress={onLongPress}
+          delayLongPress={350}
+        >
+          <View
+            style={[
+              styles.bubble,
+              {
+                backgroundColor: mine ? c.accent2 : c.bg2,
+                borderColor: mine ? c.accent2 : c.border,
+                maxWidth: '85%',
+              },
+            ]}
+          >
+            {replyContent ? (
+              <Text style={{ color: c.muted, fontSize: 11, fontStyle: 'italic', marginBottom: 4 }}>
+                ↪ {decryptIfEncrypted(replyContent, threadKey)}
+              </Text>
+            ) : null}
+            {isImage ? (
+              <ExpoImage
+                source={{ uri: item.content }}
+                style={{ width: 220, height: 220, borderRadius: 10 }}
+                contentFit="cover"
+                transition={150}
+              />
+            ) : (
+              <Text style={{ color: mine ? '#001018' : c.text, fontSize: 14, lineHeight: 19 }}>
+                {decryptIfEncrypted(item.content, threadKey)}
+              </Text>
+            )}
+            {item.type === 'file' && item.file_name ? (
+              <Text style={{ marginTop: 6, fontSize: 13, color: mine ? '#001018' : c.text }}>📎 {item.file_name}</Text>
+            ) : null}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginTop: 4 }}>
+              <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: 10 }}>
+                {fmtTime(item.created_at)}
+                {item.edited ? ' · edited' : ''}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+      {reactions.length > 0 ? (
+        <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+          {reactions.map(([emoji, usernames]) => (
+            <TouchableOpacity
+              key={emoji}
+              onPress={() => onToggleReact(emoji)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: c.border,
+                backgroundColor: c.bg2,
+              }}
+            >
+              <Text style={{ fontSize: 13 }}>{emoji}</Text>
+              <Text style={{ color: c.muted, fontSize: 11 }}>{usernames.length}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : null}
+      <View style={{ flexDirection: 'row', gap: 12, marginTop: 4, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+        <TouchableOpacity onPress={onReply} hitSlop={8}>
+          <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>Reply</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onReact} hitSlop={8}>
+          <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>React</Text>
+        </TouchableOpacity>
+        {mine ? (
+          <>
+            <TouchableOpacity onPress={onEdit} hitSlop={8}>
+              <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onDelete} hitSlop={8}>
+              <Text style={{ color: c.danger, fontSize: 11, fontWeight: '700' }}>Delete</Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
+      </View>
+    </View>
+  )
 }
 
 export default function DMThreadScreen() {
@@ -58,6 +175,9 @@ export default function DMThreadScreen() {
   const [sending, setSending] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [threadKey, setThreadKey] = useState('')
+  const [editing, setEditing] = useState<DMMessage | null>(null)
+  const [editText, setEditText] = useState('')
+  const [replying, setReplying] = useState<DMMessage | null>(null)
   const listRef = useRef<FlatList<DMMessage>>(null)
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -99,13 +219,55 @@ export default function DMThreadScreen() {
     setSending(true)
     try {
       const payload = threadKey ? `ENC:${encryptText(content, threadKey)}` : content
-      await api.post(`/chat/dm/threads/${thread_id}/messages`, { content: payload, type: 'text' })
+      const replyTo = replying
+        ? { id: replying.id, sender: replying.sender, content: replying.content ?? '' }
+        : undefined
+      await api.post(`/chat/dm/threads/${thread_id}/messages`, { content: payload, type: 'text', reply_to: replyTo })
       setText('')
+      setReplying(null)
       await load(true)
     } catch (e: any) {
       setErr(e?.response?.data?.detail || 'Failed to send')
     } finally {
       setSending(false)
+    }
+  }
+
+  const startEdit = (m: DMMessage) => {
+    setEditing(m)
+    setEditText(decryptIfEncrypted(m.content ?? '', threadKey))
+  }
+
+  const cancelEdit = () => {
+    setEditing(null)
+    setEditText('')
+  }
+
+  const saveEdit = async () => {
+    if (!editing) return
+    const content = editText.trim()
+    if (!content) return
+    setSending(true)
+    try {
+      const payload = threadKey ? `ENC:${encryptText(content, threadKey)}` : content
+      await api.patch(`/chat/dm/messages/${editing.id}`, { content: payload })
+      setEditing(null)
+      setEditText('')
+      await load(true)
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Failed to edit')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const toggleReact = async (id: string, emoji: string) => {
+    try {
+      const r = await api.patch(`/chat/dm/messages/${id}/react`, { emoji })
+      const reactions = (r.data?.reactions ?? {}) as Record<string, string[]>
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, reactions } : m)))
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Failed to react')
     }
   }
 
@@ -118,18 +280,39 @@ export default function DMThreadScreen() {
     }
   }
 
-  const pickImage = () => {
-    askImageSource((f) => uploadImage(f))
+  const confirmDelete = (id: string) => {
+    Alert.alert('Delete message', 'Delete this message?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteMsg(id) },
+    ])
   }
 
-  const uploadImage = async (file: PickedFile) => {
+  const onLongPress = (m: DMMessage) => {
+    showMessageActions({
+      isMine: isMine(m),
+      onReply: () => setReplying(m),
+      onReact: () => showEmojiPicker((emoji) => toggleReact(m.id, emoji)),
+      onEdit: () => startEdit(m),
+      onDelete: () => confirmDelete(m.id),
+    })
+  }
+
+  const pickImage = () => {
+    askImageSource((f) => uploadFile(f, 'image'))
+  }
+
+  const pickDoc = () => {
+    pickDocument().then((f) => f && uploadFile(f, 'file'))
+  }
+
+  const uploadFile = async (file: PickedFile, type: 'image' | 'file') => {
     setUploading(true)
     try {
       const form = new FormData()
       form.append('file', {
         uri: file.uri,
-        name: file.name ?? 'photo.jpg',
-        type: file.mimeType ?? 'image/jpeg',
+        name: file.name ?? (type === 'image' ? 'photo.jpg' : 'file'),
+        type: file.mimeType ?? (type === 'image' ? 'image/jpeg' : 'application/octet-stream'),
       } as any)
       const up = await api.post(`/upload/chat?thread_id=${thread_id}`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -139,13 +322,13 @@ export default function DMThreadScreen() {
       if (!url) throw new Error('Upload returned no URL')
       await api.post(`/chat/dm/threads/${thread_id}/messages`, {
         content: url,
-        type: 'image',
-        file_name: file.name ?? 'photo.jpg',
+        type,
+        file_name: file.name ?? (type === 'image' ? 'photo.jpg' : 'file'),
         file_size: String(file.size ?? 0),
       })
       await load(true)
     } catch (e: any) {
-      setErr(e?.response?.data?.detail || e?.message || 'Failed to upload image')
+      setErr(e?.response?.data?.detail || e?.message || 'Failed to upload')
     } finally {
       setUploading(false)
     }
@@ -224,53 +407,27 @@ export default function DMThreadScreen() {
             renderItem={({ item }) => {
               const mine = isMine(item)
               const isImage = item.type === 'image'
+              const reactions = item.reactions ?? {}
+              const reactionEntries = Object.entries(reactions)
               let replyContent = ''
               if (item.reply_to?.content) replyContent = item.reply_to.content
               return (
-                <View style={{ marginBottom: 10, alignItems: mine ? 'flex-end' : 'flex-start' }}>
-                  <View
-                    style={[
-                      styles.bubble,
-                      {
-                        backgroundColor: mine ? c.accent2 : c.bg2,
-                        borderColor: mine ? c.accent2 : c.border,
-                        maxWidth: '85%',
-                      },
-                    ]}
-                  >
-                    {replyContent ? (
-                      <Text style={{ color: c.muted, fontSize: 11, fontStyle: 'italic', marginBottom: 4 }}>
-                        ↪ {decryptIfEncrypted(replyContent, threadKey)}
-                      </Text>
-                    ) : null}
-                    {isImage ? (
-                      <ExpoImage
-                        source={{ uri: item.content }}
-                        style={{ width: 220, height: 220, borderRadius: 10 }}
-                        contentFit="cover"
-                        transition={150}
-                      />
-                    ) : (
-                      <Text style={{ color: mine ? '#001018' : c.text, fontSize: 14, lineHeight: 19 }}>
-                        {decryptIfEncrypted(item.content, threadKey)}
-                      </Text>
-                    )}
-                    {item.type === 'file' && item.file_name ? (
-                      <Text style={{ marginTop: 6, fontSize: 13, color: c.text }}>📎 {item.file_name}</Text>
-                    ) : null}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginTop: 4 }}>
-                      <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: 10 }}>
-                        {fmtTime(item.created_at)}
-                        {item.edited ? ' · edited' : ''}
-                      </Text>
-                    </View>
-                  </View>
-                  {mine ? (
-                    <TouchableOpacity onPress={() => deleteMsg(item.id)} hitSlop={8} style={{ marginTop: 4 }}>
-                      <Text style={{ color: c.danger, fontSize: 12 }}>Delete</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
+                <MessageRow
+                  mine={mine}
+                  c={c}
+                  theme={theme}
+                  item={item}
+                  threadKey={threadKey}
+                  isImage={isImage}
+                  replyContent={replyContent}
+                  reactions={reactionEntries}
+                  onReply={() => setReplying(item)}
+                  onReact={() => showEmojiPicker((emoji) => toggleReact(item.id, emoji))}
+                  onEdit={() => startEdit(item)}
+                  onDelete={() => confirmDelete(item.id)}
+                  onToggleReact={(emoji) => toggleReact(item.id, emoji)}
+                  onLongPress={() => onLongPress(item)}
+                />
               )
             }}
           />
@@ -278,13 +435,26 @@ export default function DMThreadScreen() {
       </KeyboardAvoidingView>
 
       <View style={[styles.inputBar, { borderTopColor: c.border, backgroundColor: c.bg2 }]}>
+        {(editing || replying) ? (
+          <View style={{ position: 'absolute', top: -42, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.bg3, borderTopWidth: 1, borderTopColor: c.border }}>
+            <Text style={{ flex: 1, color: c.muted, fontSize: 11, fontStyle: 'italic' }} numberOfLines={1}>
+              {editing ? `✏️ Editing: ${decryptIfEncrypted(editing.content ?? '', threadKey)}` : replying ? `↪ Replying to ${replying?.sender}: ${decryptIfEncrypted(replying?.content ?? '', threadKey)}` : ''}
+            </Text>
+            <TouchableOpacity onPress={() => { cancelEdit(); setReplying(null) }} hitSlop={8}>
+              <Text style={{ color: c.danger, fontSize: 12, fontWeight: '700' }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
         <TouchableOpacity onPress={pickImage} disabled={uploading} hitSlop={8} style={{ paddingRight: 2 }}>
           <Text style={{ fontSize: 18, opacity: uploading ? 0.4 : 1 }}>{uploading ? '⏳' : '🖼️'}</Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: 2 }}>
+          <Text style={{ fontSize: 18, opacity: uploading ? 0.4 : 1 }}>📎</Text>
+        </TouchableOpacity>
         <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder="Type a message…"
+          value={editing ? editText : text}
+          onChangeText={editing ? setEditText : setText}
+          placeholder={editing ? 'Edit message…' : 'Type a message…'}
           placeholderTextColor={c.muted}
           multiline
           style={[
@@ -298,12 +468,12 @@ export default function DMThreadScreen() {
           ]}
         />
         <TouchableOpacity
-          onPress={send}
-          disabled={sending || !text.trim()}
-          style={[styles.sendBtn, { backgroundColor: c.accent, opacity: sending || !text.trim() ? 0.5 : 1 }]}
+          onPress={editing ? saveEdit : send}
+          disabled={sending || !(editing ? editText : text).trim()}
+          style={[styles.sendBtn, { backgroundColor: c.accent, opacity: sending || !(editing ? editText : text).trim() ? 0.5 : 1 }]}
         >
           <Text style={{ color: theme.dark ? '#000' : '#fff', fontWeight: '800', fontSize: 13 }}>
-            {sending ? '…' : 'Send'}
+            {sending ? '…' : editing ? 'Save' : 'Send'}
           </Text>
         </TouchableOpacity>
       </View>

@@ -11,15 +11,17 @@ import {
   Platform,
   Linking,
   Pressable,
+  Alert,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { askImageSource, type PickedFile } from '@/src/lib/media'
+import { askImageSource, pickDocument, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
+import { showMessageActions, showEmojiPicker, SwipeReplyRow } from '@/src/lib/chat-actions'
 import { MarkdownText } from '@/src/components/markdown'
 
 interface ChatMessage {
@@ -221,6 +223,13 @@ export default function ChatRoomScreen() {
     }
   }
 
+  const confirmDelete = (id: string) => {
+    Alert.alert('Delete message', 'Delete this message?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => deleteMsg(id) },
+    ])
+  }
+
   const startEdit = (m: ChatMessage) => {
     setEditing(m)
     setEditText(decryptIfEncrypted(m.content ?? '', roomKey))
@@ -251,17 +260,21 @@ export default function ChatRoomScreen() {
   }
 
   const pickImage = () => {
-    askImageSource((f) => uploadImage(f))
+    askImageSource((f) => uploadFile(f, 'image'))
   }
 
-  const uploadImage = async (file: PickedFile) => {
+  const pickDoc = () => {
+    pickDocument().then((f) => f && uploadFile(f, 'file'))
+  }
+
+  const uploadFile = async (file: PickedFile, type: 'image' | 'file') => {
     setUploading(true)
     try {
       const form = new FormData()
       form.append('file', {
         uri: file.uri,
-        name: file.name ?? 'photo.jpg',
-        type: file.mimeType ?? 'image/jpeg',
+        name: file.name ?? (type === 'image' ? 'photo.jpg' : 'file'),
+        type: file.mimeType ?? (type === 'image' ? 'image/jpeg' : 'application/octet-stream'),
       } as any)
       const up = await api.post(`/upload/chat?room_id=${room}`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -271,13 +284,13 @@ export default function ChatRoomScreen() {
       if (!url) throw new Error('Upload returned no URL')
       await api.post(`/chat/rooms/${room}/messages`, {
         content: url,
-        type: 'image',
-        file_name: file.name ?? 'photo.jpg',
+        type,
+        file_name: file.name ?? (type === 'image' ? 'photo.jpg' : 'file'),
         file_size: String(file.size ?? 0),
       })
       await load(true)
     } catch (e: any) {
-      setErr(e?.response?.data?.detail || e?.message || 'Failed to upload image')
+      setErr(e?.response?.data?.detail || e?.message || 'Failed to upload')
     } finally {
       setUploading(false)
     }
@@ -472,107 +485,119 @@ export default function ChatRoomScreen() {
               let replyContent = ''
               if (item.reply_to?.content) replyContent = item.reply_to.content
               const body = decryptIfEncrypted(item.content, roomKey)
+              const onLongPress = () =>
+                showMessageActions({
+                  isMine: mine,
+                  onReply: () => setReplying(item),
+                  onReact: () => setReactTarget(item),
+                  onEdit: () => startEdit(item),
+                  onDelete: () => confirmDelete(item.id),
+                })
               return (
-                <View style={{ marginBottom: 10, alignItems: mine ? 'flex-end' : 'flex-start' }}>
-                  <Pressable
-                    onLongPress={() => setReactTarget(item)}
-                    delayLongPress={350}
-                    style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-                  >
-                    <View
-                      style={[
-                        styles.bubble,
-                        {
-                          backgroundColor: mine ? c.accent2 : c.bg2,
-                          borderColor: mine ? c.accent2 : c.border,
-                          maxWidth: '85%',
-                        },
-                      ]}
-                    >
-                      {!mine ? (
-                        <Text style={{ color: c.accent2, fontSize: 11, fontWeight: '700', marginBottom: 3 }}>
-                          {item.sender}
-                          {item.role && item.role !== 'member' ? ` · ${item.role}` : ''}
-                        </Text>
-                      ) : null}
-                      {replyContent ? (
-                        <Text style={{ color: c.muted, fontSize: 11, fontStyle: 'italic', marginBottom: 4 }}>
-                          ↪ {decryptIfEncrypted(replyContent, roomKey)}
-                        </Text>
-                      ) : null}
-                      {isImage ? (
-                        <TouchableOpacity onPress={() => openLink(item.content ?? '')}>
-                          <ExpoImage
-                            source={{ uri: item.content }}
-                            style={{ width: 220, height: 220, borderRadius: 10 }}
-                            contentFit="cover"
-                            transition={150}
-                          />
-                        </TouchableOpacity>
-                      ) : (
-                        <MarkdownText
-                          content={body || item.content}
-                          color={mine ? '#001018' : c.text}
-                          onLink={openLink}
-                        />
-                      )}
-                      {item.type === 'file' && item.file_name ? (
-                        <TouchableOpacity
-                          onPress={() => openLink(item.content ?? '')}
-                          style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                <View style={{ marginBottom: 10 }}>
+                  <SwipeReplyRow onReply={() => setReplying(item)}>
+                    <View style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
+                      <Pressable
+                        onLongPress={onLongPress}
+                        delayLongPress={350}
+                        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+                      >
+                        <View
+                          style={[
+                            styles.bubble,
+                            {
+                              backgroundColor: mine ? c.accent2 : c.bg2,
+                              borderColor: mine ? c.accent2 : c.border,
+                              maxWidth: '85%',
+                            },
+                          ]}
                         >
-                          <Text style={{ fontSize: 15 }}>📎</Text>
-                          <Text style={{ color: mine ? '#001018' : c.text, fontSize: 13, fontWeight: '600' }}>
-                            {item.file_name} {item.file_size ? `(${fmtSize(item.file_size)})` : ''}
-                          </Text>
-                        </TouchableOpacity>
-                      ) : null}
-                      {preview && preview.title ? (
-                        <TouchableOpacity onPress={() => openLink(preview.url ?? item.content ?? '')}>
-                          <View
-                            style={[
-                              styles.previewCard,
-                              {
-                                backgroundColor: mine ? 'rgba(255,255,255,0.35)' : c.bg,
-                                borderColor: mine ? 'rgba(0,16,24,0.25)' : c.border,
-                              },
-                            ]}
-                          >
-                            {preview.image ? (
+                          {!mine ? (
+                            <Text style={{ color: c.accent2, fontSize: 11, fontWeight: '700', marginBottom: 3 }}>
+                              {item.sender}
+                              {item.role && item.role !== 'member' ? ` · ${item.role}` : ''}
+                            </Text>
+                          ) : null}
+                          {replyContent ? (
+                            <Text style={{ color: c.muted, fontSize: 11, fontStyle: 'italic', marginBottom: 4 }}>
+                              ↪ {decryptIfEncrypted(replyContent, roomKey)}
+                            </Text>
+                          ) : null}
+                          {isImage ? (
+                            <TouchableOpacity onPress={() => openLink(item.content ?? '')}>
                               <ExpoImage
-                                source={{ uri: preview.image }}
-                                style={{ width: '100%', height: 120, borderTopLeftRadius: 10, borderTopRightRadius: 10 }}
+                                source={{ uri: item.content }}
+                                style={{ width: 220, height: 220, borderRadius: 10 }}
                                 contentFit="cover"
+                                transition={150}
                               />
-                            ) : null}
-                            <View style={{ padding: 8 }}>
-                              {preview.site ? (
-                                <Text style={{ color: c.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                  {preview.site}
-                                </Text>
-                              ) : null}
-                              <Text style={{ color: c.text, fontSize: 12, fontWeight: '700', marginTop: 2 }}>
-                                {preview.title}
+                            </TouchableOpacity>
+                          ) : (
+                            <MarkdownText
+                              content={body || item.content}
+                              color={mine ? '#001018' : c.text}
+                              onLink={openLink}
+                            />
+                          )}
+                          {item.type === 'file' && item.file_name ? (
+                            <TouchableOpacity
+                              onPress={() => openLink(item.content ?? '')}
+                              style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                            >
+                              <Text style={{ fontSize: 15 }}>📎</Text>
+                              <Text style={{ color: mine ? '#001018' : c.text, fontSize: 13, fontWeight: '600' }}>
+                                {item.file_name} {item.file_size ? `(${fmtSize(item.file_size)})` : ''}
                               </Text>
-                              {preview.description ? (
-                                <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }} numberOfLines={2}>
-                                  {preview.description}
-                                </Text>
-                              ) : null}
-                            </View>
+                            </TouchableOpacity>
+                          ) : null}
+                          {preview && preview.title ? (
+                            <TouchableOpacity onPress={() => openLink(preview.url ?? item.content ?? '')}>
+                              <View
+                                style={[
+                                  styles.previewCard,
+                                  {
+                                    backgroundColor: mine ? 'rgba(255,255,255,0.35)' : c.bg,
+                                    borderColor: mine ? 'rgba(0,16,24,0.25)' : c.border,
+                                  },
+                                ]}
+                              >
+                                {preview.image ? (
+                                  <ExpoImage
+                                    source={{ uri: preview.image }}
+                                    style={{ width: '100%', height: 120, borderTopLeftRadius: 10, borderTopRightRadius: 10 }}
+                                    contentFit="cover"
+                                  />
+                                ) : null}
+                                <View style={{ padding: 8 }}>
+                                  {preview.site ? (
+                                    <Text style={{ color: c.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                      {preview.site}
+                                    </Text>
+                                  ) : null}
+                                  <Text style={{ color: c.text, fontSize: 12, fontWeight: '700', marginTop: 2 }}>
+                                    {preview.title}
+                                  </Text>
+                                  {preview.description ? (
+                                    <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }} numberOfLines={2}>
+                                      {preview.description}
+                                    </Text>
+                                  ) : null}
+                                </View>
+                              </View>
+                            </TouchableOpacity>
+                          ) : null}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginTop: 4 }}>
+                            <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: 10 }}>
+                              {fmtTime(item.created_at)}
+                              {item.edited ? ' · edited' : ''}
+                            </Text>
                           </View>
-                        </TouchableOpacity>
-                      ) : null}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginTop: 4 }}>
-                        <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: 10 }}>
-                          {fmtTime(item.created_at)}
-                          {item.edited ? ' · edited' : ''}
-                        </Text>
-                      </View>
+                        </View>
+                      </Pressable>
                     </View>
-                  </Pressable>
+                  </SwipeReplyRow>
                   {reactionEntries.length > 0 ? (
-                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
                       {reactionEntries.map(([emoji, usernames]) => (
                         <TouchableOpacity
                           key={emoji}
@@ -595,11 +620,11 @@ export default function ChatRoomScreen() {
                       ))}
                     </View>
                   ) : null}
-                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 4, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
                     <TouchableOpacity onPress={() => setReplying(item)} hitSlop={8}>
                       <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>Reply</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setReactTarget(item)} hitSlop={8}>
+                    <TouchableOpacity onPress={() => showEmojiPicker((emoji) => toggleReact(item.id, emoji))} hitSlop={8}>
                       <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>React</Text>
                     </TouchableOpacity>
                     {mine ? (
@@ -607,7 +632,7 @@ export default function ChatRoomScreen() {
                         <TouchableOpacity onPress={() => startEdit(item)} hitSlop={8}>
                           <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>Edit</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => deleteMsg(item.id)} hitSlop={8}>
+                        <TouchableOpacity onPress={() => confirmDelete(item.id)} hitSlop={8}>
                           <Text style={{ color: c.danger, fontSize: 11, fontWeight: '700' }}>Delete</Text>
                         </TouchableOpacity>
                       </>
@@ -648,9 +673,14 @@ export default function ChatRoomScreen() {
           </TouchableOpacity>
         ) : null}
         {!editing ? (
-          <TouchableOpacity onPress={pickImage} disabled={uploading} hitSlop={8} style={{ paddingRight: 2 }}>
-            <Text style={{ fontSize: 18, opacity: uploading ? 0.4 : 1 }}>{uploading ? '⏳' : '🖼️'}</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity onPress={pickImage} disabled={uploading} hitSlop={8} style={{ paddingRight: 2 }}>
+              <Text style={{ fontSize: 18, opacity: uploading ? 0.4 : 1 }}>{uploading ? '⏳' : '🖼️'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: 2 }}>
+              <Text style={{ fontSize: 18, opacity: uploading ? 0.4 : 1 }}>📎</Text>
+            </TouchableOpacity>
+          </>
         ) : null}
         <View style={{ flex: 1 }}>
           {replying ? (
