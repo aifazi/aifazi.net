@@ -202,6 +202,10 @@ _OPEN_GET_PREFIXES: tuple[str, ...] = (
     "/api/fivem/players/sessions",
     # Store catalog — public reads (categories/plans); protected routes use JWT
     "/api/store",
+    # Mobile app release metadata + APK download — public so the in-app updater
+    # can check for new Android builds without a session (server-side GITHUB_TOKEN).
+    "/api/mobile/release/latest",
+    "/api/mobile/release/download",
 )
 
 # ── CORS allowed origins ───────────────────────────────────────────────────────
