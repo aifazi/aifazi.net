@@ -197,6 +197,22 @@ export function ProductsTab({ categories, onOpenVariants }) {
     e.target.value = ''
   }
 
+  const [imageUploading, setImageUploading] = useState(false)
+  const uploadProductImage = async (e) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setImageUploading(true)
+    const fd = new FormData()
+    fd.append('file', f)
+    try {
+      const r = await api.post('/store/admin/products/image/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      inp('image_url', r.data?.url || r.data?.storage_path || '')
+      toast.success('Product image uploaded')
+    } catch (err) { toast.error(err.response?.data?.error || 'Upload failed', { title: 'Error' }) }
+    finally { setImageUploading(false) }
+    e.target.value = ''
+  }
+
   const inp = (key, val) => setForm(f => ({ ...f, [key]: val }))
 
   return (
@@ -264,8 +280,16 @@ export function ProductsTab({ categories, onOpenVariants }) {
               <textarea value={form.description} onChange={e => inp('description', e.target.value)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
             </div>
             <div style={{ marginTop: 12 }}>
-              <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Image URL</label>
-              {input(form.image_url, v => inp('image_url', v), false)}
+              <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Product image</label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {form.image_url ? (
+                  <img src={form.image_url} alt="" style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)', background: 'var(--bg3)' }} />
+                ) : <div style={{ width: 56, height: 56, borderRadius: 8, background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🛒</div>}
+                <div style={{ flex: 1, minWidth: 200 }}>{input(form.image_url, v => inp('image_url', v), false)}</div>
+                <Btn onClick={() => document.getElementById('storeImageInput')?.click()} disabled={imageUploading} color={C}>{imageUploading ? 'UPLOADING…' : 'UPLOAD'}</Btn>
+                {form.image_url && <Btn onClick={() => inp('image_url', '')} small danger>REMOVE</Btn>}
+              </div>
+              <input id="storeImageInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={uploadProductImage} />
             </div>
             {form.type === 'digital' && (
               <>

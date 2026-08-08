@@ -5,6 +5,7 @@ inventory, orders, invoices, quotes, sales stats). Mounted at /api/store/admin.
 from __future__ import annotations
 
 import os
+import secrets
 import logging
 import random
 import uuid as _uuid
@@ -641,6 +642,48 @@ async def upload_store_file(file: UploadFile = File(...), _: dict = Depends(CATA
         url, storage_path, provider = await upload_media(
             content, filename, file.content_type or "application/octet-stream",
             folder="store",
+        )
+    except Exception as exc:
+        raise HTTPException(500, f"Upload failed: {str(exc)[:200]}")
+    return {"storage_path": storage_path, "url": url, "filename": filename, "provider": provider}
+
+
+# ── Store product image upload ───────────────────────────────────────────────
+_IMAGE_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+_IMAGE_MAGIC = [
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"GIF87a", "image/gif"),
+    (b"GIF89a", "image/gif"),
+    (b"RIFF", "image/webp"),
+]
+
+
+@router.post("/products/image/upload")
+async def upload_product_image(file: UploadFile = File(...), _: dict = Depends(CATALOG)):
+    content = await file.read()
+    if len(content) > _IMAGE_MAX_BYTES:
+        raise HTTPException(413, "Image must be 10 MB or smaller")
+    if not content:
+        raise HTTPException(400, "Empty file")
+
+    mimetype = ""
+    for magic, mime in _IMAGE_MAGIC:
+        if content.startswith(magic):
+            if magic == b"RIFF" and len(content) >= 12:
+                mimetype = "image/webp" if content[8:12] == b"WEBP" else ""
+            else:
+                mimetype = mime
+            break
+    if not mimetype:
+        raise HTTPException(415, "Product image must be a JPEG, PNG, GIF, or WebP image (SVG is not allowed)")
+
+    safe = (file.filename or "img").replace("\\", "/").rsplit("/", 1)[-1]
+    safe = safe.replace("..", "").replace("/", "_").strip()[:60] or "img"
+    filename = f"product_{secrets.token_hex(8)}_{safe}"
+    try:
+        url, storage_path, provider = await upload_media(
+            content, filename, mimetype, folder="store/products",
         )
     except Exception as exc:
         raise HTTPException(500, f"Upload failed: {str(exc)[:200]}")
