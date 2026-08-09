@@ -108,6 +108,7 @@ SERVICES = [
     {"name": "database",    "label": "Database"},
     {"name": "email",       "label": "Email Service"},
     {"name": "fivem",       "label": "FiveM Server"},
+    {"name": "mobile",      "label": "Mobile App"},
 ]
 
 
@@ -213,12 +214,38 @@ async def _check_fivem():
     return await _check_http(f"{BACKEND_URL}/api/fivem/status")
 
 
+async def _check_mobile():
+    """Mobile app release pipeline: our own /api/mobile/status must answer.
+
+    `state` (ready|building|none) is a normal pipeline condition, so any
+    well-formed JSON counts as UP — only a dead/instrumented backend or a
+    broken release endpoint is a failure.
+    """
+    start = time.perf_counter()
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+            r = await client.get(f"{BACKEND_URL}/api/mobile/status")
+            lat = round((time.perf_counter() - start) * 1000)
+            if r.status_code != 200:
+                return False, lat, f"HTTP {r.status_code}"
+            data = r.json()
+            state = data.get("state")
+            if state not in ("ready", "building", "none"):
+                return False, lat, f"unexpected state: {state!r}"
+            return True, lat, f"release {state}"
+    except Exception as e:
+        lat = round((time.perf_counter() - start) * 1000)
+        return False, lat, type(e).__name__
+
+
 CHECKERS = {
     "frontend": _check_frontend,
     "backend": _check_backend,
     "database": _check_database,
     "email": _check_email,
     "fivem": _check_fivem,
+    "mobile": _check_mobile,
 }
 
 

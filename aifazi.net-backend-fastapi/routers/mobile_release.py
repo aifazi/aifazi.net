@@ -11,10 +11,11 @@ operations server-side:
   - GET  /api/mobile/release/download -> streams the latest APK asset bytes
 
 `state` tells the mobile app what to show. The auto-release tag is created
-immediately, but the ~16-minute EAS build uploads the APK a while later, so
-`building` (not an error) is returned in that window. `/release/latest` returns
-200 with `state` instead of a bare 404 so the in-app updater never has to guess
-between "no release", "still building", and "backend broken".
+immediately, but the CI build (local Gradle `assembleRelease` on GitHub
+Actions) uploads the APK a while later, so `building` (not an error) is
+returned in that window. `/release/latest` returns 200 with `state` instead of a
+bare 404 so the in-app updater never has to guess between "no release", "still
+building", and "backend broken".
 
 Use GITHUB_TOKEN (a fine-grained PAT with Contents:Read, or a classic PAT with
 `repo` scope) so the server can read the private repo. When the token is missing
@@ -97,9 +98,10 @@ async def mobile_release_latest() -> dict:
 async def mobile_release_status() -> dict:
     """Public pipeline status used by the web /app page.
 
-    The auto-release tag is created immediately; the ~16-minute EAS build uploads
-    the APK a while later. `state` tells consumers the download is *ready* once
-    the APK appears, or *building* while it is not yet uploaded.
+    The auto-release tag is created immediately; the CI build (local Gradle
+    `assembleRelease` on GitHub Actions) uploads the APK a while later.
+    `state` tells consumers the download is *ready* once the APK appears, or
+    *building* while it is not yet uploaded.
     """
     async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
         release, err = await get_latest_release(client)
