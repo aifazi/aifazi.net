@@ -6,18 +6,21 @@ mobile and web clients can render a rich card. Uses only the public OpenGraph /
 <meta> tags of the target page — no body-text scraping. Parsing uses only the
 stdlib HTMLParser, so no extra runtime dependency is introduced.
 
-Security: the fetch is SSRF-hardened (resolves the host up front and rejects
-any non-global address; only http/https allowed; capped response; hard timeout).
+Security: the fetch is SSRF-hardened. The host is resolved ONCE, every result
+IP is validated as global, and httpx connects to that PINNED IP (reusing
+seo_proxy's _validate_resolved_host) — the client is never allowed to
+re-resolve, which closes the classic DNS-rebinding TOCTOU. Every redirect hop
+is re-validated and re-pinned too. Only http/https allowed; capped response;
+hard timeout.
 """
 import re
-import socket
-import ipaddress
 import time
 import asyncio
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 from html.parser import HTMLParser
 from fastapi import APIRouter, HTTPException, Query
 import httpx
+from routers.seo_proxy import _validate_resolved_host
 
 router = APIRouter()
 
@@ -100,30 +103,27 @@ def _extract_meta(html: str, url: str) -> dict:
 
 # ── SSRF guards ───────────────────────────────────────────────────────────────
 
-def _is_private_hostname(host: str) -> bool:
-    """Reject literal private/loopback/link-local hostnames (e.g. 127.0.0.1)."""
-    try:
-        addr = ipaddress.ip_address(host)
-        return addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved or addr.is_multicast
-    except ValueError:
-        return False
+MAX_REDIRECTS = 5
 
 
-async def _resolve_blocked(host: str) -> bool:
-    """Resolve DNS and reject any non-global address (SSRF guard)."""
-    try:
-        info = await asyncio.get_event_loop().getaddrinfo(host, None, type=socket.SOCK_STREAM)
-    except Exception:
-        return True
-    for entry in info:
-        ip = entry[4][0]
-        try:
-            addr = ipaddress.ip_address(ip)
-            if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved or addr.is_multicast:
-                return True
-        except ValueError:
-            return True
-    return False
+def _pinned_get(client: httpx.AsyncClient, url: str, *, hostname: str, pinned_ip: str) -> httpx.Response:
+    """GET url but connect to the PRE-VALIDATED pinned IP, not re-resolved DNS.
+    The IP is substituted into the URL netloc and the original host is restored
+    via the Host header so SNI / vhost routing still works. Follows seo_proxy."""
+    parsed = urlparse(url)
+    netloc = pinned_ip if ":" not in pinned_ip else f"[{pinned_ip}]"  # bracket IPv6
+    if parsed.port:
+        netloc = f"{netloc}:{parsed.port}"
+    pinned_url = parsed._replace(netloc=netloc).geturl()
+    return client.get(
+        pinned_url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (aifazi.net link previews; +https://aifazi.net) AppleWebKit/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Host": hostname,
+        },
+    )
 
 
 # ── route ─────────────────────────────────────────────────────────────────────
@@ -135,9 +135,7 @@ async def link_preview(url: str = Query(..., min_length=8, max_length=2048)):
     if parsed.scheme not in ("http", "https"):
         raise HTTPException(400, "Only http/https URLs supported")
     host = parsed.hostname or ""
-    if not host or _is_private_hostname(host):
-        raise HTTPException(400, "Address not allowed")
-    if await _resolve_blocked(host):
+    if not host:
         raise HTTPException(400, "Address not allowed")
 
     now = time.time()
@@ -146,20 +144,48 @@ async def link_preview(url: str = Query(..., min_length=8, max_length=2048)):
         if entry and now - entry[0] < _PREVIEW_TTL:
             return entry[1]
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (aifazi.net link previews; +https://aifazi.net) AppleWebKit/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-    }
     try:
-        async with httpx.AsyncClient(timeout=FETCH_TIMEOUT, follow_redirects=True, headers=headers) as client:
-            r = await client.get(url)
+        pinned_ip = await asyncio.to_thread(_validate_resolved_host, host)
+    except HTTPException as exc:
+        # Keep the route's public contract: any unsafe resolution → 400.
+        raise HTTPException(400, exc.detail)
+
+    async def _pin(next_host: str) -> str:
+        try:
+            return await asyncio.to_thread(_validate_resolved_host, next_host)
+        except HTTPException as exc:
+            raise HTTPException(400, exc.detail)
+
+    try:
+        async with httpx.AsyncClient(timeout=FETCH_TIMEOUT, verify=True) as client:
+            final = None
+            current_url, current_host, current_ip = url, host, pinned_ip
+            for _ in range(MAX_REDIRECTS):
+                final = await _pinned_get(client, current_url, hostname=current_host, pinned_ip=current_ip)
+                if final.status_code not in (301, 302, 303, 307, 308):
+                    break
+                location = final.headers.get("location", "")
+                if not location:
+                    break
+                next_url = urljoin(str(final.url), location)
+                next_parsed = urlparse(next_url)
+                if next_parsed.scheme not in ("http", "https"):
+                    raise HTTPException(400, "Only http/https URLs supported")
+                next_host = next_parsed.hostname or ""
+                if not next_host:
+                    raise HTTPException(400, "Address not allowed")
+                current_url, current_host = next_url, next_host
+                current_ip = await _pin(next_host)
+            else:
+                raise HTTPException(422, "Too many redirects")
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(422, "Could not fetch URL")
-    if r.status_code >= 400:
-        raise HTTPException(422, f"Could not fetch URL — status {r.status_code}")
+    if final is None or final.status_code >= 400:
+        raise HTTPException(422, f"Could not fetch URL — status {getattr(final, 'status_code', '?')}")
 
-    raw = (r.content or b"")[:MAX_RESPONSE_BYTES]
+    raw = (final.content or b"")[:MAX_RESPONSE_BYTES]
     try:
         text = raw.decode("utf-8", errors="replace")
     except Exception:

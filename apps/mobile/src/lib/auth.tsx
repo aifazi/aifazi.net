@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useCallback, useState, ReactNode } from 'react'
-import { api, setAuthTokens, clearAuthTokens, getAccessToken, onAuthCleared } from './api'
+import { api, setAuthTokens, clearAuthTokens, ensureSession, onAuthCleared } from './api'
 
 export interface AuthUser {
   id?: string
@@ -81,7 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const tok = await getAccessToken()
+      // H4 — cold start: access token is memory-only. ensureSession() reissues
+      // one from the SecureStore refresh token when present; otherwise logged out.
+      const tok = await ensureSession()
       if (!tok) {
         setUser(null)
         return

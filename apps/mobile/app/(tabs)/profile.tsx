@@ -99,10 +99,10 @@ function AppUpdatesCard() {
     if (!check?.release?.apkUrl) return
     setDownloading(true); setError(''); setProgress(0)
     try {
-      await downloadAndInstall(check.release.apkUrl, (p) => setProgress(Math.round(p.fraction * 100)), check.release.apkSize)
+      await downloadAndInstall(check.release.apkUrl, (p) => setProgress(Math.round(p.fraction * 100)), check.release.apkSize, check.release.sha256)
     } catch (e) {
       setError(
-        e instanceof Error && e.message.includes('Download incomplete')
+        e instanceof Error && (e.message.includes('Download incomplete') || e.message.includes('checksum'))
           ? e.message
           : 'Install was blocked. Open settings to allow aifazi to install apps.',
       )

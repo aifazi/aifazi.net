@@ -2,6 +2,7 @@ import { File, Paths } from 'expo-file-system'
 import * as IntentLauncher from 'expo-intent-launcher'
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
+import * as Crypto from 'expo-crypto'
 import { Platform } from 'react-native'
 
 const RELEASE_API = 'https://api.aifazi.net/api/mobile/release/latest'
@@ -11,6 +12,7 @@ export interface ReleaseInfo {
   version: string
   apkUrl?: string
   apkSize?: number
+  sha256?: string
   publishedAt?: string
   notes?: string
 }
@@ -20,6 +22,7 @@ interface BackendRelease {
   version?: string
   apk_url?: string
   asset_size?: number
+  sha256?: string
   published_at?: string
   notes?: string
   asset_name?: string
@@ -71,6 +74,7 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
       version: data.version || data.tag.replace(/^v/i, ''),
       apkUrl: data.apk_url,
       apkSize: data.asset_size,
+      sha256: data.sha256,
       publishedAt: data.published_at,
       notes: data.notes,
     }
@@ -110,6 +114,7 @@ export async function downloadAndInstall(
   apkUrl: string,
   onProgress?: (p: InstallProgress) => void,
   expectedSize?: number,
+  expectedSha256?: string,
 ): Promise<void> {
   const dest = new File(Paths.cache, 'aifazi-update.apk')
   if (dest.exists) dest.delete()
@@ -136,6 +141,25 @@ export async function downloadAndInstall(
   if (expectedSize && file.size !== expectedSize) {
     dest.delete()
     throw new Error(`Download incomplete (got ${file.size} of ${expectedSize} bytes) — please retry`)
+  }
+
+  // Authenticity check: when the backend advertises the release's SHA-256 (taken
+  // from the GitHub asset digest), reject any APK that doesn't hash to it. This
+  // stops a tampered/mitm'd binary from ever reaching the installer even if the
+  // plain size + PK check would have passed.
+  if (expectedSha256) {
+    try {
+      const bytes = await file.bytes()
+      const digestBuf = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes)
+      const digestHex = Array.from(new Uint8Array(digestBuf), (b) => b.toString(16).padStart(2, '0')).join('')
+      if (digestHex !== expectedSha256.toLowerCase()) {
+        dest.delete()
+        throw new Error('Downloaded APK failed its checksum verification — please retry')
+      }
+    } catch {
+      dest.delete()
+      throw new Error('Downloaded APK failed its checksum verification — please retry')
+    }
   }
 
   // Sanity: every APK is a ZIP archive, so it must start with "PK\x03\x04".

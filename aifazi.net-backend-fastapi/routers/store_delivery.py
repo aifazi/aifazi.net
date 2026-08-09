@@ -378,10 +378,27 @@ async def order_delivery_tracking(order_no: str):
         agent = supabase.table("delivery_agents").select("id,display_name,phone,vehicle,status,current_area").eq("id", o["delivery_agent_id"]).single().execute()
         agent_info = {k: v for k, v in (agent.data or {}).items() if k != "phone"}  # never leak agent phone on a public endpoint
 
-        assignment = supabase.table("delivery_assignments").select("*").eq("order_id", o["id"]).limit(1).execute()
+        assignment = supabase.table("delivery_assignments").select(
+            "id,status,assigned_at,picked_up_at,in_transit_at,delivered_at,failed_at,returned_at"
+        ).eq("order_id", o["id"]).limit(1).execute()
         if assignment.data:
-            assignment_info = assignment.data[0]
-            scans = supabase.table("delivery_scan_events").select("*").eq("assignment_id", assignment_info["id"]).order("created_at").execute()
+            # H24 — export ONLY the public status + sanitized timestamps from the
+            # assignment. The full row (select "*") was leaking internal fields
+            # (agent_id, order_id, notes, updated_at …) to anyone with an order
+            # number — a public endpoint must never mirror the DB row.
+            raw = assignment.data[0]
+            assignment_info = {
+                "status": raw.get("status"),
+                "assigned_at": raw.get("assigned_at"),
+                "picked_up_at": raw.get("picked_up_at"),
+                "in_transit_at": raw.get("in_transit_at"),
+                "delivered_at": raw.get("delivered_at"),
+                "failed_at": raw.get("failed_at"),
+                "returned_at": raw.get("returned_at"),
+            }
+            scans = supabase.table("delivery_scan_events").select(
+                "scan_type,note,created_at"
+            ).eq("assignment_id", raw["id"]).order("created_at").execute()
             scan_events = scans.data or []
 
     events = supabase.table("store_order_events").select("status,note,created_at").eq("order_id", o["id"]).order("created_at").execute()

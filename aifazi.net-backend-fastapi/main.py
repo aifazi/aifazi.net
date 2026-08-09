@@ -487,6 +487,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Access-Control-Allow-Methods"]     = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
             response.headers["Access-Control-Allow-Headers"]     = _CORS_ALLOW_HEADERS
+        # Reflected (dynamic) ACAO means the response varies by Origin. Emit
+        # Vary: Origin ALWAYS (even when not allowed) so shared caches never
+        # reuse a credentialed response across origins — prevents CORS cache
+        # poisoning between aifazi.net subdomains.
+        response.headers["Vary"] = response.headers.get("Vary", "") + ", Origin"
 
         response.headers["X-Content-Type-Options"]  = "nosniff"
         response.headers["X-Frame-Options"]         = "DENY"

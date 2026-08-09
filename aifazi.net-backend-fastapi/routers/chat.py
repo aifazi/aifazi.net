@@ -422,6 +422,75 @@ async def create_room(body: RoomBody, _: dict = Depends(require_staff)):
     res = supabase.table("chat_rooms").insert(body.model_dump()).execute()
     return res.data[0]
 
+def _mark_room_read(room_id: str, user: dict) -> None:
+    """Record that `user` read `room_id` up to now (backend-only writes)."""
+    try:
+        supabase.table("chat_read_state").upsert(
+            {"room_id": room_id, "username": (user.get("username") or "").lower(), "last_read_at": _now()},
+            on_conflict="room_id,username",
+        ).execute()
+    except Exception:
+        pass
+
+
+def _room_unread_count(room_id: str, user: dict) -> int:
+    """Messages `user` hasn't read yet in `room_id` (from other senders)."""
+    username = (user.get("username") or "").lower()
+    last_read_at = None
+    try:
+        rs = (
+            supabase.table("chat_read_state")
+            .select("last_read_at")
+            .eq("room_id", room_id)
+            .eq("username", username)
+            .limit(1)
+            .execute()
+        )
+        last_read_at = rs.data[0].get("last_read_at") if rs.data else None
+    except Exception:
+        pass
+    try:
+        q = (
+            supabase.table("chat_messages")
+            .select("id", count="exact")
+            .eq("room_id", room_id)
+            .neq("sender", user.get("username"))
+        )
+        if last_read_at:
+            q = q.gt("created_at", last_read_at)
+        res = q.execute()
+        return int(res.count or 0)
+    except Exception:
+        return 0
+
+
+@router.post("/rooms/{room_id}/read")
+async def mark_room_read(room_id: str, user: dict = Depends(get_current_user)):
+    _ensure_room_access(room_id, user)
+    _mark_room_read(room_id, user)
+    return {"ok": True}
+
+
+@router.get("/unread")
+async def list_unread(user: dict = Depends(get_current_user)):
+    """Per-room unread counts for the current user over the authenticated API.
+
+    Replaces the old anon-keyed Supabase Realtime 'chat_unread' stream so nobody
+    can subscribe to every chat_messages INSERT with just the publishable key.
+    Rooms the user cannot access are excluded entirely.
+    """
+    res = supabase.table("chat_rooms").select("id").limit(200).execute()
+    out: dict[str, int] = {}
+    for room in (res.data or []):
+        room_id = room.get("id")
+        if not room_id or not _role_allowed(room, user):
+            continue
+        n = _room_unread_count(room_id, user)
+        if n > 0:
+            out[room_id] = n
+    return out
+
+
 @router.put("/rooms/{room_id}")
 async def update_room(room_id: str, body: RoomBody, _: dict = Depends(require_staff)):
     res = supabase.table("chat_rooms").update(body.model_dump()).eq("id", room_id).execute()
@@ -558,6 +627,7 @@ async def get_messages(
     rows = list(reversed(res.data or []))
     if not before:
         _set_cached_history(room_id, rows)
+        _mark_room_read(room_id, user)
     return rows
 
 def _decrypt_aesgcm(cipher_b64: str, key_b64: str) -> str | None:

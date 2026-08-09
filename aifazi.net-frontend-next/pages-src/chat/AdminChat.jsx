@@ -210,24 +210,32 @@ export default function AdminChat({ embedded=false }) {
     return () => { supabase.removeChannel(channel) }
   }, [mounted, authState, me, role, profile.username, profile.role, profile.avatar, callRoom?.id, callRoom?.name])
 
-  // ── Global unread tracking ───────────────────────────────────────────────
+  // ── Global unread tracking (authenticated poll) ──────────────────────────
+  // Replaces the old anon-keyed Supabase Realtime 'chat_unread' stream, which
+  // let anyone with the publishable key subscribe to every chat_messages INSERT.
+  // Unread counts now come from /chat/unread over the authenticated API.
   useEffect(() => {
-    // Only subscribed for signed-in users — with the anon key a signed-out
-    // visitor must not stream every chat_messages INSERT.
-    if (!mounted || !supabase || !me || authState !== 'ok') return
-
-    const channel = supabase.channel('chat_unread')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
-        (payload) => {
-          const msgRoomId = payload.new.room_id
-          if (!msgRoomId || msgRoomId === roomIdRef.current) return
-          setUnread(prev => ({ ...prev, [msgRoomId]: (prev[msgRoomId] || 0) + 1 }))
-        }
-      )
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
+    if (!mounted || !me || authState !== 'ok') return
+    let cancelled = false
+    const poll = () => {
+      api.get('/chat/unread').then(r => {
+        if (cancelled) return
+        const counts = r.data || {}
+        setUnread(prev => {
+          const next = { ...prev }
+          for (const roomId of Object.keys(counts)) {
+            if (roomId === roomIdRef.current) continue
+            next[roomId] = counts[roomId]
+          }
+          return next
+        })
+      }).catch(() => {})
+    }
+    poll()
+    const iv = setInterval(poll, 15000)
+    const onFocus = () => poll()
+    window.addEventListener('focus', onFocus)
+    return () => { cancelled = true; clearInterval(iv); window.removeEventListener('focus', onFocus) }
   }, [mounted, me, authState])
 
   // ── Realtime staff sync ──────────────────────────────────────────────────
@@ -533,6 +541,8 @@ export default function AdminChat({ embedded=false }) {
       if (callRoom && r.id !== callRoom.id) leaveCall()
       joinCall(r)
     }
+    setUnread(prev => { const n={...prev}; delete n[r.id]; return n })
+    api.post(`/chat/rooms/${r.id}/read`).catch(() => {})
   }, [isMobile, callRoom, joinCall, leaveCall])
 
   const saveChan = async data => {

@@ -137,6 +137,21 @@ def _apply_ops(doc, ops: list[Operation]):
         if 0 <= p < doc.page_count: doc.delete_page(p)
 
 # ── Routes ────────────────────────────────────────────────────────
+# H24 — memory-amplification guards. A crafted PDF can declare absurd page
+# dimensions and still be tiny on disk; rendering such a page (any scale) or
+# even iterating its metadata costs real RAM. These caps keep worst-case
+# memory bounded regardless of the uploaded bytes.
+MAX_PDF_PAGES   = 2000   # sane doc length
+MAX_PAGE_POINTS = 20000  # a page dimension beyond this is almost surely hostile
+MAX_RENDER_PX   = 4096   # longest rendered edge (px) regardless of scale
+
+def _page_is_huge(page) -> bool:
+    try:
+        return page.rect.width > MAX_PAGE_POINTS or page.rect.height > MAX_PAGE_POINTS
+    except Exception:
+        return True
+
+
 @router.post("/open")
 async def open_pdf(request: Request, file: UploadFile = File(...)):
     import fitz
@@ -147,10 +162,19 @@ async def open_pdf(request: Request, file: UploadFile = File(...)):
     try:
         doc   = fitz.open(stream=content, filetype="pdf")
         count = doc.page_count
+        if count > MAX_PDF_PAGES:
+            doc.close()
+            raise HTTPException(413, f"PDF exceeds {MAX_PDF_PAGES} pages")
+        for i in range(count):
+            if _page_is_huge(doc[i]):
+                doc.close()
+                raise HTTPException(413, "PDF page dimensions exceed the supported maximum")
         meta  = doc.metadata or {}
         pages = [{"width": doc[i].rect.width, "height": doc[i].rect.height,
                   "rotation": doc[i].rotation} for i in range(count)]
         doc.close()
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(400, f"Cannot open PDF: {e}")
     _evict()
@@ -168,8 +192,16 @@ async def render_page(request: Request, session_id: str, page_num: int, scale: f
     doc  = fitz.open(stream=sess["bytes"], filetype="pdf")
     if not (0 <= page_num < doc.page_count):
         doc.close(); raise HTTPException(400, "Invalid page")
-    mat = fitz.Matrix(max(0.5, min(scale, 4.0)), max(0.5, min(scale, 4.0)))
-    pix = doc[page_num].get_pixmap(matrix=mat, alpha=False)
+    # H24 — clamp the requested scale so the output edge never exceeds the cap,
+    # even if the page itself is large. Prevents a pixel-bomb pixmap in RAM.
+    page  = doc[page_num]
+    base  = max(page.rect.width, page.rect.height)
+    scale = max(0.5, min(float(scale), 4.0))
+    if base > 0 and base * scale > MAX_RENDER_PX:
+        scale = MAX_RENDER_PX / base
+        scale = max(0.05, scale)
+    mat = fitz.Matrix(scale, scale)
+    pix = page.get_pixmap(matrix=mat, alpha=False)
     png = pix.tobytes("png")
     doc.close()
     return Response(content=png, media_type="image/png",

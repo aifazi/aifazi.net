@@ -2,8 +2,8 @@
 /**
  * DiscordAuthCallback.jsx
  * Handles the redirect from /api/auth/discord/callback
- * Supports both query params (?token=...) and hash fragments (#token=...)
- * Hash fragments are preferred — they don't appear in server logs or Referer headers.
+ * Token is delivered ONLY via the URL hash fragment (#token=...) — never as a
+ * query param, so it can't land in server logs or Referer headers.
  */
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -29,16 +29,14 @@ export default function DiscordAuthCallback() {
   const [error,  setError]  = useState(discordErr ? (DISCORD_ERR_MSGS[discordErr] || 'Discord login failed. Please try again.') : '')
 
   useEffect(() => {
-    // Try fragment first, then fall back to query param
+    // Token ONLY via hash fragment — never accept it from a query param
+    // (query params leak into server logs and Referer headers).
     const hash = new URLSearchParams(window.location.hash.substring(1))
-    let token = hash.get('token')
+    const token = hash.get('token')
     // C15/G5: validate dest through safeNextPath to prevent open-redirect
     // (attacker can craft ?dest=https://evil.com or #dest=//evil.com)
     let dest = safeNextPath(hash.get('dest') || searchParams.get('dest')) || '/profile'
     let err = hash.get('discord_error') || searchParams.get('discord_error')
-
-    if (!token) token = searchParams.get('token')
-    if (!err) err = searchParams.get('discord_error')
 
     if (err) {
       setTimeout(() => router.replace('/login'), 3000)

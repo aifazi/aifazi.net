@@ -280,6 +280,12 @@ function withCors(response: NextResponse, origin: string): NextResponse {
   // subdomain MUST be dot-separated, so lookalikes like `evil-aifazi.net`
   // never match.
   const allow = origin && /^https:\/\/([a-z0-9-]+\.)?aifazi\.net$/.test(origin)
+  // A reflected (dynamic) Allow-Origin means the response varies by Origin —
+  // signal it up front so shared caches never reuse a credentialed response
+  // across subdomains, otherwise a only-aifazi.net response's ACAO could be
+  // served to store.aifazi.net (CORS cache poisoning).
+  // Always emit, because even a non-allowed origin produced one of two outcomes.
+  response.headers.append('Vary', 'Origin')
   if (allow) {
     response.headers.set('Access-Control-Allow-Origin', origin)
     response.headers.set('Access-Control-Allow-Credentials', 'true')
@@ -439,7 +445,8 @@ export async function proxy(request: NextRequest) {
 
   // ── 6. Admin route protection ─────────────────────────────────────────────
   const isAdminRoute = pathname.toLowerCase().startsWith('/admin') ||
-    pathname.toLowerCase() === '/forum/admin' || pathname.toLowerCase().startsWith('/forum/admin/')
+    pathname.toLowerCase() === '/forum/admin' || pathname.toLowerCase().startsWith('/forum/admin/') ||
+    pathname.toLowerCase() === '/tools/db' || pathname.toLowerCase().startsWith('/tools/db/')
   if (isAdminRoute) {
     const sessionCookie = request.cookies.get('admin_session')?.value
     if (!sessionCookie || !(await isAdminSessionValid(sessionCookie, hostname))) {

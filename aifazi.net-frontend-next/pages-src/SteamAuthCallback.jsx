@@ -2,8 +2,8 @@
 /**
  * SteamAuthCallback.jsx
  * Receives the JWT from the Steam OpenID backend callback.
- * Supports both query params and hash fragments for token delivery.
- * Hash fragments are preferred — they don't appear in server logs or Referer headers.
+ * Token is delivered ONLY via the URL hash fragment (#token=...) — never as a
+ * query param, so it can't land in server logs or Referer headers.
  */
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -30,17 +30,14 @@ export default function SteamAuthCallback() {
   const [error,  setError]  = useState(steamErr ? (STEAM_ERR_MSGS[steamErr] || 'Steam login failed. Please try again.') : '')
 
   useEffect(() => {
-    // Try fragment first, then fall back to query param
+    // Token ONLY via hash fragment — never accept it from a query param
+    // (query params leak into server logs and Referer headers).
     const hash = new URLSearchParams(window.location.hash.substring(1))
-    let token = hash.get('token')
+    const token = hash.get('token')
     // C15/G5: validate dest through safeNextPath to prevent open-redirect
     let dest = safeNextPath(hash.get('dest') || searchParams?.get('dest')) || '/profile'
     let steamErr = hash.get('steam_error') || searchParams?.get('steam_error')
     let isNewAccount = hash.get('new_account') === '1' || searchParams?.get('new_account') === '1'
-
-    if (!token) token = searchParams?.get('token')
-    if (!steamErr) steamErr = searchParams?.get('steam_error')
-    if (!isNewAccount) isNewAccount = searchParams?.get('new_account') === '1'
 
     if (steamErr) {
       setTimeout(() => nav.replace('/login?tab=signin'), 3000)

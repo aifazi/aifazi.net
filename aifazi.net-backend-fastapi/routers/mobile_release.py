@@ -64,6 +64,14 @@ def _apk_asset(release: dict) -> dict:
     raise HTTPException(status_code=404, detail="No APK attached to the latest release")
 
 
+def _asset_sha256(asset: dict) -> str | None:
+    """GitHub returns the asset's own SHA-256 under `digest` (``sha256:...``)."""
+    digest = (asset.get("digest") or "").strip()
+    if digest.lower().startswith("sha256:"):
+        return digest.split(":", 1)[1].strip().lower()
+    return None
+
+
 @router.get("/release/latest")
 async def mobile_release_latest() -> dict:
     async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
@@ -82,6 +90,7 @@ async def mobile_release_latest() -> dict:
         "notes": release.get("body"),
         "asset_name": asset.get("name"),
         "asset_size": asset.get("size"),
+        "sha256": _asset_sha256(asset),
     }
 
 

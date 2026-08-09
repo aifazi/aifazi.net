@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useDialog } from "../core/dialog.jsx";
 import { useNotify } from "../core/notify.jsx";
 import { Checkbox, Select } from "../core/ui.jsx";
-import { getRole, getAuthToken } from "../lib/api";
+import { getAuthToken } from "../lib/api";
 import api from "../lib/api";  // <- use the internal axios proxy (handles /api prefix + auth token)
 
 // API_URL is intentionally empty - all requests go through the Next.js /api proxy
@@ -1378,9 +1378,35 @@ function SessionsTab({ token, toast }) {
 
 // ------------------------- M -------------------------AIN DASHBOARD ----------
 export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp = undefined }) {
-  // #19 - Auto read-only for editor/moderator roles
-  const role = getRole()
-  const readOnly = readOnlyProp ?? (role === 'editor' || role === 'moderator')
+  // #23 — The read-only gate must never trust localStorage (aifazi_effective_role
+  // / aifazi_permissions are client-editable). Resolve the role from the signed
+  // in-memory token first (set only from a verified login), and fall back to the
+  // server-verified /auth/me response. Until it resolves, default SAFE (readOnly).
+  const [serverRole, setServerRole] = useState(() => {
+    const token = getAuthToken()
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        return payload?.role || null
+      } catch { return null }
+    }
+    return null
+  })
+  const [roleReady, setRoleReady] = useState(Boolean(getAuthToken()))
+  useEffect(() => {
+    if (roleReady) return
+    let active = true
+    ;(async () => {
+      try {
+        const r = await api.get('/auth/me', { headers: getAuthToken() ? { Authorization: `Bearer ${getAuthToken()}` } : undefined })
+        if (active && r.data?.role) setServerRole(r.data.role)
+      } catch {}
+      finally { if (active) setRoleReady(true) }
+    })()
+    return () => { active = false }
+  }, [roleReady])
+  const role = serverRole || (readOnlyProp ? 'moderator' : null)
+  const readOnly = readOnlyProp ?? (roleReady ? (role === 'editor' || role === 'moderator') : true)
   const [token, setToken]           = useState(_preloadToken || getAuthToken());
   const [tokenInput, setTokenInput] = useState("");
   const [stats, setStats]           = useState(null);

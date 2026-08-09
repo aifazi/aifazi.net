@@ -63,7 +63,11 @@ ROLE_PERMISSION_PRESETS: dict[str, dict[str, list[str]]] = {
         "home": ["view"], "community.forum": ["view", "edit", "delete", "manage"],
         "community.chat": ["view", "edit", "delete", "manage"], "support.helpdesk": ["view", "edit"],
         "content.media": ["view", "create", "edit", "delete"],
-        "store": ["view", "edit", "manage"],
+        # Operational store access only — NOT financial. Refunds/payouts/POS
+        # (store.payments) and store settings/coupons/deals are admin-only.
+        "store.products": ["view", "edit"], "store.categories": ["view", "edit"],
+        "store.customers": ["view"], "store.orders": ["view", "edit", "manage"],
+        "store.reviews": ["view", "edit"], "store.delivery": ["view", "edit"],
         "fivem.status": ["view"], "fivem.whitelist": ["view", "approve", "sync"],
         "fivem.forms": ["view", "approve"], "fivem.approval_log": ["view"], "fivem.bans": ["view", "create", "edit"],
         "system.monitor": ["view"],
