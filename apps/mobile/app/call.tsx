@@ -89,7 +89,16 @@ function fmtTime(iso?: string) {
 }
 
 export default function CallScreen() {
-  const { room, name } = useLocalSearchParams<{ room: string; name?: string }>()
+  const { room, name, mode, thread_id, peer, type } = useLocalSearchParams<{
+    room: string
+    name?: string
+    mode?: string
+    thread_id?: string
+    peer?: string
+    type?: string
+  }>()
+  const isDm = mode === 'dm' || !!thread_id
+  const videoCall = isDm || type === 'video'
   const { theme } = useTheme()
   const c = theme.colors
   const { user } = useAuth()
@@ -115,7 +124,10 @@ export default function CallScreen() {
     muteParticipant,
     kickParticipant,
     leave,
-  } = useLiveKitCall(room ?? null)
+  } = useLiveKitCall(isDm ? (thread_id ?? (room ?? null)) : (room ?? null), {
+    dmThreadId: isDm ? (thread_id ?? null) : null,
+    video: videoCall,
+  })
 
   const [chatOpen, setChatOpen] = useState(false)
   const [chatMsgs, setChatMsgs] = useState<CallMessage[]>([])
@@ -127,26 +139,32 @@ export default function CallScreen() {
   const [pttActive, setPttActive] = useState(false)
 
   const isStaff = user?.role === 'admin' || user?.role === 'moderator'
-  const roomName = name || 'Call'
+  const roomName = name || (isDm ? (peer ? `Call · ${peer}` : 'DM call') : 'Call')
   const count = participants.length + 1
 
+  const baseChatId = isDm ? thread_id ?? '' : (room ?? '')
+
   useEffect(() => {
-    if (!room) return
+    if (!baseChatId) return
+    const keyPath = isDm
+      ? `/chat/dm/threads/${baseChatId}/encryption-key`
+      : `/chat/rooms/${baseChatId}/encryption-key`
     api
-      .get(`/chat/rooms/${room}/encryption-key`)
+      .get(keyPath)
       .then((r) => setRoomKey((r.data?.encryption_key ?? '') as string))
       .catch(() => setRoomKey(''))
-  }, [room])
+  }, [isDm, baseChatId])
 
   const loadChat = useCallback(async (silent = false) => {
-    if (!room) return
+    if (!baseChatId) return
     try {
-      const r = await api.get(`/chat/rooms/${room}/messages`, { params: { limit: 50 } })
+      const path = isDm ? `/chat/dm/threads/${baseChatId}/messages` : `/chat/rooms/${baseChatId}/messages`
+      const r = await api.get(path, { params: { limit: 50 } })
       setChatMsgs((r.data ?? []) as CallMessage[])
     } catch (e: any) {
       if (!silent) alert({ message: e?.response?.data?.detail || 'Could not load chat' })
     }
-  }, [room])
+  }, [isDm, baseChatId, alert])
 
   useEffect(() => {
     if (!chatOpen) return
@@ -192,11 +210,12 @@ export default function CallScreen() {
 
   const sendChat = async () => {
     const content = chatText.trim()
-    if (!content || !room) return
+    if (!content || !baseChatId) return
     setChatSending(true)
     try {
       const payload = roomKey ? `ENC:${encryptText(content, roomKey)}` : content
-      await api.post(`/chat/rooms/${room}/messages`, { content: payload, type: 'text' })
+      const path = isDm ? `/chat/dm/threads/${baseChatId}/messages` : `/chat/rooms/${baseChatId}/messages`
+      await api.post(path, { content: payload, type: 'text' })
       setChatText('')
       await loadChat(true)
     } catch (e: any) {

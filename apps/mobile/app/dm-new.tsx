@@ -24,10 +24,24 @@ export default function DMNewScreen() {
   const [err, setErr] = useState('')
   const [statuses, setStatuses] = useState<Record<string, string>>({})
 
+  useEffect(() => {
+    loadBrowse()
+  }, [])
+
+  const loadBrowse = async () => {
+    try {
+      const r = await api.get('/chat/dm/users')
+      setResults((r.data ?? []) as UserHit[])
+      setErr('')
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Could not load users')
+    }
+  }
+
   const search = async (query: string) => {
     setQ(query)
     if (!query.trim()) {
-      setResults([])
+      loadBrowse()
       return
     }
     try {
@@ -119,7 +133,7 @@ export default function DMNewScreen() {
         keyExtractor={(u) => u.username}
         contentContainerStyle={{ paddingHorizontal: 12 }}
         ListEmptyComponent={
-          <Muted style={{ textAlign: 'center', marginTop: 30 }}>{q.trim() ? 'No users found.' : 'Search for a username to message.'}</Muted>
+          <Muted style={{ textAlign: 'center', marginTop: 30 }}>{q.trim() ? 'No users found.' : 'No users yet.'}</Muted>
         }
         renderItem={({ item }) => (
           <Card style={{ paddingVertical: 10 }}>

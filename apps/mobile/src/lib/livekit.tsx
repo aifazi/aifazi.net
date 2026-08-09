@@ -30,7 +30,12 @@ export interface LKParticipant {
 
 export type LKStatus = 'idle' | 'connecting' | 'connected' | 'error'
 
-export function useLiveKitCall(roomId: string | null) {
+export interface LiveKitCallOptions {
+  dmThreadId?: string | null
+  video?: boolean
+}
+
+export function useLiveKitCall(roomId: string | null, opts?: LiveKitCallOptions) {
   const [status, setStatus] = useState<LKStatus>('idle')
   const [error, setError] = useState('')
   const [info, setInfo] = useState<LKInfo | null>(null)
@@ -42,6 +47,7 @@ export function useLiveKitCall(roomId: string | null) {
   const [localVideoUrl, setLocalVideoUrl] = useState<string | null>(null)
   const roomRef = useRef<Room | null>(null)
   const joined = useRef(false)
+  const isDm = !!opts?.dmThreadId
 
   const refresh = useCallback(() => {
     const room = roomRef.current
@@ -112,9 +118,12 @@ export function useLiveKitCall(roomId: string | null) {
       setStatus('connecting')
       setError('')
       try {
-        const res = await api.get(`/chat/livekit/token?room_id=${encodeURIComponent(roomId)}`)
+        const tokenPath = isDm
+          ? `/chat/dm/threads/${encodeURIComponent((opts?.dmThreadId as string) || '')}/livekit/token`
+          : `/chat/livekit/token?room_id=${encodeURIComponent((roomId as string) || '')}`
+        const res = await api.get(tokenPath)
         const d = res.data
-        const room = new Room({ adaptiveStream: true, dynacast: true })
+        const room = new Room({ adaptiveStream: false, dynacast: false })
 
         if (d.encryption_key) {
           try {
@@ -155,6 +164,12 @@ export function useLiveKitCall(roomId: string | null) {
         try {
           await room.localParticipant.setMicrophoneEnabled(true)
         } catch {}
+        if (opts?.video) {
+          try {
+            await room.localParticipant.setCameraEnabled(true)
+            setCamOff(false)
+          } catch {}
+        }
         refresh()
       } catch (e: any) {
         if (!cancelled) {

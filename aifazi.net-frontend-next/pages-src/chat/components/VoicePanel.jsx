@@ -202,8 +202,11 @@ export function VoicePanel({ room, onLeave, muted, camOff, onMute, onCam, onScre
   }, [effectiveMuted])
 
   useEffect(() => {
-    roomRef.current?.localParticipant?.setCameraEnabled(!camOff)
-  }, [camOff])
+    const lkRoom = roomRef.current
+    if (!lkRoom) return
+    const enableCam = room.type === 'video' && !camOff
+    lkRoom.localParticipant?.setCameraEnabled(enableCam).catch?.()
+  }, [camOff, room.type])
 
   // Remote volume control — apply to all current + future remote audio elements.
   useEffect(() => {
@@ -321,6 +324,7 @@ export function VoicePanel({ room, onLeave, muted, camOff, onMute, onCam, onScre
   }
 
   const typeLabel = room.type === 'video' ? 'Video Call' : 'Voice Chat'
+  const isVideo = room.type === 'video'
   const ctlBtn = (active) => ({
     width: 40, height: 40, borderRadius: '50%', border: active ? '2px solid #00ff88' : 'none',
     background: active ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(255,255,255,0.1)',
@@ -377,7 +381,7 @@ export function VoicePanel({ room, onLeave, muted, camOff, onMute, onCam, onScre
       ) : (
         <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 10, alignContent: 'start' }}>
           <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 10, position: 'relative', minHeight: 140, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: localSpeaking ? '2px solid #00ff88' : '2px solid transparent', transition: 'border-color 0.15s' }}>
-            {(room.type === 'video' || cameras.length > 0) && !camOff && (
+            {isVideo && !camOff && (
               <video ref={el => {
                 if (el && roomRef.current?.localParticipant?.videoTrackPublications?.size > 0) {
                   const pub = roomRef.current.localParticipant.videoTrackPublications.values().next().value
@@ -394,7 +398,7 @@ export function VoicePanel({ room, onLeave, muted, camOff, onMute, onCam, onScre
               <div style={{ marginTop: 5 }}><RolePill role={room._myRole} /></div>
               <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: effectiveMuted ? '#ff4757' : '#23d160' }} />
-                {(room.type === 'video' || cameras.length > 0) && <span style={{ width: 8, height: 8, borderRadius: '50%', background: camOff ? '#ff4757' : '#23d160' }} />}
+                {isVideo && <span style={{ width: 8, height: 8, borderRadius: '50%', background: camOff ? '#ff4757' : '#23d160' }} />}
               </div>
             </div>
           </div>

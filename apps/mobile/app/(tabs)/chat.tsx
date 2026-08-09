@@ -95,7 +95,7 @@ export default function ChatScreen() {
   )
 
   const open = (room: Room) => {
-    const params = `room=${room.id}&name=${encodeURIComponent(room.name)}`
+    const params = `room=${room.id}&name=${encodeURIComponent(room.name)}&type=${room.type}`
     if (room.type === 'text') router.push(`/chat-room?${params}` as Href)
     else router.push(`/call?${params}` as Href)
   }

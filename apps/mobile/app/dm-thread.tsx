@@ -13,6 +13,7 @@ import {
   AppState,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { askImageSourceAsync, pickDocument, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
@@ -382,8 +383,17 @@ export default function DMThreadScreen() {
         <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>
           {peer || 'Direct message'}
         </Text>
+        <TouchableOpacity
+          onPress={() => {
+            if (!thread_id) return
+            router.push(`/call?mode=dm&thread_id=${encodeURIComponent(thread_id)}&peer=${encodeURIComponent(peer || '')}` as Href)
+          }}
+          hitSlop={10}
+        >
+          <Text style={{ fontSize: 16 }}>📞</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={openMenu} hitSlop={10}>
-          <Text style={{ color: c.muted, fontSize: 18 }}>⋯</Text>
+          <Text style={{ color: c.muted, fontSize: 18, marginLeft: 8 }}>⋯</Text>
         </TouchableOpacity>
       </View>
 

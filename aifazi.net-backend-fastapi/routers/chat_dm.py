@@ -18,12 +18,14 @@ import secrets
 import base64
 import threading
 import time
+import json
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from database import supabase
 from dependencies import get_current_user
 from routers.chat import _EMOJI_RE
+from routers.chat_livekit import _generate_token, LIVEKIT_URL, LIVEKIT_KEY, LIVEKIT_SECRET
 
 router = APIRouter()
 
@@ -328,6 +330,64 @@ async def dm_encryption_key(thread_id: str, user: dict = Depends(get_current_use
     }
 
 
+# ── DM voice/video calls (LiveKit) ─────────────────────────────────────────────
+# A DM call is a LiveKit room keyed by the thread id, encrypted with the same
+# AES-256 key that protects the thread's text messages. Only the two parties
+# can mint a token (see _get_thread), and blocked pairs can't call.
+
+@router.get("/dm/threads/{thread_id}/livekit/token")
+async def dm_livekit_token(thread_id: str, user: dict = Depends(get_current_user)):
+    """Mint a LiveKit token for a 1:1 DM call between the thread's two parties."""
+    if not LIVEKIT_URL or not LIVEKIT_KEY or not LIVEKIT_SECRET:
+        raise HTTPException(503, "LiveKit env vars not set: LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET")
+    thread = _get_thread(thread_id, user)
+    peer = _peer_of(thread, user)
+    if _blocked_by(user["username"], peer) or _blocked_by(peer, user["username"]):
+        raise HTTPException(403, "Direct messages are not available with this user")
+
+    username = (user.get("username") or "unknown")
+    role = (user.get("role") or "user")
+    livekit_room = f"dm-{thread_id}"
+    encryption_key = thread.get("encryption_key") or ""
+    if not encryption_key:
+        key = base64.b64encode(secrets.token_bytes(32)).decode()
+        encryption_key = key
+        try:
+            supabase.table("dm_threads").update({"encryption_key": key}).eq("id", thread_id).execute()
+        except Exception:
+            pass
+    token = _generate_token(
+        identity=username,
+        room_id=livekit_room,
+        can_publish=True,
+        can_subscribe=True,
+        can_screen_share=role in ("admin", "moderator"),
+        metadata=json.dumps({"username": username, "role": role, "dm_thread": thread_id}),
+        e2ee_key=encryption_key,
+    )
+    return {
+        "token": token,
+        "url": LIVEKIT_URL,
+        "can_publish": True,
+        "can_screen_share": role in ("admin", "moderator"),
+        "identity": username,
+        "username": username,
+        "role": role,
+        "room": livekit_room,
+        "thread_id": thread_id,
+        "peer": peer,
+        "encryption_key": encryption_key,
+    }
+
+
+@router.get("/dm/livekit/status")
+async def dm_livekit_status(_: dict = Depends(get_current_user)):
+    return {
+        "available": bool(LIVEKIT_URL and LIVEKIT_KEY and LIVEKIT_SECRET),
+        "configured": bool(LIVEKIT_URL),
+    }
+
+
 # ── DM requests + blocks ──────────────────────────────────────────────────────
 
 @router.post("/dm/requests")
@@ -579,22 +639,75 @@ async def delete_dm_message(msg_id: str, user: dict = Depends(get_current_user))
 
 # ── User search (authenticated) for starting DMs ──────────────────────────────
 
-@router.get("/dm/users/search")
-async def dm_search_users(q: str = Query(..., min_length=1), user: dict = Depends(get_current_user)):
-    """Search registered users to start a DM — returns username/avatar/role only."""
+def _blocked_user_names_for(username: str) -> set[str]:
+    """Usernames that `username` has blocked or that have blocked `username`."""
+    blocked: set[str] = set()
+    try:
+        out = supabase.table("dm_blocks").select("blocker,blocked").execute()
+        uname = (username or "").strip().lower()
+        for row in (out.data or []):
+            if row.get("blocker") == uname:
+                blocked.add(row.get("blocked") or "")
+            if row.get("blocked") == uname:
+                blocked.add(row.get("blocker") or "")
+    except Exception:
+        pass
+    return {b for b in blocked if b}
+
+
+@router.get("/dm/users")
+async def dm_users_browse(
+    limit: int = Query(100, le=300),
+    user: dict = Depends(get_current_user),
+):
+    """Browse registered users to start a DM. Excludes self + blocked both ways."""
+    my_name = (user.get("username") or "").strip().lower()
+    blocked = _blocked_user_names_for(my_name)
     res = (
         supabase.table("users")
-        .select("id,username,avatar,role")
-        .ilike("username", f"%{q}%")
-        .limit(12)
+        .select("username,avatar,role,created_at")
+        .order("created_at", desc=True)
+        .limit(limit + 60)
         .execute()
     )
     out = []
     seen = set()
-    my_name = (user.get("username") or "").lower()
     for u in (res.data or []):
         uname = str(u.get("username") or "")
         if not uname or uname.lower() in seen or uname.lower() == my_name:
+            continue
+        if uname.lower() in blocked:
+            continue
+        seen.add(uname.lower())
+        out.append({
+            "username": uname,
+            "avatar": u.get("avatar") or "",
+            "role": u.get("role") or "",
+        })
+        if len(out) >= limit:
+            break
+    return out
+
+
+@router.get("/dm/users/search")
+async def dm_search_users(q: str = Query(..., min_length=1), user: dict = Depends(get_current_user)):
+    """Search registered users to start a DM — returns username/avatar/role only."""
+    my_name = (user.get("username") or "").strip().lower()
+    blocked = _blocked_user_names_for(my_name)
+    res = (
+        supabase.table("users")
+        .select("id,username,avatar,role")
+        .ilike("username", f"%{q}%")
+        .limit(30)
+        .execute()
+    )
+    out = []
+    seen = set()
+    for u in (res.data or []):
+        uname = str(u.get("username") or "")
+        if not uname or uname.lower() in seen or uname.lower() == my_name:
+            continue
+        if uname.lower() in blocked:
             continue
         seen.add(uname.lower())
         out.append({
