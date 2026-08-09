@@ -96,13 +96,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Check for EXPO_TOKEN
-        run: |
-          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
-            echo "You must provide an EXPO_TOKEN secret linked to this project's Expo account in this repo's secrets. Learn more: https://docs.expo.dev/build/building-on-ci"
-            exit 1
-          fi
-
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
@@ -115,11 +108,11 @@ jobs:
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
 
-      - name: Setup EAS
-        uses: expo/expo-github-action@v8
+      - name: Setup JDK
+        uses: actions/setup-java@v4
         with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+          distribution: temurin
+          java-version: '17'
 
       - name: Install dependencies
         working-directory: apps/mobile
@@ -163,49 +156,48 @@ jobs:
           console.log("version=" + v + " versionCode=" + app.expo.android.versionCode);
           EOF
 
-      - name: Start EAS Android build
-        id: build
+      - name: Generate Android project
         working-directory: apps/mobile
         run: |
-          eas build --platform android --profile production-apk --non-interactive --json > build-output.json
-          cat build-output.json
-          echo "build_id=$(jq -r '.[0].id // .id' build-output.json)" >> "$GITHUB_OUTPUT"
+          npx expo prebuild --platform android --no-install
+          echo "React Native architectures: $(grep '^reactNativeArchitectures=' android/gradle.properties)"
 
-      - name: Wait for build to finish
-        working-directory: apps/mobile
-        run: |
-          BUILD_ID="${{ steps.build.outputs.build_id }}"
-          echo "Build ID: $BUILD_ID"
-          for i in $(seq 1 240); do
-            STATUS=$(eas build:view "$BUILD_ID" --json 2>/dev/null | jq -r '.status')
-            echo "Attempt $i: status=$STATUS"
-            if [ "$STATUS" = "FINISHED" ]; then
-              echo "Build finished."
-              exit 0
-            fi
-            if [ "$STATUS" = "CANCELED" ] || [ "$STATUS" = "ERRORED" ]; then
-              echo "Build failed with status: $STATUS" >&2
-              exit 1
-            fi
-            sleep 30
-          done
-          echo "Timed out waiting for build" >&2
-          exit 1
-
-      - name: Download artifact
-        working-directory: apps/mobile
+      - name: Write release signing keystore
+        working-directory: apps/mobile/android
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          BUILD_ID="${{ steps.build.outputs.build_id }}"
-          URL=$(eas build:view "$BUILD_ID" --json 2>/dev/null | jq -r '.artifacts.applicationArchiveUrl // .artifacts.buildUrl')
-          if [ -z "$URL" ] || [ "$URL" = "null" ]; then
-            echo "No artifact URL found for build $BUILD_ID" >&2
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "The ANDROID_KEYSTORE_BASE64 secret is required for a release build." >&2
+            echo "Generate one with: keytool -genkey -v -keystore release.keystore -alias aifazi -keyalg RSA -keysize 2048 -validity 10000" >&2
+            echo "Then: base64 -w0 release.keystore" >&2
             exit 1
           fi
-          echo "Downloading from: $URL"
-          curl -fL -H "Authorization: Bearer $EXPO_TOKEN" "$URL" -o aifazi-${{ steps.tag.outputs.tag }}.apk
-          ls -la aifazi-${{ steps.tag.outputs.tag }}.apk
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/release.keystore
+          if [ ! -s app/release.keystore ]; then
+            echo "Decoded keystore is empty — check the ANDROID_KEYSTORE_BASE64 secret." >&2
+            exit 1
+          fi
+
+      - name: Build release APK
+        working-directory: apps/mobile/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease \
+            -PMYAPP_UPLOAD_STORE_FILE=release.keystore \
+            -PMYAPP_UPLOAD_STORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD" \
+            -PMYAPP_UPLOAD_KEY_ALIAS="$ANDROID_KEY_ALIAS" \
+            -PMYAPP_UPLOAD_KEY_PASSWORD="$ANDROID_KEY_PASSWORD"
+
+      - name: Copy APK to workspace
+        working-directory: apps/mobile
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk \
+            "aifazi-${{ steps.tag.outputs.tag }}.apk"
+          ls -la "aifazi-${{ steps.tag.outputs.tag }}.apk"
 
       - name: Upload artifact to release
         env:

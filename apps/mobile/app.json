@@ -82,13 +82,14 @@
           "android": {
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
-            "abiFilters": [
+            "buildArchs": [
               "arm64-v8a",
               "armeabi-v7a"
             ]
           }
         }
-      ]
+      ],
+      "./plugins/with-release-signing"
     ],
     "experiments": {
       "typedRoutes": true
