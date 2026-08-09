@@ -8,6 +8,7 @@ import { Card, Title, Muted, Btn, Field } from '@/src/components/ui'
 import { Avatar, BUILTIN_AVATARS, BUILTIN_AVATAR_ICONS } from '@/src/components/Avatar'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
+import { OAuthButtons } from '@/src/components/OAuthButtons'
 import { api } from '@/src/lib/api'
 import { THEME_IDS, THEMES } from '@/src/themes'
 import { checkForUpdate, downloadAndInstall, openInstallSettings, canRequestPackageInstalls, InstallBlockedError, type UpdateCheck } from '@/src/lib/updates'
@@ -182,7 +183,7 @@ type TabId = 'overview' | 'orders' | 'tickets' | 'activity' | 'documents' | 'sec
 
 /* ─── Overview ──────────────────────────────────────────────────────────── */
 function OverviewTab({ goEdit }: { goEdit: () => void }) {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, source, isLocked } = useTheme()
   const c = theme.colors
   const { user, logout, refresh } = useAuth()
   const router = useRouter()
@@ -236,13 +237,30 @@ function OverviewTab({ goEdit }: { goEdit: () => void }) {
         </View>
       </Card>
 
-      <Card title="Theme" subtitle="Pick your vibe">
+      <Card
+        title="Theme"
+        subtitle={
+          isLocked
+            ? 'Locked by the site admin'
+            : source === 'user'
+              ? 'Your choice'
+              : source === 'os'
+                ? 'Following your device setting'
+                : source === 'global'
+                  ? 'Site default'
+                  : 'Default app theme'
+        }
+      >
+        {isLocked ? (
+          <Muted style={{ marginBottom: 8 }}>🔒 Theme switching is disabled — the admin has forced a theme site-wide.</Muted>
+        ) : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
           {THEME_IDS.map((id) => (
             <Btn
               key={id}
               title={THEMES[id].name}
               variant={theme.id === id ? 'primary' : 'ghost'}
+              disabled={isLocked}
               onPress={() => setTheme(id)}
               style={{ paddingVertical: 8, paddingHorizontal: 12 }}
             />
@@ -1015,6 +1033,16 @@ export default function ProfileScreen() {
             <View style={{ marginTop: 12 }}>
               <Btn title="Create account" variant="ghost" onPress={() => router.push('/auth/register')} />
             </View>
+            <OAuthButtons
+              onSuccess={() => {
+                setPassword('')
+                setIdentifier('')
+              }}
+              on2FA={(partialToken, username) => {
+                setTwoFA({ partialToken, username: username || '' })
+                setTwoFACode('')
+              }}
+            />
           </Card>
         </ScrollView>
       </Screen>

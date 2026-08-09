@@ -1,6 +1,7 @@
-import { ReactNode } from 'react'
-import { Text, TextInput, View, TouchableOpacity, Animated, StyleSheet, ViewStyle, TextStyle } from 'react-native'
+import { ReactNode, useState } from 'react'
+import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle } from 'react-native'
 import { useTheme } from '@/src/theme'
+import { withAlpha, glowShadow } from '@/src/lib/color'
 
 export function Btn({
   title,
@@ -18,25 +19,34 @@ export function Btn({
   const { theme } = useTheme()
   const c = theme.colors
   const isPrimary = variant === 'primary'
+  const isDanger = variant === 'danger'
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
+      activeOpacity={0.75}
       style={[
         styles.btn,
         {
-          backgroundColor: isPrimary ? c.accent : 'transparent',
-          borderColor: variant === 'danger' ? c.danger : isPrimary ? c.accent : c.border,
-          opacity: disabled ? 0.5 : 1,
+          backgroundColor: isPrimary ? c.accent : withAlpha(c.accent, 0.05),
+          borderColor: isDanger ? c.danger : isPrimary ? c.accent : withAlpha(c.accent, 0.25),
+          opacity: disabled ? 0.4 : 1,
+          shadowColor: isPrimary ? c.accent : '#000',
+          shadowOpacity: isPrimary ? (theme.dark ? 0.4 : 0.25) : 0.14,
+          shadowRadius: isPrimary ? 12 : 6,
+          shadowOffset: { width: 0, height: isPrimary ? 5 : 3 },
+          elevation: isPrimary ? 6 : 2,
         },
         style,
       ]}
     >
       <Text
         style={{
-          color: isPrimary ? (theme.dark ? '#000' : '#fff') : variant === 'danger' ? c.danger : c.text,
+          color: isPrimary ? (theme.dark ? '#000' : '#fff') : isDanger ? c.danger : c.text,
           fontFamily: theme.mono ? 'monospace' : undefined,
-          fontWeight: '700',
+          fontWeight: '800',
+          fontSize: 14,
+          letterSpacing: 0.3,
         }}
       >
         {title}
@@ -60,24 +70,38 @@ export function Card({
 }) {
   const { theme } = useTheme()
   const c = theme.colors
+  const icy = !theme.mono
   return (
     <View
       style={[
+        styles.card,
         {
-          backgroundColor: c.bg2,
-          borderColor: c.border,
-          borderRadius: theme.mono ? 0 : 12,
-          borderWidth: 1,
-          padding: 14,
-          marginBottom: 10,
+          backgroundColor: withAlpha(c.bg2, theme.dark ? 0.92 : 0.98),
+          borderColor: icy ? withAlpha(c.accent, 0.16) : c.border,
+          borderRadius: theme.mono ? 0 : 18,
         },
+        glowShadow(20, theme.dark ? 0.4 : 0.14),
         style,
       ]}
     >
+      {icy ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 16,
+            bottom: 16,
+            width: 3,
+            borderRadius: 2,
+            backgroundColor: withAlpha(c.accent, 0.55),
+          }}
+        />
+      ) : null}
       {title ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined }}>
+            <Text style={{ color: c.text, fontSize: 14, fontWeight: '900', fontFamily: theme.mono ? 'monospace' : undefined, letterSpacing: 0.4 }}>
               {title}
             </Text>
             {subtitle ? <Muted>{subtitle}</Muted> : null}
@@ -98,10 +122,10 @@ export function Title({ children }: { children: ReactNode }) {
       style={{
         color: c.text,
         fontSize: 24,
-        fontWeight: '800',
-        marginBottom: 12,
+        fontWeight: '900',
+        marginBottom: 14,
         fontFamily: theme.mono ? 'monospace' : undefined,
-        letterSpacing: theme.mono ? 1 : 0,
+        letterSpacing: theme.mono ? 1 : 0.4,
       }}
     >
       {children}
@@ -114,7 +138,7 @@ export function Muted({ children, style, numberOfLines }: { children: ReactNode;
   return (
     <Text
       numberOfLines={numberOfLines}
-      style={[{ color: theme.colors.muted, fontSize: 12, fontFamily: theme.mono ? 'monospace' : undefined }, style]}
+      style={[{ color: theme.colors.muted, fontSize: 12, lineHeight: 17, fontFamily: theme.mono ? 'monospace' : undefined }, style]}
     >
       {children}
     </Text>
@@ -144,15 +168,17 @@ export function Field({
 }) {
   const { theme } = useTheme()
   const c = theme.colors
+  const [focused, setFocused] = useState(false)
   return (
     <View style={{ marginBottom: 12 }}>
       <Text
         style={{
-          color: c.muted,
+          color: focused ? c.accent2 : c.muted,
           fontSize: 10,
           letterSpacing: 2,
           marginBottom: 6,
           fontFamily: theme.mono ? 'monospace' : undefined,
+          fontWeight: '700',
         }}
       >
         {label.toUpperCase()}
@@ -168,16 +194,23 @@ export function Field({
         keyboardType={keyboardType}
         maxLength={maxLength}
         autoFocus={autoFocus}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         style={{
           backgroundColor: c.bg,
           color: c.text,
-          borderColor: c.border,
-          borderRadius: theme.mono ? 0 : 8,
+          borderColor: focused ? withAlpha(c.accent2, 0.6) : c.border,
+          borderRadius: theme.mono ? 0 : 12,
           borderWidth: 1,
           paddingHorizontal: 12,
           paddingVertical: 12,
           fontSize: 15,
           fontFamily: theme.mono ? 'monospace' : undefined,
+          shadowColor: focused ? c.accent2 : 'transparent',
+          shadowOpacity: 0.25,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 0,
         }}
       />
     </View>
@@ -188,10 +221,17 @@ const styles = StyleSheet.create({
   btn: {
     paddingVertical: 13,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 13,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  card: {
+    borderWidth: 1,
+    padding: 16,
+    paddingLeft: 18,
+    marginBottom: 12,
+    overflow: 'hidden',
   },
 })
 
@@ -223,7 +263,7 @@ export function Toggle({
         borderRadius: 14,
         borderWidth: 1,
         borderColor: accent,
-        backgroundColor: value ? `${c.accent}18` : c.bg3,
+        backgroundColor: value ? withAlpha(c.accent, 0.14) : c.bg3,
         opacity: disabled ? 0.5 : 1,
         padding: 2,
         justifyContent: 'center',
@@ -236,9 +276,9 @@ export function Toggle({
           borderRadius: 11,
           backgroundColor: thumb,
           alignSelf: value ? 'flex-end' : 'flex-start',
-          shadowColor: '#000',
-          shadowOpacity: 0.3,
-          shadowRadius: 2,
+          shadowColor: value ? c.accent : '#000',
+          shadowOpacity: value ? 0.5 : 0.3,
+          shadowRadius: 4,
           shadowOffset: { width: 0, height: 1 },
         }}
       />

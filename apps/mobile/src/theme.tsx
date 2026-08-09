@@ -1,45 +1,131 @@
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from 'react'
 import * as SecureStore from 'expo-secure-store'
-import { THEMES, THEME_IDS, Theme, ThemeId } from './themes'
+import { AppState, useColorScheme } from 'react-native'
+import { THEMES, THEME_IDS, Theme, ThemeId, webThemeToMobile } from './themes'
+import { getSiteConfig, SiteConfig } from './lib/siteConfig'
+
+export type ThemeSource = 'locked' | 'user' | 'os' | 'global' | 'default'
 
 interface ThemeCtx {
   theme: Theme
   setTheme: (id: ThemeId) => void
   cycleTheme: () => void
+  source: ThemeSource
+  isLocked: boolean
+  globalThemeId: ThemeId | null
+  siteConfig: SiteConfig | null
+  reload: () => Promise<void>
 }
 
 const Ctx = createContext<ThemeCtx>({
   theme: THEMES['cyber-dark'],
   setTheme: () => {},
   cycleTheme: () => {},
+  source: 'default',
+  isLocked: false,
+  globalThemeId: null,
+  siteConfig: null,
+  reload: async () => {},
 })
 
 const STORE_KEY = 'aifazi_mobile_theme'
+const REFRESH_MS = 90_000
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [id, setId] = useState<ThemeId>('cyber-dark')
+  const [userTheme, setUserTheme] = useState<ThemeId | null>(null)
+  const [userSet, setUserSet] = useState(false)
+  const [siteConfig, setSiteConfig] = useState<SiteConfig | null>(null)
+  const osScheme = useColorScheme()
+
+  const loadSite = useCallback(async (fresh = true) => {
+    try {
+      setSiteConfig(await getSiteConfig({ fresh }))
+    } catch {
+      /* keep last known config */
+    }
+  }, [])
 
   useEffect(() => {
-    SecureStore.getItemAsync(STORE_KEY)
-      .then((v) => {
-        if (v && (THEME_IDS as string[]).includes(v)) setId(v as ThemeId)
-      })
-      .catch(() => {})
-  }, [])
+    let active = true
+    SecureStore.getItemAsync(STORE_KEY).then((v) => {
+      if (!active) return
+      if (v && (THEME_IDS as string[]).includes(v)) {
+        setUserTheme(v as ThemeId)
+        setUserSet(true)
+      }
+    }).catch(() => {})
+    loadSite(true)
+    const timer = setInterval(() => {
+      if (AppState.currentState === 'active') loadSite(true)
+    }, REFRESH_MS)
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') loadSite(true)
+    })
+    return () => {
+      active = false
+      clearInterval(timer)
+      sub.remove()
+    }
+  }, [loadSite])
 
-  const setTheme = useCallback((next: ThemeId) => {
-    setId(next)
+  /**
+   * Priority resolution — mirrors the web (providers.tsx):
+   * 1. Admin lock            lockTheme + globalTheme  → forced
+   * 2. User's explicit choice                        → user theme
+   * 3. Follow OS             followOsTheme           → light/dark
+   * 4. Site default          globalTheme             → site theme
+   * 5. Fallback                                     → cyber-dark
+   */
+  const { id, source } = useMemo<{ id: ThemeId; source: ThemeSource }>(() => {
+    const cfg = siteConfig ?? {}
+    const locked = !!cfg.lockTheme && typeof cfg.globalTheme === 'string'
+    if (locked) return { id: webThemeToMobile(cfg.globalTheme), source: 'locked' }
+    if (userSet && userTheme) return { id: userTheme, source: 'user' }
+    if (cfg.followOsTheme) {
+      return { id: osScheme === 'light' ? 'light' : 'cyber-dark', source: 'os' }
+    }
+    if (typeof cfg.globalTheme === 'string') return { id: webThemeToMobile(cfg.globalTheme), source: 'global' }
+    return { id: 'cyber-dark', source: 'default' }
+  }, [siteConfig, userSet, userTheme, osScheme])
+
+  const isLocked = source === 'locked'
+  const persist = useCallback((next: ThemeId) => {
+    setUserTheme(next)
+    setUserSet(true)
     SecureStore.setItemAsync(STORE_KEY, next).catch(() => {})
   }, [])
+
+  const setTheme = useCallback(
+    (next: ThemeId) => {
+      if ((THEME_IDS as string[]).includes(next) && !isLocked) persist(next)
+    },
+    [isLocked, persist],
+  )
 
   const cycleTheme = useCallback(() => {
+    if (isLocked) return
     const idx = THEME_IDS.indexOf(id)
     const next = THEME_IDS[(idx + 1) % THEME_IDS.length]
-    setId(next)
-    SecureStore.setItemAsync(STORE_KEY, next).catch(() => {})
-  }, [id])
+    persist(next)
+  }, [id, isLocked, persist])
 
-  return <Ctx.Provider value={{ theme: THEMES[id], setTheme, cycleTheme }}>{children}</Ctx.Provider>
+  const reload = useCallback(() => loadSite(true), [loadSite])
+
+  const value = useMemo<ThemeCtx>(
+    () => ({
+      theme: THEMES[id],
+      setTheme,
+      cycleTheme,
+      source,
+      isLocked,
+      globalThemeId: typeof siteConfig?.globalTheme === 'string' ? webThemeToMobile(siteConfig.globalTheme) : null,
+      siteConfig,
+      reload,
+    }),
+    [id, setTheme, cycleTheme, source, isLocked, siteConfig, reload],
+  )
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
 export const useTheme = () => useContext(Ctx)

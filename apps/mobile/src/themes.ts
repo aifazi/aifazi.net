@@ -12,6 +12,10 @@ export interface ThemeColors {
   accent2: string // secondary (cyan)
   danger: string
   border: string
+  success: string
+  warning: string
+  info: string
+  divider: string
 }
 
 export interface Theme {
@@ -39,6 +43,10 @@ export const THEMES: Record<ThemeId, Theme> = {
       accent2: '#00d4ff',
       danger: '#ff4757',
       border: 'rgba(0,212,255,0.18)',
+      success: '#22d968',
+      warning: '#ffb43a',
+      info: '#38b6ff',
+      divider: 'rgba(140,190,230,0.10)',
     },
   },
   terminal: {
@@ -57,6 +65,10 @@ export const THEMES: Record<ThemeId, Theme> = {
       accent2: '#ffcc00',
       danger: '#ff6600',
       border: 'rgba(51,255,51,0.3)',
+      success: '#33ff33',
+      warning: '#ffcc00',
+      info: '#66ddff',
+      divider: 'rgba(51,255,51,0.14)',
     },
   },
   win95: {
@@ -75,6 +87,10 @@ export const THEMES: Record<ThemeId, Theme> = {
       accent2: '#ffffff',
       danger: '#c00000',
       border: '#808080',
+      success: '#008000',
+      warning: '#808000',
+      info: '#000080',
+      divider: '#a6a6a6',
     },
   },
   pacman: {
@@ -93,6 +109,10 @@ export const THEMES: Record<ThemeId, Theme> = {
       accent2: '#00cfff',
       danger: '#ff5c00',
       border: 'rgba(255,224,0,0.3)',
+      success: '#00ffb4',
+      warning: '#ffb43a',
+      info: '#00cfff',
+      divider: 'rgba(255,224,0,0.14)',
     },
   },
   light: {
@@ -111,8 +131,50 @@ export const THEMES: Record<ThemeId, Theme> = {
       accent2: '#005d8f',
       danger: '#b00020',
       border: 'rgba(0,93,143,0.28)',
+      success: '#1b8a4a',
+      warning: '#b26a00',
+      info: '#0a6fa8',
+      divider: 'rgba(10,21,32,0.14)',
     },
   },
 }
 
 export const THEME_IDS: ThemeId[] = ['cyber-dark', 'terminal', 'win95', 'pacman', 'light']
+
+/**
+ * Map the web's full theme registry (45 themes) down to the curated mobile set
+ * so admin-set global/locked themes resolve to a sensible mobile counterpart.
+ */
+const WEB_THEME_MAP: Record<string, ThemeId> = {
+  'cyber-dark': 'cyber-dark', 'cyber-light': 'light',
+  light: 'light',
+  midnight: 'cyber-dark', 'midnight-light': 'light',
+  crimson: 'cyber-dark', 'crimson-light': 'light',
+  ocean: 'cyber-dark', 'ocean-light': 'light',
+  amber: 'cyber-dark', 'amber-light': 'light',
+  rose: 'cyber-dark', 'rose-light': 'light',
+  forest: 'cyber-dark', 'forest-light': 'light',
+  lava: 'cyber-dark', 'lava-light': 'light',
+  toxic: 'cyber-dark', 'toxic-light': 'light',
+  ice: 'light',
+  'glass-dark': 'cyber-dark', 'glass-light': 'light',
+  brutalist: 'light', 'brutalist-dark': 'terminal',
+  synthwave: 'cyber-dark', 'synthwave-light': 'light',
+  paper: 'light', 'paper-dark': 'cyber-dark',
+  neumorph: 'light', 'neumorph-dark': 'cyber-dark',
+  terminal: 'terminal', 'terminal-light': 'light',
+  macos: 'light', 'macos-dark': 'cyber-dark',
+  'neon-noir': 'cyber-dark', 'neon-noir-light': 'light',
+  pastel: 'light', 'pastel-dark': 'cyber-dark',
+  win95: 'win95', 'win95-dark': 'cyber-dark',
+  aurora: 'cyber-dark', 'aurora-light': 'light',
+  mario: 'pacman', 'mario-light': 'light',
+  minecraft: 'terminal', 'minecraft-light': 'light',
+  sonic: 'cyber-dark', 'sonic-light': 'light',
+  pacman: 'pacman', 'pacman-light': 'light',
+}
+
+export function webThemeToMobile(id?: string | null): ThemeId {
+  if (id && WEB_THEME_MAP[id]) return WEB_THEME_MAP[id]
+  return 'cyber-dark'
+}
