@@ -40,7 +40,13 @@ jobs:
 
           # Gather all existing vX.Y.Z release tags and pick the highest
           # (sort -V handles multi-digit components correctly, unlike <string>).
-          VAS=$(gh release list --limit 100 --json tagName -q '.[].tagName' 2>/dev/null || true)
+          # NOTE: do NOT swallow errors here — if the API call fails we must
+          # abort, not silently compute "v0.0.1" and create a bogus release.
+          VAS=$(gh release list --limit 100 --json tagName -q '.[].tagName')
+          if [ -z "$VAS" ]; then
+            echo "::error::Failed to list existing releases — aborting instead of auto-releasing a wrong version." >&2
+            exit 1
+          fi
           CANDIDATES=""
           for T in $VAS; do
             case "$T" in

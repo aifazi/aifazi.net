@@ -2,7 +2,7 @@
   "expo": {
     "name": "aifazi",
     "slug": "fazi",
-    "version": "0.0.1",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "aifazi",
@@ -37,7 +37,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "net.aifazi.mobile",
-      "versionCode": 1
+      "versionCode": 1000007
     },
     "web": {
       "bundler": "metro",
