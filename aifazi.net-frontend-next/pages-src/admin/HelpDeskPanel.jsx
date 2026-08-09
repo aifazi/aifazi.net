@@ -449,6 +449,7 @@ export default function HelpDeskPanel() {
   const toast = useToast()
   const { confirm } = useDialog()
   const isMobile = useIsMobile()
+  const now = useNow()
   const [tab, setTab] = useState('tickets')
 
   const [tickets, setTickets] = useState([])

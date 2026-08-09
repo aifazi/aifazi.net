@@ -7,7 +7,23 @@
  * ╚══════════════════════════════════════════════════════════════╝
  */
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react'
+import { createPortal } from 'react-dom'
 import { t, VARIANTS, zIndex } from './tokens'
+
+/**
+ * Renders its children through a portal onto <body>. A `position: fixed`
+ * container whose ancestors include a transform/filter/animation, an overflow
+ * scroll wrapper, or a stacking context gets misplaced/clipped (toasts ended up
+ * below the visible UI in the admin portal). Anchoring to document.body keeps
+ * toasts pinned to the real viewport on every route.
+ */
+function FixedHost({ children, style }) {
+  if (typeof document === 'undefined') return null
+  return createPortal(
+    <div aria-live="polite" aria-label="Notifications" style={style}>{children}</div>,
+    document.body,
+  )
+}
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const NotifyContext = createContext(null)
@@ -473,13 +489,13 @@ export function NotifyProvider({ children, position = 'bottom-right', maxToasts 
     return (
       <NotifyContext.Provider value={api}>
         {children}
-        <div aria-live="polite" style={{ position:'fixed', top:0, left:0, right:0, zIndex: zIndex.toast, display:'flex', flexDirection:'column' }}>
+        <FixedHost style={{ position:'fixed', top:0, left:0, right:0, zIndex: zIndex.toast, display:'flex', flexDirection:'column' }}>
           {toasts.map(toast => (
             <div key={toast.id} style={{ pointerEvents:'auto' }}>
               <ToastItem toast={toast} onRemove={remove} notifyStyle="banner" />
             </div>
           ))}
-        </div>
+        </FixedHost>
       </NotifyContext.Provider>
     )
   }
@@ -490,9 +506,9 @@ export function NotifyProvider({ children, position = 'bottom-right', maxToasts 
       <NotifyContext.Provider value={api}>
         {children}
         {toasts.length > 0 && (
-          <div aria-live="polite" style={{ position:'fixed', zIndex: zIndex.toast, bottom: 24, right: 24, pointerEvents:'auto' }}>
+          <FixedHost style={{ position:'fixed', zIndex: zIndex.toast, bottom: 24, right: 24, pointerEvents:'auto' }}>
             <TerminalWindow toasts={toasts} onRemove={remove} />
-          </div>
+          </FixedHost>
         )}
       </NotifyContext.Provider>
     )
@@ -502,7 +518,7 @@ export function NotifyProvider({ children, position = 'bottom-right', maxToasts 
   return (
     <NotifyContext.Provider value={api}>
       {children}
-      <div aria-live="polite" aria-label="Notifications" style={{
+      <FixedHost style={{
         position: 'fixed', zIndex: zIndex.toast,
         display: 'flex', flexDirection: 'column-reverse', pointerEvents: 'none',
         ...(POS[livePosition] || POS['bottom-right']),
@@ -512,7 +528,7 @@ export function NotifyProvider({ children, position = 'bottom-right', maxToasts 
             <ToastItem toast={toast} onRemove={remove} notifyStyle={activeNotifyStyle} />
           </div>
         ))}
-      </div>
+      </FixedHost>
     </NotifyContext.Provider>
   )
 }
