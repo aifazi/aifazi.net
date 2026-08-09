@@ -3,7 +3,33 @@ import * as IntentLauncher from 'expo-intent-launcher'
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
 import * as Crypto from 'expo-crypto'
-import { Platform } from 'react-native'
+import { PermissionsAndroid, Platform } from 'react-native'
+
+/**
+ * Thrown when Android refuses the install because the app's per-app
+ * "Install unknown apps" toggle is off. Android 8+ (and particularly 13/14)
+ * resets that toggle for an app after it is updated to a newer versionCode,
+ * so the user may *believe* it's on while the installer still blocks us.
+ * Callers should route the user to the per-app toggle and retry.
+ */
+export class InstallBlockedError extends Error {
+  constructor() {
+    super('Install was blocked by Android. Allow aifazi to install apps, then press retry.')
+    this.name = 'InstallBlockedError'
+  }
+}
+
+/** True when Android's per-app "Install unknown apps" permission is granted. */
+export async function canRequestPackageInstalls(): Promise<boolean> {
+  if (Platform.OS !== 'android') return true
+  try {
+    // REQUEST_INSTALL_PACKAGES is a special "app op" (not a runtime
+    // permission), so it is not in RN's Permission union — cast is expected.
+    return await PermissionsAndroid.check('android.permission.REQUEST_INSTALL_PACKAGES' as never)
+  } catch {
+    return true
+  }
+}
 
 const RELEASE_API = 'https://api.aifazi.net/api/mobile/release/latest'
 
@@ -116,6 +142,14 @@ export async function downloadAndInstall(
   expectedSize?: number,
   expectedSha256?: string,
 ): Promise<void> {
+  // Android 8+: refuse to even start the download when the per-app toggle is
+  // off, instead of wasting 150MB and then hitting the installer's block
+  // screen. The toggle silently resets on Android 13/14 after the app itself
+  // is updated, so trusting the user's previous "I enabled it" is not enough.
+  if (!(await canRequestPackageInstalls())) {
+    throw new InstallBlockedError()
+  }
+
   const dest = new File(Paths.cache, 'aifazi-update.apk')
   if (dest.exists) dest.delete()
 
@@ -177,6 +211,7 @@ export async function downloadAndInstall(
 
   await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
     data: file.contentUri,
+    type: 'application/vnd.android.package-archive',
     flags: 0x00000001 | 0x00000040, // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
   })
 }

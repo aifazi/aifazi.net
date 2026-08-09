@@ -10,7 +10,7 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { THEME_IDS, THEMES } from '@/src/themes'
-import { checkForUpdate, downloadAndInstall, openInstallSettings, type UpdateCheck } from '@/src/lib/updates'
+import { checkForUpdate, downloadAndInstall, openInstallSettings, canRequestPackageInstalls, InstallBlockedError, type UpdateCheck } from '@/src/lib/updates'
 import { useOverlay } from '@/src/components/overlay'
 
 function fmtDate(iso?: string) {
@@ -81,9 +81,10 @@ function AppUpdatesCard() {
   const [downloading, setDownloading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
+  const [needPerm, setNeedPerm] = useState(false)
 
   const runCheck = async () => {
-    setBusy(true); setError('')
+    setBusy(true); setError(''); setNeedPerm(false)
     try {
       setCheck(await checkForUpdate())
     } catch {
@@ -95,17 +96,41 @@ function AppUpdatesCard() {
 
   useEffect(() => { runCheck() }, [])
 
+  // Android 8+ requires the per-app "Install unknown apps" toggle before the
+  // package installer will accept our APK. The OS silently resets this after
+  // the app updates itself, so verify up front instead of hoping.
+  const ensureInstallPerm = async (): Promise<boolean> => {
+    if (await canRequestPackageInstalls()) return true
+    setNeedPerm(true)
+    try {
+      await openInstallSettings()
+    } catch {}
+    return await canRequestPackageInstalls()
+  }
+
+  const retryAfterPerm = async () => {
+    const granted = await ensureInstallPerm()
+    setNeedPerm(!granted)
+    if (granted && !downloading) await install()
+  }
+
   const install = async () => {
     if (!check?.release?.apkUrl) return
     setDownloading(true); setError(''); setProgress(0)
     try {
+      if (!(await ensureInstallPerm())) return
       await downloadAndInstall(check.release.apkUrl, (p) => setProgress(Math.round(p.fraction * 100)), check.release.apkSize, check.release.sha256)
     } catch (e) {
-      setError(
-        e instanceof Error && (e.message.includes('Download incomplete') || e.message.includes('checksum'))
-          ? e.message
-          : 'Install was blocked. Open settings to allow aifazi to install apps.',
-      )
+      if (e instanceof InstallBlockedError) {
+        setError(e.message)
+        setNeedPerm(true)
+      } else {
+        setError(
+          e instanceof Error && (e.message.includes('Download incomplete') || e.message.includes('checksum'))
+            ? e.message
+            : 'Install was blocked. Open settings to allow aifazi to install apps.',
+        )
+      }
     } finally {
       setDownloading(false)
     }
@@ -125,6 +150,16 @@ function AppUpdatesCard() {
             <View style={{ marginTop: 10 }}>
               <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>Downloading… {progress}%</Text>
             </View>
+          ) : needPerm ? (
+            <>
+              {error ? <Muted style={{ color: c.danger, marginTop: 8 }}>{error}</Muted> : null}
+              <Muted style={{ marginTop: 8 }}>
+                Android must allow aifazi to install apps before the update can continue.
+              </Muted>
+              <View style={{ marginTop: 10 }}>
+                <Btn title="Turn on install permission" onPress={retryAfterPerm} />
+              </View>
+            </>
           ) : (
             <View style={{ marginTop: 10 }}>
               <Btn title="Download & install" onPress={install} />
@@ -139,14 +174,6 @@ function AppUpdatesCard() {
           </View>
         </>
       )}
-      {error ? (
-        <>
-          <Muted style={{ color: c.danger, marginTop: 8 }}>{error}</Muted>
-          <View style={{ marginTop: 8 }}>
-            <Btn title="Open settings to allow installs" variant="ghost" onPress={() => openInstallSettings()} />
-          </View>
-        </>
-      ) : null}
     </Card>
   )
 }
