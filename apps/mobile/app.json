@@ -2,7 +2,7 @@
   "expo": {
     "name": "aifazi",
     "slug": "fazi",
-    "version": "1.0.5",
+    "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "aifazi",
@@ -37,7 +37,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "net.aifazi.mobile",
-      "versionCode": 1000005
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -82,7 +82,10 @@
           "android": {
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
-            "abiFilters": ["arm64-v8a", "armeabi-v7a"]
+            "abiFilters": [
+              "arm64-v8a",
+              "armeabi-v7a"
+            ]
           }
         }
       ]
