@@ -184,6 +184,128 @@ function smallBtn() {
 const lbl = { fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }
 const inp = { width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '10px 12px', outline: 'none', borderRadius: 6 }
 
+const fmtMB = n => {
+  if (n == null) return '—'
+  const u = ['B', 'KB', 'MB', 'GB', 'TB']
+  let i = 0, v = n
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++ }
+  return `${v.toFixed((i > 0 && v < 10) ? 1 : 0)} ${u[i]}`
+}
+
+const RUN_STATE = run => {
+  if (run?.status === 'in_progress') return { color: C, label: 'RUNNING' }
+  if (run?.conclusion === 'success') return { color: G, label: 'SUCCESS' }
+  if (run?.conclusion === 'failure') return { color: R, label: 'FAILED' }
+  if (run?.conclusion === 'cancelled') return { color: O, label: 'CANCELLED' }
+  if (run?.conclusion) return { color: O, label: run.conclusion.toUpperCase() }
+  return { color: 'var(--muted)', label: (run?.status || '—').toUpperCase() }
+}
+
+function MobileAppTab() {
+  const toast = useToast()
+  const now = useNow()
+  const [releases, setReleases] = useState([])
+  const [workflows, setWorkflows] = useState(null)   // { ok, workflows: [] }
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let alive = true
+    const load = () => {
+      Promise.allSettled([api.get('/admin/mobile/releases'), api.get('/admin/mobile/workflow-runs')]).then(([r, w]) => {
+        if (!alive) return
+        if (r.status === 'fulfilled') setReleases(r.value.data?.releases || [])
+        else toast.error('Could not load mobile releases')
+        if (w.status === 'fulfilled') setWorkflows(w.value.data || { ok: true, workflows: [] })
+        else toast.error('Could not load mobile workflow runs')
+        setLoading(false)
+      })
+    }
+    load()
+    const t = setInterval(load, 30000)
+    return () => { alive = false; clearInterval(t) }
+  }, [])
+
+  if (loading) return <div className="loader" />
+
+  const runs = workflows?.workflows || []
+
+  return (
+    <div>
+      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C, marginBottom: 16 }}>
+        MOBILE APP · DELIVERY PIPELINE
+      </div>
+
+      {workflows?.ok === false && (
+        <div style={{ border: `1px solid ${O}55`, background: `${O}0d`, borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontFamily: MONO, fontSize: 10, color: O, lineHeight: 1.6 }}>
+          ⚠ GitHub Actions read access missing — workflow status unavailable. Give your <strong>GITHUB_TOKEN</strong> the Actions:Read permission on aifazi/aifazi.net. Releases still load fine.
+        </div>
+      )}
+
+      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 10 }}>CI WORKFLOW RUNS · MAIN</div>
+      <div style={{ display: 'grid', gap: 10, marginBottom: 22 }}>
+        {runs.length === 0 && <EmptyState icon="🤖" title="No workflow data" hint="Push a change to apps/mobile on main, or check the GitHub Actions read scope on GITHUB_TOKEN." />}
+        {runs.map(wf => {
+          const latest = wf.runs?.[0] || null
+          const st = RUN_STATE(latest)
+          const started = latest?.created_at ? new Date(latest.created_at).getTime() : null
+          const finished = latest?.updated_at ? new Date(latest.updated_at).getTime() : started
+          const elapsed = started ? Math.max(0, Math.round((now - (latest.status === 'in_progress' ? started : finished)) / 1000)) : null
+          return (
+            <div key={wf.file} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', background: 'var(--bg2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{wf.label}</span>
+                {!wf.ok && <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>UNAVAILABLE</span>}
+                {wf.ok && latest && (
+                  <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, padding: '3px 10px', borderRadius: 999, background: `${st.color}1a`, border: `1px solid ${st.color}55`, color: st.color, fontWeight: 700 }}>
+                    {latest.status === 'in_progress' ? '◌ ' : ''}{st.label}
+                  </span>
+                )}
+              </div>
+              {wf.ok && latest && (
+                <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: '4px 14px' }}>
+                  <span>#{latest.run_number}</span>
+                  <span style={{ color: C }}>{latest.head_sha?.slice(0, 7) || '—'}</span>
+                  <span>{latest.event}</span>
+                  <span>{started ? new Date(started).toLocaleString() : '—'}</span>
+                  {elapsed != null && <span>{Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')} {(latest.status === 'in_progress' ? 'elapsed' : 'last')}</span>}
+                  <span style={{ maxWidth: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{latest.title}</span>
+                </div>
+              )}
+              {wf.ok && !latest && <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 8 }}>No runs on main yet.</div>}
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 10 }}>RELEASES · LATEST 10</div>
+      <div style={{ display: 'grid', gap: 10 }}>
+        {releases.length === 0 && <EmptyState icon="📦" title="No releases yet" hint="Push a change to apps/mobile on main to kick off the auto-release pipeline." />}
+        {releases.map((r, i) => (
+          <div key={r.tag} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', background: 'var(--bg2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>v{r.version}</span>
+              {r.latest && <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, padding: '2px 8px', borderRadius: 999, background: `${G}1a`, border: `1px solid ${G}55`, color: G, fontWeight: 700 }}>LATEST</span>}
+              <span style={{ flex: 1 }} />
+              <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{r.published_at ? new Date(r.published_at).toLocaleDateString() : '—'}</span>
+            </div>
+            {(r.assets || []).map(a => (
+              <div key={a.name} style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
+                <span style={{ color: C }}>{a.name}</span>
+                <span>{fmtMB(a.size)}</span>
+                {a.sha256 && <span style={{ color: 'var(--muted)', wordBreak: 'break-all' }}>sha256:{a.sha256.slice(0, 16)}…</span>}
+                {a.download_count != null && <span>⬇ {a.download_count}</span>}
+              </div>
+            ))}
+            {r.notes && (
+              <pre style={{ fontSize: 9, color: 'var(--muted)', background: 'var(--bg3)', padding: 8, borderRadius: 6, marginTop: 8, overflow: 'auto', maxHeight: 100 }}>{r.notes.slice(0, 500)}</pre>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 
 function StatusTab() {
   const toast = useToast()
@@ -392,7 +514,7 @@ export default function MonitoringPanel() {
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10, flexWrap: 'wrap' }}>
-        {[['status', '📊 Status'], ['monitors', '🛰️ Monitors'], ['settings', '⚙️ Settings'], ['errors', '🚨 Errors']].map(([k, l]) => (
+        {[['status', '📊 Status'], ['monitors', '🛰️ Monitors'], ['settings', '⚙️ Settings'], ['errors', '🚨 Errors'], ['mobile', '📱 Mobile']].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} style={{
             fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '8px 16px', cursor: 'pointer',
             background: tab === k ? 'var(--green)' : 'transparent', color: tab === k ? '#000' : 'var(--muted)',
@@ -400,7 +522,7 @@ export default function MonitoringPanel() {
           }}>{l}</button>
         ))}
       </div>
-      {tab === 'status' ? <StatusTab /> : tab === 'monitors' ? <MonitorsTab /> : tab === 'settings' ? <SettingsTab /> : <ErrorsTab />}
+      {tab === 'status' ? <StatusTab /> : tab === 'monitors' ? <MonitorsTab /> : tab === 'settings' ? <SettingsTab /> : tab === 'errors' ? <ErrorsTab /> : <MobileAppTab />}
     </div>
   )
 }

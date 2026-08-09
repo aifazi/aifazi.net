@@ -3,10 +3,11 @@ routers/mobile_release.py — public release metadata + APK download for the mob
 
 The mobile app's in-app updater needs to know the latest Android release and
 download the APK. The GitHub repo is private, so the app cannot query
-api.github.com directly (anonymous requests 404). This router proxies the two
+api.github.com directly (anonymous requests 404). This router proxies the
 operations server-side:
 
-  - GET  /api/mobile/release/latest   -> JSON { tag, version, apk_url, published_at, notes }
+  - GET  /api/mobile/release/latest  -> JSON { tag, version, apk_url, published_at, notes }
+  - GET  /api/mobile/status          -> JSON { state: ready|building|none, ... }
   - GET  /api/mobile/release/download -> streams the latest APK asset bytes
 
 Use GITHUB_TOKEN (a fine-grained PAT with Contents:Read on aifazi/aifazi.net, or
@@ -24,73 +25,79 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse, Response, StreamingResponse
 
+from utils.github import (
+    GITHUB_API,
+    GITHUB_REPO,
+    TIMEOUT,
+    apk_asset,
+    asset_sha256,
+    get_latest_release,
+    headers,
+)
+
 log = logging.getLogger("mobile_release")
 
 router = APIRouter()
 
-GITHUB_REPO = os.getenv("GITHUB_REPO", "aifazi/aifazi.net")
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()
-GITHUB_API = "https://api.github.com"
-
-TIMEOUT = httpx.Timeout(60.0, connect=10.0)
-
-
-def _headers() -> dict:
-    h = {
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "aifazi-backend",
-    }
-    if GITHUB_TOKEN:
-        h["Authorization"] = f"Bearer {GITHUB_TOKEN}"
-    return h
-
-
-async def _latest_release_json(client: httpx.AsyncClient) -> dict:
-    url = f"{GITHUB_API}/repos/{GITHUB_REPO}/releases/latest"
-    resp = await client.get(url, headers=_headers())
-    if resp.status_code == 404:
-        raise HTTPException(status_code=404, detail="No release found for this app")
-    if resp.status_code != 200:
-        log.warning("GitHub releases/latest -> %s %s", resp.status_code, resp.text[:200])
-        raise HTTPException(status_code=502, detail="Could not reach GitHub release API")
-    return resp.json()
-
-
-def _apk_asset(release: dict) -> dict:
-    for asset in release.get("assets") or []:
-        if (asset.get("name") or "").lower().endswith(".apk"):
-            return asset
-    raise HTTPException(status_code=404, detail="No APK attached to the latest release")
-
-
-def _asset_sha256(asset: dict) -> str | None:
-    """GitHub returns the asset's own SHA-256 under `digest` (``sha256:...``)."""
-    digest = (asset.get("digest") or "").strip()
-    if digest.lower().startswith("sha256:"):
-        return digest.split(":", 1)[1].strip().lower()
-    return None
+API_URL = os.getenv("API_URL", "https://api.aifazi.net").rstrip("/")
 
 
 @router.get("/release/latest")
 async def mobile_release_latest() -> dict:
     async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
-        release = await _latest_release_json(client)
-        asset = _apk_asset(release)
+        release, err = await get_latest_release(client)
+    if err:
+        log.warning("GitHub releases/latest -> %s", err)
+        raise HTTPException(status_code=502, detail="Could not reach GitHub release API")
+    if not release:
+        raise HTTPException(status_code=404, detail="No release found for this app")
+    asset = apk_asset(release)
+    if not asset:
+        raise HTTPException(status_code=404, detail="No APK attached to the latest release")
     tag = (release.get("tag_name") or "").strip()
-    apk_url = (
-        f"{os.getenv('API_URL', 'https://api.aifazi.net').rstrip('/')}"
-        f"/api/mobile/release/download"
-    )
     return {
         "tag": tag,
         "version": tag.lstrip("v"),
-        "apk_url": apk_url,
+        "apk_url": f"{API_URL}/api/mobile/release/download",
         "published_at": release.get("published_at"),
         "notes": release.get("body"),
         "asset_name": asset.get("name"),
         "asset_size": asset.get("size"),
-        "sha256": _asset_sha256(asset),
+        "sha256": asset_sha256(asset),
+    }
+
+
+@router.get("/status")
+async def mobile_release_status() -> dict:
+    """Public pipeline status used by the web /app page.
+
+    The auto-release tag is created immediately; the ~16-minute EAS build uploads
+    the APK a while later. `state` tells consumers the download is *ready* once
+    the APK appears, or *building* while it is not yet uploaded.
+    """
+    async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
+        release, err = await get_latest_release(client)
+    if err:
+        raise HTTPException(status_code=502, detail="Could not reach GitHub release API")
+    if not release:
+        return {"state": "none", "tag": None, "version": None, "published_at": None, "notes": None}
+    tag = (release.get("tag_name") or "").strip()
+    base = {
+        "tag": tag,
+        "version": tag.lstrip("v"),
+        "published_at": release.get("published_at"),
+        "notes": release.get("body"),
+    }
+    asset = apk_asset(release)
+    if not asset:
+        return {**base, "state": "building"}
+    return {
+        **base,
+        "state": "ready",
+        "apk_url": f"{API_URL}/api/mobile/release/download",
+        "asset_name": asset.get("name"),
+        "asset_size": asset.get("size"),
+        "sha256": asset_sha256(asset),
     }
 
 
@@ -104,17 +111,20 @@ async def mobile_release_download() -> Response:
     so the 150MB APK streams from GitHub's CDN instead of proxying through us.
     """
     async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=False) as client:
-        release = await _latest_release_json(client)
-        asset = _apk_asset(release)
-        asset_id = asset.get("id")
-        if not asset_id:
-            raise HTTPException(status_code=404, detail="APK asset has no id")
+        release, err = await get_latest_release(client)
+        if err:
+            raise HTTPException(status_code=502, detail="Could not reach GitHub release API")
+        if not release:
+            raise HTTPException(status_code=404, detail="No release found for this app")
+        asset = apk_asset(release)
+        if not asset or not asset.get("id"):
+            raise HTTPException(status_code=404, detail="No APK attached to the latest release")
+        asset_id = asset["id"]
 
         url = f"{GITHUB_API}/repos/{GITHUB_REPO}/releases/assets/{asset_id}"
-        headers = _headers()
-        headers["Accept"] = "application/octet-stream"
+        h = headers(accept="application/octet-stream")
 
-        resp = await client.get(url, headers=headers)
+        resp = await client.get(url, headers=h)
         if resp.status_code == 302:
             location = resp.headers.get("location")
             if location:
@@ -125,14 +135,13 @@ async def mobile_release_download() -> Response:
             raise HTTPException(status_code=502, detail="Could not reach GitHub CDN")
 
         # Older tokenless flows may get the body directly; stream it.
-        headers = {"Content-Type": "application/vnd.android.package-archive"}
         body = resp.content
 
         async def _stream():
             for chunk in _chunks(body):
                 yield chunk
 
-        return StreamingResponse(_stream(), headers=headers, media_type="application/vnd.android.package-archive")
+        return StreamingResponse(_stream(), media_type="application/vnd.android.package-archive", headers={"Content-Type": "application/vnd.android.package-archive"})
 
 
 def _chunks(data: bytes, size: int = 64 * 1024):

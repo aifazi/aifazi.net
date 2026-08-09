@@ -206,6 +206,8 @@ _OPEN_GET_PREFIXES: tuple[str, ...] = (
     # can check for new Android builds without a session (server-side GITHUB_TOKEN).
     "/api/mobile/release/latest",
     "/api/mobile/release/download",
+    # Public pipeline status (ready/building) for the /app download button.
+    "/api/mobile/status",
 )
 
 # ── CORS allowed origins ───────────────────────────────────────────────────────
@@ -574,6 +576,7 @@ from routers import (
     db_console,
     monitor,
     mobile_release,
+    mobile_admin,
 )
 
 app.include_router(auth.router,           prefix="/api/auth")
@@ -633,6 +636,7 @@ app.include_router(steam_auth.router,     prefix="/api/forum/auth/steam")
 app.include_router(github_auth.router,    prefix="/api/forum/auth/github")
 app.include_router(db_console.router,    prefix="/api/admin/db")
 app.include_router(mobile_release.router, prefix="/api/mobile")
+app.include_router(mobile_admin.router,   prefix="/api/admin/mobile")
 
 @app.get("/api/health")
 async def health():

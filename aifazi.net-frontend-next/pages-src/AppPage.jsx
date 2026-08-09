@@ -70,25 +70,54 @@ function DownloadCard({ release, loading, error }) {
         </div>
       </div>
 
-      <a href={release?.apkUrl || 'https://api.aifazi.net/api/mobile/release/download'}
-        style={{
+      {release?.state === 'building' ? (
+        <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           fontFamily: MONO, fontSize: 13, letterSpacing: 3, fontWeight: 700,
-          padding: '15px 20px', color: '#04120a', background: G,
-          borderRadius: 8, textDecoration: 'none', boxShadow: `0 0 24px ${G}40`, marginBottom: 16,
+          padding: '15px 20px', color: '#261303', background: O,
+          borderRadius: 8, marginBottom: 10, cursor: 'not-allowed',
         }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-        DOWNLOAD FOR ANDROID
-      </a>
+          <span style={{ fontSize: 16 }}>⏳</span>
+          BUILD IN PROGRESS — v{release.version}
+        </div>
+      ) : release?.state === 'none' ? (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          fontFamily: MONO, fontSize: 13, letterSpacing: 3, fontWeight: 700,
+          padding: '15px 20px', color: 'var(--muted)', background: 'var(--bg3)',
+          borderRadius: 8, marginBottom: 10, border: '1px solid var(--border)',
+        }}>
+          NO RELEASE YET
+        </div>
+      ) : (
+        <a href={release?.apkUrl || 'https://api.aifazi.net/api/mobile/release/download'}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+            fontFamily: MONO, fontSize: 13, letterSpacing: 3, fontWeight: 700,
+            padding: '15px 20px', color: '#04120a', background: G,
+            borderRadius: 8, textDecoration: 'none', boxShadow: `0 0 24px ${G}40`, marginBottom: 10,
+          }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          DOWNLOAD FOR ANDROID
+        </a>
+      )}
 
-      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: 'var(--muted)', textAlign: 'center' }}>
-        {release?.asset_name || 'aifazi-v1.0.1.apk'} · {fmtSize(release?.asset_size)}
-        {release?.published_at ? ` · ${new Date(release.published_at).toLocaleDateString()}` : ''}
-      </div>
+      {release?.state === 'building' && (
+        <p style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: O, textAlign: 'center', marginBottom: 8 }}>
+          The APK is being built right now — it usually appears here within ~15 minutes.
+        </p>
+      )}
+
+      {release?.state === 'ready' && (
+        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: 'var(--muted)', textAlign: 'center', marginBottom: 8 }}>
+          {release?.asset_name || 'aifazi-v1.0.1.apk'} · {fmtSize(release?.asset_size)}
+          {release?.published_at ? ` · ${new Date(release.published_at).toLocaleDateString()}` : ''}
+        </div>
+      )}
 
       {notes && (
         <div style={{ marginTop: 18, border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', background: 'var(--bg3)', whiteSpace: 'pre-wrap', fontFamily: MONO, fontSize: 10, lineHeight: 1.6, color: 'var(--muted)' }}>
@@ -105,7 +134,7 @@ export default function AppPage() {
 
   useEffect(() => {
     let cancelled = false
-    api.get('/mobile/release/latest')
+    api.get('/mobile/status')
       .then(r => { if (!cancelled) { setRelease(r.data); setStatus('ok') } })
       .catch(() => { if (!cancelled) setStatus('error') })
     return () => { cancelled = true }
