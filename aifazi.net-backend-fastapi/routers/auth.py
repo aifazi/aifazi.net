@@ -59,6 +59,10 @@ ADMIN_GATE_SECRET = os.getenv("ADMIN_GATE_SECRET") or ""
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 SITE_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
+# Deep-link base the OAuth callbacks redirect to when the flow was started from
+# the mobile app (`mobile=1`). Server-controlled; the app only accepts URLs under
+# this exact prefix. Override via MOBILE_AUTH_URL if the scheme ever changes.
+MOBILE_AUTH_URL = os.getenv("MOBILE_AUTH_URL", "aifazi:///oauth/callback").rstrip("/")
 
 # C1 — Cookie domain derivation so the frontend Next.js middleware on `aifazi.net`
 # can read the auth cookies issued by `api.aifazi.net`. Without an explicit
@@ -77,7 +81,7 @@ if not COOKIE_DOMAIN:
             COOKIE_DOMAIN = "." + ".".join(parts[-2:])
 
 # OAuth state helper for C2 (login-CSRF / open-redirect).
-from utils.oauth_state import make_oauth_state, verify_oauth_state, _safe_relative_path
+from utils.oauth_state import make_oauth_state, verify_oauth_state_full, _safe_relative_path
 
 def make_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
     """Mint an ACCESS token. Carries `token_type: "access"` so it can never be
@@ -1835,7 +1839,7 @@ async def user_my_tickets(creds: HTTPAuthorizationCredentials | None = Depends(b
     return tickets
 
 @router.get("/discord/login")
-async def discord_login(dest: str = "/forum/profile"):
+async def discord_login(dest: str = "/forum/profile", mobile: int = 0):
     _DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
     if not _DISCORD_CLIENT_ID:
         raise HTTPException(500, "Discord OAuth not configured — set DISCORD_CLIENT_ID")
@@ -1843,7 +1847,7 @@ async def discord_login(dest: str = "/forum/profile"):
     # been tampered with and the dest is a same-origin relative path. The previous
     # implementation just sent `dest` as the state verbatim → open redirect + login-CSRF.
     safe_dest = _safe_relative_path(dest, default="/forum/profile")
-    state = make_oauth_state("discord", safe_dest)
+    state = make_oauth_state("discord", safe_dest, mobile=bool(mobile))
     return _Redir(_discord_oauth_url(state))
 
 @router.get("/discord/connect-url")
@@ -1872,6 +1876,7 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     dest = "/forum/profile"
     mode = "login"
     link_payload = None
+    _st = {"dest": dest, "mobile": False}
     if state_value.startswith("connect:"):
         parts = state_value.split(":", 2)
         if len(parts) != 3:
@@ -1884,15 +1889,23 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     else:
         # C2 — verify the signed state token. Fail closed on any mismatch (login-CSRF).
         try:
-            dest = verify_oauth_state(state_value, "discord")
+            _st = verify_oauth_state_full(state_value, "discord")
+            dest = _st["dest"]
         except ValueError:
             front = SITE_URL
             return _Redir(f"{front}/login?discord_error=state")
     front = SITE_URL
+    # Mobile flows carry `m` inside the signed state — so only flows the server
+    # explicitly started with mobile=1 can redirect to the aifazi:// deep link.
+    if _st.get("mobile"):
+        front = f"{MOBILE_AUTH_URL}/discord"
+    # Mobile targets strip the web-only `/login` path so the app sees a clean
+    # `aifazi:///oauth/callback/discord?/...#...` URL under the redirect base.
+    m_login = "" if _st.get("mobile") else "/login"
     if error or not code:
-        return _Redir(f"{front}/login?discord_error=1")
+        return _Redir(f"{front}{m_login}?discord_error=1")
     if not _httpx:
-        return _Redir(f"{front}/login?discord_error=cfg")
+        return _Redir(f"{front}{m_login}?discord_error=cfg")
     try:
         async with _httpx.AsyncClient() as c:
             tok = await c.post("https://discord.com/api/oauth2/token", data={
@@ -1900,22 +1913,22 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
                 "grant_type": "authorization_code", "code": code, "redirect_uri": _DISCORD_REDIRECT_URI,
             }, headers={"Content-Type": "application/x-www-form-urlencoded"}, timeout=10)
         if tok.status_code != 200:
-            return _Redir(f"{front}/login?discord_error=2")
+            return _Redir(f"{front}{m_login}?discord_error=2")
         access_token = tok.json().get("access_token")
     except Exception:
-        return _Redir(f"{front}/login?discord_error=2")
+        return _Redir(f"{front}{m_login}?discord_error=2")
     try:
         async with _httpx.AsyncClient() as c:
             me = await c.get("https://discord.com/api/users/@me", headers={"Authorization": f"Bearer {access_token}"}, timeout=10)
         if me.status_code != 200:
-            return _Redir(f"{front}/login?discord_error=3")
+            return _Redir(f"{front}{m_login}?discord_error=3")
         d = me.json()
         discord_id = str(d["id"])
         discord_username = d.get("username", "")
         discord_avatar = f"https://cdn.discordapp.com/avatars/{discord_id}/{d['avatar']}.png" if d.get("avatar") else f"https://cdn.discordapp.com/embed/avatars/{int(discord_id) % 5}.png"
         discord_email = d.get("email", "")
     except Exception:
-        return _Redir(f"{front}/login?discord_error=3")
+        return _Redir(f"{front}{m_login}?discord_error=3")
     try:
         if mode == "connect":
             current_user_id = link_payload["id"]
@@ -1991,15 +2004,15 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
                         except Exception:
                             pass
     except Exception:
-        return _Redir(f"{front}/login?discord_error=db")
+        return _Redir(f"{front}{m_login}?discord_error=db")
     if user.get("banned"):
-        return _Redir(f"{front}/login?discord_error=banned")
+        return _Redir(f"{front}{m_login}?discord_error=banned")
     if mode != "connect" and user.get("totp_enabled") and user.get("totp_secret"):
         partial = make_forum_2fa_token(user["id"], user["username"], user.get("role", "user"), "discord")
         safe_dest = _urlparse.quote(dest, safe="/")
         safe_user = _urlparse.quote(user.get("username") or "")
         safe_partial = _urlparse.quote(partial, safe="")
-        return _Redir(f"{front}/login#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
+        return _Redir(f"{front}{m_login}#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
     refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
     try:
@@ -2010,6 +2023,10 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
         pass
     _record_user_activity(user["id"], user["username"], "discord_connect" if mode == "connect" else "discord_login", f"discord_id={discord_id}")
     safe_dest = _urlparse.quote(dest, safe="/")
+    if _st.get("mobile"):
+        # App deep link: deliver the refresh token in the fragment (the app has no
+        # cookie jar), skip HttpOnly cookies, and let the app store both tokens.
+        return _Redir(f"{front}#token={token}&refresh={refresh}&dest={safe_dest}")
     # M9 — deliver the token as a URL hash fragment, NOT a query param, so it
     # never lands in server logs or Referer headers. The frontend callback
     # (DiscordAuthCallback.jsx) already reads the fragment first.

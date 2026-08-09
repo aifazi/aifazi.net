@@ -39,7 +39,7 @@ except ImportError:
 
 from jwt_compat import JWTError
 from database import supabase
-from utils.oauth_state import make_oauth_state, verify_oauth_state, _safe_relative_path
+from utils.oauth_state import make_oauth_state, verify_oauth_state_full, _safe_relative_path
 
 from routers.auth import (
     make_forum_token,
@@ -65,6 +65,9 @@ GITHUB_CLIENT_ID     = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
 API_URL              = os.getenv("API_URL", "https://api.aifazi.net").rstrip("/")
 GITHUB_REDIRECT_URI  = f"{API_URL}/api/forum/auth/github/callback"
+# Deep-link base for mobile (see routers/auth.py MOBILE_AUTH_URL). Server controls
+# this prefix; the app only accepts redirects under it.
+MOBILE_AUTH_URL      = os.getenv("MOBILE_AUTH_URL", "aifazi:///oauth/callback").rstrip("/")
 
 GITHUB_AUTH_URL  = "https://github.com/login/oauth/authorize"
 GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
@@ -142,12 +145,12 @@ async def _fetch_github_profile(access_token: str) -> dict:
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @router.get("/login")
-async def github_login(dest: str = "/forum/profile"):
+async def github_login(dest: str = "/forum/profile", mobile: int = 0):
     """Redirect the player to the GitHub OAuth consent screen."""
     if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
         raise HTTPException(500, "GitHub OAuth not configured — set GITHUB_CLIENT_ID")
     safe_dest = _safe_relative_path(dest, default="/forum/profile")
-    state = make_oauth_state("github", safe_dest)
+    state = make_oauth_state("github", safe_dest, mobile=bool(mobile))
     return RedirectResponse(_github_oauth_url(state))
 
 
@@ -178,6 +181,7 @@ async def github_callback(code: str = None, state: str = None, error: str = None
     dest = "/forum/profile"
     mode = "login"
     link_payload = None
+    _st = {"dest": dest, "mobile": False}
 
     if state_value.startswith("connect:"):
         parts = state_value.split(":", 2)
@@ -190,15 +194,22 @@ async def github_callback(code: str = None, state: str = None, error: str = None
             return RedirectResponse(f"{front}/profile?github_error=link")
     else:
         try:
-            dest = verify_oauth_state(state_value, "github")
+            _st = verify_oauth_state_full(state_value, "github")
+            dest = _st["dest"]
         except ValueError:
             return RedirectResponse(f"{front}/login?github_error=state")
 
+    if _st.get("mobile"):
+        front = f"{MOBILE_AUTH_URL}/github"
+    # Mobile targets strip the web-only `/login` path so the app sees a clean
+    # `aifazi:///oauth/callback/github?/...#...` URL under the redirect base.
+    m_login = "" if _st.get("mobile") else "/login"
+
     if error or not code:
-        return RedirectResponse(f"{front}/login?github_error=1")
+        return RedirectResponse(f"{front}{m_login}?github_error=1")
 
     if not _httpx:
-        return RedirectResponse(f"{front}/login?github_error=cfg")
+        return RedirectResponse(f"{front}{m_login}?github_error=cfg")
 
     # 1. Exchange code for GitHub access token
     try:
@@ -215,12 +226,12 @@ async def github_callback(code: str = None, state: str = None, error: str = None
                 timeout=10,
             )
         if tok.status_code != 200:
-            return RedirectResponse(f"{front}/login?github_error=2")
+            return RedirectResponse(f"{front}{m_login}?github_error=2")
         access_token = tok.json().get("access_token")
         if not access_token:
-            return RedirectResponse(f"{front}/login?github_error=2")
+            return RedirectResponse(f"{front}{m_login}?github_error=2")
     except Exception:
-        return RedirectResponse(f"{front}/login?github_error=2")
+        return RedirectResponse(f"{front}{m_login}?github_error=2")
 
     # 2. Fetch GitHub profile
     try:
@@ -231,9 +242,9 @@ async def github_callback(code: str = None, state: str = None, error: str = None
         github_avatar   = profile["avatar"]
         github_email    = profile["email"]
     except HTTPException:
-        return RedirectResponse(f"{front}/login?github_error=3")
+        return RedirectResponse(f"{front}{m_login}?github_error=3")
     except Exception:
-        return RedirectResponse(f"{front}/login?github_error=3")
+        return RedirectResponse(f"{front}{m_login}?github_error=3")
 
     now = datetime.now(timezone.utc).isoformat()
 
@@ -312,10 +323,10 @@ async def github_callback(code: str = None, state: str = None, error: str = None
     except Exception as exc:
         import logging
         logging.getLogger("github_auth").error("github_callback db: %s", exc)
-        return RedirectResponse(f"{front}/login?github_error=db")
+        return RedirectResponse(f"{front}{m_login}?github_error=db")
 
     if user.get("banned"):
-        return RedirectResponse(f"{front}/login?github_error=banned")
+        return RedirectResponse(f"{front}{m_login}?github_error=banned")
 
     # 4. Issue the same JWT the rest of the site uses
     if mode != "connect" and user.get("totp_enabled") and user.get("totp_secret"):
@@ -323,7 +334,7 @@ async def github_callback(code: str = None, state: str = None, error: str = None
         safe_dest = _urlparse.quote(dest, safe="/")
         safe_user = _urlparse.quote(user.get("username") or "")
         safe_partial = _urlparse.quote(partial, safe="")
-        return RedirectResponse(f"{front}/login#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
+        return RedirectResponse(f"{front}{m_login}#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
 
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
     _record_user_activity(user["id"], user["username"], "github_connect" if mode == "connect" else "github_login", f"github_id={github_id}")
@@ -339,6 +350,9 @@ async def github_callback(code: str = None, state: str = None, error: str = None
         except Exception:
             pass
         safe_dest = _urlparse.quote(dest, safe="/")
+        if _st.get("mobile"):
+            # App deep link — deliver the refresh token too (no cookie jar on the app).
+            return RedirectResponse(f"{front}#token={token}&refresh={refresh}&dest={safe_dest}")
         resp = RedirectResponse(f"{front}/auth/github-callback#token={token}&dest={safe_dest}")
         _set_auth_cookies(resp, token, refresh)
         return resp

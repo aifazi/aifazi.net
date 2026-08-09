@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
 import { Title, Muted, Btn, Field } from '@/src/components/ui'
 import { useAuth } from '@/src/lib/auth'
+import { OAuthButtons } from '@/src/components/OAuthButtons'
 import { useTheme } from '@/src/theme'
 import { useOverlay } from '@/src/components/overlay'
 
@@ -89,6 +90,13 @@ export default function LoginScreen() {
               <Field label="Password" value={password} onChangeText={setPassword} secure placeholder="••••••••" autoCapitalize="none" />
               <Btn title={busy ? 'Signing in…' : 'Sign In'} onPress={submit} disabled={busy} />
             </View>
+            <OAuthButtons
+              onSuccess={() => router.back()}
+              on2FA={(partialToken, username) => {
+                setPending2FA({ partialToken, username })
+                setCode('')
+              }}
+            />
           </>
         )}
       </Screen>

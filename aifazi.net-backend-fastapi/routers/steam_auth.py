@@ -44,7 +44,7 @@ from jwt_compat import jwt, JWTError
 from database import supabase
 from dependencies import CookieHTTPBearer
 from utils.audit import record as _audit
-from utils.oauth_state import make_oauth_state, verify_oauth_state, _safe_relative_path
+from utils.oauth_state import make_oauth_state, verify_oauth_state_full, _safe_relative_path
 
 router = APIRouter()
 
@@ -54,6 +54,9 @@ FRONTEND_URL   = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 API_URL        = os.getenv("API_URL", "https://api.aifazi.net").rstrip("/")
 STEAM_CALLBACK = f"{API_URL}/api/forum/auth/steam/callback"
 STEAM_REALM    = API_URL   # must be a prefix of STEAM_CALLBACK
+# Deep-link base for mobile (see routers/auth.py MOBILE_AUTH_URL). Server controls
+# this prefix; the app only accepts redirects under it.
+MOBILE_AUTH_URL = os.getenv("MOBILE_AUTH_URL", "aifazi:///oauth/callback").rstrip("/")
 
 STEAM_OPENID   = "https://steamcommunity.com/openid/login"
 STEAM_PROF_API = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
@@ -249,14 +252,14 @@ async def _verify_steam_openid(raw_params: dict) -> str | None:
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @router.get("/login")
-async def steam_login(dest: str = "/forum/profile"):
+async def steam_login(dest: str = "/forum/profile", mobile: int = 0):
     """Redirect user to Steam OpenID consent screen."""
     # M10 — sign dest into a time-bound OAuth state token. Steam OpenID 2.0 has
     # no native state param, but return_to (which Steam echoes back on the
     # callback) is under our control, so we embed the state there. The callback
     # verifies signature + expiry and rejects any forged/echoed login (login-CSRF).
     safe_dest = _safe_relative_path(dest, default="/forum/profile")
-    state = make_oauth_state("steam", safe_dest)
+    state = make_oauth_state("steam", safe_dest, mobile=bool(mobile))
     # Embed dest in return_to so it survives the OpenID redirect
     return_to = (
         f"{STEAM_CALLBACK}?state={_urlparse.quote(state, safe='')}"
@@ -282,19 +285,31 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     # Collect ALL query params (openid.* come from Steam)
     raw_params = dict(request.query_params)
 
-    # Validate
-    steam64 = await _verify_steam_openid(raw_params)
-    if not steam64:
-        return RedirectResponse(f"{front}/login?steam_error=1")
-
-    # M10 — verify the signed state token. Steam echoes `openid.return_to` back,
-    # so `state` here is the one we issued in /login or /connect-*. Any forged,
-    # replayed, or expired state fails closed (prevents login-CSRF + open-redirect).
+    # M10 — verify the signed state token FIRST. Steam echoes `openid.return_to`
+    # back, so `state` here is the one we issued in /login or /connect-*. Any
+    # forged, replayed, or expired state fails closed (prevents login-CSRF +
+    # open-redirect). Doing this before OpenID validation lets mobile flows
+    # redirect errors back to the app deep link too.
+    _st = {"dest": "/forum/profile", "mobile": False}
     try:
-        dest = verify_oauth_state(state, "steam")
+        _st = verify_oauth_state_full(state, "steam")
+        dest = _st["dest"]
     except ValueError:
         return RedirectResponse(f"{front}/login?steam_error=state")
     dest = _safe_relative_path(dest, default="/forum/profile")
+
+    # Mobile flows carry `m` inside the signed state — so only flows the server
+    # explicitly started with mobile=1 can redirect to the aifazi:// deep link.
+    if _st.get("mobile"):
+        front = f"{MOBILE_AUTH_URL}/steam"
+    # Mobile targets strip the web-only `/login` path so the app sees a clean
+    # `aifazi:///oauth/callback/steam?/...#...` URL under the redirect base.
+    m_login = "" if _st.get("mobile") else "/login"
+
+    # Validate
+    steam64 = await _verify_steam_openid(raw_params)
+    if not steam64:
+        return RedirectResponse(f"{front}{m_login}?steam_error=1")
 
     # Fetch Steam profile
     profile = await _fetch_steam_profile(steam64)
@@ -369,17 +384,17 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     except Exception as exc:
         import logging
         logging.getLogger("steam_auth").error("steam_callback db: %s", exc)
-        return RedirectResponse(f"{front}/login?steam_error=db")
+        return RedirectResponse(f"{front}{m_login}?steam_error=db")
 
     if user.get("banned"):
-        return RedirectResponse(f"{front}/login?steam_error=banned")
+        return RedirectResponse(f"{front}{m_login}?steam_error=banned")
 
     if mode != "connect" and user.get("totp_enabled") and user.get("totp_secret"):
         partial = _make_forum_2fa_token(user["id"], user["username"], user.get("role", "user"), "steam")
         safe_dest = _urlparse.quote(dest, safe="/")
         safe_user = _urlparse.quote(user.get("username") or "")
         safe_partial = _urlparse.quote(partial, safe="")
-        return RedirectResponse(f"{front}/login#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
+        return RedirectResponse(f"{front}{m_login}#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
 
     token = _make_forum_token(user["id"], user["username"], user.get("role", "user"))
     _record_activity(user["id"], user["username"], "steam_connect" if mode == "connect" else "steam_login", f"steam64={steam64}")
@@ -400,6 +415,9 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
         except Exception:
             pass
         resp = RedirectResponse(f"{front}/auth/steam-callback#token={token}&dest={safe_dest}{new_flag}")
+        if _st.get("mobile"):
+            # App deep link — deliver the refresh token too (no cookie jar on the app).
+            return RedirectResponse(f"{front}#token={token}&refresh={refresh}&dest={safe_dest}{new_flag}")
         _set_auth_cookies(resp, token, refresh)
         return resp
     except Exception:

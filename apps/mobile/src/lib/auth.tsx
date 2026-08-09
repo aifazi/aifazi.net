@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useCallback, useState, ReactNode } from 'react'
 import { api, setAuthTokens, clearAuthTokens, ensureSession, onAuthCleared } from './api'
+import { loginWithOAuth as oauthLogin, OAuthProvider } from './oauth'
 
 export interface AuthUser {
   id?: string
@@ -29,6 +30,8 @@ export interface LoginResult {
   requires2fa: boolean
   partialToken?: string
   username?: string
+  /** true when the user closed the native auth browser without completing. */
+  cancelled?: boolean
 }
 
 interface AuthCtx {
@@ -36,6 +39,7 @@ interface AuthCtx {
   loading: boolean
   isAuthed: boolean
   login: (identifier: string, password: string) => Promise<LoginResult>
+  loginWithOAuth: (provider: OAuthProvider) => Promise<LoginResult>
   verify2FA: (partialToken: string, code: string) => Promise<void>
   register: (username: string, email: string, password: string) => Promise<string>
   logout: () => Promise<void>
@@ -58,6 +62,7 @@ const Ctx = createContext<AuthCtx>({
   loading: true,
   isAuthed: false,
   login: async () => ({ requires2fa: false }),
+  loginWithOAuth: async () => ({ requires2fa: false }),
   verify2FA: async () => {},
   register: async () => '',
   logout: async () => {},
@@ -74,6 +79,23 @@ const Ctx = createContext<AuthCtx>({
   confirm2FA: async () => {},
   disable2FA: async () => {},
 })
+
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  banned: 'This account is banned.',
+  state: 'Your sign-in link expired. Please try again.',
+  identity_locked: 'Your player identity is active. Contact an admin to change it.',
+  duplicate: 'This account is already linked to another user.',
+  email_unverified: 'A matching account exists but its email is not verified.',
+  missing: 'Account not found.',
+  cfg: 'Sign-in is temporarily unavailable. Please try again.',
+  db: 'Something went wrong. Please try again.',
+  signin_failed: 'Could not reach the sign-in service. Please try again.',
+  invalid_redirect: 'Sign-in returned an unexpected result. Please try again.',
+  unknown: 'Sign-in failed. Please try again.',
+  '1': 'The sign-in service rejected the request. Please try again.',
+  '2': 'Could not reach the sign-in service. Please try again.',
+  '3': 'Could not load your account. Please try again.',
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -124,6 +146,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { token, refreshToken } = data
       if (!token) throw new Error('Login failed — no token returned')
       await setAuthTokens(token, refreshToken ?? '')
+      await refresh()
+      return { requires2fa: false }
+    },
+    [refresh],
+  )
+
+  const loginWithOAuth = useCallback(
+    async (provider: OAuthProvider): Promise<LoginResult> => {
+      const res = await oauthLogin(provider)
+      if (!res.ok) {
+        if (res.cancelled) return { requires2fa: false, cancelled: true }
+        throw new Error(OAUTH_ERROR_MESSAGES[res.error ?? 'unknown'] ?? 'Sign-in failed. Please try again.')
+      }
+      if (res.requires2fa) {
+        return { requires2fa: true, partialToken: res.partialToken, username: res.username }
+      }
+      await setAuthTokens(res.token, res.refreshToken)
       await refresh()
       return { requires2fa: false }
     },
@@ -228,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         isAuthed: !!user,
         login,
+        loginWithOAuth,
         verify2FA,
         register,
         logout,

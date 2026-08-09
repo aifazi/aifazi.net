@@ -59,8 +59,13 @@ def _safe_relative_path(value: str | None, default: str = "/profile") -> str:
     return value
 
 
-def make_oauth_state(provider: str, dest: str = "/profile") -> str:
+def make_oauth_state(provider: str, dest: str = "/profile", mobile: bool = False) -> str:
     """Issue a signed state token: `<base64url(payload)>.<hex HMAC-SHA256>`.
+
+    `mobile=True` marks the flow as app-driven so the callback redirects back to
+    the mobile deep link (`aifazi://...`) instead of the web frontend. It is part
+    of the signed payload, so an attacker cannot flip a web flow into a custom
+    scheme redirect (that would open an arbitrary-scheme redirect primitive).
 
     Raises RuntimeError if no signing secret is configured (fail closed at issue time
     so we never send an unsigned state to Discord/Steam).
@@ -71,21 +76,22 @@ def make_oauth_state(provider: str, dest: str = "/profile") -> str:
             "Configure it in Vercel env vars."
         )
     safe_dest = _safe_relative_path(dest)
-    data = json.dumps(
-        {"p": provider, "d": safe_dest, "t": int(time.time())},
-        separators=(",", ":"),
-    )
+    payload = {"p": provider, "d": safe_dest, "t": int(time.time())}
+    if mobile:
+        payload["m"] = 1
+    data = json.dumps(payload, separators=(",", ":"))
     body = _b64u(data.encode("utf-8"))
     sig = hmac.new(_OAUTH_STATE_SECRET.encode("utf-8"), body.encode("ascii"), hashlib.sha256).hexdigest()
     return f"{body}.{sig}"
 
 
-def verify_oauth_state(state: str | None, provider: str) -> str:
-    """Verify signature + TTL + provider claim. Returns the validated `dest` path.
+def verify_oauth_state_full(state: str | None, provider: str) -> dict:
+    """Verify signature + TTL + provider claim. Returns `{"dest": ..., "mobile": bool}`.
 
     Raises ValueError on any mismatch / expiry so callers can fail closed:
         try:
-            dest = verify_oauth_state(state, "discord")
+            payload = verify_oauth_state_full(state, "discord")
+            dest, mobile = payload["dest"], payload["mobile"]
         except ValueError:
             return RedirectResponse(f"{front}/login?oauth_error=state")
     """
@@ -106,4 +112,19 @@ def verify_oauth_state(state: str | None, provider: str) -> str:
     issued_at = int(data.get("t", 0))
     if issued_at <= 0 or int(time.time()) - issued_at > _STATE_TTL_S:
         raise ValueError("expired")
-    return _safe_relative_path(data.get("d", "/profile"))
+    return {
+        "dest": _safe_relative_path(data.get("d", "/profile")),
+        "mobile": bool(data.get("m")),
+    }
+
+
+def verify_oauth_state(state: str | None, provider: str) -> str:
+    """Verify signature + TTL + provider claim. Returns the validated `dest` path.
+
+    Raises ValueError on any mismatch / expiry so callers can fail closed:
+        try:
+            dest = verify_oauth_state(state, "discord")
+        except ValueError:
+            return RedirectResponse(f"{front}/login?oauth_error=state")
+    """
+    return verify_oauth_state_full(state, provider)["dest"]
