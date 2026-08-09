@@ -1,22 +1,26 @@
 name: Mobile OTA Update
 
+# Runtime version policy is "appVersion", so an OTA published while app.json
+# carries a stale version silently targets a runtime no installed device uses.
+# To keep one source of truth, this workflow only runs AFTER a native release
+# build has committed its app.json version bump back to main, and it refuses to
+# publish if the checked-out version still disagrees with the latest release.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "apps/mobile/**"
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Mobile Release Build"]
+    types: [completed]
+  workflow_dispatch:
 
 concurrency:
-  group: mobile-ota-${{ github.ref }}
+  group: mobile-ota
   cancel-in-progress: false
 
 jobs:
   update:
     name: EAS Update (production)
     runs-on: ubuntu-latest
+    # Only run when the release build (and its version bump commit-back) succeeded.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: read
     steps:
@@ -31,6 +35,16 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+
+      # The commit-back from mobile-release-build.yml landed on main before the
+      # workflow completed, so the checkout above already includes it. This is
+      # the reason this workflow is keyed off workflow_run and NOT off the
+      # original push event (which would see the stale version).
+      - name: Sync to latest main (must include the version bump commit)
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+          git log -1 --oneline
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -49,14 +63,28 @@ jobs:
         working-directory: apps/mobile
         run: npm install
 
+      - name: Verify app.json version matches the latest release tag
+        working-directory: apps/mobile
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APP_VERSION=$(node -e "console.log(require('./app.json').expo.version)")
+          LATEST_TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
+          EXPECTED=$(echo "$LATEST_TAG" | sed 's/^v//')
+          echo "app.json version=$APP_VERSION latest release tag=$LATEST_TAG"
+          if [ "$APP_VERSION" != "$EXPECTED" ]; then
+            echo "::error::VERSION DRIFT: app.json is $APP_VERSION but the latest release is $LATEST_TAG." >&2
+            echo "::error::Publishing an OTA now would target runtime $APP_VERSION, which no installed native release uses." >&2
+            echo "::error::Ensure mobile-release-build.yml commits its app.json bump back to main before OTA runs." >&2
+            exit 1
+          fi
+          echo "Version check passed: app.json $APP_VERSION matches release $LATEST_TAG"
+
       - name: Publish OTA update
         working-directory: apps/mobile
         run: |
-          MESSAGE="CI auto-update: ${{ github.event_name }}"
-          if [ "${{ github.event_name }}" = "release" ]; then
-            MESSAGE="Release ${{ github.event.release.tag_name }}"
-          fi
-          if [ -n "${{ github.event.head_commit.message }}" ]; then
-            MESSAGE="$(echo "${{ github.event.head_commit.message }}" | head -n 1)"
+          MESSAGE="Post-release OTA (${{ github.event.workflow_run.id }})"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MESSAGE="Manual OTA update"
           fi
           eas update --channel production --environment production --message "$MESSAGE" --auto

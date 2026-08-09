@@ -14,8 +14,83 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  set-version:
+    # Single source of truth for the version: stamp app.json from the release
+    # tag AND commit the bump back to main, so downstream consumers (EAS
+    # Update / mobile-ota-update.yml) always publish against the current
+    # release version instead of a stale committed one.
+    name: Bump app.json from release tag and commit back to main
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          fi
+          if [ -z "$TAG" ]; then
+            TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Set app version from release tag
+        working-directory: apps/mobile
+        env:
+          APP_VERSION: ${{ steps.tag.outputs.tag }}
+        run: |
+          # appVersionSource is "local", so the APK's versionName AND versionCode
+          # come from app.json. Stamp both from the release tag so:
+          #   1) the in-app updater's getInstalledVersion() reports the real
+          #      version (no more stuck "1.0.0"), and
+          #   2) versionCode increases monotonically per release (maj*1e6 +
+          #      min*1e3 + patch), which is what makes Android treat the APK as
+          #      an actual UPDATE instead of a no-op re-install.
+          node <<'EOF'
+          const fs = require('fs');
+          const v = process.env.APP_VERSION.replace(/^v/i, '').trim();
+          const [maj = 0, min = 0, pat = 0] = v.split('.').map(Number);
+          const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+          app.expo.version = v;
+          app.expo.android = app.expo.android || {};
+          app.expo.android.versionCode = maj * 1000000 + min * 1000 + pat;
+          fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+          console.log("version=" + v + " versionCode=" + app.expo.android.versionCode);
+          EOF
+
+      - name: Commit and push version bump back to main
+        working-directory: apps/mobile
+        env:
+          APP_VERSION: ${{ steps.tag.outputs.tag }}
+        run: |
+          if git diff --quiet -- app.json; then
+            echo "app.json is already at $APP_VERSION — nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.json
+          # [skip ci] prevents this push from re-triggering the
+          # push-based mobile-auto-release.yml workflow (infinite release loop).
+          git commit -m "chore(mobile): bump app version to $APP_VERSION [skip ci]"
+          git pull --rebase origin main
+          git push origin main
+          echo "Committed and pushed app.json version bump to main"
+
   build-android:
     name: Build Android (${{ matrix.ext }}) and attach to release
+    needs: set-version
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
