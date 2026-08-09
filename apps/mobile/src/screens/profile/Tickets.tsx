@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
-import { Card, Muted } from '@/src/components/ui'
+import { useRouter } from 'expo-router'
+import type { Href } from 'expo-router'
+import { Card, Muted, Btn } from '@/src/components/ui'
 import { Loader } from '@/src/components/Loader'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
+import { webPillSnap } from '@/src/lib/carousel'
 import { api } from '@/src/lib/api'
 import { fmtWhen, StatusChip } from './helpers'
 
@@ -16,6 +19,7 @@ export function TicketsTab() {
   const { theme } = useTheme()
   const c = theme.colors
   const { user } = useAuth()
+  const router = useRouter()
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
@@ -63,7 +67,11 @@ export function TicketsTab() {
         ))}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+      <View style={{ marginBottom: 10 }}>
+        <Btn title="+ New Ticket" onPress={() => router.push('/helpdesk-new' as Href)} />
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} {...webPillSnap()} style={{ marginBottom: 10 }}>
         <View style={{ flexDirection: 'row', gap: 6 }}>
           {statuses.map((s) => {
             const active = filter === s
@@ -84,18 +92,23 @@ export function TicketsTab() {
         <Muted style={{ textAlign: 'center', marginTop: 30 }}>{tickets.length === 0 ? 'No tickets yet.' : 'No tickets match this filter.'}</Muted>
       ) : (
         filtered.map((t) => (
-          <Card key={t.id} style={{ padding: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ color: c.text, fontSize: 13, fontWeight: '700', flex: 1 }}>{t.subject || t.ticket_id}</Text>
-              <StatusChip text={t.status || 'unknown'} />
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
-              {t.priority ? <StatusChip text={t.priority} /> : null}
-              {t.category ? <Text style={{ color: c.muted, fontSize: 10 }}>{t.category}</Text> : null}
-              <View style={{ flex: 1 }} />
-              <Muted style={{ fontSize: 10 }}>{fmtWhen(t.updated_at || t.created_at)}</Muted>
-            </View>
-          </Card>
+          <TouchableOpacity
+            key={t.id}
+            onPress={() => router.push(`/helpdesk-detail?id=${encodeURIComponent(t.id || '')}` as Href)}
+          >
+            <Card style={{ padding: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ color: c.text, fontSize: 13, fontWeight: '700', flex: 1 }}>{t.subject || t.ticket_id}</Text>
+                <StatusChip text={t.status || 'unknown'} />
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                {t.priority ? <StatusChip text={t.priority} /> : null}
+                {t.category ? <Text style={{ color: c.muted, fontSize: 10 }}>{t.category}</Text> : null}
+                <View style={{ flex: 1 }} />
+                <Muted style={{ fontSize: 10 }}>{fmtWhen(t.updated_at || t.created_at)}</Muted>
+              </View>
+            </Card>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>

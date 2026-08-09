@@ -1,11 +1,12 @@
 import { Tabs } from 'expo-router'
-import { Text, ColorValue } from 'react-native'
+import { Text, ColorValue, TouchableOpacity } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
 import { tagLabel } from '@/src/design'
 import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
+import { CommandPaletteProvider, useCommandPalette } from '@/src/components/command-palette'
 
 function TabIcon({ name, color, focused }: { name: IconName; color?: ColorValue; focused?: boolean }) {
   return (
@@ -15,7 +16,20 @@ function TabIcon({ name, color, focused }: { name: IconName; color?: ColorValue;
   )
 }
 
-export default function TabLayout() {
+/**
+ * Every tab button long-presses to open the command palette — the tab bar is
+ * the global "search / navigate anywhere" trigger.
+ */
+function TabBarButton({ children, onPress, ...rest }: any) {
+  const { open } = useCommandPalette()
+  return (
+    <TouchableOpacity {...rest} onPress={onPress} onLongPress={open} delayLongPress={350} activeOpacity={0.6}>
+      {children}
+    </TouchableOpacity>
+  )
+}
+
+function TabNavigator() {
   const { theme } = useTheme()
   const c = theme.colors
   const insets = useSafeAreaInsets()
@@ -51,6 +65,7 @@ export default function TabLayout() {
         tabBarLabelStyle: { ...tagLabel(8.5, 1.2), marginBottom: 4 },
         tabBarIconStyle: { marginTop: 2 },
         tabBarHideOnKeyboard: true,
+        tabBarButton: (props) => <TabBarButton {...props} />,
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: (p) => <TabIcon name="home" {...p} /> }} />
@@ -59,5 +74,13 @@ export default function TabLayout() {
       <Tabs.Screen name="chat" options={{ title: 'Chat', tabBarIcon: (p) => <TabIcon name="chat" {...p} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: (p) => <TabIcon name="profile" {...p} /> }} />
     </Tabs>
+  )
+}
+
+export default function TabLayout() {
+  return (
+    <CommandPaletteProvider>
+      <TabNavigator />
+    </CommandPaletteProvider>
   )
 }

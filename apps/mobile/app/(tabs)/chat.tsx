@@ -37,13 +37,46 @@ function roomIcon(type: string) {
   return '💬'
 }
 
+const ACCESS_LABEL: Record<string, { icon: string; label: string }> = {
+  users: { icon: '🔒', label: 'Locked' },
+  roles: { icon: '🛡️', label: 'VIP' },
+  mixed: { icon: '🔐', label: 'Protected' },
+}
+
+function Badge({ icon, label, color }: { icon: string; label: string; color: string }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        borderWidth: 1,
+        borderColor: color + '44',
+        backgroundColor: color + '11',
+        borderRadius: 5,
+        paddingHorizontal: 5,
+        paddingVertical: 1,
+      }}
+    >
+      <Text style={{ fontSize: 10 }}>{icon}</Text>
+      <Text style={{ color, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</Text>
+    </View>
+  )
+}
+
 function AccessBadge({ room }: { room: Room }) {
   const { theme } = useTheme()
   const c = theme.colors
   const mode = room.access?.mode ?? (room.is_private ? 'users' : 'public')
   if (mode === 'public') return null
-  const icon = mode === 'users' ? '🔒' : mode === 'roles' ? '🛡️' : '🔐'
-  return <Text style={{ fontSize: 13 }}>{icon}</Text>
+  const { icon, label } = ACCESS_LABEL[mode] ?? { icon: '🔐', label: 'Protected' }
+  return <Badge icon={icon} label={label} color={c.accent2} />
+}
+
+function ReadOnlyBadge() {
+  const { theme } = useTheme()
+  const c = theme.colors
+  return <Badge icon="🔇" label="read-only" color={c.muted} />
 }
 
 export default function ChatScreen() {
@@ -54,6 +87,7 @@ export default function ChatScreen() {
   const [rooms, setRooms] = useState<Room[]>([])
   const [dms, setDms] = useState<DMThread[]>([])
   const [requests, setRequests] = useState<any[]>([])
+  const [unreadNotifs, setUnreadNotifs] = useState(0)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [err, setErr] = useState('')
@@ -80,6 +114,10 @@ export default function ChatScreen() {
       .get('/chat/dm/requests')
       .then((r) => setRequests((r.data ?? []) as any[]))
       .catch(() => setRequests([]))
+    api
+      .get('/forum/notifications')
+      .then((r) => setUnreadNotifs((Array.isArray(r.data) ? r.data : []).filter((n) => !n.read).length))
+      .catch(() => {})
       .finally(() => { setLoading(false); setRefreshing(false) })
   }, [isAuthed])
 
@@ -119,16 +157,39 @@ export default function ChatScreen() {
     <Screen scroll={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Title>Chat rooms</Title>
-        {isStaff ? (
-          <View style={{ flexDirection: 'row', gap: 14 }}>
-            <TouchableOpacity onPress={() => router.push('/chat-admin' as Href)} hitSlop={8}>
-              <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>Admin</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/channel-manage' as Href)} hitSlop={8}>
-              <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>Manage ⚙</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <TouchableOpacity onPress={() => router.push('/notifications' as Href)} hitSlop={8} style={{ position: 'relative' }}>
+            <Text style={{ color: unreadNotifs > 0 ? c.accent : c.muted, fontWeight: '700', fontSize: 16 }}>🔔</Text>
+            {unreadNotifs > 0 ? (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -6,
+                  right: -8,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  paddingHorizontal: 4,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: c.accent,
+                }}
+              >
+                <Text style={{ color: c.onAccent, fontSize: 9, fontWeight: '800' }}>{unreadNotifs > 9 ? '9+' : unreadNotifs}</Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+          {isStaff ? (
+            <View style={{ flexDirection: 'row', gap: 14 }}>
+              <TouchableOpacity onPress={() => router.push('/chat-admin' as Href)} hitSlop={8}>
+                <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>Admin</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/channel-manage' as Href)} hitSlop={8}>
+                <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>Manage ⚙</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       {loading ? (
@@ -193,14 +254,23 @@ export default function ChatScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Text style={{ fontSize: 16 }}>{item.emoji || roomIcon(item.type)}</Text>
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
                           {item.name}
                         </Text>
                         <AccessBadge room={item} />
-                        {item.read_only ? <Text style={{ color: c.muted, fontSize: 11 }}>🔇</Text> : null}
+                        {item.read_only ? <ReadOnlyBadge /> : null}
                       </View>
-                      {item.description ? <Muted numberOfLines={1}>{item.description}</Muted> : null}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                        <Text style={{ color: c.muted, fontSize: 11, fontFamily: theme.mono ? 'monospace' : undefined }}>
+                          #{item.id.slice(0, 6)}
+                        </Text>
+                        {item.description ? (
+                          <Text style={{ color: c.muted, fontSize: 11, flex: 1 }} numberOfLines={1}>
+                            {item.description}
+                          </Text>
+                        ) : null}
+                      </View>
                     </View>
                     <Btn
                       title={item.type === 'text' ? 'Open' : 'Join'}

@@ -25,6 +25,37 @@ export const glowShadow = (size: number, opacity: number) => ({
   elevation: size / 3 || 4,
 })
 
+/**
+ * Pick a near-black or near-white text color that clears WCAG AA (4.5:1)
+ * against a solid background. Used for filled buttons whose label would
+ * otherwise be invisible (e.g. the danger variant once rendered `c.danger`
+ * text on a `c.danger` fill).
+ */
+export function contrastText(background: string): string {
+  let r = 0
+  let g = 0
+  let b = 0
+  const hex = (background || '').replace('#', '')
+  if (hex.length >= 6) {
+    const n = parseInt(hex.slice(0, 6), 16)
+    r = (n >> 16) & 255
+    g = (n >> 8) & 255
+    b = n & 255
+  } else {
+    const m = (background || '').match(/\d+/g)
+    if (m && m.length >= 3) {
+      r = Number(m[0]); g = Number(m[1]); b = Number(m[2])
+    }
+  }
+  const f = (v: number) => {
+    const s = v / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  }
+  const l = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+  // White only wins below this luminance; above it, dark text clears 4.5:1.
+  return l > 0.2 ? '#0a0f14' : '#ffffff'
+}
+
 type ToneColors = {
   accent: string
   accent2: string

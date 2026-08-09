@@ -1,5 +1,6 @@
 import { Link, Stack } from 'expo-router'
-import { StyleSheet, View , Text } from 'react-native'
+import { StyleSheet, Text } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTheme } from '@/src/theme'
 
 export default function NotFoundScreen() {
@@ -8,7 +9,7 @@ export default function NotFoundScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Oops!' }} />
-      <View style={[styles.container, { backgroundColor: c.bg }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
         <Text style={[styles.title, { color: c.text, fontFamily: theme.mono ? 'monospace' : undefined }]}>
           This screen doesn&apos;t exist.
         </Text>
@@ -17,7 +18,7 @@ export default function NotFoundScreen() {
             Go to home screen!
           </Text>
         </Link>
-      </View>
+      </SafeAreaView>
     </>
   )
 }

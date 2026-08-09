@@ -5,6 +5,7 @@ import { Title } from '@/src/components/ui'
 import { Loader } from '@/src/components/Loader'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
+import { webPillSnap } from '@/src/lib/carousel'
 import { OverviewTab } from '@/src/screens/profile/Overview'
 import { OrdersTab } from '@/src/screens/profile/Orders'
 import { TicketsTab } from '@/src/screens/profile/Tickets'
@@ -56,7 +57,7 @@ export default function ProfileScreen() {
   return (
     <Screen scroll={false}>
       <Title tag="ACCOUNT">Profile</Title>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12, flexGrow: 0 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} {...webPillSnap()} style={{ marginBottom: 12, flexGrow: 0 }}>
         <View style={{ flexDirection: 'row', gap: 6 }}>
           {TABS.map((t) => {
             const active = tab === t.id

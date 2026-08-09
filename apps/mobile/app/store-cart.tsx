@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
+import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import * as WebBrowser from 'expo-web-browser'
 import { Image as ExpoImage } from 'expo-image'
 import { Btn, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
@@ -29,7 +31,7 @@ export default function StoreCartScreen() {
   const router = useRouter()
   const { theme } = useTheme()
   const c = theme.colors
-  const { toast, confirm, alert } = useOverlay()
+  const { toast, confirm } = useOverlay()
   const [cart, setCart] = useState<Cart>({ items: [], subtotal_cents: 0, count: 0 })
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -84,7 +86,36 @@ export default function StoreCartScreen() {
   }
 
   const checkout = async () => {
-    await alert({ message: 'Web checkout is coming soon to the mobile app. For now, complete your order on the website.' })
+    if (busy) return
+    setBusy(true)
+    setErr('')
+    try {
+      const r = await api.post('/store/checkout/cart', {
+        success_url: 'aifazi:///store-success?session_id={{CHECKOUT_SESSION_ID}}',
+        cancel_url: 'aifazi:///store-cart',
+      })
+      const url = r.data?.url
+      if (!url) {
+        setErr('Checkout could not be started.')
+        return
+      }
+      // Open the Stripe Checkout session. When the user completes/cancels,
+      // Stripe redirects back to the aifazi:// deep link and this resolves.
+      const res = await WebBrowser.openAuthSessionAsync(url, 'aifazi:///store-success')
+      if (res.type === 'success') {
+        const sessionId = /[?&]session_id=([^&#]+)/.exec(res.url || '')?.[1] || ''
+        // Clear the now-paid cart server-side so the badge and cart stay in sync.
+        await api.post('/store/cart/clear').catch(() => {})
+        router.replace(`/store-success${sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : ''}` as Href)
+      } else {
+        await load()
+      }
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || 'Checkout failed.')
+      await load()
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

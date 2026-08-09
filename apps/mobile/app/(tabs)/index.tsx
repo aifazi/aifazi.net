@@ -1,16 +1,19 @@
 import { useEffect, useState, useCallback } from 'react'
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
+import { carouselSnap } from '@/src/lib/carousel'
 import { api } from '@/src/lib/api'
 import { Btn } from '@/src/components/ui'
 import { Avatar } from '@/src/components/Avatar'
 import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
+import { AmbientGlow, PulsingDot } from '@/src/components/glow'
 
 interface StatusService {
   name: string
@@ -139,13 +142,14 @@ export default function HomeScreen() {
   ]
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: c.bg }}
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
-      }
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 96 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
+        }
+      >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         <Text style={{ color: c.text, fontSize: 24, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined, letterSpacing: theme.mono ? 1 : 0 }}>
           aifazi.net
@@ -182,11 +186,12 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          <View style={[styles.card, { borderColor: c.border, backgroundColor: c.bg2 }]}>
+          <View style={[styles.card, { borderColor: c.border, backgroundColor: c.bg2, overflow: 'hidden' }]}>
+            <AmbientGlow color={overallColor} size={150} intensity={0.32} style={{ top: -60, right: -40 }} />
             <View style={styles.cardHeader}>
               <Text style={{ color: c.text, fontSize: 13, fontWeight: '800' }}>Server status</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: overallColor }} />
+                <PulsingDot color={overallColor} size={9} />
                 <Text style={{ color: overallColor, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' }}>{overall}</Text>
               </View>
             </View>
@@ -209,7 +214,7 @@ export default function HomeScreen() {
           {projects.length > 0 ? (
             <>
               <SectionTitle title="Our projects" onMore={() => router.push('/projects')} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} {...carouselSnap(160)} style={{ marginBottom: 18 }}>
                 {projects.map((p) => (
                   <TouchableOpacity
                     key={p.id}
@@ -235,7 +240,7 @@ export default function HomeScreen() {
           {products.length > 0 ? (
             <>
               <SectionTitle title="Store picks" onMore={() => router.push('/store')} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} {...carouselSnap(150)} style={{ marginBottom: 18 }}>
                 {products.slice(0, 6).map((p) => (
                   <TouchableOpacity
                     key={p.id}
@@ -302,7 +307,8 @@ export default function HomeScreen() {
           ) : null}
         </>
       )}
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 

@@ -1,7 +1,8 @@
 import { ReactNode, useState } from 'react'
 import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, ScrollView, DimensionValue } from 'react-native'
 import { useTheme } from '@/src/theme'
-import { withAlpha, glowShadow } from '@/src/lib/color'
+import { withAlpha, glowShadow, contrastText } from '@/src/lib/color'
+import { webPillSnap } from '@/src/lib/carousel'
 import { CODE_FONT, micro, buttonLabel, tagLabel } from '@/src/design'
 import { Icon, IconName } from '@/src/components/icon'
 
@@ -61,7 +62,7 @@ export function Btn({
         style={[
           buttonLabel(),
           {
-            color: isPrimary ? c.onAccent : isDanger ? c.danger : c.accent2,
+            color: isPrimary ? c.onAccent : isDanger ? contrastText(c.danger) : c.accent2,
           },
         ]}
       >
@@ -493,7 +494,7 @@ export function CategoryPills<T extends string>({
   onSelect: (v: T) => void
 }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} {...webPillSnap()}>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {items.map((it) => (
           <Pill key={it.key} label={it.label ?? it.key} active={it.key === active} onPress={() => onSelect(it.key)} />

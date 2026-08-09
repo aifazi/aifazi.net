@@ -11,7 +11,9 @@ export default function Root({ children }: { children: ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        {/* viewport-fit=cover lets the layout extend under the notch/home
+            indicator so env(safe-area-inset-*) are non-zero for the PWA. */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, shrink-to-fit=no" />
 
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.

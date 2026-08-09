@@ -54,7 +54,9 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
           {children}
         </ScrollView>
       ) : (
-        <View style={styles.content}>{children}</View>
+        // flex:1 bounds the child list/scroll so it scrolls within the screen
+        // instead of overflowing behind the floating bottom nav bar.
+        <View style={styles.contentFixed}>{children}</View>
       )}
     </SafeAreaView>
   )
@@ -62,5 +64,6 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  content: { padding: 16, paddingBottom: 100 },
+  content: { padding: 16, paddingBottom: 96 },
+  contentFixed: { flex: 1, padding: 16, paddingBottom: 96 },
 })

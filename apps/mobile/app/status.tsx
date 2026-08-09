@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Muted } from '@/src/components/ui'
+import { Card, Muted, Btn } from '@/src/components/ui'
+import { StatusChip } from '@/src/screens/profile/helpers'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
@@ -49,6 +50,7 @@ export default function StatusScreen() {
   const c = theme.colors
   const [data, setData] = useState<StatusData>({})
   const [loading, setLoading] = useState(true)
+  const [detail, setDetail] = useState<Incident | null>(null)
 
   useEffect(() => {
     api
@@ -63,6 +65,9 @@ export default function StatusScreen() {
 
   const statusDot = (s: string) =>
     s === 'up' || s === 'operational' ? c.accent : s === 'down' || s === 'outage' ? c.danger : c.accent2
+
+  const serviceFor = (inc: Incident): Service | undefined =>
+    (data.services ?? []).find((s) => (s.label || s.name) === (inc.label || ''))
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
@@ -85,7 +90,7 @@ export default function StatusScreen() {
           </View>
 
           {(data.services ?? []).map((s) => (
-            <View key={s.name} style={{ backgroundColor: c.bg2, borderWidth: 1, borderColor: c.border, borderRadius: 10, padding: 14, marginBottom: 10 }}>
+            <Card key={s.name} style={{ padding: 14, marginBottom: 10 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: statusDot(s.status) }} />
                 <Text style={{ color: c.text, fontSize: 14, fontWeight: '700', flex: 1 }} numberOfLines={1}>
@@ -101,7 +106,7 @@ export default function StatusScreen() {
                 <Muted>7d {s.uptime_7d != null ? `${s.uptime_7d.toFixed(1)}%` : '—'}</Muted>
                 <Muted>30d {s.uptime_30d != null ? `${s.uptime_30d.toFixed(1)}%` : '—'}</Muted>
               </View>
-            </View>
+            </Card>
           ))}
 
           {(data.incidents ?? []).length > 0 ? (
@@ -110,26 +115,26 @@ export default function StatusScreen() {
                 ⚠ RECENT INCIDENTS
               </Text>
               {(data.incidents ?? []).map((inc, i) => (
-                <View key={i} style={{ backgroundColor: c.bg2, borderWidth: 1, borderColor: c.border, borderRadius: 10, padding: 14, marginBottom: 10 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-                    <Text style={{ fontSize: 14 }}>{inc.ongoing ? '🔴' : '🟠'}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }}>
-                        {inc.label || 'Incident'}
-                        {inc.ongoing ? ' · ONGOING' : ''}
-                      </Text>
-                      {(inc.start || inc.end) ? (
-                        <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }}>
-                          {inc.start ? new Date(inc.start).toLocaleString() : ''}
-                          {inc.end && inc.end !== inc.start ? ` → ${new Date(inc.end).toLocaleTimeString()}` : ''}
-                        </Text>
-                      ) : null}
-                      {!inc.ongoing && inc.duration_s != null ? (
-                        <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }}>{fmtDur(inc.duration_s)} down</Text>
-                      ) : null}
+                <TouchableOpacity key={i} onPress={() => setDetail(inc)} activeOpacity={0.7}>
+                  <Card style={{ padding: 14, marginBottom: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                      <Text style={{ fontSize: 14 }}>{inc.ongoing ? '🔴' : '🟠'}</Text>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text style={{ color: c.text, fontSize: 13, fontWeight: '700', flex: 1 }} numberOfLines={1}>
+                            {inc.label || 'Incident'}
+                          </Text>
+                          <StatusChip text={inc.ongoing ? 'ongoing' : 'resolved'} tone={inc.ongoing ? c.danger : undefined} />
+                        </View>
+                        <Muted style={{ marginTop: 2 }} numberOfLines={1}>
+                          {inc.ongoing ? 'Started ' : ''}
+                          {inc.start ? new Date(inc.start).toLocaleString() : '—'}
+                        </Muted>
+                        {!inc.ongoing && inc.duration_s != null ? <Muted>{fmtDur(inc.duration_s)} down</Muted> : null}
+                      </View>
                     </View>
-                  </View>
-                </View>
+                  </Card>
+                </TouchableOpacity>
               ))}
             </>
           ) : (
@@ -137,6 +142,56 @@ export default function StatusScreen() {
           )}
         </ScrollView>
       )}
+
+      {detail ? (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', padding: 16 }}>
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Text style={{ fontSize: 16 }}>{detail.ongoing ? '🔴' : '🟠'}</Text>
+              <Text style={{ color: c.text, fontSize: 14, fontWeight: '800', flex: 1 }} numberOfLines={2}>
+                {detail.label || 'Incident'}
+              </Text>
+              <StatusChip text={detail.ongoing ? 'ongoing' : 'resolved'} tone={detail.ongoing ? c.danger : undefined} />
+            </View>
+
+            {serviceFor(detail) ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: statusDot(serviceFor(detail)!.status) }} />
+                <Muted>Service is currently {serviceFor(detail)!.status}</Muted>
+              </View>
+            ) : null}
+
+            <Text style={{ color: c.accent2, fontSize: 9, fontWeight: '800', letterSpacing: 2, marginTop: 10, marginBottom: 6 }}>TIMELINE</Text>
+            {detail.start ? (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Muted>Started</Muted>
+                <Text style={{ color: c.text, fontSize: 12 }}>{new Date(detail.start).toLocaleString()}</Text>
+              </View>
+            ) : null}
+            {detail.ongoing ? (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Muted>Ended</Muted>
+                <Text style={{ color: c.danger, fontSize: 12 }}>Still ongoing</Text>
+              </View>
+            ) : detail.end ? (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Muted>Ended</Muted>
+                <Text style={{ color: c.text, fontSize: 12 }}>{new Date(detail.end).toLocaleString()}</Text>
+              </View>
+            ) : null}
+            {!detail.ongoing && detail.duration_s != null ? (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Muted>Duration</Muted>
+                <Text style={{ color: c.text, fontSize: 12 }}>{fmtDur(detail.duration_s)}</Text>
+              </View>
+            ) : null}
+
+            <View style={{ marginTop: 12 }}>
+              <Btn title="Close" variant="ghost" onPress={() => setDetail(null)} />
+            </View>
+          </Card>
+        </View>
+      ) : null}
     </SafeAreaView>
   )
 }
