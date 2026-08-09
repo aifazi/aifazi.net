@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, RefreshControl } from 'react-native'
-import { useRouter } from 'expo-router'
+import { View, Text, TouchableOpacity, FlatList, RefreshControl } from 'react-native'
+import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
-import { useFocusEffect } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { useAuth } from '@/src/lib/auth'
+import { Loader } from '@/src/components/Loader'
 
 interface ThreadAuthor {
   username: string
@@ -90,7 +90,7 @@ export default function ForumScreen() {
   if (loading) {
     return (
       <Screen>
-        <ActivityIndicator color={c.accent} style={{ marginTop: 60 }} />
+        <Loader />
       </Screen>
     )
   }
@@ -103,7 +103,7 @@ export default function ForumScreen() {
           onPress={() => router.push(isAuthed ? '/forum-new' : '/auth/login')}
           style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: theme.mono ? 0 : 8, backgroundColor: c.accent, marginBottom: 12 }}
         >
-          <Text style={{ color: theme.dark ? '#000' : '#fff', fontSize: 13, fontWeight: '700' }}>+ New thread</Text>
+          <Text style={{ color: c.onAccent, fontSize: 13, fontWeight: '700' }}>+ New thread</Text>
         </TouchableOpacity>
       </View>
       {categories.length > 0 ? (
@@ -119,7 +119,7 @@ export default function ForumScreen() {
               backgroundColor: cat === '' ? c.accent2 : 'transparent',
             }}
           >
-            <Text style={{ color: cat === '' ? '#001018' : c.text, fontSize: 12, fontWeight: '700' }}>All</Text>
+            <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>All</Text>
           </TouchableOpacity>
           {categories.map((x) => (
             <TouchableOpacity
@@ -134,7 +134,7 @@ export default function ForumScreen() {
                 backgroundColor: cat === (x._id || x.id) ? c.accent2 : 'transparent',
               }}
             >
-              <Text style={{ color: cat === (x._id || x.id) ? '#001018' : c.text, fontSize: 12, fontWeight: '700' }}>
+              <Text style={{ color: cat === (x._id || x.id) ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>
                 {x.icon ?? ''} {x.name}
               </Text>
             </TouchableOpacity>

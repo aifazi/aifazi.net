@@ -1,6 +1,7 @@
 import { Text, Linking } from 'react-native'
+import { useTheme } from '@/src/theme'
 
-function parseInline(text: string, baseColor: string, onLink?: (url: string) => void): any[] {
+function parseInline(text: string, baseColor: string, link: string, onLink?: (url: string) => void): any[] {
   const out: any[] = []
   const re = /(`{1,3})([\s\S]*?)\1|\*\*([^*]+)\*\*|\*([^*]+)\*|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
   let m: RegExpExecArray | null
@@ -10,7 +11,7 @@ function parseInline(text: string, baseColor: string, onLink?: (url: string) => 
     if (m.index > last) out.push(<Text key={k++} style={{ color: baseColor }}>{text.slice(last, m.index)}</Text>)
     if (m[2] !== undefined) {
       out.push(
-        <Text key={k++} style={{ fontFamily: 'monospace', fontSize: 12, color: '#22d3ee', backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 4, overflow: 'hidden', paddingHorizontal: 3 }}>
+        <Text key={k++} style={{ fontFamily: 'monospace', fontSize: 12, color: link, backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 4, overflow: 'hidden', paddingHorizontal: 3 }}>
           {m[2]}
         </Text>,
       )
@@ -23,7 +24,7 @@ function parseInline(text: string, baseColor: string, onLink?: (url: string) => 
       out.push(
         <Text
           key={k++}
-          style={{ color: '#22d3ee', textDecorationLine: 'underline' }}
+          style={{ color: link, textDecorationLine: 'underline' }}
           onPress={() => (onLink ?? Linking.openURL)(url)}
         >
           {url}
@@ -45,13 +46,15 @@ export function MarkdownText({
   color: string
   onLink?: (url: string) => void
 }) {
+  const { theme } = useTheme()
   if (!content) return null
   const lines = content.split('\n')
+  const link = theme.colors.link
   return (
     <Text style={{ color, fontSize: 14, lineHeight: 19 }}>
       {lines.map((line, i) => (
         <Text key={i}>
-          {parseInline(line, color, onLink)}
+          {parseInline(line, color, link, onLink)}
           {i < lines.length - 1 ? '\n' : null}
         </Text>
       ))}

@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import * as SecureStore from 'expo-secure-store'
 
-export const API_BASE = 'https://api.aifazi.net'
+export const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://api.aifazi.net'
 
 // H4 — access token lives in MEMORY ONLY. On app restart it is gone; the refresh
 // token (stored in SecureStore) reissues it automatically on the first 401.

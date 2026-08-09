@@ -1,13 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
-import { useRouter } from 'expo-router'
+import { View, Text, TouchableOpacity, FlatList, RefreshControl } from 'react-native'
+import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
-import { useFocusEffect } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { Loader } from '@/src/components/Loader'
 
 interface StoreCat {
   id: string
@@ -99,7 +99,7 @@ export default function StoreScreen() {
               backgroundColor: cat === '' ? c.accent2 : 'transparent',
             }}
           >
-            <Text style={{ color: cat === '' ? '#001018' : c.text, fontSize: 12, fontWeight: '700' }}>All</Text>
+            <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>All</Text>
           </TouchableOpacity>
           {cats.map((x) => (
             <TouchableOpacity
@@ -114,7 +114,7 @@ export default function StoreScreen() {
                 backgroundColor: cat === x.slug ? c.accent2 : 'transparent',
               }}
             >
-              <Text style={{ color: cat === x.slug ? '#001018' : c.text, fontSize: 12, fontWeight: '700' }}>
+              <Text style={{ color: cat === x.slug ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>
                 {x.icon ?? ''} {x.name}
               </Text>
             </TouchableOpacity>
@@ -123,7 +123,7 @@ export default function StoreScreen() {
       ) : null}
 
       {loading ? (
-        <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
+        <Loader />
       ) : err ? (
         <Muted>{err}</Muted>
       ) : (

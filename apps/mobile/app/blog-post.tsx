@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -9,6 +9,7 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { useOverlay } from '@/src/components/overlay'
+import { Loader } from '@/src/components/Loader'
 
 interface Comment {
   _id?: string
@@ -109,7 +110,7 @@ export default function BlogPostScreen() {
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={c.accent} />
+        <Loader compact />
       </SafeAreaView>
     )
   }
@@ -201,7 +202,7 @@ export default function BlogPostScreen() {
                 disabled={posting || !commentText.trim()}
                 style={{ marginTop: 8, alignSelf: 'flex-end', backgroundColor: c.accent, paddingVertical: 9, paddingHorizontal: 18, borderRadius: theme.mono ? 0 : 8, opacity: posting || !commentText.trim() ? 0.5 : 1 }}
               >
-                <Text style={{ color: theme.dark ? '#000' : '#fff', fontWeight: '700', fontSize: 13 }}>{posting ? 'Posting…' : 'Post comment'}</Text>
+                <Text style={{ color: c.onAccent, fontWeight: '700', fontSize: 13 }}>{posting ? 'Posting…' : 'Post comment'}</Text>
               </TouchableOpacity>
             </>
           ) : (

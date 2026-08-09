@@ -6,14 +6,20 @@ download the APK. The GitHub repo is private, so the app cannot query
 api.github.com directly (anonymous requests 404). This router proxies the
 operations server-side:
 
-  - GET  /api/mobile/release/latest  -> JSON { tag, version, apk_url, published_at, notes }
+  - GET  /api/mobile/release/latest  -> JSON { state: ready|building|none, tag, version, apk_url, ... }
   - GET  /api/mobile/status          -> JSON { state: ready|building|none, ... }
   - GET  /api/mobile/release/download -> streams the latest APK asset bytes
 
-Use GITHUB_TOKEN (a fine-grained PAT with Contents:Read on aifazi/aifazi.net, or
-a classic PAT with `repo` scope) so the server can read the private repo. When
-the token is missing the endpoints fall back to the public repo path (useful in
-local/dev where the repo may be public).
+`state` tells the mobile app what to show. The auto-release tag is created
+immediately, but the ~16-minute EAS build uploads the APK a while later, so
+`building` (not an error) is returned in that window. `/release/latest` returns
+200 with `state` instead of a bare 404 so the in-app updater never has to guess
+between "no release", "still building", and "backend broken".
+
+Use GITHUB_TOKEN (a fine-grained PAT with Contents:Read, or a classic PAT with
+`repo` scope) so the server can read the private repo. When the token is missing
+the endpoints fall back to the public repo path (useful in local/dev where the
+repo may be public).
 """
 from __future__ import annotations
 
@@ -44,23 +50,43 @@ API_URL = os.getenv("API_URL", "https://api.aifazi.net").rstrip("/")
 
 @router.get("/release/latest")
 async def mobile_release_latest() -> dict:
+    """Latest release metadata for the in-app updater.
+
+    Returns 200 with `state` (ready|building|none) instead of a bare 404 so the
+    mobile app can distinguish "no release yet", "release is still building",
+    and "backend cannot reach GitHub" (the latter stays a 502).
+    """
     async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
         release, err = await get_latest_release(client)
     if err:
         log.warning("GitHub releases/latest -> %s", err)
         raise HTTPException(status_code=502, detail="Could not reach GitHub release API")
     if not release:
-        raise HTTPException(status_code=404, detail="No release found for this app")
-    asset = apk_asset(release)
-    if not asset:
-        raise HTTPException(status_code=404, detail="No APK attached to the latest release")
+        return {
+            "state": "none",
+            "tag": None,
+            "version": None,
+            "published_at": None,
+            "notes": None,
+            "apk_url": None,
+            "asset_name": None,
+            "asset_size": None,
+            "sha256": None,
+        }
     tag = (release.get("tag_name") or "").strip()
-    return {
+    base = {
         "tag": tag,
         "version": tag.lstrip("v"),
-        "apk_url": f"{API_URL}/api/mobile/release/download",
         "published_at": release.get("published_at"),
         "notes": release.get("body"),
+    }
+    asset = apk_asset(release)
+    if not asset:
+        return {**base, "state": "building", "apk_url": None, "asset_name": None, "asset_size": None, "sha256": None}
+    return {
+        **base,
+        "state": "ready",
+        "apk_url": f"{API_URL}/api/mobile/release/download",
         "asset_name": asset.get("name"),
         "asset_size": asset.get("size"),
         "sha256": asset_sha256(asset),

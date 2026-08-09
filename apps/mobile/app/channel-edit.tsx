@@ -1,11 +1,10 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -14,6 +13,7 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { useOverlay } from '@/src/components/overlay'
+import { Loader } from '@/src/components/Loader'
 
 const PLATFORM_ROLES = ['member', 'admin', 'moderator', 'editor', 'chat']
 const ROOM_PERMS = [
@@ -62,6 +62,7 @@ export default function ChannelEditScreen() {
   const [loading, setLoading] = useState(!!room_id)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
+  const inviteInputRef = useRef<TextInput>(null)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -294,7 +295,7 @@ export default function ChannelEditScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
+        <Loader />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 60 }}>
           {err ? <Muted style={{ marginBottom: 10 }}>{err}</Muted> : null}
@@ -346,7 +347,7 @@ export default function ChannelEditScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ color: type === t ? '#001018' : c.text, fontWeight: '700', fontSize: 13 }}>
+                    <Text style={{ color: type === t ? c.onAccent : c.text, fontWeight: '700', fontSize: 13 }}>
                       {t === 'text' ? '💬 Text' : t === 'voice' ? '🔊 Voice' : '📹 Video'}
                     </Text>
                   </TouchableOpacity>
@@ -384,7 +385,7 @@ export default function ChannelEditScreen() {
                     backgroundColor: mode === m.key ? c.accent2 : 'transparent',
                   }}
                 >
-                  <Text style={{ color: mode === m.key ? '#001018' : c.text, fontWeight: '700', fontSize: 12 }}>{m.label}</Text>
+                  <Text style={{ color: mode === m.key ? c.onAccent : c.text, fontWeight: '700', fontSize: 12 }}>{m.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -408,7 +409,7 @@ export default function ChannelEditScreen() {
                           backgroundColor: on ? c.accent2 : 'transparent',
                         }}
                       >
-                        <Text style={{ color: on ? '#001018' : c.text, fontWeight: '700', fontSize: 12 }}>{r}</Text>
+                        <Text style={{ color: on ? c.onAccent : c.text, fontWeight: '700', fontSize: 12 }}>{r}</Text>
                       </TouchableOpacity>
                     )
                   })}
@@ -477,7 +478,7 @@ export default function ChannelEditScreen() {
                           backgroundColor: on ? c.accent2 : 'transparent',
                         }}
                       >
-                        <Text style={{ color: on ? '#001018' : c.text, fontWeight: '700', fontSize: 12 }}>{r}</Text>
+                        <Text style={{ color: on ? c.onAccent : c.text, fontWeight: '700', fontSize: 12 }}>{r}</Text>
                       </TouchableOpacity>
                     )
                   })}
@@ -553,7 +554,7 @@ export default function ChannelEditScreen() {
                               backgroundColor: on ? c.accent2 : 'transparent',
                             }}
                           >
-                            <Text style={{ color: on ? '#001018' : c.text, fontWeight: '700', fontSize: 11 }}>{p}</Text>
+                            <Text style={{ color: on ? c.onAccent : c.text, fontWeight: '700', fontSize: 11 }}>{p}</Text>
                           </TouchableOpacity>
                         )
                       })}
@@ -570,10 +571,11 @@ export default function ChannelEditScreen() {
                 title="Members"
                 subtitle={`${members.length} total`}
                 headerRight={
-                  <Btn title="Invite" onPress={() => {}} style={{ paddingVertical: 6, paddingHorizontal: 10 }} />
+                  <Btn title="Invite" onPress={() => inviteInputRef.current?.focus()} style={{ paddingVertical: 6, paddingHorizontal: 10 }} />
                 }
               >
                 <TextInput
+                  ref={inviteInputRef}
                   value={inviteQ}
                   onChangeText={(q) => doSearch(q, setInviteQ, setInviteResults)}
                   placeholder="Search users to invite…"

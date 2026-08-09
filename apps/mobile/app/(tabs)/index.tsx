@@ -1,14 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, RefreshControl } from 'react-native'
-import { useRouter } from 'expo-router'
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl } from 'react-native'
+import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
-import { useFocusEffect } from 'expo-router'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { Btn } from '@/src/components/ui'
 import { Avatar } from '@/src/components/Avatar'
+import { Icon } from '@/src/components/icon'
+import type { IconName } from '@/src/components/icon'
+import { Loader } from '@/src/components/Loader'
 
 interface StatusService {
   name: string
@@ -59,12 +61,12 @@ interface Project {
 
 interface MonitorStatus {
   overall?: string
-  services?: Array<{
+  services?: {
     name: string
     label?: string
     status: string
     uptime_24h?: number
-  }>
+  }[]
 }
 
 function fmtPrice(p?: Product) {
@@ -85,8 +87,10 @@ export default function HomeScreen() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const load = useCallback(() => {
+    const onErr = () => setLoadError('Some sections could not load. Pull to refresh.')
     api
       .get('/monitor/status')
       .then((r) => setMon((r.data ?? {}) as MonitorStatus))
@@ -98,20 +102,21 @@ export default function HomeScreen() {
     api
       .get('/forum/threads', { params: { limit: 5 } })
       .then((r) => setThreads((r.data?.threads ?? []) as Thread[]))
-      .catch(() => setThreads([]))
+      .catch(onErr)
     api
       .get('/blog', { params: { limit: 5 } })
       .then((r) => setPosts((r.data?.posts ?? []) as Post[]))
-      .catch(() => setPosts([]))
+      .catch(onErr)
     api
       .get('/portfolio/projects')
       .then((r) => setProjects((r.data ?? []) as Project[]))
-      .catch(() => setProjects([]))
+      .catch(onErr)
       .finally(() => { setLoading(false); setRefreshing(false) })
   }, [])
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
+    setLoadError(null)
     load()
   }, [load])
 
@@ -125,12 +130,12 @@ export default function HomeScreen() {
   const overallColor = overall === 'operational' ? c.accent : overall === 'outage' ? c.danger : c.accent2
 
   const tiles = [
-    { label: 'Store', icon: '🛍️', href: '/store' as Href, tint: '#ff6b35' },
-    { label: 'Projects', icon: '🚀', href: '/projects' as Href, tint: '#00d4ff' },
-    { label: 'Forum', icon: '💬', href: '/forum' as Href, tint: '#00ff88' },
-    { label: 'Blog', icon: '📝', href: '/blog' as Href, tint: '#facc15' },
-    { label: 'Chat', icon: '🗨️', href: '/chat' as Href, tint: '#a78bfa' },
-    { label: 'Profile', icon: '👤', href: '/profile' as Href, tint: '#f472b6' },
+    { label: 'Store', icon: 'store' as IconName, href: '/store' as Href, tint: c.sale },
+    { label: 'Projects', icon: 'rocket' as IconName, href: '/projects' as Href, tint: c.accent2 },
+    { label: 'Forum', icon: 'forum' as IconName, href: '/forum' as Href, tint: c.accent },
+    { label: 'Blog', icon: 'blog' as IconName, href: '/blog' as Href, tint: c.star },
+    { label: 'Chat', icon: 'chat' as IconName, href: '/chat' as Href, tint: c.info },
+    { label: 'Profile', icon: 'profile' as IconName, href: '/profile' as Href, tint: c.warning },
   ]
 
   return (
@@ -158,9 +163,12 @@ export default function HomeScreen() {
       </Text>
 
       {loading ? (
-        <ActivityIndicator color={c.accent} style={{ marginTop: 30 }} />
+        <Loader />
       ) : (
         <>
+          {loadError ? (
+            <Text style={{ color: c.warning, fontSize: 12, marginBottom: 10 }}>{loadError}</Text>
+          ) : null}
           <View style={[styles.grid, { marginBottom: 18 }]}>
             {tiles.map((t) => (
               <TouchableOpacity
@@ -168,7 +176,7 @@ export default function HomeScreen() {
                 onPress={() => router.push(t.href)}
                 style={[styles.tile, { borderColor: c.border, backgroundColor: c.bg2 }]}
               >
-                <Text style={{ fontSize: 24 }}>{t.icon}</Text>
+                <Icon name={t.icon} size={24} color={t.tint} />
                 <Text style={{ color: c.text, fontSize: 13, fontWeight: '800', marginTop: 6 }}>{t.label}</Text>
               </TouchableOpacity>
             ))}

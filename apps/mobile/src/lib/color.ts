@@ -24,3 +24,30 @@ export const glowShadow = (size: number, opacity: number) => ({
   shadowOffset: { width: 0, height: size / 2 || 4 },
   elevation: size / 3 || 4,
 })
+
+type ToneColors = {
+  accent: string
+  accent2: string
+  warning: string
+  success: string
+  danger: string
+  info: string
+  sale: string
+  star: string
+  muted: string
+}
+
+/**
+ * Map free-text status/ticket/order states to a semantic theme tone so status
+ * chips render consistently in every theme instead of hardcoded hex.
+ */
+export function statusTone(text: string | undefined, c: ToneColors): string | undefined {
+  const t = (text || '').toLowerCase()
+  if (t === 'open' || t === 'active' || t === 'in-progress' || t === 'processing' || t === 'low' || t === 'accepted' || t === 'approved') return c.accent2
+  if (t === 'resolved' || t === 'paid' || t === 'delivered' || t === 'success' || t === 'operational' || t === 'up' || t === 'online' || t === 'verified') return c.success
+  if (t === 'pending' || t === 'sale' || t === 'shipped' || t === 'medium' || t === 'requested' || t === 'moderator' || t === 'admin') return c.star
+  if (t === 'cancelled' || t === 'refunded' || t === 'blocked' || t === 'banned' || t === 'down' || t === 'outage' || t === 'rejected' || t === 'critical' || t === 'high') return c.danger
+  if (t === 'closed' || t === 'muted') return c.muted
+  if (t === 'warning' || t === 'partial' || t === 'degraded' || t === 'maintenance' || t === 'market') return c.warning
+  return undefined
+}

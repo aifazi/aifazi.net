@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, ScrollView } from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
 import { useFocusEffect } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { Loader } from '@/src/components/Loader'
 
 interface Project {
   id: string
@@ -38,7 +39,7 @@ function ProjectCard({ item }: { item: Project }) {
         <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>{item.name || item.title}</Text>
         {item.status ? (
           <View style={{ backgroundColor: c.accent, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-            <Text style={{ color: theme.dark ? '#000' : '#fff', fontSize: 9, fontWeight: '800', textTransform: 'uppercase' }}>{item.status}</Text>
+            <Text style={{ color: c.onAccent, fontSize: 9, fontWeight: '800', textTransform: 'uppercase' }}>{item.status}</Text>
           </View>
         ) : null}
       </View>
@@ -77,7 +78,7 @@ export default function ProjectsScreen() {
     return (
       <Screen>
         <Title>Our projects</Title>
-        <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
+        <Loader />
       </Screen>
     )
   }

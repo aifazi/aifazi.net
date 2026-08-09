@@ -1,0 +1,36 @@
+name: Mobile Lint & Typecheck
+
+on:
+  pull_request:
+    paths: ["apps/mobile/**"]
+  push:
+    branches: [main]
+    paths: ["apps/mobile/**"]
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Lint + Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/mobile
+        run: npm install
+
+      - name: Lint
+        working-directory: apps/mobile
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: apps/mobile
+        run: npm run typecheck

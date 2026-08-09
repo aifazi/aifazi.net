@@ -226,8 +226,8 @@ export function useLiveKitCall(roomId: string | null, opts?: LiveKitCallOptions)
 
   const listDevices = useCallback(async (kind: 'audioinput' | 'audiooutput' | 'videoinput') => {
     try {
-      const list: Array<{ kind: string; deviceId: string; label?: string }> =
-        (await mediaDevices.enumerateDevices()) as Array<{ kind: string; deviceId: string; label?: string }>
+      const list: { kind: string; deviceId: string; label?: string }[] =
+        (await mediaDevices.enumerateDevices()) as { kind: string; deviceId: string; label?: string }[]
       return list.filter((d) => d.kind === kind).map((d) => ({ id: d.deviceId, label: d.label || kind }))
     } catch {
       return []

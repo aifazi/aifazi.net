@@ -5,13 +5,13 @@ export function registerGlobals(): void {
 export const MediaStream: any = undefined
 
 export const mediaDevices: any = {
-  async enumerateDevices(): Promise<Array<{ kind: string; deviceId: string; label?: string }>> {
+  async enumerateDevices(): Promise<{ kind: string; deviceId: string; label?: string }[]> {
     if (typeof navigator !== 'undefined' && navigator.mediaDevices?.enumerateDevices) {
-      return (await navigator.mediaDevices.enumerateDevices()) as unknown as Array<{
+      return (await navigator.mediaDevices.enumerateDevices()) as unknown as {
         kind: string
         deviceId: string
         label?: string
-      }>
+      }[]
     }
     return []
   },
@@ -21,7 +21,7 @@ export function streamUrl(): string | null {
   return null
 }
 
-export async function listDevices(): Promise<Array<{ kind: string; deviceId: string; label?: string }>> {
+export async function listDevices(): Promise<{ kind: string; deviceId: string; label?: string }[]> {
   try {
     return await mediaDevices.enumerateDevices()
   } catch {

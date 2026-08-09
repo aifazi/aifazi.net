@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  ActivityIndicator,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
@@ -23,6 +22,7 @@ import { api } from '@/src/lib/api'
 import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
 import { useMessageActions, useSwipeToReply } from '@/src/lib/chat-actions'
 import { useOverlay } from '@/src/components/overlay'
+import { Loader } from '@/src/components/Loader'
 
 interface DMMessage {
   id: string
@@ -101,12 +101,12 @@ function MessageRow(props: RowProps) {
                 transition={150}
               />
             ) : (
-              <Text style={{ color: mine ? '#001018' : c.text, fontSize: 14, lineHeight: 19 }}>
+              <Text style={{ color: mine ? c.onAccent : c.text, fontSize: 14, lineHeight: 19 }}>
                 {decryptIfEncrypted(item.content, threadKey)}
               </Text>
             )}
             {item.type === 'file' && item.file_name ? (
-              <Text style={{ marginTop: 6, fontSize: 13, color: mine ? '#001018' : c.text }}>📎 {item.file_name}</Text>
+              <Text style={{ marginTop: 6, fontSize: 13, color: mine ? c.onAccent : c.text }}>📎 {item.file_name}</Text>
             ) : null}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginTop: 4 }}>
               <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: 10 }}>
@@ -403,7 +403,7 @@ export default function DMThreadScreen() {
       >
         {loading ? (
           <View style={{ paddingTop: 40, alignItems: 'center' }}>
-            <ActivityIndicator color={c.accent} />
+            <Loader compact />
           </View>
         ) : err && messages.length === 0 ? (
           <View style={{ padding: 20, alignItems: 'center' }}>
@@ -499,7 +499,7 @@ export default function DMThreadScreen() {
           disabled={sending || !(editing ? editText : text).trim()}
           style={[styles.sendBtn, { backgroundColor: c.accent, opacity: sending || !(editing ? editText : text).trim() ? 0.5 : 1 }]}
         >
-          <Text style={{ color: theme.dark ? '#000' : '#fff', fontWeight: '800', fontSize: 13 }}>
+          <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: 13 }}>
             {sending ? '…' : editing ? 'Save' : 'Send'}
           </Text>
         </TouchableOpacity>

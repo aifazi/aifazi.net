@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { Loader } from '@/src/components/Loader'
 
 interface Service {
   name: string
@@ -21,7 +22,25 @@ interface Service {
 interface StatusData {
   overall?: string
   services?: Service[]
-  incidents?: any[]
+  incidents?: Incident[]
+}
+
+interface Incident {
+  label?: string
+  ongoing?: boolean
+  start?: string
+  end?: string
+  duration_s?: number
+  resolved?: boolean
+  status?: string
+}
+
+function fmtDur(s?: number): string {
+  if (s == null || Number.isNaN(s)) return '—'
+  if (s < 60) return `${Math.floor(s)}s`
+  if (s < 3600) return `${Math.floor(s / 60)}m`
+  if (s < 86400) return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`
+  return `${Math.floor(s / 86400)}d ${Math.floor((s % 86400) / 3600)}h`
 }
 
 export default function StatusScreen() {
@@ -56,7 +75,7 @@ export default function StatusScreen() {
 
       {loading ? (
         <View style={{ paddingTop: 40, alignItems: 'center' }}>
-          <ActivityIndicator color={c.accent} />
+          <Loader compact />
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
@@ -85,9 +104,37 @@ export default function StatusScreen() {
             </View>
           ))}
 
-          {(data.incidents ?? []).length === 0 ? (
+          {(data.incidents ?? []).length > 0 ? (
+            <>
+              <Text style={{ color: c.muted, fontSize: 10, letterSpacing: 3, marginTop: 12, marginBottom: 10, fontWeight: '800' }}>
+                ⚠ RECENT INCIDENTS
+              </Text>
+              {(data.incidents ?? []).map((inc, i) => (
+                <View key={i} style={{ backgroundColor: c.bg2, borderWidth: 1, borderColor: c.border, borderRadius: 10, padding: 14, marginBottom: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                    <Text style={{ fontSize: 14 }}>{inc.ongoing ? '🔴' : '🟠'}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }}>
+                        {inc.label || 'Incident'}
+                        {inc.ongoing ? ' · ONGOING' : ''}
+                      </Text>
+                      {(inc.start || inc.end) ? (
+                        <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }}>
+                          {inc.start ? new Date(inc.start).toLocaleString() : ''}
+                          {inc.end && inc.end !== inc.start ? ` → ${new Date(inc.end).toLocaleTimeString()}` : ''}
+                        </Text>
+                      ) : null}
+                      {!inc.ongoing && inc.duration_s != null ? (
+                        <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }}>{fmtDur(inc.duration_s)} down</Text>
+                      ) : null}
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </>
+          ) : (
             <Muted style={{ marginTop: 10, textAlign: 'center' }}>No incidents reported.</Muted>
-          ) : null}
+          )}
         </ScrollView>
       )}
     </SafeAreaView>

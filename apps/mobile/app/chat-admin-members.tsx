@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
@@ -7,6 +7,7 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { useOverlay } from '@/src/components/overlay'
+import { Loader } from '@/src/components/Loader'
 
 interface Member {
   id: string
@@ -111,7 +112,7 @@ export default function ChatAdminMembersScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
+        <Loader />
       ) : (
         <FlatList
           data={members}
@@ -130,7 +131,7 @@ export default function ChatAdminMembersScreen() {
                     </Text>
                     <Text
                       style={{
-                        color: item.role === 'moderator' || item.role === 'admin' ? '#ffd700' : c.muted,
+                        color: item.role === 'moderator' || item.role === 'admin' ? c.star : c.muted,
                         fontSize: 11,
                         fontWeight: '700',
                       }}

@@ -31,11 +31,16 @@ export async function canRequestPackageInstalls(): Promise<boolean> {
   }
 }
 
-const RELEASE_API = 'https://api.aifazi.net/api/mobile/release/latest'
+const RELEASE_API =
+  `${process.env.EXPO_PUBLIC_API_URL ?? 'https://api.aifazi.net'}/api/mobile/release/latest`
+
+/** Pipeline state for the latest release, mirroring the backend `/status` contract. */
+export type ReleaseState = 'ready' | 'building' | 'none'
 
 export interface ReleaseInfo {
-  tag: string
-  version: string
+  tag?: string
+  version?: string
+  state?: ReleaseState
   apkUrl?: string
   apkSize?: number
   sha256?: string
@@ -46,6 +51,7 @@ export interface ReleaseInfo {
 interface BackendRelease {
   tag?: string
   version?: string
+  state?: ReleaseState
   apk_url?: string
   asset_size?: number
   sha256?: string
@@ -84,28 +90,41 @@ export function compareVersions(a: string, b: string): number {
   return 0
 }
 
+/**
+ * Fetch the latest release from the backend. Throws on network failure, backend
+ * errors, or timeout so callers can surface "could not check" instead of
+ * silently claiming the app is up to date. A release that exists but whose APK
+ * is still uploading comes back with `state: 'building'` (200), and no release
+ * at all comes back with `state: 'none'` — both are normal states, not errors.
+ */
 export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 10_000)
   try {
     const res = await fetch(RELEASE_API, {
       headers: {
         Accept: 'application/json',
         'User-Agent': 'aifazi-mobile',
       },
+      signal: controller.signal,
     })
-    if (!res.ok) return null
+    if (!res.ok) {
+      throw new Error(`Release endpoint replied ${res.status}`)
+    }
     const data = (await res.json()) as BackendRelease
-    if (!data.tag) return null
+    if (!data.tag || data.state === 'none') return null
     return {
       tag: data.tag,
       version: data.version || data.tag.replace(/^v/i, ''),
+      state: data.state ?? (data.apk_url ? 'ready' : 'building'),
       apkUrl: data.apk_url,
       apkSize: data.asset_size,
       sha256: data.sha256,
       publishedAt: data.published_at,
       notes: data.notes,
     }
-  } catch {
-    return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -113,6 +132,8 @@ export interface UpdateCheck {
   installed: string
   latest: string
   updateAvailable: boolean
+  /** Pipeline state of the fetched release: ready, building, or none. */
+  state?: ReleaseState
   release?: ReleaseInfo
 }
 
@@ -120,12 +141,14 @@ export async function checkForUpdate(): Promise<UpdateCheck> {
   const installed = getInstalledVersion()
   const release = await fetchLatestRelease()
   if (!release) {
-    return { installed, latest: installed, updateAvailable: false }
+    return { installed, latest: installed, updateAvailable: false, state: 'none' }
   }
+  const version = release.version || installed
   return {
     installed,
-    latest: release.version,
-    updateAvailable: compareVersions(release.version, installed) > 0,
+    latest: version,
+    updateAvailable: release.state === 'ready' && compareVersions(version, installed) > 0,
+    state: release.state,
     release,
   }
 }

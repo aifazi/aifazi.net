@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Image as ExpoImage } from 'expo-image'
@@ -7,6 +7,7 @@ import { Btn, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { useOverlay } from '@/src/components/overlay'
+import { Loader } from '@/src/components/Loader'
 
 interface CartItem {
   id: string
@@ -102,7 +103,7 @@ export default function StoreCartScreen() {
 
       {loading ? (
         <View style={{ paddingTop: 40, alignItems: 'center' }}>
-          <ActivityIndicator color={c.accent} />
+          <Loader compact />
         </View>
       ) : cart.items.length === 0 ? (
         <View style={{ padding: 30, alignItems: 'center', gap: 14 }}>

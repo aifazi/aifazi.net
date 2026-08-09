@@ -95,7 +95,7 @@ export default function NewThreadScreen() {
                     backgroundColor: active ? c.accent2 : 'transparent',
                   }}
                 >
-                  <Text style={{ color: active ? '#001018' : c.text, fontSize: 12, fontWeight: '700' }}>
+                  <Text style={{ color: active ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>
                     {x.icon ?? ''} {x.name}
                   </Text>
                 </TouchableOpacity>

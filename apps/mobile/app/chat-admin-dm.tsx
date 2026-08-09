@@ -1,12 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
+import { statusTone } from '@/src/lib/color'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { useOverlay } from '@/src/components/overlay'
+import { Loader } from '@/src/components/Loader'
 
 interface DMRequest {
   id: string
@@ -36,8 +38,6 @@ interface DMBlock {
 }
 
 type Tab = 'requests' | 'threads' | 'blocks'
-
-const STATUS_COLOR: Record<string, string> = { pending: '#facc15', accepted: '#22d3ee', rejected: '#ff6b35' }
 
 export default function ChatAdminDMScreen() {
   const { theme } = useTheme()
@@ -157,7 +157,7 @@ export default function ChatAdminDMScreen() {
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: tab === t.key ? '#001018' : c.text, fontWeight: '700', fontSize: 12 }} numberOfLines={1}>
+            <Text style={{ color: tab === t.key ? c.onAccent : c.text, fontWeight: '700', fontSize: 12 }} numberOfLines={1}>
               {t.label}
             </Text>
           </TouchableOpacity>
@@ -165,7 +165,7 @@ export default function ChatAdminDMScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
+        <Loader />
       ) : tab === 'requests' ? (
         <FlatList
           data={requests}
@@ -184,7 +184,7 @@ export default function ChatAdminDMScreen() {
                     {item.status.toUpperCase()} · {item.created_at ? new Date(item.created_at).toLocaleString() : ''}
                   </Muted>
                 </View>
-                <Text style={{ color: STATUS_COLOR[item.status] || c.muted, fontWeight: '800', fontSize: 11 }}>
+                <Text style={{ color: statusTone(item.status, c) ?? c.muted, fontWeight: '800', fontSize: 11 }}>
                   {item.status.toUpperCase()}
                 </Text>
               </View>

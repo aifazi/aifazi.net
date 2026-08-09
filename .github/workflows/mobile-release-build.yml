@@ -72,6 +72,30 @@ jobs:
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
+      - name: Set app version from release tag
+        working-directory: apps/mobile
+        env:
+          APP_VERSION: ${{ steps.tag.outputs.tag }}
+        run: |
+          # appVersionSource is "local", so the APK's versionName AND versionCode
+          # come from app.json. Stamp both from the release tag so:
+          #   1) the in-app updater's getInstalledVersion() reports the real
+          #      version (no more stuck "1.0.0"), and
+          #   2) versionCode increases monotonically per release (maj*1e6 +
+          #      min*1e3 + patch), which is what makes Android treat the APK as
+          #      an actual UPDATE instead of a no-op re-install.
+          node <<'EOF'
+          const fs = require('fs');
+          const v = process.env.APP_VERSION.replace(/^v/i, '').trim();
+          const [maj = 0, min = 0, pat = 0] = v.split('.').map(Number);
+          const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+          app.expo.version = v;
+          app.expo.android = app.expo.android || {};
+          app.expo.android.versionCode = maj * 1000000 + min * 1000 + pat;
+          fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+          console.log("version=" + v + " versionCode=" + app.expo.android.versionCode);
+          EOF
+
       - name: Start EAS Android build
         id: build
         working-directory: apps/mobile

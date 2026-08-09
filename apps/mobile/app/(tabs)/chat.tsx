@@ -1,14 +1,14 @@
 import { useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, SectionList, RefreshControl } from 'react-native'
-import { useRouter } from 'expo-router'
+import { View, Text, TouchableOpacity, FlatList, SectionList, RefreshControl } from 'react-native'
+import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
-import { useFocusEffect } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted, Btn } from '@/src/components/ui'
 import { Avatar } from '@/src/components/Avatar'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { Loader } from '@/src/components/Loader'
 
 interface Room {
   id: string
@@ -132,7 +132,7 @@ export default function ChatScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
+        <Loader />
       ) : (
         <SectionList
           refreshControl={
@@ -175,7 +175,7 @@ export default function ChatScreen() {
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ color: theme.dark ? '#000' : '#fff', fontSize: 11, fontWeight: '800' }}>
+                        <Text style={{ color: c.onAccent, fontSize: 11, fontWeight: '800' }}>
                           {item.unread}
                         </Text>
                       </View>

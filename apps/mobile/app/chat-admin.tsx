@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -7,6 +7,7 @@ import { Card, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
+import { Loader } from '@/src/components/Loader'
 
 interface Stats {
   rooms?: { total?: number; text?: number; voice?: number; video?: number }
@@ -101,7 +102,7 @@ export default function ChatAdminScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
+        <Loader />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 40 }}>
           {err ? <Muted style={{ marginBottom: 10 }}>{err}</Muted> : null}
@@ -109,12 +110,12 @@ export default function ChatAdminScreen() {
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
             <Stat label="Rooms" value={stats?.rooms?.total ?? 0} color={c.accent} />
             <Stat label="Members" value={stats?.members ?? 0} color={c.text} />
-            <Stat label="Messages" value={stats?.messages ?? 0} color="#facc15" />
+            <Stat label="Messages" value={stats?.messages ?? 0} color={c.star} />
           </View>
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-            <Stat label="Mutes" value={stats?.mutes ?? 0} color="#ff6b35" />
-            <Stat label="Bans" value={stats?.bans ?? 0} color="#ff4757" />
-            <Stat label="DM" value={stats?.dm?.threads ?? 0} color="#22d3ee" />
+            <Stat label="Mutes" value={stats?.mutes ?? 0} color={c.sale} />
+            <Stat label="Bans" value={stats?.bans ?? 0} color={c.danger} />
+            <Stat label="DM" value={stats?.dm?.threads ?? 0} color={c.link} />
           </View>
           {stats?.dm?.pending ? (
             <Muted style={{ marginBottom: 12 }}>⏳ {stats.dm.pending} pending DM request{stats.dm.pending === 1 ? '' : 's'}.</Muted>

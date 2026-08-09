@@ -317,7 +317,7 @@ export default function CallScreen() {
                             {m.sender}
                           </Text>
                         ) : null}
-                        <Text style={{ color: mine ? '#001018' : c.text, fontSize: 13, lineHeight: 18 }}>
+                        <Text style={{ color: mine ? c.onAccent : c.text, fontSize: 13, lineHeight: 18 }}>
                           {body || (m.content?.startsWith('ENC:') ? '(encrypted)' : m.content)}
                         </Text>
                         <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: 9, marginTop: 2 }}>
@@ -346,7 +346,7 @@ export default function CallScreen() {
                 disabled={chatSending || !chatText.trim()}
                 style={[styles.chatSend, { backgroundColor: c.accent, opacity: chatSending || !chatText.trim() ? 0.5 : 1 }]}
               >
-                <Text style={{ color: theme.dark ? '#000' : '#fff', fontWeight: '800', fontSize: 12 }}>
+                <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: 12 }}>
                   {chatSending ? '…' : 'Send'}
                 </Text>
               </TouchableOpacity>

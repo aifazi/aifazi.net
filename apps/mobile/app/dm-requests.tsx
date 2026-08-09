@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -7,6 +7,7 @@ import { Card, Muted, Btn } from '@/src/components/ui'
 import { Avatar } from '@/src/components/Avatar'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { Loader } from '@/src/components/Loader'
 
 interface Req {
   id: string
@@ -94,7 +95,7 @@ export default function DMRequestsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={c.accent} style={{ marginTop: 40 }} />
+        <Loader />
       ) : (
         <FlatList
           data={requests}

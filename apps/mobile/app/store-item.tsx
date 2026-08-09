@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -8,6 +8,7 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { useOverlay } from '@/src/components/overlay'
+import { Loader } from '@/src/components/Loader'
 
 interface Variant {
   id: string
@@ -81,7 +82,7 @@ export default function StoreItemScreen() {
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={c.accent} />
+        <Loader compact />
       </SafeAreaView>
     )
   }
@@ -180,7 +181,7 @@ export default function StoreItemScreen() {
                   opacity: v.in_stock ? 1 : 0.4,
                 }}
               >
-                <Text style={{ color: variant === v.id ? '#001018' : c.text, fontSize: 13, fontWeight: '700' }}>
+                <Text style={{ color: variant === v.id ? c.onAccent : c.text, fontSize: 13, fontWeight: '700' }}>
                   {v.name} · ${(v.price_cents / 100).toFixed(2)}
                 </Text>
               </TouchableOpacity>

@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 15.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -20,11 +20,9 @@
       "channel": "preview"
     },
     "production": {
-      "autoIncrement": true,
       "channel": "production"
     },
     "production-apk": {
-      "autoIncrement": true,
       "channel": "production",
       "android": {
         "buildType": "apk"

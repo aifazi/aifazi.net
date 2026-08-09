@@ -16,10 +16,10 @@ export function streamUrl(tracks: any[]): string | null {
   }
 }
 
-export async function listDevices(): Promise<Array<{ kind: string; deviceId: string; label?: string }>> {
+export async function listDevices(): Promise<{ kind: string; deviceId: string; label?: string }[]> {
   try {
-    const list: Array<{ kind: string; deviceId: string; label?: string }> =
-      (await mediaDevices.enumerateDevices()) as Array<{ kind: string; deviceId: string; label?: string }>
+    const list: { kind: string; deviceId: string; label?: string }[] =
+      (await mediaDevices.enumerateDevices()) as { kind: string; deviceId: string; label?: string }[]
     return list
   } catch {
     return []

@@ -557,7 +557,7 @@ export default function ChatRoomScreen() {
                           ) : (
                             <MarkdownText
                               content={body || item.content}
-                              color={mine ? '#001018' : c.text}
+                              color={mine ? c.onAccent : c.text}
                               onLink={openLink}
                             />
                           )}
@@ -567,7 +567,7 @@ export default function ChatRoomScreen() {
                               style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}
                             >
                               <Text style={{ fontSize: 15 }}>📎</Text>
-                              <Text style={{ color: mine ? '#001018' : c.text, fontSize: 13, fontWeight: '600' }}>
+                              <Text style={{ color: mine ? c.onAccent : c.text, fontSize: 13, fontWeight: '600' }}>
                                 {item.file_name} {item.file_size ? `(${fmtSize(item.file_size)})` : ''}
                               </Text>
                             </TouchableOpacity>
@@ -743,7 +743,7 @@ export default function ChatRoomScreen() {
             },
           ]}
         >
-          <Text style={{ color: theme.dark ? '#000' : '#fff', fontWeight: '800', fontSize: 13 }}>
+          <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: 13 }}>
             {sending ? '…' : editing ? 'Save' : 'Send'}
           </Text>
         </TouchableOpacity>

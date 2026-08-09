@@ -8,9 +8,11 @@
 //   loading(true, 'text'); loading(false)
 //   toast('message', 'success' | 'error' | 'info')
 
-import { createContext, useCallback, useContext, useRef, useState, ReactNode } from 'react'
+import { createContext, useContext, useRef, useState, ReactNode } from 'react'
 import { Modal, View, Text, ScrollView, TouchableOpacity, StyleSheet, Pressable, ActivityIndicator } from 'react-native'
 import { useTheme } from '@/src/theme'
+import { withAlpha } from '@/src/lib/color'
+import { CODE_FONT, micro, tagLabel } from '@/src/design'
 
 export interface MenuOption {
   value: string
@@ -76,7 +78,7 @@ export function useOverlay(): OverlayApi {
 export function OverlayProvider({ children }: { children: ReactNode }) {
   const { theme } = useTheme()
   const c = theme.colors
-  const mono = theme.mono
+  const radius = theme.radius
 
   const [alertState, setAlert] = useState<AlertState | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
@@ -149,14 +151,14 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
           {toasts.map((t) => {
             const color = t.kind === 'error' ? c.danger : t.kind === 'success' ? c.accent : c.accent2
             return (
-              <View
-                key={t.key}
-                style={[styles.toast, { backgroundColor: c.bg2, borderColor: color, borderRadius: mono ? 0 : 10 }]}
-              >
+              <View key={t.key} style={[styles.toast, { backgroundColor: c.bg2, borderColor: color, borderRadius: radius }]}>
                 <View style={[styles.toastDot, { backgroundColor: color }]} />
-                <Text style={{ color: c.text, fontSize: 13, flex: 1, fontFamily: mono ? 'monospace' : undefined }}>
-                  {t.message}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[tagLabel(8.5, 2.5), { color, marginBottom: 2 }]}>
+                    {t.kind === 'error' ? 'ERROR' : t.kind === 'success' ? 'SUCCESS' : 'SYSTEM'}
+                  </Text>
+                  <Text style={[styles.toastMsg, { color: c.text, fontFamily: CODE_FONT }]}>{t.message}</Text>
+                </View>
               </View>
             )
           })}
@@ -168,14 +170,14 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
         <Modal transparent visible animationType="fade" statusBarTranslucent onRequestClose={dismissAlert}>
           <View style={styles.backdrop}>
             <Pressable style={StyleSheet.absoluteFill} onPress={dismissAlert} />
-            <View style={[styles.card, { backgroundColor: c.bg2, borderColor: c.border, borderRadius: mono ? 0 : 14 }]}>
-              {mono ? <View style={[styles.accentBar, { backgroundColor: c.accent }]} /> : null}
-              <Text style={[styles.message, { color: c.text, fontFamily: mono ? 'monospace' : undefined }]}>{alertState.message}</Text>
+            <View style={[styles.card, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.3), borderRadius: radius }]}>
+              <View style={[styles.accentBar, { backgroundColor: c.accent }]} />
+              <Text style={[styles.message, { color: c.text2, fontFamily: CODE_FONT, lineHeight: 22 }]}>{alertState.message}</Text>
               <TouchableOpacity
                 onPress={dismissAlert}
-                style={[styles.primaryBtn, { borderColor: c.accent, borderRadius: mono ? 0 : 8, backgroundColor: `${c.accent}12` }]}
+                style={[styles.primaryBtn, { borderColor: c.accent, borderRadius: theme.buttonRadius, backgroundColor: `${c.accent}14` }]}
               >
-                <Text style={{ color: c.accent, fontWeight: '800', fontFamily: mono ? 'monospace' : undefined }}>{alertState.okText}</Text>
+                <Text style={[micro(11, 2, '800'), { color: c.accent }]}>{alertState.okText.toUpperCase()}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -187,16 +189,18 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
         <Modal transparent visible animationType="fade" statusBarTranslucent onRequestClose={() => dismissConfirm(false)}>
           <View style={styles.backdrop}>
             <Pressable style={StyleSheet.absoluteFill} onPress={() => dismissConfirm(false)} />
-            <View style={[styles.card, { backgroundColor: c.bg2, borderColor: c.border, borderRadius: mono ? 0 : 14 }]}>
-              {mono ? <View style={[styles.accentBar, { backgroundColor: confirm.destructive ? c.danger : c.accent }]} /> : null}
-              <Text style={[styles.title, { color: c.text, fontFamily: mono ? 'monospace' : undefined }]}>{confirm.title}</Text>
-              <Text style={[styles.message, { color: c.text2, fontFamily: mono ? 'monospace' : undefined }]}>{confirm.message}</Text>
+            <View style={[styles.card, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.3), borderRadius: radius }]}>
+              <View style={[styles.accentBar, { backgroundColor: confirm.destructive ? withAlpha(c.danger, 0.8) : c.accent }]} />
+              <Text style={[micro(12, 2, '800'), { color: confirm.destructive ? c.danger : c.accent2, marginBottom: 8 }]}>
+                {confirm.title.toUpperCase()}
+              </Text>
+              <Text style={[styles.message, { color: c.text2, fontFamily: CODE_FONT, lineHeight: 22 }]}>{confirm.message}</Text>
               <View style={styles.btnRow}>
                 <TouchableOpacity
                   onPress={() => dismissConfirm(false)}
-                  style={[styles.ghostBtn, { borderColor: c.border, borderRadius: mono ? 0 : 8 }]}
+                  style={[styles.ghostBtn, { borderColor: c.border, borderRadius: theme.buttonRadius }]}
                 >
-                  <Text style={{ color: c.muted, fontWeight: '700', fontFamily: mono ? 'monospace' : undefined }}>{confirm.cancelText}</Text>
+                  <Text style={[micro(11, 2, '700'), { color: c.muted }]}>{confirm.cancelText.toUpperCase()}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => dismissConfirm(true)}
@@ -204,13 +208,13 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
                     styles.primaryBtn,
                     {
                       borderColor: confirm.destructive ? c.danger : c.accent,
-                      borderRadius: mono ? 0 : 8,
-                      backgroundColor: confirm.destructive ? `${c.danger}12` : `${c.accent}12`,
+                      borderRadius: theme.buttonRadius,
+                      backgroundColor: confirm.destructive ? `${c.danger}14` : `${c.accent}14`,
                     },
                   ]}
                 >
-                  <Text style={{ color: confirm.destructive ? c.danger : c.accent, fontWeight: '800', fontFamily: mono ? 'monospace' : undefined }}>
-                    {confirm.confirmText}
+                  <Text style={[micro(11, 2, '800'), { color: confirm.destructive ? c.danger : c.accent }]}>
+                    {confirm.confirmText.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -224,29 +228,29 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
         <Modal transparent visible animationType="slide" statusBarTranslucent onRequestClose={() => dismissSheet(null)}>
           <View style={styles.backdropJustify}>
             <Pressable style={StyleSheet.absoluteFill} onPress={() => dismissSheet(null)} />
-            <View style={[styles.sheetCard, { backgroundColor: c.bg2, borderColor: c.border }]}>
-              {mono ? <View style={[styles.accentBar, { backgroundColor: c.accent }]} /> : null}
+            <View style={[styles.sheetCard, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.25), borderTopLeftRadius: radius, borderTopRightRadius: radius }]}>
+              <View style={[styles.accentBar, { backgroundColor: c.accent }]} />
               {sheet.title ? (
-                <Text style={[styles.sheetTitle, { color: c.muted, fontFamily: mono ? 'monospace' : undefined }]}>{sheet.title}</Text>
+                <Text style={[micro(11, 3, '700'), { color: c.accent2, paddingHorizontal: 20, paddingBottom: 8 }]}>
+                  {sheet.title.toUpperCase()}
+                </Text>
               ) : null}
               <ScrollView bounces={false} style={{ maxHeight: 380 }}>
                 {sheet.options.map((o) => (
                   <TouchableOpacity
                     key={o.value}
                     onPress={() => dismissSheet(o.value)}
-                    style={[styles.sheetRow, { borderBottomColor: c.border }]}
+                    style={[styles.sheetRow, { borderBottomColor: c.divider }]}
                   >
                     {o.icon ? <Text style={[styles.sheetIcon, { color: o.color || c.text }]}>{o.icon}</Text> : null}
-                    <Text style={{ color: o.destructive ? c.danger : o.color || c.text, fontSize: 15, fontWeight: '600', fontFamily: mono ? 'monospace' : undefined }}>
+                    <Text style={{ color: o.destructive ? c.danger : o.color || c.text, fontSize: 15, fontWeight: '600', fontFamily: CODE_FONT }}>
                       {o.label}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
               <TouchableOpacity onPress={() => dismissSheet(null)} style={[styles.sheetRow, styles.sheetCancel]}>
-                <Text style={{ color: c.muted, fontSize: 14, fontWeight: '700', textAlign: 'center', width: '100%', fontFamily: mono ? 'monospace' : undefined }}>
-                  Cancel
-                </Text>
+                <Text style={[micro(11, 2, '700'), { color: c.muted, textAlign: 'center', width: '100%' }]}>CANCEL</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -257,10 +261,10 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
       {loading && (
         <Modal transparent visible animationType="fade" statusBarTranslucent>
           <View style={styles.backdrop}>
-            <View style={[styles.card, { backgroundColor: c.bg2, borderColor: c.border, borderRadius: mono ? 0 : 14, alignItems: 'center', minWidth: 160 }]}>
+            <View style={[styles.card, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.3), borderRadius: radius, alignItems: 'center', minWidth: 160 }]}>
               <ActivityIndicator color={c.accent} size="large" />
               {loading.text ? (
-                <Text style={{ color: c.muted, fontSize: 12, marginTop: 12, fontFamily: mono ? 'monospace' : undefined }}>{loading.text}</Text>
+                <Text style={[micro(10, 2.5, '700'), { color: c.muted, marginTop: 14 }]}>{loading.text.toUpperCase()}</Text>
               ) : null}
             </View>
           </View>
@@ -273,46 +277,43 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
   backdropJustify: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   card: {
     width: '100%',
-    maxWidth: 360,
-    padding: 20,
+    maxWidth: 368,
+    padding: 22,
     borderWidth: 1,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '800',
-    marginBottom: 6,
+    overflow: 'hidden',
   },
   message: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 20,
   },
   btnRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 18,
+    marginTop: 4,
     gap: 8,
   },
   primaryBtn: {
     paddingVertical: 11,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     alignItems: 'center',
     borderWidth: 1,
   },
   ghostBtn: {
     paddingVertical: 11,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     alignItems: 'center',
     borderWidth: 1,
   },
@@ -328,17 +329,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderBottomWidth: 0,
     paddingBottom: 10,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingTop: 10,
-  },
-  sheetTitle: {
-    fontSize: 11,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    fontWeight: '700',
-    paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingTop: 14,
   },
   sheetRow: {
     paddingVertical: 15,
@@ -376,8 +367,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 8,
-    minWidth: 200,
+    minWidth: 220,
     maxWidth: '100%',
+    backgroundColor: 'transparent',
     shadowColor: '#000',
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -387,6 +379,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 10,
+    marginRight: 12,
+  },
+  toastMsg: {
+    fontSize: 13,
+    lineHeight: 17,
   },
 })
