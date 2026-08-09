@@ -12,6 +12,7 @@ on:
       - main
     paths:
       - "apps/mobile/**"
+  workflow_dispatch:
 
 concurrency:
   group: mobile-auto-release
