@@ -75,6 +75,16 @@
           "cameraPermission": "aifazi uses the camera so you can share photos in chat.",
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "abiFilters": ["arm64-v8a", "armeabi-v7a"]
+          }
+        }
       ]
     ],
     "experiments": {

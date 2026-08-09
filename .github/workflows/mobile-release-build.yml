@@ -89,20 +89,12 @@ jobs:
           echo "Committed and pushed app.json version bump to main"
 
   build-android:
-    name: Build Android (${{ matrix.ext }}) and attach to release
+    name: Build Android APK and attach to release
     needs: set-version
     runs-on: ubuntu-latest
     timeout-minutes: 120
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - profile: production
-            ext: aab
-          - profile: production-apk
-            ext: apk
     steps:
       - name: Check for EXPO_TOKEN
         run: |
@@ -175,7 +167,7 @@ jobs:
         id: build
         working-directory: apps/mobile
         run: |
-          eas build --platform android --profile ${{ matrix.profile }} --non-interactive --json > build-output.json
+          eas build --platform android --profile production-apk --non-interactive --json > build-output.json
           cat build-output.json
           echo "build_id=$(jq -r '.[0].id // .id' build-output.json)" >> "$GITHUB_OUTPUT"
 
@@ -212,11 +204,11 @@ jobs:
             exit 1
           fi
           echo "Downloading from: $URL"
-          curl -fL -H "Authorization: Bearer $EXPO_TOKEN" "$URL" -o aifazi-${{ steps.tag.outputs.tag }}.${{ matrix.ext }}
-          ls -la aifazi-${{ steps.tag.outputs.tag }}.${{ matrix.ext }}
+          curl -fL -H "Authorization: Bearer $EXPO_TOKEN" "$URL" -o aifazi-${{ steps.tag.outputs.tag }}.apk
+          ls -la aifazi-${{ steps.tag.outputs.tag }}.apk
 
       - name: Upload artifact to release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "${{ steps.tag.outputs.tag }}" apps/mobile/aifazi-${{ steps.tag.outputs.tag }}.${{ matrix.ext }} --clobber
+          gh release upload "${{ steps.tag.outputs.tag }}" apps/mobile/aifazi-${{ steps.tag.outputs.tag }}.apk --clobber
