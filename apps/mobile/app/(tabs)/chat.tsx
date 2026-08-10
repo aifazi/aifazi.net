@@ -26,9 +26,19 @@ interface DMThread {
   peer: string
   peer_avatar?: string
   peer_role?: string
+  peer_last_seen?: string
   last_message?: string
   last_message_at?: string
   unread?: number
+}
+
+/** Online if the peer's last_seen is within 5 minutes. */
+function isOnline(dm: DMThread): boolean {
+  const ts = dm.peer_last_seen
+  if (!ts) return false
+  const seen = new Date(ts).getTime()
+  if (Number.isNaN(seen)) return false
+  return Date.now() - seen < 5 * 60 * 1000
 }
 
 function roomIcon(type: string) {
@@ -129,6 +139,10 @@ export default function ChatScreen() {
   useFocusEffect(
     useCallback(() => {
       load()
+      // Keep DM presence/unread fresh while this screen is in view (matches the
+      // 4s message poll in dm-thread; the list is lighter so 15s is plenty).
+      const timer = setInterval(() => load(), 15_000)
+      return () => clearInterval(timer)
     }, [load]),
   )
 
@@ -218,11 +232,33 @@ export default function ChatScreen() {
               renderItem: ({ item }: { item: DMThread }) => (
                 <Card>
                   <TouchableOpacity onPress={() => openDm(item)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Avatar name={item.peer} avatar={item.peer_avatar} size={30} />
+                    <View>
+                      <Avatar name={item.peer} avatar={item.peer_avatar} size={30} />
+                      <View
+                        style={{
+                          position: 'absolute',
+                          bottom: -1,
+                          right: -1,
+                          width: 11,
+                          height: 11,
+                          borderRadius: 6,
+                          borderWidth: 2,
+                          borderColor: c.bg2,
+                          backgroundColor: isOnline(item) ? c.success : c.muted,
+                        }}
+                      />
+                    </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
-                        {item.peer}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+                          {item.peer}
+                        </Text>
+                        {isOnline(item) ? (
+                          <Text style={{ color: c.success, fontSize: 9, fontWeight: '700', textTransform: 'uppercase' }}>
+                            online
+                          </Text>
+                        ) : null}
+                      </View>
                       {item.last_message ? <Muted numberOfLines={1}>{item.last_message}</Muted> : null}
                     </View>
                     {item.unread ? (

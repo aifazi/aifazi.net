@@ -23,6 +23,7 @@ import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
 import { useMessageActions, useSwipeToReply } from '@/src/lib/chat-actions'
 import { useOverlay } from '@/src/components/overlay'
 import { Loader } from '@/src/components/Loader'
+import { VoiceRecorder, VoiceNotePlay } from '@/src/components/VoiceNote'
 
 interface DMMessage {
   id: string
@@ -32,13 +33,21 @@ interface DMMessage {
   content?: string
   file_name?: string
   file_size?: string
+  duration?: string
   reply_to?: { id: string; sender: string; content: string } | null
   reactions?: Record<string, string[]>
   created_at?: string
   edited?: boolean
 }
 
+interface DMThreadPayload {
+  messages: DMMessage[]
+  read_state?: Record<string, string>
+  peer?: string
+}
+
 const POLL_MS = 4000
+const PAGE_SIZE = 50
 
 function fmtTime(iso?: string) {
   if (!iso) return ''
@@ -56,6 +65,7 @@ interface RowProps {
   item: DMMessage
   threadKey: string
   isImage: boolean
+  isVoice: boolean
   replyContent: string
   reactions: [string, string[]][]
   onReply: () => void
@@ -67,7 +77,7 @@ interface RowProps {
 }
 
 function MessageRow(props: RowProps) {
-  const { mine, c, theme, item, threadKey, isImage, replyContent, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress } = props
+  const { mine, c, theme, item, threadKey, isImage, isVoice, replyContent, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress } = props
   const { pan, panHandlers } = useSwipeToReply({ onReply })
 
   return (
@@ -100,6 +110,8 @@ function MessageRow(props: RowProps) {
                 contentFit="cover"
                 transition={150}
               />
+            ) : isVoice ? (
+              <VoiceNotePlay uri={item.content} duration={item.duration} color={mine ? c.onAccent : c.accent2} />
             ) : (
               <Text style={{ color: mine ? c.onAccent : c.text, fontSize: 14, lineHeight: 19 }}>
                 {decryptIfEncrypted(item.content, threadKey)}
@@ -175,6 +187,7 @@ export default function DMThreadScreen() {
 
   const [messages, setMessages] = useState<DMMessage[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingOlder, setLoadingOlder] = useState(false)
   const [err, setErr] = useState('')
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
@@ -183,9 +196,13 @@ export default function DMThreadScreen() {
   const [editing, setEditing] = useState<DMMessage | null>(null)
   const [editText, setEditText] = useState('')
   const [replying, setReplying] = useState<DMMessage | null>(null)
+  const [peerLastRead, setPeerLastRead] = useState('')
+  const [typing, setTyping] = useState<string[]>([])
   const listRef = useRef<FlatList<DMMessage>>(null)
   const stick = useRef(true)
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isTyping = useRef(false)
 
   useEffect(() => {
     if (!thread_id) return
@@ -200,7 +217,10 @@ export default function DMThreadScreen() {
       if (!thread_id) return
       try {
         const r = await api.get(`/chat/dm/threads/${thread_id}/messages`, { params: { limit: 100 } })
-        setMessages((r.data ?? []) as DMMessage[])
+        const payload = (r.data ?? {}) as DMThreadPayload
+        const rows = Array.isArray(payload) ? (payload as unknown as DMMessage[]) : payload.messages
+        setMessages(rows)
+        setPeerLastRead(payload.read_state?.[payload.peer ?? ''] ?? '')
         setErr('')
       } catch (e: any) {
         if (!silent) setErr(e?.response?.data?.detail || 'Could not load messages')
@@ -211,13 +231,40 @@ export default function DMThreadScreen() {
     [thread_id],
   )
 
+  /** Load older messages (pagination) prepended above the current first one. */
+  const loadOlder = useCallback(async () => {
+    if (!thread_id || messages.length === 0 || loadingOlder) return
+    const before = messages[0].created_at
+    if (!before) return
+    setLoadingOlder(true)
+    try {
+      const r = await api.get(`/chat/dm/threads/${thread_id}/messages`, { params: { limit: PAGE_SIZE, before } })
+      const payload = (r.data ?? {}) as DMThreadPayload
+      const older = Array.isArray(payload) ? (payload as unknown as DMMessage[]) : payload.messages
+      if (older.length > 0) setMessages((prev) => [...older, ...prev])
+    } catch {
+      /* keep current history on error */
+    } finally {
+      setLoadingOlder(false)
+    }
+  }, [thread_id, messages, loadingOlder])
+
   useEffect(() => {
     load()
     pollTimer.current = setInterval(() => load(true), POLL_MS)
+    const pollTyping = () => {
+      api
+        .get(`/chat/dm/threads/${thread_id}/typing`)
+        .then((r) => setTyping((r.data ?? []) as string[]))
+        .catch(() => {})
+    }
+    pollTyping()
+    const typingTimer = setInterval(pollTyping, 3000)
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         if (!pollTimer.current) pollTimer.current = setInterval(() => load(true), POLL_MS)
         load(true)
+        pollTyping()
       } else if (pollTimer.current) {
         clearInterval(pollTimer.current)
         pollTimer.current = null
@@ -225,9 +272,10 @@ export default function DMThreadScreen() {
     })
     return () => {
       if (pollTimer.current) clearInterval(pollTimer.current)
+      clearInterval(typingTimer)
       sub.remove()
     }
-  }, [load])
+  }, [load, thread_id])
 
   const send = async () => {
     const content = text.trim()
@@ -246,6 +294,54 @@ export default function DMThreadScreen() {
       setErr(e?.response?.data?.detail || 'Failed to send')
     } finally {
       setSending(false)
+    }
+  }
+
+  /** Heartbeat to the server that we're typing (throttled to ~2s). */
+  const heartbeatTyping = useCallback(() => {
+    if (!thread_id || isTyping.current) return
+    isTyping.current = true
+    api.post(`/chat/dm/threads/${thread_id}/typing`).catch(() => {})
+    if (typingTimer.current) clearTimeout(typingTimer.current)
+    typingTimer.current = setTimeout(() => {
+      isTyping.current = false
+    }, 2500)
+  }, [thread_id])
+
+  const onTextChange = (t: string) => {
+    if (editing) setEditText(t)
+    else setText(t)
+    heartbeatTyping()
+  }
+
+  const uploadVoice = async (uri: string, durSec: number) => {
+    if (!thread_id) return
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', {
+        uri,
+        name: 'voice.m4a',
+        type: 'audio/mp4',
+      } as any)
+      const up = await api.post(`/upload/chat?thread_id=${thread_id}`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 30000,
+      })
+      const url = (up.data?.url ?? '') as string
+      if (!url) throw new Error('Upload returned no URL')
+      await api.post(`/chat/dm/threads/${thread_id}/messages`, {
+        content: url,
+        type: 'voice',
+        file_name: 'voice.m4a',
+        file_size: String(up.data?.size ?? 0),
+        duration: String(Math.max(1, Math.round(durSec))),
+      })
+      await load(true)
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || e?.message || 'Failed to send voice note')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -426,6 +522,17 @@ export default function DMThreadScreen() {
               stick.current = contentSize.height - (contentOffset.y + layoutMeasurement.height) < 80
             }}
             scrollEventThrottle={100}
+            ListHeaderComponent={
+              loadingOlder ? (
+                <View style={{ paddingVertical: 10, alignItems: 'center' }}>
+                  <Loader compact />
+                </View>
+              ) : messages.length >= PAGE_SIZE ? (
+                <TouchableOpacity onPress={loadOlder} style={{ paddingVertical: 10, alignItems: 'center' }}>
+                  <Text style={{ color: c.accent, fontWeight: '700', fontSize: 12 }}>↑ Load older</Text>
+                </TouchableOpacity>
+              ) : null
+            }
             ListEmptyComponent={
               <Text style={{ color: c.muted, textAlign: 'center', marginTop: 40, fontSize: 13 }}>
                 No messages yet. Say hi!
@@ -434,27 +541,38 @@ export default function DMThreadScreen() {
             renderItem={({ item }) => {
               const mine = isMine(item)
               const isImage = item.type === 'image'
+              const isVoice = item.type === 'voice'
               const reactions = item.reactions ?? {}
               const reactionEntries = Object.entries(reactions)
               let replyContent = ''
               if (item.reply_to?.content) replyContent = item.reply_to.content
+              // Read receipt: mark my last message as seen when the peer read it.
+              const seen = mine && item.created_at && peerLastRead && item.created_at <= peerLastRead
               return (
-                <MessageRow
-                  mine={mine}
-                  c={c}
-                  theme={theme}
-                  item={item}
-                  threadKey={threadKey}
-                  isImage={isImage}
-                  replyContent={replyContent}
-                  reactions={reactionEntries}
-                  onReply={() => setReplying(item)}
-                  onReact={() => showEmojiPicker((emoji) => toggleReact(item.id, emoji))}
-                  onEdit={() => startEdit(item)}
-                  onDelete={() => confirmDelete(item.id)}
-                  onToggleReact={(emoji) => toggleReact(item.id, emoji)}
-                  onLongPress={() => onLongPress(item)}
-                />
+                <>
+                  <MessageRow
+                    mine={mine}
+                    c={c}
+                    theme={theme}
+                    item={item}
+                    threadKey={threadKey}
+                    isImage={isImage}
+                    isVoice={isVoice}
+                    replyContent={replyContent}
+                    reactions={reactionEntries}
+                    onReply={() => setReplying(item)}
+                    onReact={() => showEmojiPicker((emoji) => toggleReact(item.id, emoji))}
+                    onEdit={() => startEdit(item)}
+                    onDelete={() => confirmDelete(item.id)}
+                    onToggleReact={(emoji) => toggleReact(item.id, emoji)}
+                    onLongPress={() => onLongPress(item)}
+                  />
+                  {seen ? (
+                    <View style={{ alignItems: 'flex-end', marginTop: -4, marginBottom: 4 }}>
+                      <Text style={{ color: c.muted, fontSize: 10 }}>✓ seen</Text>
+                    </View>
+                  ) : null}
+                </>
               )
             }}
           />
@@ -462,6 +580,14 @@ export default function DMThreadScreen() {
       </KeyboardAvoidingView>
 
       <View style={[styles.inputBar, { borderTopColor: c.border, backgroundColor: c.bg2 }]}>
+        {typing.length > 0 ? (
+          <View style={{ position: 'absolute', top: -26, left: 0, right: 0, alignItems: 'center' }}>
+            <Text style={{ color: c.muted, fontSize: 11, fontStyle: 'italic' }}>
+              {typing[0]}
+              {typing.length > 1 ? ` +${typing.length - 1} others` : ''} typing…
+            </Text>
+          </View>
+        ) : null}
         {(editing || replying) ? (
           <View style={{ position: 'absolute', top: -42, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.bg3, borderTopWidth: 1, borderTopColor: c.border }}>
             <Text style={{ flex: 1, color: c.muted, fontSize: 11, fontStyle: 'italic' }} numberOfLines={1}>
@@ -478,9 +604,10 @@ export default function DMThreadScreen() {
         <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: 2 }}>
           <Text style={{ fontSize: 18, opacity: uploading ? 0.4 : 1 }}>📎</Text>
         </TouchableOpacity>
+        <VoiceRecorder onRecorded={uploadVoice} onError={(m) => setErr(m)} />
         <TextInput
           value={editing ? editText : text}
-          onChangeText={editing ? setEditText : setText}
+          onChangeText={onTextChange}
           placeholder={editing ? 'Edit message…' : 'Type a message…'}
           placeholderTextColor={c.muted}
           multiline

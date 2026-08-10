@@ -106,13 +106,20 @@ export async function loginWithOAuth(provider: OAuthProvider): Promise<OAuthResu
     WebBrowser.openAuthSessionAsync(url, OAUTH_REDIRECT_BASE)
       .then((res: WebBrowser.WebBrowserAuthSessionResult) => {
         if (!pending) return // already completed via deep link
-        pending = null
-        if (res.type !== 'success' || !res.url) {
-          // User closed the browser / declined — treat as an intentional cancel.
-          resolve({ ok: false, cancelled: true })
+        if (res.type === 'success' && res.url) {
+          pending = null
+          resolve(parseOAuthRedirect(res.url, provider) ?? { ok: false, cancelled: false, error: 'invalid_redirect' })
           return
         }
-        resolve(parseOAuthRedirect(res.url, provider) ?? { ok: false, cancelled: false, error: 'invalid_redirect' })
+        // Browser closed without returning a URL. On Android the backend
+        // redirect is often delivered as an app deep link while the browser
+        // promise itself resolves to dismiss/cancel — so keep `pending` alive
+        // for a short grace window to let the callback route re-inject the URL.
+        setTimeout(() => {
+          if (!pending) return // completed via deep link during the grace period
+          pending = null
+          resolve({ ok: false, cancelled: true })
+        }, 2000)
       })
       .catch(() => {
         if (!pending) return

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from 'react'
 import * as SecureStore from 'expo-secure-store'
 import { AppState, useColorScheme } from 'react-native'
-import { THEMES, THEME_IDS, Theme, ThemeId, webThemeToMobile } from './themes'
+import { THEMES, THEME_IDS, Theme, ThemeId, webThemeToMobile, toggleTheme as toggleThemeId, themeFamily } from './themes'
 import { getSiteConfig, SiteConfig } from './lib/siteConfig'
 
 export type ThemeSource = 'locked' | 'user' | 'os' | 'global' | 'default'
@@ -10,6 +10,7 @@ interface ThemeCtx {
   theme: Theme
   setTheme: (id: ThemeId) => void
   cycleTheme: () => void
+  toggleTheme: () => void
   source: ThemeSource
   isLocked: boolean
   globalThemeId: ThemeId | null
@@ -21,6 +22,7 @@ const Ctx = createContext<ThemeCtx>({
   theme: THEMES['cyber-dark'],
   setTheme: () => {},
   cycleTheme: () => {},
+  toggleTheme: () => {},
   source: 'default',
   isLocked: false,
   globalThemeId: null,
@@ -109,6 +111,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     persist(next)
   }, [id, isLocked, persist])
 
+  /** Toggle the current theme to its light/dark counterpart (web parity). */
+  const toggleTheme = useCallback(() => {
+    if (isLocked) return
+    persist(toggleThemeId(id))
+  }, [id, isLocked, persist])
+
   const reload = useCallback(() => loadSite(true), [loadSite])
 
   const value = useMemo<ThemeCtx>(
@@ -116,13 +124,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       theme: THEMES[id],
       setTheme,
       cycleTheme,
+      toggleTheme,
       source,
       isLocked,
       globalThemeId: typeof siteConfig?.globalTheme === 'string' ? webThemeToMobile(siteConfig.globalTheme) : null,
       siteConfig,
       reload,
     }),
-    [id, setTheme, cycleTheme, source, isLocked, siteConfig, reload],
+    [id, setTheme, cycleTheme, toggleTheme, source, isLocked, siteConfig, reload],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

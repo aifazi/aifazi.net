@@ -44,3 +44,6 @@ yarn-error.*
 # expo export check
 .export-check/
 
+
+# built apks
+*.apk

@@ -10,7 +10,7 @@ import { fmtDate, fmtWhen } from './helpers'
 import { AppUpdatesCard } from './AppUpdates'
 
 export function OverviewTab({ goEdit }: { goEdit: () => void }) {
-  const { theme, setTheme, source, isLocked } = useTheme()
+  const { theme, setTheme, toggleTheme, source, isLocked } = useTheme()
   const c = theme.colors
   const { user, logout, refresh } = useAuth()
   const router = useRouter()
@@ -76,7 +76,25 @@ export function OverviewTab({ goEdit }: { goEdit: () => void }) {
       >
         {isLocked ? (
           <Muted style={{ marginBottom: 8 }}>🔒 Theme switching is disabled — the admin has forced a theme site-wide.</Muted>
-        ) : null}
+        ) : (
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+            <Btn
+              title={theme.dark ? '☀️ Light' : '🌙 Dark'}
+              variant="ghost"
+              onPress={toggleTheme}
+              style={{ paddingVertical: 8, paddingHorizontal: 14, flex: 1 }}
+            />
+            <Btn
+              title="⏭ Next"
+              variant="ghost"
+              onPress={() => {
+                const idx = THEME_IDS.indexOf(theme.id)
+                setTheme(THEME_IDS[(idx + 1) % THEME_IDS.length])
+              }}
+              style={{ paddingVertical: 8, paddingHorizontal: 14, flex: 1 }}
+            />
+          </View>
+        )}
         {(['dark', 'light'] as const).map((grp) => (
           <View key={grp} style={{ marginBottom: grp === 'dark' ? 12 : 0 }}>
             <MicroLabel style={{ marginBottom: 8 }}>{grp === 'dark' ? 'Dark themes' : 'Light themes'}</MicroLabel>

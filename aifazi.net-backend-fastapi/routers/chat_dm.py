@@ -233,9 +233,10 @@ class StartThreadBody(BaseModel):
 
 class DMMessageBody(BaseModel):
     content: str
-    type: str = "text"           # text | image | file
+    type: str = "text"           # text | image | file | voice
     file_name: str = ""
     file_size: str = ""
+    duration: str = ""           # seconds for voice notes
     reply_to: dict | None = None
 
 
@@ -262,12 +263,15 @@ async def list_threads(user: dict = Depends(get_current_user)):
             continue
         peer = _peer_of(t, user)
         preview = ""
-        lm = supabase.table("dm_messages").select("content,type").eq("thread_id", tid).order("created_at", desc=True).limit(1).execute()
+        lm = supabase.table("dm_messages").select("content,type,duration").eq("thread_id", tid).order("created_at", desc=True).limit(1).execute()
         if lm.data:
             if lm.data[0].get("type") == "image":
                 preview = "[image]"
             elif lm.data[0].get("type") == "file":
                 preview = "[file]"
+            elif lm.data[0].get("type") == "voice":
+                dur = lm.data[0].get("duration") or ""
+                preview = f"[voice note]{' ' + dur + 's' if dur else ''}"
             else:
                 preview = lm.data[0].get("content") or ""
         merged[tid] = {
@@ -283,7 +287,7 @@ async def list_threads(user: dict = Depends(get_current_user)):
     out = sorted(merged.values(), key=lambda x: (x.get("last_message_at") or ""), reverse=True)
     peers = [t["peer"] for t in out]
     if peers:
-        p = supabase.table("users").select("username,avatar,role").in_("username", peers).execute()
+        p = supabase.table("users").select("username,avatar,role,last_seen").in_("username", peers).execute()
         peer_meta: dict[str, dict] = {}
         for u in (p.data or []):
             meta[u["username"]] = u
@@ -291,6 +295,7 @@ async def list_threads(user: dict = Depends(get_current_user)):
             meta = peer_meta.get(t["peer"], {})
             t["peer_avatar"] = meta.get("avatar") or ""
             t["peer_role"] = meta.get("role") or ""
+            t["peer_last_seen"] = meta.get("last_seen")
     return out
 
 
@@ -527,19 +532,41 @@ async def list_blocks(user: dict = Depends(get_current_user)):
 async def get_dm_messages(
     thread_id: str,
     limit: int = Query(50, le=200),
+    before: str | None = Query(None, description="created_at cursor for loading older messages"),
     user: dict = Depends(get_current_user),
 ):
-    _get_thread(thread_id, user)
-    res = (
+    thread = _get_thread(thread_id, user)
+    q = (
         supabase.table("dm_messages")
         .select("*")
         .eq("thread_id", thread_id)
         .order("created_at", desc=True)
         .limit(limit)
-        .execute()
     )
-    _touch_read(thread_id, user["username"])
-    return list(reversed(res.data or []))
+    if before:
+        q = q.lt("created_at", before)
+    res = q.execute()
+    rows = list(reversed(res.data or []))
+    # Read receipts: the peer's last-read timestamp for this thread, so clients
+    # can mark the newest message they sent as "seen" once the peer read it.
+    read_state: dict[str, str] = {}
+    try:
+        peer = _peer_of(thread, user)
+        rr = (
+            supabase.table("dm_read_state")
+            .select("last_read_at")
+            .eq("thread_id", thread_id)
+            .eq("username", peer)
+            .limit(1)
+            .execute()
+        )
+        if (rr.data or []) and rr.data[0].get("last_read_at"):
+            read_state[peer] = rr.data[0]["last_read_at"]
+    except Exception:
+        pass
+    if not before:
+        _touch_read(thread_id, user["username"])
+    return {"messages": rows, "read_state": read_state, "peer": _peer_of(thread, user)}
 
 
 @router.post("/dm/threads/{thread_id}/messages")
@@ -554,7 +581,7 @@ async def send_dm_message(thread_id: str, body: DMMessageBody, user: dict = Depe
         raise HTTPException(400, "Message cannot be empty")
     if len(content) > 4000:
         raise HTTPException(400, "Message too long (max 4000 chars)")
-    if body.type not in ("text", "image", "file"):
+    if body.type not in ("text", "image", "file", "voice"):
         raise HTTPException(400, "Invalid message type")
     safe_reply = None
     if body.reply_to and body.reply_to.get("id"):
@@ -572,6 +599,7 @@ async def send_dm_message(thread_id: str, body: DMMessageBody, user: dict = Depe
             "type": body.type,
             "file_name": (body.file_name or "")[:255],
             "file_size": str(body.file_size)[:128],
+            "duration": (body.duration or "")[:32],
             "reply_to": safe_reply,
         })
         .execute()
@@ -637,8 +665,42 @@ async def delete_dm_message(msg_id: str, user: dict = Depends(get_current_user))
     return {"message": "Deleted"}
 
 
-# ── User search (authenticated) for starting DMs ──────────────────────────────
+# ── DM typing presence (in-memory TTL — mirrors chat.py) ──────────────────────
+# Best-effort single-instance cache; the web app additionally streams typing via
+# Supabase Realtime broadcast. This REST variant powers the mobile clients.
+_DM_TYPING_TTL = 6.0
+_dm_typing_lock = threading.Lock()
+_dm_typing: dict[tuple[str, str], float] = {}
 
+
+@router.post("/dm/threads/{thread_id}/typing")
+async def set_dm_typing(thread_id: str, user: dict = Depends(get_current_user)):
+    """Heartbeat that the caller is typing in a DM thread (expires ~6s)."""
+    _get_thread(thread_id, user)
+    with _dm_typing_lock:
+        _dm_typing[(thread_id, user["username"])] = time.monotonic()
+    return {"ok": True}
+
+
+@router.get("/dm/threads/{thread_id}/typing")
+async def get_dm_typing(thread_id: str, user: dict = Depends(get_current_user)):
+    """Usernames currently typing in a thread (excluding the caller)."""
+    _get_thread(thread_id, user)
+    now = time.monotonic()
+    names = []
+    with _dm_typing_lock:
+        for (tid, uname), ts in list(_dm_typing.items()):
+            if tid != thread_id:
+                continue
+            if now - ts > _DM_TYPING_TTL:
+                _dm_typing.pop((tid, uname), None)
+                continue
+            if uname != user["username"]:
+                names.append(uname)
+    return names
+
+
+# ── User search (authenticated) for starting DMs ──────────────────────────────
 def _blocked_user_names_for(username: str) -> set[str]:
     """Usernames that `username` has blocked or that have blocked `username`."""
     blocked: set[str] = set()

@@ -18,6 +18,7 @@ import { MediaViewer } from './components/MediaViewer'
 import { ChannelModal } from './components/ChannelModal'
 import { EditBar } from './components/EditBar'
 import { UserSearchModal } from './components/UserSearchModal'
+import DMPanel from './components/DMPanel'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
@@ -85,6 +86,7 @@ export default function AdminChat({ embedded=false }) {
   const [canScreenShare, setCanScreenShare] = useState(false)
   const [callParticipants, setCallParticipants] = useState([])
   const [roomKey, setRoomKey] = useState('')
+  const [dmOpen, setDmOpen] = useState(false)
   const [userSearch, setUserSearch] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQ, setSearchQ] = useState('')
@@ -841,6 +843,10 @@ export default function AdminChat({ embedded=false }) {
                       <span style={{ width:7, height:7, borderRadius:'50%', background:'#23d160', display:'inline-block' }}/>
                       {online.length}
                     </button>
+                    <button onClick={()=>setDmOpen(p=>!p)} title="Direct messages"
+                      style={{ padding:'4px 10px', border:`1px solid ${dmOpen?'color-mix(in srgb, var(--green) 45%, transparent)':T.border}`, borderRadius:7, background:dmOpen?'color-mix(in srgb, var(--green) 10%, transparent)':'transparent', color:dmOpen?T.accent:T.muted, fontFamily:T.mono, fontSize:11, cursor:'pointer' }}>
+                      💬 {dmOpen ? 'Channels' : 'DMs'}
+                    </button>
                     <button onClick={()=>{ const next=!searchOpen; setSearchOpen(next); if(!next){setSearchQ('');setSearchResults(null)} }}
                       title="Search messages"
                       style={{ padding:'4px 10px', border:`1px solid ${searchOpen?'color-mix(in srgb, var(--cyan) 40%, transparent)':T.border}`, borderRadius:7, background:searchOpen?'color-mix(in srgb, var(--cyan) 8%, transparent)':'transparent', color:searchOpen?T.accentB:T.muted, fontFamily:T.mono, fontSize:11, cursor:'pointer' }}>
@@ -858,7 +864,9 @@ export default function AdminChat({ embedded=false }) {
                   participants={callParticipants} />
               )}
 
-              {room ? (
+              {dmOpen ? (
+                <DMPanel me={me} onClose={() => setDmOpen(false)} />
+              ) : room ? (
                 <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
                   {searchOpen && (
                     <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'color-mix(in srgb, var(--cyan) 8%, transparent)', borderBottom:`1px solid color-mix(in srgb, var(--cyan) 20%, transparent)`, flexShrink:0 }}>

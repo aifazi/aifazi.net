@@ -1,5 +1,5 @@
 import { SymbolView } from 'expo-symbols'
-import { Text, ViewStyle, ColorValue } from 'react-native'
+import { Text, View, ViewStyle, ColorValue } from 'react-native'
 import { useTheme } from '@/src/theme'
 
 /**
@@ -232,15 +232,17 @@ function ViewAsSymbol({
   style?: ViewStyle
 }) {
   return (
-    <SymbolView
-      name={{
-        ios: sym.ios as never,
-        android: sym.android as never,
-        web: sym.android as never,
-      }}
-      size={size}
-      tintColor={tint}
-      style={{ width: size + 4, height: size + 4, ...style }}
-    />
+    <View style={{ width: size + 4, height: size + 4, alignItems: 'center', justifyContent: 'center', ...style }}>
+      <SymbolView
+        name={{
+          ios: sym.ios as never,
+          android: sym.android as never,
+          web: sym.android as never,
+        }}
+        size={size}
+        tintColor={tint}
+        resizeMode="center"
+      />
+    </View>
   )
 }

@@ -1,74 +1,106 @@
-import { ReactNode, useState } from 'react'
-import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, ScrollView, DimensionValue } from 'react-native'
+import { ReactNode, useRef, useState } from 'react'
+import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, ScrollView, DimensionValue, ActivityIndicator, Animated } from 'react-native'
 import { useTheme } from '@/src/theme'
 import { withAlpha, glowShadow, contrastText } from '@/src/lib/color'
 import { webPillSnap } from '@/src/lib/carousel'
-import { CODE_FONT, micro, buttonLabel, tagLabel } from '@/src/design'
+import { CODE_FONT, micro, buttonLabel, tagLabel, frameworkStyles } from '@/src/design'
 import { Icon, IconName } from '@/src/components/icon'
 
 /* ─── Surfaces / shapes ─────────────────────────────────────────────────── */
 
 const CARD_SHADOW = glowShadow(10, 0.32)
 
+const BTN_PADDING: Record<BtnSize, { py: number; px: number; fs: number }> = {
+  sm: { py: 8, px: 12, fs: 12 },
+  md: { py: 14, px: 20, fs: 13 },
+  lg: { py: 17, px: 24, fs: 14 },
+}
+
+export type BtnSize = 'sm' | 'md' | 'lg'
+
 export function Btn({
   title,
   onPress,
   variant = 'primary',
   disabled = false,
+  loading = false,
+  leading,
+  size = 'md',
+  full = false,
   style,
 }: {
   title: string
   onPress: () => void
   variant?: 'primary' | 'ghost' | 'danger'
   disabled?: boolean
+  loading?: boolean
+  leading?: ReactNode
+  size?: BtnSize
+  full?: boolean
   style?: ViewStyle
 }) {
   const { theme } = useTheme()
   const c = theme.colors
+  const fw = frameworkStyles(theme)
   const isPrimary = variant === 'primary'
   const isDanger = variant === 'danger'
   const filled = isPrimary || isDanger
-  const radius = theme.buttonRadius
+  const radius = fw.buttonRadius
   const notchColor = c.bg
+  const labelColor = isPrimary ? c.onAccent : isDanger ? contrastText(c.danger) : c.accent2
+  const scale = useRef(new Animated.Value(1)).current
+  const pad = BTN_PADDING[size]
+  const borderWidth = fw.borderWidth
+
+  const pressIn = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40, bounciness: 0 }).start()
+  const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 0 }).start()
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
-      activeOpacity={0.7}
-      style={[
-        styles.btn,
-        {
-          borderRadius: radius,
-          backgroundColor: filled ? (isPrimary ? c.accent : c.danger) : withAlpha(c.accent, 0.04),
-          borderColor: isDanger ? withAlpha(c.danger, 0.9) : isPrimary ? c.accent : withAlpha(c.accent2, 0.35),
-          opacity: disabled ? 0.4 : 1,
-          shadowColor: filled ? (isPrimary ? c.accent : c.danger) : '#000',
-          shadowOpacity: filled ? (theme.dark ? 0.45 : 0.3) : 0.1,
-          shadowRadius: filled ? 14 : 5,
-          shadowOffset: { width: 0, height: filled ? 4 : 2 },
-          elevation: filled ? 5 : 1,
-        },
-        style,
-      ]}
-    >
-      {filled ? (
-        <>
-          <View pointerEvents="none" style={[styles.notch, { top: -7, right: -7, backgroundColor: notchColor }]} />
-          <View pointerEvents="none" style={[styles.notch, { bottom: -7, left: -7, backgroundColor: notchColor }]} />
-        </>
-      ) : null}
-      <Text
+    <Animated.View style={[{ transform: [{ scale }] }, full && { alignSelf: 'stretch' }]}>
+      <TouchableOpacity
+        onPress={onPress}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        disabled={disabled || loading}
+        activeOpacity={0.85}
         style={[
-          buttonLabel(),
+          styles.btn,
           {
-            color: isPrimary ? c.onAccent : isDanger ? contrastText(c.danger) : c.accent2,
+            borderRadius: radius,
+            borderWidth,
+            paddingVertical: pad.py,
+            paddingHorizontal: pad.px,
+            backgroundColor: filled ? (isPrimary ? c.accent : c.danger) : withAlpha(c.accent, 0.04),
+            borderColor: isDanger ? withAlpha(c.danger, 0.9) : isPrimary ? c.accent : withAlpha(c.accent2, 0.35),
+            opacity: disabled ? 0.4 : loading ? 0.85 : 1,
+            shadowColor: filled ? (isPrimary ? c.accent : c.danger) : '#000',
+            shadowOpacity: filled ? (fw.glow ? (theme.dark ? 0.5 : 0.35) : theme.dark ? 0.45 : 0.3) : 0.1,
+            shadowRadius: filled ? (fw.glow ? 18 : 14) : 5,
+            shadowOffset: { width: fw.hardShadow ? (filled ? 3 : 2) : 0, height: filled ? (fw.hardShadow ? 4 : 4) : 2 },
+            elevation: filled ? 5 : 1,
+            alignSelf: full ? 'stretch' : undefined,
           },
+          style,
         ]}
       >
-        {title}
-      </Text>
-    </TouchableOpacity>
+        {filled && fw.notch ? (
+          <>
+            <View pointerEvents="none" style={[styles.notch, { top: -7, right: -7, backgroundColor: notchColor }]} />
+            <View pointerEvents="none" style={[styles.notch, { bottom: -7, left: -7, backgroundColor: notchColor }]} />
+          </>
+        ) : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
+          {loading ? (
+            <ActivityIndicator size="small" color={labelColor} />
+          ) : (
+            <>
+              {leading ?? null}
+              <Text style={[buttonLabel(pad.fs), { color: labelColor }]}>{title}</Text>
+            </>
+          )}
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   )
 }
 
@@ -100,6 +132,7 @@ export function Card({
 }) {
   const { theme } = useTheme()
   const c = theme.colors
+  const fw = frameworkStyles(theme)
   const icy = !theme.mono
   return (
     <View
@@ -108,7 +141,11 @@ export function Card({
         {
           backgroundColor: withAlpha(c.bg2, theme.dark ? 0.94 : 0.98),
           borderColor: icy ? withAlpha(c.accent2, 0.18) : withAlpha(c.accent2, 0.4),
-          borderRadius: theme.radius,
+          borderWidth: fw.borderWidth,
+          borderRadius: fw.radius,
+          shadowOpacity: fw.hardShadow ? 0.18 : theme.dark ? 0.3 : 0.2,
+          shadowRadius: fw.hardShadow ? 3 : 10,
+          shadowOffset: { width: fw.hardShadow ? 4 : 0, height: fw.hardShadow ? 4 : 2 },
         },
         CARD_SHADOW,
         style,
@@ -123,8 +160,8 @@ export function Card({
             left: 0,
             right: 0,
             height: 2,
-            borderTopLeftRadius: theme.radius,
-            borderTopRightRadius: theme.radius,
+            borderTopLeftRadius: fw.radius,
+            borderTopRightRadius: fw.radius,
             backgroundColor: withAlpha(c.accent, 0.5),
           }}
         />
@@ -156,7 +193,7 @@ export function Title({ children, tag }: { children: ReactNode; tag?: string }) 
           color: c.text,
           fontSize: 26,
           fontWeight: '900',
-          letterSpacing: theme.mono ? 1 : 0.2,
+          letterSpacing: frameworkStyles(theme).headingSpacing,
         }}
       >
         {children}
@@ -213,8 +250,9 @@ export function Field({
 }) {
   const { theme } = useTheme()
   const c = theme.colors
+  const fw = frameworkStyles(theme)
   const [focused, setFocused] = useState(false)
-  const radius = theme.buttonRadius
+  const radius = fw.buttonRadius
   return (
     <View style={{ marginBottom: 12 }}>
       <Text style={[micro(10, 2.5, '700'), { color: focused ? c.accent2 : c.muted, marginBottom: 6 }]}>
@@ -292,9 +330,10 @@ export function Toggle({
 }) {
   const { theme } = useTheme()
   const c = theme.colors
+  const fw = frameworkStyles(theme)
   const accent = value ? c.accent : c.border
   const thumb = value ? c.bg : c.muted
-  const radius = theme.mono ? 0 : Math.max(9, theme.buttonRadius + 4)
+  const radius = theme.mono ? 0 : Math.max(9, fw.buttonRadius + 4)
   return (
     <TouchableOpacity
       onPress={() => !disabled && onValueChange(!value)}
@@ -526,7 +565,7 @@ export function Pill({
       style={{
         borderWidth: 1,
         borderColor: active ? withAlpha(tint, 0.7) : c.border,
-        borderRadius: theme.mono ? 0 : Math.max(4, theme.buttonRadius),
+        borderRadius: theme.mono ? 0 : Math.max(4, frameworkStyles(theme).buttonRadius),
         paddingHorizontal: 14,
         paddingVertical: 8,
         backgroundColor: active ? withAlpha(tint, 0.14) : 'transparent',
@@ -540,4 +579,54 @@ export function Pill({
       <Text style={[tagLabel(10, 1.8), { color: active ? tint : c.muted }]}>{label}</Text>
     </TouchableOpacity>
   )
+}
+
+/**
+ * Static status/role chip — small filled pill with a leading dot. Used for
+ * roles, presence and status words (matches web RolePill). Optional onPress
+ * turns it into a button.
+ */
+export function Chip({
+  label,
+  color,
+  dot = true,
+  onPress,
+  style,
+}: {
+  label: string
+  color?: string
+  dot?: boolean
+  onPress?: () => void
+  style?: ViewStyle
+}) {
+  const { theme } = useTheme()
+  const c = theme.colors
+  const tint = color ?? c.accent2
+  const content = (
+    <>
+      {dot ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tint }} /> : null}
+      <Text style={[tagLabel(9, 1.5), { color: tint }]}>{label.toUpperCase()}</Text>
+    </>
+  )
+  const box: ViewStyle = {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: theme.mono ? 0 : 999,
+    borderWidth: 1,
+    borderColor: withAlpha(tint, 0.35),
+    backgroundColor: withAlpha(tint, 0.08),
+    ...style,
+  }
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={box}>
+        {content}
+      </TouchableOpacity>
+    )
+  }
+  return <View style={box}>{content}</View>
 }

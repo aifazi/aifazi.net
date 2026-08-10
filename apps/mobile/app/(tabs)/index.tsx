@@ -9,7 +9,7 @@ import { useAuth } from '@/src/lib/auth'
 import { carouselSnap } from '@/src/lib/carousel'
 import { api } from '@/src/lib/api'
 import { Btn } from '@/src/components/ui'
-import { Avatar } from '@/src/components/Avatar'
+import { ProfilePill } from '@/src/components/ProfilePill'
 import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
@@ -155,11 +155,9 @@ export default function HomeScreen() {
           aifazi.net
         </Text>
         {isAuthed ? (
-          <TouchableOpacity onPress={() => router.push('/profile' as Href)}>
-            <Avatar name={user?.username} avatar={user?.avatar} size={34} />
-          </TouchableOpacity>
+          <ProfilePill onPress={() => router.push('/profile' as Href)} />
         ) : (
-          <Btn title="Sign in" onPress={() => router.push('/profile' as Href)} style={{ paddingVertical: 7, paddingHorizontal: 12 }} />
+          <Btn title="Sign in" onPress={() => router.push('/profile' as Href)} size="sm" />
         )}
       </View>
       <Text style={{ color: c.muted, fontSize: 12, marginBottom: 16 }}>

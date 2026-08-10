@@ -712,3 +712,93 @@ export function webThemeToMobile(id?: string | null): ThemeId {
   if (id && WEB_THEME_MAP[id]) return WEB_THEME_MAP[id]
   return 'cyber-dark'
 }
+
+/**
+ * Web-style light/dark family pairs. Every curated mobile theme resolves to a
+ * counterpart so the theme picker can offer a "toggle dark/light" action that
+ * matches what the web's family switcher does.
+ */
+export const THEME_PAIRS: Record<ThemeId, ThemeId> = {
+  'cyber-dark': 'light',
+  light: 'cyber-dark',
+  terminal: 'win95',
+  win95: 'terminal',
+  pacman: 'light',
+  midnight: 'ocean',
+  synthwave: 'neon-noir',
+  ocean: 'midnight',
+  aurora: 'ocean',
+  'neon-noir': 'synthwave',
+  crimson: 'light',
+  forest: 'light',
+  toxic: 'light',
+  amber: 'light',
+  rose: 'light',
+  lava: 'light',
+  'glass-dark': 'light',
+  macos: 'light',
+  pastel: 'cyber-dark',
+  neumorph: 'cyber-dark',
+  brutalist: 'light',
+}
+
+/**
+ * Themes that are light-mode by default (used by the picker to decide whether
+ * the toggle action should say "Dark" or "Light", and by theming for status bar
+ * contrast). Mirrors web LIGHT_THEMES.
+ */
+export const LIGHT_THEMES: ReadonlySet<string> = new Set([
+  'light', 'win95', 'ocean-light', 'crimson-light', 'rose-light', 'amber-light',
+  'forest-light', 'lava-light', 'toxic-light', 'glass-light', 'mario-light',
+  'macos-light', 'pastel', 'neumorph-dark', 'brutalist-light', 'paper',
+  'paper-dark', 'aurora-light', 'synthwave-light', 'neon-noir-light', 'ice',
+])
+
+/**
+ * Framework / design language each theme belongs to — drives per-theme styling
+ * of buttons, inputs, borders and shadows so mobile matches the web's families
+ * (angular chamfered cyber, sharp brutalist, flat retro, round glass, etc).
+ */
+export type ThemeFamily = 'cyber' | 'brutalist' | 'retro' | 'glass' | 'paper' | 'dark' | 'neon' | 'sharp'
+
+const THEME_FAMILIES: Record<ThemeId, ThemeFamily> = {
+  'cyber-dark': 'cyber',
+  light: 'cyber',
+  midnight: 'dark',
+  synthwave: 'neon',
+  ocean: 'dark',
+  aurora: 'dark',
+  'neon-noir': 'dark',
+  crimson: 'dark',
+  forest: 'dark',
+  toxic: 'dark',
+  amber: 'dark',
+  rose: 'dark',
+  lava: 'dark',
+  terminal: 'retro',
+  win95: 'retro',
+  pacman: 'retro',
+  'glass-dark': 'glass',
+  macos: 'glass',
+  pastel: 'paper',
+  neumorph: 'paper',
+  brutalist: 'brutalist',
+}
+
+export function themeFamily(id: ThemeId): ThemeFamily {
+  return THEME_FAMILIES[id] ?? 'dark'
+}
+
+/** Number of columns the theme gallery grid shows (web parity: 3 on mobile). */
+export const THEME_GRID_COLUMNS = 3
+
+/**
+ * Theme action when the user toggles dark/light. If a theme has a real light or
+ * dark counterpart in the curated set, we jump to it; otherwise fall back to
+ * webThemeToMobile('cyber-light' / 'cyber-dark').
+ */
+export function toggleTheme(id: ThemeId): ThemeId {
+  const pair = THEME_PAIRS[id]
+  if (pair && THEMES[pair]) return pair
+  return LIGHT_THEMES.has(id) ? 'cyber-dark' : 'light'
+}

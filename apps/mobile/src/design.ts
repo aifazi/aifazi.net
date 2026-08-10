@@ -1,4 +1,5 @@
 import { Platform, TextStyle } from 'react-native'
+import { Theme, ThemeFamily, themeFamily } from './themes'
 
 /**
  * Shared cyber design tokens used across the mobile component kit so every
@@ -45,4 +46,45 @@ export function buttonLabel(fontSize = 13, spacing = 2.5): TextStyle {
 /** Mono small tag used by badges/chips/status pills. */
 export function tagLabel(size = 9, spacing = 1.5): TextStyle {
   return micro(size, spacing, '800')
+}
+
+export interface FrameworkStyles {
+  family: ThemeFamily
+  /** button corner radius — sharp families go 0, glass/paper get soft rounds */
+  buttonRadius: number
+  /** card/surface corner radius */
+  radius: number
+  /** hard offset shadow (brutalist) vs soft glow */
+  hardShadow: boolean
+  /** border width multiplier — brutalist/retro get thicker edges */
+  borderWidth: number
+  /** whether the chamfered corner notch is drawn on primary buttons */
+  notch: boolean
+  /** heavy glow behind accents (neon/synthwave) */
+  glow: boolean
+  /** letter-spacing for headings */
+  headingSpacing: number
+}
+
+/**
+ * Per-family (web "framework style") overrides so mobile mirrors the web's
+ * design languages: angular chamfered cyber, sharp brutalist, flat retro,
+ * translucent glass, soft paper/neumorph, glowing neon.
+ */
+export function frameworkStyles(theme: Theme): FrameworkStyles {
+  const f = themeFamily(theme.id)
+  const sharp = f === 'brutalist' || f === 'retro' || f === 'cyber'
+  return {
+    family: f,
+    buttonRadius:
+      f === 'glass' || f === 'paper' ? Math.max(8, theme.buttonRadius)
+      : f === 'brutalist' || f === 'retro' ? 0
+      : theme.buttonRadius,
+    radius: f === 'glass' ? 16 : f === 'paper' ? 14 : theme.radius,
+    hardShadow: f === 'brutalist' || f === 'retro',
+    borderWidth: f === 'brutalist' ? 2 : f === 'retro' ? 2 : 1,
+    notch: f === 'cyber',
+    glow: f === 'neon' || f === 'cyber',
+    headingSpacing: theme.mono ? 1 : f === 'cyber' ? 0.4 : 0.2,
+  }
 }

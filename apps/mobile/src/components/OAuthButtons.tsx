@@ -6,10 +6,10 @@ import { OAuthProvider } from '@/src/lib/oauth'
 import { useOverlay } from '@/src/components/overlay'
 import { useTheme } from '@/src/theme'
 
-const PROVIDERS: { id: OAuthProvider; label: string; color: string }[] = [
-  { id: 'discord', label: 'Discord', color: '#5865F2' },
-  { id: 'steam', label: 'Steam', color: '#66C0F4' },
-  { id: 'github', label: 'GitHub', color: '#8B949E' },
+const PROVIDERS: { id: OAuthProvider; label: string; color: string; glyph: string }[] = [
+  { id: 'discord', label: 'Discord', color: '#5865F2', glyph: '💬' },
+  { id: 'steam', label: 'Steam', color: '#66C0F4', glyph: '🎮' },
+  { id: 'github', label: 'GitHub', color: '#8B949E', glyph: '🐙' },
 ]
 
 /**
@@ -63,6 +63,12 @@ export function OAuthButtons({
           title={busy === p.id ? `Connecting to ${p.label}…` : `Continue with ${p.label}`}
           variant="ghost"
           disabled={!!busy}
+          loading={busy === p.id}
+          leading={
+            busy === p.id ? undefined : (
+              <Text style={{ fontSize: 15, lineHeight: 18 }}>{p.glyph}</Text>
+            )
+          }
           onPress={() => handle(p.id)}
           style={{ marginBottom: 8, borderColor: busy === p.id ? c.border : p.color, opacity: busy && busy !== p.id ? 0.4 : 1 }}
         />

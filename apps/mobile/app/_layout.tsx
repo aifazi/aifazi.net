@@ -2,8 +2,9 @@ import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ThemeProvider, useTheme } from '@/src/theme'
-import { AuthProvider } from '@/src/lib/auth'
+import { AuthProvider, useAuth } from '@/src/lib/auth'
 import { OverlayProvider } from '@/src/components/overlay'
+import { BootScreen } from '@/src/components/BootScreen'
 
 export { ErrorBoundary } from 'expo-router'
 
@@ -14,6 +15,8 @@ export const unstable_settings = {
 function RootNav() {
   const { theme } = useTheme()
   const c = theme.colors
+  const { loading: authLoading } = useAuth()
+  if (authLoading) return <BootScreen label="LOADING PLATFORM" />
   return (
     <>
       <Stack
