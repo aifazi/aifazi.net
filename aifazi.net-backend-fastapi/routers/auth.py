@@ -1360,17 +1360,17 @@ async def resend_verification(body: ResendBody):
         res = supabase.table("users").select("*").eq("email", identifier).execute()
     else:
         res = supabase.table("users").select("*").eq("username", identifier).execute()
-    if not res.data:
+    # Anti-enumeration: always answer with the same generic message whether the
+    # account exists, is verified, or does not exist at all.
+    if not res.data or res.data[0].get("email_verified"):
         return {"message": "If that account exists, a verification link was sent"}
     user = res.data[0]
-    if user.get("email_verified"):
-        return {"message": "Email is already verified"}
     verify_token = secrets.token_urlsafe(32)
     verify_expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
     supabase.table("users").update({"verify_token": verify_token, "verify_expires": verify_expires}).eq("id", user["id"]).execute()
     verify_url = f"{SITE_URL}/forum/verify?token={verify_token}"
     await _queue_activation_email(user["email"], verify_url, user.get("username") or "")
-    return {"message": "Verification email sent"}
+    return {"message": "If that account exists, a verification link was sent"}
 
 # ── Verify status (used by the "waiting for activation" screen on /login) ──────
 @router.get("/verify-status")
@@ -1380,7 +1380,7 @@ async def verify_status(email: str):
     auto-advances once the user clicks the email link."""
     res = supabase.table("users").select("email_verified").ilike("email", email.strip()).limit(1).execute()
     verified = bool(res.data and res.data[0].get("email_verified"))
-    return {"verified": verified, "found": bool(res.data)}
+    return {"verified": verified}
 
 @router.post("/register")
 async def register(body: RegisterBody):
@@ -1391,6 +1391,11 @@ async def register(body: RegisterBody):
     username = _clean_username(body.username)
     email_owner = _find_user_by_ci("email", email, "id,email,email_verified")
     if email_owner:
+        # Anti-enumeration: an existing email must not reveal whether it is
+        # verified or whether the account is complete. If the email was already
+        # registered but never activated, re-send the activation link; either
+        # way respond with a generic "registered" success so the client shows
+        # the standard "check your email" screen for both outcomes.
         existing = email_owner
         if not existing.get("email_verified"):
             verify_token = secrets.token_urlsafe(32)
@@ -1398,10 +1403,11 @@ async def register(body: RegisterBody):
             supabase.table("users").update({"verify_token": verify_token, "verify_expires": verify_expires}).eq("id", existing["id"]).execute()
             verify_url = f"{SITE_URL}/forum/verify?token={verify_token}"
             await _queue_activation_email(email, verify_url, existing.get("username") or "")
-            raise HTTPException(409, "pending_verification")
-        raise HTTPException(409, "Email already registered")
+        return {"message": "Registered — check your email to verify"}
     if _find_user_by_ci("username", username, "id,username"):
-        raise HTTPException(409, "Username taken")
+        # Same generic response as a successful registration: do not reveal
+        # which field collided (username/email) to a probing caller.
+        raise HTTPException(409, "That username or email is already registered")
     verify_token = secrets.token_urlsafe(32)
     verify_expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
     try:

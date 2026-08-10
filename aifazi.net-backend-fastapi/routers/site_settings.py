@@ -10,6 +10,7 @@ Migration (run once in Supabase SQL editor):
         VALUES ('global', '{}')
         ON CONFLICT (key) DO NOTHING;
 """
+import re
 from fastapi import APIRouter, Depends, HTTPException, Request
 from database import supabase
 from dependencies import require_staff
@@ -29,6 +30,25 @@ def _is_corrupted(settings: dict) -> bool:
     # If ALL keys are numeric strings, the dict is a character-indexed string — corrupted
     return all(k.isdigit() for k in list(settings.keys())[:10])
 
+# Keys that must never leave the server. This endpoint is public, so any
+# smtpPassword / apiKey / token a staff member saves into settings would
+# otherwise be served to anonymous visitors. Match by name, case-insensitive.
+_SENSITIVE_KEY_RE = re.compile(r"(secret|password|token|api[_-]?key|preshared)", re.IGNORECASE)
+
+def _redact_sensitive(value):
+    """Recursively blank values whose key looks sensitive (name or list item)."""
+    if isinstance(value, dict):
+        out = {}
+        for k, v in value.items():
+            if _SENSITIVE_KEY_RE.search(k):
+                out[k] = ""
+            else:
+                out[k] = _redact_sensitive(v)
+        return out
+    if isinstance(value, list):
+        return [_redact_sensitive(v) for v in value]
+    return value
+
 @router.get("")
 async def get_settings():
     row = _get_row()
@@ -40,7 +60,10 @@ async def get_settings():
     if _is_corrupted(settings):
         supabase.table("site_config").update({"settings": {}}).eq("key", "global").execute()
         return {}
-    return settings
+    # Public endpoint — never leak staff PII or credentials. Alert emails and any
+    # provider secrets are surfaced only through staff-gated endpoints, so blank
+    # them out (recursively) before serving.
+    return _redact_sensitive(settings)
 
 @router.put("")
 async def update_settings(body: dict, request: Request, staff: dict = Depends(require_staff)):

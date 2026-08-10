@@ -223,8 +223,9 @@ function GlobeMap({ lat, lon, city, mapId }) {
         iconAnchor: [9, 9],
       })
 
+      const escCity = String(city || 'Location').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
       const marker = window.L.marker([lat, lon], { icon: greenIcon }).addTo(map)
-      marker.bindPopup(`<b style="font-family:monospace">${city || 'Location'}</b><br/>${lat.toFixed(4)}, ${lon.toFixed(4)}`)
+      marker.bindPopup(`<b style="font-family:monospace">${escCity}</b><br/>${lat.toFixed(4)}, ${lon.toFixed(4)}`)
       leafletRef.current = map
       markerRef.current = marker
     }

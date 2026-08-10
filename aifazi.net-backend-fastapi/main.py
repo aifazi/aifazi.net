@@ -326,6 +326,8 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/file-tools/",           5,   60),
     ("/seo-proxy",            10,   60),
     ("/helpdesk/tickets",     10,   60),
+    ("/monitor/errors",       20,   60),
+    ("/store/track/",         10,   60),
 ]
 _RL_DEFAULT = (100, 60)   # 100 requests / 60 s general
 
@@ -333,10 +335,11 @@ _RL_DEFAULT = (100, 60)   # 100 requests / 60 s general
 # an ADDITIONAL shared-store (Supabase) check in dispatch() so the limit holds
 # across all Vercel serverless instances, not just within one instance's memory.
 _RL_SENSITIVE_SUFFIXES = {suffix for suffix, _, _ in _RL_RULES}
+_RL_PREFIXES = {suffix for suffix, _, _ in _RL_RULES if suffix.endswith("/")}
 
 def _get_limit(path: str) -> tuple[int, int]:
     for suffix, calls, period in _RL_RULES:
-        if path.endswith(suffix):
+        if path.endswith(suffix) or (suffix in _RL_PREFIXES and path.startswith(suffix)):
             return calls, period
     return _RL_DEFAULT
 
@@ -420,7 +423,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # via an atomic upsert. Fail-open on DB error (if the DB is down the
         # auth endpoints themselves are down, and login must never be a worse
         # DoS than it already is).
-        if any(path.endswith(s) for s in _RL_SENSITIVE_SUFFIXES):
+        if any(path.endswith(s) for s in _RL_SENSITIVE_SUFFIXES) or any(path.startswith(s) for s in _RL_PREFIXES):
             try:
                 from database import supabase as _sb
                 res = _sb.rpc("rate_limit_check", {

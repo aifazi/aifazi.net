@@ -16,7 +16,7 @@ Endpoints:
 SQL migration (run once in Supabase — only needed if you persist sessions):
   None — sessions are fully in-memory.
 """
-import io, uuid, base64
+import io, uuid, base64, time
 from typing import Optional
 from fastapi import APIRouter, UploadFile, File, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
@@ -25,22 +25,38 @@ from pydantic import BaseModel
 router = APIRouter()
 
 # ── In-memory session store ───────────────────────────────────────
-# Values are {"bytes": pdf_bytes, "ip": creator_ip} so a leaked session_id
-# (e.g. via <img> Referer headers) can't be used to render someone else's PDF
-# from a different client IP.
+# Values are {"bytes": pdf_bytes, "ip": creator_ip, "at": last_used_ts}
+# so a leaked session_id (e.g. via <img> Referer headers) can't be used to
+# render someone else's PDF from a different client IP. Sessions expire after
+# SESSION_TTL_S of inactivity and are also FIFO-evicted at MAX_SESSIONS.
 _sessions: dict[str, dict] = {}
-MAX_SESSIONS = 80
-MAX_PDF_MB   = 80
+MAX_SESSIONS = 20
+MAX_PDF_MB   = 40
+SESSION_TTL_S = 1800   # 30 min idle → drop session
+
+def _now() -> float:
+    return time.monotonic()
 
 def _evict():
-    if len(_sessions) > MAX_SESSIONS:
+    """Drop expired sessions, then FIFO-evict the oldest if over cap."""
+    now = _now()
+    expired = [k for k, v in _sessions.items() if now - (v.get("at") or 0) > SESSION_TTL_S]
+    for k in expired:
+        del _sessions[k]
+    while len(_sessions) > MAX_SESSIONS:
         del _sessions[next(iter(_sessions))]
+
+def _touch(session_id: str):
+    sess = _sessions.get(session_id)
+    if sess:
+        sess["at"] = _now()
 
 def _client_ip(request) -> str:
     from utils.request_ip import client_ip
     return client_ip(request)
 
 def _require_session(request, session_id: str):
+    _evict()
     sess = _sessions.get(session_id)
     if not sess:
         raise HTTPException(404, "Session not found")
@@ -81,7 +97,12 @@ class CloseBody(BaseModel):
 def _hex_rgb(h: str) -> tuple[float, float, float]:
     h = h.lstrip("#")
     if len(h) == 3: h = "".join(c*2 for c in h)
-    return int(h[:2],16)/255, int(h[2:4],16)/255, int(h[4:6],16)/255
+    if len(h) != 6:
+        raise HTTPException(400, f"Invalid color: {h!r}")
+    try:
+        return int(h[:2],16)/255, int(h[2:4],16)/255, int(h[4:6],16)/255
+    except ValueError:
+        raise HTTPException(400, f"Invalid color: {h!r}")
 
 def _apply_ops(doc, ops: list[Operation]):
     import fitz
@@ -179,7 +200,7 @@ async def open_pdf(request: Request, file: UploadFile = File(...)):
         raise HTTPException(400, f"Cannot open PDF: {e}")
     _evict()
     sid = str(uuid.uuid4())
-    _sessions[sid] = {"bytes": content, "ip": _client_ip(request)}
+    _sessions[sid] = {"bytes": content, "ip": _client_ip(request), "at": _now()}
     return {"session_id": sid, "page_count": count, "filename": file.filename,
             "title": meta.get("title") or file.filename,
             "author": meta.get("author",""), "pages": pages,
@@ -189,6 +210,7 @@ async def open_pdf(request: Request, file: UploadFile = File(...)):
 async def render_page(request: Request, session_id: str, page_num: int, scale: float = 1.5):
     import fitz
     sess = _require_session(request, session_id)
+    _touch(session_id)
     doc  = fitz.open(stream=sess["bytes"], filetype="pdf")
     if not (0 <= page_num < doc.page_count):
         doc.close(); raise HTTPException(400, "Invalid page")
@@ -215,6 +237,7 @@ async def thumbnail(request: Request, session_id: str, page_num: int):
 async def get_info(request: Request, session_id: str):
     import fitz
     sess = _require_session(request, session_id)
+    _touch(session_id)
     doc   = fitz.open(stream=sess["bytes"], filetype="pdf")
     pages = [{"width": doc[i].rect.width, "height": doc[i].rect.height,
                "rotation": doc[i].rotation} for i in range(doc.page_count)]
@@ -226,6 +249,7 @@ async def get_info(request: Request, session_id: str):
 async def export_pdf(request: Request, body: ExportBody):
     import fitz
     sess = _require_session(request, body.session_id)
+    _touch(body.session_id)
     doc = fitz.open(stream=sess["bytes"], filetype="pdf")
     if body.operations: _apply_ops(doc, body.operations)
     buf = io.BytesIO()

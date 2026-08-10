@@ -1942,18 +1942,6 @@ async def unban_player(
 
     return {"message": "Player unbanned â€” queued for server sync.", "ban": ban}
 
-@router.get("/bans/check/{identifier}")
-async def check_ban(identifier: str):
-    now = _now()
-    res = (supabase.table("fivem_bans").select("*")
-           .eq("identifier", identifier).eq("active", True)
-           .or_(f"expires_at.is.null,expires_at.gt.{now}").execute())
-    if not res.data: return {"banned": False}
-    ban = res.data[0]
-    return {"banned": True, "reason": ban["reason"],
-            "expires_at": ban.get("expires_at"), "banned_by": ban["banned_by"]}
-
-# â”€â”€â”€ Server Status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.post("/status")
 async def update_server_status(body: StatusUpdate, request: Request):
     _check_token(request)

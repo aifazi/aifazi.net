@@ -144,7 +144,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                       <img src={m.content} alt="" loading="lazy" style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, objectFit: 'contain', cursor: 'pointer' }}
                         onClick={() => onMediaClick?.({ url: m.content, type: m.type })} />
                     ) : m.type === 'file' ? (
-                      <div><a href={m.content} target='_blank' style={{ color: T.accentB, textDecoration: 'none' }}>📎 {m.file_name || 'file'}</a> <span style={{ fontSize: 10, color: T.muted }}>{fmtSz(m.file_size)}</span></div>
+                      <div><a href={/^https?:\/\//i.test(m.content || '') ? m.content : '#'} target='_blank' rel='noopener noreferrer' style={{ color: T.accentB, textDecoration: 'none' }}>📎 {m.file_name || 'file'}</a> <span style={{ fontSize: 10, color: T.muted }}>{fmtSz(m.file_size)}</span></div>
                     ) : <Markdown text={m.content} />}
                     {m.type === 'text' && <MediaPreviews text={m.content} onMediaClick={onMediaClick} right={isMe} />}
                   </div>

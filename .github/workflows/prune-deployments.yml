@@ -1,0 +1,145 @@
+name: Prune Old Deployments (keep only current)
+
+# Runs after every push to main (which triggers Vercel + Railway auto-deploys)
+# and removes all old deployment builds so only the current one remains on
+# Vercel, Railway, and GitHub. Manual trigger also supported.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: prune-deployments
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    name: Keep only current deployment
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Wait for new deployments to be created
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Give Vercel/Railway a moment to start creating their deployment
+          # records before we compute what is "old". Deployments created after
+          # this job started are always kept.
+          sleep 45
+
+      - name: Prune Vercel deployments
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::warning::VERCEL_TOKEN secret not set — skipping Vercel prune."
+            exit 0
+          fi
+          TEAM_ID="team_nL9SXzDbhzUHFNR2xaPzWldV"
+          # projectName|projectId
+          PROJECTS="aifazi-website-new|prj_KbPCKEO6LvFztKF6GEIn0y2x7cmx
+aifazi-backend|prj_Va1GHAH4Rhabm2MicoxuS62iSWY3"
+
+          while IFS='|' read -r NAME PROJ; do
+            [ -z "$NAME" ] && continue
+            # Newest production deployment for this project (createdAt desc).
+            NEWEST=$(curl -fsS \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v6/deployments?projectId=${PROJ}&target=production&limit=100&teamId=${TEAM_ID}" \
+              | jq -r '.deployments | sort_by(.created) | reverse | .[0].uid' 2>/dev/null || true)
+            echo "[$NAME] current deployment: ${NEWEST:-none}"
+            # Delete every deployment except the newest one (loop with pagination).
+            CURSOR=""
+            while :; do
+              URL="https://api.vercel.com/v6/deployments?projectId=${PROJ}&limit=100&teamId=${TEAM_ID}"
+              [ -n "$CURSOR" ] && URL="${URL}&until=${CURSOR}"
+              RESP=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "$URL")
+              IDS=$(echo "$RESP" | jq -r '.deployments[]?.uid')
+              [ -z "$IDS" ] && break
+              for ID in $IDS; do
+                if [ "$ID" != "$NEWEST" ]; then
+                  curl -fsS -X DELETE \
+                    -H "Authorization: Bearer $VERCEL_TOKEN" \
+                    "https://api.vercel.com/v13/deployments/${ID}?teamId=${TEAM_ID}" >/dev/null || \
+                    echo "::warning::Vercel delete failed: $ID"
+                  echo "[$NAME] deleted $ID"
+                fi
+              done
+              CURSOR=$(echo "$RESP" | jq -r '.pagination.next // empty')
+              [ -z "$CURSOR" ] && break
+            done
+          done <<< "$PROJECTS"
+
+      - name: Prune Railway deployments
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::warning::RAILWAY_TOKEN secret not set — skipping Railway prune."
+            exit 0
+          fi
+          SERVICE_ID="da51fadf-76d5-4f4a-96af-90877d7aafdc"
+          QUERY='query { service(id: "'"$SERVICE_ID"'") { deployments { edges { node { id status } } } } }'
+          PAYLOAD=$(jq -nc --arg q "$QUERY" '{query:$q}')
+          EDGES=$(curl -fsS \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: railway-cli" \
+            -d "$PAYLOAD" \
+            https://backboard.railway.com/graphql/v2 \
+            | jq -c '.data.service.deployments.edges[]?.node')
+          # Newest = the successful deployment that is serving traffic today.
+          NEWEST=$(echo "$EDGES" | jq -sr '.[0].id // empty')
+          echo "Current Railway deployment: ${NEWEST:-none}"
+          echo "$EDGES" | jq -r '.id' | while read -r DEP; do
+            [ -z "$DEP" ] && continue
+            if [ "$DEP" != "$NEWEST" ]; then
+              MUT='mutation { deploymentRemove(id: "'"$DEP"'") { id } }'
+              MP=$(jq -nc --arg m "$MUT" '{query:$m}')
+              curl -fsS \
+                -H "Authorization: Bearer $RAILWAY_TOKEN" \
+                -H "Content-Type: application/json" \
+                -H "User-Agent: railway-cli" \
+                -d "$MP" \
+                https://backboard.railway.com/graphql/v2 >/dev/null || \
+                echo "::warning::Railway delete failed: $DEP"
+              echo "deleted $DEP"
+            fi
+          done
+
+      - name: Prune GitHub deployment records
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Keep only the newest deployment record per environment; delete the rest.
+          gh api "repos/${GITHUB_REPO}/deployments" --paginate \
+            -q '.[] | [.id,.environment,.created_at] | @tsv' > /tmp/deps.tsv
+          if [ ! -s /tmp/deps.tsv ]; then
+            echo "No deployment records to prune."
+            exit 0
+          fi
+          awk -F'\t' '{ print $2 "\t" $1 "\t" $3 }' /tmp/deps.tsv | sort > /tmp/envs.tsv
+          CURRENT_ENV=""
+          while IFS=$'\t' read -r ENV ID CREATED; do
+            if [ "$ENV" != "$CURRENT_ENV" ]; then
+              CURRENT_ENV="$ENV"
+              # First row of each env is the newest (sorted, keeps first per env).
+              echo "[$ENV] keeping $ID"
+              continue
+            fi
+            gh api -X DELETE "repos/${GITHUB_REPO}/deployments/${ID}" >/dev/null || \
+              echo "::warning::GitHub record delete failed: $ID"
+            echo "[$ENV] deleted record $ID"
+          done < /tmp/envs.tsv
