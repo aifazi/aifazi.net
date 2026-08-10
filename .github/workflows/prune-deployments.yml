@@ -47,7 +47,7 @@ jobs:
           TEAM_ID="team_nL9SXzDbhzUHFNR2xaPzWldV"
           # projectName|projectId
           PROJECTS="aifazi-website-new|prj_KbPCKEO6LvFztKF6GEIn0y2x7cmx
-aifazi-backend|prj_Va1GHAH4Rhabm2MicoxuS62iSWY3"
+                    aifazi-backend|prj_Va1GHAH4Rhabm2MicoxuS62iSWY3"
 
           while IFS='|' read -r NAME PROJ; do
             [ -z "$NAME" ] && continue
