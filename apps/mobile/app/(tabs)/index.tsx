@@ -7,6 +7,7 @@ import { Image as ExpoImage } from 'expo-image'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { carouselSnap } from '@/src/lib/carousel'
+import { withAlpha } from '@/src/lib/color'
 import { api } from '@/src/lib/api'
 import { Btn, Card, SectionTag } from '@/src/components/ui'
 import { ProfilePill } from '@/src/components/ProfilePill'
@@ -15,6 +16,7 @@ import type { IconName } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
 import { AmbientGlow, PulsingDot } from '@/src/components/glow'
 import { Screen } from '@/src/components/Screen'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface StatusService {
   name: string
@@ -148,41 +150,48 @@ export default function HomeScreen() {
     <Screen scroll refreshControl={
       <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
     }>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.xs }}>
-        <Text style={{ color: c.text, fontSize: FONT.h1, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined, letterSpacing: theme.mono ? 1 : 0 }}>
-          aifazi.net
+      <Reveal dir="up" duration={420}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.xs }}>
+          <Text style={{ color: c.text, fontSize: FONT.h1, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined, letterSpacing: theme.mono ? 1 : 0 }}>
+            aifazi.net
+          </Text>
+          {isAuthed ? (
+            <ProfilePill onPress={() => router.push('/profile' as Href)} />
+          ) : (
+            <Btn title="Sign in" onPress={() => router.push('/profile' as Href)} size="sm" />
+          )}
+        </View>
+        <Text style={{ color: c.muted, fontSize: FONT.md, marginBottom: SPACE.xxxl }}>
+          Community platform — mobile client{isAuthed && user ? ` · hi ${user.username}` : ''}
         </Text>
-        {isAuthed ? (
-          <ProfilePill onPress={() => router.push('/profile' as Href)} />
-        ) : (
-          <Btn title="Sign in" onPress={() => router.push('/profile' as Href)} size="sm" />
-        )}
-      </View>
-      <Text style={{ color: c.muted, fontSize: FONT.md, marginBottom: SPACE.xxxl }}>
-        Community platform — mobile client{isAuthed && user ? ` · hi ${user.username}` : ''}
-      </Text>
+      </Reveal>
 
       {loading ? (
         <Loader />
       ) : (
         <>
           {loadError ? (
-            <Text style={{ color: c.warning, fontSize: FONT.md, marginBottom: SPACE.lg }}>{loadError}</Text>
+            <Reveal dir="scale" delay={stagger(0)} duration={480}>
+              <Text style={{ color: c.warning, fontSize: FONT.md, marginBottom: SPACE.lg }}>{loadError}</Text>
+            </Reveal>
           ) : null}
           <View style={[styles.grid, { marginBottom: SPACE.huge }]}>
-            {tiles.map((t) => (
-              <TouchableOpacity
-                key={t.label}
-                onPress={() => router.push(t.href)}
-                style={[styles.tile, { borderColor: c.border, backgroundColor: c.bg2, borderRadius: radius }]}
-              >
-                <Icon name={t.icon} size={24} color={t.tint} />
-                <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '800', marginTop: SPACE.sm }}>{t.label}</Text>
-              </TouchableOpacity>
+            {tiles.map((t, i) => (
+              <Reveal key={t.label} dir="scale" delay={stagger(i)} duration={420}>
+                <TouchableOpacity
+                  onPress={() => router.push(t.href)}
+                  activeOpacity={0.85}
+                  style={[styles.tile, { borderColor: c.border, backgroundColor: withAlpha(c.bg2, 0.9), borderRadius: radius }]}
+                >
+                  <Icon name={t.icon} size={24} color={t.tint} />
+                  <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '800', marginTop: SPACE.sm }}>{t.label}</Text>
+                </TouchableOpacity>
+              </Reveal>
             ))}
           </View>
 
-          <Card style={{ marginBottom: SPACE.huge }}>
+          <Reveal dir="up" delay={120} duration={520} style={{ marginBottom: SPACE.huge }}>
+          <Card>
             <AmbientGlow color={overallColor} size={150} intensity={0.32} style={{ top: -60, right: -40 }} />
             <View style={styles.cardHeader}>
               <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '800' }}>Server status</Text>
@@ -206,8 +215,10 @@ export default function HomeScreen() {
               <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '700' }}>Detailed status →</Text>
             </TouchableOpacity>
           </Card>
+          </Reveal>
 
           {projects.length > 0 ? (
+            <Reveal dir="up" delay={160} duration={520}>
             <>
               <SectionTitle title="Our projects" onMore={() => router.push('/projects')} />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} {...carouselSnap(160)} style={{ marginBottom: SPACE.huge }}>
@@ -215,7 +226,7 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     key={p.id}
                     onPress={() => router.push('/projects' as Href)}
-                    style={[styles.projectTile, { borderColor: c.border, backgroundColor: c.bg3, borderRadius: radius }]}
+                    style={[styles.projectTile, { borderColor: c.border, backgroundColor: withAlpha(c.bg3, 0.9), borderRadius: radius }]}
                   >
                     {p.image_url ? (
                       <ExpoImage source={{ uri: p.image_url }} style={{ width: '100%', height: 70, borderTopLeftRadius: radius, borderTopRightRadius: radius }} contentFit="cover" />
@@ -231,9 +242,11 @@ export default function HomeScreen() {
                 ))}
               </ScrollView>
             </>
+            </Reveal>
           ) : null}
 
           {products.length > 0 ? (
+            <Reveal dir="up" delay={200} duration={520}>
             <>
               <SectionTitle title="Store picks" onMore={() => router.push('/store')} />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} {...carouselSnap(150)} style={{ marginBottom: SPACE.huge }}>
@@ -241,7 +254,7 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     key={p.id}
                     onPress={() => router.push(`/store-item?slug=${encodeURIComponent(p.slug)}` as Href)}
-                    style={[styles.productTile, { borderColor: c.border, backgroundColor: c.bg2, borderRadius: radius }]}
+                    style={[styles.productTile, { borderColor: c.border, backgroundColor: withAlpha(c.bg2, 0.9), borderRadius: radius }]}
                   >
                     {p.image_url ? (
                       <ExpoImage source={{ uri: p.image_url }} style={{ width: '100%', height: 70, borderTopLeftRadius: radius, borderTopRightRadius: radius }} contentFit="cover" />
@@ -258,9 +271,11 @@ export default function HomeScreen() {
                 ))}
               </ScrollView>
             </>
+            </Reveal>
           ) : null}
 
           {threads.length > 0 ? (
+            <Reveal dir="up" delay={240} duration={520}>
             <>
               <SectionTitle title="Forum threads" onMore={() => router.push('/forum')} />
               <View style={{ marginBottom: SPACE.huge }}>
@@ -280,9 +295,11 @@ export default function HomeScreen() {
                 ))}
               </View>
             </>
+            </Reveal>
           ) : null}
 
           {posts.length > 0 ? (
+            <Reveal dir="up" delay={280} duration={520}>
             <>
               <SectionTitle title="Blog" onMore={() => router.push('/blog')} />
               <View>
@@ -300,6 +317,7 @@ export default function HomeScreen() {
                 ))}
               </View>
             </>
+            </Reveal>
           ) : null}
         </>
       )}

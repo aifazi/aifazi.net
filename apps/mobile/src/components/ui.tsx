@@ -5,6 +5,7 @@ import { withAlpha, contrastText } from '@/src/lib/color'
 import { webPillSnap } from '@/src/lib/carousel'
 import { CODE_FONT, FONT, SPACE, buttonLabel, frameworkStyles, micro, tagLabel } from '@/src/design'
 import { Icon, IconName } from '@/src/components/icon'
+import { Shimmer } from '@/src/components/motion'
 
 /* ─── Surfaces / shapes ─────────────────────────────────────────────────── */
 
@@ -121,35 +122,39 @@ export function Card({
   title,
   subtitle,
   headerRight,
+  onPress,
 }: {
   children: ReactNode
   style?: ViewStyle
   title?: string
   subtitle?: string
   headerRight?: ReactNode
+  onPress?: () => void
 }) {
   const { theme } = useTheme()
   const c = theme.colors
   const fw = frameworkStyles(theme)
   const icy = !theme.mono
-  return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: withAlpha(c.bg2, theme.dark ? 0.94 : 0.98),
-          borderColor: icy ? withAlpha(c.accent2, 0.18) : withAlpha(c.accent2, 0.4),
-          borderWidth: fw.borderWidth,
-          borderRadius: fw.radius,
-          shadowColor: '#000',
-          shadowOpacity: fw.hardShadow ? 0.18 : theme.dark ? 0.3 : 0.2,
-          shadowRadius: fw.hardShadow ? 3 : 10,
-          shadowOffset: { width: fw.hardShadow ? 4 : 0, height: fw.hardShadow ? 4 : 2 },
-          elevation: fw.hardShadow ? 2 : 4,
-        },
-        style,
-      ]}
-    >
+  const scale = useRef(new Animated.Value(1)).current
+  const pressIn = () => Animated.spring(scale, { toValue: 0.98, useNativeDriver: true, speed: 50, bounciness: 0 }).start()
+  const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start()
+  const shell = [
+    styles.card,
+    {
+      backgroundColor: withAlpha(c.bg2, theme.dark ? 0.9 : 0.97),
+      borderColor: icy ? withAlpha(c.accent2, 0.18) : withAlpha(c.accent2, 0.4),
+      borderWidth: fw.borderWidth,
+      borderRadius: fw.radius,
+      shadowColor: '#000',
+      shadowOpacity: fw.hardShadow ? 0.18 : theme.dark ? 0.32 : 0.18,
+      shadowRadius: fw.hardShadow ? 3 : 12,
+      shadowOffset: { width: fw.hardShadow ? 4 : 0, height: fw.hardShadow ? 4 : 3 },
+      elevation: fw.hardShadow ? 2 : 5,
+    },
+    style,
+  ]
+  const inner = (
+    <>
       {icy ? (
         <View
           pointerEvents="none"
@@ -177,7 +182,17 @@ export function Card({
         </View>
       ) : null}
       {children}
-    </View>
+    </>
+  )
+  if (!onPress) {
+    return <View style={shell}>{inner}</View>
+  }
+  return (
+    <Animated.View style={[{ transform: [{ scale }] }, style ? { alignSelf: 'stretch' } : null]}>
+      <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={0.9} style={shell}>
+        {inner}
+      </TouchableOpacity>
+    </Animated.View>
   )
 }
 
@@ -502,9 +517,7 @@ export function EmptyState({
 
 /** Theme-aware pulsing skeleton block (list rows / cards while loading). */
 export function Skeleton({ width, height, radius = 10 }: { width: DimensionValue; height: number; radius?: number }) {
-  const { theme } = useTheme()
-  const c = theme.colors
-  return <View style={{ width, height, borderRadius: theme.mono ? 0 : radius, backgroundColor: withAlpha(c.border, 0.45), overflow: 'hidden' }} />
+  return <Shimmer width={width} height={height} radius={radius} />
 }
 
 /** Inline form error line. */
