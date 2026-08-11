@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
@@ -8,12 +8,13 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { carouselSnap } from '@/src/lib/carousel'
 import { api } from '@/src/lib/api'
-import { Btn } from '@/src/components/ui'
+import { Btn, Card, SectionTag } from '@/src/components/ui'
 import { ProfilePill } from '@/src/components/ProfilePill'
 import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
 import { AmbientGlow, PulsingDot } from '@/src/components/glow'
+import { Screen } from '@/src/components/Screen'
 
 interface StatusService {
   name: string
@@ -81,6 +82,8 @@ function fmtPrice(p?: Product) {
 export default function HomeScreen() {
   const { theme } = useTheme()
   const c = theme.colors
+  const fw = frameworkStyles(theme)
+  const radius = fw.radius
   const router = useRouter()
   const { user, isAuthed } = useAuth()
   const [mon, setMon] = useState<MonitorStatus>({})
@@ -142,16 +145,11 @@ export default function HomeScreen() {
   ]
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 96 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
-        }
-      >
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-        <Text style={{ color: c.text, fontSize: 24, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined, letterSpacing: theme.mono ? 1 : 0 }}>
+    <Screen scroll refreshControl={
+      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
+    }>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.xs }}>
+        <Text style={{ color: c.text, fontSize: FONT.h1, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined, letterSpacing: theme.mono ? 1 : 0 }}>
           aifazi.net
         </Text>
         {isAuthed ? (
@@ -160,7 +158,7 @@ export default function HomeScreen() {
           <Btn title="Sign in" onPress={() => router.push('/profile' as Href)} size="sm" />
         )}
       </View>
-      <Text style={{ color: c.muted, fontSize: 12, marginBottom: 16 }}>
+      <Text style={{ color: c.muted, fontSize: FONT.md, marginBottom: SPACE.xxxl }}>
         Community platform — mobile client{isAuthed && user ? ` · hi ${user.username}` : ''}
       </Text>
 
@@ -169,64 +167,64 @@ export default function HomeScreen() {
       ) : (
         <>
           {loadError ? (
-            <Text style={{ color: c.warning, fontSize: 12, marginBottom: 10 }}>{loadError}</Text>
+            <Text style={{ color: c.warning, fontSize: FONT.md, marginBottom: SPACE.lg }}>{loadError}</Text>
           ) : null}
-          <View style={[styles.grid, { marginBottom: 18 }]}>
+          <View style={[styles.grid, { marginBottom: SPACE.huge }]}>
             {tiles.map((t) => (
               <TouchableOpacity
                 key={t.label}
                 onPress={() => router.push(t.href)}
-                style={[styles.tile, { borderColor: c.border, backgroundColor: c.bg2 }]}
+                style={[styles.tile, { borderColor: c.border, backgroundColor: c.bg2, borderRadius: radius }]}
               >
                 <Icon name={t.icon} size={24} color={t.tint} />
-                <Text style={{ color: c.text, fontSize: 13, fontWeight: '800', marginTop: 6 }}>{t.label}</Text>
+                <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '800', marginTop: SPACE.sm }}>{t.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <View style={[styles.card, { borderColor: c.border, backgroundColor: c.bg2, overflow: 'hidden' }]}>
+          <Card style={{ marginBottom: SPACE.huge }}>
             <AmbientGlow color={overallColor} size={150} intensity={0.32} style={{ top: -60, right: -40 }} />
             <View style={styles.cardHeader}>
-              <Text style={{ color: c.text, fontSize: 13, fontWeight: '800' }}>Server status</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '800' }}>Server status</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
                 <PulsingDot color={overallColor} size={9} />
-                <Text style={{ color: overallColor, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' }}>{overall}</Text>
+                <Text style={{ color: overallColor, fontSize: FONT.md, fontWeight: '700', textTransform: 'uppercase' }}>{overall}</Text>
               </View>
             </View>
             {mon.services ? (
-              <View style={{ marginTop: 8 }}>
+              <View style={{ marginTop: SPACE.md }}>
                 {mon.services.slice(0, 6).map((s) => (
-                  <View key={s.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}>
+                  <View key={s.name} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.xs }}>
                     <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: s.status === 'up' || s.status === 'operational' ? c.accent : s.status === 'down' || s.status === 'outage' ? c.danger : c.accent2 }} />
-                    <Text style={{ color: c.text2, fontSize: 12, flex: 1 }} numberOfLines={1}>{s.label || s.name}</Text>
-                    <Text style={{ color: c.muted, fontSize: 11 }}>{s.uptime_24h != null ? `${s.uptime_24h}%` : ''}</Text>
+                    <Text style={{ color: c.text2, fontSize: FONT.md, flex: 1 }} numberOfLines={1}>{s.label || s.name}</Text>
+                    <Text style={{ color: c.muted, fontSize: FONT.sm }}>{s.uptime_24h != null ? `${s.uptime_24h}%` : ''}</Text>
                   </View>
                 ))}
               </View>
             ) : null}
-            <TouchableOpacity onPress={() => router.push('/status' as Href)} hitSlop={8} style={{ marginTop: 10, alignSelf: 'flex-start' }}>
-              <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>Detailed status →</Text>
+            <TouchableOpacity onPress={() => router.push('/status' as Href)} hitSlop={8} style={{ marginTop: SPACE.lg, alignSelf: 'flex-start' }}>
+              <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '700' }}>Detailed status →</Text>
             </TouchableOpacity>
-          </View>
+          </Card>
 
           {projects.length > 0 ? (
             <>
               <SectionTitle title="Our projects" onMore={() => router.push('/projects')} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} {...carouselSnap(160)} style={{ marginBottom: 18 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} {...carouselSnap(160)} style={{ marginBottom: SPACE.huge }}>
                 {projects.map((p) => (
                   <TouchableOpacity
                     key={p.id}
                     onPress={() => router.push('/projects' as Href)}
-                    style={[styles.projectTile, { borderColor: c.border, backgroundColor: c.bg3 }]}
+                    style={[styles.projectTile, { borderColor: c.border, backgroundColor: c.bg3, borderRadius: radius }]}
                   >
                     {p.image_url ? (
-                      <ExpoImage source={{ uri: p.image_url }} style={{ width: '100%', height: 70, borderTopLeftRadius: 10, borderTopRightRadius: 10 }} contentFit="cover" />
+                      <ExpoImage source={{ uri: p.image_url }} style={{ width: '100%', height: 70, borderTopLeftRadius: radius, borderTopRightRadius: radius }} contentFit="cover" />
                     ) : (
                       <View style={{ height: 56, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 20 }}>🚀</Text>
+                        <Text style={{ fontSize: FONT.h3 }}>🚀</Text>
                       </View>
                     )}
-                    <Text style={{ color: c.text, fontSize: 12, fontWeight: '700', padding: 8 }} numberOfLines={2}>
+                    <Text style={{ color: c.text, fontSize: FONT.md, fontWeight: '700', padding: SPACE.md }} numberOfLines={2}>
                       {p.name || p.title}
                     </Text>
                   </TouchableOpacity>
@@ -238,23 +236,23 @@ export default function HomeScreen() {
           {products.length > 0 ? (
             <>
               <SectionTitle title="Store picks" onMore={() => router.push('/store')} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} {...carouselSnap(150)} style={{ marginBottom: 18 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} {...carouselSnap(150)} style={{ marginBottom: SPACE.huge }}>
                 {products.slice(0, 6).map((p) => (
                   <TouchableOpacity
                     key={p.id}
                     onPress={() => router.push(`/store-item?slug=${encodeURIComponent(p.slug)}` as Href)}
-                    style={[styles.productTile, { borderColor: c.border, backgroundColor: c.bg2 }]}
+                    style={[styles.productTile, { borderColor: c.border, backgroundColor: c.bg2, borderRadius: radius }]}
                   >
                     {p.image_url ? (
-                      <ExpoImage source={{ uri: p.image_url }} style={{ width: '100%', height: 70, borderTopLeftRadius: 10, borderTopRightRadius: 10 }} contentFit="cover" />
+                      <ExpoImage source={{ uri: p.image_url }} style={{ width: '100%', height: 70, borderTopLeftRadius: radius, borderTopRightRadius: radius }} contentFit="cover" />
                     ) : (
                       <View style={[styles.productArt, { backgroundColor: c.bg3 }]}>
-                        <Text style={{ fontSize: 22 }}>🛍️</Text>
+                        <Text style={{ fontSize: FONT.h2 }}>🛍️</Text>
                       </View>
                     )}
-                    <View style={{ padding: 8 }}>
-                      <Text style={{ color: c.text, fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{p.name}</Text>
-                      <Text style={{ color: c.accent, fontSize: 12, fontWeight: '800', marginTop: 2 }}>{fmtPrice(p)}</Text>
+                    <View style={{ padding: SPACE.md }}>
+                      <Text style={{ color: c.text, fontSize: FONT.md, fontWeight: '700' }} numberOfLines={1}>{p.name}</Text>
+                      <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '800', marginTop: SPACE.xxs }}>{fmtPrice(p)}</Text>
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -265,17 +263,17 @@ export default function HomeScreen() {
           {threads.length > 0 ? (
             <>
               <SectionTitle title="Forum threads" onMore={() => router.push('/forum')} />
-              <View style={{ marginBottom: 18 }}>
+              <View style={{ marginBottom: SPACE.huge }}>
                 {threads.slice(0, 4).map((t) => (
                   <TouchableOpacity
                     key={t.id}
                     onPress={() => router.push(`/forum-thread?id=${t.id}` as Href)}
                     style={[styles.listRow, { borderBottomColor: c.border }]}
                   >
-                    <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>
+                    <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }} numberOfLines={1}>
                       {t.category?.icon ? `${t.category.icon} ` : ''}{t.title}
                     </Text>
-                    <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }}>
+                    <Text style={{ color: c.muted, fontSize: FONT.sm, marginTop: SPACE.xxs }}>
                       {t.author?.username || '—'} · 💬 {t.replyCount ?? 0}
                     </Text>
                   </TouchableOpacity>
@@ -294,8 +292,8 @@ export default function HomeScreen() {
                     onPress={() => router.push(`/blog-post?slug=${encodeURIComponent(p.slug)}` as Href)}
                     style={[styles.listRow, { borderBottomColor: c.border }]}
                   >
-                    <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }} numberOfLines={1}>{p.title}</Text>
-                    <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                    <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }} numberOfLines={1}>{p.title}</Text>
+                    <Text style={{ color: c.muted, fontSize: FONT.sm, marginTop: SPACE.xxs }} numberOfLines={1}>
                       {p.author_name ?? ''}{p.category ? ` · ${p.category}` : ''}
                     </Text>
                   </TouchableOpacity>
@@ -305,8 +303,7 @@ export default function HomeScreen() {
           ) : null}
         </>
       )}
-      </ScrollView>
-    </SafeAreaView>
+    </Screen>
   )
 }
 
@@ -314,41 +311,30 @@ function SectionTitle({ title, onMore }: { title: string; onMore: () => void }) 
   const { theme } = useTheme()
   const c = theme.colors
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-      <Text style={{ color: c.text, fontSize: 15, fontWeight: '800' }}>{title}</Text>
-      <TouchableOpacity onPress={onMore} hitSlop={8}>
-        <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>See all →</Text>
-      </TouchableOpacity>
+    <View style={{ marginBottom: SPACE.md }}>
+      <SectionTag>{title}</SectionTag>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: SPACE.xs }}>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800' }}>{title}</Text>
+        <TouchableOpacity onPress={onMore} hitSlop={8}>
+          <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '700' }}>See all →</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: SPACE.lg,
   },
   tile: {
     width: '30%',
     aspectRatio: 1,
-    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  card: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 18,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -357,16 +343,14 @@ const styles = StyleSheet.create({
   },
   projectTile: {
     width: 150,
-    borderRadius: 10,
     borderWidth: 1,
-    marginRight: 10,
+    marginRight: SPACE.lg,
     overflow: 'hidden',
   },
   productTile: {
     width: 140,
-    borderRadius: 10,
     borderWidth: 1,
-    marginRight: 10,
+    marginRight: SPACE.lg,
     overflow: 'hidden',
   },
   productArt: {
@@ -375,7 +359,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   listRow: {
-    paddingVertical: 10,
+    paddingVertical: SPACE.lg,
     borderBottomWidth: 1,
   },
 })

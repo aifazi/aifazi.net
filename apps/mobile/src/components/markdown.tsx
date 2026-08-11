@@ -1,4 +1,5 @@
 import { Text, Linking } from 'react-native'
+import { FONT } from '@/src/design'
 import { useTheme } from '@/src/theme'
 
 function parseInline(text: string, baseColor: string, link: string, onLink?: (url: string) => void): any[] {
@@ -11,7 +12,7 @@ function parseInline(text: string, baseColor: string, link: string, onLink?: (ur
     if (m.index > last) out.push(<Text key={k++} style={{ color: baseColor }}>{text.slice(last, m.index)}</Text>)
     if (m[2] !== undefined) {
       out.push(
-        <Text key={k++} style={{ fontFamily: 'monospace', fontSize: 12, color: link, backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 4, overflow: 'hidden', paddingHorizontal: 3 }}>
+        <Text key={k++} style={{ fontFamily: 'monospace', fontSize: FONT.md, color: link, backgroundColor: 'rgba(0,0,0,0.35)', borderRadius: 4, overflow: 'hidden', paddingHorizontal: 3 }}>
           {m[2]}
         </Text>,
       )
@@ -51,7 +52,7 @@ export function MarkdownText({
   const lines = content.split('\n')
   const link = theme.colors.link
   return (
-    <Text style={{ color, fontSize: 14, lineHeight: 19 }}>
+    <Text style={{ color, fontSize: FONT.base, lineHeight: 19 }}>
       {lines.map((line, i) => (
         <Text key={i}>
           {parseInline(line, color, link, onLink)}

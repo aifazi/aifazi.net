@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text } from 'react-native'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
@@ -77,7 +78,7 @@ export function AppUpdatesCard() {
       ) : checkError ? (
         <>
           <Muted style={{ color: c.danger }}>{checkError}</Muted>
-          <View style={{ marginTop: 10 }}>
+          <View style={{ marginTop: SPACE.lg }}>
             <Btn title="Try again" variant="ghost" onPress={runCheck} />
           </View>
         </>
@@ -86,37 +87,37 @@ export function AppUpdatesCard() {
       ) : check.state === 'building' ? (
         <>
           <Muted>Version {check.latest} is being built — it usually appears within about 15 minutes. Check again shortly to install it.</Muted>
-          <View style={{ marginTop: 10 }}>
+          <View style={{ marginTop: SPACE.lg }}>
             <Btn title="Check again" variant="ghost" onPress={runCheck} />
           </View>
         </>
       ) : check.state === 'none' ? (
         <>
           <Muted>No update release yet.</Muted>
-          <View style={{ marginTop: 10 }}>
+          <View style={{ marginTop: SPACE.lg }}>
             <Btn title="Check again" variant="ghost" onPress={runCheck} />
           </View>
         </>
       ) : check.updateAvailable ? (
         <>
           <Muted>Version {check.latest} is available (you have {check.installed}).</Muted>
-          {check.release?.notes ? <Muted style={{ marginTop: 4 }} numberOfLines={2}>{check.release.notes}</Muted> : null}
+          {check.release?.notes ? <Muted style={{ marginTop: SPACE.xs }} numberOfLines={2}>{check.release.notes}</Muted> : null}
           {downloading ? (
-            <View style={{ marginTop: 10 }}>
-              <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>Downloading… {progress}%</Text>
+            <View style={{ marginTop: SPACE.lg }}>
+              <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '700' }}>Downloading… {progress}%</Text>
             </View>
           ) : needPerm ? (
             <>
-              {error ? <Muted style={{ color: c.danger, marginTop: 8 }}>{error}</Muted> : null}
-              <Muted style={{ marginTop: 8 }}>
+              {error ? <Muted style={{ color: c.danger, marginTop: SPACE.md }}>{error}</Muted> : null}
+              <Muted style={{ marginTop: SPACE.md }}>
                 Android must allow aifazi to install apps before the update can continue.
               </Muted>
-              <View style={{ marginTop: 10 }}>
+              <View style={{ marginTop: SPACE.lg }}>
                 <Btn title="Turn on install permission" onPress={retryAfterPerm} />
               </View>
             </>
           ) : (
-            <View style={{ marginTop: 10 }}>
+            <View style={{ marginTop: SPACE.lg }}>
               <Btn title="Download & install" onPress={install} />
             </View>
           )}
@@ -124,7 +125,7 @@ export function AppUpdatesCard() {
       ) : (
         <>
           <Muted>You&apos;re on the latest version ({check.installed}).</Muted>
-          <View style={{ marginTop: 10 }}>
+          <View style={{ marginTop: SPACE.lg }}>
             <Btn title="Check again" variant="ghost" onPress={runCheck} disabled={busy} />
           </View>
         </>

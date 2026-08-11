@@ -9,6 +9,7 @@
 import { View, Text } from 'react-native'
 import { Image } from 'expo-image'
 import { useTheme } from '@/src/theme'
+import { withAlpha } from '@/src/lib/color'
 
 export const BUILTIN_AVATARS = [
   { key: 'neon-cat', icon: '🐱', label: 'Neon Cat' },
@@ -82,11 +83,11 @@ export function Avatar({
           width: size,
           height: size,
           borderRadius: r,
-          backgroundColor: `${c.accent2}22`,
+          backgroundColor: withAlpha(c.accent2, 0.13),
           alignItems: 'center',
           justifyContent: 'center',
           borderWidth: 1,
-          borderColor: `${c.accent2}44`,
+          borderColor: withAlpha(c.accent2, 0.27),
         }}
       >
         <Text style={{ fontSize: size * 0.55 }}>{builtin}</Text>
@@ -111,11 +112,11 @@ export function Avatar({
         width: size,
         height: size,
         borderRadius: r,
-        backgroundColor: `${c.accent}22`,
+        backgroundColor: withAlpha(c.accent, 0.13),
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: `${c.accent}44`,
+        borderColor: withAlpha(c.accent, 0.27),
       }}
     >
       <Text style={{ color: c.accent, fontSize: size * 0.38, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined }}>

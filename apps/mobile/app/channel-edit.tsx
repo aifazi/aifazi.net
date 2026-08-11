@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import {
   View,
   Text,
@@ -9,6 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn, Toggle } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -267,7 +269,7 @@ export default function ChannelEditScreen() {
   if (!isStaff) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
-        <Muted style={{ textAlign: 'center', marginTop: 40 }}>Staff only.</Muted>
+        <Muted style={{ textAlign: 'center', marginTop: SPACE.colossal }}>Staff only.</Muted>
       </SafeAreaView>
     )
   }
@@ -278,68 +280,68 @@ export default function ChannelEditScreen() {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
+          gap: SPACE.lg,
+          paddingHorizontal: SPACE.xl,
+          paddingVertical: SPACE.lg,
           borderBottomWidth: 1,
           borderBottomColor: c.border,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }}>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }}>
           {room_id ? 'Edit channel' : 'New channel'}
         </Text>
-        <Btn title="Save" onPress={save} disabled={saving} style={{ paddingVertical: 7, paddingHorizontal: 14 }} />
+        <Btn title="Save" onPress={save} disabled={saving} style={{ paddingVertical: 7, paddingHorizontal: SPACE.xxl }} />
       </View>
 
       {loading ? (
         <Loader />
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 60 }}>
-          {err ? <Muted style={{ marginBottom: 10 }}>{err}</Muted> : null}
+        <ScrollView contentContainerStyle={{ padding: SPACE.xl, paddingBottom: 60 }}>
+          {err ? <Muted style={{ marginBottom: SPACE.lg }}>{err}</Muted> : null}
 
           <Card title="Details">
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: SPACE.md }}>
               <TextInput
                 value={name}
                 onChangeText={setName}
                 placeholder="Channel name"
                 placeholderTextColor={c.muted}
-                style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10 }}
+                style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: SPACE.lg }}
               />
               <TextInput
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Description"
                 placeholderTextColor={c.muted}
-                style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10 }}
+                style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: SPACE.lg }}
               />
-              <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flexDirection: 'row', gap: SPACE.md }}>
                 <TextInput
                   value={emoji}
                   onChangeText={setEmoji}
                   placeholder="👑"
                   placeholderTextColor={c.muted}
-                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10, width: 70, textAlign: 'center' }}
+                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: SPACE.lg, width: 70, textAlign: 'center' }}
                 />
                 <TextInput
                   value={color}
                   onChangeText={setColor}
                   placeholder="#00ff88"
                   placeholderTextColor={c.muted}
-                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10, flex: 1 }}
+                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: SPACE.lg, flex: 1 }}
                 />
               </View>
-              <View style={{ flexDirection: 'row', gap: 6 }}>
+              <View style={{ flexDirection: 'row', gap: SPACE.sm }}>
                 {TYPES.map((t) => (
                   <TouchableOpacity
                     key={t}
                     onPress={() => setType(t)}
                     style={{
                       flex: 1,
-                      paddingVertical: 8,
+                      paddingVertical: SPACE.md,
                       borderRadius: 8,
                       borderWidth: 1,
                       borderColor: type === t ? c.accent : c.border,
@@ -347,53 +349,53 @@ export default function ChannelEditScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ color: type === t ? c.onAccent : c.text, fontWeight: '700', fontSize: 13 }}>
+                    <Text style={{ color: type === t ? c.onAccent : c.text, fontWeight: '700', fontSize: FONT.body }}>
                       {t === 'text' ? '💬 Text' : t === 'voice' ? '🔊 Voice' : '📹 Video'}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ color: c.text, width: 100, fontSize: 13 }}>Slow mode (s)</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
+                <Text style={{ color: c.text, width: 100, fontSize: FONT.body }}>Slow mode (s)</Text>
                 <TextInput
                   value={slowMode}
                   onChangeText={setSlowMode}
                   keyboardType="number-pad"
                   placeholderTextColor={c.muted}
-                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 8, flex: 1 }}
+                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: SPACE.md, flex: 1 }}
                 />
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ color: c.text, fontSize: 13 }}>Read-only (staff + privileged can post)</Text>
+                <Text style={{ color: c.text, fontSize: FONT.body }}>Read-only (staff + privileged can post)</Text>
                 <Toggle value={readOnly} onValueChange={setReadOnly} />
               </View>
             </View>
           </Card>
 
           <Card title="Who can access" subtitle="Roles and/or users can open this channel">
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm, marginBottom: SPACE.lg }}>
               {MODES.map((m) => (
                 <TouchableOpacity
                   key={m.key}
                   onPress={() => changeMode(m.key)}
                   style={{
                     paddingVertical: 7,
-                    paddingHorizontal: 12,
+                    paddingHorizontal: SPACE.xl,
                     borderRadius: 16,
                     borderWidth: 1,
                     borderColor: mode === m.key ? c.accent : c.border,
                     backgroundColor: mode === m.key ? c.accent2 : 'transparent',
                   }}
                 >
-                  <Text style={{ color: mode === m.key ? c.onAccent : c.text, fontWeight: '700', fontSize: 12 }}>{m.label}</Text>
+                  <Text style={{ color: mode === m.key ? c.onAccent : c.text, fontWeight: '700', fontSize: FONT.md }}>{m.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             {(mode === 'roles' || mode === 'mixed') && (
-              <View style={{ marginBottom: 10 }}>
-                <Muted style={{ marginBottom: 6 }}>Platform roles allowed</Muted>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              <View style={{ marginBottom: SPACE.lg }}>
+                <Muted style={{ marginBottom: SPACE.sm }}>Platform roles allowed</Muted>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm }}>
                   {PLATFORM_ROLES.map((r) => {
                     const on = allowedRoles.includes(r)
                     return (
@@ -401,15 +403,15 @@ export default function ChannelEditScreen() {
                         key={r}
                         onPress={() => setAllowedRoles((prev) => toggle(prev, r))}
                         style={{
-                          paddingVertical: 6,
-                          paddingHorizontal: 10,
+                          paddingVertical: SPACE.sm,
+                          paddingHorizontal: SPACE.lg,
                           borderRadius: 14,
                           borderWidth: 1,
                           borderColor: on ? c.accent : c.border,
                           backgroundColor: on ? c.accent2 : 'transparent',
                         }}
                       >
-                        <Text style={{ color: on ? c.onAccent : c.text, fontWeight: '700', fontSize: 12 }}>{r}</Text>
+                        <Text style={{ color: on ? c.onAccent : c.text, fontWeight: '700', fontSize: FONT.md }}>{r}</Text>
                       </TouchableOpacity>
                     )
                   })}
@@ -418,14 +420,14 @@ export default function ChannelEditScreen() {
             )}
 
             {(mode === 'users' || mode === 'mixed') && (
-              <View style={{ marginBottom: 10 }}>
-                <Muted style={{ marginBottom: 6 }}>Allowed users</Muted>
+              <View style={{ marginBottom: SPACE.lg }}>
+                <Muted style={{ marginBottom: SPACE.sm }}>Allowed users</Muted>
                 <TextInput
                   value={searchQ}
                   onChangeText={(q) => doSearch(q, setSearchQ, setSearchResults)}
                   placeholder="Search users…"
                   placeholderTextColor={c.muted}
-                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 8 }}
+                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: SPACE.lg, marginBottom: SPACE.md }}
                 />
                 {searchResults.map((u) => (
                   <TouchableOpacity
@@ -435,23 +437,23 @@ export default function ChannelEditScreen() {
                       setSearchResults([])
                       setSearchQ('')
                     }}
-                    style={{ paddingVertical: 6 }}
+                    style={{ paddingVertical: SPACE.sm }}
                   >
-                    <Text style={{ color: c.text, fontSize: 13 }}>
+                    <Text style={{ color: c.text, fontSize: FONT.body }}>
                       {u.username}
                       {u.role ? <Text style={{ color: c.muted }}> · {u.role}</Text> : null} ＋
                     </Text>
                   </TouchableOpacity>
                 ))}
                 {allowedUsers.length > 0 && (
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm }}>
                     {allowedUsers.map((u) => (
                       <TouchableOpacity
                         key={u}
                         onPress={() => setAllowedUsers((prev) => prev.filter((x) => x !== u))}
-                        style={{ paddingVertical: 6, paddingHorizontal: 10, borderRadius: 14, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg2 }}
+                        style={{ paddingVertical: SPACE.sm, paddingHorizontal: SPACE.lg, borderRadius: 14, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg2 }}
                       >
-                        <Text style={{ color: c.text, fontWeight: '700', fontSize: 12 }}>✕ {u}</Text>
+                        <Text style={{ color: c.text, fontWeight: '700', fontSize: FONT.md }}>✕ {u}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -460,9 +462,9 @@ export default function ChannelEditScreen() {
             )}
 
             {type !== 'text' && (
-              <View style={{ marginBottom: 6 }}>
-                <Muted style={{ marginBottom: 6 }}>Speak permissions (leave empty = same as access)</Muted>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              <View style={{ marginBottom: SPACE.sm }}>
+                <Muted style={{ marginBottom: SPACE.sm }}>Speak permissions (leave empty = same as access)</Muted>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm }}>
                   {PLATFORM_ROLES.map((r) => {
                     const on = speakRoles.includes(r)
                     return (
@@ -470,15 +472,15 @@ export default function ChannelEditScreen() {
                         key={r}
                         onPress={() => setSpeakRoles((prev) => toggle(prev, r))}
                         style={{
-                          paddingVertical: 6,
-                          paddingHorizontal: 10,
+                          paddingVertical: SPACE.sm,
+                          paddingHorizontal: SPACE.lg,
                           borderRadius: 14,
                           borderWidth: 1,
                           borderColor: on ? c.accent : c.border,
                           backgroundColor: on ? c.accent2 : 'transparent',
                         }}
                       >
-                        <Text style={{ color: on ? c.onAccent : c.text, fontWeight: '700', fontSize: 12 }}>{r}</Text>
+                        <Text style={{ color: on ? c.onAccent : c.text, fontWeight: '700', fontSize: FONT.md }}>{r}</Text>
                       </TouchableOpacity>
                     )
                   })}
@@ -496,19 +498,19 @@ export default function ChannelEditScreen() {
                   <Btn
                     title="+ Role"
                     onPress={() => setRoleEditor({ id: '', name: '', color: '#00ff88', permissions: [] })}
-                    style={{ paddingVertical: 6, paddingHorizontal: 10 }}
+                    style={{ paddingVertical: SPACE.sm, paddingHorizontal: SPACE.lg }}
                   />
                 }
               >
                 {roles.map((r) => (
-                  <View key={r.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 }}>
+                  <View key={r.id} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.sm }}>
                     <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: r.color }} />
                     <TouchableOpacity onPress={() => setRoleEditor(r)} style={{ flex: 1 }}>
-                      <Text style={{ color: c.text, fontSize: 13 }}>{r.name}</Text>
+                      <Text style={{ color: c.text, fontSize: FONT.body }}>{r.name}</Text>
                     </TouchableOpacity>
-                    <Text style={{ color: c.muted, fontSize: 11 }}>{(r.permissions ?? []).length} perms</Text>
+                    <Text style={{ color: c.muted, fontSize: FONT.sm }}>{(r.permissions ?? []).length} perms</Text>
                     <TouchableOpacity onPress={() => deleteRole(r)} hitSlop={8}>
-                      <Text style={{ color: c.danger, fontSize: 12 }}>Delete</Text>
+                      <Text style={{ color: c.danger, fontSize: FONT.md }}>Delete</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -517,22 +519,22 @@ export default function ChannelEditScreen() {
 
               {roleEditor ? (
                 <Card title={roleEditor.id === '' ? 'New role' : `Edit ${roleEditor.name}`}>
-                  <View style={{ gap: 8 }}>
+                  <View style={{ gap: SPACE.md }}>
                     <TextInput
                       value={roleEditor.name}
                       onChangeText={(v) => setRoleEditor((p) => (p ? { ...p, name: v } : p))}
                       placeholder="Role name"
                       placeholderTextColor={c.muted}
-                      style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10 }}
+                      style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: SPACE.lg }}
                     />
                     <TextInput
                       value={roleEditor.color}
                       onChangeText={(v) => setRoleEditor((p) => (p ? { ...p, color: v } : p))}
                       placeholder="#00ff88"
                       placeholderTextColor={c.muted}
-                      style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10 }}
+                      style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: SPACE.lg }}
                     />
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm }}>
                       {ROOM_PERMS.map((p) => {
                         const on = (roleEditor.permissions ?? []).includes(p)
                         return (
@@ -547,19 +549,19 @@ export default function ChannelEditScreen() {
                             }
                             style={{
                               paddingVertical: 5,
-                              paddingHorizontal: 8,
+                              paddingHorizontal: SPACE.md,
                               borderRadius: 12,
                               borderWidth: 1,
                               borderColor: on ? c.accent : c.border,
                               backgroundColor: on ? c.accent2 : 'transparent',
                             }}
                           >
-                            <Text style={{ color: on ? c.onAccent : c.text, fontWeight: '700', fontSize: 11 }}>{p}</Text>
+                            <Text style={{ color: on ? c.onAccent : c.text, fontWeight: '700', fontSize: FONT.sm }}>{p}</Text>
                           </TouchableOpacity>
                         )
                       })}
                     </View>
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={{ flexDirection: 'row', gap: SPACE.md }}>
                       <Btn title="Save role" onPress={saveRole} style={{ flex: 1 }} />
                       <Btn title="Cancel" onPress={() => setRoleEditor(null)} style={{ flex: 1, backgroundColor: c.border }} />
                     </View>
@@ -571,7 +573,7 @@ export default function ChannelEditScreen() {
                 title="Members"
                 subtitle={`${members.length} total`}
                 headerRight={
-                  <Btn title="Invite" onPress={() => inviteInputRef.current?.focus()} style={{ paddingVertical: 6, paddingHorizontal: 10 }} />
+                  <Btn title="Invite" onPress={() => inviteInputRef.current?.focus()} style={{ paddingVertical: SPACE.sm, paddingHorizontal: SPACE.lg }} />
                 }
               >
                 <TextInput
@@ -580,31 +582,31 @@ export default function ChannelEditScreen() {
                   onChangeText={(q) => doSearch(q, setInviteQ, setInviteResults)}
                   placeholder="Search users to invite…"
                   placeholderTextColor={c.muted}
-                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: 10, marginBottom: 8 }}
+                  style={{ backgroundColor: c.bg2, color: c.text, borderColor: c.border, borderWidth: 1, borderRadius: 8, padding: SPACE.lg, marginBottom: SPACE.md }}
                 />
                 {inviteResults.map((u) => (
-                  <TouchableOpacity key={u.username} onPress={() => invite(u.username)} style={{ paddingVertical: 6 }}>
-                    <Text style={{ color: c.text, fontSize: 13 }}>
+                  <TouchableOpacity key={u.username} onPress={() => invite(u.username)} style={{ paddingVertical: SPACE.sm }}>
+                    <Text style={{ color: c.text, fontSize: FONT.body }}>
                       {u.username}
                       {u.role ? <Text style={{ color: c.muted }}> · {u.role}</Text> : null} ＋
                     </Text>
                   </TouchableOpacity>
                 ))}
                 {members.map((m) => (
-                  <View key={m.username} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: c.border }}>
-                    <Text style={{ color: c.text, fontSize: 13, flex: 1 }} numberOfLines={1}>{m.username}</Text>
+                  <View key={m.username} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.sm, borderBottomWidth: 1, borderBottomColor: c.border }}>
+                    <Text style={{ color: c.text, fontSize: FONT.body, flex: 1 }} numberOfLines={1}>{m.username}</Text>
                     <TouchableOpacity onPress={() => changeMemberRole(m)} hitSlop={8}>
-                      <Text style={{ color: c.accent, fontWeight: '700', fontSize: 12 }}>{m.role || 'member'}</Text>
+                      <Text style={{ color: c.accent, fontWeight: '700', fontSize: FONT.md }}>{m.role || 'member'}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => removeMember(m)} hitSlop={8}>
-                      <Text style={{ color: c.danger, fontSize: 12 }}>Remove</Text>
+                      <Text style={{ color: c.danger, fontSize: FONT.md }}>Remove</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
                 {members.length === 0 ? <Muted>No members yet.</Muted> : null}
               </Card>
 
-              <TouchableOpacity onPress={removeRoom} style={{ marginTop: 16, alignItems: 'center' }}>
+              <TouchableOpacity onPress={removeRoom} style={{ marginTop: SPACE.xxxl, alignItems: 'center' }}>
                 <Text style={{ color: c.danger, fontWeight: '700' }}>Delete channel</Text>
               </TouchableOpacity>
             </>

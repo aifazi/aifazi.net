@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { statusTone } from '@/src/lib/color'
 import { useAuth } from '@/src/lib/auth'
@@ -111,7 +113,7 @@ export default function ChatAdminDMScreen() {
   if (!isStaff) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
-        <Muted style={{ textAlign: 'center', marginTop: 40 }}>Staff only.</Muted>
+        <Muted style={{ textAlign: 'center', marginTop: SPACE.colossal }}>Staff only.</Muted>
       </SafeAreaView>
     )
   }
@@ -128,28 +130,28 @@ export default function ChatAdminDMScreen() {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
+          gap: SPACE.lg,
+          paddingHorizontal: SPACE.xl,
+          paddingVertical: SPACE.lg,
           borderBottomWidth: 1,
           borderBottomColor: c.border,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }}>DM admin</Text>
-        <Btn title="Refresh" onPress={() => { setLoading(true); load() }} style={{ paddingVertical: 7, paddingHorizontal: 12 }} />
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }}>DM admin</Text>
+        <Btn title="Refresh" onPress={() => { setLoading(true); load() }} style={{ paddingVertical: 7, paddingHorizontal: SPACE.xl }} />
       </View>
 
-      <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}>
+      <View style={{ flexDirection: 'row', paddingHorizontal: SPACE.xl, paddingVertical: SPACE.md, gap: SPACE.md }}>
         {TABS.map((t) => (
           <TouchableOpacity
             key={t.key}
             onPress={() => setTab(t.key)}
             style={{
               flex: 1,
-              paddingVertical: 8,
+              paddingVertical: SPACE.md,
               borderRadius: 8,
               borderWidth: 1,
               borderColor: tab === t.key ? c.accent : c.border,
@@ -157,7 +159,7 @@ export default function ChatAdminDMScreen() {
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: tab === t.key ? c.onAccent : c.text, fontWeight: '700', fontSize: 12 }} numberOfLines={1}>
+            <Text style={{ color: tab === t.key ? c.onAccent : c.text, fontWeight: '700', fontSize: FONT.md }} numberOfLines={1}>
               {t.label}
             </Text>
           </TouchableOpacity>
@@ -170,32 +172,32 @@ export default function ChatAdminDMScreen() {
         <FlatList
           data={requests}
           keyExtractor={(r) => r.id}
-          contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
-          ListHeaderComponent={err ? <Muted style={{ marginBottom: 8 }}>{err}</Muted> : null}
-          ListEmptyComponent={<Muted style={{ textAlign: 'center', marginTop: 30 }}>No DM requests.</Muted>}
+          contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.colossal }}
+          ListHeaderComponent={err ? <Muted style={{ marginBottom: SPACE.md }}>{err}</Muted> : null}
+          ListEmptyComponent={<Muted style={{ textAlign: 'center', marginTop: SPACE.jumbo }}>No DM requests.</Muted>}
           renderItem={({ item }) => (
             <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+                  <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }} numberOfLines={1}>
                     {item.sender} → {item.recipient}
                   </Text>
                   <Muted numberOfLines={1}>
                     {item.status.toUpperCase()} · {item.created_at ? new Date(item.created_at).toLocaleString() : ''}
                   </Muted>
                 </View>
-                <Text style={{ color: statusTone(item.status, c) ?? c.muted, fontWeight: '800', fontSize: 11 }}>
+                <Text style={{ color: statusTone(item.status, c) ?? c.muted, fontWeight: '800', fontSize: FONT.sm }}>
                   {item.status.toUpperCase()}
                 </Text>
               </View>
               {item.status === 'pending' ? (
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                  <Btn title="Accept" onPress={() => accept(item)} style={{ flex: 1, paddingVertical: 8 }} />
-                  <Btn title="Reject" onPress={() => reject(item)} style={{ flex: 1, paddingVertical: 8, backgroundColor: c.danger }} />
+                <View style={{ flexDirection: 'row', gap: SPACE.md, marginTop: SPACE.lg }}>
+                  <Btn title="Accept" onPress={() => accept(item)} style={{ flex: 1, paddingVertical: SPACE.md }} />
+                  <Btn title="Reject" onPress={() => reject(item)} style={{ flex: 1, paddingVertical: SPACE.md, backgroundColor: c.danger }} />
                 </View>
               ) : null}
-              <TouchableOpacity onPress={() => del(item)} hitSlop={8} style={{ marginTop: 8 }}>
-                <Text style={{ color: c.danger, fontWeight: '700', fontSize: 12 }}>Delete request</Text>
+              <TouchableOpacity onPress={() => del(item)} hitSlop={8} style={{ marginTop: SPACE.md }}>
+                <Text style={{ color: c.danger, fontWeight: '700', fontSize: FONT.md }}>Delete request</Text>
               </TouchableOpacity>
             </Card>
           )}
@@ -204,12 +206,12 @@ export default function ChatAdminDMScreen() {
         <FlatList
           data={threads}
           keyExtractor={(t) => t.id}
-          contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
-          ListHeaderComponent={err ? <Muted style={{ marginBottom: 8 }}>{err}</Muted> : null}
-          ListEmptyComponent={<Muted style={{ textAlign: 'center', marginTop: 30 }}>No DM threads.</Muted>}
+          contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.colossal }}
+          ListHeaderComponent={err ? <Muted style={{ marginBottom: SPACE.md }}>{err}</Muted> : null}
+          ListEmptyComponent={<Muted style={{ textAlign: 'center', marginTop: SPACE.jumbo }}>No DM threads.</Muted>}
           renderItem={({ item }) => (
             <Card>
-              <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+              <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }} numberOfLines={1}>
                 {item.party_a} ⬌ {item.party_b}
               </Text>
               <Muted numberOfLines={1}>
@@ -222,14 +224,14 @@ export default function ChatAdminDMScreen() {
         <FlatList
           data={blocks}
           keyExtractor={(b) => b.id}
-          contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
-          ListHeaderComponent={err ? <Muted style={{ marginBottom: 8 }}>{err}</Muted> : null}
-          ListEmptyComponent={<Muted style={{ textAlign: 'center', marginTop: 30 }}>No DM blocks.</Muted>}
+          contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.colossal }}
+          ListHeaderComponent={err ? <Muted style={{ marginBottom: SPACE.md }}>{err}</Muted> : null}
+          ListEmptyComponent={<Muted style={{ textAlign: 'center', marginTop: SPACE.jumbo }}>No DM blocks.</Muted>}
           renderItem={({ item }) => (
             <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+                  <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }} numberOfLines={1}>
                     {item.blocked || '—'}
                   </Text>
                   <Muted numberOfLines={1}>
@@ -237,7 +239,7 @@ export default function ChatAdminDMScreen() {
                     {item.created_at ? ` · ${new Date(item.created_at).toLocaleString()}` : ''}
                   </Muted>
                 </View>
-                <Btn title="Unblock" onPress={() => unblock(item)} style={{ paddingVertical: 7, paddingHorizontal: 12 }} />
+                <Btn title="Unblock" onPress={() => unblock(item)} style={{ paddingVertical: 7, paddingHorizontal: SPACE.xl }} />
               </View>
             </Card>
           )}

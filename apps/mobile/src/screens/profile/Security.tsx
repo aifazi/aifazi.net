@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, ScrollView } from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
 import { Card, Muted, Btn, Field } from '@/src/components/ui'
@@ -117,18 +118,18 @@ export function SecurityTab() {
           <>
             <Muted>Scan the QR code with your authenticator app, then confirm.</Muted>
             {twoSecret.qr_image ? (
-              <ExpoImage source={{ uri: twoSecret.qr_image }} style={{ width: 180, height: 180, alignSelf: 'center', marginVertical: 10 }} contentFit="contain" />
+              <ExpoImage source={{ uri: twoSecret.qr_image }} style={{ width: 180, height: 180, alignSelf: 'center', marginVertical: SPACE.lg }} contentFit="contain" />
             ) : (
-              <Text selectable style={{ color: c.text, fontSize: 11, marginVertical: 8 }}>{twoSecret.otpauth_uri}</Text>
+              <Text selectable style={{ color: c.text, fontSize: FONT.sm, marginVertical: SPACE.md }}>{twoSecret.otpauth_uri}</Text>
             )}
-            <Text selectable style={{ color: c.muted, fontSize: 11, textAlign: 'center', marginBottom: 8 }}>{twoSecret.secret}</Text>
+            <Text selectable style={{ color: c.muted, fontSize: FONT.sm, textAlign: 'center', marginBottom: SPACE.md }}>{twoSecret.secret}</Text>
             <Field label="6-digit code" value={twoCode} onChangeText={setTwoCode} placeholder="123456" />
             <Btn title={busy ? 'Confirming…' : 'Confirm & Enable'} onPress={submit2faCode} disabled={busy || twoCode.trim().length !== 6} />
           </>
         ) : (
           <>
             <Muted>Protect your account with an authenticator app.</Muted>
-            <View style={{ marginTop: 10 }}>
+            <View style={{ marginTop: SPACE.lg }}>
               <Btn title="Enable 2FA" onPress={enable2fa} />
             </View>
           </>
@@ -140,34 +141,34 @@ export function SecurityTab() {
           <Muted>No active sessions.</Muted>
         ) : (
           sessions.map((s) => (
-            <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: c.border }}>
+            <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.md, borderBottomWidth: 1, borderBottomColor: c.border }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: c.text, fontSize: 12, fontWeight: '600' }} numberOfLines={1}>
+                <Text style={{ color: c.text, fontSize: FONT.md, fontWeight: '600' }} numberOfLines={1}>
                   {s.current ? '📍 This device' : '💻 Device'}
                 </Text>
-                <Muted style={{ fontSize: 9 }} numberOfLines={1}>{s.ip} · {s.user_agent || ''}</Muted>
-                <Muted style={{ fontSize: 9 }}>Last active {fmtWhen(s.last_active)}</Muted>
+                <Muted style={{ fontSize: FONT.micro }} numberOfLines={1}>{s.ip} · {s.user_agent || ''}</Muted>
+                <Muted style={{ fontSize: FONT.micro }}>Last active {fmtWhen(s.last_active)}</Muted>
               </View>
               {!s.current ? (
-                <Btn title="Revoke" variant="ghost" style={{ paddingVertical: 6, paddingHorizontal: 12 }} onPress={() => revokeSession(s.id).then(() => listSessions().then(setSessions)).catch(() => {})} />
+                <Btn title="Revoke" variant="ghost" style={{ paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xl }} onPress={() => revokeSession(s.id).then(() => listSessions().then(setSessions)).catch(() => {})} />
               ) : null}
             </View>
           ))
         )}
         {sessions.length > 0 && (
-          <View style={{ marginTop: 10 }}>
+          <View style={{ marginTop: SPACE.lg }}>
             <Btn title="Revoke all other sessions" variant="ghost" onPress={() => { revokeAllSessions().then(() => listSessions().then(setSessions)).catch(() => {}) }} />
           </View>
         )}
       </Card>
 
       <Card title="Danger Zone">
-        <Muted style={{ marginBottom: 10 }}>Permanently delete your account and all data.</Muted>
+        <Muted style={{ marginBottom: SPACE.lg }}>Permanently delete your account and all data.</Muted>
         <Field label="Password" value={deletePw} onChangeText={setDeletePw} secure placeholder="Your password" />
         <Btn title={busy ? 'Deleting…' : 'Delete account'} variant="danger" onPress={del} disabled={busy || !deletePw} />
       </Card>
 
-      {msg ? <Muted style={{ textAlign: 'center', marginTop: 4 }}>{msg}</Muted> : null}
+      {msg ? <Muted style={{ textAlign: 'center', marginTop: SPACE.xs }}>{msg}</Muted> : null}
     </ScrollView>
   )
 }

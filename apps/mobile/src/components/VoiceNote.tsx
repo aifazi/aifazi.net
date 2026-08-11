@@ -10,7 +10,7 @@ import {
 } from 'expo-audio'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
-import { tagLabel } from '@/src/design'
+import { FONT, SPACE, tagLabel } from '@/src/design'
 
 /**
  * Voice note button (composer): tap to start recording, tap to stop. Returns
@@ -84,7 +84,7 @@ export function VoiceRecorder({
       ]}
     >
       <View style={[styles.dot, { backgroundColor: recording ? c.danger : c.accent }]} />
-      {recording ? <Text style={[tagLabel(10, 1), { color: c.danger, marginLeft: 2 }]}>{mm}</Text> : null}
+      {recording ? <Text style={[tagLabel(10, 1), { color: c.danger, marginLeft: SPACE.xxs }]}>{mm}</Text> : null}
     </TouchableOpacity>
   )
 }
@@ -126,7 +126,7 @@ export function VoiceNotePlay({
       hitSlop={8}
       style={[styles.play, { borderColor: withAlpha(tint, 0.5), backgroundColor: withAlpha(tint, 0.12) }]}
     >
-      <Text style={{ color: tint, fontSize: 13, fontWeight: '900', width: 18, textAlign: 'center' }}>
+      <Text style={{ color: tint, fontSize: FONT.body, fontWeight: '900', width: 18, textAlign: 'center' }}>
         {player.playing ? '⏸' : '▶'}
       </Text>
       <View style={[styles.bar, { backgroundColor: withAlpha(tint, 0.25) }]}>
@@ -147,11 +147,11 @@ const styles = StyleSheet.create({
   recBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: SPACE.xs,
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: SPACE.lg,
+    paddingVertical: SPACE.md,
   },
   dot: {
     width: 10,
@@ -161,11 +161,11 @@ const styles = StyleSheet.create({
   play: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SPACE.md,
     borderWidth: 1,
     borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: SPACE.md,
+    paddingVertical: SPACE.sm,
     minWidth: 150,
   },
   bar: {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { askImageSourceAsync, pickDocument, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -24,6 +26,7 @@ import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
 import { useMessageActions, SwipeReplyRow } from '@/src/lib/chat-actions'
 import { MarkdownText } from '@/src/components/markdown'
 import { useOverlay } from '@/src/components/overlay'
+import { withAlpha, contrastText } from '@/src/lib/color'
 
 interface ChatMessage {
   id: string
@@ -86,6 +89,8 @@ export default function ChatRoomScreen() {
   const router = useRouter()
   const { theme } = useTheme()
   const c = theme.colors
+  const radius = frameworkStyles(theme).radius
+  const pillRadius = frameworkStyles(theme).buttonRadius
   const { user } = useAuth()
   const overlay = useOverlay()
   const { confirm } = overlay
@@ -379,14 +384,14 @@ export default function ChatRoomScreen() {
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
       <View style={[styles.header, { borderBottomColor: c.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>
           {searchOpen ? 'Search chat' : roomName}
         </Text>
         {!searchOpen ? (
           <TouchableOpacity onPress={() => setSearchOpen(true)} hitSlop={10}>
-            <Text style={{ fontSize: 16, opacity: 0.8 }}>🔍</Text>
+            <Text style={{ fontSize: FONT.section, opacity: 0.8 }}>🔍</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -397,13 +402,13 @@ export default function ChatRoomScreen() {
             }}
             hitSlop={10}
           >
-            <Text style={{ color: c.danger, fontWeight: '700', fontSize: 12 }}>Close</Text>
+            <Text style={{ color: c.danger, fontWeight: '700', fontSize: FONT.md }}>Close</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {searchOpen ? (
-        <View style={{ borderBottomWidth: 1, borderBottomColor: c.border, padding: 10, gap: 8 }}>
+        <View style={{ borderBottomWidth: 1, borderBottomColor: c.border, padding: SPACE.lg, gap: SPACE.md }}>
           <TextInput
             value={searchQ}
             onChangeText={onSearchInput}
@@ -424,7 +429,7 @@ export default function ChatRoomScreen() {
             <ActivityIndicator color={c.accent} size="small" />
           ) : searchResults !== null ? (
             searchResults.length === 0 ? (
-              <Text style={{ color: c.muted, fontSize: 12 }}>No matches.</Text>
+              <Text style={{ color: c.muted, fontSize: FONT.md }}>No matches.</Text>
             ) : (
               <FlatList
                 data={searchResults}
@@ -435,10 +440,10 @@ export default function ChatRoomScreen() {
                   return (
                     <TouchableOpacity
                       onPress={() => jumpTo(item.id)}
-                      style={{ paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }}
+                      style={{ paddingVertical: SPACE.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }}
                     >
-                      <Text style={{ color: c.accent2, fontSize: 11, fontWeight: '700' }}>{item.sender}</Text>
-                      <Text style={{ color: c.text, fontSize: 13 }} numberOfLines={2}>
+                      <Text style={{ color: c.accent2, fontSize: FONT.sm, fontWeight: '700' }}>{item.sender}</Text>
+                      <Text style={{ color: c.text, fontSize: FONT.body }} numberOfLines={2}>
                         {item.type === 'image' ? '🖼 Image' : item.type === 'file' ? `📎 ${item.file_name ?? 'file'}` : body || item.content}
                       </Text>
                     </TouchableOpacity>
@@ -455,13 +460,13 @@ export default function ChatRoomScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {loading ? (
-          <View style={{ paddingTop: 40, alignItems: 'center' }}>
+          <View style={{ paddingTop: SPACE.colossal, alignItems: 'center' }}>
             <ActivityIndicator color={c.accent} />
           </View>
         ) : err && messages.length === 0 ? (
-          <View style={{ padding: 20, alignItems: 'center' }}>
+          <View style={{ padding: SPACE.giant, alignItems: 'center' }}>
             <Text style={{ color: c.danger, textAlign: 'center' }}>{err}</Text>
-            <TouchableOpacity onPress={() => load()} style={{ marginTop: 14 }}>
+            <TouchableOpacity onPress={() => load()} style={{ marginTop: SPACE.xxl }}>
               <Text style={{ color: c.accent, fontWeight: '700' }}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -470,7 +475,7 @@ export default function ChatRoomScreen() {
             ref={listRef}
             data={messages}
             keyExtractor={(m) => m.id}
-            contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
+            contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.giant }}
             onContentSizeChange={() => {
               if (stick.current) listRef.current?.scrollToEnd({ animated: true })
             }}
@@ -484,21 +489,23 @@ export default function ChatRoomScreen() {
                 <TouchableOpacity
                   onPress={loadOlder}
                   disabled={loadingMore}
-                  style={{ alignItems: 'center', paddingVertical: 10, marginBottom: 6 }}
+                  style={{ alignItems: 'center', paddingVertical: SPACE.lg, marginBottom: SPACE.sm }}
                 >
-                  <Text style={{ color: c.accent, fontSize: 12, fontWeight: '700' }}>
+                  <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '700' }}>
                     {loadingMore ? 'Loading…' : '⬆ Load earlier'}
                   </Text>
                 </TouchableOpacity>
               ) : null
             }
             ListEmptyComponent={
-              <Text style={{ color: c.muted, textAlign: 'center', marginTop: 40, fontSize: 13 }}>
+              <Text style={{ color: c.muted, textAlign: 'center', marginTop: SPACE.colossal, fontSize: FONT.body }}>
                 No messages yet. Say hi!
               </Text>
             }
             renderItem={({ item }) => {
               const mine = isMine(item)
+              const mineText = mine ? contrastText(c.accent2) : c.text
+              const mineMuted = mine ? withAlpha(mineText, 0.65) : c.muted
               const reactions = item.reactions ?? {}
               const reactionEntries = Object.entries(reactions)
               const isImage = item.type === 'image' || isImageUrl(item.content ?? '')
@@ -516,7 +523,7 @@ export default function ChatRoomScreen() {
                   onDelete: () => confirmDelete(item.id),
                 })
               return (
-                <View style={{ marginBottom: 10 }}>
+                <View style={{ marginBottom: SPACE.lg }}>
                   <SwipeReplyRow onReply={() => setReplying(item)}>
                     <View style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
                       <Pressable
@@ -531,17 +538,18 @@ export default function ChatRoomScreen() {
                               backgroundColor: mine ? c.accent2 : c.bg2,
                               borderColor: mine ? c.accent2 : c.border,
                               maxWidth: '85%',
+                              borderRadius: radius,
                             },
                           ]}
                         >
                           {!mine ? (
-                            <Text style={{ color: c.accent2, fontSize: 11, fontWeight: '700', marginBottom: 3 }}>
+                            <Text style={{ color: c.accent2, fontSize: FONT.sm, fontWeight: '700', marginBottom: 3 }}>
                               {item.sender}
                               {item.role && item.role !== 'member' ? ` · ${item.role}` : ''}
                             </Text>
                           ) : null}
                           {replyContent ? (
-                            <Text style={{ color: c.muted, fontSize: 11, fontStyle: 'italic', marginBottom: 4 }}>
+                            <Text style={{ color: c.muted, fontSize: FONT.sm, fontStyle: 'italic', marginBottom: SPACE.xs }}>
                               ↪ {decryptIfEncrypted(replyContent, roomKey)}
                             </Text>
                           ) : null}
@@ -557,17 +565,17 @@ export default function ChatRoomScreen() {
                           ) : (
                             <MarkdownText
                               content={body || item.content}
-                              color={mine ? c.onAccent : c.text}
+                              color={mine ? mineText : c.text}
                               onLink={openLink}
                             />
                           )}
                           {item.type === 'file' && item.file_name ? (
                             <TouchableOpacity
                               onPress={() => openLink(item.content ?? '')}
-                              style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                              style={{ marginTop: SPACE.sm, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}
                             >
-                              <Text style={{ fontSize: 15 }}>📎</Text>
-                              <Text style={{ color: mine ? c.onAccent : c.text, fontSize: 13, fontWeight: '600' }}>
+                              <Text style={{ fontSize: FONT.card }}>📎</Text>
+                              <Text style={{ color: mine ? mineText : c.text, fontSize: FONT.body, fontWeight: '600' }}>
                                 {item.file_name} {item.file_size ? `(${fmtSize(item.file_size)})` : ''}
                               </Text>
                             </TouchableOpacity>
@@ -578,8 +586,8 @@ export default function ChatRoomScreen() {
                                 style={[
                                   styles.previewCard,
                                   {
-                                    backgroundColor: mine ? 'rgba(255,255,255,0.35)' : c.bg,
-                                    borderColor: mine ? 'rgba(0,16,24,0.25)' : c.border,
+                                    backgroundColor: mine ? withAlpha(mineText, 0.1) : c.bg,
+                                    borderColor: mine ? withAlpha(mineText, 0.25) : c.border,
                                   },
                                 ]}
                               >
@@ -590,17 +598,17 @@ export default function ChatRoomScreen() {
                                     contentFit="cover"
                                   />
                                 ) : null}
-                                <View style={{ padding: 8 }}>
+                                <View style={{ padding: SPACE.md }}>
                                   {preview.site ? (
-                                    <Text style={{ color: c.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                    <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                       {preview.site}
                                     </Text>
                                   ) : null}
-                                  <Text style={{ color: c.text, fontSize: 12, fontWeight: '700', marginTop: 2 }}>
+                                  <Text style={{ color: mine ? mineText : c.text, fontSize: FONT.md, fontWeight: '700', marginTop: SPACE.xxs }}>
                                     {preview.title}
                                   </Text>
                                   {preview.description ? (
-                                    <Text style={{ color: c.muted, fontSize: 11, marginTop: 2 }} numberOfLines={2}>
+                                    <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.sm, marginTop: SPACE.xxs }} numberOfLines={2}>
                                       {preview.description}
                                     </Text>
                                   ) : null}
@@ -608,8 +616,8 @@ export default function ChatRoomScreen() {
                               </View>
                             </TouchableOpacity>
                           ) : null}
-                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginTop: 4 }}>
-                            <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: 10 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: SPACE.sm, marginTop: SPACE.xs }}>
+                            <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs }}>
                               {fmtTime(item.created_at)}
                               {item.edited ? ' · edited' : ''}
                             </Text>
@@ -619,7 +627,7 @@ export default function ChatRoomScreen() {
                     </View>
                   </SwipeReplyRow>
                   {reactionEntries.length > 0 ? (
-                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                    <View style={{ flexDirection: 'row', gap: SPACE.sm, marginTop: SPACE.xs, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
                       {reactionEntries.map(([emoji, usernames]) => (
                         <TouchableOpacity
                           key={emoji}
@@ -627,35 +635,35 @@ export default function ChatRoomScreen() {
                           style={{
                             flexDirection: 'row',
                             alignItems: 'center',
-                            gap: 4,
-                            paddingHorizontal: 8,
-                            paddingVertical: 2,
+                            gap: SPACE.xs,
+                            paddingHorizontal: SPACE.md,
+                            paddingVertical: SPACE.xxs,
                             borderRadius: 12,
                             borderWidth: 1,
                             borderColor: c.border,
                             backgroundColor: c.bg2,
                           }}
                         >
-                          <Text style={{ fontSize: 13 }}>{emoji}</Text>
-                          <Text style={{ color: c.muted, fontSize: 11 }}>{usernames.length}</Text>
+                          <Text style={{ fontSize: FONT.body }}>{emoji}</Text>
+                          <Text style={{ color: c.muted, fontSize: FONT.sm }}>{usernames.length}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
                   ) : null}
-                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 4, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                  <View style={{ flexDirection: 'row', gap: SPACE.xl, marginTop: SPACE.xs, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
                     <TouchableOpacity onPress={() => setReplying(item)} hitSlop={8}>
-                      <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>Reply</Text>
+                      <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>Reply</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => showEmojiPicker((emoji) => toggleReact(item.id, emoji))} hitSlop={8}>
-                      <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>React</Text>
+                      <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>React</Text>
                     </TouchableOpacity>
                     {mine ? (
                       <>
                         <TouchableOpacity onPress={() => startEdit(item)} hitSlop={8}>
-                          <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>Edit</Text>
+                          <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>Edit</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => confirmDelete(item.id)} hitSlop={8}>
-                          <Text style={{ color: c.danger, fontSize: 11, fontWeight: '700' }}>Delete</Text>
+                          <Text style={{ color: c.danger, fontSize: FONT.sm, fontWeight: '700' }}>Delete</Text>
                         </TouchableOpacity>
                       </>
                     ) : null}
@@ -669,7 +677,7 @@ export default function ChatRoomScreen() {
 
       {reactTarget ? (
         <View style={[styles.reactBar, { borderTopColor: c.border, backgroundColor: c.bg2 }]}>
-          <Text style={{ color: c.muted, fontSize: 11, marginRight: 6 }}>React to</Text>
+          <Text style={{ color: c.muted, fontSize: FONT.sm, marginRight: SPACE.sm }}>React to</Text>
           {TYPING_EMOJIS.map((e) => (
             <TouchableOpacity
               key={e}
@@ -677,41 +685,41 @@ export default function ChatRoomScreen() {
                 toggleReact(reactTarget.id, e)
                 setReactTarget(null)
               }}
-              style={{ paddingHorizontal: 8, paddingVertical: 6 }}
+              style={{ paddingHorizontal: SPACE.md, paddingVertical: SPACE.sm }}
             >
-              <Text style={{ fontSize: 20 }}>{e}</Text>
+              <Text style={{ fontSize: FONT.h3 }}>{e}</Text>
             </TouchableOpacity>
           ))}
           <TouchableOpacity onPress={() => setReactTarget(null)} hitSlop={8} style={{ marginLeft: 'auto' }}>
-            <Text style={{ color: c.danger, fontWeight: '700', fontSize: 13 }}>✕</Text>
+            <Text style={{ color: c.danger, fontWeight: '700', fontSize: FONT.body }}>✕</Text>
           </TouchableOpacity>
         </View>
       ) : null}
 
       <View style={[styles.inputBar, { borderTopColor: c.border, backgroundColor: c.bg2 }]}>
         {editing ? (
-          <TouchableOpacity onPress={cancelEdit} hitSlop={8} style={{ paddingRight: 6 }}>
-            <Text style={{ color: c.danger, fontWeight: '700', fontSize: 13 }}>✕</Text>
+          <TouchableOpacity onPress={cancelEdit} hitSlop={8} style={{ paddingRight: SPACE.sm }}>
+            <Text style={{ color: c.danger, fontWeight: '700', fontSize: FONT.body }}>✕</Text>
           </TouchableOpacity>
         ) : null}
         {!editing ? (
           <>
-            <TouchableOpacity onPress={pickImage} disabled={uploading} hitSlop={8} style={{ paddingRight: 2 }}>
-              <Text style={{ fontSize: 18, opacity: uploading ? 0.4 : 1 }}>{uploading ? '⏳' : '🖼️'}</Text>
+            <TouchableOpacity onPress={pickImage} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
+              <Text style={{ fontSize: FONT.lead, opacity: uploading ? 0.4 : 1 }}>{uploading ? '⏳' : '🖼️'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: 2 }}>
-              <Text style={{ fontSize: 18, opacity: uploading ? 0.4 : 1 }}>📎</Text>
+            <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
+              <Text style={{ fontSize: FONT.lead, opacity: uploading ? 0.4 : 1 }}>📎</Text>
             </TouchableOpacity>
           </>
         ) : null}
         <View style={{ flex: 1 }}>
           {replying ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <Text style={{ color: c.accent2, fontSize: 11, fontWeight: '700', flex: 1 }} numberOfLines={1}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.xs }}>
+              <Text style={{ color: c.accent2, fontSize: FONT.sm, fontWeight: '700', flex: 1 }} numberOfLines={1}>
                 ↪ Reply to {replying.sender}: {decryptIfEncrypted(replying.content ?? '', roomKey) || '(image/file)'}
               </Text>
               <TouchableOpacity onPress={() => setReplying(null)} hitSlop={8}>
-                <Text style={{ color: c.danger, fontWeight: '700', fontSize: 12 }}>✕</Text>
+                <Text style={{ color: c.danger, fontWeight: '700', fontSize: FONT.md }}>✕</Text>
               </TouchableOpacity>
             </View>
           ) : null}
@@ -728,6 +736,7 @@ export default function ChatRoomScreen() {
                 color: c.text,
                 borderColor: c.border,
                 fontFamily: theme.mono ? 'monospace' : undefined,
+                borderRadius: pillRadius,
               },
             ]}
           />
@@ -739,19 +748,20 @@ export default function ChatRoomScreen() {
             styles.sendBtn,
             {
               backgroundColor: editing ? c.accent2 : c.accent,
+              borderRadius: pillRadius,
               opacity: editing ? (sending || !editText.trim() ? 0.5 : 1) : sending || !text.trim() ? 0.5 : 1,
             },
           ]}
         >
-          <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: 13 }}>
+          <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: FONT.body }}>
             {sending ? '…' : editing ? 'Save' : 'Send'}
           </Text>
         </TouchableOpacity>
       </View>
 
       {typingUsers.length > 0 ? (
-        <View style={{ paddingHorizontal: 12, paddingVertical: 4, alignItems: 'center' }}>
-          <Text style={{ color: c.muted, fontSize: 11 }}>
+        <View style={{ paddingHorizontal: SPACE.xl, paddingVertical: SPACE.xs, alignItems: 'center' }}>
+          <Text style={{ color: c.muted, fontSize: FONT.sm }}>
             {typingUsers.length === 1 ? `${typingUsers[0]} is typing…` : `${typingUsers.slice(0, 2).join(', ')}${typingUsers.length > 2 ? ` +${typingUsers.length - 2}` : ''} typing…`}
           </Text>
         </View>
@@ -765,20 +775,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    gap: SPACE.lg,
+    paddingHorizontal: SPACE.xl,
+    paddingVertical: SPACE.lg,
     borderBottomWidth: 1,
   },
-  backBtn: { paddingRight: 4 },
+  backBtn: { paddingRight: SPACE.xs },
   bubble: {
     borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: SPACE.xl,
+    paddingVertical: SPACE.md,
   },
   previewCard: {
-    marginTop: 8,
+    marginTop: SPACE.md,
     borderRadius: 10,
     borderWidth: 1,
     overflow: 'hidden',
@@ -787,30 +797,30 @@ const styles = StyleSheet.create({
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    gap: SPACE.md,
+    paddingHorizontal: SPACE.lg,
+    paddingVertical: SPACE.md,
     borderTopWidth: 1,
   },
   input: {
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACE.xl,
     paddingVertical: 9,
     maxHeight: 100,
-    fontSize: 14,
+    fontSize: FONT.base,
   },
   sendBtn: {
     borderRadius: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACE.xxxl,
     paddingVertical: 11,
     alignItems: 'center',
   },
   reactBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: SPACE.xl,
+    paddingVertical: SPACE.sm,
     borderTopWidth: 1,
   },
 })

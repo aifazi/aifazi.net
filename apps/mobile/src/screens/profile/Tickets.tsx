@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -8,6 +9,7 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { webPillSnap } from '@/src/lib/carousel'
 import { api } from '@/src/lib/api'
+import { withAlpha } from '@/src/lib/color'
 import { fmtWhen, StatusChip } from './helpers'
 
 interface Ticket {
@@ -48,40 +50,40 @@ export function TicketsTab() {
     return <Loader />
   }
   if (!user?.email) {
-    return <Muted style={{ textAlign: 'center', marginTop: 40 }}>No email associated with your account.</Muted>
+    return <Muted style={{ textAlign: 'center', marginTop: SPACE.colossal }}>No email associated with your account.</Muted>
   }
 
   return (
     <ScrollView keyboardShouldPersistTaps="handled">
-      <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+      <View style={{ flexDirection: 'row', gap: SPACE.sm, marginBottom: SPACE.md }}>
         {[
           { label: 'TOTAL', value: stats.total, color: c.accent2 },
           { label: 'OPEN', value: stats.open, color: c.star },
           { label: 'PROGRESS', value: stats.progress, color: c.accent2 },
           { label: 'RESOLVED', value: stats.resolved, color: c.accent },
         ].map((s) => (
-          <View key={s.label} style={{ flex: 1, backgroundColor: c.bg, borderWidth: 1, borderColor: c.border, borderTopWidth: 2, borderTopColor: s.color, borderRadius: 8, padding: 10, alignItems: 'center' }}>
-            <Text style={{ color: c.muted, fontSize: 8, letterSpacing: 1, marginBottom: 2 }}>{s.label}</Text>
-            <Text style={{ color: s.color, fontSize: 18, fontWeight: '800' }}>{s.value}</Text>
+          <View key={s.label} style={{ flex: 1, backgroundColor: c.bg, borderWidth: 1, borderColor: c.border, borderTopWidth: 2, borderTopColor: s.color, borderRadius: 8, padding: SPACE.lg, alignItems: 'center' }}>
+            <Text style={{ color: c.muted, fontSize: FONT.nano, letterSpacing: 1, marginBottom: SPACE.xxs }}>{s.label}</Text>
+            <Text style={{ color: s.color, fontSize: FONT.lead, fontWeight: '800' }}>{s.value}</Text>
           </View>
         ))}
       </View>
 
-      <View style={{ marginBottom: 10 }}>
+      <View style={{ marginBottom: SPACE.lg }}>
         <Btn title="+ New Ticket" onPress={() => router.push('/helpdesk-new' as Href)} />
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} {...webPillSnap()} style={{ marginBottom: 10 }}>
-        <View style={{ flexDirection: 'row', gap: 6 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} {...webPillSnap()} style={{ marginBottom: SPACE.lg }}>
+        <View style={{ flexDirection: 'row', gap: SPACE.sm }}>
           {statuses.map((s) => {
             const active = filter === s
             return (
               <TouchableOpacity
                 key={s}
                 onPress={() => setFilter(s)}
-                style={{ borderWidth: 1, borderColor: active ? c.accent2 : c.border, borderRadius: 5, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: active ? c.accent2 + '22' : 'transparent' }}
+                style={{ borderWidth: 1, borderColor: active ? c.accent2 : c.border, borderRadius: 5, paddingHorizontal: SPACE.xl, paddingVertical: SPACE.sm, backgroundColor: active ? withAlpha(c.accent2, 0.13) : 'transparent' }}
               >
-                <Text style={{ color: active ? c.accent2 : c.muted, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', fontWeight: '700' }}>{s}</Text>
+                <Text style={{ color: active ? c.accent2 : c.muted, fontSize: FONT.xs, letterSpacing: 1, textTransform: 'uppercase', fontWeight: '700' }}>{s}</Text>
               </TouchableOpacity>
             )
           })}
@@ -89,23 +91,23 @@ export function TicketsTab() {
       </ScrollView>
 
       {filtered.length === 0 ? (
-        <Muted style={{ textAlign: 'center', marginTop: 30 }}>{tickets.length === 0 ? 'No tickets yet.' : 'No tickets match this filter.'}</Muted>
+        <Muted style={{ textAlign: 'center', marginTop: SPACE.jumbo }}>{tickets.length === 0 ? 'No tickets yet.' : 'No tickets match this filter.'}</Muted>
       ) : (
         filtered.map((t) => (
           <TouchableOpacity
             key={t.id}
             onPress={() => router.push(`/helpdesk-detail?id=${encodeURIComponent(t.id || '')}` as Href)}
           >
-            <Card style={{ padding: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ color: c.text, fontSize: 13, fontWeight: '700', flex: 1 }}>{t.subject || t.ticket_id}</Text>
+            <Card style={{ padding: SPACE.xl }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
+                <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700', flex: 1 }}>{t.subject || t.ticket_id}</Text>
                 <StatusChip text={t.status || 'unknown'} />
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginTop: SPACE.md }}>
                 {t.priority ? <StatusChip text={t.priority} /> : null}
-                {t.category ? <Text style={{ color: c.muted, fontSize: 10 }}>{t.category}</Text> : null}
+                {t.category ? <Text style={{ color: c.muted, fontSize: FONT.xs }}>{t.category}</Text> : null}
                 <View style={{ flex: 1 }} />
-                <Muted style={{ fontSize: 10 }}>{fmtWhen(t.updated_at || t.created_at)}</Muted>
+                <Muted style={{ fontSize: FONT.xs }}>{fmtWhen(t.updated_at || t.created_at)}</Muted>
               </View>
             </Card>
           </TouchableOpacity>

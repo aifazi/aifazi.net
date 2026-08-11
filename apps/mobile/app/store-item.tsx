@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Btn, Muted } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -58,6 +60,8 @@ export default function StoreItemScreen() {
   const [adding, setAdding] = useState(false)
   const { isAuthed } = useAuth()
   const { confirm, alert, toast } = useOverlay()
+  const radius = frameworkStyles(theme).radius
+  const pillRadius = frameworkStyles(theme).buttonRadius
 
   const load = useCallback(() => {
     if (!slug) return
@@ -89,11 +93,11 @@ export default function StoreItemScreen() {
 
   if (!p) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, padding: 20 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, padding: SPACE.giant }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.danger, marginTop: 20 }}>{err || 'Product not found'}</Text>
+        <Text style={{ color: c.danger, marginTop: SPACE.giant }}>{err || 'Product not found'}</Text>
       </SafeAreaView>
     )
   }
@@ -131,57 +135,57 @@ export default function StoreItemScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>{p.name}</Text>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>{p.name}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: SPACE.xxxl, paddingBottom: SPACE.colossal }}>
         {displayImage ? (
-          <ExpoImage source={{ uri: displayImage }} style={{ width: '100%', height: 220, borderRadius: 12, marginBottom: 14 }} contentFit="cover" transition={150} />
+          <ExpoImage source={{ uri: displayImage }} style={{ width: '100%', height: 220, borderRadius: radius, marginBottom: SPACE.xxl }} contentFit="cover" transition={150} />
         ) : (
-          <View style={{ width: '100%', height: 160, borderRadius: 12, backgroundColor: c.bg3, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+          <View style={{ width: '100%', height: 160, borderRadius: radius, backgroundColor: c.bg3, alignItems: 'center', justifyContent: 'center', marginBottom: SPACE.xxl }}>
             <Text style={{ fontSize: 44 }}>🛍️</Text>
           </View>
         )}
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <Text style={{ color: c.accent, fontSize: 22, fontWeight: '900' }}>${(priceCents / 100).toFixed(2)}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, marginBottom: SPACE.md }}>
+          <Text style={{ color: c.accent, fontSize: FONT.h2, fontWeight: '900' }}>${(priceCents / 100).toFixed(2)}</Text>
           {compareCents ? (
-            <Text style={{ color: c.muted, fontSize: 15, textDecorationLine: 'line-through' }}>${(compareCents / 100).toFixed(2)}</Text>
+            <Text style={{ color: c.muted, fontSize: FONT.card, textDecorationLine: 'line-through' }}>${(compareCents / 100).toFixed(2)}</Text>
           ) : null}
           {p.on_sale ? (
-            <View style={{ backgroundColor: c.danger, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-              <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>SALE</Text>
+            <View style={{ backgroundColor: c.danger, borderRadius: 4, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xxs }}>
+              <Text style={{ color: '#fff', fontSize: FONT.xs, fontWeight: '800' }}>SALE</Text>
             </View>
           ) : null}
           {p.rating?.count ? (
-            <Text style={{ color: c.muted, fontSize: 13 }}>★ {p.rating.rating?.toFixed(1)} ({p.rating.count})</Text>
+            <Text style={{ color: c.muted, fontSize: FONT.body }}>★ {p.rating.rating?.toFixed(1)} ({p.rating.count})</Text>
           ) : null}
         </View>
 
-        {!p.in_stock ? <Text style={{ color: c.danger, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>Out of stock</Text> : null}
+        {!p.in_stock ? <Text style={{ color: c.danger, fontSize: FONT.body, fontWeight: '700', marginBottom: SPACE.md }}>Out of stock</Text> : null}
 
         {p.variants && p.variants.length > 0 ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md, marginBottom: SPACE.xxl }}>
             {p.variants.map((v) => (
               <TouchableOpacity
                 key={v.id}
                 onPress={() => setVariant(v.id)}
                 disabled={!v.in_stock}
                 style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 8,
+                  paddingHorizontal: SPACE.xxl,
+                  paddingVertical: SPACE.md,
+                  borderRadius: pillRadius,
                   borderWidth: 1,
                   borderColor: variant === v.id ? c.accent : c.border,
                   backgroundColor: variant === v.id ? c.accent2 : 'transparent',
                   opacity: v.in_stock ? 1 : 0.4,
                 }}
               >
-                <Text style={{ color: variant === v.id ? c.onAccent : c.text, fontSize: 13, fontWeight: '700' }}>
+                <Text style={{ color: variant === v.id ? c.onAccent : c.text, fontSize: FONT.body, fontWeight: '700' }}>
                   {v.name} · ${(v.price_cents / 100).toFixed(2)}
                 </Text>
               </TouchableOpacity>
@@ -189,22 +193,22 @@ export default function StoreItemScreen() {
           </View>
         ) : null}
 
-        {p.description ? <Text style={{ color: c.text2, fontSize: 13, lineHeight: 19, marginBottom: 14 }}>{p.description}</Text> : null}
+        {p.description ? <Text style={{ color: c.text2, fontSize: FONT.body, lineHeight: 19, marginBottom: SPACE.xxl }}>{p.description}</Text> : null}
 
         <Btn title={adding ? 'Adding…' : 'Add to cart'} onPress={addToCart} disabled={adding} />
 
-        <Text style={{ color: c.text, fontSize: 14, fontWeight: '800', marginTop: 22, marginBottom: 8 }}>Reviews</Text>
+        <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '800', marginTop: 22, marginBottom: SPACE.md }}>Reviews</Text>
         {reviews.length === 0 ? (
           <Muted>No reviews yet.</Muted>
         ) : (
           reviews.map((r) => (
-            <View key={r.id} style={{ borderTopWidth: 1, borderTopColor: c.border, paddingVertical: 10 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }}>{r.username}</Text>
-                <Text style={{ color: c.accent, fontSize: 12 }}>★ {r.rating}</Text>
+            <View key={r.id} style={{ borderTopWidth: 1, borderTopColor: c.border, paddingVertical: SPACE.lg }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
+                <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>{r.username}</Text>
+                <Text style={{ color: c.accent, fontSize: FONT.md }}>★ {r.rating}</Text>
               </View>
-              {r.title ? <Text style={{ color: c.text, fontSize: 13, fontWeight: '700', marginTop: 3 }}>{r.title}</Text> : null}
-              {r.body ? <Text style={{ color: c.text2, fontSize: 12, marginTop: 2 }}>{r.body}</Text> : null}
+              {r.title ? <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700', marginTop: 3 }}>{r.title}</Text> : null}
+              {r.body ? <Text style={{ color: c.text2, fontSize: FONT.md, marginTop: SPACE.xxs }}>{r.body}</Text> : null}
             </View>
           ))
         )}

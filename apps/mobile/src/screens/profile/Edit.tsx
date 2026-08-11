@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, TextInput, ScrollView } from 'react-native'
 import { Card, Muted, Btn, Field } from '@/src/components/ui'
 import { Avatar, BUILTIN_AVATARS, BUILTIN_AVATAR_ICONS } from '@/src/components/Avatar'
@@ -79,9 +80,9 @@ export function EditTab() {
   return (
     <ScrollView keyboardShouldPersistTaps="handled">
       <Card title="Edit Profile">
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xxl, marginBottom: SPACE.xxl }}>
           <Avatar name={username} avatar={avatar} size={56} />
-          <View style={{ flex: 1, gap: 8 }}>
+          <View style={{ flex: 1, gap: SPACE.md }}>
             <Btn title={uploading ? 'Uploading…' : '📷 Set avatar'} variant="ghost" onPress={pickAvatar} disabled={uploading} />
             {avatar?.startsWith('avatar:') ? (
               <Btn title="✕ Remove built-in icon" variant="ghost" onPress={() => { setAvatar(''); setSaveMsg('Icon cleared. Save changes to keep it.') }} />
@@ -91,7 +92,7 @@ export function EditTab() {
 
         <Field label="Username" value={username} onChangeText={setUsername} autoCapitalize="none" />
         <Field label="Avatar URL" value={avatar} onChangeText={setAvatar} placeholder="https://…" autoCapitalize="none" />
-        <Text style={{ color: c.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Bio</Text>
+        <Text style={{ color: c.muted, fontSize: FONT.xs, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: SPACE.xs }}>Bio</Text>
         <TextInput
           value={bio}
           onChangeText={setBio}
@@ -99,11 +100,11 @@ export function EditTab() {
           placeholderTextColor={c.muted}
           multiline
           maxLength={1000}
-          style={{ backgroundColor: c.bg, borderColor: c.border, color: c.text, borderWidth: 1, borderRadius: theme.mono ? 0 : 8, paddingHorizontal: 12, paddingVertical: 9, minHeight: 80, fontSize: 14, fontFamily: theme.mono ? 'monospace' : undefined }}
+          style={{ backgroundColor: c.bg, borderColor: c.border, color: c.text, borderWidth: 1, borderRadius: theme.mono ? 0 : 8, paddingHorizontal: SPACE.xl, paddingVertical: 9, minHeight: 80, fontSize: FONT.base, fontFamily: theme.mono ? 'monospace' : undefined }}
         />
 
-        {saveMsg ? <Muted style={{ marginTop: 10 }}>{saveMsg}</Muted> : null}
-        <View style={{ marginTop: 12 }}>
+        {saveMsg ? <Muted style={{ marginTop: SPACE.lg }}>{saveMsg}</Muted> : null}
+        <View style={{ marginTop: SPACE.xl }}>
           <Btn title={saving ? 'Saving…' : 'Save'} onPress={save} disabled={saving || !username.trim()} />
         </View>
       </Card>

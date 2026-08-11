@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, ScrollView, Linking } from 'react-native'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { Loader } from '@/src/components/Loader'
@@ -80,22 +81,22 @@ export function DocumentsTab() {
 
   return (
     <ScrollView keyboardShouldPersistTaps="handled">
-      <View style={{ marginBottom: 10 }}>
+      <View style={{ marginBottom: SPACE.lg }}>
         <Btn title={uploading ? 'Uploading…' : '⬆ Upload file'} onPress={pick} disabled={uploading} />
-        <Muted style={{ marginTop: 6 }}>Documents are stored privately in your account.</Muted>
+        <Muted style={{ marginTop: SPACE.sm }}>Documents are stored privately in your account.</Muted>
       </View>
       {docs.length === 0 ? (
-        <Muted style={{ textAlign: 'center', marginTop: 30 }}>No documents yet.</Muted>
+        <Muted style={{ textAlign: 'center', marginTop: SPACE.jumbo }}>No documents yet.</Muted>
       ) : (
         docs.map((d) => (
-          <Card key={d.id} style={{ padding: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Card key={d.id} style={{ padding: SPACE.xl }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }}>{d.name}</Text>
-                <Muted style={{ fontSize: 10 }}>{d.category} · {fmtBytes(d.file_size)} · {fmtDate(d.created_at)}</Muted>
+                <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>{d.name}</Text>
+                <Muted style={{ fontSize: FONT.xs }}>{d.category} · {fmtBytes(d.file_size)} · {fmtDate(d.created_at)}</Muted>
               </View>
-              <Btn title="Open" variant="ghost" style={{ paddingVertical: 6, paddingHorizontal: 12 }} onPress={() => { if (d.file_url) Linking.openURL(d.file_url) }} />
-              <Btn title="Del" variant="danger" style={{ paddingVertical: 6, paddingHorizontal: 12 }} onPress={() => remove(d.id)} />
+              <Btn title="Open" variant="ghost" style={{ paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xl }} onPress={() => { if (d.file_url) Linking.openURL(d.file_url) }} />
+              <Btn title="Del" variant="danger" style={{ paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xl }} onPress={() => remove(d.id)} />
             </View>
           </Card>
         ))

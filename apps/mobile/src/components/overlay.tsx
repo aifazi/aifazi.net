@@ -12,7 +12,7 @@ import { createContext, useContext, useRef, useState, ReactNode } from 'react'
 import { Modal, View, Text, ScrollView, TouchableOpacity, StyleSheet, Pressable, ActivityIndicator } from 'react-native'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
-import { CODE_FONT, micro, tagLabel } from '@/src/design'
+import { CODE_FONT, FONT, SPACE, micro, tagLabel } from '@/src/design'
 
 export interface MenuOption {
   value: string
@@ -154,7 +154,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
               <View key={t.key} style={[styles.toast, { backgroundColor: c.bg2, borderColor: color, borderRadius: radius }]}>
                 <View style={[styles.toastDot, { backgroundColor: color }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[tagLabel(8.5, 2.5), { color, marginBottom: 2 }]}>
+                  <Text style={[tagLabel(8.5, 2.5), { color, marginBottom: SPACE.xxs }]}>
                     {t.kind === 'error' ? 'ERROR' : t.kind === 'success' ? 'SUCCESS' : 'SYSTEM'}
                   </Text>
                   <Text style={[styles.toastMsg, { color: c.text, fontFamily: CODE_FONT }]}>{t.message}</Text>
@@ -191,7 +191,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
             <Pressable style={StyleSheet.absoluteFill} onPress={() => dismissConfirm(false)} />
             <View style={[styles.card, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.3), borderRadius: radius }]}>
               <View style={[styles.accentBar, { backgroundColor: confirm.destructive ? withAlpha(c.danger, 0.8) : c.accent }]} />
-              <Text style={[micro(12, 2, '800'), { color: confirm.destructive ? c.danger : c.accent2, marginBottom: 8 }]}>
+              <Text style={[micro(12, 2, '800'), { color: confirm.destructive ? c.danger : c.accent2, marginBottom: SPACE.md }]}>
                 {confirm.title.toUpperCase()}
               </Text>
               <Text style={[styles.message, { color: c.text2, fontFamily: CODE_FONT, lineHeight: 22 }]}>{confirm.message}</Text>
@@ -231,7 +231,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
             <View style={[styles.sheetCard, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.25), borderTopLeftRadius: radius, borderTopRightRadius: radius }]}>
               <View style={[styles.accentBar, { backgroundColor: c.accent }]} />
               {sheet.title ? (
-                <Text style={[micro(11, 3, '700'), { color: c.accent2, paddingHorizontal: 20, paddingBottom: 8 }]}>
+                <Text style={[micro(11, 3, '700'), { color: c.accent2, paddingHorizontal: SPACE.giant, paddingBottom: SPACE.md }]}>
                   {sheet.title.toUpperCase()}
                 </Text>
               ) : null}
@@ -243,7 +243,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
                     style={[styles.sheetRow, { borderBottomColor: c.divider }]}
                   >
                     {o.icon ? <Text style={[styles.sheetIcon, { color: o.color || c.text }]}>{o.icon}</Text> : null}
-                    <Text style={{ color: o.destructive ? c.danger : o.color || c.text, fontSize: 15, fontWeight: '600', fontFamily: CODE_FONT }}>
+                    <Text style={{ color: o.destructive ? c.danger : o.color || c.text, fontSize: FONT.card, fontWeight: '600', fontFamily: CODE_FONT }}>
                       {o.label}
                     </Text>
                   </TouchableOpacity>
@@ -264,7 +264,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
             <View style={[styles.card, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.3), borderRadius: radius, alignItems: 'center', minWidth: 160 }]}>
               <ActivityIndicator color={c.accent} size="large" />
               {loading.text ? (
-                <Text style={[micro(10, 2.5, '700'), { color: c.muted, marginTop: 14 }]}>{loading.text.toUpperCase()}</Text>
+                <Text style={[micro(10, 2.5, '700'), { color: c.muted, marginTop: SPACE.xxl }]}>{loading.text.toUpperCase()}</Text>
               ) : null}
             </View>
           </View>
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: SPACE.mega,
   },
   backdropJustify: {
     flex: 1,
@@ -295,25 +295,25 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   message: {
-    fontSize: 14,
+    fontSize: FONT.base,
     lineHeight: 21,
-    marginBottom: 20,
+    marginBottom: SPACE.giant,
   },
   btnRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 4,
-    gap: 8,
+    marginTop: SPACE.xs,
+    gap: SPACE.md,
   },
   primaryBtn: {
     paddingVertical: 11,
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACE.giant,
     alignItems: 'center',
     borderWidth: 1,
   },
   ghostBtn: {
     paddingVertical: 11,
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACE.giant,
     alignItems: 'center',
     borderWidth: 1,
   },
@@ -328,25 +328,25 @@ const styles = StyleSheet.create({
     width: '100%',
     borderWidth: 1,
     borderBottomWidth: 0,
-    paddingBottom: 10,
-    paddingTop: 14,
+    paddingBottom: SPACE.lg,
+    paddingTop: SPACE.xxl,
   },
   sheetRow: {
     paddingVertical: 15,
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACE.giant,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sheetIcon: {
-    fontSize: 18,
-    marginRight: 12,
+    fontSize: FONT.lead,
+    marginRight: SPACE.xl,
     width: 24,
     textAlign: 'center',
   },
   sheetCancel: {
     borderBottomWidth: 0,
-    marginTop: 6,
+    marginTop: SPACE.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(128,128,128,0.25)',
   },
@@ -358,15 +358,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 9999,
     paddingTop: 60,
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACE.giant,
   },
   toast: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    paddingVertical: SPACE.xl,
+    paddingHorizontal: SPACE.xxxl,
+    marginBottom: SPACE.md,
     minWidth: 220,
     maxWidth: '100%',
     backgroundColor: 'transparent',
@@ -379,10 +379,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 12,
+    marginRight: SPACE.xl,
   },
   toastMsg: {
-    fontSize: 13,
+    fontSize: FONT.body,
     lineHeight: 17,
   },
 })

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import { View, Text, TouchableOpacity, FlatList, ScrollView } from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
 import { useFocusEffect } from 'expo-router'
@@ -26,25 +27,26 @@ interface Project {
 function ProjectCard({ item }: { item: Project }) {
   const { theme } = useTheme()
   const c = theme.colors
+  const radius = frameworkStyles(theme).radius
   return (
     <Card>
       {item.image_url ? (
-        <ExpoImage source={{ uri: item.image_url }} style={{ width: '100%', height: 160, borderRadius: 8, marginBottom: 10 }} contentFit="cover" transition={150} />
+        <ExpoImage source={{ uri: item.image_url }} style={{ width: '100%', height: 160, borderRadius: radius, marginBottom: SPACE.lg }} contentFit="cover" transition={150} />
       ) : (
-        <View style={{ width: '100%', height: 120, borderRadius: 8, backgroundColor: c.bg3, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+        <View style={{ width: '100%', height: 120, borderRadius: radius, backgroundColor: c.bg3, alignItems: 'center', justifyContent: 'center', marginBottom: SPACE.lg }}>
           <Text style={{ fontSize: 36 }}>🚀</Text>
         </View>
       )}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>{item.name || item.title}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>{item.name || item.title}</Text>
         {item.status ? (
-          <View style={{ backgroundColor: c.accent, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-            <Text style={{ color: c.onAccent, fontSize: 9, fontWeight: '800', textTransform: 'uppercase' }}>{item.status}</Text>
+          <View style={{ backgroundColor: c.accent, borderRadius: 4, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xxs }}>
+            <Text style={{ color: c.onAccent, fontSize: FONT.micro, fontWeight: '800', textTransform: 'uppercase' }}>{item.status}</Text>
           </View>
         ) : null}
       </View>
       {(item.description || item.roles) ? (
-        <Text style={{ color: c.text2, fontSize: 12, lineHeight: 17, marginTop: 6 }} numberOfLines={3}>
+        <Text style={{ color: c.text2, fontSize: FONT.md, lineHeight: 17, marginTop: SPACE.sm }} numberOfLines={3}>
           {item.description ?? ''}
           {item.roles?.length ? `\n${item.roles.join(' · ')}` : ''}
         </Text>
@@ -86,7 +88,7 @@ export default function ProjectsScreen() {
   return (
     <FlatList
       style={{ backgroundColor: c.bg }}
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+      contentContainerStyle={{ padding: SPACE.xxxl, paddingBottom: SPACE.colossal }}
       data={projects}
       keyExtractor={(p) => p.id}
       showsVerticalScrollIndicator={false}

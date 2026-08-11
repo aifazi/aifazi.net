@@ -16,6 +16,45 @@ export const CODE_FONT = Platform.select({
   default: 'monospace',
 })
 
+/** Base spacing scale (px). Screens default to `xxxl`; cards/rows use `md`/`xl`. */
+export const SPACE = {
+  xxs: 2,
+  xs: 4,
+  sm: 6,
+  md: 8,
+  lg: 10,
+  xl: 12,
+  xxl: 14,
+  xxxl: 16,
+  huge: 18,
+  giant: 20,
+  mega: 24,
+  jumbo: 30,
+  colossal: 40,
+  page: 96,
+} as const
+
+/**
+ * Shared font-size scale. Screens should prefer these over raw numbers so a
+ * future global type scale / accessibility ramp can change in one place.
+ */
+export const FONT = {
+  nano: 8,
+  micro: 9,
+  xs: 10,
+  sm: 11,
+  md: 12,
+  body: 13,
+  base: 14,
+  card: 15,
+  section: 16,
+  lead: 18,
+  h3: 20,
+  h2: 22,
+  h1: 24,
+  title: 26,
+} as const
+
 export type TitleWeight = '600' | '700' | '800' | '900'
 
 /**

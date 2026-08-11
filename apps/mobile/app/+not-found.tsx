@@ -1,4 +1,5 @@
 import { Link, Stack } from 'expo-router'
+import { FONT, SPACE } from '@/src/design'
 import { StyleSheet, Text } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTheme } from '@/src/theme'
@@ -28,21 +29,21 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: SPACE.giant,
   },
   title: {
-    fontSize: 20,
+    fontSize: FONT.h3,
     fontWeight: 'bold',
   },
   link: {
     marginTop: 15,
     paddingVertical: 15,
     borderWidth: 1,
-    paddingHorizontal: 18,
+    paddingHorizontal: SPACE.huge,
     borderRadius: 8,
   },
   linkText: {
-    fontSize: 14,
+    fontSize: FONT.base,
     fontWeight: '700',
   },
 })

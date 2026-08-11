@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native'
+import { FONT, SPACE } from '@/src/design'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { Avatar } from '@/src/components/Avatar'
@@ -23,8 +24,8 @@ export function ProfilePill({ onPress, compact = false }: { onPress: () => void;
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 6,
-          paddingHorizontal: 12,
+          gap: SPACE.sm,
+          paddingHorizontal: SPACE.xl,
           paddingVertical: 7,
           borderWidth: 1,
           borderColor: withAlpha(c.accent, 0.5),
@@ -33,7 +34,7 @@ export function ProfilePill({ onPress, compact = false }: { onPress: () => void;
         }}
       >
         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c.accent }} />
-        <Text style={{ color: c.accent, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+        <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 }}>
           Sign in
         </Text>
       </TouchableOpacity>
@@ -49,10 +50,10 @@ export function ProfilePill({ onPress, compact = false }: { onPress: () => void;
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
-        paddingVertical: 4,
-        paddingLeft: 4,
-        paddingRight: 10,
+        gap: SPACE.md,
+        paddingVertical: SPACE.xs,
+        paddingLeft: SPACE.xs,
+        paddingRight: SPACE.lg,
         borderWidth: 1,
         borderColor: c.border,
         borderRadius: 999,
@@ -62,7 +63,7 @@ export function ProfilePill({ onPress, compact = false }: { onPress: () => void;
       <Avatar name={user.username} avatar={user.avatar} size={compact ? 28 : 32} />
       {!compact ? (
         <View style={{ alignItems: 'flex-start' }}>
-          <Text style={{ color: c.text, fontSize: 12, fontWeight: '800', maxWidth: 90 }} numberOfLines={1}>
+          <Text style={{ color: c.text, fontSize: FONT.md, fontWeight: '800', maxWidth: 90 }} numberOfLines={1}>
             {user.username}
           </Text>
           <Chip label={user.role ?? 'member'} color={roleColor} dot={false} />

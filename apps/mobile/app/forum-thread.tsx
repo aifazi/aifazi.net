@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import { View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Btn, Muted } from '@/src/components/ui'
 import { MarkdownText } from '@/src/components/markdown'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -49,6 +51,7 @@ export default function ForumThreadScreen() {
   const router = useRouter()
   const { theme } = useTheme()
   const c = theme.colors
+  const pillRadius = frameworkStyles(theme).buttonRadius
   const { isAuthed, user } = useAuth()
   const { confirm } = useOverlay()
   const [thread, setThread] = useState<ThreadDetail | null>(null)
@@ -149,11 +152,11 @@ export default function ForumThreadScreen() {
 
   if (!thread) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, padding: 20 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, padding: SPACE.giant }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.danger, marginTop: 20 }}>{err || 'Thread not found'}</Text>
+        <Text style={{ color: c.danger, marginTop: SPACE.giant }}>{err || 'Thread not found'}</Text>
       </SafeAreaView>
     )
   }
@@ -163,63 +166,63 @@ export default function ForumThreadScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>Thread</Text>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>Thread</Text>
         {isAuthed ? (
           <TouchableOpacity onPress={toggleLike} hitSlop={10}>
-            <Text style={{ fontSize: 16, opacity: liked ? 1 : 0.6 }}>❤️</Text>
+            <Text style={{ fontSize: FONT.section, opacity: liked ? 1 : 0.6 }}>❤️</Text>
           </TouchableOpacity>
         ) : null}
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 20 }}>
+        <ScrollView contentContainerStyle={{ padding: SPACE.xxxl, paddingBottom: SPACE.giant }}>
           <Text style={{ color: c.text, fontSize: 19, fontWeight: '900', lineHeight: 26 }}>
             {thread.pinned ? '📌 ' : ''}{thread.locked ? '🔒 ' : ''}{thread.title}
           </Text>
-          <View style={{ flexDirection: 'row', marginTop: 8, gap: 10 }}>
+          <View style={{ flexDirection: 'row', marginTop: SPACE.md, gap: SPACE.lg }}>
             <Muted>{author.username ?? 'anonymous'}</Muted>
             {thread.category?.name ? <Muted>{thread.category.icon ?? ''} {thread.category.name}</Muted> : null}
             {thread.views ? <Muted>👁 {thread.views}</Muted> : null}
           </View>
 
           {thread.content ? (
-            <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: c.border }}>
+            <View style={{ marginTop: SPACE.xxl, paddingTop: SPACE.xxl, borderTopWidth: 1, borderTopColor: c.border }}>
               <MarkdownText content={thread.content} color={bodyColor} />
             </View>
           ) : null}
 
-          <Text style={{ color: c.text, fontSize: 14, fontWeight: '800', marginTop: 20, marginBottom: 8 }}>
+          <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '800', marginTop: SPACE.giant, marginBottom: SPACE.md }}>
             Replies ({replies.length})
           </Text>
           {replies.length === 0 ? (
             <Muted>No replies yet.</Muted>
           ) : (
             replies.map((r) => (
-              <View key={r._id || r.id} style={{ paddingVertical: 10, borderTopWidth: 1, borderTopColor: c.border }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ color: c.accent2, fontSize: 12, fontWeight: '700', flex: 1 }}>{r.author?.username ?? 'anonymous'}</Text>
+              <View key={r._id || r.id} style={{ paddingVertical: SPACE.lg, borderTopWidth: 1, borderTopColor: c.border }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
+                  <Text style={{ color: c.accent2, fontSize: FONT.md, fontWeight: '700', flex: 1 }}>{r.author?.username ?? 'anonymous'}</Text>
                   {canManageReply(r) ? (
                     <>
                       {editingId === r.id ? (
                         <>
                           <TouchableOpacity onPress={saveEdit} disabled={sending || !editText.trim()} hitSlop={8}>
-                            <Text style={{ color: c.accent2, fontSize: 12, fontWeight: '700' }}>Save</Text>
+                            <Text style={{ color: c.accent2, fontSize: FONT.md, fontWeight: '700' }}>Save</Text>
                           </TouchableOpacity>
                           <TouchableOpacity onPress={() => { setEditingId(null); setEditText('') }} hitSlop={8}>
-                            <Text style={{ color: c.muted, fontSize: 12 }}>Cancel</Text>
+                            <Text style={{ color: c.muted, fontSize: FONT.md }}>Cancel</Text>
                           </TouchableOpacity>
                         </>
                       ) : (
                         <>
                           <TouchableOpacity onPress={() => startEdit(r)} hitSlop={8}>
-                            <Text style={{ color: c.accent2, fontSize: 12 }}>Edit</Text>
+                            <Text style={{ color: c.accent2, fontSize: FONT.md }}>Edit</Text>
                           </TouchableOpacity>
                           <TouchableOpacity onPress={() => deleteReply(r)} hitSlop={8}>
-                            <Text style={{ color: c.danger, fontSize: 12 }}>Delete</Text>
+                            <Text style={{ color: c.danger, fontSize: FONT.md }}>Delete</Text>
                           </TouchableOpacity>
                         </>
                       )}
@@ -234,7 +237,7 @@ export default function ForumThreadScreen() {
                     placeholderTextColor={c.muted}
                     multiline
                     editable={!sending}
-                    style={{ marginTop: 6, backgroundColor: c.bg, borderColor: c.border, color: c.text, borderWidth: 1, borderRadius: theme.mono ? 0 : 8, paddingHorizontal: 12, paddingVertical: 9, minHeight: 60, fontSize: 14, fontFamily: theme.mono ? 'monospace' : undefined, textAlignVertical: 'top' }}
+                    style={{ marginTop: SPACE.sm, backgroundColor: c.bg, borderColor: c.border, color: c.text, borderWidth: 1, borderRadius: theme.mono ? 0 : 8, paddingHorizontal: SPACE.xl, paddingVertical: 9, minHeight: 60, fontSize: FONT.base, fontFamily: theme.mono ? 'monospace' : undefined, textAlignVertical: 'top' }}
                   />
                 ) : (
                   <MarkdownText content={r.content} color={c.text2} />
@@ -245,7 +248,7 @@ export default function ForumThreadScreen() {
         </ScrollView>
 
         {isAuthed ? (
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, padding: 10, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bg2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: SPACE.md, padding: SPACE.lg, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bg2 }}>
             <TextInput
               value={text}
               onChangeText={setText}
@@ -253,9 +256,9 @@ export default function ForumThreadScreen() {
               placeholderTextColor={c.muted}
               editable={!thread.locked}
               multiline
-              style={{ flex: 1, borderRadius: 8, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg, color: c.text, paddingHorizontal: 12, paddingVertical: 9, maxHeight: 100, fontSize: 14, fontFamily: theme.mono ? 'monospace' : undefined }}
+              style={{ flex: 1, borderRadius: pillRadius, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg, color: c.text, paddingHorizontal: SPACE.xl, paddingVertical: 9, maxHeight: 100, fontSize: FONT.base, fontFamily: theme.mono ? 'monospace' : undefined }}
             />
-            <Btn title={sending ? '…' : 'Reply'} onPress={postReply} disabled={sending || !text.trim() || !!thread.locked} style={{ paddingVertical: 10, paddingHorizontal: 16 }} />
+            <Btn title={sending ? '…' : 'Reply'} onPress={postReply} disabled={sending || !text.trim() || !!thread.locked} style={{ paddingVertical: SPACE.lg, paddingHorizontal: SPACE.xxxl }} />
           </View>
         ) : null}
       </KeyboardAvoidingView>

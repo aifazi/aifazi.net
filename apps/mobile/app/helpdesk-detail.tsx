@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform, AppState } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Btn, Muted } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
 import { StatusChip } from '@/src/screens/profile/helpers'
+import { withAlpha } from '@/src/lib/color'
 
 interface TicketMessage {
   id?: string
@@ -120,9 +123,9 @@ export default function TicketDetailScreen() {
 
   if (!ticket) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', padding: SPACE.mega }}>
         <Muted>{err || 'Ticket not found.'}</Muted>
-        <View style={{ marginTop: 16, width: 200 }}>
+        <View style={{ marginTop: SPACE.xxxl, width: 200 }}>
           <Btn title="Go back" variant="ghost" onPress={() => router.back()} />
         </View>
       </SafeAreaView>
@@ -131,11 +134,11 @@ export default function TicketDetailScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>
           #{ticket.ticket_id || (ticket.id || '').slice(-6).toUpperCase()}
         </Text>
         {ticket.status ? <StatusChip text={ticket.status} /> : null}
@@ -144,12 +147,12 @@ export default function TicketDetailScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
+          contentContainerStyle={{ padding: SPACE.xxxl, paddingBottom: SPACE.giant }}
           onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={{ color: c.text, fontSize: 18, fontWeight: '900', lineHeight: 25 }}>{ticket.subject}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, marginBottom: 16 }}>
+          <Text style={{ color: c.text, fontSize: FONT.lead, fontWeight: '900', lineHeight: 25 }}>{ticket.subject}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, marginTop: SPACE.md, marginBottom: SPACE.xxxl }}>
             {ticket.category ? <Muted>{ticket.category.toUpperCase()}</Muted> : null}
             {ticket.priority ? <StatusChip text={ticket.priority} /> : null}
             {ticket.updated_at ? <Muted>Updated {fmtTime(ticket.updated_at)}</Muted> : null}
@@ -163,20 +166,20 @@ export default function TicketDetailScreen() {
                 style={{
                   alignSelf: isUser ? 'flex-end' : 'flex-start',
                   maxWidth: '85%',
-                  marginBottom: 10,
+                  marginBottom: SPACE.lg,
                   borderRadius: theme.mono ? 0 : 14,
                   borderWidth: 1,
-                  borderColor: isUser ? c.accent2 + '55' : c.border,
-                  backgroundColor: isUser ? c.accent2 + '22' : c.bg,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
+                  borderColor: isUser ? withAlpha(c.accent2, 0.33) : c.border,
+                  backgroundColor: isUser ? withAlpha(c.accent2, 0.13) : c.bg,
+                  paddingHorizontal: SPACE.xl,
+                  paddingVertical: SPACE.md,
                 }}
               >
-                <Text style={{ color: isUser ? c.accent2 : c.accent, fontSize: 11, fontWeight: '700', marginBottom: 2 }}>
+                <Text style={{ color: isUser ? c.accent2 : c.accent, fontSize: FONT.sm, fontWeight: '700', marginBottom: SPACE.xxs }}>
                   {isUser ? 'You' : (m.author_name || 'Support')}
                 </Text>
-                <Text style={{ color: c.text, fontSize: 14, lineHeight: 20 }}>{m.message}</Text>
-                {m.created_at ? <Text style={{ color: c.muted, fontSize: 10, marginTop: 4, textAlign: 'right' }}>{fmtTime(m.created_at)}</Text> : null}
+                <Text style={{ color: c.text, fontSize: FONT.base, lineHeight: 20 }}>{m.message}</Text>
+                {m.created_at ? <Text style={{ color: c.muted, fontSize: FONT.xs, marginTop: SPACE.xs, textAlign: 'right' }}>{fmtTime(m.created_at)}</Text> : null}
               </View>
             )
           })}
@@ -184,35 +187,35 @@ export default function TicketDetailScreen() {
         </ScrollView>
 
         {closed ? (
-          <View style={{ padding: 14, borderTopWidth: 1, borderTopColor: c.border }}>
+          <View style={{ padding: SPACE.xxl, borderTopWidth: 1, borderTopColor: c.border }}>
             <Muted style={{ textAlign: 'center' }}>This ticket is {ticket.status}. Replies are disabled.</Muted>
           </View>
         ) : (
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: c.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: SPACE.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderTopWidth: 1, borderTopColor: c.border }}>
             <TextInput
               value={text}
               onChangeText={setText}
               placeholder="Type a reply…"
               placeholderTextColor={c.muted}
               multiline
-              style={{ flex: 1, borderRadius: 8, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg, color: c.text, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, fontFamily: theme.mono ? 'monospace' : undefined, maxHeight: 120 }}
+              style={{ flex: 1, borderRadius: 8, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg, color: c.text, paddingHorizontal: SPACE.xl, paddingVertical: SPACE.md, fontSize: FONT.base, fontFamily: theme.mono ? 'monospace' : undefined, maxHeight: 120 }}
             />
             <TouchableOpacity
               onPress={send}
               disabled={sending || !text.trim()}
               style={{
-                paddingHorizontal: 16,
-                paddingVertical: 10,
+                paddingHorizontal: SPACE.xxxl,
+                paddingVertical: SPACE.lg,
                 borderRadius: theme.mono ? 0 : 8,
                 backgroundColor: c.accent,
                 opacity: sending || !text.trim() ? 0.5 : 1,
               }}
             >
-              <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: 13 }}>{sending ? '…' : 'Send'}</Text>
+              <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: FONT.body }}>{sending ? '…' : 'Send'}</Text>
             </TouchableOpacity>
           </View>
         )}
-        {err ? <Text style={{ color: c.danger, fontSize: 12, textAlign: 'center', paddingBottom: 8 }}>{err}</Text> : null}
+        {err ? <Text style={{ color: c.danger, fontSize: FONT.md, textAlign: 'center', paddingBottom: SPACE.md }}>{err}</Text> : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   )

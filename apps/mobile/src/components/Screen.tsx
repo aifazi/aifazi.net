@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
-import { View, ScrollView, StyleSheet, Dimensions } from 'react-native'
+import { SPACE } from '@/src/design'
+import { View, ScrollView, StyleSheet, Dimensions, type ScrollViewProps } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
@@ -27,7 +28,7 @@ function Grid() {
   )
 }
 
-export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
+export function Screen({ children, scroll = true, refreshControl }: { children: ReactNode; scroll?: boolean; refreshControl?: ScrollViewProps['refreshControl'] }) {
   const { theme } = useTheme()
   const c = theme.colors
   const bg = { backgroundColor: c.bg }
@@ -50,7 +51,7 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
         />
       ) : null}
       {scroll ? (
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" refreshControl={refreshControl}>
           {children}
         </ScrollView>
       ) : (
@@ -64,6 +65,6 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  content: { padding: 16, paddingBottom: 96 },
-  contentFixed: { flex: 1, padding: 16, paddingBottom: 96 },
+  content: { padding: SPACE.xxxl, paddingBottom: SPACE.page },
+  contentFixed: { flex: 1, padding: SPACE.xxxl, paddingBottom: SPACE.page },
 })

@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { Modal, View, Text, TextInput, TouchableOpacity, FlatList, Pressable, Animated, Easing } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -90,7 +91,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                 borderColor: withAlpha(c.accent2, 0.35),
                 borderRadius: theme.radius,
                 maxHeight: '70%',
-                padding: 12,
+                padding: SPACE.xl,
                 shadowColor: '#000',
                 shadowOpacity: 0.5,
                 shadowRadius: 24,
@@ -98,18 +99,18 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                 elevation: 16,
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <Text style={{ fontSize: 15 }}>⌘</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, marginBottom: SPACE.lg }}>
+                <Text style={{ fontSize: FONT.card }}>⌘</Text>
                 <TextInput
                   ref={inputRef}
                   value={query}
                   onChangeText={setQuery}
                   placeholder="Search screens & actions…"
                   placeholderTextColor={c.muted}
-                  style={{ flex: 1, color: c.text, fontSize: 15, fontFamily: theme.mono ? 'monospace' : undefined }}
+                  style={{ flex: 1, color: c.text, fontSize: FONT.card, fontFamily: theme.mono ? 'monospace' : undefined }}
                 />
                 <TouchableOpacity onPress={doClose} hitSlop={8}>
-                  <Text style={{ color: c.muted, fontSize: 12, fontWeight: '700' }}>ESC</Text>
+                  <Text style={{ color: c.muted, fontSize: FONT.md, fontWeight: '700' }}>ESC</Text>
                 </TouchableOpacity>
               </View>
 
@@ -120,18 +121,18 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     onPress={() => select(item)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 8, borderRadius: 8 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xl, paddingVertical: SPACE.lg, paddingHorizontal: SPACE.md, borderRadius: 8 }}
                     activeOpacity={0.6}
                   >
-                    <Text style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{item.icon}</Text>
+                    <Text style={{ fontSize: FONT.section, width: 22, textAlign: 'center' }}>{item.icon}</Text>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }}>{item.label}</Text>
-                      <Text style={{ color: c.muted, fontSize: 11 }}>{item.hint}</Text>
+                      <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }}>{item.label}</Text>
+                      <Text style={{ color: c.muted, fontSize: FONT.sm }}>{item.hint}</Text>
                     </View>
-                    <Text style={{ color: c.muted, fontSize: 11 }}>↵</Text>
+                    <Text style={{ color: c.muted, fontSize: FONT.sm }}>↵</Text>
                   </TouchableOpacity>
                 )}
-                ListEmptyComponent={<Text style={{ color: c.muted, padding: 12 }}>No matches.</Text>}
+                ListEmptyComponent={<Text style={{ color: c.muted, padding: SPACE.xl }}>No matches.</Text>}
               />
             </View>
           </Animated.View>

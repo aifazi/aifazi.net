@@ -1,14 +1,12 @@
 import { ReactNode, useRef, useState } from 'react'
 import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, ScrollView, DimensionValue, ActivityIndicator, Animated } from 'react-native'
 import { useTheme } from '@/src/theme'
-import { withAlpha, glowShadow, contrastText } from '@/src/lib/color'
+import { withAlpha, contrastText } from '@/src/lib/color'
 import { webPillSnap } from '@/src/lib/carousel'
-import { CODE_FONT, micro, buttonLabel, tagLabel, frameworkStyles } from '@/src/design'
+import { CODE_FONT, FONT, SPACE, buttonLabel, frameworkStyles, micro, tagLabel } from '@/src/design'
 import { Icon, IconName } from '@/src/components/icon'
 
 /* ─── Surfaces / shapes ─────────────────────────────────────────────────── */
-
-const CARD_SHADOW = glowShadow(10, 0.32)
 
 const BTN_PADDING: Record<BtnSize, { py: number; px: number; fs: number }> = {
   sm: { py: 8, px: 12, fs: 12 },
@@ -110,7 +108,7 @@ export function SectionTag({ children, color }: { children: ReactNode; color?: s
   const c = theme.colors
   const tint = color ?? c.accent
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.sm }}>
       <View style={{ width: 18, height: 2, backgroundColor: withAlpha(tint, 0.6) }} />
       <Text style={[micro(10, 3.5, '700'), { color: tint }]}>{children}</Text>
     </View>
@@ -143,11 +141,12 @@ export function Card({
           borderColor: icy ? withAlpha(c.accent2, 0.18) : withAlpha(c.accent2, 0.4),
           borderWidth: fw.borderWidth,
           borderRadius: fw.radius,
+          shadowColor: '#000',
           shadowOpacity: fw.hardShadow ? 0.18 : theme.dark ? 0.3 : 0.2,
           shadowRadius: fw.hardShadow ? 3 : 10,
           shadowOffset: { width: fw.hardShadow ? 4 : 0, height: fw.hardShadow ? 4 : 2 },
+          elevation: fw.hardShadow ? 2 : 4,
         },
-        CARD_SHADOW,
         style,
       ]}
     >
@@ -167,9 +166,9 @@ export function Card({
         />
       ) : null}
       {title ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.lg }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: c.text, fontSize: 15, fontWeight: '900', letterSpacing: 0.4 }}>{title}</Text>
+            <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '900', letterSpacing: 0.4 }}>{title}</Text>
             {subtitle ? (
               <Text style={[tagLabel(9, 3), { color: c.accent2, marginTop: 3 }]}>{subtitle}</Text>
             ) : null}
@@ -186,12 +185,12 @@ export function Title({ children, tag }: { children: ReactNode; tag?: string }) 
   const { theme } = useTheme()
   const c = theme.colors
   return (
-    <View style={{ marginBottom: 14 }}>
+    <View style={{ marginBottom: SPACE.xxl }}>
       {tag ? <SectionTag>{tag}</SectionTag> : null}
       <Text
         style={{
           color: c.text,
-          fontSize: 26,
+          fontSize: FONT.title,
           fontWeight: '900',
           letterSpacing: frameworkStyles(theme).headingSpacing,
         }}
@@ -207,7 +206,7 @@ export function Muted({ children, style, numberOfLines }: { children: ReactNode;
   return (
     <Text
       numberOfLines={numberOfLines}
-      style={[{ color: theme.colors.muted, fontSize: 13, lineHeight: 18 }, style]}
+      style={[{ color: theme.colors.muted, fontSize: FONT.body, lineHeight: 18 }, style]}
     >
       {children}
     </Text>
@@ -254,8 +253,8 @@ export function Field({
   const [focused, setFocused] = useState(false)
   const radius = fw.buttonRadius
   return (
-    <View style={{ marginBottom: 12 }}>
-      <Text style={[micro(10, 2.5, '700'), { color: focused ? c.accent2 : c.muted, marginBottom: 6 }]}>
+    <View style={{ marginBottom: SPACE.xl }}>
+      <Text style={[micro(10, 2.5, '700'), { color: focused ? c.accent2 : c.muted, marginBottom: SPACE.sm }]}>
         {label.toUpperCase()}
       </Text>
       <TextInput
@@ -277,10 +276,10 @@ export function Field({
           borderColor: focused ? withAlpha(c.accent, 0.7) : c.border,
           borderRadius: radius,
           borderWidth: 1,
-          paddingHorizontal: 14,
+          paddingHorizontal: SPACE.xxl,
           paddingVertical: radius === 0 ? 14 : 13,
-          fontSize: 15,
-          fontFamily: CODE_FONT,
+          fontSize: FONT.card,
+          fontFamily: theme.mono ? CODE_FONT : undefined,
           shadowColor: focused ? c.accent : 'transparent',
           shadowOpacity: 0.25,
           shadowRadius: 10,
@@ -294,8 +293,8 @@ export function Field({
 
 const styles = StyleSheet.create({
   btn: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingVertical: SPACE.xxl,
+    paddingHorizontal: SPACE.giant,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -309,8 +308,8 @@ const styles = StyleSheet.create({
   },
   card: {
     borderWidth: 1,
-    padding: 16,
-    marginBottom: 12,
+    padding: SPACE.xxxl,
+    marginBottom: SPACE.xl,
     overflow: 'hidden',
   },
 })
@@ -401,11 +400,11 @@ export function ListItem({
       <View style={{ flex: 1 }}>
         <Text
           numberOfLines={1}
-          style={{ color: disabled ? c.muted : c.text, fontSize: 14, fontWeight: '800', letterSpacing: 0.3 }}
+          style={{ color: disabled ? c.muted : c.text, fontSize: FONT.base, fontWeight: '800', letterSpacing: 0.3 }}
         >
           {title}
         </Text>
-        {subtitle ? <Muted numberOfLines={1} style={{ fontSize: 11 }}>{subtitle}</Muted> : null}
+        {subtitle ? <Muted numberOfLines={1} style={{ fontSize: FONT.sm }}>{subtitle}</Muted> : null}
       </View>
       {badge != null ? <Badge text={String(badge)} /> : null}
       {onPress ? <Icon name="forward" size={15} color={c.muted} /> : null}
@@ -417,9 +416,9 @@ export function ListItem({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
-          paddingVertical: 12,
-          paddingHorizontal: 4,
+          gap: SPACE.md,
+          paddingVertical: SPACE.xl,
+          paddingHorizontal: SPACE.xs,
           borderBottomWidth: 1,
           borderBottomColor: c.divider,
           opacity: disabled ? 0.5 : 1,
@@ -434,7 +433,7 @@ export function ListItem({
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.6}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: c.divider }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.xl, paddingHorizontal: SPACE.xs, borderBottomWidth: 1, borderBottomColor: c.divider }}
     >
       {body}
     </TouchableOpacity>
@@ -490,12 +489,12 @@ export function EmptyState({
   const { theme } = useTheme()
   const c = theme.colors
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 44, paddingHorizontal: 24 }}>
+    <View style={{ alignItems: 'center', paddingVertical: 44, paddingHorizontal: SPACE.mega }}>
       {icon ? <Icon name={icon} size={34} color={withAlpha(c.muted, 0.7)} /> : null}
-      <Text style={{ color: c.text2, fontSize: 15, fontWeight: '800', marginTop: 10, textAlign: 'center' }}>{title}</Text>
-      {subtitle ? <Muted style={{ textAlign: 'center', marginTop: 4 }}>{subtitle}</Muted> : null}
+      <Text style={{ color: c.text2, fontSize: FONT.card, fontWeight: '800', marginTop: SPACE.lg, textAlign: 'center' }}>{title}</Text>
+      {subtitle ? <Muted style={{ textAlign: 'center', marginTop: SPACE.xs }}>{subtitle}</Muted> : null}
       {actionLabel && onAction ? (
-        <Btn title={actionLabel} onPress={onAction} style={{ marginTop: 14, paddingVertical: 8, paddingHorizontal: 18 }} />
+        <Btn title={actionLabel} onPress={onAction} style={{ marginTop: SPACE.xxl, paddingVertical: SPACE.md, paddingHorizontal: SPACE.huge }} />
       ) : null}
     </View>
   )
@@ -514,7 +513,7 @@ export function FormError({ message }: { message?: string | null }) {
   const c = theme.colors
   if (!message) return null
   return (
-    <Text style={[micro(11, 1.5, '700'), { color: c.danger, marginBottom: 10, textTransform: 'none' }]}>{message}</Text>
+    <Text style={[micro(11, 1.5, '700'), { color: c.danger, marginBottom: SPACE.lg, textTransform: 'none' }]}>{message}</Text>
   )
 }
 
@@ -534,7 +533,7 @@ export function CategoryPills<T extends string>({
 }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} {...webPillSnap()}>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', gap: SPACE.md }}>
         {items.map((it) => (
           <Pill key={it.key} label={it.label ?? it.key} active={it.key === active} onPress={() => onSelect(it.key)} />
         ))}
@@ -566,8 +565,8 @@ export function Pill({
         borderWidth: 1,
         borderColor: active ? withAlpha(tint, 0.7) : c.border,
         borderRadius: theme.mono ? 0 : Math.max(4, frameworkStyles(theme).buttonRadius),
-        paddingHorizontal: 14,
-        paddingVertical: 8,
+        paddingHorizontal: SPACE.xxl,
+        paddingVertical: SPACE.md,
         backgroundColor: active ? withAlpha(tint, 0.14) : 'transparent',
         shadowColor: active ? tint : '#000',
         shadowOpacity: active ? 0.35 : 0,
@@ -611,10 +610,10 @@ export function Chip({
   const box: ViewStyle = {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: SPACE.sm,
     alignSelf: 'flex-start',
     paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingVertical: SPACE.xs,
     borderRadius: theme.mono ? 0 : 999,
     borderWidth: 1,
     borderColor: withAlpha(tint, 0.35),

@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -59,22 +61,22 @@ export default function ChannelManageScreen() {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
+          gap: SPACE.lg,
+          paddingHorizontal: SPACE.xl,
+          paddingVertical: SPACE.lg,
           borderBottomWidth: 1,
           borderBottomColor: c.border,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }}>Channel management</Text>
-        <Btn title="+ New" onPress={() => router.push('/channel-edit' as Href)} style={{ paddingVertical: 7, paddingHorizontal: 12 }} />
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }}>Channel management</Text>
+        <Btn title="+ New" onPress={() => router.push('/channel-edit' as Href)} style={{ paddingVertical: 7, paddingHorizontal: SPACE.xl }} />
       </View>
 
       {!isStaff ? (
-        <View style={{ padding: 20 }}>
+        <View style={{ padding: SPACE.giant }}>
           <Muted style={{ textAlign: 'center' }}>Staff only.</Muted>
         </View>
       ) : loading ? (
@@ -83,15 +85,15 @@ export default function ChannelManageScreen() {
         <FlatList
           data={rooms}
           keyExtractor={(r) => r.id}
-          contentContainerStyle={{ padding: 12 }}
+          contentContainerStyle={{ padding: SPACE.xl }}
           ListEmptyComponent={err ? <Muted>{err}</Muted> : <Muted>No channels yet.</Muted>}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => router.push(`/channel-edit?room_id=${item.id}` as Href)}>
               <Card>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Text style={{ fontSize: 16 }}>{item.emoji || '💬'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
+                  <Text style={{ fontSize: FONT.section }}>{item.emoji || '💬'}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+                    <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }} numberOfLines={1}>
                       {item.name}
                     </Text>
                     <Muted numberOfLines={1}>

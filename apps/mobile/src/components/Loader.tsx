@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Animated, Easing, View, Text } from 'react-native'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
-import { micro } from '@/src/design'
+import { SPACE, micro } from '@/src/design'
 
 function dot(size: number, color: string) {
   return { width: size, height: size, borderRadius: size / 2, backgroundColor: color, position: 'absolute' as const }
@@ -104,7 +104,7 @@ export function Loader({ label, size = 56, compact = false }: { label?: string; 
         ))}
       </View>
       {label ? (
-        <Text style={[micro(10, 3), { color: c.accent2, marginTop: 14 }]}>{label}</Text>
+        <Text style={[micro(10, 3), { color: c.accent2, marginTop: SPACE.xxl }]}>{label}</Text>
       ) : null}
     </View>
   )

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { ActivityIndicator, View, Text } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as Linking from 'expo-linking'
@@ -77,7 +78,7 @@ export default function OAuthCallbackScreen() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bg }}>
       <ActivityIndicator size="large" color={c.accent} />
-      <Text style={{ color: c.muted, fontSize: 13, marginTop: 12, fontFamily: theme.mono ? 'monospace' : undefined }}>
+      <Text style={{ color: c.muted, fontSize: FONT.body, marginTop: SPACE.xl, fontFamily: theme.mono ? 'monospace' : undefined }}>
         Completing sign-in…
       </Text>
     </View>

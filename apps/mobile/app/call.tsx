@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { useLocalSearchParams } from 'expo-router'
 import {
   View,
@@ -56,7 +57,7 @@ function Tile({
         </View>
       )}
       <View style={styles.tileMeta}>
-        <Text style={{ color: c.text, fontSize: 11, fontWeight: '700' }} numberOfLines={1}>
+        <Text style={{ color: c.text, fontSize: FONT.sm, fontWeight: '700' }} numberOfLines={1}>
           {label}
         </Text>
         <View style={styles.dotRow}>
@@ -248,7 +249,7 @@ export default function CallScreen() {
     return (
       <View style={[styles.center, { backgroundColor: c.bg }]}>
         <ActivityIndicator color={c.accent} size="large" />
-        <Text style={{ color: c.muted, marginTop: 14, fontFamily: theme.mono ? 'monospace' : undefined }}>
+        <Text style={{ color: c.muted, marginTop: SPACE.xxl, fontFamily: theme.mono ? 'monospace' : undefined }}>
           Joining {roomName}…
         </Text>
       </View>
@@ -259,8 +260,8 @@ export default function CallScreen() {
     return (
       <View style={[styles.center, { backgroundColor: c.bg }]}>
         <Text style={{ fontSize: 40 }}>⚠️</Text>
-        <Text style={{ color: c.danger, marginTop: 10, textAlign: 'center' }}>{error || 'Call ended'}</Text>
-        <TouchableOpacity onPress={leave} style={[styles.ctl, { backgroundColor: c.danger, marginTop: 20 }]}>
+        <Text style={{ color: c.danger, marginTop: SPACE.lg, textAlign: 'center' }}>{error || 'Call ended'}</Text>
+        <TouchableOpacity onPress={leave} style={[styles.ctl, { backgroundColor: c.danger, marginTop: SPACE.giant }]}>
           <Text style={{ color: '#fff', fontWeight: '800' }}>LEAVE</Text>
         </TouchableOpacity>
       </View>
@@ -270,17 +271,17 @@ export default function CallScreen() {
   return (
     <View style={[styles.root, { backgroundColor: c.bg }]}>
       <View style={[styles.header, { borderBottomColor: c.border }]}>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>
           {roomName}
         </Text>
-        <Text style={{ color: c.muted, fontSize: 11 }}>
+        <Text style={{ color: c.muted, fontSize: FONT.sm }}>
           {count} participant{count !== 1 ? 's' : ''}
         </Text>
-        <TouchableOpacity onPress={() => setChatOpen((v) => !v)} hitSlop={10} style={{ marginLeft: 10 }}>
-          <Text style={{ fontSize: 16, opacity: chatOpen ? 1 : 0.55 }}>💬</Text>
+        <TouchableOpacity onPress={() => setChatOpen((v) => !v)} hitSlop={10} style={{ marginLeft: SPACE.lg }}>
+          <Text style={{ fontSize: FONT.section, opacity: chatOpen ? 1 : 0.55 }}>💬</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={openDevices} hitSlop={10} style={{ marginLeft: 8 }}>
-          <Text style={{ fontSize: 16, opacity: 0.8 }}>⚙️</Text>
+        <TouchableOpacity onPress={openDevices} hitSlop={10} style={{ marginLeft: SPACE.md }}>
+          <Text style={{ fontSize: FONT.section, opacity: 0.8 }}>⚙️</Text>
         </TouchableOpacity>
       </View>
 
@@ -289,12 +290,12 @@ export default function CallScreen() {
           <View style={[styles.chatPane, { borderBottomColor: c.border }]}>
             <ScrollView
               style={{ flex: 1 }}
-              contentContainerStyle={{ padding: 10, paddingBottom: 12 }}
+              contentContainerStyle={{ padding: SPACE.lg, paddingBottom: SPACE.xl }}
               ref={(ref) => ref?.scrollToEnd?.({ animated: false })}
               onContentSizeChange={() => {}}
             >
               {chatMsgs.length === 0 ? (
-                <Text style={{ color: c.muted, fontSize: 12, textAlign: 'center', marginTop: 20 }}>
+                <Text style={{ color: c.muted, fontSize: FONT.md, textAlign: 'center', marginTop: SPACE.giant }}>
                   No chat yet. Say something!
                 </Text>
               ) : (
@@ -302,7 +303,7 @@ export default function CallScreen() {
                   const mine = m.sender === user?.username
                   const body = decryptIfEncrypted(m.content ?? '', roomKey)
                   return (
-                    <View key={m.id} style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
+                    <View key={m.id} style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginBottom: SPACE.md }}>
                       <View
                         style={[
                           styles.chatBubble,
@@ -313,14 +314,14 @@ export default function CallScreen() {
                         ]}
                       >
                         {!mine ? (
-                          <Text style={{ color: c.accent2, fontSize: 10, fontWeight: '700', marginBottom: 2 }}>
+                          <Text style={{ color: c.accent2, fontSize: FONT.xs, fontWeight: '700', marginBottom: SPACE.xxs }}>
                             {m.sender}
                           </Text>
                         ) : null}
-                        <Text style={{ color: mine ? c.onAccent : c.text, fontSize: 13, lineHeight: 18 }}>
+                        <Text style={{ color: mine ? c.onAccent : c.text, fontSize: FONT.body, lineHeight: 18 }}>
                           {body || (m.content?.startsWith('ENC:') ? '(encrypted)' : m.content)}
                         </Text>
-                        <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: 9, marginTop: 2 }}>
+                        <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: FONT.micro, marginTop: SPACE.xxs }}>
                           {fmtTime(m.created_at)}
                         </Text>
                       </View>
@@ -346,7 +347,7 @@ export default function CallScreen() {
                 disabled={chatSending || !chatText.trim()}
                 style={[styles.chatSend, { backgroundColor: c.accent, opacity: chatSending || !chatText.trim() ? 0.5 : 1 }]}
               >
-                <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: 12 }}>
+                <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: FONT.md }}>
                   {chatSending ? '…' : 'Send'}
                 </Text>
               </TouchableOpacity>
@@ -359,7 +360,7 @@ export default function CallScreen() {
         <View style={[styles.screen, { borderBottomColor: c.border }]}>
           <VideoStream streamURL={screenUrl} objectFit="contain" style={StyleSheet.absoluteFill} />
           <View style={styles.screenTag}>
-            <Text style={{ color: '#fff', fontSize: 9 }}>🖥 Screen Share</Text>
+            <Text style={{ color: '#fff', fontSize: FONT.micro }}>🖥 Screen Share</Text>
           </View>
         </View>
       ) : null}
@@ -401,24 +402,24 @@ export default function CallScreen() {
           delayLongPress={120}
           style={[styles.ctl, { backgroundColor: pttActive ? c.accent : 'rgba(255,255,255,0.12)' }]}
         >
-          <Text style={{ fontSize: 16 }}>{pttActive ? '🎙️' : '🎤'}</Text>
+          <Text style={{ fontSize: FONT.section }}>{pttActive ? '🎙️' : '🎤'}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={toggleMute} style={[styles.ctl, { backgroundColor: muted ? c.danger : 'rgba(255,255,255,0.12)' }]}>
-          <Text style={{ fontSize: 16 }}>{muted ? '🔇' : '🔊'}</Text>
+          <Text style={{ fontSize: FONT.section }}>{muted ? '🔇' : '🔊'}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={toggleCam} style={[styles.ctl, { backgroundColor: camOff ? c.danger : 'rgba(255,255,255,0.12)' }]}>
-          <Text style={{ fontSize: 16 }}>{camOff ? '📷' : '📸'}</Text>
+          <Text style={{ fontSize: FONT.section }}>{camOff ? '📷' : '📸'}</Text>
         </TouchableOpacity>
         {canScreenShare && (
           <TouchableOpacity
             onPress={toggleScreen}
             style={[styles.ctl, { backgroundColor: screenActive ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.12)' }]}
           >
-            <Text style={{ fontSize: 16 }}>🖥</Text>
+            <Text style={{ fontSize: FONT.section }}>🖥</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity onPress={leave} style={[styles.ctl, { backgroundColor: c.danger }]}>
-          <Text style={{ fontSize: 16 }}>❌</Text>
+          <Text style={{ fontSize: FONT.section }}>❌</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -427,13 +428,13 @@ export default function CallScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACE.mega },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: SPACE.lg,
+    paddingHorizontal: SPACE.xxxl,
+    paddingVertical: SPACE.xl,
     borderBottomWidth: 1,
   },
   chatPane: {
@@ -443,39 +444,39 @@ const styles = StyleSheet.create({
   chatBubble: {
     borderRadius: 12,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: SPACE.lg,
+    paddingVertical: SPACE.sm,
     maxWidth: '90%',
   },
   chatInputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 8,
-    padding: 8,
+    gap: SPACE.md,
+    padding: SPACE.md,
     borderTopWidth: 1,
   },
   chatInput: {
     flex: 1,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: SPACE.lg,
+    paddingVertical: SPACE.md,
     maxHeight: 80,
-    fontSize: 13,
+    fontSize: FONT.body,
   },
   chatSend: {
     borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: SPACE.xxl,
+    paddingVertical: SPACE.lg,
     alignItems: 'center',
   },
   screen: { height: 200, backgroundColor: '#000', borderBottomWidth: 1, position: 'relative' },
-  screenTag: { position: 'absolute', bottom: 8, left: 12, backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 3 },
+  screenTag: { position: 'absolute', bottom: 8, left: 12, backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 6, paddingHorizontal: SPACE.lg, paddingVertical: 3 },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 12,
-    gap: 10,
+    padding: SPACE.xl,
+    gap: SPACE.lg,
   },
   tile: {
     width: '47%',
@@ -495,15 +496,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 6,
+    padding: SPACE.sm,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
-  dotRow: { flexDirection: 'row', gap: 4 },
+  dotRow: { flexDirection: 'row', gap: SPACE.xs },
   controls: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 14,
+    gap: SPACE.xl,
+    paddingVertical: SPACE.xxl,
     borderTopWidth: 1,
   },
   ctl: {

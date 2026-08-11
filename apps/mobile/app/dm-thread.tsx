@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { askImageSourceAsync, pickDocument, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -24,6 +26,7 @@ import { useMessageActions, useSwipeToReply } from '@/src/lib/chat-actions'
 import { useOverlay } from '@/src/components/overlay'
 import { Loader } from '@/src/components/Loader'
 import { VoiceRecorder, VoiceNotePlay } from '@/src/components/VoiceNote'
+import { withAlpha, contrastText } from '@/src/lib/color'
 
 interface DMMessage {
   id: string
@@ -79,9 +82,12 @@ interface RowProps {
 function MessageRow(props: RowProps) {
   const { mine, c, theme, item, threadKey, isImage, isVoice, replyContent, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress } = props
   const { pan, panHandlers } = useSwipeToReply({ onReply })
+  const mineText = mine ? contrastText(c.accent2) : c.text
+  const mineMuted = mine ? withAlpha(contrastText(c.accent2), 0.65) : c.muted
+  const radius = frameworkStyles(theme).radius
 
   return (
-    <View style={{ marginBottom: 10 }}>
+    <View style={{ marginBottom: SPACE.lg }}>
       <Animated.View style={{ alignItems: mine ? 'flex-end' : 'flex-start', transform: [{ translateX: pan.x }] }} {...panHandlers}>
         <TouchableOpacity
           activeOpacity={0.8}
@@ -95,11 +101,12 @@ function MessageRow(props: RowProps) {
                 backgroundColor: mine ? c.accent2 : c.bg2,
                 borderColor: mine ? c.accent2 : c.border,
                 maxWidth: '85%',
+                borderRadius: radius,
               },
             ]}
           >
             {replyContent ? (
-              <Text style={{ color: c.muted, fontSize: 11, fontStyle: 'italic', marginBottom: 4 }}>
+              <Text style={{ color: c.muted, fontSize: FONT.sm, fontStyle: 'italic', marginBottom: SPACE.xs }}>
                 ↪ {decryptIfEncrypted(replyContent, threadKey)}
               </Text>
             ) : null}
@@ -111,17 +118,17 @@ function MessageRow(props: RowProps) {
                 transition={150}
               />
             ) : isVoice ? (
-              <VoiceNotePlay uri={item.content} duration={item.duration} color={mine ? c.onAccent : c.accent2} />
+              <VoiceNotePlay uri={item.content} duration={item.duration} color={mine ? mineText : c.accent2} />
             ) : (
-              <Text style={{ color: mine ? c.onAccent : c.text, fontSize: 14, lineHeight: 19 }}>
+              <Text style={{ color: mine ? mineText : c.text, fontSize: FONT.base, lineHeight: 19 }}>
                 {decryptIfEncrypted(item.content, threadKey)}
               </Text>
             )}
             {item.type === 'file' && item.file_name ? (
-              <Text style={{ marginTop: 6, fontSize: 13, color: mine ? c.onAccent : c.text }}>📎 {item.file_name}</Text>
+              <Text style={{ marginTop: SPACE.sm, fontSize: FONT.body, color: mine ? mineText : c.text }}>📎 {item.file_name}</Text>
             ) : null}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginTop: 4 }}>
-              <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: SPACE.sm, marginTop: SPACE.xs }}>
+              <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs }}>
                 {fmtTime(item.created_at)}
                 {item.edited ? ' · edited' : ''}
               </Text>
@@ -130,7 +137,7 @@ function MessageRow(props: RowProps) {
         </TouchableOpacity>
       </Animated.View>
       {reactions.length > 0 ? (
-        <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+        <View style={{ flexDirection: 'row', gap: SPACE.sm, marginTop: SPACE.xs, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
           {reactions.map(([emoji, usernames]) => (
             <TouchableOpacity
               key={emoji}
@@ -138,35 +145,35 @@ function MessageRow(props: RowProps) {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 4,
-                paddingHorizontal: 8,
-                paddingVertical: 2,
+                gap: SPACE.xs,
+                paddingHorizontal: SPACE.md,
+                paddingVertical: SPACE.xxs,
                 borderRadius: 12,
                 borderWidth: 1,
                 borderColor: c.border,
                 backgroundColor: c.bg2,
               }}
             >
-              <Text style={{ fontSize: 13 }}>{emoji}</Text>
-              <Text style={{ color: c.muted, fontSize: 11 }}>{usernames.length}</Text>
+              <Text style={{ fontSize: FONT.body }}>{emoji}</Text>
+              <Text style={{ color: c.muted, fontSize: FONT.sm }}>{usernames.length}</Text>
             </TouchableOpacity>
           ))}
         </View>
       ) : null}
-      <View style={{ flexDirection: 'row', gap: 12, marginTop: 4, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+      <View style={{ flexDirection: 'row', gap: SPACE.xl, marginTop: SPACE.xs, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
         <TouchableOpacity onPress={onReply} hitSlop={8}>
-          <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>Reply</Text>
+          <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>Reply</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={onReact} hitSlop={8}>
-          <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>React</Text>
+          <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>React</Text>
         </TouchableOpacity>
         {mine ? (
           <>
             <TouchableOpacity onPress={onEdit} hitSlop={8}>
-              <Text style={{ color: c.muted, fontSize: 11, fontWeight: '700' }}>Edit</Text>
+              <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onDelete} hitSlop={8}>
-              <Text style={{ color: c.danger, fontSize: 11, fontWeight: '700' }}>Delete</Text>
+              <Text style={{ color: c.danger, fontSize: FONT.sm, fontWeight: '700' }}>Delete</Text>
             </TouchableOpacity>
           </>
         ) : null}
@@ -180,6 +187,8 @@ export default function DMThreadScreen() {
   const router = useRouter()
   const { theme } = useTheme()
   const c = theme.colors
+  const radius = frameworkStyles(theme).radius
+  const pillRadius = frameworkStyles(theme).buttonRadius
   const { user } = useAuth()
   const overlay = useOverlay()
   const { confirm, menu, alert } = overlay
@@ -474,9 +483,9 @@ export default function DMThreadScreen() {
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
       <View style={[styles.header, { borderBottomColor: c.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }} numberOfLines={1}>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>
           {peer || 'Direct message'}
         </Text>
         <TouchableOpacity
@@ -486,10 +495,10 @@ export default function DMThreadScreen() {
           }}
           hitSlop={10}
         >
-          <Text style={{ fontSize: 16 }}>📞</Text>
+          <Text style={{ fontSize: FONT.section }}>📞</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={openMenu} hitSlop={10}>
-          <Text style={{ color: c.muted, fontSize: 18, marginLeft: 8 }}>⋯</Text>
+          <Text style={{ color: c.muted, fontSize: FONT.lead, marginLeft: SPACE.md }}>⋯</Text>
         </TouchableOpacity>
       </View>
 
@@ -498,13 +507,13 @@ export default function DMThreadScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {loading ? (
-          <View style={{ paddingTop: 40, alignItems: 'center' }}>
+          <View style={{ paddingTop: SPACE.colossal, alignItems: 'center' }}>
             <Loader compact />
           </View>
         ) : err && messages.length === 0 ? (
-          <View style={{ padding: 20, alignItems: 'center' }}>
+          <View style={{ padding: SPACE.giant, alignItems: 'center' }}>
             <Text style={{ color: c.danger, textAlign: 'center' }}>{err}</Text>
-            <TouchableOpacity onPress={() => load()} style={{ marginTop: 14 }}>
+            <TouchableOpacity onPress={() => load()} style={{ marginTop: SPACE.xxl }}>
               <Text style={{ color: c.accent, fontWeight: '700' }}>Retry</Text>
             </TouchableOpacity>
           </View>
@@ -513,7 +522,7 @@ export default function DMThreadScreen() {
             ref={listRef}
             data={messages}
             keyExtractor={(m) => m.id}
-            contentContainerStyle={{ padding: 12, paddingBottom: 20 }}
+            contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.giant }}
             onContentSizeChange={() => {
               if (stick.current) listRef.current?.scrollToEnd({ animated: true })
             }}
@@ -524,17 +533,17 @@ export default function DMThreadScreen() {
             scrollEventThrottle={100}
             ListHeaderComponent={
               loadingOlder ? (
-                <View style={{ paddingVertical: 10, alignItems: 'center' }}>
+                <View style={{ paddingVertical: SPACE.lg, alignItems: 'center' }}>
                   <Loader compact />
                 </View>
               ) : messages.length >= PAGE_SIZE ? (
-                <TouchableOpacity onPress={loadOlder} style={{ paddingVertical: 10, alignItems: 'center' }}>
-                  <Text style={{ color: c.accent, fontWeight: '700', fontSize: 12 }}>↑ Load older</Text>
+                <TouchableOpacity onPress={loadOlder} style={{ paddingVertical: SPACE.lg, alignItems: 'center' }}>
+                  <Text style={{ color: c.accent, fontWeight: '700', fontSize: FONT.md }}>↑ Load older</Text>
                 </TouchableOpacity>
               ) : null
             }
             ListEmptyComponent={
-              <Text style={{ color: c.muted, textAlign: 'center', marginTop: 40, fontSize: 13 }}>
+              <Text style={{ color: c.muted, textAlign: 'center', marginTop: SPACE.colossal, fontSize: FONT.body }}>
                 No messages yet. Say hi!
               </Text>
             }
@@ -568,8 +577,8 @@ export default function DMThreadScreen() {
                     onLongPress={() => onLongPress(item)}
                   />
                   {seen ? (
-                    <View style={{ alignItems: 'flex-end', marginTop: -4, marginBottom: 4 }}>
-                      <Text style={{ color: c.muted, fontSize: 10 }}>✓ seen</Text>
+                    <View style={{ alignItems: 'flex-end', marginTop: -4, marginBottom: SPACE.xs }}>
+                      <Text style={{ color: c.muted, fontSize: FONT.xs }}>✓ seen</Text>
                     </View>
                   ) : null}
                 </>
@@ -582,27 +591,27 @@ export default function DMThreadScreen() {
       <View style={[styles.inputBar, { borderTopColor: c.border, backgroundColor: c.bg2 }]}>
         {typing.length > 0 ? (
           <View style={{ position: 'absolute', top: -26, left: 0, right: 0, alignItems: 'center' }}>
-            <Text style={{ color: c.muted, fontSize: 11, fontStyle: 'italic' }}>
+            <Text style={{ color: c.muted, fontSize: FONT.sm, fontStyle: 'italic' }}>
               {typing[0]}
               {typing.length > 1 ? ` +${typing.length - 1} others` : ''} typing…
             </Text>
           </View>
         ) : null}
         {(editing || replying) ? (
-          <View style={{ position: 'absolute', top: -42, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: c.bg3, borderTopWidth: 1, borderTopColor: c.border }}>
-            <Text style={{ flex: 1, color: c.muted, fontSize: 11, fontStyle: 'italic' }} numberOfLines={1}>
+          <View style={{ position: 'absolute', top: -42, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.xl, paddingVertical: SPACE.sm, backgroundColor: c.bg3, borderTopWidth: 1, borderTopColor: c.border }}>
+            <Text style={{ flex: 1, color: c.muted, fontSize: FONT.sm, fontStyle: 'italic' }} numberOfLines={1}>
               {editing ? `✏️ Editing: ${decryptIfEncrypted(editing.content ?? '', threadKey)}` : replying ? `↪ Replying to ${replying?.sender}: ${decryptIfEncrypted(replying?.content ?? '', threadKey)}` : ''}
             </Text>
             <TouchableOpacity onPress={() => { cancelEdit(); setReplying(null) }} hitSlop={8}>
-              <Text style={{ color: c.danger, fontSize: 12, fontWeight: '700' }}>✕</Text>
+              <Text style={{ color: c.danger, fontSize: FONT.md, fontWeight: '700' }}>✕</Text>
             </TouchableOpacity>
           </View>
         ) : null}
-        <TouchableOpacity onPress={pickImage} disabled={uploading} hitSlop={8} style={{ paddingRight: 2 }}>
-          <Text style={{ fontSize: 18, opacity: uploading ? 0.4 : 1 }}>{uploading ? '⏳' : '🖼️'}</Text>
+        <TouchableOpacity onPress={pickImage} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
+          <Text style={{ fontSize: FONT.lead, opacity: uploading ? 0.4 : 1 }}>{uploading ? '⏳' : '🖼️'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: 2 }}>
-          <Text style={{ fontSize: 18, opacity: uploading ? 0.4 : 1 }}>📎</Text>
+        <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
+          <Text style={{ fontSize: FONT.lead, opacity: uploading ? 0.4 : 1 }}>📎</Text>
         </TouchableOpacity>
         <VoiceRecorder onRecorded={uploadVoice} onError={(m) => setErr(m)} />
         <TextInput
@@ -618,15 +627,16 @@ export default function DMThreadScreen() {
               color: c.text,
               borderColor: c.border,
               fontFamily: theme.mono ? 'monospace' : undefined,
+              borderRadius: pillRadius,
             },
           ]}
         />
         <TouchableOpacity
           onPress={editing ? saveEdit : send}
           disabled={sending || !(editing ? editText : text).trim()}
-          style={[styles.sendBtn, { backgroundColor: c.accent, opacity: sending || !(editing ? editText : text).trim() ? 0.5 : 1 }]}
+          style={[styles.sendBtn, { backgroundColor: c.accent, borderRadius: pillRadius, opacity: sending || !(editing ? editText : text).trim() ? 0.5 : 1 }]}
         >
-          <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: 13 }}>
+          <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: FONT.body }}>
             {sending ? '…' : editing ? 'Save' : 'Send'}
           </Text>
         </TouchableOpacity>
@@ -640,38 +650,38 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    gap: SPACE.lg,
+    paddingHorizontal: SPACE.xl,
+    paddingVertical: SPACE.lg,
     borderBottomWidth: 1,
   },
-  backBtn: { paddingRight: 4 },
+  backBtn: { paddingRight: SPACE.xs },
   bubble: {
     borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: SPACE.xl,
+    paddingVertical: SPACE.md,
   },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    gap: SPACE.md,
+    paddingHorizontal: SPACE.lg,
+    paddingVertical: SPACE.md,
     borderTopWidth: 1,
   },
   input: {
     flex: 1,
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACE.xl,
     paddingVertical: 9,
     maxHeight: 100,
-    fontSize: 14,
+    fontSize: FONT.base,
   },
   sendBtn: {
     borderRadius: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACE.xxxl,
     paddingVertical: 11,
     alignItems: 'center',
   },

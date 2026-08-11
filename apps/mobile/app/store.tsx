@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import { View, Text, TouchableOpacity, FlatList, RefreshControl } from 'react-native'
 import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -47,6 +48,8 @@ export default function StoreScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [err, setErr] = useState('')
+  const radius = frameworkStyles(theme).radius
+  const pillRadius = frameworkStyles(theme).buttonRadius
 
   const load = useCallback(() => {
     api
@@ -78,43 +81,43 @@ export default function StoreScreen() {
   return (
     <Screen scroll={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Title>Store</Title>
+        <Title tag="STORE">Store</Title>
         <TouchableOpacity
           onPress={() => router.push('/store-cart' as Href)}
-          style={{ marginBottom: 12, paddingHorizontal: 12, paddingVertical: 8, borderRadius: theme.mono ? 0 : 8, backgroundColor: c.bg2, borderWidth: 1, borderColor: c.border }}
+          style={{ marginBottom: SPACE.xl, paddingHorizontal: SPACE.xl, paddingVertical: SPACE.md, borderRadius: pillRadius, backgroundColor: c.bg2, borderWidth: 1, borderColor: c.border }}
         >
-          <Text style={{ color: c.text, fontSize: 13, fontWeight: '700' }}>🛒 {cartCount > 0 ? `(${cartCount})` : ''}</Text>
+          <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>🛒 {cartCount > 0 ? `(${cartCount})` : ''}</Text>
         </TouchableOpacity>
       </View>
       {cats.length > 0 ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md, marginBottom: SPACE.xl }}>
           <TouchableOpacity
             onPress={() => setCat('')}
             style={{
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 14,
+              paddingHorizontal: SPACE.xl,
+              paddingVertical: SPACE.sm,
+              borderRadius: pillRadius,
               borderWidth: 1,
               borderColor: cat === '' ? c.accent : c.border,
               backgroundColor: cat === '' ? c.accent2 : 'transparent',
             }}
           >
-            <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>All</Text>
+            <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>All</Text>
           </TouchableOpacity>
           {cats.map((x) => (
             <TouchableOpacity
               key={x.id}
               onPress={() => setCat(x.slug)}
               style={{
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 14,
+                paddingHorizontal: SPACE.xl,
+                paddingVertical: SPACE.sm,
+                borderRadius: pillRadius,
                 borderWidth: 1,
                 borderColor: cat === x.slug ? c.accent : c.border,
                 backgroundColor: cat === x.slug ? c.accent2 : 'transparent',
               }}
             >
-              <Text style={{ color: cat === x.slug ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>
+              <Text style={{ color: cat === x.slug ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>
                 {x.icon ?? ''} {x.name}
               </Text>
             </TouchableOpacity>
@@ -138,36 +141,35 @@ export default function StoreScreen() {
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => router.push(`/store-item?slug=${encodeURIComponent(item.slug)}` as Href)}>
               <Card>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flexDirection: 'row', gap: SPACE.xl }}>
                   {item.image_url ? (
-                    <ExpoImage source={{ uri: item.image_url }} style={{ width: 64, height: 64, borderRadius: 8 }} contentFit="cover" />
+                    <ExpoImage source={{ uri: item.image_url }} style={{ width: 64, height: 64, borderRadius: radius }} contentFit="cover" />
                   ) : (
-                    <View style={{ width: 64, height: 64, borderRadius: 8, backgroundColor: c.bg3, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ fontSize: 24 }}>🛍️</Text>
+                    <View style={{ width: 64, height: 64, borderRadius: radius, backgroundColor: c.bg3, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontSize: FONT.h1 }}>🛍️</Text>
                     </View>
                   )}
                   <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ color: c.text, fontSize: 14, fontWeight: '700', flex: 1 }} numberOfLines={1}>{item.name}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+                      <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700', flex: 1 }} numberOfLines={1}>{item.name}</Text>
                       {item.on_sale ? (
                         <View style={{ backgroundColor: c.danger, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
-                          <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>SALE</Text>
-                        </View>
-                      ) : null}
+                          <Text style={{ color: '#fff', fontSize: FONT.micro, fontWeight: '800' }}>SALE</Text>
+                        </View>                      ) : null}
                     </View>
                     {item.description ? (
-                      <Text style={{ color: c.text2, fontSize: 12, marginTop: 3 }} numberOfLines={2}>{item.description}</Text>
+                      <Text style={{ color: c.text2, fontSize: FONT.md, marginTop: 3 }} numberOfLines={2}>{item.description}</Text>
                     ) : null}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 }}>
-                      <Text style={{ color: c.accent, fontSize: 14, fontWeight: '800' }}>{price(item)}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginTop: 5 }}>
+                      <Text style={{ color: c.accent, fontSize: FONT.base, fontWeight: '800' }}>{price(item)}</Text>
                       {item.compare_at_cents ? (
-                        <Text style={{ color: c.muted, fontSize: 12, textDecorationLine: 'line-through' }}>
+                        <Text style={{ color: c.muted, fontSize: FONT.md, textDecorationLine: 'line-through' }}>
                           ${((item.compare_at_cents ?? 0) / 100).toFixed(2)}
                         </Text>
                       ) : null}
-                      {!item.in_stock ? <Text style={{ color: c.danger, fontSize: 11, fontWeight: '700' }}>Out of stock</Text> : null}
+                      {!item.in_stock ? <Text style={{ color: c.danger, fontSize: FONT.sm, fontWeight: '700' }}>Out of stock</Text> : null}
                       {item.rating?.count ? (
-                        <Text style={{ color: c.muted, fontSize: 11 }}>★ {item.rating.rating?.toFixed(1)} ({item.rating.count})</Text>
+                        <Text style={{ color: c.muted, fontSize: FONT.sm }}>★ {item.rating.rating?.toFixed(1)} ({item.rating.count})</Text>
                       ) : null}
                     </View>
                   </View>

@@ -3,7 +3,7 @@ import { Text, ColorValue, TouchableOpacity } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
-import { tagLabel } from '@/src/design'
+import { SPACE, tagLabel } from '@/src/design'
 import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
 import { CommandPaletteProvider, useCommandPalette } from '@/src/components/command-palette'
@@ -50,9 +50,9 @@ function TabNavigator() {
           bottom: insets.bottom > 0 ? insets.bottom + 6 : 10,
           borderRadius: theme.radius,
           height: 64,
-          paddingTop: 6,
-          paddingBottom: 6,
-          paddingHorizontal: 8,
+          paddingTop: SPACE.sm,
+          paddingBottom: SPACE.sm,
+          paddingHorizontal: SPACE.md,
           borderWidth: 1,
           shadowColor: '#000',
           shadowOpacity: 0.5,
@@ -61,9 +61,9 @@ function TabNavigator() {
           elevation: 14,
         },
         tabBarActiveBackgroundColor: withAlpha(c.accent, 0.16),
-        tabBarItemStyle: { borderRadius: radius - 3, marginHorizontal: 2 },
-        tabBarLabelStyle: { ...tagLabel(8.5, 1.2), marginBottom: 4 },
-        tabBarIconStyle: { marginTop: 2 },
+        tabBarItemStyle: { borderRadius: radius - 3, marginHorizontal: SPACE.xxs },
+        tabBarLabelStyle: { ...tagLabel(8.5, 1.2), marginBottom: SPACE.xs },
+        tabBarIconStyle: { marginTop: SPACE.xxs },
         tabBarHideOnKeyboard: true,
         tabBarButton: (props) => <TabBarButton {...props} />,
       }}

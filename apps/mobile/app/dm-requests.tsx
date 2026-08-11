@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { Avatar } from '@/src/components/Avatar'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
@@ -81,17 +83,17 @@ export default function DMRequestsScreen() {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
+          gap: SPACE.lg,
+          paddingHorizontal: SPACE.xl,
+          paddingVertical: SPACE.lg,
           borderBottomWidth: 1,
           borderBottomColor: c.border,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800' }}>Message requests</Text>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800' }}>Message requests</Text>
       </View>
 
       {loading ? (
@@ -100,37 +102,37 @@ export default function DMRequestsScreen() {
         <FlatList
           data={requests}
           keyExtractor={(r) => r.id}
-          contentContainerStyle={{ padding: 12, paddingBottom: 30 }}
+          contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.jumbo }}
           ListHeaderComponent={
             err ? (
-              <Muted style={{ marginBottom: 8 }}>{err}</Muted>
+              <Muted style={{ marginBottom: SPACE.md }}>{err}</Muted>
             ) : null
           }
           ListEmptyComponent={
-            <View style={{ marginBottom: 24 }}>
+            <View style={{ marginBottom: SPACE.mega }}>
               <Muted style={{ textAlign: 'center' }}>No pending requests.</Muted>
             </View>
           }
           renderItem={({ item }) => (
             <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
                 <Avatar name={item.sender} avatar={item.avatar} size={30} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }}>{item.sender}</Text>
+                  <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }}>{item.sender}</Text>
                   {item.role ? <Muted>{item.role}</Muted> : null}
                 </View>
-                <Btn title="Accept" onPress={() => accept(item)} style={{ paddingVertical: 7, paddingHorizontal: 12 }} />
+                <Btn title="Accept" onPress={() => accept(item)} style={{ paddingVertical: 7, paddingHorizontal: SPACE.xl }} />
                 <Btn
                   title="Reject"
                   onPress={() => reject(item)}
-                  style={{ paddingVertical: 7, paddingHorizontal: 12, backgroundColor: c.danger }}
+                  style={{ paddingVertical: 7, paddingHorizontal: SPACE.xl, backgroundColor: c.danger }}
                 />
               </View>
             </Card>
           )}
           ListFooterComponent={
-            <View style={{ marginTop: 24 }}>
-              <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', marginBottom: 8 }}>
+            <View style={{ marginTop: SPACE.mega }}>
+              <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', marginBottom: SPACE.md }}>
                 Blocked users
               </Text>
               {blocks.length === 0 ? (
@@ -142,13 +144,13 @@ export default function DMRequestsScreen() {
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 10,
-                      paddingVertical: 8,
+                      gap: SPACE.lg,
+                      paddingVertical: SPACE.md,
                       borderBottomWidth: 1,
                       borderBottomColor: c.border,
                     }}
                   >
-                    <Text style={{ color: c.text, fontSize: 14, flex: 1 }}>{b.blocked}</Text>
+                    <Text style={{ color: c.text, fontSize: FONT.base, flex: 1 }}>{b.blocked}</Text>
                     <TouchableOpacity onPress={() => unblock(b)} hitSlop={8}>
                       <Text style={{ color: c.accent, fontWeight: '700' }}>Unblock</Text>
                     </TouchableOpacity>

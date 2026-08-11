@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import { View, Text, TouchableOpacity, FlatList, RefreshControl, TextInput } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -61,6 +62,7 @@ const PAGE_SIZE = 20
 export default function ForumScreen() {
   const { theme } = useTheme()
   const c = theme.colors
+  const pillRadius = frameworkStyles(theme).buttonRadius
   const router = useRouter()
   const { isAuthed } = useAuth()
   const [threads, setThreads] = useState<Thread[]>([])
@@ -140,12 +142,12 @@ export default function ForumScreen() {
   return (
     <Screen scroll={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Title>Forum</Title>
+        <Title tag="FORUM">Forum</Title>
         <TouchableOpacity
           onPress={() => router.push(isAuthed ? '/forum-new' : '/auth/login')}
-          style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: theme.mono ? 0 : 8, backgroundColor: c.accent, marginBottom: 12 }}
+          style={{ paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.md, borderRadius: pillRadius, backgroundColor: c.accent, marginBottom: SPACE.xl }}
         >
-          <Text style={{ color: c.onAccent, fontSize: 13, fontWeight: '700' }}>+ New thread</Text>
+          <Text style={{ color: c.onAccent, fontSize: FONT.body, fontWeight: '700' }}>+ New thread</Text>
         </TouchableOpacity>
       </View>
 
@@ -171,15 +173,15 @@ export default function ForumScreen() {
                 color: c.text,
                 borderWidth: 1,
                 borderRadius: theme.mono ? 0 : 8,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                fontSize: 13,
+                paddingHorizontal: SPACE.xl,
+                paddingVertical: SPACE.md,
+                fontSize: FONT.body,
                 fontFamily: theme.mono ? 'monospace' : undefined,
-                marginBottom: 10,
+                marginBottom: SPACE.lg,
               }}
             />
 
-            <View style={{ marginBottom: 12 }}>
+            <View style={{ marginBottom: SPACE.xl }}>
               <CategoryPills
                 items={[{ key: 'new', label: 'New' }, { key: 'top', label: 'Top' }]}
                 active={sort}
@@ -188,51 +190,51 @@ export default function ForumScreen() {
             </View>
 
             {categories.length > 0 ? (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md, marginBottom: SPACE.xl }}>
                 <TouchableOpacity
                   onPress={() => setCat('')}
                   style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 14,
+                    paddingHorizontal: SPACE.xl,
+                    paddingVertical: SPACE.sm,
+                    borderRadius: pillRadius,
                     borderWidth: 1,
                     borderColor: cat === '' ? c.accent : c.border,
                     backgroundColor: cat === '' ? c.accent2 : 'transparent',
                   }}
                 >
-                  <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>All</Text>
+                  <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>All</Text>
                 </TouchableOpacity>
                 {categories.map((x) => (
                   <TouchableOpacity
                     key={x._id || x.id}
                     onPress={() => setCat(x._id || x.id)}
                     style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 14,
+                      paddingHorizontal: SPACE.xl,
+                      paddingVertical: SPACE.sm,
+                      borderRadius: pillRadius,
                       borderWidth: 1,
                       borderColor: cat === (x._id || x.id) ? c.accent : c.border,
                       backgroundColor: cat === (x._id || x.id) ? c.accent2 : 'transparent',
                     }}
                   >
-                    <Text style={{ color: cat === (x._id || x.id) ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>
+                    <Text style={{ color: cat === (x._id || x.id) ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>
                       {x.icon ?? ''} {x.name}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
             ) : null}
-            {error ? <Muted style={{ marginBottom: 10 }}>{error}</Muted> : null}
+            {error ? <Muted style={{ marginBottom: SPACE.lg }}>{error}</Muted> : null}
           </>
         }
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => router.push(`/forum-thread?id=${encodeURIComponent(item.id)}` as Href)}>
             <Card>
-              {item.category?.icon ? <Text style={{ fontSize: 15, marginBottom: 4 }}>{item.category.icon} {item.category.name}</Text> : null}
-              <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={2}>
+              {item.category?.icon ? <Text style={{ fontSize: FONT.card, marginBottom: SPACE.xs }}>{item.category.icon} {item.category.name}</Text> : null}
+              <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }} numberOfLines={2}>
                 {item.pinned ? '📌 ' : ''}{item.locked ? '🔒 ' : ''}{item.title}
               </Text>
-              <View style={{ flexDirection: 'row', marginTop: 6, gap: 12 }}>
+              <View style={{ flexDirection: 'row', marginTop: SPACE.sm, gap: SPACE.xl }}>
                 <Muted>{item.author?.username ?? 'anonymous'}</Muted>
                 <Muted>💬 {item.replyCount ?? 0}</Muted>
                 <Muted>👁 {item.views ?? 0}</Muted>
@@ -244,11 +246,11 @@ export default function ForumScreen() {
         ListEmptyComponent={<Muted>No threads yet.</Muted>}
         ListFooterComponent={
           loadingMore ? (
-            <View style={{ paddingVertical: 14, alignItems: 'center' }}>
+            <View style={{ paddingVertical: SPACE.xxl, alignItems: 'center' }}>
               <Loader />
             </View>
           ) : page >= pages && threads.length > 0 ? (
-            <Muted style={{ textAlign: 'center', paddingVertical: 14 }}>· · ·</Muted>
+            <Muted style={{ textAlign: 'center', paddingVertical: SPACE.xxl }}>· · ·</Muted>
           ) : null
         }
       />

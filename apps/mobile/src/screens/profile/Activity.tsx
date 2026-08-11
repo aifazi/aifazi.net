@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, ScrollView } from 'react-native'
 import { Card, Muted } from '@/src/components/ui'
 import { Loader } from '@/src/components/Loader'
@@ -43,12 +44,12 @@ export function ActivityTab() {
     <ScrollView keyboardShouldPersistTaps="handled">
       <Card title="Recent Threads" subtitle="FORUM">
         {threads.length === 0 ? (
-          <Muted style={{ textAlign: 'center', padding: 12 }}>No threads yet</Muted>
+          <Muted style={{ textAlign: 'center', padding: SPACE.xl }}>No threads yet</Muted>
         ) : (
           threads.map((t) => (
-            <View key={t.id || t._id} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border }}>
-              <Text style={{ color: c.text, fontSize: 13, fontWeight: '600' }}>{t.title}</Text>
-              <Muted style={{ fontSize: 10, marginTop: 2 }}>{fmtWhen(t.created_at || t.createdAt)}</Muted>
+            <View key={t.id || t._id} style={{ paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
+              <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '600' }}>{t.title}</Text>
+              <Muted style={{ fontSize: FONT.xs, marginTop: SPACE.xxs }}>{fmtWhen(t.created_at || t.createdAt)}</Muted>
             </View>
           ))
         )}
@@ -56,12 +57,12 @@ export function ActivityTab() {
 
       <Card title="Recent Replies" subtitle="FORUM">
         {replies.length === 0 ? (
-          <Muted style={{ textAlign: 'center', padding: 12 }}>No replies yet</Muted>
+          <Muted style={{ textAlign: 'center', padding: SPACE.xl }}>No replies yet</Muted>
         ) : (
           replies.map((r) => (
-            <View key={r.id || r._id} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border }}>
-              <Text style={{ color: c.muted, fontSize: 12, lineHeight: 18 }} numberOfLines={2}>{r.content || r.body}</Text>
-              <Muted style={{ fontSize: 10, marginTop: 2 }}>{fmtWhen(r.created_at || r.createdAt)}</Muted>
+            <View key={r.id || r._id} style={{ paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
+              <Text style={{ color: c.muted, fontSize: FONT.md, lineHeight: 18 }} numberOfLines={2}>{r.content || r.body}</Text>
+              <Muted style={{ fontSize: FONT.xs, marginTop: SPACE.xxs }}>{fmtWhen(r.created_at || r.createdAt)}</Muted>
             </View>
           ))
         )}

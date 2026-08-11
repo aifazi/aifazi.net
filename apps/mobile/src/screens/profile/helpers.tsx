@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native'
 import { useTheme } from '@/src/theme'
-import { statusTone } from '@/src/lib/color'
-import { tagLabel } from '@/src/design'
+import { statusTone, withAlpha } from '@/src/lib/color'
+import { SPACE, tagLabel } from '@/src/design'
 
 export function fmtDate(iso?: string) {
   if (!iso) return ''
@@ -41,7 +41,7 @@ export function StatusChip({ text, tone }: { text: string; tone?: string }) {
   const c = theme.colors
   const color = tone ?? statusTone(text, c) ?? c.muted
   return (
-    <View style={[styles.chip, { borderColor: color + '66', borderRadius: theme.mono ? 0 : 4 }]}>
+    <View style={[styles.chip, { borderColor: withAlpha(color, 0.4), borderRadius: theme.mono ? 0 : 4 }]}>
       <Text style={[tagLabel(8.5, 1.8), { color }]}>{text}</Text>
     </View>
   )
@@ -50,7 +50,7 @@ export function StatusChip({ text, tone }: { text: string; tone?: string }) {
 const styles = StyleSheet.create({
   chip: {
     borderWidth: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: SPACE.md,
     paddingVertical: 3,
   },
 })

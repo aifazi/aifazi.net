@@ -6,6 +6,10 @@
 !.env.docker.example
 **/.env.vercel
 
+# Local build artifacts
+*.apk
+*.aab
+
 # Python
 __pycache__/
 *.pyc

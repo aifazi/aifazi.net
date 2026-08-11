@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import { View, Text, TouchableOpacity, FlatList, RefreshControl } from 'react-native'
 import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -34,6 +35,8 @@ function fmtDate(iso?: string) {
 export default function BlogScreen() {
   const { theme } = useTheme()
   const c = theme.colors
+  const radius = frameworkStyles(theme).radius
+  const pillRadius = frameworkStyles(theme).buttonRadius
   const router = useRouter()
   const [posts, setPosts] = useState<Post[]>([])
   const [cats, setCats] = useState<string[]>([])
@@ -78,36 +81,36 @@ export default function BlogScreen() {
 
   return (
     <Screen scroll={false}>
-      <Title>Blog</Title>
+      <Title tag="BLOG">Blog</Title>
       {cats.length > 0 ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md, marginBottom: SPACE.xl }}>
           <TouchableOpacity
             onPress={() => setCat('')}
             style={{
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 14,
+              paddingHorizontal: SPACE.xl,
+              paddingVertical: SPACE.sm,
+              borderRadius: pillRadius,
               borderWidth: 1,
               borderColor: cat === '' ? c.accent : c.border,
               backgroundColor: cat === '' ? c.accent2 : 'transparent',
             }}
           >
-            <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>All</Text>
+            <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>All</Text>
           </TouchableOpacity>
           {cats.map((x) => (
             <TouchableOpacity
               key={x}
               onPress={() => setCat(x)}
               style={{
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 14,
+                paddingHorizontal: SPACE.xl,
+                paddingVertical: SPACE.sm,
+                borderRadius: pillRadius,
                 borderWidth: 1,
                 borderColor: cat === x ? c.accent : c.border,
                 backgroundColor: cat === x ? c.accent2 : 'transparent',
               }}
             >
-              <Text style={{ color: cat === x ? c.onAccent : c.text, fontSize: 12, fontWeight: '700' }}>{x}</Text>
+              <Text style={{ color: cat === x ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>{x}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -125,13 +128,13 @@ export default function BlogScreen() {
           <TouchableOpacity onPress={() => router.push(`/blog-post?slug=${encodeURIComponent(item.slug)}` as Href)}>
             <Card>
               {item.cover_image ? (
-                <ExpoImage source={{ uri: item.cover_image }} style={{ width: '100%', height: 150, borderRadius: 8, marginBottom: 10 }} contentFit="cover" transition={150} />
+                <ExpoImage source={{ uri: item.cover_image }} style={{ width: '100%', height: 150, borderRadius: radius, marginBottom: SPACE.lg }} contentFit="cover" transition={150} />
               ) : null}
-              <Text style={{ color: c.text, fontSize: 15, fontWeight: '800' }} numberOfLines={2}>{item.title}</Text>
+              <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800' }} numberOfLines={2}>{item.title}</Text>
               {item.excerpt ? (
-                <Text style={{ color: c.text2, fontSize: 12, marginTop: 6, lineHeight: 17 }} numberOfLines={3}>{item.excerpt}</Text>
+                <Text style={{ color: c.text2, fontSize: FONT.md, marginTop: SPACE.sm, lineHeight: 17 }} numberOfLines={3}>{item.excerpt}</Text>
               ) : null}
-              <View style={{ flexDirection: 'row', marginTop: 8, gap: 10 }}>
+              <View style={{ flexDirection: 'row', marginTop: SPACE.md, gap: SPACE.lg }}>
                 <Muted>{item.author_name ?? 'Admin'}</Muted>
                 <Muted>{fmtDate(item.created_at)}</Muted>
                 {item.category ? <Muted>{item.category}</Muted> : null}

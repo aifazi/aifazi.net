@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -65,18 +67,18 @@ export default function ChatAdminScreen() {
         borderColor: c.border,
         borderWidth: 1,
         borderRadius: theme.mono ? 0 : 10,
-        padding: 12,
+        padding: SPACE.xl,
       }}
     >
-      <Text style={{ color: c.muted, fontSize: 10, letterSpacing: 1.5, marginBottom: 4 }}>{label.toUpperCase()}</Text>
-      <Text style={{ color, fontSize: 22, fontWeight: '800' }}>{value}</Text>
+      <Text style={{ color: c.muted, fontSize: FONT.xs, letterSpacing: 1.5, marginBottom: SPACE.xs }}>{label.toUpperCase()}</Text>
+      <Text style={{ color, fontSize: FONT.h2, fontWeight: '800' }}>{value}</Text>
     </View>
   )
 
   if (!isStaff) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
-        <Muted style={{ textAlign: 'center', marginTop: 40 }}>Staff only.</Muted>
+        <Muted style={{ textAlign: 'center', marginTop: SPACE.colossal }}>Staff only.</Muted>
       </SafeAreaView>
     )
   }
@@ -87,47 +89,47 @@ export default function ChatAdminScreen() {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
+          gap: SPACE.lg,
+          paddingHorizontal: SPACE.xl,
+          paddingVertical: SPACE.lg,
           borderBottomWidth: 1,
           borderBottomColor: c.border,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }}>Chat admin</Text>
-        <Btn title="Refresh" onPress={() => { setLoading(true); load() }} style={{ paddingVertical: 7, paddingHorizontal: 12 }} />
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }}>Chat admin</Text>
+        <Btn title="Refresh" onPress={() => { setLoading(true); load() }} style={{ paddingVertical: 7, paddingHorizontal: SPACE.xl }} />
       </View>
 
       {loading ? (
         <Loader />
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 40 }}>
-          {err ? <Muted style={{ marginBottom: 10 }}>{err}</Muted> : null}
+        <ScrollView contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.colossal }}>
+          {err ? <Muted style={{ marginBottom: SPACE.lg }}>{err}</Muted> : null}
 
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+          <View style={{ flexDirection: 'row', gap: SPACE.md, marginBottom: SPACE.md }}>
             <Stat label="Rooms" value={stats?.rooms?.total ?? 0} color={c.accent} />
             <Stat label="Members" value={stats?.members ?? 0} color={c.text} />
             <Stat label="Messages" value={stats?.messages ?? 0} color={c.star} />
           </View>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', gap: SPACE.md, marginBottom: SPACE.xxxl }}>
             <Stat label="Mutes" value={stats?.mutes ?? 0} color={c.sale} />
             <Stat label="Bans" value={stats?.bans ?? 0} color={c.danger} />
             <Stat label="DM" value={stats?.dm?.threads ?? 0} color={c.link} />
           </View>
           {stats?.dm?.pending ? (
-            <Muted style={{ marginBottom: 12 }}>⏳ {stats.dm.pending} pending DM request{stats.dm.pending === 1 ? '' : 's'}.</Muted>
+            <Muted style={{ marginBottom: SPACE.xl }}>⏳ {stats.dm.pending} pending DM request{stats.dm.pending === 1 ? '' : 's'}.</Muted>
           ) : null}
 
           {sections.map((s) => (
             <TouchableOpacity key={s.key} onPress={() => router.push(s.route)}>
               <Card>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <Text style={{ fontSize: 22 }}>{s.icon}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xl }}>
+                  <Text style={{ fontSize: FONT.h2 }}>{s.icon}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }}>{s.label}</Text>
+                    <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }}>{s.label}</Text>
                     <Muted>{s.sub}</Muted>
                   </View>
                   <Text style={{ color: c.accent, fontWeight: '700' }}>›</Text>

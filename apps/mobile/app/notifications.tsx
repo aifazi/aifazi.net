@@ -1,14 +1,17 @@
 import { useState, useCallback } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, FlatList, RefreshControl, Linking } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Btn, Muted } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
 import { fmtWhen } from '@/src/screens/profile/helpers'
+import { withAlpha } from '@/src/lib/color'
 
 interface Notification {
   _id?: string
@@ -85,38 +88,38 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.border }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }}>Notifications{unread > 0 ? ` (${unread})` : ''}</Text>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }}>Notifications{unread > 0 ? ` (${unread})` : ''}</Text>
         {unread > 0 ? (
           <TouchableOpacity onPress={markAllRead} hitSlop={10}>
-            <Text style={{ color: c.accent2, fontSize: 12, fontWeight: '700' }}>Mark all read</Text>
+            <Text style={{ color: c.accent2, fontSize: FONT.md, fontWeight: '700' }}>Mark all read</Text>
           </TouchableOpacity>
         ) : null}
       </View>
 
       {!isAuthed ? (
-        <View style={{ padding: 30, alignItems: 'center', gap: 14 }}>
+        <View style={{ padding: SPACE.jumbo, alignItems: 'center', gap: SPACE.xxl }}>
           <Text style={{ fontSize: 40 }}>🔔</Text>
           <Muted>Sign in on the Profile tab to see notifications.</Muted>
           <Btn title="Go to Profile" onPress={() => router.push('/profile' as Href)} />
         </View>
       ) : loading ? (
-        <View style={{ paddingTop: 40, alignItems: 'center' }}>
+        <View style={{ paddingTop: SPACE.colossal, alignItems: 'center' }}>
           <Loader />
         </View>
       ) : (
         <FlatList
           data={notifs}
           keyExtractor={(n) => n.id || n._id || `${n.created_at}-${n.message}`}
-          contentContainerStyle={{ padding: 14, paddingBottom: 30 }}
+          contentContainerStyle={{ padding: SPACE.xxl, paddingBottom: SPACE.jumbo }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
           }
           ListEmptyComponent={
-            <View style={{ padding: 30, alignItems: 'center', gap: 8 }}>
+            <View style={{ padding: SPACE.jumbo, alignItems: 'center', gap: SPACE.md }}>
               <Text style={{ fontSize: 36 }}>🔕</Text>
               <Muted>No notifications yet.</Muted>
               {err ? <Muted style={{ color: c.danger }}>{err}</Muted> : null}
@@ -130,19 +133,19 @@ export default function NotificationsScreen() {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 12,
-                    padding: 12,
-                    marginBottom: 8,
+                    gap: SPACE.xl,
+                    padding: SPACE.xl,
+                    marginBottom: SPACE.md,
                     borderRadius: theme.mono ? 0 : 10,
                     borderWidth: 1,
-                    borderColor: item.read ? c.border : c.accent + '55',
-                    backgroundColor: item.read ? c.bg2 : c.accent + '0f',
+                    borderColor: item.read ? c.border : withAlpha(c.accent, 0.33),
+                    backgroundColor: item.read ? c.bg2 : withAlpha(c.accent, 0.06),
                   }}
                 >
-                  <Text style={{ fontSize: 18 }}>{icon}</Text>
+                  <Text style={{ fontSize: FONT.lead }}>{icon}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: c.text, fontSize: 13, lineHeight: 18 }}>{item.message}</Text>
-                    {item.created_at ? <Muted style={{ fontSize: 10, marginTop: 3 }}>{fmtWhen(item.created_at)}</Muted> : null}
+                    <Text style={{ color: c.text, fontSize: FONT.body, lineHeight: 18 }}>{item.message}</Text>
+                    {item.created_at ? <Muted style={{ fontSize: FONT.xs, marginTop: 3 }}>{fmtWhen(item.created_at)}</Muted> : null}
                   </View>
                   {!item.read ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.accent }} /> : null}
                 </View>

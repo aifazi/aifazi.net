@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
@@ -39,14 +40,14 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <Screen>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACE.md }}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-            <Text style={{ color: c.text, fontSize: 18, fontFamily: theme.mono ? 'monospace' : undefined }}>←</Text>
+            <Text style={{ color: c.text, fontSize: FONT.lead, fontFamily: theme.mono ? 'monospace' : undefined }}>←</Text>
           </TouchableOpacity>
         </View>
         <Title>Create account</Title>
         <Muted>Join the aifazi.net community</Muted>
-        <View style={{ marginTop: 18 }}>
+        <View style={{ marginTop: SPACE.huge }}>
           <Field label="Username" value={username} onChangeText={setUsername} placeholder="tanvir" autoCapitalize="none" />
           <Field label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" autoCapitalize="none" />
           <Field label="Password" value={password} onChangeText={setPassword} secure placeholder="At least 8 characters" autoCapitalize="none" />

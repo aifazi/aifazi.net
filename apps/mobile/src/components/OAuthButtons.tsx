@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text } from 'react-native'
 import { Btn } from '@/src/components/ui'
 import { useAuth } from '@/src/lib/auth'
@@ -49,10 +50,10 @@ export function OAuthButtons({
   }
 
   return (
-    <View style={{ marginTop: 14 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+    <View style={{ marginTop: SPACE.xxl }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACE.xl }}>
         <View style={{ flex: 1, height: 1, backgroundColor: c.border }} />
-        <Text style={{ color: c.muted, fontSize: 11, marginHorizontal: 10, fontFamily: theme.mono ? 'monospace' : undefined }}>
+        <Text style={{ color: c.muted, fontSize: FONT.sm, marginHorizontal: SPACE.lg, fontFamily: theme.mono ? 'monospace' : undefined }}>
           OR CONTINUE WITH
         </Text>
         <View style={{ flex: 1, height: 1, backgroundColor: c.border }} />
@@ -66,11 +67,11 @@ export function OAuthButtons({
           loading={busy === p.id}
           leading={
             busy === p.id ? undefined : (
-              <Text style={{ fontSize: 15, lineHeight: 18 }}>{p.glyph}</Text>
+              <Text style={{ fontSize: FONT.card, lineHeight: 18 }}>{p.glyph}</Text>
             )
           }
           onPress={() => handle(p.id)}
-          style={{ marginBottom: 8, borderColor: busy === p.id ? c.border : p.color, opacity: busy && busy !== p.id ? 0.4 : 1 }}
+          style={{ marginBottom: SPACE.md, borderColor: busy === p.id ? c.border : p.color, opacity: busy && busy !== p.id ? 0.4 : 1 }}
         />
       ))}
     </View>

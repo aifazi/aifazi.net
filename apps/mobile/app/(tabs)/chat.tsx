@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, FlatList, SectionList, RefreshControl } from 'react-native'
 import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -9,6 +10,8 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
+import { Icon, type IconName } from '@/src/components/icon'
+import { withAlpha } from '@/src/lib/color'
 
 interface Room {
   id: string
@@ -41,35 +44,35 @@ function isOnline(dm: DMThread): boolean {
   return Date.now() - seen < 5 * 60 * 1000
 }
 
-function roomIcon(type: string) {
-  if (type === 'video') return '📹'
-  if (type === 'voice') return '🔊'
-  return '💬'
+function roomIcon(type: string): IconName {
+  if (type === 'video') return 'video'
+  if (type === 'voice') return 'mic'
+  return 'chat'
 }
 
-const ACCESS_LABEL: Record<string, { icon: string; label: string }> = {
-  users: { icon: '🔒', label: 'Locked' },
-  roles: { icon: '🛡️', label: 'VIP' },
-  mixed: { icon: '🔐', label: 'Protected' },
+const ACCESS_LABEL: Record<string, { icon: IconName; label: string }> = {
+  users: { icon: 'lock', label: 'Locked' },
+  roles: { icon: 'shield', label: 'VIP' },
+  mixed: { icon: 'lock', label: 'Protected' },
 }
 
-function Badge({ icon, label, color }: { icon: string; label: string; color: string }) {
+function Badge({ icon, label, color }: { icon: IconName; label: string; color: string }) {
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 3,
+        gap: SPACE.xxs,
         borderWidth: 1,
-        borderColor: color + '44',
-        backgroundColor: color + '11',
+        borderColor: withAlpha(color, 0.27),
+        backgroundColor: withAlpha(color, 0.07),
         borderRadius: 5,
         paddingHorizontal: 5,
         paddingVertical: 1,
       }}
     >
-      <Text style={{ fontSize: 10 }}>{icon}</Text>
-      <Text style={{ color, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</Text>
+      <Icon name={icon} size={10} color={color} />
+      <Text style={{ color, fontSize: FONT.micro, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</Text>
     </View>
   )
 }
@@ -79,14 +82,14 @@ function AccessBadge({ room }: { room: Room }) {
   const c = theme.colors
   const mode = room.access?.mode ?? (room.is_private ? 'users' : 'public')
   if (mode === 'public') return null
-  const { icon, label } = ACCESS_LABEL[mode] ?? { icon: '🔐', label: 'Protected' }
+  const { icon, label } = ACCESS_LABEL[mode] ?? { icon: 'lock', label: 'Protected' }
   return <Badge icon={icon} label={label} color={c.accent2} />
 }
 
 function ReadOnlyBadge() {
   const { theme } = useTheme()
   const c = theme.colors
-  return <Badge icon="🔇" label="read-only" color={c.muted} />
+  return <Badge icon="mic-off" label="read-only" color={c.muted} />
 }
 
 export default function ChatScreen() {
@@ -170,10 +173,10 @@ export default function ChatScreen() {
   return (
     <Screen scroll={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Title>Chat rooms</Title>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+        <Title tag="MESSAGES">Chat rooms</Title>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xxl }}>
           <TouchableOpacity onPress={() => router.push('/notifications' as Href)} hitSlop={8} style={{ position: 'relative' }}>
-            <Text style={{ color: unreadNotifs > 0 ? c.accent : c.muted, fontWeight: '700', fontSize: 16 }}>🔔</Text>
+            <Icon name="bell" size={18} color={unreadNotifs > 0 ? c.accent : c.muted} />
             {unreadNotifs > 0 ? (
               <View
                 style={{
@@ -183,23 +186,23 @@ export default function ChatScreen() {
                   minWidth: 16,
                   height: 16,
                   borderRadius: 8,
-                  paddingHorizontal: 4,
+                  paddingHorizontal: SPACE.xs,
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: c.accent,
                 }}
               >
-                <Text style={{ color: c.onAccent, fontSize: 9, fontWeight: '800' }}>{unreadNotifs > 9 ? '9+' : unreadNotifs}</Text>
+                <Text style={{ color: c.onAccent, fontSize: FONT.micro, fontWeight: '800' }}>{unreadNotifs > 9 ? '9+' : unreadNotifs}</Text>
               </View>
             ) : null}
           </TouchableOpacity>
           {isStaff ? (
-            <View style={{ flexDirection: 'row', gap: 14 }}>
+            <View style={{ flexDirection: 'row', gap: SPACE.xxl }}>
               <TouchableOpacity onPress={() => router.push('/chat-admin' as Href)} hitSlop={8}>
-                <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>Admin</Text>
+                <Text style={{ color: c.accent, fontWeight: '700', fontSize: FONT.base }}>Admin</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push('/channel-manage' as Href)} hitSlop={8}>
-                <Text style={{ color: c.accent, fontWeight: '700', fontSize: 14 }}>Manage ⚙</Text>
+                <Icon name="settings" size={18} color={c.accent} />
               </TouchableOpacity>
             </View>
           ) : null}
@@ -218,7 +221,7 @@ export default function ChatScreen() {
               title: 'Direct messages',
               data: dms as any[],
               headerExtra: (
-                <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flexDirection: 'row', gap: SPACE.lg }}>
                   <TouchableOpacity onPress={() => router.push('/dm-new' as Href)} hitSlop={8}>
                     <Text style={{ color: c.accent, fontWeight: '700' }}>+ New</Text>
                   </TouchableOpacity>
@@ -231,7 +234,7 @@ export default function ChatScreen() {
               ),
               renderItem: ({ item }: { item: DMThread }) => (
                 <Card>
-                  <TouchableOpacity onPress={() => openDm(item)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <TouchableOpacity onPress={() => openDm(item)} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
                     <View>
                       <Avatar name={item.peer} avatar={item.peer_avatar} size={30} />
                       <View
@@ -249,12 +252,12 @@ export default function ChatScreen() {
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+                        <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }} numberOfLines={1}>
                           {item.peer}
                         </Text>
                         {isOnline(item) ? (
-                          <Text style={{ color: c.success, fontSize: 9, fontWeight: '700', textTransform: 'uppercase' }}>
+                          <Text style={{ color: c.success, fontSize: FONT.micro, fontWeight: '700', textTransform: 'uppercase' }}>
                             online
                           </Text>
                         ) : null}
@@ -267,12 +270,12 @@ export default function ChatScreen() {
                           backgroundColor: c.accent,
                           borderRadius: 10,
                           paddingHorizontal: 7,
-                          paddingVertical: 2,
+                          paddingVertical: SPACE.xxs,
                           minWidth: 20,
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ color: c.onAccent, fontSize: 11, fontWeight: '800' }}>
+                        <Text style={{ color: c.onAccent, fontSize: FONT.sm, fontWeight: '800' }}>
                           {item.unread}
                         </Text>
                       </View>
@@ -287,22 +290,26 @@ export default function ChatScreen() {
               data: rooms as any[],
               renderItem: ({ item }: { item: Room }) => (
                 <Card>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Text style={{ fontSize: 16 }}>{item.emoji || roomIcon(item.type)}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
+                    {item.emoji ? (
+                      <Text style={{ fontSize: FONT.section }}>{item.emoji}</Text>
+                    ) : (
+                      <Icon name={roomIcon(item.type)} size={18} color={c.accent2} />
+                    )}
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, flexWrap: 'wrap' }}>
+                        <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }} numberOfLines={1}>
                           {item.name}
                         </Text>
                         <AccessBadge room={item} />
                         {item.read_only ? <ReadOnlyBadge /> : null}
                       </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                        <Text style={{ color: c.muted, fontSize: 11, fontFamily: theme.mono ? 'monospace' : undefined }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginTop: SPACE.xxs }}>
+                        <Text style={{ color: c.muted, fontSize: FONT.sm, fontFamily: theme.mono ? 'monospace' : undefined }}>
                           #{item.id.slice(0, 6)}
                         </Text>
                         {item.description ? (
-                          <Text style={{ color: c.muted, fontSize: 11, flex: 1 }} numberOfLines={1}>
+                          <Text style={{ color: c.muted, fontSize: FONT.sm, flex: 1 }} numberOfLines={1}>
                             {item.description}
                           </Text>
                         ) : null}
@@ -311,7 +318,7 @@ export default function ChatScreen() {
                     <Btn
                       title={item.type === 'text' ? 'Open' : 'Join'}
                       onPress={() => open(item)}
-                      style={{ paddingVertical: 8, paddingHorizontal: 14 }}
+                      style={{ paddingVertical: SPACE.md, paddingHorizontal: SPACE.xxl }}
                     />
                   </View>
                 </Card>
@@ -328,15 +335,15 @@ export default function ChatScreen() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 marginTop: section.title === 'Direct messages' ? 0 : 20,
-                marginBottom: 8,
+                marginBottom: SPACE.md,
               }}
             >
-              <Text style={{ color: c.text, fontSize: 16, fontWeight: '800' }}>{section.title}</Text>
+              <Text style={{ color: c.text, fontSize: FONT.section, fontWeight: '800' }}>{section.title}</Text>
               {section.headerExtra ?? null}
             </View>
           )}
           renderSectionFooter={({ section }: any) =>
-            section.empty ? <View style={{ paddingBottom: 4 }}>{section.empty}</View> : null
+            section.empty ? <View style={{ paddingBottom: SPACE.xs }}>{section.empty}</View> : null
           }
         />
       )}

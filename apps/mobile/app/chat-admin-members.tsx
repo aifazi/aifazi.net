@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
+import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -86,7 +88,7 @@ export default function ChatAdminMembersScreen() {
   if (!isStaff) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
-        <Muted style={{ textAlign: 'center', marginTop: 40 }}>Staff only.</Muted>
+        <Muted style={{ textAlign: 'center', marginTop: SPACE.colossal }}>Staff only.</Muted>
       </SafeAreaView>
     )
   }
@@ -97,18 +99,18 @@ export default function ChatAdminMembersScreen() {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
+          gap: SPACE.lg,
+          paddingHorizontal: SPACE.xl,
+          paddingVertical: SPACE.lg,
           borderBottomWidth: 1,
           borderBottomColor: c.border,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Text style={{ color: c.text, fontSize: 18 }}>←</Text>
+          <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: 15, fontWeight: '800', flex: 1 }}>Members</Text>
-        <Btn title="Refresh" onPress={() => { setLoading(true); load() }} style={{ paddingVertical: 7, paddingHorizontal: 12 }} />
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }}>Members</Text>
+        <Btn title="Refresh" onPress={() => { setLoading(true); load() }} style={{ paddingVertical: 7, paddingHorizontal: SPACE.xl }} />
       </View>
 
       {loading ? (
@@ -117,22 +119,22 @@ export default function ChatAdminMembersScreen() {
         <FlatList
           data={members}
           keyExtractor={(m) => m.id}
-          contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
-          ListHeaderComponent={err ? <Muted style={{ marginBottom: 8 }}>{err}</Muted> : null}
-          ListEmptyComponent={<Muted style={{ textAlign: 'center', marginTop: 30 }}>No members yet.</Muted>}
+          contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.colossal }}
+          ListHeaderComponent={err ? <Muted style={{ marginBottom: SPACE.md }}>{err}</Muted> : null}
+          ListEmptyComponent={<Muted style={{ textAlign: 'center', marginTop: SPACE.jumbo }}>No members yet.</Muted>}
           renderItem={({ item }) => (
             <Card>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Text style={{ fontSize: 18 }}>{item.room_emoji || '💬'}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
+                <Text style={{ fontSize: FONT.lead }}>{item.room_emoji || '💬'}</Text>
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={{ color: c.text, fontSize: 14, fontWeight: '700' }} numberOfLines={1}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+                    <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }} numberOfLines={1}>
                       {item.username}
                     </Text>
                     <Text
                       style={{
                         color: item.role === 'moderator' || item.role === 'admin' ? c.star : c.muted,
-                        fontSize: 11,
+                        fontSize: FONT.sm,
                         fontWeight: '700',
                       }}
                     >
@@ -141,11 +143,11 @@ export default function ChatAdminMembersScreen() {
                   </View>
                   <Muted numberOfLines={1}>{item.room_name || '—'}</Muted>
                 </View>
-                <Btn title="Role" onPress={() => changeRole(item)} style={{ paddingVertical: 7, paddingHorizontal: 12 }} />
+                <Btn title="Role" onPress={() => changeRole(item)} style={{ paddingVertical: 7, paddingHorizontal: SPACE.xl }} />
                 <Btn
                   title="Kick"
                   onPress={() => kick(item)}
-                  style={{ paddingVertical: 7, paddingHorizontal: 12, backgroundColor: c.danger }}
+                  style={{ paddingVertical: 7, paddingHorizontal: SPACE.xl, backgroundColor: c.danger }}
                 />
               </View>
             </Card>
