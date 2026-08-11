@@ -315,6 +315,11 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/auth/resend-verification", 3, 300),
     ("/auth/check-username", 20,  60),
     ("/auth/check-email",    20,  60),
+    # Anti-enumeration: /auth/verify-status reveals whether an email is
+    # registered+verified, so it must not be probeable at the generic default.
+    # 60/min is 3x the web VerifyWaiting poll cadence (every 3s = 20/min) while
+    # still throttling mass email enumeration per IP.
+    ("/auth/verify-status",  60,  60),
     ("/auth/logout",         10,  60),
     ("/auth/discord",         5,   60),
     ("/auth/steam",           5,   60),

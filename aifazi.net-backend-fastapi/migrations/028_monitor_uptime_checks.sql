@@ -1,4 +1,4 @@
--- 023_monitor_uptime_checks.sql
+-- 028_monitor_uptime_checks.sql
 -- Uptime / service-monitor check history (backend routers/monitor.py).
 -- Records the result of every scheduled + manual health check so the public
 -- /status page and the admin Monitoring panel can render uptime % + history.

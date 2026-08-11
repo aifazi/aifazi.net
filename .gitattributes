@@ -1,0 +1,27 @@
+# Normalize line endings to LF in the repo, check out native on Windows.
+* text=auto
+
+# Binary file extensions must never be line-normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.keystore binary
+*.p12 binary
+*.apk binary
+*.aab binary
+*.mp3 binary
+*.m4a binary
+*.caf binary
+*.zip binary
+*.gz binary
+
+# Lockfiles/artifacts stay LF regardless of platform.
+package-lock.json -text
+*.lock -text
