@@ -2,7 +2,7 @@
   "expo": {
     "name": "aifazi",
     "slug": "fazi",
-    "version": "1.0.14",
+    "version": "1.0.15",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "aifazi",
@@ -13,7 +13,10 @@
         "NSMicrophoneUsageDescription": "aifazi uses the microphone for voice and video calls.",
         "NSCameraUsageDescription": "aifazi uses the camera for video calls and screen share.",
         "NSScreenCaptureUsageDescription": "aifazi shares your screen during calls.",
-        "UIBackgroundModes": ["audio", "voip"]
+        "UIBackgroundModes": [
+          "audio",
+          "voip"
+        ]
       },
       "bitcode": false
     },
@@ -39,7 +42,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "net.aifazi.mobile",
-      "versionCode": 1000014
+      "versionCode": 1000015
     },
     "web": {
       "bundler": "metro",
