@@ -137,7 +137,7 @@ export function stagger(index: number, base = 0.06, start = 60) {
   return start + index * base * 1000
 }
 
-export function GlowPulse({ children, color, style }: { children: ReactNode; color?: string; style?: StyleProp<ViewStyle> }) {
+export function GlowPulse({ children, color, style, active = true }: { children: ReactNode; color?: string; style?: StyleProp<ViewStyle>; active?: boolean }) {
   const { theme } = useTheme()
   const c = theme.colors
   const a = useRef(new Animated.Value(0)).current
@@ -156,8 +156,8 @@ export function GlowPulse({ children, color, style }: { children: ReactNode; col
   const opacity = a.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.6] })
   return (
     <View style={style}>
-      <Animated.View pointerEvents="none" style={{ position: 'absolute', inset: 0, borderRadius: 999, backgroundColor: tint, opacity }} />
-      <Animated.View style={{ transform: [{ scale }], zIndex: 1 }}>{children}</Animated.View>
+      {active ? <Animated.View pointerEvents="none" style={{ position: 'absolute', inset: 0, borderRadius: 999, backgroundColor: tint, opacity }} /> : null}
+      <Animated.View style={[{ transform: [{ scale }] }, { zIndex: 1 }]}>{children}</Animated.View>
     </View>
   )
 }

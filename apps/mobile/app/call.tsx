@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -20,6 +19,8 @@ import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
 import { useOverlay } from '@/src/components/overlay'
+import { Loader } from '@/src/components/Loader'
+import { GlowPulse, Reveal } from '@/src/components/motion'
 
 function Tile({
   label,
@@ -248,10 +249,9 @@ export default function CallScreen() {
   if (status === 'connecting') {
     return (
       <View style={[styles.center, { backgroundColor: c.bg }]}>
-        <ActivityIndicator color={c.accent} size="large" />
-        <Text style={{ color: c.muted, marginTop: SPACE.xxl, fontFamily: theme.mono ? 'monospace' : undefined }}>
-          Joining {roomName}…
-        </Text>
+        <Reveal dir="scale" duration={520}>
+          <Loader label={`JOINING ${roomName.toUpperCase()}`} size={64} />
+        </Reveal>
       </View>
     )
   }
@@ -259,11 +259,13 @@ export default function CallScreen() {
   if (status === 'error' || status === 'idle') {
     return (
       <View style={[styles.center, { backgroundColor: c.bg }]}>
-        <Text style={{ fontSize: 40 }}>⚠️</Text>
-        <Text style={{ color: c.danger, marginTop: SPACE.lg, textAlign: 'center' }}>{error || 'Call ended'}</Text>
-        <TouchableOpacity onPress={leave} style={[styles.ctl, { backgroundColor: c.danger, marginTop: SPACE.giant }]}>
-          <Text style={{ color: '#fff', fontWeight: '800' }}>LEAVE</Text>
-        </TouchableOpacity>
+        <Reveal dir="scale" duration={420}>
+          <Text style={{ fontSize: 40 }}>⚠️</Text>
+          <Text style={{ color: c.danger, marginTop: SPACE.lg, textAlign: 'center' }}>{error || 'Call ended'}</Text>
+          <TouchableOpacity onPress={leave} style={[styles.ctl, { backgroundColor: c.danger, marginTop: SPACE.giant }]}>
+            <Text style={{ color: '#fff', fontWeight: '800' }}>LEAVE</Text>
+          </TouchableOpacity>
+        </Reveal>
       </View>
     )
   }
@@ -395,15 +397,16 @@ export default function CallScreen() {
       </ScrollView>
 
       <View style={[styles.controls, { borderTopColor: c.border }]}>
+        <GlowPulse color={c.accent} active={pttActive} style={{ borderRadius: 999 }}>
         <TouchableOpacity
-          onPress={pttPressIn}
+          onPressIn={pttPressIn}
           onPressOut={pttPressOut}
-          onLongPress={pttPressIn}
-          delayLongPress={120}
+          activeOpacity={0.85}
           style={[styles.ctl, { backgroundColor: pttActive ? c.accent : 'rgba(255,255,255,0.12)' }]}
         >
           <Text style={{ fontSize: FONT.section }}>{pttActive ? '🎙️' : '🎤'}</Text>
         </TouchableOpacity>
+        </GlowPulse>
         <TouchableOpacity onPress={toggleMute} style={[styles.ctl, { backgroundColor: muted ? c.danger : 'rgba(255,255,255,0.12)' }]}>
           <Text style={{ fontSize: FONT.section }}>{muted ? '🔇' : '🔊'}</Text>
         </TouchableOpacity>
