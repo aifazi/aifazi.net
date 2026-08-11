@@ -3,10 +3,10 @@ const { withAppBuildGradle } = require('@expo/config-plugins');
 const RELEASE_SIGNING = `
         release {
             if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
-                storeFile file(MYAPP_UPLOAD_STORE_FILE)
-                storePassword MYAPP_UPLOAD_STORE_PASSWORD
-                keyAlias MYAPP_UPLOAD_KEY_ALIAS
-                keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+                storeFile file("\${MYAPP_UPLOAD_STORE_FILE}")
+                storePassword "\${MYAPP_UPLOAD_STORE_PASSWORD}"
+                keyAlias "\${MYAPP_UPLOAD_KEY_ALIAS}"
+                keyPassword "\${MYAPP_UPLOAD_KEY_PASSWORD}"
             }
         }`;
 

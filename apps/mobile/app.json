@@ -12,7 +12,8 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "aifazi uses the microphone for voice and video calls.",
         "NSCameraUsageDescription": "aifazi uses the camera for video calls and screen share.",
-        "NSScreenCaptureUsageDescription": "aifazi shares your screen during calls."
+        "NSScreenCaptureUsageDescription": "aifazi shares your screen during calls.",
+        "UIBackgroundModes": ["audio", "voip"]
       },
       "bitcode": false
     },
@@ -23,9 +24,10 @@
         "RECORD_AUDIO",
         "CAMERA",
         "MODIFY_AUDIO_SETTINGS",
-        "BLUETOOTH",
+        "BLUETOOTH_CONNECT",
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_MEDIA_PROJECTION",
+        "FOREGROUND_SERVICE_MICROPHONE",
         "WAKE_LOCK",
         "REQUEST_INSTALL_PACKAGES"
       ],
@@ -83,8 +85,7 @@
             "enableProguardInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
             "buildArchs": [
-              "arm64-v8a",
-              "armeabi-v7a"
+              "arm64-v8a"
             ]
           }
         }

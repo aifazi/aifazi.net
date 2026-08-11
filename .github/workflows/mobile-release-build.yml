@@ -116,7 +116,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: apps/mobile
-        run: npm install
+        run: npm ci
 
       - name: Resolve release tag
         id: tag

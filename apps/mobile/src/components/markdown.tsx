@@ -21,14 +21,14 @@ function parseInline(text: string, baseColor: string, link: string, onLink?: (ur
     } else if (m[4] !== undefined) {
       out.push(<Text key={k++} style={{ fontStyle: 'italic', color: baseColor }}>{m[4]}</Text>)
     } else if (m[5] !== undefined) {
-      const url = m[5]
+      const url = m[6]
       out.push(
         <Text
           key={k++}
           style={{ color: link, textDecorationLine: 'underline' }}
           onPress={() => (onLink ?? Linking.openURL)(url)}
         >
-          {url}
+          {m[5]}
         </Text>,
       )
     }
