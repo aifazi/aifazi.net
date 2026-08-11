@@ -9,6 +9,7 @@ import { Card, Title, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface Post {
   id: string
@@ -81,9 +82,13 @@ export default function BlogScreen() {
 
   return (
     <Screen scroll={false}>
-      <Title tag="BLOG">Blog</Title>
+      <Reveal dir="up" duration={420}>
+        <Title tag="BLOG">Blog</Title>
+      </Reveal>
       {cats.length > 0 ? (
+        <Reveal dir="up" delay={120} duration={520}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md, marginBottom: SPACE.xl }}>
+          <Reveal dir="scale" delay={stagger(0)} duration={420}>
           <TouchableOpacity
             onPress={() => setCat('')}
             style={{
@@ -97,9 +102,10 @@ export default function BlogScreen() {
           >
             <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>All</Text>
           </TouchableOpacity>
-          {cats.map((x) => (
+          </Reveal>
+          {cats.map((x, i) => (
+            <Reveal key={x} dir="scale" delay={stagger(i + 1)} duration={420}>
             <TouchableOpacity
-              key={x}
               onPress={() => setCat(x)}
               style={{
                 paddingHorizontal: SPACE.xl,
@@ -112,10 +118,12 @@ export default function BlogScreen() {
             >
               <Text style={{ color: cat === x ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>{x}</Text>
             </TouchableOpacity>
+            </Reveal>
           ))}
         </View>
+        </Reveal>
       ) : null}
-      {error ? <Muted>{error}</Muted> : null}
+      {error ? <Reveal dir="scale" delay={stagger(0)} duration={480}><Muted>{error}</Muted></Reveal> : null}
 
       <FlatList
         data={posts}
@@ -124,7 +132,8 @@ export default function BlogScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
         }
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
+          <Reveal dir="scale" delay={stagger(index)} duration={420}>
           <TouchableOpacity onPress={() => router.push(`/blog-post?slug=${encodeURIComponent(item.slug)}` as Href)}>
             <Card>
               {item.cover_image ? (
@@ -142,6 +151,7 @@ export default function BlogScreen() {
               </View>
             </Card>
           </TouchableOpacity>
+          </Reveal>
         )}
         ListEmptyComponent={<Muted>No posts yet.</Muted>}
       />

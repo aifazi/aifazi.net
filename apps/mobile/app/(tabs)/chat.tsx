@@ -12,6 +12,7 @@ import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
 import { Icon, type IconName } from '@/src/components/icon'
 import { withAlpha } from '@/src/lib/color'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface Room {
   id: string
@@ -162,16 +163,21 @@ export default function ChatScreen() {
   if (!isAuthed) {
     return (
       <Screen>
-        <Title>Chat</Title>
-        <Card>
-          <Muted>Sign in on the Profile tab to join rooms.</Muted>
-        </Card>
+        <Reveal dir="up" duration={420}>
+          <Title>Chat</Title>
+        </Reveal>
+        <Reveal dir="up" delay={120} duration={520}>
+          <Card>
+            <Muted>Sign in on the Profile tab to join rooms.</Muted>
+          </Card>
+        </Reveal>
       </Screen>
     )
   }
 
   return (
     <Screen scroll={false}>
+      <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Title tag="MESSAGES">Chat rooms</Title>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xxl }}>
@@ -208,6 +214,7 @@ export default function ChatScreen() {
           ) : null}
         </View>
       </View>
+      </Reveal>
 
       {loading ? (
         <Loader />
@@ -232,7 +239,8 @@ export default function ChatScreen() {
                   </TouchableOpacity>
                 </View>
               ),
-              renderItem: ({ item }: { item: DMThread }) => (
+              renderItem: ({ item, index }: { item: DMThread; index: number }) => (
+                <Reveal dir="scale" delay={stagger(index)} duration={420}>
                 <Card>
                   <TouchableOpacity onPress={() => openDm(item)} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
                     <View>
@@ -282,13 +290,15 @@ export default function ChatScreen() {
                     ) : null}
                   </TouchableOpacity>
                 </Card>
+                </Reveal>
               ),
               empty: dms.length === 0 ? <Muted>No DMs yet — tap “+ New” to message someone.</Muted> : null,
             },
             {
               title: 'Rooms',
               data: rooms as any[],
-              renderItem: ({ item }: { item: Room }) => (
+              renderItem: ({ item, index }: { item: Room; index: number }) => (
+                <Reveal dir="scale" delay={stagger(index)} duration={420}>
                 <Card>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
                     {item.emoji ? (
@@ -322,6 +332,7 @@ export default function ChatScreen() {
                     />
                   </View>
                 </Card>
+                </Reveal>
               ),
               empty: rooms.length === 0 ? <Muted>{err || 'No chat rooms yet.'}</Muted> : null,
             },

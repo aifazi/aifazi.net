@@ -9,6 +9,7 @@ import { Avatar } from '@/src/components/Avatar'
 import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface UserHit {
   username: string
@@ -86,6 +87,7 @@ export default function DMNewScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
+      <Reveal dir="up" duration={420}>
       <View
         style={{
           flexDirection: 'row',
@@ -102,7 +104,9 @@ export default function DMNewScreen() {
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800' }}>New message</Text>
       </View>
+      </Reveal>
 
+      <Reveal dir="up" delay={120} duration={520}>
       <View style={{ padding: SPACE.xl }}>
         <TextInput
           value={q}
@@ -123,11 +127,14 @@ export default function DMNewScreen() {
           }}
         />
       </View>
+      </Reveal>
 
       {err ? (
+        <Reveal dir="scale" delay={stagger(0)} duration={480}>
         <View style={{ paddingHorizontal: SPACE.xl }}>
           <Muted>{err}</Muted>
         </View>
+        </Reveal>
       ) : null}
 
       <FlatList
@@ -137,7 +144,8 @@ export default function DMNewScreen() {
         ListEmptyComponent={
           <Muted style={{ textAlign: 'center', marginTop: SPACE.jumbo }}>{q.trim() ? 'No users found.' : 'No users yet.'}</Muted>
         }
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
+          <Reveal dir="scale" delay={stagger(index)} duration={420}>
           <Card style={{ paddingVertical: SPACE.lg }}>
             <TouchableOpacity
               onPress={() => choose(item)}
@@ -157,6 +165,7 @@ export default function DMNewScreen() {
               />
             </TouchableOpacity>
           </Card>
+          </Reveal>
         )}
       />
     </SafeAreaView>

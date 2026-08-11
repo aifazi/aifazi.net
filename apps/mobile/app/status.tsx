@@ -9,6 +9,7 @@ import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface Service {
   name: string
@@ -73,12 +74,14 @@ export default function StatusScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
+      <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
           <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }}>Status</Text>
       </View>
+      </Reveal>
 
       {loading ? (
         <View style={{ paddingTop: SPACE.colossal, alignItems: 'center' }}>
@@ -86,13 +89,16 @@ export default function StatusScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: SPACE.xxxl, paddingBottom: SPACE.colossal }}>
+          <Reveal dir="up" delay={120} duration={520}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, marginBottom: SPACE.huge }}>
             <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: color }} />
             <Text style={{ color, fontSize: 17, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 }}>{overall}</Text>
           </View>
+          </Reveal>
 
-          {(data.services ?? []).map((s) => (
-            <Card key={s.name} style={{ padding: SPACE.xxl, marginBottom: SPACE.lg }}>
+          {(data.services ?? []).map((s, i) => (
+            <Reveal key={s.name} dir="scale" delay={stagger(i)} duration={420}>
+            <Card style={{ padding: SPACE.xxl, marginBottom: SPACE.lg }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
                 <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: statusDot(s.status) }} />
                 <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700', flex: 1 }} numberOfLines={1}>
@@ -109,15 +115,19 @@ export default function StatusScreen() {
                 <Muted>30d {s.uptime_30d != null ? `${s.uptime_30d.toFixed(1)}%` : '—'}</Muted>
               </View>
             </Card>
+            </Reveal>
           ))}
 
           {(data.incidents ?? []).length > 0 ? (
             <>
+              <Reveal dir="up" delay={200} duration={520}>
               <Text style={{ color: c.muted, fontSize: FONT.xs, letterSpacing: 3, marginTop: SPACE.xl, marginBottom: SPACE.lg, fontWeight: '800' }}>
                 ⚠ RECENT INCIDENTS
               </Text>
+              </Reveal>
               {(data.incidents ?? []).map((inc, i) => (
-                <TouchableOpacity key={i} onPress={() => setDetail(inc)} activeOpacity={0.7}>
+                <Reveal key={i} dir="scale" delay={stagger(i)} duration={420}>
+                <TouchableOpacity onPress={() => setDetail(inc)} activeOpacity={0.7}>
                   <Card style={{ padding: SPACE.xxl, marginBottom: SPACE.lg }}>
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.lg }}>
                       <Text style={{ fontSize: FONT.base }}>{inc.ongoing ? '🔴' : '🟠'}</Text>
@@ -137,10 +147,11 @@ export default function StatusScreen() {
                     </View>
                   </Card>
                 </TouchableOpacity>
+                </Reveal>
               ))}
             </>
           ) : (
-            <Muted style={{ marginTop: SPACE.lg, textAlign: 'center' }}>No incidents reported.</Muted>
+            <Reveal dir="up" delay={200} duration={520}><Muted style={{ marginTop: SPACE.lg, textAlign: 'center' }}>No incidents reported.</Muted></Reveal>
           )}
         </ScrollView>
       )}

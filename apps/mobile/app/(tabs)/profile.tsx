@@ -18,6 +18,7 @@ import { DocumentsTab } from '@/src/screens/profile/Documents'
 import { SecurityTab } from '@/src/screens/profile/Security'
 import { EditTab } from '@/src/screens/profile/Edit'
 import { LoginCard } from '@/src/screens/profile/LoginCard'
+import { Reveal, stagger } from '@/src/components/motion'
 
 type TabId = 'overview' | 'orders' | 'tickets' | 'activity' | 'documents' | 'security' | 'edit'
 
@@ -53,22 +54,29 @@ export default function ProfileScreen() {
   if (!isAuthed) {
     return (
       <Screen scroll={false}>
-        <Title tag="ACCOUNT">Profile</Title>
-        <LoginCard />
+        <Reveal dir="up" duration={420}>
+          <Title tag="ACCOUNT">Profile</Title>
+        </Reveal>
+        <Reveal dir="up" delay={120} duration={520}>
+          <LoginCard />
+        </Reveal>
       </Screen>
     )
   }
 
   return (
     <Screen scroll={false}>
-      <Title tag="ACCOUNT">Profile</Title>
+      <Reveal dir="up" duration={420}>
+        <Title tag="ACCOUNT">Profile</Title>
+      </Reveal>
+      <Reveal dir="up" delay={120} duration={520}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} {...webPillSnap()} style={{ marginBottom: SPACE.xl, flexGrow: 0 }}>
         <View style={{ flexDirection: 'row', gap: SPACE.sm }}>
-          {TABS.map((t) => {
+          {TABS.map((t, i) => {
             const active = tab === t.id
             return (
+              <Reveal key={t.id} dir="scale" delay={stagger(i)} duration={420}>
               <TouchableOpacity
-                key={t.id}
                 onPress={() => setTab(t.id)}
                 style={{
                   flexDirection: 'row',
@@ -90,18 +98,20 @@ export default function ProfileScreen() {
                 <Icon name={t.icon} size={13} color={active ? c.accent : c.muted} />
                 <Text style={{ color: active ? c.accent : c.muted, fontSize: FONT.sm, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.label}</Text>
               </TouchableOpacity>
+              </Reveal>
             )
           })}
         </View>
       </ScrollView>
+      </Reveal>
 
-      {tab === 'overview' && <OverviewTab goEdit={() => setTab('edit')} />}
-      {tab === 'orders' && <OrdersTab />}
-      {tab === 'tickets' && <TicketsTab />}
-      {tab === 'activity' && <ActivityTab />}
-      {tab === 'documents' && <DocumentsTab />}
-      {tab === 'security' && <SecurityTab />}
-      {tab === 'edit' && <EditTab />}
+      {tab === 'overview' && <Reveal dir="up" delay={160} duration={520}><OverviewTab goEdit={() => setTab('edit')} /></Reveal>}
+      {tab === 'orders' && <Reveal dir="up" delay={160} duration={520}><OrdersTab /></Reveal>}
+      {tab === 'tickets' && <Reveal dir="up" delay={160} duration={520}><TicketsTab /></Reveal>}
+      {tab === 'activity' && <Reveal dir="up" delay={160} duration={520}><ActivityTab /></Reveal>}
+      {tab === 'documents' && <Reveal dir="up" delay={160} duration={520}><DocumentsTab /></Reveal>}
+      {tab === 'security' && <Reveal dir="up" delay={160} duration={520}><SecurityTab /></Reveal>}
+      {tab === 'edit' && <Reveal dir="up" delay={160} duration={520}><EditTab /></Reveal>}
     </Screen>
   )
 }

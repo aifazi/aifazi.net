@@ -10,6 +10,7 @@ import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface Req {
   id: string
@@ -79,6 +80,7 @@ export default function DMRequestsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
+      <Reveal dir="up" duration={420}>
       <View
         style={{
           flexDirection: 'row',
@@ -95,6 +97,7 @@ export default function DMRequestsScreen() {
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800' }}>Message requests</Text>
       </View>
+      </Reveal>
 
       {loading ? (
         <Loader />
@@ -105,15 +108,18 @@ export default function DMRequestsScreen() {
           contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.jumbo }}
           ListHeaderComponent={
             err ? (
-              <Muted style={{ marginBottom: SPACE.md }}>{err}</Muted>
+              <Reveal dir="scale" delay={stagger(0)} duration={480}><Muted style={{ marginBottom: SPACE.md }}>{err}</Muted></Reveal>
             ) : null
           }
           ListEmptyComponent={
+            <Reveal dir="scale" delay={stagger(0)} duration={480}>
             <View style={{ marginBottom: SPACE.mega }}>
               <Muted style={{ textAlign: 'center' }}>No pending requests.</Muted>
             </View>
+            </Reveal>
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
+            <Reveal dir="scale" delay={stagger(index)} duration={420}>
             <Card>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
                 <Avatar name={item.sender} avatar={item.avatar} size={30} />
@@ -129,8 +135,10 @@ export default function DMRequestsScreen() {
                 />
               </View>
             </Card>
+            </Reveal>
           )}
           ListFooterComponent={
+            <Reveal dir="up" delay={200} duration={520}>
             <View style={{ marginTop: SPACE.mega }}>
               <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', marginBottom: SPACE.md }}>
                 Blocked users
@@ -138,9 +146,9 @@ export default function DMRequestsScreen() {
               {blocks.length === 0 ? (
                 <Muted>No blocked users.</Muted>
               ) : (
-                blocks.map((b) => (
+                blocks.map((b, i) => (
+                  <Reveal key={b.blocked} dir="scale" delay={stagger(i)} duration={420}>
                   <View
-                    key={b.blocked}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
@@ -155,9 +163,11 @@ export default function DMRequestsScreen() {
                       <Text style={{ color: c.accent, fontWeight: '700' }}>Unblock</Text>
                     </TouchableOpacity>
                   </View>
+                  </Reveal>
                 ))
               )}
             </View>
+            </Reveal>
           }
         />
       )}

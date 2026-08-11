@@ -8,6 +8,7 @@ import { Card, Title, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface Project {
   id: string
@@ -79,7 +80,9 @@ export default function ProjectsScreen() {
   if (loading) {
     return (
       <Screen>
-        <Title>Our projects</Title>
+        <Reveal dir="up" duration={420}>
+          <Title>Our projects</Title>
+        </Reveal>
         <Loader />
       </Screen>
     )
@@ -93,13 +96,19 @@ export default function ProjectsScreen() {
       keyExtractor={(p) => p.id}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
+        <Reveal dir="up" delay={120} duration={520}>
         <>
           <Title>Our projects</Title>
           {err ? <Muted>{err}</Muted> : null}
         </>
+        </Reveal>
       }
       ListEmptyComponent={<Muted>No projects published yet.</Muted>}
-      renderItem={({ item }) => <ProjectCard item={item} />}
+      renderItem={({ item, index }) => (
+        <Reveal dir="scale" delay={stagger(index)} duration={420}>
+          <ProjectCard item={item} />
+        </Reveal>
+      )}
     />
   )
 }

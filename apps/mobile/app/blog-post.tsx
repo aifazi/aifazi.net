@@ -12,6 +12,7 @@ import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { useOverlay } from '@/src/components/overlay'
 import { Loader } from '@/src/components/Loader'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface Comment {
   _id?: string
@@ -132,18 +133,23 @@ export default function BlogPostScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
+      <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
           <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>Post</Text>
       </View>
+      </Reveal>
 
       <ScrollView contentContainerStyle={{ padding: SPACE.xxxl, paddingBottom: SPACE.colossal }}>
         {post.cover_image ? (
+          <Reveal dir="up" delay={120} duration={520}>
           <ExpoImage source={{ uri: post.cover_image }} style={{ width: '100%', height: 200, borderRadius: radius, marginBottom: SPACE.xxl }} contentFit="cover" transition={150} />
+          </Reveal>
         ) : null}
 
+        <Reveal dir="up" delay={160} duration={520}>
         <Text style={{ color: c.text, fontSize: 21, fontWeight: '900', lineHeight: 28 }}>{post.title}</Text>
         <View style={{ flexDirection: 'row', marginTop: SPACE.md, gap: SPACE.lg, flexWrap: 'wrap' }}>
           <Muted>{post.author_name ?? 'Admin'}</Muted>
@@ -151,30 +157,40 @@ export default function BlogPostScreen() {
           {post.category ? <Muted>{post.category}</Muted> : null}
           {post.views ? <Muted>👁 {post.views}</Muted> : null}
         </View>
+        </Reveal>
+
         {post.tags && post.tags.length > 0 ? (
+          <Reveal dir="up" delay={200} duration={520}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm, marginTop: SPACE.md }}>
-            {post.tags.map((t) => (
-                <View key={t} style={{ backgroundColor: c.bg3, borderRadius: pillRadius, paddingHorizontal: SPACE.md, paddingVertical: 3 }}>
-                <Text style={{ color: c.text2, fontSize: FONT.sm }}>#{t}</Text>
-              </View>
+            {post.tags.map((t, i) => (
+              <Reveal key={t} dir="scale" delay={stagger(i)} duration={420}>
+                <View style={{ backgroundColor: c.bg3, borderRadius: pillRadius, paddingHorizontal: SPACE.md, paddingVertical: 3 }}>
+                  <Text style={{ color: c.text2, fontSize: FONT.sm }}>#{t}</Text>
+                </View>
+              </Reveal>
             ))}
           </View>
+          </Reveal>
         ) : null}
 
         {post.content ? (
+          <Reveal dir="up" delay={240} duration={520}>
           <View style={{ marginTop: SPACE.xxxl, paddingTop: SPACE.xxxl, borderTopWidth: 1, borderTopColor: c.border }}>
             <MarkdownText content={post.content} color={c.text2} />
           </View>
+          </Reveal>
         ) : post.excerpt ? (
-          <Text style={{ color: c.text2, fontSize: FONT.body, lineHeight: 19, marginTop: SPACE.xxxl }}>{post.excerpt}</Text>
+          <Reveal dir="up" delay={240} duration={520}><Text style={{ color: c.text2, fontSize: FONT.body, lineHeight: 19, marginTop: SPACE.xxxl }}>{post.excerpt}</Text></Reveal>
         ) : null}
 
+        <Reveal dir="up" delay={280} duration={520}>
         <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '800', marginTop: SPACE.mega, marginBottom: SPACE.md }}>Comments ({comments.length})</Text>
         {comments.length === 0 ? (
           <Muted>No comments yet.</Muted>
         ) : (
-          comments.map((cm) => (
-            <View key={cm._id || cm.id || cm.content} style={{ paddingVertical: SPACE.lg, borderTopWidth: 1, borderTopColor: c.border }}>
+          comments.map((cm, i) => (
+            <Reveal key={cm._id || cm.id || cm.content} dir="scale" delay={stagger(i)} duration={420}>
+            <View style={{ paddingVertical: SPACE.lg, borderTopWidth: 1, borderTopColor: c.border }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
                 <Text style={{ color: c.accent2, fontSize: FONT.md, fontWeight: '700', flex: 1 }}>{cm.author?.username ?? 'anonymous'}</Text>
                 {(canModerate || cm.author?._id === user?.id || cm.author?._id === user?._id) && (
@@ -185,9 +201,12 @@ export default function BlogPostScreen() {
               </View>
               <Text style={{ color: c.text2, fontSize: FONT.body, marginTop: SPACE.xxs }}>{cm.content}</Text>
             </View>
+            </Reveal>
           ))
         )}
+        </Reveal>
 
+        <Reveal dir="up" delay={300} duration={520}>
         <View style={{ marginTop: SPACE.xxxl, borderTopWidth: 1, borderTopColor: c.border, paddingTop: SPACE.xl }}>
           <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '800', marginBottom: SPACE.md }}>{isAuthed ? 'Add a comment' : 'Login to comment'}</Text>
           {isAuthed ? (
@@ -215,6 +234,7 @@ export default function BlogPostScreen() {
             </TouchableOpacity>
           )}
         </View>
+        </Reveal>
       </ScrollView>
     </SafeAreaView>
   )

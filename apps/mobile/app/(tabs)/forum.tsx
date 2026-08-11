@@ -9,6 +9,7 @@ import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { useAuth } from '@/src/lib/auth'
 import { Loader } from '@/src/components/Loader'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface ThreadAuthor {
   username: string
@@ -141,6 +142,7 @@ export default function ForumScreen() {
 
   return (
     <Screen scroll={false}>
+      <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Title tag="FORUM">Forum</Title>
         <TouchableOpacity
@@ -150,6 +152,7 @@ export default function ForumScreen() {
           <Text style={{ color: c.onAccent, fontSize: FONT.body, fontWeight: '700' }}>+ New thread</Text>
         </TouchableOpacity>
       </View>
+      </Reveal>
 
       <FlatList
         data={threads}
@@ -161,6 +164,7 @@ export default function ForumScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
         }
         ListHeaderComponent={
+          <Reveal dir="up" delay={120} duration={520}>
           <>
             <TextInput
               value={input}
@@ -191,6 +195,7 @@ export default function ForumScreen() {
 
             {categories.length > 0 ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md, marginBottom: SPACE.xl }}>
+                <Reveal dir="scale" delay={stagger(0)} duration={420}>
                 <TouchableOpacity
                   onPress={() => setCat('')}
                   style={{
@@ -204,9 +209,10 @@ export default function ForumScreen() {
                 >
                   <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>All</Text>
                 </TouchableOpacity>
-                {categories.map((x) => (
+                </Reveal>
+                {categories.map((x, i) => (
+                  <Reveal key={x._id || x.id} dir="scale" delay={stagger(i + 1)} duration={420}>
                   <TouchableOpacity
-                    key={x._id || x.id}
                     onPress={() => setCat(x._id || x.id)}
                     style={{
                       paddingHorizontal: SPACE.xl,
@@ -221,13 +227,16 @@ export default function ForumScreen() {
                       {x.icon ?? ''} {x.name}
                     </Text>
                   </TouchableOpacity>
+                  </Reveal>
                 ))}
               </View>
             ) : null}
             {error ? <Muted style={{ marginBottom: SPACE.lg }}>{error}</Muted> : null}
           </>
+          </Reveal>
         }
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
+          <Reveal dir="scale" delay={stagger(index)} duration={420}>
           <TouchableOpacity onPress={() => router.push(`/forum-thread?id=${encodeURIComponent(item.id)}` as Href)}>
             <Card>
               {item.category?.icon ? <Text style={{ fontSize: FONT.card, marginBottom: SPACE.xs }}>{item.category.icon} {item.category.name}</Text> : null}
@@ -242,6 +251,7 @@ export default function ForumScreen() {
               </View>
             </Card>
           </TouchableOpacity>
+          </Reveal>
         )}
         ListEmptyComponent={<Muted>No threads yet.</Muted>}
         ListFooterComponent={

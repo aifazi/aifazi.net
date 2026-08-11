@@ -9,6 +9,7 @@ import { Card, Title, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface StoreCat {
   id: string
@@ -80,6 +81,7 @@ export default function StoreScreen() {
 
   return (
     <Screen scroll={false}>
+      <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Title tag="STORE">Store</Title>
         <TouchableOpacity
@@ -89,8 +91,11 @@ export default function StoreScreen() {
           <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>🛒 {cartCount > 0 ? `(${cartCount})` : ''}</Text>
         </TouchableOpacity>
       </View>
+      </Reveal>
       {cats.length > 0 ? (
+        <Reveal dir="up" delay={120} duration={520}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md, marginBottom: SPACE.xl }}>
+          <Reveal dir="scale" delay={stagger(0)} duration={420}>
           <TouchableOpacity
             onPress={() => setCat('')}
             style={{
@@ -104,9 +109,10 @@ export default function StoreScreen() {
           >
             <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>All</Text>
           </TouchableOpacity>
-          {cats.map((x) => (
+          </Reveal>
+          {cats.map((x, i) => (
+            <Reveal key={x.id} dir="scale" delay={stagger(i + 1)} duration={420}>
             <TouchableOpacity
-              key={x.id}
               onPress={() => setCat(x.slug)}
               style={{
                 paddingHorizontal: SPACE.xl,
@@ -121,14 +127,16 @@ export default function StoreScreen() {
                 {x.icon ?? ''} {x.name}
               </Text>
             </TouchableOpacity>
+            </Reveal>
           ))}
         </View>
+        </Reveal>
       ) : null}
 
       {loading ? (
         <Loader />
       ) : err ? (
-        <Muted>{err}</Muted>
+        <Reveal dir="scale" delay={stagger(0)} duration={480}><Muted>{err}</Muted></Reveal>
       ) : (
         <FlatList
           data={products}
@@ -138,7 +146,8 @@ export default function StoreScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
           }
           ListEmptyComponent={<Muted>No products yet.</Muted>}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
+            <Reveal dir="scale" delay={stagger(index)} duration={420}>
             <TouchableOpacity onPress={() => router.push(`/store-item?slug=${encodeURIComponent(item.slug)}` as Href)}>
               <Card>
                 <View style={{ flexDirection: 'row', gap: SPACE.xl }}>
@@ -176,6 +185,7 @@ export default function StoreScreen() {
                 </View>
               </Card>
             </TouchableOpacity>
+            </Reveal>
           )}
         />
       )}

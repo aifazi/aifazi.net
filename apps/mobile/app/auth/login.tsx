@@ -8,6 +8,7 @@ import { useAuth } from '@/src/lib/auth'
 import { OAuthButtons } from '@/src/components/OAuthButtons'
 import { useTheme } from '@/src/theme'
 import { useOverlay } from '@/src/components/overlay'
+import { Reveal } from '@/src/components/motion'
 
 export default function LoginScreen() {
   const { login, verify2FA } = useAuth()
@@ -58,17 +59,22 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <Screen>
+        <Reveal dir="up" duration={420}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACE.md }}>
           <TouchableOpacity onPress={() => (pending2FA ? setPending2FA(null) : router.back())} hitSlop={10}>
             <Text style={{ color: c.text, fontSize: FONT.lead, fontFamily: theme.mono ? 'monospace' : undefined }}>←</Text>
           </TouchableOpacity>
         </View>
+        </Reveal>
         {pending2FA ? (
           <>
-            <Title>Two-factor code</Title>
+            <Reveal dir="up" delay={120} duration={520}><Title>Two-factor code</Title></Reveal>
+            <Reveal dir="up" delay={160} duration={520}>
             <Muted>
               Enter the 6-digit code from your authenticator app{pending2FA.username ? ` for @${pending2FA.username}` : ''}.
             </Muted>
+            </Reveal>
+            <Reveal dir="up" delay={200} duration={520}>
             <View style={{ marginTop: SPACE.huge }}>
               <Field
                 label="Authenticator code"
@@ -81,16 +87,20 @@ export default function LoginScreen() {
               />
               <Btn title={busy ? 'Verifying…' : 'Verify'} onPress={submit2FA} disabled={busy || code.length < 6} />
             </View>
+            </Reveal>
           </>
         ) : (
           <>
-            <Title>Sign in</Title>
-            <Muted>Welcome back to aifazi.net</Muted>
+            <Reveal dir="up" delay={120} duration={520}><Title>Sign in</Title></Reveal>
+            <Reveal dir="up" delay={160} duration={520}><Muted>Welcome back to aifazi.net</Muted></Reveal>
+            <Reveal dir="up" delay={200} duration={520}>
             <View style={{ marginTop: SPACE.huge }}>
               <Field label="Username / Email" value={identifier} onChangeText={setIdentifier} placeholder="tanvir" autoCapitalize="none" />
               <Field label="Password" value={password} onChangeText={setPassword} secure placeholder="••••••••" autoCapitalize="none" />
               <Btn title={busy ? 'Signing in…' : 'Sign In'} onPress={submit} disabled={busy} />
             </View>
+            </Reveal>
+            <Reveal dir="up" delay={240} duration={520}>
             <OAuthButtons
               onSuccess={() => router.back()}
               on2FA={(partialToken, username) => {
@@ -98,6 +108,7 @@ export default function LoginScreen() {
                 setCode('')
               }}
             />
+            </Reveal>
           </>
         )}
       </Screen>

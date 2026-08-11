@@ -11,6 +11,7 @@ import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { useOverlay } from '@/src/components/overlay'
 import { Loader } from '@/src/components/Loader'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface ThreadAuthor {
   username: string
@@ -166,6 +167,7 @@ export default function ForumThreadScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
+      <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
           <Icon name="back" size={22} color={c.text} />
@@ -177,9 +179,11 @@ export default function ForumThreadScreen() {
           </TouchableOpacity>
         ) : null}
       </View>
+      </Reveal>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: SPACE.xxxl, paddingBottom: SPACE.giant }}>
+          <Reveal dir="up" delay={120} duration={520}>
           <Text style={{ color: c.text, fontSize: 19, fontWeight: '900', lineHeight: 26 }}>
             {thread.pinned ? '📌 ' : ''}{thread.locked ? '🔒 ' : ''}{thread.title}
           </Text>
@@ -188,21 +192,26 @@ export default function ForumThreadScreen() {
             {thread.category?.name ? <Muted>{thread.category.icon ?? ''} {thread.category.name}</Muted> : null}
             {thread.views ? <Muted>👁 {thread.views}</Muted> : null}
           </View>
+          </Reveal>
 
           {thread.content ? (
+            <Reveal dir="up" delay={160} duration={520}>
             <View style={{ marginTop: SPACE.xxl, paddingTop: SPACE.xxl, borderTopWidth: 1, borderTopColor: c.border }}>
               <MarkdownText content={thread.content} color={bodyColor} />
             </View>
+            </Reveal>
           ) : null}
 
+          <Reveal dir="up" delay={200} duration={520}>
           <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '800', marginTop: SPACE.giant, marginBottom: SPACE.md }}>
             Replies ({replies.length})
           </Text>
           {replies.length === 0 ? (
             <Muted>No replies yet.</Muted>
           ) : (
-            replies.map((r) => (
-              <View key={r._id || r.id} style={{ paddingVertical: SPACE.lg, borderTopWidth: 1, borderTopColor: c.border }}>
+            replies.map((r, i) => (
+              <Reveal key={r._id || r.id} dir="scale" delay={stagger(i)} duration={420}>
+              <View style={{ paddingVertical: SPACE.lg, borderTopWidth: 1, borderTopColor: c.border }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
                   <Text style={{ color: c.accent2, fontSize: FONT.md, fontWeight: '700', flex: 1 }}>{r.author?.username ?? 'anonymous'}</Text>
                   {canManageReply(r) ? (
@@ -243,11 +252,14 @@ export default function ForumThreadScreen() {
                   <MarkdownText content={r.content} color={c.text2} />
                 )}
               </View>
+              </Reveal>
             ))
           )}
+          </Reveal>
         </ScrollView>
 
         {isAuthed ? (
+          <Reveal dir="up" delay={240} duration={520}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: SPACE.md, padding: SPACE.lg, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bg2 }}>
             <TextInput
               value={text}
@@ -260,6 +272,7 @@ export default function ForumThreadScreen() {
             />
             <Btn title={sending ? '…' : 'Reply'} onPress={postReply} disabled={sending || !text.trim() || !!thread.locked} style={{ paddingVertical: SPACE.lg, paddingHorizontal: SPACE.xxxl }} />
           </View>
+          </Reveal>
         ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>

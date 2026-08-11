@@ -12,6 +12,7 @@ import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
 import { fmtWhen } from '@/src/screens/profile/helpers'
 import { withAlpha } from '@/src/lib/color'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface Notification {
   _id?: string
@@ -88,6 +89,7 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
+      <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
           <Icon name="back" size={22} color={c.text} />
@@ -99,13 +101,16 @@ export default function NotificationsScreen() {
           </TouchableOpacity>
         ) : null}
       </View>
+      </Reveal>
 
       {!isAuthed ? (
+        <Reveal dir="up" delay={120} duration={520}>
         <View style={{ padding: SPACE.jumbo, alignItems: 'center', gap: SPACE.xxl }}>
           <Text style={{ fontSize: 40 }}>🔔</Text>
           <Muted>Sign in on the Profile tab to see notifications.</Muted>
           <Btn title="Go to Profile" onPress={() => router.push('/profile' as Href)} />
         </View>
+        </Reveal>
       ) : loading ? (
         <View style={{ paddingTop: SPACE.colossal, alignItems: 'center' }}>
           <Loader />
@@ -119,15 +124,18 @@ export default function NotificationsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
           }
           ListEmptyComponent={
+            <Reveal dir="scale" delay={stagger(0)} duration={480}>
             <View style={{ padding: SPACE.jumbo, alignItems: 'center', gap: SPACE.md }}>
               <Text style={{ fontSize: 36 }}>🔕</Text>
               <Muted>No notifications yet.</Muted>
               {err ? <Muted style={{ color: c.danger }}>{err}</Muted> : null}
             </View>
+            </Reveal>
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const icon = TYPE_ICON[item.type || ''] ?? '🔔'
             return (
+              <Reveal dir="scale" delay={stagger(index)} duration={420}>
               <TouchableOpacity onPress={() => open(item)} onLongPress={() => remove(item)} activeOpacity={0.7}>
                 <View
                   style={{
@@ -150,6 +158,7 @@ export default function NotificationsScreen() {
                   {!item.read ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.accent }} /> : null}
                 </View>
               </TouchableOpacity>
+              </Reveal>
             )
           }}
         />

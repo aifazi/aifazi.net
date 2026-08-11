@@ -11,6 +11,7 @@ import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { useOverlay } from '@/src/components/overlay'
 import { Loader } from '@/src/components/Loader'
+import { Reveal, stagger } from '@/src/components/motion'
 
 interface Variant {
   id: string
@@ -135,14 +136,17 @@ export default function StoreItemScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
+      <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
           <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>{p.name}</Text>
       </View>
+      </Reveal>
 
       <ScrollView contentContainerStyle={{ padding: SPACE.xxxl, paddingBottom: SPACE.colossal }}>
+        <Reveal dir="up" delay={120} duration={520}>
         {displayImage ? (
           <ExpoImage source={{ uri: displayImage }} style={{ width: '100%', height: 220, borderRadius: radius, marginBottom: SPACE.xxl }} contentFit="cover" transition={150} />
         ) : (
@@ -150,7 +154,9 @@ export default function StoreItemScreen() {
             <Text style={{ fontSize: 44 }}>🛍️</Text>
           </View>
         )}
+        </Reveal>
 
+        <Reveal dir="up" delay={160} duration={520}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, marginBottom: SPACE.md }}>
           <Text style={{ color: c.accent, fontSize: FONT.h2, fontWeight: '900' }}>${(priceCents / 100).toFixed(2)}</Text>
           {compareCents ? (
@@ -167,12 +173,14 @@ export default function StoreItemScreen() {
         </View>
 
         {!p.in_stock ? <Text style={{ color: c.danger, fontSize: FONT.body, fontWeight: '700', marginBottom: SPACE.md }}>Out of stock</Text> : null}
+        </Reveal>
 
         {p.variants && p.variants.length > 0 ? (
+          <Reveal dir="up" delay={200} duration={520}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md, marginBottom: SPACE.xxl }}>
-            {p.variants.map((v) => (
+            {p.variants.map((v, i) => (
+              <Reveal key={v.id} dir="scale" delay={stagger(i)} duration={420}>
               <TouchableOpacity
-                key={v.id}
                 onPress={() => setVariant(v.id)}
                 disabled={!v.in_stock}
                 style={{
@@ -189,20 +197,26 @@ export default function StoreItemScreen() {
                   {v.name} · ${(v.price_cents / 100).toFixed(2)}
                 </Text>
               </TouchableOpacity>
+              </Reveal>
             ))}
           </View>
+          </Reveal>
         ) : null}
 
-        {p.description ? <Text style={{ color: c.text2, fontSize: FONT.body, lineHeight: 19, marginBottom: SPACE.xxl }}>{p.description}</Text> : null}
+        {p.description ? <Reveal dir="up" delay={240} duration={520}><Text style={{ color: c.text2, fontSize: FONT.body, lineHeight: 19, marginBottom: SPACE.xxl }}>{p.description}</Text></Reveal> : null}
 
+        <Reveal dir="up" delay={260} duration={520}>
         <Btn title={adding ? 'Adding…' : 'Add to cart'} onPress={addToCart} disabled={adding} />
+        </Reveal>
 
+        <Reveal dir="up" delay={280} duration={520}>
         <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '800', marginTop: 22, marginBottom: SPACE.md }}>Reviews</Text>
         {reviews.length === 0 ? (
           <Muted>No reviews yet.</Muted>
         ) : (
-          reviews.map((r) => (
-            <View key={r.id} style={{ borderTopWidth: 1, borderTopColor: c.border, paddingVertical: SPACE.lg }}>
+          reviews.map((r, i) => (
+            <Reveal key={r.id} dir="scale" delay={stagger(i)} duration={420}>
+            <View style={{ borderTopWidth: 1, borderTopColor: c.border, paddingVertical: SPACE.lg }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
                 <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>{r.username}</Text>
                 <Text style={{ color: c.accent, fontSize: FONT.md }}>★ {r.rating}</Text>
@@ -210,8 +224,10 @@ export default function StoreItemScreen() {
               {r.title ? <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700', marginTop: 3 }}>{r.title}</Text> : null}
               {r.body ? <Text style={{ color: c.text2, fontSize: FONT.md, marginTop: SPACE.xxs }}>{r.body}</Text> : null}
             </View>
+            </Reveal>
           ))
         )}
+        </Reveal>
       </ScrollView>
     </SafeAreaView>
   )
