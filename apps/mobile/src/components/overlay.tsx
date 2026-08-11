@@ -9,7 +9,7 @@
 //   toast('message', 'success' | 'error' | 'info')
 
 import { createContext, useContext, useRef, useState, ReactNode } from 'react'
-import { Modal, View, Text, ScrollView, TouchableOpacity, StyleSheet, Pressable, ActivityIndicator } from 'react-native'
+import { Modal, View, Text, ScrollView, TouchableOpacity, StyleSheet, Pressable, ActivityIndicator, ViewStyle } from 'react-native'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
 import { CODE_FONT, FONT, SPACE, micro, tagLabel } from '@/src/design'
@@ -76,9 +76,12 @@ export function useOverlay(): OverlayApi {
 }
 
 export function OverlayProvider({ children }: { children: ReactNode }) {
-  const { theme } = useTheme()
+  const { theme, framework } = useTheme()
   const c = theme.colors
-  const radius = theme.radius
+  const dialogFw = framework.dialog
+  const notifyFw = framework.notify
+  const radius = dialogFw.radius
+  const notifyPosition = framework.notifyPosition ?? 'bottom-right'
 
   const [alertState, setAlert] = useState<AlertState | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
@@ -147,11 +150,11 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
 
       {/* ── Toast layer ───────────────────────────────────────────── */}
       {toasts.length > 0 && (
-        <View pointerEvents="none" style={styles.toastLayer}>
+        <View pointerEvents="none" style={toastLayerStyle(notifyPosition)}>
           {toasts.map((t) => {
             const color = t.kind === 'error' ? c.danger : t.kind === 'success' ? c.accent : c.accent2
             return (
-              <View key={t.key} style={[styles.toast, { backgroundColor: c.bg2, borderColor: color, borderRadius: radius }]}>
+              <View key={t.key} style={[styles.toast, { backgroundColor: c.bg2, borderColor: color, borderRadius: notifyFw.radius }]}>
                 <View style={[styles.toastDot, { backgroundColor: color }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={[tagLabel(8.5, 2.5), { color, marginBottom: SPACE.xxs }]}>
@@ -274,6 +277,21 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
   )
 }
 
+/**
+ * Vertically/horizontally position the toast layer from the web `notifyPosition`
+ * id (bottom-right, bottom-left, top-right, top-left, top-center). Falls back
+ * to bottom-right when unset.
+ */
+function toastLayerStyle(pos: string): ViewStyle {
+  const bottom = pos.startsWith('top') ? undefined : 0
+  const top = pos.startsWith('top') ? 60 : undefined
+  const align =
+    pos === 'top-left' || pos === 'bottom-left' ? 'flex-start'
+    : pos === 'top-right' || pos === 'bottom-right' ? 'flex-end'
+    : 'center'
+  return { top, bottom, left: 0, right: 0, alignItems: align, position: 'absolute', zIndex: 9999, paddingTop: top ?? 0, paddingHorizontal: SPACE.giant }
+}
+
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
@@ -349,16 +367,6 @@ const styles = StyleSheet.create({
     marginTop: SPACE.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(128,128,128,0.25)',
-  },
-  toastLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 9999,
-    paddingTop: 60,
-    paddingHorizontal: SPACE.giant,
   },
   toast: {
     flexDirection: 'row',

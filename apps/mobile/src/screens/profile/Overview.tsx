@@ -2,6 +2,7 @@ import { ScrollView, View, Text, TouchableOpacity } from 'react-native'
 import { FONT, SPACE } from '@/src/design'
 import { useRouter } from 'expo-router'
 import { Card, Muted, Btn, MicroLabel } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { Avatar } from '@/src/components/Avatar'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
@@ -105,11 +106,29 @@ export function OverviewTab({ goEdit }: { goEdit: () => void }) {
         {user?.bio ? <Text style={{ color: c.text2, fontSize: FONT.body, lineHeight: 18, marginTop: SPACE.xl }}>{user.bio}</Text> : null}
 
         <View style={{ marginTop: SPACE.xl, gap: SPACE.xs }}>
-          {user?.email ? <Muted>✉️ {user.email}{user?.email_verified === false ? ' (unverified)' : ''}</Muted> : null}
-          {fmtDate(user?.created_at || user?.createdAt) ? <Muted>📅 Joined {fmtDate(user?.created_at || user?.createdAt)}</Muted> : null}
-          {user?.last_seen || user?.lastSeen ? <Muted>🕐 Last seen {fmtWhen(user.last_seen || user.lastSeen)}</Muted> : null}
+          {user?.email ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+              <Icon name="doc" size={14} color={c.muted} />
+              <Muted>{user.email}{user?.email_verified === false ? ' (unverified)' : ''}</Muted>
+            </View>
+          ) : null}
+          {fmtDate(user?.created_at || user?.createdAt) ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+              <Icon name="calendar" size={14} color={c.muted} />
+              <Muted>Joined {fmtDate(user?.created_at || user?.createdAt)}</Muted>
+            </View>
+          ) : null}
+          {user?.last_seen || user?.lastSeen ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+              <Icon name="info" size={14} color={c.muted} />
+              <Muted>Last seen {fmtWhen(user.last_seen || user.lastSeen)}</Muted>
+            </View>
+          ) : null}
           {linked.map((l) => (
-            <Muted key={l.label}>🔗 {l.label}: {l.value}</Muted>
+            <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+              <Icon name="link" size={14} color={c.muted} />
+              <Muted>{l.label}: {l.value}</Muted>
+            </View>
           ))}
         </View>
 
@@ -134,7 +153,10 @@ export function OverviewTab({ goEdit }: { goEdit: () => void }) {
         }
       >
         {isLocked ? (
-          <Muted style={{ marginBottom: SPACE.md }}>🔒 Theme switching is disabled — the admin has forced a theme site-wide.</Muted>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.md }}>
+            <Icon name="lock" size={14} color={c.muted} />
+            <Muted>Theme switching is disabled — the admin has forced a theme site-wide.</Muted>
+          </View>
         ) : (
           <View style={{ flexDirection: 'row', gap: SPACE.md, marginBottom: SPACE.xxl }}>
             <Btn

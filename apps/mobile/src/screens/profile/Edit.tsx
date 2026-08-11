@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FONT, SPACE } from '@/src/design'
 import { View, Text, TextInput, ScrollView } from 'react-native'
 import { Card, Muted, Btn, Field } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { Avatar, BUILTIN_AVATARS, BUILTIN_AVATAR_ICONS } from '@/src/components/Avatar'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
@@ -83,9 +84,9 @@ export function EditTab() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xxl, marginBottom: SPACE.xxl }}>
           <Avatar name={username} avatar={avatar} size={56} />
           <View style={{ flex: 1, gap: SPACE.md }}>
-            <Btn title={uploading ? 'Uploading…' : '📷 Set avatar'} variant="ghost" onPress={pickAvatar} disabled={uploading} />
+            <Btn title={uploading ? 'Uploading…' : 'Set avatar'} variant="ghost" onPress={pickAvatar} disabled={uploading} leading={<Icon name="camera" size={16} color={c.accent2} />} />
             {avatar?.startsWith('avatar:') ? (
-              <Btn title="✕ Remove built-in icon" variant="ghost" onPress={() => { setAvatar(''); setSaveMsg('Icon cleared. Save changes to keep it.') }} />
+              <Btn title="Remove built-in icon" variant="ghost" onPress={() => { setAvatar(''); setSaveMsg('Icon cleared. Save changes to keep it.') }} leading={<Icon name="close" size={16} color={c.accent2} />} />
             ) : null}
           </View>
         </View>

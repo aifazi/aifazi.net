@@ -3,6 +3,7 @@ import { FONT, SPACE } from '@/src/design'
 import { View, Text, ScrollView } from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
 import { Card, Muted, Btn, Field } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
@@ -109,7 +110,10 @@ export function SecurityTab() {
           <Loader size={44} />
         ) : twoEnabled ? (
           <>
-            <Muted>✅ Two-factor authentication is enabled.</Muted>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+              <Icon name="check" size={14} color={c.accent} />
+              <Muted>Two-factor authentication is enabled.</Muted>
+            </View>
             <Field label="Password" value={twoPw} onChangeText={setTwoPw} secure placeholder="Your password" />
             <Field label="2FA code" value={twoCode} onChangeText={setTwoCode} placeholder="6-digit code" />
             <Btn title={busy ? 'Disabling…' : 'Disable 2FA'} variant="danger" onPress={disable2fa} disabled={busy || !twoPw} />
@@ -143,9 +147,12 @@ export function SecurityTab() {
           sessions.map((s) => (
             <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.md, borderBottomWidth: 1, borderBottomColor: c.border }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: c.text, fontSize: FONT.md, fontWeight: '600' }} numberOfLines={1}>
-                  {s.current ? '📍 This device' : '💻 Device'}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs }}>
+                  <Icon name={s.current ? 'globe' : 'info'} size={14} color={c.text2} />
+                  <Text style={{ color: c.text, fontSize: FONT.md, fontWeight: '600' }} numberOfLines={1}>
+                    {s.current ? 'This device' : 'Device'}
+                  </Text>
+                </View>
                 <Muted style={{ fontSize: FONT.micro }} numberOfLines={1}>{s.ip} · {s.user_agent || ''}</Muted>
                 <Muted style={{ fontSize: FONT.micro }}>Last active {fmtWhen(s.last_active)}</Muted>
               </View>

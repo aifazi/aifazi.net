@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Card, Muted, Btn } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
@@ -70,7 +71,7 @@ export function TicketsTab() {
       </View>
 
       <View style={{ marginBottom: SPACE.lg }}>
-        <Btn title="+ New Ticket" onPress={() => router.push('/helpdesk-new' as Href)} />
+        <Btn title="New Ticket" leading={<Icon name="plus" size={16} color={c.onAccent} />} onPress={() => router.push('/helpdesk-new' as Href)} />
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} {...webPillSnap()} style={{ marginBottom: SPACE.lg }}>

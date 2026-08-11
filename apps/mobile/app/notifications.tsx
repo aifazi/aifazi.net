@@ -6,6 +6,7 @@ import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Btn, Muted } from '@/src/components/ui'
 import { Icon } from '@/src/components/icon'
+import type { IconName } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -24,12 +25,12 @@ interface Notification {
   created_at?: string
 }
 
-const TYPE_ICON: Record<string, string> = {
-  reply: '💬',
-  like: '❤️',
-  mention: '@',
-  pm: '✉️',
-  system: '🔔',
+const TYPE_ICON: Record<string, IconName> = {
+  reply: 'chat',
+  like: 'heart',
+  mention: 'chat',
+  pm: 'send',
+  system: 'bell',
 }
 
 export default function NotificationsScreen() {
@@ -106,7 +107,7 @@ export default function NotificationsScreen() {
       {!isAuthed ? (
         <Reveal dir="up" delay={120} duration={520}>
         <View style={{ padding: SPACE.jumbo, alignItems: 'center', gap: SPACE.xxl }}>
-          <Text style={{ fontSize: 40 }}>🔔</Text>
+          <Icon name="bell" size={40} color={c.text2} />
           <Muted>Sign in on the Profile tab to see notifications.</Muted>
           <Btn title="Go to Profile" onPress={() => router.push('/profile' as Href)} />
         </View>
@@ -126,14 +127,14 @@ export default function NotificationsScreen() {
           ListEmptyComponent={
             <Reveal dir="scale" delay={stagger(0)} duration={480}>
             <View style={{ padding: SPACE.jumbo, alignItems: 'center', gap: SPACE.md }}>
-              <Text style={{ fontSize: 36 }}>🔕</Text>
+              <Icon name="bell" size={36} color={c.muted} />
               <Muted>No notifications yet.</Muted>
               {err ? <Muted style={{ color: c.danger }}>{err}</Muted> : null}
             </View>
             </Reveal>
           }
           renderItem={({ item, index }) => {
-            const icon = TYPE_ICON[item.type || ''] ?? '🔔'
+            const icon = TYPE_ICON[item.type || ''] ?? 'bell'
             return (
               <Reveal dir="scale" delay={stagger(index)} duration={420}>
               <TouchableOpacity onPress={() => open(item)} onLongPress={() => remove(item)} activeOpacity={0.7}>
@@ -150,7 +151,7 @@ export default function NotificationsScreen() {
                     backgroundColor: item.read ? c.bg2 : withAlpha(c.accent, 0.06),
                   }}
                 >
-                  <Text style={{ fontSize: FONT.lead }}>{icon}</Text>
+                  <Icon name={icon} size={18} color={c.text2} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: c.text, fontSize: FONT.body, lineHeight: 18 }}>{item.message}</Text>
                     {item.created_at ? <Muted style={{ fontSize: FONT.xs, marginTop: 3 }}>{fmtWhen(item.created_at)}</Muted> : null}

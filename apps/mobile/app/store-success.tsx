@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Btn, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { Icon } from '@/src/components/icon'
 
 interface Order { order_number?: string; status?: string; total_cents?: number }
 
@@ -36,7 +37,9 @@ export default function StoreSuccessScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', padding: SPACE.mega }}>
-      <Text style={{ fontSize: 56, marginBottom: SPACE.xl }}>✅</Text>
+      <View style={{ marginBottom: SPACE.xl }}>
+        <Icon name="check" size={56} color={c.accent} />
+      </View>
       <Text style={{ color: c.accent, fontSize: FONT.h3, fontWeight: '900', letterSpacing: 2, textAlign: 'center' }}>
         ORDER PLACED
       </Text>

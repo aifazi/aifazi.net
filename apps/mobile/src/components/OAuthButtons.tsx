@@ -1,17 +1,20 @@
 import { useState } from 'react'
-import { FONT, SPACE } from '@/src/design'
-import { View, Text } from 'react-native'
-import { Btn } from '@/src/components/ui'
+import { ActivityIndicator, Text, TextStyle, View, TouchableOpacity } from 'react-native'
+
+import { FONT, SPACE, buttonLabel, frameworkStyles } from '@/src/design'
 import { useAuth } from '@/src/lib/auth'
 import { OAuthProvider } from '@/src/lib/oauth'
 import { useOverlay } from '@/src/components/overlay'
 import { useTheme } from '@/src/theme'
+import { BrandIcon, BRAND_COLORS, Brand } from '@/src/components/BrandIcon'
 
-const PROVIDERS: { id: OAuthProvider; label: string; color: string; glyph: string }[] = [
-  { id: 'discord', label: 'Discord', color: '#5865F2', glyph: '💬' },
-  { id: 'steam', label: 'Steam', color: '#66C0F4', glyph: '🎮' },
-  { id: 'github', label: 'GitHub', color: '#8B949E', glyph: '🐙' },
+const PROVIDERS: { id: OAuthProvider; label: string; brand: Brand }[] = [
+  { id: 'discord', label: 'Discord', brand: 'discord' },
+  { id: 'steam', label: 'Steam', brand: 'steam' },
+  { id: 'github', label: 'GitHub', brand: 'github' },
 ]
+
+const LABEL: TextStyle = buttonLabel(13)
 
 /**
  * Provider OAuth buttons for login/signup. Opens the native auth session, then
@@ -28,6 +31,7 @@ export function OAuthButtons({
   const { loginWithOAuth } = useAuth()
   const { theme } = useTheme()
   const c = theme.colors
+  const fw = frameworkStyles(theme)
   const { alert } = useOverlay()
   const [busy, setBusy] = useState<OAuthProvider | null>(null)
 
@@ -58,22 +62,41 @@ export function OAuthButtons({
         </Text>
         <View style={{ flex: 1, height: 1, backgroundColor: c.border }} />
       </View>
-      {PROVIDERS.map((p) => (
-        <Btn
-          key={p.id}
-          title={busy === p.id ? `Connecting to ${p.label}…` : `Continue with ${p.label}`}
-          variant="ghost"
-          disabled={!!busy}
-          loading={busy === p.id}
-          leading={
-            busy === p.id ? undefined : (
-              <Text style={{ fontSize: FONT.card, lineHeight: 18 }}>{p.glyph}</Text>
-            )
-          }
-          onPress={() => handle(p.id)}
-          style={{ marginBottom: SPACE.md, borderColor: busy === p.id ? c.border : p.color, opacity: busy && busy !== p.id ? 0.4 : 1 }}
-        />
-      ))}
+      {PROVIDERS.map((p) => {
+        const brand = BRAND_COLORS[p.brand]
+        const isBusy = busy === p.id
+        return (
+          <TouchableOpacity
+            key={p.id}
+            onPress={() => handle(p.id)}
+            disabled={!!busy}
+            activeOpacity={0.85}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              paddingVertical: 14,
+              paddingHorizontal: 20,
+              borderRadius: fw.buttonRadius,
+              marginBottom: SPACE.md,
+              backgroundColor: brand.bg,
+              borderWidth: 1,
+              borderColor: brand.border ?? brand.bg,
+              opacity: busy && !isBusy ? 0.4 : 1,
+            }}
+          >
+            {isBusy ? (
+              <ActivityIndicator size="small" color={brand.logo} />
+            ) : (
+              <BrandIcon brand={p.brand} color={brand.logo} />
+            )}
+            <Text style={[LABEL, { color: brand.logo }]}>
+              {isBusy ? `Connecting to ${p.label}…` : `Continue with ${p.label}`}
+            </Text>
+          </TouchableOpacity>
+        )
+      })}
     </View>
   )
 }

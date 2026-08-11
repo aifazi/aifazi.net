@@ -155,7 +155,12 @@ export default function BlogPostScreen() {
           <Muted>{post.author_name ?? 'Admin'}</Muted>
           <Muted>{fmtDate(post.created_at)}</Muted>
           {post.category ? <Muted>{post.category}</Muted> : null}
-          {post.views ? <Muted>👁 {post.views}</Muted> : null}
+          {post.views ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Icon name="eye" size={12} color={c.muted} />
+              <Muted>{post.views}</Muted>
+            </View>
+          ) : null}
         </View>
         </Reveal>
 

@@ -107,9 +107,16 @@ export default function ChatAdminRecentScreen() {
                   {item.sender}
                   {item.edited ? ' (edited)' : ''}
                 </Text>
-                <Text style={{ color: c.text, fontSize: FONT.base, marginTop: SPACE.xxs }}>
-                  {item.type === 'file' ? `📎 ${item.file_name || 'file'}` : item.content || ''}
-                </Text>
+                {item.type === 'file' ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: SPACE.xxs }}>
+                    <Icon name="attach" size={14} color={c.text2} />
+                    <Text style={{ color: c.text, fontSize: FONT.base }} numberOfLines={1}>
+                      {item.file_name || 'file'}
+                    </Text>
+                  </View>
+                ) : item.content ? (
+                  <Text style={{ color: c.text, fontSize: FONT.base, marginTop: SPACE.xxs }}>{item.content}</Text>
+                ) : null}
               </Card>
             </TouchableOpacity>
           )}

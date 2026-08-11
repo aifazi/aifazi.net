@@ -38,9 +38,9 @@ export function Btn({
   full?: boolean
   style?: ViewStyle
 }) {
-  const { theme } = useTheme()
+  const { theme, framework } = useTheme()
   const c = theme.colors
-  const fw = frameworkStyles(theme)
+  const fw = framework.input
   const isPrimary = variant === 'primary'
   const isDanger = variant === 'danger'
   const filled = isPrimary || isDanger
@@ -131,9 +131,9 @@ export function Card({
   headerRight?: ReactNode
   onPress?: () => void
 }) {
-  const { theme } = useTheme()
+  const { theme, framework } = useTheme()
   const c = theme.colors
-  const fw = frameworkStyles(theme)
+  const fw = framework.surface
   const icy = !theme.mono
   const scale = useRef(new Animated.Value(1)).current
   const pressIn = () => Animated.spring(scale, { toValue: 0.98, useNativeDriver: true, speed: 50, bounciness: 0 }).start()
@@ -262,9 +262,9 @@ export function Field({
   maxLength?: number
   autoFocus?: boolean
 }) {
-  const { theme } = useTheme()
+  const { theme, framework } = useTheme()
   const c = theme.colors
-  const fw = frameworkStyles(theme)
+  const fw = framework.input
   const [focused, setFocused] = useState(false)
   const radius = fw.buttonRadius
   return (
@@ -567,7 +567,7 @@ export function Pill({
   onPress?: () => void
   color?: string
 }) {
-  const { theme } = useTheme()
+  const { theme, framework } = useTheme()
   const c = theme.colors
   const tint = color ?? c.accent2
   return (
@@ -577,7 +577,7 @@ export function Pill({
       style={{
         borderWidth: 1,
         borderColor: active ? withAlpha(tint, 0.7) : c.border,
-        borderRadius: theme.mono ? 0 : Math.max(4, frameworkStyles(theme).buttonRadius),
+        borderRadius: theme.mono ? 0 : Math.max(4, framework.input.buttonRadius),
         paddingHorizontal: SPACE.xxl,
         paddingVertical: SPACE.md,
         backgroundColor: active ? withAlpha(tint, 0.14) : 'transparent',

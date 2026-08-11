@@ -10,6 +10,7 @@ import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
 import { Reveal, stagger } from '@/src/components/motion'
+import { Icon } from '@/src/components/icon'
 
 interface StoreCat {
   id: string
@@ -88,7 +89,10 @@ export default function StoreScreen() {
           onPress={() => router.push('/store-cart' as Href)}
           style={{ marginBottom: SPACE.xl, paddingHorizontal: SPACE.xl, paddingVertical: SPACE.md, borderRadius: pillRadius, backgroundColor: c.bg2, borderWidth: 1, borderColor: c.border }}
         >
-          <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>🛒 {cartCount > 0 ? `(${cartCount})` : ''}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+            <Icon name="store" size={18} color={c.text} />
+            <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>{cartCount > 0 ? `(${cartCount})` : ''}</Text>
+          </View>
         </TouchableOpacity>
       </View>
       </Reveal>
@@ -155,7 +159,7 @@ export default function StoreScreen() {
                     <ExpoImage source={{ uri: item.image_url }} style={{ width: 64, height: 64, borderRadius: radius }} contentFit="cover" />
                   ) : (
                     <View style={{ width: 64, height: 64, borderRadius: radius, backgroundColor: c.bg3, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ fontSize: FONT.h1 }}>🛍️</Text>
+                      <Icon name="store" size={30} color={c.muted} />
                     </View>
                   )}
                   <View style={{ flex: 1 }}>
@@ -163,7 +167,7 @@ export default function StoreScreen() {
                       <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700', flex: 1 }} numberOfLines={1}>{item.name}</Text>
                       {item.on_sale ? (
                         <View style={{ backgroundColor: c.danger, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
-                          <Text style={{ color: '#fff', fontSize: FONT.micro, fontWeight: '800' }}>SALE</Text>
+                          <Text style={{ color: c.onAccent, fontSize: FONT.micro, fontWeight: '800' }}>SALE</Text>
                         </View>                      ) : null}
                     </View>
                     {item.description ? (
@@ -178,7 +182,10 @@ export default function StoreScreen() {
                       ) : null}
                       {!item.in_stock ? <Text style={{ color: c.danger, fontSize: FONT.sm, fontWeight: '700' }}>Out of stock</Text> : null}
                       {item.rating?.count ? (
-                        <Text style={{ color: c.muted, fontSize: FONT.sm }}>★ {item.rating.rating?.toFixed(1)} ({item.rating.count})</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                          <Icon name="star" size={12} color={c.muted} />
+                          <Text style={{ color: c.muted, fontSize: FONT.sm }}>{item.rating.rating?.toFixed(1)} ({item.rating.count})</Text>
+                        </View>
                       ) : null}
                     </View>
                   </View>

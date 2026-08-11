@@ -151,7 +151,7 @@ export default function StoreItemScreen() {
           <ExpoImage source={{ uri: displayImage }} style={{ width: '100%', height: 220, borderRadius: radius, marginBottom: SPACE.xxl }} contentFit="cover" transition={150} />
         ) : (
           <View style={{ width: '100%', height: 160, borderRadius: radius, backgroundColor: c.bg3, alignItems: 'center', justifyContent: 'center', marginBottom: SPACE.xxl }}>
-            <Text style={{ fontSize: 44 }}>🛍️</Text>
+            <Icon name="store" size={44} color={c.muted} />
           </View>
         )}
         </Reveal>
@@ -164,11 +164,14 @@ export default function StoreItemScreen() {
           ) : null}
           {p.on_sale ? (
             <View style={{ backgroundColor: c.danger, borderRadius: 4, paddingHorizontal: SPACE.sm, paddingVertical: SPACE.xxs }}>
-              <Text style={{ color: '#fff', fontSize: FONT.xs, fontWeight: '800' }}>SALE</Text>
+              <Text style={{ color: c.onAccent, fontSize: FONT.xs, fontWeight: '800' }}>SALE</Text>
             </View>
           ) : null}
           {p.rating?.count ? (
-            <Text style={{ color: c.muted, fontSize: FONT.body }}>★ {p.rating.rating?.toFixed(1)} ({p.rating.count})</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+              <Icon name="star" size={13} color={c.muted} />
+              <Text style={{ color: c.muted, fontSize: FONT.body }}>{p.rating.rating?.toFixed(1)} ({p.rating.count})</Text>
+            </View>
           ) : null}
         </View>
 
@@ -219,7 +222,10 @@ export default function StoreItemScreen() {
             <View style={{ borderTopWidth: 1, borderTopColor: c.border, paddingVertical: SPACE.lg }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
                 <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>{r.username}</Text>
-                <Text style={{ color: c.accent, fontSize: FONT.md }}>★ {r.rating}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                  <Icon name="star" size={13} color={c.accent} />
+                  <Text style={{ color: c.accent, fontSize: FONT.md }}>{r.rating}</Text>
+                </View>
               </View>
               {r.title ? <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700', marginTop: 3 }}>{r.title}</Text> : null}
               {r.body ? <Text style={{ color: c.text2, fontSize: FONT.md, marginTop: SPACE.xxs }}>{r.body}</Text> : null}

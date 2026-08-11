@@ -8,6 +8,7 @@ import { Card, Title, Muted, CategoryPills } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { useAuth } from '@/src/lib/auth'
+import { Icon } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
 import { Reveal, stagger } from '@/src/components/motion'
 
@@ -240,14 +241,29 @@ export default function ForumScreen() {
           <TouchableOpacity onPress={() => router.push(`/forum-thread?id=${encodeURIComponent(item.id)}` as Href)}>
             <Card>
               {item.category?.icon ? <Text style={{ fontSize: FONT.card, marginBottom: SPACE.xs }}>{item.category.icon} {item.category.name}</Text> : null}
-              <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }} numberOfLines={2}>
-                {item.pinned ? '📌 ' : ''}{item.locked ? '🔒 ' : ''}{item.title}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                {item.pinned ? <Icon name="pin" size={14} color={c.text2} /> : null}
+                {item.locked ? <Icon name="lock" size={14} color={c.text2} /> : null}
+                <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700', flexShrink: 1 }} numberOfLines={2}>
+                  {item.title}
+                </Text>
+              </View>
               <View style={{ flexDirection: 'row', marginTop: SPACE.sm, gap: SPACE.xl }}>
                 <Muted>{item.author?.username ?? 'anonymous'}</Muted>
-                <Muted>💬 {item.replyCount ?? 0}</Muted>
-                <Muted>👁 {item.views ?? 0}</Muted>
-                {item.likes ? <Muted>❤️ {item.likes}</Muted> : null}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Icon name="chat" size={12} color={c.muted} />
+                  <Muted>{item.replyCount ?? 0}</Muted>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Icon name="eye" size={12} color={c.muted} />
+                  <Muted>{item.views ?? 0}</Muted>
+                </View>
+                {item.likes ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Icon name="heart" size={12} color={c.muted} />
+                    <Muted>{item.likes}</Muted>
+                  </View>
+                ) : null}
               </View>
             </Card>
           </TouchableOpacity>

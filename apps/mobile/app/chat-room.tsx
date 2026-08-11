@@ -391,7 +391,7 @@ export default function ChatRoomScreen() {
         </Text>
         {!searchOpen ? (
           <TouchableOpacity onPress={() => setSearchOpen(true)} hitSlop={10}>
-            <Text style={{ fontSize: FONT.section, opacity: 0.8 }}>🔍</Text>
+            <Icon name="search" size={FONT.section} color={c.text} />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -443,9 +443,18 @@ export default function ChatRoomScreen() {
                       style={{ paddingVertical: SPACE.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }}
                     >
                       <Text style={{ color: c.accent2, fontSize: FONT.sm, fontWeight: '700' }}>{item.sender}</Text>
-                      <Text style={{ color: c.text, fontSize: FONT.body }} numberOfLines={2}>
-                        {item.type === 'image' ? '🖼 Image' : item.type === 'file' ? `📎 ${item.file_name ?? 'file'}` : body || item.content}
-                      </Text>
+                      {item.type === 'image' || item.type === 'file' ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+                          <Icon name={item.type === 'image' ? 'image' : 'attach'} size={FONT.body} color={c.muted} />
+                          <Text style={{ color: c.text, fontSize: FONT.body, flexShrink: 1 }} numberOfLines={2}>
+                            {item.type === 'image' ? 'Image' : item.file_name ?? 'file'}
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text style={{ color: c.text, fontSize: FONT.body }} numberOfLines={2}>
+                          {body || item.content}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   )
                 }}
@@ -491,9 +500,12 @@ export default function ChatRoomScreen() {
                   disabled={loadingMore}
                   style={{ alignItems: 'center', paddingVertical: SPACE.lg, marginBottom: SPACE.sm }}
                 >
-                  <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '700' }}>
-                    {loadingMore ? 'Loading…' : '⬆ Load earlier'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+                    <Icon name="up" size={FONT.md} color={c.accent} />
+                    <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '700' }}>
+                      {loadingMore ? 'Loading…' : 'Load earlier'}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ) : null
             }
@@ -549,9 +561,12 @@ export default function ChatRoomScreen() {
                             </Text>
                           ) : null}
                           {replyContent ? (
-                            <Text style={{ color: c.muted, fontSize: FONT.sm, fontStyle: 'italic', marginBottom: SPACE.xs }}>
-                              ↪ {decryptIfEncrypted(replyContent, roomKey)}
-                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, marginBottom: SPACE.xs }}>
+                              <Icon name="reply" size={FONT.sm} color={c.muted} />
+                              <Text style={{ color: c.muted, fontSize: FONT.sm, fontStyle: 'italic', flexShrink: 1 }}>
+                                {decryptIfEncrypted(replyContent, roomKey)}
+                              </Text>
+                            </View>
                           ) : null}
                           {isImage ? (
                             <TouchableOpacity onPress={() => openLink(item.content ?? '')}>
@@ -574,7 +589,7 @@ export default function ChatRoomScreen() {
                               onPress={() => openLink(item.content ?? '')}
                               style={{ marginTop: SPACE.sm, flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}
                             >
-                              <Text style={{ fontSize: FONT.card }}>📎</Text>
+                              <Icon name="attach" size={FONT.card} color={mine ? mineText : c.text} />
                               <Text style={{ color: mine ? mineText : c.text, fontSize: FONT.body, fontWeight: '600' }}>
                                 {item.file_name} {item.file_size ? `(${fmtSize(item.file_size)})` : ''}
                               </Text>
@@ -691,7 +706,7 @@ export default function ChatRoomScreen() {
             </TouchableOpacity>
           ))}
           <TouchableOpacity onPress={() => setReactTarget(null)} hitSlop={8} style={{ marginLeft: 'auto' }}>
-            <Text style={{ color: c.danger, fontWeight: '700', fontSize: FONT.body }}>✕</Text>
+            <Icon name="close" size={FONT.base} color={c.danger} />
           </TouchableOpacity>
         </View>
       ) : null}
@@ -699,27 +714,28 @@ export default function ChatRoomScreen() {
       <View style={[styles.inputBar, { borderTopColor: c.border, backgroundColor: c.bg2 }]}>
         {editing ? (
           <TouchableOpacity onPress={cancelEdit} hitSlop={8} style={{ paddingRight: SPACE.sm }}>
-            <Text style={{ color: c.danger, fontWeight: '700', fontSize: FONT.body }}>✕</Text>
+            <Icon name="close" size={FONT.body} color={c.danger} />
           </TouchableOpacity>
         ) : null}
         {!editing ? (
           <>
             <TouchableOpacity onPress={pickImage} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
-              <Text style={{ fontSize: FONT.lead, opacity: uploading ? 0.4 : 1 }}>{uploading ? '⏳' : '🖼️'}</Text>
+              <Icon name="image" size={FONT.lead} color={c.text} style={uploading ? { opacity: 0.4 } : undefined} />
             </TouchableOpacity>
             <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
-              <Text style={{ fontSize: FONT.lead, opacity: uploading ? 0.4 : 1 }}>📎</Text>
+              <Icon name="attach" size={FONT.lead} color={c.text} style={uploading ? { opacity: 0.4 } : undefined} />
             </TouchableOpacity>
           </>
         ) : null}
         <View style={{ flex: 1 }}>
           {replying ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.xs }}>
+              <Icon name="reply" size={FONT.sm} color={c.accent2} />
               <Text style={{ color: c.accent2, fontSize: FONT.sm, fontWeight: '700', flex: 1 }} numberOfLines={1}>
-                ↪ Reply to {replying.sender}: {decryptIfEncrypted(replying.content ?? '', roomKey) || '(image/file)'}
+                Reply to {replying.sender}: {decryptIfEncrypted(replying.content ?? '', roomKey) || '(image/file)'}
               </Text>
               <TouchableOpacity onPress={() => setReplying(null)} hitSlop={8}>
-                <Text style={{ color: c.danger, fontWeight: '700', fontSize: FONT.md }}>✕</Text>
+                <Icon name="close" size={FONT.md} color={c.danger} />
               </TouchableOpacity>
             </View>
           ) : null}

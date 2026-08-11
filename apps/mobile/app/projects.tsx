@@ -9,6 +9,7 @@ import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
 import { Reveal, stagger } from '@/src/components/motion'
+import { Icon } from '@/src/components/icon'
 
 interface Project {
   id: string
@@ -35,7 +36,7 @@ function ProjectCard({ item }: { item: Project }) {
         <ExpoImage source={{ uri: item.image_url }} style={{ width: '100%', height: 160, borderRadius: radius, marginBottom: SPACE.lg }} contentFit="cover" transition={150} />
       ) : (
         <View style={{ width: '100%', height: 120, borderRadius: radius, backgroundColor: c.bg3, alignItems: 'center', justifyContent: 'center', marginBottom: SPACE.lg }}>
-          <Text style={{ fontSize: 36 }}>🚀</Text>
+          <Icon name="rocket" size={36} color={c.muted} />
         </View>
       )}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>

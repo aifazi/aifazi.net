@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { Card, Muted, Btn } from '@/src/components/ui'
+import { Icon } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
@@ -71,16 +72,20 @@ export function OrdersTab() {
               </View>
             )}
             {o.tracking_number ? (
-              <Muted style={{ marginTop: SPACE.md }}>
-                📦 {o.carrier || 'Carrier'}: {o.tracking_number}
-              </Muted>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, marginTop: SPACE.md }}>
+                <Icon name="orders" size={FONT.body} color={c.muted} />
+                <Muted>{o.carrier || 'Carrier'}: {o.tracking_number}</Muted>
+              </View>
             ) : null}
             {(o.downloads || []).length > 0 && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm, marginTop: SPACE.md }}>
                 {(o.downloads || []).map((d) => (
-                  <Text key={d.id} style={{ color: c.accent, fontSize: FONT.xs, borderWidth: 1, borderColor: withAlpha(c.accent, 0.25), borderRadius: 5, paddingHorizontal: SPACE.md, paddingVertical: 3 }}>
-                    ⬇ {d.filename || d.product_name} ({d.downloads_used}/{d.downloads_allowed})
-                  </Text>
+                  <View key={d.id} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, borderWidth: 1, borderColor: withAlpha(c.accent, 0.25), borderRadius: 5, paddingHorizontal: SPACE.md, paddingVertical: 3 }}>
+                    <Icon name="download" size={FONT.xs} color={c.accent} />
+                    <Text style={{ color: c.accent, fontSize: FONT.xs }}>
+                      {d.filename || d.product_name} ({d.downloads_used}/{d.downloads_allowed})
+                    </Text>
+                  </View>
                 ))}
               </View>
             )}
@@ -89,7 +94,7 @@ export function OrdersTab() {
       ))}
 
       {detail && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', padding: SPACE.xxxl }}>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.overlay, padding: SPACE.xxxl, justifyContent: 'center' }}>
           <Card>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.md }}>
               <Text style={{ color: c.accent, fontSize: FONT.body, fontWeight: '800', letterSpacing: 1 }}>{detail.order_number}</Text>
@@ -97,7 +102,10 @@ export function OrdersTab() {
             </View>
             <Muted>Placed {detail.created_at ? new Date(detail.created_at).toLocaleString() : '—'}</Muted>
             {(detail.carrier || detail.tracking_number) && (
-              <Muted style={{ marginTop: SPACE.xs }}>📦 {detail.carrier || ''} {detail.tracking_number || ''}</Muted>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, marginTop: SPACE.xs }}>
+                <Icon name="orders" size={FONT.body} color={c.muted} />
+                <Muted>{detail.carrier || ''} {detail.tracking_number || ''}</Muted>
+              </View>
             )}
 
             <Text style={{ color: c.accent2, fontSize: FONT.micro, fontWeight: '800', letterSpacing: 2, marginTop: SPACE.xxl, marginBottom: SPACE.sm }}>STATUS TIMELINE</Text>

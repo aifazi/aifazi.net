@@ -1,13 +1,15 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from 'react'
 import * as SecureStore from 'expo-secure-store'
 import { AppState, useColorScheme } from 'react-native'
-import { THEMES, THEME_IDS, Theme, ThemeId, webThemeToMobile, toggleTheme as toggleThemeId, themeFamily } from './themes'
+import { THEMES, THEME_IDS, Theme, ThemeId, webThemeToMobile, toggleTheme as toggleThemeId } from './themes'
 import { getSiteConfig, SiteConfig } from './lib/siteConfig'
+import { resolveFramework, ResolvedFramework } from './framework'
 
 export type ThemeSource = 'locked' | 'user' | 'os' | 'global' | 'default'
 
 interface ThemeCtx {
   theme: Theme
+  framework: ResolvedFramework
   setTheme: (id: ThemeId) => void
   cycleTheme: () => void
   toggleTheme: () => void
@@ -20,6 +22,7 @@ interface ThemeCtx {
 
 const Ctx = createContext<ThemeCtx>({
   theme: THEMES['cyber-dark'],
+  framework: resolveFramework(THEMES['cyber-dark'], null),
   setTheme: () => {},
   cycleTheme: () => {},
   toggleTheme: () => {},
@@ -122,6 +125,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ThemeCtx>(
     () => ({
       theme: THEMES[id],
+      framework: resolveFramework(THEMES[id], siteConfig),
       setTheme,
       cycleTheme,
       toggleTheme,
@@ -131,7 +135,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       siteConfig,
       reload,
     }),
-    [id, setTheme, cycleTheme, toggleTheme, source, isLocked, siteConfig, reload],
+    [id, siteConfig, setTheme, cycleTheme, toggleTheme, source, isLocked, reload],
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

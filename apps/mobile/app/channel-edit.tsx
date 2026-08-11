@@ -349,9 +349,16 @@ export default function ChannelEditScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Text style={{ color: type === t ? c.onAccent : c.text, fontWeight: '700', fontSize: FONT.body }}>
-                      {t === 'text' ? '💬 Text' : t === 'voice' ? '🔊 Voice' : '📹 Video'}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+                      <Icon
+                        name={t === 'text' ? 'chat' : t === 'voice' ? 'mic' : 'video'}
+                        size={FONT.body}
+                        color={type === t ? c.onAccent : c.text}
+                      />
+                      <Text style={{ color: type === t ? c.onAccent : c.text, fontWeight: '700', fontSize: FONT.body }}>
+                        {t === 'text' ? 'Text' : t === 'voice' ? 'Voice' : 'Video'}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -453,7 +460,10 @@ export default function ChannelEditScreen() {
                         onPress={() => setAllowedUsers((prev) => prev.filter((x) => x !== u))}
                         style={{ paddingVertical: SPACE.sm, paddingHorizontal: SPACE.lg, borderRadius: 14, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg2 }}
                       >
-                        <Text style={{ color: c.text, fontWeight: '700', fontSize: FONT.md }}>✕ {u}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+                          <Icon name="close" size={FONT.md} color={c.text} />
+                          <Text style={{ color: c.text, fontWeight: '700', fontSize: FONT.md }}>{u}</Text>
+                        </View>
                       </TouchableOpacity>
                     ))}
                   </View>

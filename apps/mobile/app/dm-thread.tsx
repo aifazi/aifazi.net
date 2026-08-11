@@ -106,9 +106,12 @@ function MessageRow(props: RowProps) {
             ]}
           >
             {replyContent ? (
-              <Text style={{ color: c.muted, fontSize: FONT.sm, fontStyle: 'italic', marginBottom: SPACE.xs }}>
-                ↪ {decryptIfEncrypted(replyContent, threadKey)}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, marginBottom: SPACE.xs }}>
+                <Icon name="reply" size={FONT.sm} color={c.muted} />
+                <Text style={{ color: c.muted, fontSize: FONT.sm, fontStyle: 'italic', flexShrink: 1 }}>
+                  {decryptIfEncrypted(replyContent, threadKey)}
+                </Text>
+              </View>
             ) : null}
             {isImage ? (
               <ExpoImage
@@ -125,7 +128,10 @@ function MessageRow(props: RowProps) {
               </Text>
             )}
             {item.type === 'file' && item.file_name ? (
-              <Text style={{ marginTop: SPACE.sm, fontSize: FONT.body, color: mine ? mineText : c.text }}>📎 {item.file_name}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, marginTop: SPACE.sm }}>
+                <Icon name="attach" size={FONT.body} color={mine ? mineText : c.text} />
+                <Text style={{ fontSize: FONT.body, color: mine ? mineText : c.text }}>{item.file_name}</Text>
+              </View>
             ) : null}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: SPACE.sm, marginTop: SPACE.xs }}>
               <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs }}>
@@ -495,10 +501,10 @@ export default function DMThreadScreen() {
           }}
           hitSlop={10}
         >
-          <Text style={{ fontSize: FONT.section }}>📞</Text>
+          <Icon name="phone" size={FONT.section} color={c.text} />
         </TouchableOpacity>
         <TouchableOpacity onPress={openMenu} hitSlop={10}>
-          <Text style={{ color: c.muted, fontSize: FONT.lead, marginLeft: SPACE.md }}>⋯</Text>
+          <Icon name="more" size={FONT.lead} color={c.muted} style={{ marginLeft: SPACE.md }} />
         </TouchableOpacity>
       </View>
 
@@ -538,7 +544,10 @@ export default function DMThreadScreen() {
                 </View>
               ) : messages.length >= PAGE_SIZE ? (
                 <TouchableOpacity onPress={loadOlder} style={{ paddingVertical: SPACE.lg, alignItems: 'center' }}>
-                  <Text style={{ color: c.accent, fontWeight: '700', fontSize: FONT.md }}>↑ Load older</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+                    <Icon name="up" size={FONT.md} color={c.accent} />
+                    <Text style={{ color: c.accent, fontWeight: '700', fontSize: FONT.md }}>Load older</Text>
+                  </View>
                 </TouchableOpacity>
               ) : null
             }
@@ -578,7 +587,10 @@ export default function DMThreadScreen() {
                   />
                   {seen ? (
                     <View style={{ alignItems: 'flex-end', marginTop: -4, marginBottom: SPACE.xs }}>
-                      <Text style={{ color: c.muted, fontSize: FONT.xs }}>✓ seen</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs }}>
+                        <Icon name="check" size={FONT.xs + 1} color={c.muted} />
+                        <Text style={{ color: c.muted, fontSize: FONT.xs }}>seen</Text>
+                      </View>
                     </View>
                   ) : null}
                 </>
@@ -599,19 +611,20 @@ export default function DMThreadScreen() {
         ) : null}
         {(editing || replying) ? (
           <View style={{ position: 'absolute', top: -42, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.xl, paddingVertical: SPACE.sm, backgroundColor: c.bg3, borderTopWidth: 1, borderTopColor: c.border }}>
+            <Icon name={editing ? 'edit' : 'reply'} size={FONT.sm} color={c.accent2} />
             <Text style={{ flex: 1, color: c.muted, fontSize: FONT.sm, fontStyle: 'italic' }} numberOfLines={1}>
-              {editing ? `✏️ Editing: ${decryptIfEncrypted(editing.content ?? '', threadKey)}` : replying ? `↪ Replying to ${replying?.sender}: ${decryptIfEncrypted(replying?.content ?? '', threadKey)}` : ''}
+              {editing ? `Editing: ${decryptIfEncrypted(editing.content ?? '', threadKey)}` : `Replying to ${replying?.sender}: ${decryptIfEncrypted(replying?.content ?? '', threadKey)}`}
             </Text>
             <TouchableOpacity onPress={() => { cancelEdit(); setReplying(null) }} hitSlop={8}>
-              <Text style={{ color: c.danger, fontSize: FONT.md, fontWeight: '700' }}>✕</Text>
+              <Icon name="close" size={FONT.md} color={c.danger} />
             </TouchableOpacity>
           </View>
         ) : null}
         <TouchableOpacity onPress={pickImage} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
-          <Text style={{ fontSize: FONT.lead, opacity: uploading ? 0.4 : 1 }}>{uploading ? '⏳' : '🖼️'}</Text>
+          <Icon name="image" size={FONT.lead} color={c.text} style={uploading ? { opacity: 0.4 } : undefined} />
         </TouchableOpacity>
         <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
-          <Text style={{ fontSize: FONT.lead, opacity: uploading ? 0.4 : 1 }}>📎</Text>
+          <Icon name="attach" size={FONT.lead} color={c.text} style={uploading ? { opacity: 0.4 } : undefined} />
         </TouchableOpacity>
         <VoiceRecorder onRecorded={uploadVoice} onError={(m) => setErr(m)} />
         <TextInput

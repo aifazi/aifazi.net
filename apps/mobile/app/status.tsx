@@ -92,7 +92,7 @@ export default function StatusScreen() {
           <Reveal dir="up" delay={120} duration={520}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, marginBottom: SPACE.huge }}>
             <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: color }} />
-            <Text style={{ color, fontSize: 17, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 }}>{overall}</Text>
+            <Text style={{ color, fontSize: FONT.lead, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 }}>{overall}</Text>
           </View>
           </Reveal>
 
@@ -121,16 +121,19 @@ export default function StatusScreen() {
           {(data.incidents ?? []).length > 0 ? (
             <>
               <Reveal dir="up" delay={200} duration={520}>
-              <Text style={{ color: c.muted, fontSize: FONT.xs, letterSpacing: 3, marginTop: SPACE.xl, marginBottom: SPACE.lg, fontWeight: '800' }}>
-                ⚠ RECENT INCIDENTS
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginTop: SPACE.xl, marginBottom: SPACE.lg }}>
+              <Icon name="alert" size={FONT.md} color={c.warning} />
+              <Text style={{ color: c.muted, fontSize: FONT.xs, letterSpacing: 3, fontWeight: '800' }}>
+                RECENT INCIDENTS
               </Text>
+              </View>
               </Reveal>
               {(data.incidents ?? []).map((inc, i) => (
                 <Reveal key={i} dir="scale" delay={stagger(i)} duration={420}>
                 <TouchableOpacity onPress={() => setDetail(inc)} activeOpacity={0.7}>
                   <Card style={{ padding: SPACE.xxl, marginBottom: SPACE.lg }}>
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: SPACE.lg }}>
-                      <Text style={{ fontSize: FONT.base }}>{inc.ongoing ? '🔴' : '🟠'}</Text>
+                      <View style={{ width: 10, height: 10, borderRadius: 5, marginTop: 4, backgroundColor: inc.ongoing ? c.danger : c.warning }} />
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
                           <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700', flex: 1 }} numberOfLines={1}>
@@ -157,10 +160,10 @@ export default function StatusScreen() {
       )}
 
       {detail ? (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', padding: SPACE.xxxl }}>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: c.overlay, padding: SPACE.xxxl, justifyContent: 'center' }}>
           <Card>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginBottom: SPACE.md }}>
-              <Text style={{ fontSize: FONT.section }}>{detail.ongoing ? '🔴' : '🟠'}</Text>
+              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: detail.ongoing ? c.danger : c.warning }} />
               <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '800', flex: 1 }} numberOfLines={2}>
                 {detail.label || 'Incident'}
               </Text>

@@ -14,6 +14,7 @@ import {
 } from 'react-native'
 import VideoStream from '@/src/components/VideoStream'
 import { useLiveKitCall } from '@/src/lib/livekit'
+import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -21,6 +22,7 @@ import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
 import { useOverlay } from '@/src/components/overlay'
 import { Loader } from '@/src/components/Loader'
 import { GlowPulse, Reveal } from '@/src/components/motion'
+import { withAlpha, contrastText } from '@/src/lib/color'
 
 function Tile({
   label,
@@ -137,6 +139,7 @@ export default function CallScreen() {
   const [chatSending, setChatSending] = useState(false)
   const [roomKey, setRoomKey] = useState('')
   const chatPoll = useRef<ReturnType<typeof setInterval> | null>(null)
+  const chatScrollRef = useRef<ScrollView>(null)
 
   const [pttActive, setPttActive] = useState(false)
 
@@ -260,10 +263,12 @@ export default function CallScreen() {
     return (
       <View style={[styles.center, { backgroundColor: c.bg }]}>
         <Reveal dir="scale" duration={420}>
-          <Text style={{ fontSize: 40 }}>⚠️</Text>
-          <Text style={{ color: c.danger, marginTop: SPACE.lg, textAlign: 'center' }}>{error || 'Call ended'}</Text>
+          <View style={{ alignItems: 'center' }}>
+            <Icon name="alert" size={40} color={c.danger} />
+            <Text style={{ color: c.danger, marginTop: SPACE.lg, textAlign: 'center' }}>{error || 'Call ended'}</Text>
+          </View>
           <TouchableOpacity onPress={leave} style={[styles.ctl, { backgroundColor: c.danger, marginTop: SPACE.giant }]}>
-            <Text style={{ color: '#fff', fontWeight: '800' }}>LEAVE</Text>
+            <Text style={{ color: contrastText(c.danger), fontWeight: '800' }}>LEAVE</Text>
           </TouchableOpacity>
         </Reveal>
       </View>
@@ -280,10 +285,10 @@ export default function CallScreen() {
           {count} participant{count !== 1 ? 's' : ''}
         </Text>
         <TouchableOpacity onPress={() => setChatOpen((v) => !v)} hitSlop={10} style={{ marginLeft: SPACE.lg }}>
-          <Text style={{ fontSize: FONT.section, opacity: chatOpen ? 1 : 0.55 }}>💬</Text>
+          <Icon name="chat" size={FONT.section} color={c.text} style={{ opacity: chatOpen ? 1 : 0.55 }} />
         </TouchableOpacity>
         <TouchableOpacity onPress={openDevices} hitSlop={10} style={{ marginLeft: SPACE.md }}>
-          <Text style={{ fontSize: FONT.section, opacity: 0.8 }}>⚙️</Text>
+          <Icon name="settings" size={FONT.section} color={c.text} style={{ opacity: 0.8 }} />
         </TouchableOpacity>
       </View>
 
@@ -293,8 +298,8 @@ export default function CallScreen() {
             <ScrollView
               style={{ flex: 1 }}
               contentContainerStyle={{ padding: SPACE.lg, paddingBottom: SPACE.xl }}
-              ref={(ref) => ref?.scrollToEnd?.({ animated: false })}
-              onContentSizeChange={() => {}}
+              ref={chatScrollRef}
+              onContentSizeChange={() => chatScrollRef.current?.scrollToEnd({ animated: true })}
             >
               {chatMsgs.length === 0 ? (
                 <Text style={{ color: c.muted, fontSize: FONT.md, textAlign: 'center', marginTop: SPACE.giant }}>
@@ -323,7 +328,7 @@ export default function CallScreen() {
                         <Text style={{ color: mine ? c.onAccent : c.text, fontSize: FONT.body, lineHeight: 18 }}>
                           {body || (m.content?.startsWith('ENC:') ? '(encrypted)' : m.content)}
                         </Text>
-                        <Text style={{ color: mine ? 'rgba(0,16,24,0.6)' : c.muted, fontSize: FONT.micro, marginTop: SPACE.xxs }}>
+                        <Text style={{ color: mine ? withAlpha(contrastText(c.accent2), 0.6) : c.muted, fontSize: FONT.micro, marginTop: SPACE.xxs }}>
                           {fmtTime(m.created_at)}
                         </Text>
                       </View>
@@ -362,7 +367,10 @@ export default function CallScreen() {
         <View style={[styles.screen, { borderBottomColor: c.border }]}>
           <VideoStream streamURL={screenUrl} objectFit="contain" style={StyleSheet.absoluteFill} />
           <View style={styles.screenTag}>
-            <Text style={{ color: '#fff', fontSize: FONT.micro }}>🖥 Screen Share</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs }}>
+              <Icon name="video" size={FONT.md} color="#fff" />
+              <Text style={{ color: '#fff', fontSize: FONT.micro }}>Screen Share</Text>
+            </View>
           </View>
         </View>
       ) : null}
@@ -404,25 +412,25 @@ export default function CallScreen() {
           activeOpacity={0.85}
           style={[styles.ctl, { backgroundColor: pttActive ? c.accent : 'rgba(255,255,255,0.12)' }]}
         >
-          <Text style={{ fontSize: FONT.section }}>{pttActive ? '🎙️' : '🎤'}</Text>
+          <Icon name="mic" size={FONT.section} color={pttActive ? contrastText(c.accent) : '#fff'} />
         </TouchableOpacity>
         </GlowPulse>
         <TouchableOpacity onPress={toggleMute} style={[styles.ctl, { backgroundColor: muted ? c.danger : 'rgba(255,255,255,0.12)' }]}>
-          <Text style={{ fontSize: FONT.section }}>{muted ? '🔇' : '🔊'}</Text>
+          <Icon name={muted ? 'mic-off' : 'mic'} size={FONT.section} color={muted ? contrastText(c.danger) : '#fff'} />
         </TouchableOpacity>
         <TouchableOpacity onPress={toggleCam} style={[styles.ctl, { backgroundColor: camOff ? c.danger : 'rgba(255,255,255,0.12)' }]}>
-          <Text style={{ fontSize: FONT.section }}>{camOff ? '📷' : '📸'}</Text>
+          <Icon name={camOff ? 'video-off' : 'camera'} size={FONT.section} color={camOff ? contrastText(c.danger) : '#fff'} />
         </TouchableOpacity>
         {canScreenShare && (
           <TouchableOpacity
             onPress={toggleScreen}
             style={[styles.ctl, { backgroundColor: screenActive ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.12)' }]}
           >
-            <Text style={{ fontSize: FONT.section }}>🖥</Text>
+            <Icon name="video" size={FONT.section} color={screenActive ? '#22c55e' : '#fff'} />
           </TouchableOpacity>
         )}
         <TouchableOpacity onPress={leave} style={[styles.ctl, { backgroundColor: c.danger }]}>
-          <Text style={{ fontSize: FONT.section }}>❌</Text>
+          <Icon name="close" size={FONT.section} color={contrastText(c.danger)} />
         </TouchableOpacity>
       </View>
     </View>

@@ -6,6 +6,7 @@ import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { Icon } from '@/src/components/icon'
+import type { IconName } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -23,7 +24,7 @@ interface Stats {
 interface Section {
   key: string
   label: string
-  icon: string
+  icon: IconName
   route: Href
   sub: string
 }
@@ -52,11 +53,11 @@ export default function ChatAdminScreen() {
   }, [isStaff, load])
 
   const sections: Section[] = [
-    { key: 'members', label: 'Members', icon: '👥', route: '/chat-admin-members' as Href, sub: 'All memberships across channels' },
-    { key: 'mutes', label: 'Mutes', icon: '🔇', route: '/chat-admin-mutes' as Href, sub: 'Active mutes, lift from anywhere' },
-    { key: 'bans', label: 'Bans', icon: '🚫', route: '/chat-admin-bans' as Href, sub: 'All bans + ban/unban users' },
-    { key: 'dm', label: 'Direct messages', icon: '📨', route: '/chat-admin-dm' as Href, sub: 'All requests, threads, blocks' },
-    { key: 'recent', label: 'Recent messages', icon: '🕘', route: '/chat-admin-recent' as Href, sub: 'Latest activity across every channel' },
+    { key: 'members', label: 'Members', icon: 'profile', route: '/chat-admin-members' as Href, sub: 'All memberships across channels' },
+    { key: 'mutes', label: 'Mutes', icon: 'mic-off', route: '/chat-admin-mutes' as Href, sub: 'Active mutes, lift from anywhere' },
+    { key: 'bans', label: 'Bans', icon: 'close', route: '/chat-admin-bans' as Href, sub: 'All bans + ban/unban users' },
+    { key: 'dm', label: 'Direct messages', icon: 'chat', route: '/chat-admin-dm' as Href, sub: 'All requests, threads, blocks' },
+    { key: 'recent', label: 'Recent messages', icon: 'more', route: '/chat-admin-recent' as Href, sub: 'Latest activity across every channel' },
   ]
 
   const Stat = ({ label, value, color }: { label: string; value: number | string; color: string }) => (
@@ -127,7 +128,7 @@ export default function ChatAdminScreen() {
             <TouchableOpacity key={s.key} onPress={() => router.push(s.route)}>
               <Card>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xl }}>
-                  <Text style={{ fontSize: FONT.h2 }}>{s.icon}</Text>
+                  <Icon name={s.icon} size={FONT.h2} color={c.text} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }}>{s.label}</Text>
                     <Muted>{s.sub}</Muted>

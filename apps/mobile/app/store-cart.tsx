@@ -141,7 +141,7 @@ export default function StoreCartScreen() {
         </View>
       ) : cart.items.length === 0 ? (
         <View style={{ padding: SPACE.jumbo, alignItems: 'center', gap: SPACE.xxl }}>
-          <Text style={{ fontSize: 40 }}>🛒</Text>
+          <Icon name="store" size={40} color={c.muted} />
           <Muted>Your cart is empty.</Muted>
           <Btn title="Browse the store" onPress={() => router.replace('/store')} />
         </View>
@@ -159,7 +159,7 @@ export default function StoreCartScreen() {
                   <ExpoImage source={{ uri: img }} style={{ width: 56, height: 56, borderRadius: radius }} contentFit="cover" />
                   ) : (
                   <View style={{ width: 56, height: 56, borderRadius: radius, backgroundColor: c.bg3, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: FONT.h2 }}>🛍️</Text>
+                    <Icon name="store" size={26} color={c.muted} />
                   </View>
                 )}
                 <View style={{ flex: 1 }}>
@@ -168,11 +168,11 @@ export default function StoreCartScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, marginTop: SPACE.md }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
                       <TouchableOpacity onPress={() => changeQty(item, -1)} disabled={busy || item.quantity <= 1} hitSlop={8}>
-                        <Text style={{ color: item.quantity <= 1 ? c.muted : c.text, fontSize: FONT.section }}>−</Text>
+                        <Icon name="close" size={18} color={item.quantity <= 1 ? c.muted : c.text} />
                       </TouchableOpacity>
                       <Text style={{ color: c.text, fontSize: FONT.body, fontFamily: theme.mono ? 'monospace' : undefined }}>{item.quantity}</Text>
                       <TouchableOpacity onPress={() => changeQty(item, 1)} disabled={busy} hitSlop={8}>
-                        <Text style={{ color: c.text, fontSize: FONT.section }}>+</Text>
+                        <Icon name="plus" size={18} color={c.text} />
                       </TouchableOpacity>
                     </View>
                     <TouchableOpacity onPress={() => remove(item)} hitSlop={8}>

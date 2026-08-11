@@ -288,9 +288,12 @@ export default function HomeScreen() {
                     <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }} numberOfLines={1}>
                       {t.category?.icon ? `${t.category.icon} ` : ''}{t.title}
                     </Text>
-                    <Text style={{ color: c.muted, fontSize: FONT.sm, marginTop: SPACE.xxs }}>
-                      {t.author?.username || '—'} · 💬 {t.replyCount ?? 0}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: SPACE.xxs }}>
+                      <Icon name="chat" size={12} color={c.muted} />
+                      <Text style={{ color: c.muted, fontSize: FONT.sm }}>
+                        {t.author?.username || '—'} · {t.replyCount ?? 0}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>

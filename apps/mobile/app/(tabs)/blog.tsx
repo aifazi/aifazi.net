@@ -8,6 +8,7 @@ import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { Icon } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
 import { Reveal, stagger } from '@/src/components/motion'
 
@@ -147,7 +148,12 @@ export default function BlogScreen() {
                 <Muted>{item.author_name ?? 'Admin'}</Muted>
                 <Muted>{fmtDate(item.created_at)}</Muted>
                 {item.category ? <Muted>{item.category}</Muted> : null}
-                {item.views ? <Muted>👁 {item.views}</Muted> : null}
+                {item.views ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Icon name="eye" size={12} color={c.muted} />
+                    <Muted>{item.views}</Muted>
+                  </View>
+                ) : null}
               </View>
             </Card>
           </TouchableOpacity>

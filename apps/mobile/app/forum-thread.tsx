@@ -175,7 +175,7 @@ export default function ForumThreadScreen() {
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>Thread</Text>
         {isAuthed ? (
           <TouchableOpacity onPress={toggleLike} hitSlop={10}>
-            <Text style={{ fontSize: FONT.section, opacity: liked ? 1 : 0.6 }}>❤️</Text>
+            <Icon name="heart" size={FONT.section} color={c.text} style={{ opacity: liked ? 1 : 0.6 }} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -184,13 +184,22 @@ export default function ForumThreadScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: SPACE.xxxl, paddingBottom: SPACE.giant }}>
           <Reveal dir="up" delay={120} duration={520}>
-          <Text style={{ color: c.text, fontSize: 19, fontWeight: '900', lineHeight: 26 }}>
-            {thread.pinned ? '📌 ' : ''}{thread.locked ? '🔒 ' : ''}{thread.title}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            {thread.pinned ? <Icon name="pin" size={16} color={c.text2} /> : null}
+            {thread.locked ? <Icon name="lock" size={16} color={c.text2} /> : null}
+            <Text style={{ color: c.text, fontSize: 19, fontWeight: '900', lineHeight: 26, flexShrink: 1 }}>
+              {thread.title}
+            </Text>
+          </View>
           <View style={{ flexDirection: 'row', marginTop: SPACE.md, gap: SPACE.lg }}>
             <Muted>{author.username ?? 'anonymous'}</Muted>
             {thread.category?.name ? <Muted>{thread.category.icon ?? ''} {thread.category.name}</Muted> : null}
-            {thread.views ? <Muted>👁 {thread.views}</Muted> : null}
+            {thread.views ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Icon name="eye" size={12} color={c.muted} />
+                <Muted>{thread.views}</Muted>
+              </View>
+            ) : null}
           </View>
           </Reveal>
 
