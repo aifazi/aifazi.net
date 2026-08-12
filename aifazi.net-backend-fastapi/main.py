@@ -6,9 +6,7 @@ import asyncio
 import os
 import time
 import hmac
-import ipaddress
 import logging
-from collections import defaultdict
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -17,13 +15,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+if os.getenv("ENV") == "production" and not os.getenv("PASETO_SECRET"):
+    raise RuntimeError("PASETO_SECRET is required in production. Set it in Railway environment variables.")
+
 dsn = os.getenv("SENTRY_DSN", "")
 if dsn.startswith("https://"):
     sentry_sdk.init(dsn=dsn, traces_sample_rate=0.1,
                     environment=os.getenv("ENV", "production"))
 
-from utils.scheduler import scheduler, set_event_loop
+from utils.rate_limit import check_rate_limit, _ip_is_banned, _refresh_ip_bans, invalidate_ip_bans_cache
 from utils.request_ip import client_ip
+from utils.scheduler import scheduler, set_event_loop
 
 log = logging.getLogger("main")
 
@@ -239,67 +241,6 @@ def _is_allowed_origin(origin: str) -> bool:
         return True
     return any(p.match(origin) for p in _DYNAMIC_PATTERNS)
 
-# ── Rate limit store (in-memory sliding window, per IP) ───────────────────────
-# Uses a TTL-bounded dict to prevent unbounded memory growth under attack.
-# Buckets older than _RL_CLEANUP_INTERVAL seconds are pruned in the background.
-_rl_store: dict[str, list[float]] = defaultdict(list)
-_rl_last_cleanup: float = 0.0
-_RL_CLEANUP_INTERVAL = 300  # prune dead buckets every 5 minutes
-
-# ── IP ban cache (in-memory, TTL-refreshed) ───────────────────────────────────
-# ip_bans rows (single IP or CIDR) are loaded once per TTL window so the hot
-# request path never blocks on a Supabase round-trip. Refreshes are best-effort:
-# a failed refresh keeps serving the previous snapshot.
-_ip_bans_cache: dict = {"networks": [], "fetched_at": 0.0}
-_IP_BANS_TTL = 60.0
-
-def _refresh_ip_bans(force: bool = False) -> None:
-    now = time.monotonic()
-    if not force and now - _ip_bans_cache["fetched_at"] < _IP_BANS_TTL:
-        return
-    try:
-        from database import supabase as _sb
-        res = _sb.table("ip_bans").select("ip").execute()
-        nets = []
-        for row in (res.data or []):
-            ip = (row.get("ip") or "").strip()
-            if not ip:
-                continue
-            try:
-                nets.append(ipaddress.ip_network(ip, strict=False))
-            except ValueError:
-                try:
-                    nets.append(ipaddress.ip_network(f"{ip}/32", strict=False))
-                except ValueError:
-                    continue
-        _ip_bans_cache["networks"] = nets
-        _ip_bans_cache["fetched_at"] = now
-    except Exception:
-        _ip_bans_cache["fetched_at"] = now  # don't retry hot-loop on DB outage
-
-def _ip_is_banned(ip: str) -> bool:
-    try:
-        addr = ipaddress.ip_address(ip.split("%")[0])
-    except ValueError:
-        return False
-    for net in _ip_bans_cache["networks"]:
-        try:
-            if addr in net:
-                return True
-        except TypeError:
-            continue
-    return False
-
-def _prune_rl_store(now: float) -> None:
-    """Remove expired buckets to prevent memory growth under high unique-IP traffic."""
-    global _rl_last_cleanup
-    if now - _rl_last_cleanup < _RL_CLEANUP_INTERVAL:
-        return
-    _rl_last_cleanup = now
-    max_window = max(w for _, _, w in _RL_RULES) if _RL_RULES else _RL_DEFAULT[1]
-    dead = [k for k, ts in _rl_store.items() if not ts or now - ts[-1] > max_window]
-    for k in dead:
-        del _rl_store[k]
 
 # (max_calls, window_seconds) per path suffix
 _RL_RULES: list[tuple[str, int, int]] = [
@@ -397,8 +338,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # Cloudflare's CF-Connecting-IP (proved by CF-Ray) or the socket peer
         # is trusted — see utils/request_ip.py.
         ip = client_ip(request)
-        now  = time.monotonic()
-        _prune_rl_store(now)   # periodic cleanup — prevents memory growth
 
         # ── 2b. IP ban enforcement ─────────────────────────────────────────────
         _refresh_ip_bans()
@@ -409,25 +348,18 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             )
         max_calls, window = _get_limit(path)
         bucket = f"{ip}:{path}"
-        ts = _rl_store.get(bucket, [])
-        ts = [t for t in ts if now - t < window]
-        if len(ts) >= max_calls:
-            _rl_store[bucket] = ts
+        allowed = await check_rate_limit(bucket, max_calls, window)
+        if not allowed:
             return JSONResponse(
                 status_code=429,
                 content={"error": "Too many requests. Please slow down."},
                 headers={"Retry-After": str(window)},
             )
-        ts.append(now)
-        _rl_store[bucket] = ts
 
         # ── 2c. Shared (DB) rate limit for brute-force-sensitive paths ──────
-        # H5 — the in-memory window above is per-instance. On serverless, an
-        # attacker can exceed the intended limit by spraying across instances,
-        # so sensitive paths are ALSO enforced against a single Supabase bucket
-        # via an atomic upsert. Fail-open on DB error (if the DB is down the
-        # auth endpoints themselves are down, and login must never be a worse
-        # DoS than it already is).
+        # Additional Supabase-backed check for sensitive paths as a second layer.
+        # Fail-open on DB error (if the DB is down the auth endpoints themselves
+        # are down, and login must never be a worse DoS than it already is).
         if any(path.endswith(s) for s in _RL_SENSITIVE_SUFFIXES) or any(path.startswith(s) for s in _RL_PREFIXES):
             try:
                 from database import supabase as _sb

@@ -11,37 +11,21 @@ Usage in routers:
 
 All tokens created through this module use PASETO v4 format (v4.local.*).
 The algorithm parameter is accepted but ignored (PASETO v4 always uses XChaCha20-Poly1305).
+Requires: cryptography>=42.0 (XChaCha20-Poly1305)
 """
 import os
 import time
 import json
 import base64
 import hashlib
-import hmac as hmac_mod
 import logging
 from typing import Optional, Union
 from datetime import datetime, timezone
 
+from cryptography.hazmat.primitives.ciphers.aead import XChaCha20Poly1305
+from paseto_token import _derive_key
+
 log = logging.getLogger("jwt_compat")
-
-# Single source of truth for key derivation. Both jwt_compat (used by routers)
-# and paseto_token (used by dependencies) MUST derive the same 32-byte key from
-# the same secret, or tokens issued at login fail to decode at the auth gate.
-try:
-    from paseto_token import _derive_key
-except Exception:
-    _derive_key = None
-
-try:
-    from cryptography.hazmat.primitives.ciphers.aead import XChaCha20Poly1305
-    HAS_XCHACHA = True
-except ImportError:
-    log.warning(
-        "cryptography>=42.0 not available (XChaCha20-Poly1305 missing). "
-        "Falling back to HMAC-SHA256 tokens. "
-        "Install: pip install 'cryptography>=42.0'."
-    )
-    HAS_XCHACHA = False
 
 _TOKEN_VERSION = "v4"
 _TOKEN_PURPOSE = "local"
@@ -84,7 +68,6 @@ class _JWTCompat:
             PASETO v4 local token string.
         """
         secret = self._resolve_key(key)
-        raw_key = key.encode("utf-8") if isinstance(key, str) else key
         data = {
             k: v for k, v in payload.items()
             if k not in ("iat", "exp", "purpose")
@@ -100,18 +83,10 @@ class _JWTCompat:
         payload_bytes = json.dumps(data, separators=(",", ":"), sort_keys=True).encode()
 
         xcha = self._get_xcha(secret)
-        if xcha is not None:
-            nonce = os.urandom(_NONCE_SIZE)
-            ciphertext = xcha.encrypt(nonce, payload_bytes, None)
-            encrypted = nonce + ciphertext
-            return f"{_HEADER_B64}.{self._b64url_encode(encrypted)}"
-
-        # HMAC-SHA256 fallback
-        # Use raw key (not derived) to match paseto_token.decode_token() HMAC verification
-        payload_b64 = self._b64url_encode(payload_bytes)
-        msg = f"{_HEADER_B64}.{payload_b64}"
-        sig = hmac_mod.new(raw_key, msg.encode(), hashlib.sha256).digest()
-        return f"{msg}.{self._b64url_encode(sig)}"
+        nonce = os.urandom(_NONCE_SIZE)
+        ciphertext = xcha.encrypt(nonce, payload_bytes, None)
+        encrypted = nonce + ciphertext
+        return f"{_HEADER_B64}.{self._b64url_encode(encrypted)}"
 
     def decode(
         self,
@@ -145,20 +120,15 @@ class _JWTCompat:
             ExpiredSignatureError: If token has expired.
         """
         secret = self._resolve_key(key)
-        raw_key = key.encode("utf-8") if isinstance(key, str) else key
         parts = token.split(".")
 
-        if len(parts) == 2:
-            return self._decode_xcha(parts, secret, leeway)
-        elif len(parts) == 3:
-            return self._decode_hmac(parts, raw_key, leeway)
-        else:
-            raise JWTError("Invalid token format")
+        if len(parts) != 2:
+            raise JWTError("Invalid token format: expected PASETO v4.local (2 parts)")
+
+        return self._decode_xcha(parts, secret, leeway)
 
     def _decode_xcha(self, parts: list, secret: bytes, leeway: int) -> dict:
         xcha = self._get_xcha(secret)
-        if xcha is None:
-            raise JWTError("XChaCha20-Poly1305 not available (install cryptography>=42.0)")
         try:
             encrypted = self._b64url_decode(parts[1])
             if len(encrypted) < _NONCE_SIZE + 16:
@@ -172,23 +142,6 @@ class _JWTCompat:
         except (ValueError, TypeError) as e:
             raise JWTError(f"Invalid token: {e}")
 
-    def _decode_hmac(self, parts: list, secret: bytes, leeway: int) -> dict:
-        # M5 — never silently downgrade to HMAC when XChaCha is available.
-        if HAS_XCHACHA:
-            raise JWTError("HMAC tokens not accepted while XChaCha is available (downgrade attempt?)")
-        msg = f"{parts[0]}.{parts[1]}"
-        expected = hmac_mod.new(secret, msg.encode(), hashlib.sha256).digest()
-        provided = self._b64url_decode(parts[2])
-        if not hmac_mod.compare_digest(expected, provided):
-            raise JWTError("Token signature verification failed")
-        try:
-            payload_bytes = self._b64url_decode(parts[1])
-            data = json.loads(payload_bytes.decode())
-            self._check_expiry(data, leeway)
-            return data
-        except (ValueError, TypeError) as e:
-            raise JWTError(f"Invalid token: {e}")
-
     def _check_expiry(self, data: dict, leeway: int) -> None:
         exp = data.get("exp")
         if exp and time.time() > exp + leeway:
@@ -196,27 +149,21 @@ class _JWTCompat:
 
     def get_unverified_claims(self, token: str) -> dict:
         parts = token.split(".")
-        if len(parts) == 2:
-            try:
-                encrypted = self._b64url_decode(parts[1])
-                if len(encrypted) < _NONCE_SIZE + 16:
-                    return {}
-                nonce = encrypted[:_NONCE_SIZE]
-                ciphertext = encrypted[_NONCE_SIZE:]
-                xcha = self._get_xcha(self._resolve_key(os.environ.get("PASETO_SECRET", os.environ.get("JWT_SECRET", ""))))
-                if xcha is None:
-                    return {}
-                plaintext = xcha.decrypt(nonce, ciphertext, None)
-                return json.loads(plaintext.decode())
-            except Exception:
+        if len(parts) != 2:
+            return {}
+        try:
+            encrypted = self._b64url_decode(parts[1])
+            if len(encrypted) < _NONCE_SIZE + 16:
                 return {}
-        elif len(parts) == 3:
-            try:
-                payload_bytes = self._b64url_decode(parts[1])
-                return json.loads(payload_bytes.decode())
-            except Exception:
+            nonce = encrypted[:_NONCE_SIZE]
+            ciphertext = encrypted[_NONCE_SIZE:]
+            xcha = self._get_xcha(self._resolve_key(os.environ.get("PASETO_SECRET", "")))
+            if xcha is None:
                 return {}
-        return {}
+            plaintext = xcha.decrypt(nonce, ciphertext, None)
+            return json.loads(plaintext.decode())
+        except Exception:
+            return {}
 
     @staticmethod
     def _b64url_encode(data: bytes) -> str:
@@ -232,18 +179,13 @@ class _JWTCompat:
     def _resolve_key(key: Union[str, bytes]) -> bytes:
         if isinstance(key, bytes):
             return key
-        if _derive_key is not None:
-            return _derive_key(key)
-        raw = key.encode("utf-8")
-        # M6 — never truncate raw secrets to their first 32 bytes; always
-        # expand to the full key size via the KDF (mirrors paseto_token).
-        return hashlib.pbkdf2_hmac("sha256", raw, b"paseto-v4-aifazi", 100000, _KEY_SIZE)
+        return _derive_key(key)
 
     @staticmethod
-    def _get_xcha(secret: bytes) -> Optional["XChaCha20Poly1305"]:
-        if HAS_XCHACHA and len(secret) == _KEY_SIZE:
-            return XChaCha20Poly1305(secret)
-        return None
+    def _get_xcha(secret: bytes) -> XChaCha20Poly1305:
+        if len(secret) != _KEY_SIZE:
+            raise ValueError(f"Derived key must be {_KEY_SIZE} bytes, got {len(secret)}")
+        return XChaCha20Poly1305(secret)
 
 
 jwt = _JWTCompat()

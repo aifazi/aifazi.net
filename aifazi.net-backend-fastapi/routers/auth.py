@@ -47,7 +47,7 @@ def _verify(pw: str, hashed: str) -> bool:
 async def _verify_async(pw: str, hashed: str) -> bool:
     return await asyncio.to_thread(_verify, pw, hashed)
 
-SECRET = os.environ.get("PASETO_SECRET", os.environ.get("JWT_SECRET", ""))
+SECRET = os.environ.get("PASETO_SECRET", "")
 ALGO   = "HS256"
 # 020 — how long (seconds) a rotated-out previous-generation refresh token is
 # still accepted, to tolerate a two-tab concurrent-refresh race. Replay of a
@@ -79,6 +79,10 @@ if not COOKIE_DOMAIN:
         parts = _fr_host.split(".")
         if len(parts) >= 2:
             COOKIE_DOMAIN = "." + ".".join(parts[-2:])
+
+# Require explicit COOKIE_DOMAIN in production
+if os.getenv("ENV") == "production" and not os.getenv("COOKIE_DOMAIN"):
+    raise RuntimeError("COOKIE_DOMAIN is required in production. Set it in Railway environment variables (e.g., .aifazi.net).")
 
 # OAuth state helper for C2 (login-CSRF / open-redirect).
 from utils.oauth_state import make_oauth_state, verify_oauth_state_full, _safe_relative_path

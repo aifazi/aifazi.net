@@ -1,8 +1,5 @@
 """
 dependencies.py — PASETO v4 auth middleware
-FIX: JWT_SECRET missing no longer crashes the Lambda at import time.
-     It now raises a clear 503 on the first authenticated request instead,
-     keeping /api/health and public endpoints alive even when misconfigured.
 
 Migrated from JWT (HS256) to PASETO v4 local (XChaCha20-Poly1305):
 - Authenticated encryption (confidentiality + integrity)
@@ -21,11 +18,13 @@ from paseto_token import create_token, decode_token as _paseto_decode
 
 log = logging.getLogger("dependencies")
 
-SECRET = os.environ.get("PASETO_SECRET", os.environ.get("JWT_SECRET", ""))
+SECRET = os.environ.get("PASETO_SECRET", "")
 if not SECRET:
+    if os.getenv("ENV") == "production":
+        raise RuntimeError("PASETO_SECRET is required in production. Set it in Railway environment variables.")
     log.critical(
-        "PASETO_SECRET/JWT_SECRET is not set. All authenticated endpoints will return 503. "
-        "Set PASETO_SECRET in your Vercel environment variables and redeploy."
+        "PASETO_SECRET is not set. All authenticated endpoints will return 503. "
+        "Set PASETO_SECRET in your Railway environment variables and redeploy."
     )
 
 class CookieHTTPBearer(HTTPBearer):
@@ -93,11 +92,6 @@ def _enrich_user(payload: dict) -> dict:
     return payload
 
 def decode_token(token: str) -> dict:
-    if not SECRET:
-        raise HTTPException(
-            status_code=503,
-            detail="Auth unavailable: PASETO_SECRET not configured. Set it in Vercel environment variables."
-        )
     data = _paseto_decode(token, purpose="auth")
     if data is None:
         raise HTTPException(status_code=401, detail="Invalid or expired token")

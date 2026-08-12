@@ -16,7 +16,7 @@ Vercel env vars needed:
   STEAM_API_KEY    — from https://steamcommunity.com/dev/apikey  (optional but recommended)
   FRONTEND_URL     — https://aifazi.net
   API_URL          — https://api.aifazi.net
-  JWT_SECRET       — already set
+  PASETO_SECRET    — already set
 
 FiveM steam_hex:
   steam_hex = "steam:" + hex(int(steam64_id))[2:]   (lowercase, no "0x" prefix)
@@ -61,7 +61,7 @@ MOBILE_AUTH_URL = os.getenv("MOBILE_AUTH_URL", "aifazi:///oauth/callback").rstri
 STEAM_OPENID   = "https://steamcommunity.com/openid/login"
 STEAM_PROF_API = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
 
-JWT_SECRET = os.getenv("PASETO_SECRET", os.getenv("JWT_SECRET", ""))
+JWT_SECRET = os.getenv("PASETO_SECRET", "")
 JWT_ALGO   = "HS256"
 JWT_EXPIRE = 60 * 24 * 7   # 7 days in minutes
 

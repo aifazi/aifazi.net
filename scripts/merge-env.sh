@@ -59,7 +59,7 @@ LOCAL
 # Warn about critical vars that must be present
 echo ""
 echo "Checking critical vars..."
-for req in INTERNAL_API_SECRET PASETO_SECRET JWT_SECRET SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY ADMIN_GATE_SECRET; do
+for req in INTERNAL_API_SECRET PASETO_SECRET SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY ADMIN_GATE_SECRET; do
   if grep -q "^$req=." "$OUT" 2>/dev/null; then
     echo "  ✓ $req"
   else

@@ -149,7 +149,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...          # Service-role key (bypasses RLS)
 
 # Auth
-JWT_SECRET=your-jwt-secret                # Must match the frontend JWT secret
+PASETO_SECRET=your-paseto-secret             # 32+ char random string for PASETO v4 local tokens
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=$2b$12$...                 # bcrypt hash, or plain text for dev
 

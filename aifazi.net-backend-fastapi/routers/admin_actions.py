@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from database import supabase
 from dependencies import require_staff, require_admin
+from utils.rate_limit import invalidate_ip_bans_cache
 
 router = APIRouter()
 
@@ -203,6 +204,7 @@ async def add_ip_ban(body: IpBanBody, _: dict = Depends(require_staff)):
     row = {"ip": body.ip, "reason": body.reason or "", "created_at": datetime.now(timezone.utc).isoformat()}
     try:
         res = supabase.table("ip_bans").insert(row).execute()
+        invalidate_ip_bans_cache()
         return {"message": f"Banned {body.ip}", "ban": _normalize((res.data or [{}])[0])}
     except Exception as e:
         import os, logging
@@ -214,6 +216,7 @@ async def add_ip_ban(body: IpBanBody, _: dict = Depends(require_staff)):
 async def remove_ip_ban(ban_id: str, _: dict = Depends(require_staff)):
     try:
         supabase.table("ip_bans").delete().eq("id", ban_id).execute()
+        invalidate_ip_bans_cache()
     except Exception:
         pass
     return {"message": "IP ban removed"}

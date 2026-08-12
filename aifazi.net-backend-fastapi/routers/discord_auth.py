@@ -12,7 +12,7 @@ Vercel env vars required:
   DISCORD_CLIENT_ID       — from discord.com/developers
   DISCORD_CLIENT_SECRET   — from discord.com/developers
   FRONTEND_URL            — https://aifazi.net
-  JWT_SECRET              — already set
+  PASETO_SECRET           — already set
 """
 
 import os, secrets, httpx, urllib.parse as _urlparse
@@ -36,7 +36,7 @@ FRONTEND_URL          = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("
 API_URL               = os.getenv("API_URL", "https://api.aifazi.net").rstrip("/")
 REDIRECT_URI          = f"{API_URL}/api/discord/callback"
 
-JWT_SECRET  = os.getenv("PASETO_SECRET", os.getenv("JWT_SECRET", ""))
+JWT_SECRET  = os.getenv("PASETO_SECRET", "")
 JWT_ALGO    = "HS256"
 JWT_EXPIRE  = 60 * 24 * 7   # 7 days in minutes
 

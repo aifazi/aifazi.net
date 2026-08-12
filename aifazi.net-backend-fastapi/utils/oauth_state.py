@@ -29,7 +29,7 @@ log = logging.getLogger("oauth_state")
 _OAUTH_STATE_SECRET = (
     os.getenv("OAUTH_STATE_SECRET")
     or os.getenv("PASETO_SECRET")
-    or os.getenv("JWT_SECRET", "")
+    or ""
 )
 _STATE_TTL_S = 600  # 10 minutes — OAuth must round-trip within this window
 
@@ -72,7 +72,7 @@ def make_oauth_state(provider: str, dest: str = "/profile", mobile: bool = False
     """
     if not _OAUTH_STATE_SECRET:
         raise RuntimeError(
-            "OAuth state signing requires OAUTH_STATE_SECRET (or PASETO_SECRET/JWT_SECRET fallback). "
+            "OAuth state signing requires OAUTH_STATE_SECRET (or PASETO_SECRET fallback). "
             "Configure it in Vercel env vars."
         )
     safe_dest = _safe_relative_path(dest)

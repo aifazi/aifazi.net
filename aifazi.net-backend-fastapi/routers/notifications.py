@@ -8,7 +8,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 router = APIRouter()
 bearer = CookieHTTPBearer(auto_error=False)
-SECRET = os.getenv("PASETO_SECRET", os.getenv("JWT_SECRET", "")); ALGO = "HS256"
+SECRET = os.getenv("PASETO_SECRET", ""); ALGO = "HS256"
 
 def get_forum_user(creds: HTTPAuthorizationCredentials | None = Depends(bearer)) -> dict:
     if not creds:

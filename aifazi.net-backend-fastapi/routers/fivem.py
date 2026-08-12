@@ -2596,7 +2596,7 @@ def _jwt_secret() -> str:
     # back to INTERNAL_API_SECRET: that value ships to the Next.js client as the
     # X-Internal-Token header, so anyone who extracts it from the bundle could
     # forge connect tokens. PASETO/JWT secrets stay server-side only.
-    secret = os.environ.get("FIVEM_CONNECT_SECRET") or os.environ.get("PASETO_SECRET") or os.environ.get("JWT_SECRET")
+    secret = os.environ.get("FIVEM_CONNECT_SECRET") or os.environ.get("PASETO_SECRET")
     if not secret:
         raise HTTPException(503, "FIVEM_CONNECT_SECRET or PASETO_SECRET is required")
     return secret

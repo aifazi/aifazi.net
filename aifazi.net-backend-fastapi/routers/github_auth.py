@@ -16,7 +16,7 @@ Vercel env vars needed:
   GITHUB_CLIENT_SECRET   — from github.com/settings/developers
   FRONTEND_URL           — https://aifazi.net
   API_URL                — https://api.aifazi.net
-  JWT_SECRET / PASETO_SECRET — already set
+  PASETO_SECRET          — already set
 
   OAuth app callback URL:  https://api.aifazi.net/api/forum/auth/github/callback
 """

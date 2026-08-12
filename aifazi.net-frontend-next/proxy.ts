@@ -25,8 +25,7 @@ const STORE_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico
 const STATUS_SHARED_PREFIXES = ['/api', '/auth', '/login', '/admin']
 const STATUS_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico'])
 const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET   || ''
-const PASETO_SECRET       = process.env.PASETO_SECRET || process.env.JWT_SECRET || ''
-const JWT_SECRET          = process.env.JWT_SECRET || ''
+const PASETO_SECRET       = process.env.PASETO_SECRET || ''
 // Must match the backend's ADMIN_GATE_SECRET exactly. No fallback to
 // INTERNAL_API_SECRET — the backend deliberately never falls back either,
 // so reusing it here would break admin-gate verification when the keys differ.
@@ -168,7 +167,7 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
 }
 
 async function verifyJwtSignature(token: string): Promise<boolean> {
-  const secret = ADMIN_GATE_SECRET || JWT_SECRET
+  const secret = ADMIN_GATE_SECRET
   if (!secret) return false
   const parts = token.split('.')
   if (parts.length !== 3) return false
