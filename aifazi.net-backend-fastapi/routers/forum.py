@@ -270,10 +270,12 @@ async def get_thread(thread_id: str):
         }
 
     transformed_thread = {**thread, "_id": thread.get("id"), "createdAt": thread.get("created_at",""), "author": _transform_author(thread)}
-    transformed_replies = [
-        {**r, "_id": r.get("id"), "createdAt": r.get("created_at",""), "author": _transform_author(r)}
-        for r in replies
-    ]
+    transformed_thread.pop("ip", None)
+    transformed_replies = []
+    for r in replies:
+        clean = {**r, "_id": r.get("id"), "createdAt": r.get("created_at",""), "author": _transform_author(r)}
+        clean.pop("ip", None)
+        transformed_replies.append(clean)
     return {"thread": transformed_thread, "replies": transformed_replies}
 
 @router.post("/threads")

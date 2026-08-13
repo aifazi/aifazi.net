@@ -194,7 +194,10 @@ async def refund_order(order_id: str, staff: dict = Depends(REFUND)):
     if payment_intent_id:
         try:
             from routers.store import _stripe_client
-            _stripe_client().Refund.create(payment_intent=payment_intent_id)
+            _stripe_client().Refund.create(
+                payment_intent=payment_intent_id,
+                idempotency_key=f"refund_{order_id}",
+            )
         except Exception as exc:
             try:
                 supabase.table("store_orders").update({"status": "paid", "updated_at": now}).eq("id", order_id).execute()

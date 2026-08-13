@@ -625,6 +625,8 @@ async def get_messages(
         q = q.lt("created_at", before)
     res = q.execute()
     rows = list(reversed(res.data or []))
+    for row in rows:
+        row.pop("ip", None)
     if not before:
         _set_cached_history(room_id, rows)
         _mark_room_read(room_id, user)

@@ -170,6 +170,11 @@ def _request_permission(path: str, method: str) -> tuple[str, str] | None:
         ("/audit", "system.audit"),
         ("/banners", "system.announcements"),
         ("/settings", "system.settings"),
+        ("/site-settings", "system.settings"),
+        ("/mobile", "system.settings"),
+        ("/monitor", "system.monitor"),
+        ("/store/admin", "store"),
+        ("/store", "store"),
         ("/helpdesk", "support.helpdesk"),
         ("/seo", "dev.seo"),
         ("/network", "dev.network"),
@@ -194,6 +199,11 @@ def require_staff(request: Request, user: dict = Depends(get_current_user)) -> d
         module, action = needed
         if not has_permission(merged, module, action):
             raise HTTPException(status_code=403, detail=f"Missing permission: {module}.{action}")
+    elif needed is None:
+        # Fail closed for admin/monitor surfaces that have no explicit rule.
+        path = str(request.url.path)
+        if path.startswith("/api/admin/") or path.startswith("/api/monitor") or path.startswith("/api/store/admin"):
+            raise HTTPException(status_code=403, detail="Missing permission for this admin route")
     return merged
 
 def require_roles(*roles: str):

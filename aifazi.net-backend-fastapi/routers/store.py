@@ -447,7 +447,7 @@ async def _upsert_subscription(sub: dict, user_id: str | None = None) -> None:
     try:
         supabase.table("user_subscriptions").upsert(payload, on_conflict="stripe_subscription_id").execute()
     except Exception as e:
-        logger.error("upsert_subscription failed for %s: %s", sub_id, e)
+        log.error("upsert_subscription failed for %s: %s", sub_id, e)
 
 
 async def _handle_checkout_completed(session: dict) -> None:

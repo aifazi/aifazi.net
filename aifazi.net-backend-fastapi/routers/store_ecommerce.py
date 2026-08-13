@@ -654,6 +654,39 @@ def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_user)):
             "line_total_cents": item["unit_price_cents"] * qty,
         }).execute()
 
+    # Reserve inventory atomically BEFORE handing the customer to Stripe. The
+    # pre-payment validation above is a read-only hint; the reservation is the
+    # real guard — it decrements the quant row only if enough is on hand and
+    # records the hold. Two concurrent checkouts can no longer both pass for the
+    # last unit. If the session later expires or payment fails, the webhook
+    # releases the holds (see release_stock_reservations).
+    try:
+        from routers.store_inventory import default_location_id
+        loc = default_location_id()
+        if loc:
+            for item in cart["items"]:
+                prod = item["product"]
+                if not prod.get("track_inventory", True):
+                    continue
+                qty = item["quantity"]
+                res = supabase.rpc("reserve_quant", {
+                    "p_order_id": order_row["id"],
+                    "p_product_id": prod["id"],
+                    "p_variant_id": item.get("variant_id"),
+                    "p_location_id": loc,
+                    "p_qty": qty,
+                }).execute()
+                if res.data is None:
+                    raise HTTPException(400, f"Only limited stock of {prod['name']} available")
+    except HTTPException:
+        # Partially-reserved items must be returned before failing the checkout,
+        # otherwise stock from earlier items in the loop stays held forever.
+        _release_reservations(order_row["id"])
+        supabase.table("store_orders").update({"status": "cancelled"}).eq("id", order_row["id"]).execute()
+        raise
+    except Exception as exc:
+        log.warning("stock reservation failed for %s: %s", order_row["id"], exc)
+
     success_url = body.success_url or f"{FRONTEND_URL}/store/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url  = body.cancel_url  or f"{FRONTEND_URL}/store"
 
@@ -673,6 +706,7 @@ def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_user)):
         )
     except Exception as exc:
         log.error("product checkout create failed: %s", exc)
+        _release_reservations(order_row["id"])
         supabase.table("store_orders").update({"status": "cancelled"}).eq("id", order_row["id"]).execute()
         raise HTTPException(502, f"Stripe checkout failed: {exc}")
 
@@ -987,8 +1021,35 @@ async def product_order_webhook(request: Request):
                                     risk_level=outcome.get("risk_level"),
                                     risk_score=outcome.get("risk_score"),
                                     paid_amount_cents=int(pi.get("amount") or 0))
+    elif event.get("type") in ("checkout.session.expired", "payment_intent.payment_failed",
+                               "checkout.session.async_payment_failed"):
+        # The customer never paid (or payment failed). Return any stock we
+        # reserved at checkout and mark the order cancelled. Never refund —
+        # nothing was charged.
+        obj = event.get("data", {}).get("object", {})
+        meta = obj.get("metadata") or {}
+        order_id = meta.get("order_id") or ""
+        if not order_id:
+            pi_id = obj.get("payment_intent") or (obj.get("id") or "")
+            if pi_id:
+                q = supabase.table("store_orders").select("id").eq("payment_intent_id", pi_id).limit(1).execute()
+                if q.data:
+                    order_id = q.data[0]["id"]
+        if order_id:
+            _release_reservations(order_id)
+            supabase.table("store_orders").update({"status": "cancelled", "updated_at": _now()}).eq("id", order_id).execute()
 
     return {"received": True}
+
+
+def _release_reservations(order_id: str | None) -> None:
+    """Return held stock for an order that was never paid. Fail-soft."""
+    if not order_id:
+        return
+    try:
+        supabase.rpc("release_stock_reservations", {"p_order_id": order_id}).execute()
+    except Exception as exc:
+        log.warning("could not release stock reservations for %s: %s", order_id, exc)
 
 
 def _mark_order_paid(order_id: str, payment_intent_id: str | None,
@@ -1054,7 +1115,16 @@ def _mark_order_paid(order_id: str, payment_intent_id: str | None,
     except Exception:
         pass
 
-    # Decrement inventory (product or variant) + create digital downloads
+    # Decrement inventory (product or variant) + create digital downloads.
+    # Orders placed after 035 reserved stock atomically at checkout, so the
+    # quant was already decremented — just fulfill the holds. Legacy orders
+    # (pre-035) have no reservation rows, so fall back to consume_stock.
+    fulfilled = 0
+    try:
+        fulfilled = int((supabase.rpc("fulfill_stock_reservations", {"p_order_id": order_id}).execute()).data or 0)
+    except Exception as exc:
+        log.warning("fulfill_stock_reservations failed for %s: %s", order_id, exc)
+
     items = (supabase.table("store_order_items")
              .select("id,product_id,variant_id,variant_name,product_name,quantity").eq("order_id", order_id).execute()).data or []
     product_ids = [it["product_id"] for it in items if it.get("product_id")]
@@ -1075,16 +1145,17 @@ def _mark_order_paid(order_id: str, payment_intent_id: str | None,
         qty = int(it.get("quantity") or 1)
         pid = it.get("product_id")
         vid = it.get("variant_id")
-        if vid and vid in variants:
-            v = variants[vid]
-            if v.get("track_inventory", True):
-                consume_stock(pid, vid, qty, actor="webhook", ref_type="order", ref_id=order_id,
-                              note=f"Sale of {it.get('variant_name') or it.get('product_name')}")
-        elif pid:
-            prod = prods.get(pid)
-            if prod and prod.get("track_inventory", True):
-                consume_stock(pid, None, qty, actor="webhook", ref_type="order", ref_id=order_id,
-                              note=f"Sale of {it.get('product_name')}")
+        if not fulfilled:
+            if vid and vid in variants:
+                v = variants[vid]
+                if v.get("track_inventory", True):
+                    consume_stock(pid, vid, qty, actor="webhook", ref_type="order", ref_id=order_id,
+                                  note=f"Sale of {it.get('variant_name') or it.get('product_name')}")
+            elif pid:
+                prod = prods.get(pid)
+                if prod and prod.get("track_inventory", True):
+                    consume_stock(pid, None, qty, actor="webhook", ref_type="order", ref_id=order_id,
+                                  note=f"Sale of {it.get('product_name')}")
         if pid and prods.get(pid) and prods[pid].get("type") == "digital" and prods[pid].get("digital_file_url"):
             try:
                 supabase.table("store_downloads").insert({
