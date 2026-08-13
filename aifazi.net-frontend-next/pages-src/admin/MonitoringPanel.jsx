@@ -307,18 +307,31 @@ function MobileAppTab() {
 }
 
 
+const OVERALL_META = {
+  operational: { label: 'ALL OPERATIONAL', color: G },
+  degraded:    { label: 'DEGRADED',       color: O },
+  outage:      { label: 'OUTAGE',         color: R },
+}
+
 function StatusTab() {
   const toast = useToast()
   const now = useNow()
   const [checks, setChecks] = useState([])
+  const [agg, setAgg] = useState(null)      // /api/monitor/status aggregate (overall + incidents)
   const [running, setRunning] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const load = () => {
-    api.get('/monitor/checks?limit=100').then(r => setChecks(r.data || [])).catch(() => toast.error('Could not load monitor history')).finally(() => setLoading(false))
+    Promise.allSettled([api.get('/monitor/checks?limit=100'), api.get('/monitor/status')]).then(([c, a]) => {
+      if (c.status === 'fulfilled') setChecks(c.value.data || [])
+      else toast.error('Could not load monitor history')
+      if (a.status === 'fulfilled') setAgg(a.value.data || null)
+      else toast.error('Could not load monitor aggregate')
+      setLoading(false)
+    })
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load(); const iv = setInterval(load, 30000); return () => clearInterval(iv) }, [])
 
   const runNow = async () => {
     setRunning(true)
@@ -340,6 +353,18 @@ function StatusTab() {
   const last24h = checks.filter(c => c.checked_at && now - new Date(c.checked_at).getTime() < 24 * 3600 * 1000)
   const uptime24 = last24h.length ? Math.round((last24h.filter(c => c.status === 'up').length / last24h.length) * 100) : 0
 
+  const aggSvc = agg?.services || []
+  const upCount = aggSvc.filter(s => s.status === 'up').length
+  const downCount = aggSvc.filter(s => s.status === 'down').length
+  const unknownCount = aggSvc.filter(s => s.status === 'unknown').length
+  const agg30 = aggSvc.length
+    ? Math.round(aggSvc.reduce((a, s) => a + (s.uptime_30d ?? 0), 0) / aggSvc.length)
+    : null
+  const incidents = agg?.incidents || []
+  const ongoing = incidents.filter(i => i.ongoing).length
+  const om = OVERALL_META[agg?.overall] || OVERALL_META.degraded
+  const lastRun = [...checks].sort((a, b) => (b.checked_at || '').localeCompare(a.checked_at || ''))[0]
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
@@ -347,6 +372,7 @@ function StatusTab() {
           <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C }}>SERVICE MONITOR</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--muted)', marginTop: 4 }}>
             Uptime (24h): <strong style={{ color: uptime24 >= 99 ? G : O }}>{uptime24}%</strong> · {last24h.length} checks
+            {lastRun?.checked_at && <span style={{ color: 'var(--muted)', fontSize: 11 }}> · auto-refreshes every 30s</span>}
           </div>
         </div>
         <button onClick={runNow} disabled={running} style={{
@@ -356,37 +382,93 @@ function StatusTab() {
       </div>
 
       {loading ? <div className="loader" /> : (
-        <div style={{ display: 'grid', gap: 10 }}>
-          {Object.keys(latest).map(service => {
-            const c = latest[service]
-            const color = STATUS_COLOR[c.status] || 'var(--muted)'
-            const rows = byService[service] || []
-            const up = rows.filter(r => r.status === 'up').length
-            const pct = rows.length ? Math.round((up / rows.length) * 100) : 0
-            return (
-              <div key={service} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '14px 18px', background: 'var(--bg2)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 10, color }}>●</span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{c.label || service}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{c.latency_ms != null ? `${c.latency_ms}ms` : '—'}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, padding: '3px 10px', borderRadius: 999, background: `${color}1a`, border: `1px solid ${color}55`, color, fontWeight: 700 }}>
-                    {STATUS_LABEL[c.status] || c.status.toUpperCase()}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10 }}>
-                  <div style={{ flex: 1, height: 4, background: 'var(--bg3)', borderRadius: 2, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 2 }} />
-                  </div>
-                  <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{pct}% · {rows.length} checks</span>
-                </div>
-                {c.detail && c.status !== 'up' && <div style={{ fontFamily: MONO, fontSize: 10, color: R, marginTop: 8 }}>{c.detail}</div>}
-                {c.checked_at && <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>Last: {new Date(c.checked_at).toLocaleString()}</div>}
+        <div>
+          {/* Summary cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 10, marginBottom: 18 }}>
+            <div style={{ border: `1px solid ${om.color}55`, borderRadius: 12, padding: '14px 16px', background: `${om.color}0d` }}>
+              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>OVERALL</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800, color: om.color }}>{om.label}</div>
+            </div>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', background: 'var(--bg2)' }}>
+              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>SERVICES</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>
+                {upCount}<span style={{ color: G }}>▲</span> {downCount}<span style={{ color: R }}>▼</span>
+                {unknownCount > 0 && <span style={{ color: 'var(--muted)', fontSize: 12 }}> {unknownCount}?</span>}
               </div>
-            )
-          })}
-          {Object.keys(latest).length === 0 && (
-            <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)', fontFamily: MONO, fontSize: 12 }}>
-              No checks yet. Run a check or wait for the cron.
+            </div>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', background: 'var(--bg2)' }}>
+              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>30-DAY UPTIME</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800, color: agg30 == null || agg30 >= 99 ? G : O }}>{agg30 == null ? '—' : `${agg30}%`}</div>
+            </div>
+            <div style={{ border: `1px solid ${ongoing ? `${R}55` : 'var(--border)'}`, borderRadius: 12, padding: '14px 16px', background: ongoing ? `${R}0d` : 'var(--bg2)' }}>
+              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>INCIDENTS · 30D</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800, color: ongoing ? R : 'var(--text)' }}>
+                {ongoing > 0 ? `${ongoing} ONGOING` : incidents.length ? `${incidents.length} logged` : 'NONE'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gap: 10 }}>
+            {Object.keys(latest).map(service => {
+              const c = latest[service]
+              const color = STATUS_COLOR[c.status] || 'var(--muted)'
+              const rows = byService[service] || []
+              const up = rows.filter(r => r.status === 'up').length
+              const pct = rows.length ? Math.round((up / rows.length) * 100) : 0
+              const aggRow = aggSvc.find(s => s.name === service)
+              return (
+                <div key={service} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '14px 18px', background: 'var(--bg2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 10, color }}>●</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{c.label || service}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{c.latency_ms != null ? `${c.latency_ms}ms` : '—'}</span>
+                    {aggRow?.uptime_30d != null && (
+                      <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>30d {aggRow.uptime_30d}%</span>
+                    )}
+                    <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, padding: '3px 10px', borderRadius: 999, background: `${color}1a`, border: `1px solid ${color}55`, color, fontWeight: 700 }}>
+                      {STATUS_LABEL[c.status] || c.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10 }}>
+                    <div style={{ flex: 1, height: 4, background: 'var(--bg3)', borderRadius: 2, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 2 }} />
+                    </div>
+                    <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{pct}% · {rows.length} checks</span>
+                  </div>
+                  {c.detail && c.status !== 'up' && <div style={{ fontFamily: MONO, fontSize: 10, color: R, marginTop: 8 }}>{c.detail}</div>}
+                  {c.checked_at && <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>Last: {new Date(c.checked_at).toLocaleString()}</div>}
+                </div>
+              )
+            })}
+            {Object.keys(latest).length === 0 && (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)', fontFamily: MONO, fontSize: 12 }}>
+                No checks yet. Run a check or wait for the cron.
+              </div>
+            )}
+          </div>
+
+          {/* Incidents */}
+          {incidents.length > 0 && (
+            <div style={{ marginTop: 22 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: O }}>INCIDENTS</span>
+                <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              </div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {incidents.map((inc, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: `1px solid ${inc.ongoing ? `${R}55` : 'var(--border)'}`, borderRadius: 10, background: 'var(--bg2)', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 11 }}>{inc.ongoing ? '🔴' : '🔶'}</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, color: 'var(--text)', flex: 1, minWidth: 120 }}>{inc.label}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>
+                      {inc.start ? new Date(inc.start).toLocaleString() : ''}
+                      {inc.end && inc.end !== inc.start ? ` → ${new Date(inc.end).toLocaleTimeString()}` : ''}
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: 9, color: inc.ongoing ? R : 'var(--muted)', fontWeight: 700 }}>
+                      {inc.ongoing ? 'ONGOING' : inc.duration_s != null ? `${Math.max(1, Math.round(inc.duration_s / 60))}m down` : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -476,20 +558,46 @@ function ErrorsTab() {
   const toast = useToast()
   const [errors, setErrors] = useState([])
   const [loading, setLoading] = useState(true)
+  const [src, setSrc] = useState('')
 
-  useEffect(() => {
-    api.get('/monitor/errors?limit=50').then(r => setErrors(r.data || [])).catch(() => toast.error('Could not load errors')).finally(() => setLoading(false))
-  }, [])
+  const load = () => {
+    api.get('/monitor/errors?limit=100').then(r => setErrors(r.data || [])).catch(() => toast.error('Could not load errors')).finally(() => setLoading(false))
+  }
+  useEffect(load, [])
+
+  const sources = [...new Set(errors.map(e => e.source).filter(Boolean))]
+  const shown = src ? errors.filter(e => (e.source || '').toLowerCase() === src.toLowerCase()) : errors
+  const total = errors.reduce((a, e) => a + (e.count || 1), 0)
 
   if (loading) return <div className="loader" />
   return (
     <div>
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C, marginBottom: 16 }}>RECENT ERRORS</div>
-      {errors.length === 0 ? (
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C }}>RECENT ERRORS</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)', marginTop: 3 }}>
+            {errors.length} signatures · {total} occurrences
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {sources.length > 0 && (
+            <select value={src} onChange={e => setSrc(e.target.value)} style={{
+              fontFamily: MONO, fontSize: 10, padding: '7px 10px', background: 'var(--bg3)', color: 'var(--text)',
+              border: '1px solid var(--border)', borderRadius: 8, outline: 'none', cursor: 'pointer',
+            }}>
+              <option value="">ALL SOURCES</option>
+              {sources.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
+            </select>
+          )}
+          <button onClick={load} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '8px 14px', cursor: 'pointer', background: 'transparent', color: C, border: `1px solid ${C}45`, borderRadius: 8, fontWeight: 700 }}>↻ REFRESH</button>
+        </div>
+      </div>
+
+      {shown.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)', fontFamily: MONO, fontSize: 12 }}>No errors captured yet.</div>
       ) : (
         <div style={{ display: 'grid', gap: 10 }}>
-          {errors.map(e => (
+          {shown.map(e => (
             <div key={e.id} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', background: 'var(--bg2)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontFamily: MONO, fontSize: 9, padding: '2px 8px', borderRadius: 999, background: `${R}1a`, border: `1px solid ${R}55`, color: R, fontWeight: 700 }}>{e.error_type || 'Error'}</span>
