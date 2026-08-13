@@ -164,6 +164,10 @@ function IncidentTimeline({ incidents, mounted }) {
   )
 }
 
+/**
+ * Public status page — seeded with server-rendered data, then live-refreshed.
+ * @param {{ initialData?: object | null }} props
+ */
 export default function StatusPage({ initialData = null }) {
   const [status, setStatus] = useState(initialData)
   const [error, setError] = useState('')
@@ -186,7 +190,7 @@ export default function StatusPage({ initialData = null }) {
     const tick = setInterval(() => setCountdown(c => (c > 0 ? c - 1 : REFRESH_MS / 1000)), 1000)
     const clock = setInterval(() => setNowTs(Date.now()), 1000)
     return () => { clearTimeout(mountTick); clearInterval(iv); clearInterval(tick); clearInterval(clock) }
-  }, [])
+  }, [initialData])
 
   const meta = status ? (STATUS_META[status.overall] || STATUS_META.degraded) : null
   const updated = mounted && status?.generated_at ? new Date(status.generated_at).toLocaleString() : ''
