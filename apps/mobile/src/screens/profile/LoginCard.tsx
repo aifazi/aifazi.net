@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FONT, SPACE } from '@/src/design'
+import { FONT, SPACE, micro } from '@/src/design'
 import { ScrollView, View, Text } from 'react-native'
 import { Title, Card, Muted, Btn, Field } from '@/src/components/ui'
 import { Screen } from '@/src/components/Screen'
@@ -7,6 +7,8 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { OAuthButtons } from '@/src/components/OAuthButtons'
 import { useRouter } from 'expo-router'
+import { PulsingDot } from '@/src/components/glow'
+import { withAlpha } from '@/src/lib/color'
 
 /**
  * Shared sign-in + 2FA challenge card, used by the Profile tab and the
@@ -85,15 +87,19 @@ export function LoginCard({ onAuthed }: { onAuthed?: () => void }) {
   return (
     <ScrollView keyboardShouldPersistTaps="handled">
       <Card>
-        <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>Sign in</Text>
-        <View style={{ marginTop: SPACE.xl }}>
-          <Field label="Username / Email" value={identifier} onChangeText={setIdentifier} placeholder="tanvir" autoCapitalize="none" />
-          <Field label="Password" value={password} onChangeText={setPassword} secure placeholder="••••••••" autoCapitalize="none" />
+        <View style={{ alignItems: 'center', marginBottom: SPACE.xl }}>
+          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: withAlpha(c.accent, 0.12), alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: withAlpha(c.accent, 0.4) }}>
+            <PulsingDot color={c.accent} size={16} halo={false} />
+          </View>
+          <Text style={{ color: c.text, fontSize: FONT.h3, fontWeight: '900', marginTop: SPACE.lg, letterSpacing: 0.5 }}>aifazi.net</Text>
+          <Text style={[micro(10, 3, '700'), { color: c.accent2, marginTop: SPACE.xs }]}>SIGN IN TO CONTINUE</Text>
         </View>
-        {err ? <Muted>{err}</Muted> : null}
-        <Btn title={busy ? 'Signing in…' : 'Sign In'} onPress={submit} disabled={busy} />
+        <Field label="Username / Email" value={identifier} onChangeText={setIdentifier} placeholder="tanvir" autoCapitalize="none" />
+        <Field label="Password" value={password} onChangeText={setPassword} secure placeholder="••••••••" autoCapitalize="none" />
+        {err ? <Muted style={{ color: c.danger, marginBottom: SPACE.lg }}>{err}</Muted> : null}
+        <Btn title={busy ? 'Signing in…' : 'Sign In'} onPress={submit} disabled={busy} full />
         <View style={{ marginTop: SPACE.xl }}>
-          <Btn title="Create account" variant="ghost" onPress={() => router.push('/auth/register')} />
+          <Btn title="Create account" variant="ghost" onPress={() => router.push('/auth/register')} full />
         </View>
         <OAuthButtons
           onSuccess={() => {

@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
-import { FONT, SPACE, frameworkStyles } from '@/src/design'
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl } from 'react-native'
+import { useState, useCallback, useRef } from 'react'
+import { FONT, SPACE, frameworkStyles, micro } from '@/src/design'
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl, Animated } from 'react-native'
 import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
@@ -17,13 +17,6 @@ import { Loader } from '@/src/components/Loader'
 import { AmbientGlow, PulsingDot } from '@/src/components/glow'
 import { Screen } from '@/src/components/Screen'
 import { Reveal, stagger } from '@/src/components/motion'
-
-interface StatusService {
-  name: string
-  label?: string
-  status: string
-  uptime_24h?: number
-}
 
 interface Product {
   id: string
@@ -79,6 +72,28 @@ function fmtPrice(p?: Product) {
   const n = p?.price_cents ?? 0
   if (!n) return '$0.00'
   return `$${(n / 100).toFixed(2)}`
+}
+
+function greeting() {
+  const h = new Date().getHours()
+  if (h < 5) return 'UP LATE'
+  if (h < 12) return 'GOOD MORNING'
+  if (h < 17) return 'GOOD AFTERNOON'
+  return 'GOOD EVENING'
+}
+
+/** Pressable tile with a spring "squash" on press-down, mirroring Btn/Card. */
+function PressTile({ children, onPress, style }: { children: React.ReactNode; onPress: () => void; style?: any }) {
+  const scale = useRef(new Animated.Value(1)).current
+  const pressIn = () => Animated.spring(scale, { toValue: 0.94, useNativeDriver: true, speed: 40, bounciness: 0 }).start()
+  const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 4 }).start()
+  return (
+    <Animated.View style={[{ transform: [{ scale }] }, style]}>
+      <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={0.85}>
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  )
 }
 
 export default function HomeScreen() {
@@ -151,19 +166,46 @@ export default function HomeScreen() {
       <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
     }>
       <Reveal dir="up" duration={420}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.xs }}>
-          <Text style={{ color: c.text, fontSize: FONT.h1, fontWeight: '800', fontFamily: theme.mono ? 'monospace' : undefined, letterSpacing: theme.mono ? 1 : 0 }}>
+        <View style={{ position: 'relative', marginBottom: SPACE.xxxl }}>
+          <AmbientGlow color={c.accent} size={170} intensity={0.24} style={{ top: -70, right: -50 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg }}>
+              <View
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 5,
+                  backgroundColor: c.accent,
+                  shadowColor: c.accent,
+                  shadowOpacity: 0.9,
+                  shadowRadius: 6,
+                  shadowOffset: { width: 0, height: 0 },
+                }}
+              />
+              <Text style={[micro(10, 3.5, '700'), { color: c.accent }]}>{greeting()}</Text>
+            </View>
+            {isAuthed ? (
+              <ProfilePill onPress={() => router.push('/profile' as Href)} />
+            ) : (
+              <Btn title="Sign in" onPress={() => router.push('/profile' as Href)} size="sm" />
+            )}
+          </View>
+          <Text
+            style={{
+              color: c.text,
+              fontSize: FONT.title,
+              fontWeight: '900',
+              fontFamily: theme.mono ? 'monospace' : undefined,
+              letterSpacing: theme.mono ? 1 : 0.5,
+              marginTop: SPACE.xl,
+            }}
+          >
             aifazi.net
           </Text>
-          {isAuthed ? (
-            <ProfilePill onPress={() => router.push('/profile' as Href)} />
-          ) : (
-            <Btn title="Sign in" onPress={() => router.push('/profile' as Href)} size="sm" />
-          )}
+          <Text style={{ color: c.muted, fontSize: FONT.md, marginTop: SPACE.xs }}>
+            Community platform — mobile client{isAuthed && user ? ` · hi ${user.username}` : ''}
+          </Text>
         </View>
-        <Text style={{ color: c.muted, fontSize: FONT.md, marginBottom: SPACE.xxxl }}>
-          Community platform — mobile client{isAuthed && user ? ` · hi ${user.username}` : ''}
-        </Text>
       </Reveal>
 
       {loading ? (
@@ -178,14 +220,24 @@ export default function HomeScreen() {
           <View style={[styles.grid, { marginBottom: SPACE.huge }]}>
             {tiles.map((t, i) => (
               <Reveal key={t.label} dir="scale" delay={stagger(i)} duration={420}>
-                <TouchableOpacity
-                  onPress={() => router.push(t.href)}
-                  activeOpacity={0.85}
-                  style={[styles.tile, { borderColor: c.border, backgroundColor: withAlpha(c.bg2, 0.9), borderRadius: radius }]}
-                >
-                  <Icon name={t.icon} size={24} color={t.tint} />
-                  <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '800', marginTop: SPACE.sm }}>{t.label}</Text>
-                </TouchableOpacity>
+                <PressTile onPress={() => router.push(t.href)} style={[styles.tileWrap, { borderRadius: radius }]}>
+                  <View style={[styles.tile, { borderColor: withAlpha(t.tint, 0.35), backgroundColor: withAlpha(c.bg2, 0.9), borderRadius: radius }]}>
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 2,
+                        borderTopLeftRadius: radius,
+                        borderTopRightRadius: radius,
+                        backgroundColor: withAlpha(t.tint, 0.45),
+                      }}
+                    />
+                    <Icon name={t.icon} size={24} color={t.tint} />
+                    <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '800', marginTop: SPACE.sm }}>{t.label}</Text>
+                  </View>
+                </PressTile>
               </Reveal>
             ))}
           </View>
@@ -202,13 +254,24 @@ export default function HomeScreen() {
             </View>
             {mon.services ? (
               <View style={{ marginTop: SPACE.md }}>
-                {mon.services.slice(0, 6).map((s) => (
-                  <View key={s.name} style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.xs }}>
-                    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: s.status === 'up' || s.status === 'operational' ? c.accent : s.status === 'down' || s.status === 'outage' ? c.danger : c.accent2 }} />
-                    <Text style={{ color: c.text2, fontSize: FONT.md, flex: 1 }} numberOfLines={1}>{s.label || s.name}</Text>
-                    <Text style={{ color: c.muted, fontSize: FONT.sm }}>{s.uptime_24h != null ? `${s.uptime_24h}%` : ''}</Text>
-                  </View>
-                ))}
+                {mon.services.slice(0, 6).map((s) => {
+                  const up = s.status === 'up' || s.status === 'operational'
+                  const down = s.status === 'down' || s.status === 'outage'
+                  const tint = up ? c.accent : down ? c.danger : c.accent2
+                  const uptime = s.uptime_24h ?? 100
+                  return (
+                    <View key={s.name} style={{ marginBottom: SPACE.lg }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md }}>
+                        <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: tint }} />
+                        <Text style={{ color: c.text2, fontSize: FONT.md, flex: 1 }} numberOfLines={1}>{s.label || s.name}</Text>
+                        <Text style={{ color: c.muted, fontSize: FONT.sm }}>{uptime}%</Text>
+                      </View>
+                      <View style={{ marginTop: SPACE.xs, height: 3, borderRadius: 2, backgroundColor: withAlpha(c.border, 0.6), overflow: 'hidden' }}>
+                        <View style={{ width: `${Math.max(4, Math.min(100, uptime))}%`, height: '100%', borderRadius: 2, backgroundColor: tint }} />
+                      </View>
+                    </View>
+                  )
+                })}
               </View>
             ) : null}
             <TouchableOpacity onPress={() => router.push('/status' as Href)} hitSlop={8} style={{ marginTop: SPACE.lg, alignSelf: 'flex-start' }}>
@@ -351,11 +414,20 @@ const styles = StyleSheet.create({
     gap: SPACE.lg,
   },
   tile: {
-    width: '30%',
+    width: '100%',
     aspectRatio: 1,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  tileWrap: {
+    width: '30%',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',

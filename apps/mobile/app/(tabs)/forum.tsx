@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, FlatList, RefreshControl, TextInput } fro
 import { useRouter, useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
-import { Card, Title, Muted, CategoryPills } from '@/src/components/ui'
+import { Card, Title, Muted, CategoryPills, EmptyState } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { useAuth } from '@/src/lib/auth'
@@ -238,8 +238,7 @@ export default function ForumScreen() {
         }
         renderItem={({ item, index }) => (
           <Reveal dir="scale" delay={stagger(index)} duration={420}>
-          <TouchableOpacity onPress={() => router.push(`/forum-thread?id=${encodeURIComponent(item.id)}` as Href)}>
-            <Card>
+            <Card onPress={() => router.push(`/forum-thread?id=${encodeURIComponent(item.id)}` as Href)}>
               {item.category?.icon ? <Text style={{ fontSize: FONT.card, marginBottom: SPACE.xs }}>{item.category.icon} {item.category.name}</Text> : null}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 {item.pinned ? <Icon name="pin" size={14} color={c.text2} /> : null}
@@ -266,10 +265,15 @@ export default function ForumScreen() {
                 ) : null}
               </View>
             </Card>
-          </TouchableOpacity>
           </Reveal>
         )}
-        ListEmptyComponent={<Muted>No threads yet.</Muted>}
+        ListEmptyComponent={
+          <EmptyState
+            icon="forum"
+            title="No threads yet"
+            subtitle="Be the first to start a discussion."
+          />
+        }
         ListFooterComponent={
           loadingMore ? (
             <View style={{ paddingVertical: SPACE.xxl, alignItems: 'center' }}>

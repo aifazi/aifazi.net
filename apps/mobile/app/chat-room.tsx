@@ -12,12 +12,14 @@ import {
   Platform,
   Pressable,
   AppState,
+  Animated,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { askImageSourceAsync, pickDocument, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
 import { Icon } from '@/src/components/icon'
+import { Avatar } from '@/src/components/Avatar'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
@@ -52,13 +54,27 @@ interface LinkPreview {
 }
 
 const POLL_MS = 4000
-const TYPING_INTERVAL = 3000
 const TYPING_EMOJIS = ['👍', '❤️', '🔥', '😂', '🎉', '😮', '👀', '💯']
 
 function fmtTime(iso?: string) {
   if (!iso) return ''
   try {
     return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
+}
+
+function fmtDay(iso?: string) {
+  if (!iso) return ''
+  try {
+    const d = new Date(iso)
+    const today = new Date()
+    const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
+    const diff = startOf(today) - startOf(d)
+    if (diff === 0) return 'TODAY'
+    if (diff === 86400000) return 'YESTERDAY'
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' }).toUpperCase()
   } catch {
     return ''
   }
@@ -82,6 +98,30 @@ function extractUrl(content?: string): string {
 
 function isImageUrl(url: string) {
   return /\.(jpe?g|png|gif|webp)(\?.*)?$/i.test(url)
+}
+
+/** Small bouncing dot for the "typing…" indicator (staggered loop). */
+function TypingDot({ index, color }: { index: number; color: string }) {
+  const bounce = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(index * 150),
+        Animated.timing(bounce, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(bounce, { toValue: 0, duration: 350, useNativeDriver: true }),
+        Animated.delay((2 - index) * 150),
+      ]),
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [bounce, index])
+  const ty = bounce.interpolate({ inputRange: [0, 1], outputRange: [0, -3] })
+  const opacity = bounce.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] })
+  return (
+    <Animated.View
+      style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: color, opacity, transform: [{ translateY: ty }] }}
+    />
+  )
 }
 
 export default function ChatRoomScreen() {
@@ -530,7 +570,7 @@ export default function ChatRoomScreen() {
                 No messages yet. Say hi!
               </Text>
             }
-            renderItem={({ item }) => {
+            renderItem={({ item, index }) => {
               const mine = isMine(item)
               const mineText = mine ? contrastText(c.accent2) : c.text
               const mineMuted = mine ? withAlpha(mineText, 0.65) : c.muted
@@ -550,15 +590,31 @@ export default function ChatRoomScreen() {
                   onEdit: () => startEdit(item),
                   onDelete: () => confirmDelete(item.id),
                 })
+              const prev = index > 0 ? messages[index - 1] : undefined
+              const dayChanged = !prev || fmtDay(prev.created_at) !== fmtDay(item.created_at)
+              const prevSameSender = prev && prev.sender === item.sender && fmtDay(prev.created_at) === fmtDay(item.created_at)
               return (
                 <View style={{ marginBottom: SPACE.lg }}>
+                  {dayChanged ? (
+                    <View style={{ alignItems: 'center', marginVertical: SPACE.lg }}>
+                      <View style={{ paddingHorizontal: SPACE.lg, paddingVertical: SPACE.xs, borderRadius: 999, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg2 }}>
+                        <Text style={{ color: c.muted, fontSize: FONT.xs, fontWeight: '800', letterSpacing: 1.5 }}>{fmtDay(item.created_at)}</Text>
+                      </View>
+                    </View>
+                  ) : null}
                   <SwipeReplyRow onReply={() => setReplying(item)}>
-                    <View style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
-                      <Pressable
-                        onLongPress={onLongPress}
-                        delayLongPress={350}
-                        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-                      >
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: SPACE.sm, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                      {!mine ? (
+                        <View style={{ marginBottom: 18 }}>
+                          <Avatar name={item.sender} avatar={undefined} size={24} />
+                        </View>
+                      ) : null}
+                      <View style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
+                        <Pressable
+                          onLongPress={onLongPress}
+                          delayLongPress={350}
+                          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+                        >
                         <View
                           style={[
                             styles.bubble,
@@ -570,7 +626,7 @@ export default function ChatRoomScreen() {
                             },
                           ]}
                         >
-                          {!mine ? (
+                          {!mine && !prevSameSender ? (
                             <Text style={{ color: c.accent2, fontSize: FONT.sm, fontWeight: '700', marginBottom: 3 }}>
                               {item.sender}
                               {item.role && item.role !== 'member' ? ` · ${item.role}` : ''}
@@ -655,6 +711,7 @@ export default function ChatRoomScreen() {
                           </View>
                         </View>
                       </Pressable>
+                    </View>
                     </View>
                   </SwipeReplyRow>
                   {reactionEntries.length > 0 ? (
@@ -762,13 +819,12 @@ export default function ChatRoomScreen() {
             placeholderTextColor={c.muted}
             multiline
             style={[
-              styles.input,
+              styles.inputField,
               {
                 backgroundColor: c.bg,
                 color: c.text,
                 borderColor: c.border,
                 fontFamily: theme.mono ? 'monospace' : undefined,
-                borderRadius: pillRadius,
               },
             ]}
           />
@@ -776,26 +832,41 @@ export default function ChatRoomScreen() {
         <TouchableOpacity
           onPress={editing ? saveEdit : send}
           disabled={editing ? sending || !editText.trim() : sending || !text.trim()}
+          activeOpacity={0.8}
           style={[
             styles.sendBtn,
             {
               backgroundColor: editing ? c.accent2 : c.accent,
               borderRadius: pillRadius,
-              opacity: editing ? (sending || !editText.trim() ? 0.5 : 1) : sending || !text.trim() ? 0.5 : 1,
+              opacity: editing ? (sending || !editText.trim() ? 0.5 : 1) : sending || !text.trim() ? 0.4 : 1,
+              shadowColor: editing ? c.accent2 : c.accent,
+              shadowOpacity: editing ? (sending || !editText.trim() ? 0 : 0.5) : sending || !text.trim() ? 0 : 0.5,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 0 },
+              elevation: sending || (editing ? !editText.trim() : !text.trim()) ? 0 : 3,
             },
           ]}
         >
-          <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: FONT.body }}>
-            {sending ? '…' : editing ? 'Save' : 'Send'}
-          </Text>
+          {sending ? (
+            <ActivityIndicator size="small" color={c.onAccent} />
+          ) : (
+            <Icon name={editing ? 'check' : 'send'} size={16} color={c.onAccent} />
+          )}
         </TouchableOpacity>
       </View>
 
       {typingUsers.length > 0 ? (
         <View style={{ paddingHorizontal: SPACE.xl, paddingVertical: SPACE.xs, alignItems: 'center' }}>
-          <Text style={{ color: c.muted, fontSize: FONT.sm }}>
-            {typingUsers.length === 1 ? `${typingUsers[0]} is typing…` : `${typingUsers.slice(0, 2).join(', ')}${typingUsers.length > 2 ? ` +${typingUsers.length - 2}` : ''} typing…`}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+              {[0, 1, 2].map((i) => (
+                <TypingDot key={i} index={i} color={c.accent} />
+              ))}
+            </View>
+            <Text style={{ color: c.muted, fontSize: FONT.sm }}>
+              {typingUsers.length === 1 ? `${typingUsers[0]} is typing…` : `${typingUsers.slice(0, 2).join(', ')}${typingUsers.length > 2 ? ` +${typingUsers.length - 2}` : ''} typing…`}
+            </Text>
+          </View>
         </View>
       ) : null}
     </SafeAreaView>
@@ -842,11 +913,22 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     fontSize: FONT.base,
   },
+  inputField: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: SPACE.xl,
+    paddingVertical: 10,
+    maxHeight: 100,
+    fontSize: FONT.base,
+  },
   sendBtn: {
-    borderRadius: 8,
-    paddingHorizontal: SPACE.xxxl,
-    paddingVertical: 11,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   reactBar: {
     flexDirection: 'row',

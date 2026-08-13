@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router'
-import { Text, ColorValue, TouchableOpacity } from 'react-native'
+import { ColorValue, TouchableOpacity, View, Animated, Easing } from 'react-native'
+import { useEffect, useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
@@ -8,11 +9,44 @@ import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
 import { CommandPaletteProvider, useCommandPalette } from '@/src/components/command-palette'
 
+/**
+ * Tab icon with an animated active state: springs up + glows when focused and
+ * renders a small accent indicator dot underneath, replacing the flat
+ * tabBarActiveBackgroundColor fill with a motion-based active cue.
+ */
 function TabIcon({ name, color, focused }: { name: IconName; color?: ColorValue; focused?: boolean }) {
+  const { theme } = useTheme()
+  const c = theme.colors
+  const scale = useRef(new Animated.Value(focused ? 1 : 0.85)).current
+  const dot = useRef(new Animated.Value(focused ? 1 : 0)).current
+
+  useEffect(() => {
+    Animated.spring(scale, { toValue: focused ? 1 : 0.85, useNativeDriver: true, speed: 28, bounciness: 6 }).start()
+    Animated.timing(dot, { toValue: focused ? 1 : 0, duration: 180, easing: Easing.out(Easing.quad), useNativeDriver: true }).start()
+  }, [focused, scale, dot])
+
   return (
-    <Text style={{ lineHeight: 24 }}>
-      <Icon name={name} size={focused ? 21 : 19} color={color} />
-    </Text>
+    <View style={{ alignItems: 'center', justifyContent: 'center', height: 26 }}>
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <Icon name={name} size={focused ? 21 : 19} color={color} />
+      </Animated.View>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          bottom: -2,
+          width: 4,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: c.accent,
+          opacity: dot,
+          transform: [{ scaleX: dot }],
+          shadowColor: c.accent,
+          shadowOpacity: 0.8,
+          shadowRadius: 4,
+          shadowOffset: { width: 0, height: 0 },
+        }}
+      />
+    </View>
   )
 }
 
@@ -60,7 +94,7 @@ function TabNavigator() {
           shadowOffset: { width: 0, height: 8 },
           elevation: 14,
         },
-        tabBarActiveBackgroundColor: withAlpha(c.accent, 0.16),
+        tabBarActiveBackgroundColor: 'transparent',
         tabBarItemStyle: { borderRadius: radius - 3, marginHorizontal: SPACE.xxs },
         tabBarLabelStyle: { ...tagLabel(8.5, 1.2), marginBottom: SPACE.xs },
         tabBarIconStyle: { marginTop: SPACE.xxs },

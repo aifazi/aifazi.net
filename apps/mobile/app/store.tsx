@@ -5,7 +5,7 @@ import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { Screen } from '@/src/components/Screen'
-import { Card, Title, Muted } from '@/src/components/ui'
+import { Card, Title, Muted, EmptyState, Chip } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
@@ -149,11 +149,16 @@ export default function StoreScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />
           }
-          ListEmptyComponent={<Muted>No products yet.</Muted>}
+          ListEmptyComponent={
+            <EmptyState
+              icon="store"
+              title="No products yet"
+              subtitle="The store is being restocked. Check back soon."
+            />
+          }
           renderItem={({ item, index }) => (
             <Reveal dir="scale" delay={stagger(index)} duration={420}>
-            <TouchableOpacity onPress={() => router.push(`/store-item?slug=${encodeURIComponent(item.slug)}` as Href)}>
-              <Card>
+              <Card onPress={() => router.push(`/store-item?slug=${encodeURIComponent(item.slug)}` as Href)}>
                 <View style={{ flexDirection: 'row', gap: SPACE.xl }}>
                   {item.image_url ? (
                     <ExpoImage source={{ uri: item.image_url }} style={{ width: 64, height: 64, borderRadius: radius }} contentFit="cover" />
@@ -166,9 +171,8 @@ export default function StoreScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
                       <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700', flex: 1 }} numberOfLines={1}>{item.name}</Text>
                       {item.on_sale ? (
-                        <View style={{ backgroundColor: c.danger, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
-                          <Text style={{ color: c.onAccent, fontSize: FONT.micro, fontWeight: '800' }}>SALE</Text>
-                        </View>                      ) : null}
+                        <Chip label="SALE" color={c.sale} dot={false} />
+                      ) : null}
                     </View>
                     {item.description ? (
                       <Text style={{ color: c.text2, fontSize: FONT.md, marginTop: 3 }} numberOfLines={2}>{item.description}</Text>
@@ -180,10 +184,10 @@ export default function StoreScreen() {
                           ${((item.compare_at_cents ?? 0) / 100).toFixed(2)}
                         </Text>
                       ) : null}
-                      {!item.in_stock ? <Text style={{ color: c.danger, fontSize: FONT.sm, fontWeight: '700' }}>Out of stock</Text> : null}
+                      {!item.in_stock ? <Chip label="OUT OF STOCK" color={c.danger} dot={false} /> : null}
                       {item.rating?.count ? (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                          <Icon name="star" size={12} color={c.muted} />
+                          <Icon name="star" size={12} color={c.star} />
                           <Text style={{ color: c.muted, fontSize: FONT.sm }}>{item.rating.rating?.toFixed(1)} ({item.rating.count})</Text>
                         </View>
                       ) : null}
@@ -191,7 +195,6 @@ export default function StoreScreen() {
                   </View>
                 </View>
               </Card>
-            </TouchableOpacity>
             </Reveal>
           )}
         />

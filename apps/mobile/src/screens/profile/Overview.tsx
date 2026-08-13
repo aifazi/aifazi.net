@@ -1,13 +1,14 @@
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native'
 import { FONT, SPACE } from '@/src/design'
 import { useRouter } from 'expo-router'
-import { Card, Muted, Btn, MicroLabel } from '@/src/components/ui'
+import { Card, Muted, Btn, MicroLabel, Chip } from '@/src/components/ui'
 import { Icon } from '@/src/components/icon'
 import { Avatar } from '@/src/components/Avatar'
+import { PulsingDot } from '@/src/components/glow'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { THEME_IDS, THEMES, type ThemeId } from '@/src/themes'
-import { withAlpha } from '@/src/lib/color'
+import { withAlpha, statusTone } from '@/src/lib/color'
 import { useOverlay } from '@/src/components/overlay'
 import { fmtDate, fmtWhen } from './helpers'
 import { AppUpdatesCard } from './AppUpdates'
@@ -72,6 +73,7 @@ function ThemeSwatch({ id, active, disabled, onPress }: { id: ThemeId; active: b
 export function OverviewTab({ goEdit }: { goEdit: () => void }) {
   const { theme, setTheme, toggleTheme, source, isLocked } = useTheme()
   const c = theme.colors
+  const radius = Math.max(6, theme.radius)
   const { user, logout, refresh } = useAuth()
   const router = useRouter()
   const { confirm } = useOverlay()
@@ -93,17 +95,38 @@ export function OverviewTab({ goEdit }: { goEdit: () => void }) {
     <ScrollView keyboardShouldPersistTaps="handled">
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xxl }}>
-          <Avatar name={user?.username} avatar={user?.avatar} size={64} />
+          <View>
+            <Avatar name={user?.username} avatar={user?.avatar} size={64} />
+            <View style={{ position: 'absolute', right: -2, bottom: -2 }}>
+              <PulsingDot color={c.success} size={9} />
+            </View>
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={{ color: c.text, fontSize: FONT.lead, fontWeight: '900' }}>{user?.username}</Text>
-            <Text style={{ color: c.accent2, fontSize: FONT.md, fontWeight: '700', textTransform: 'uppercase', marginTop: SPACE.xxs }}>
-              {user?.role ?? 'member'}
-            </Text>
+            <View style={{ marginTop: SPACE.xs }}>
+              <Chip label={user?.role ?? 'member'} color={statusTone(user?.role ?? '', c) ?? c.accent2} />
+            </View>
           </View>
           <Btn title="Edit" onPress={goEdit} style={{ paddingVertical: SPACE.md, paddingHorizontal: SPACE.xxl }} />
         </View>
 
         {user?.bio ? <Text style={{ color: c.text2, fontSize: FONT.body, lineHeight: 18, marginTop: SPACE.xl }}>{user.bio}</Text> : null}
+
+        <View style={{ flexDirection: 'row', gap: SPACE.md, marginTop: SPACE.xxl }}>
+          <View style={{ flex: 1, alignItems: 'center', paddingVertical: SPACE.md, borderRadius: radius, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg }}>
+            <Text style={{ color: c.text, fontSize: FONT.h3, fontWeight: '900' }}>
+              {user?.last_seen || user?.lastSeen ? fmtWhen(user.last_seen || user.lastSeen).replace(/\s+ago$/, '') : '—'}
+            </Text>
+            <MicroLabel style={{ marginTop: SPACE.xs }}>LAST SEEN</MicroLabel>
+          </View>
+          <View style={{ flex: 1, alignItems: 'center', paddingVertical: SPACE.md, borderRadius: radius, borderWidth: 1, borderColor: c.border, backgroundColor: c.bg }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+              <PulsingDot color={c.success} size={7} halo={false} />
+              <Text style={{ color: c.success, fontSize: FONT.h3, fontWeight: '900' }}>ONLINE</Text>
+            </View>
+            <MicroLabel style={{ marginTop: SPACE.xs }}>PRESENCE</MicroLabel>
+          </View>
+        </View>
 
         <View style={{ marginTop: SPACE.xl, gap: SPACE.xs }}>
           {user?.email ? (

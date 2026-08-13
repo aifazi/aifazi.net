@@ -5,7 +5,7 @@ import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { Screen } from '@/src/components/Screen'
-import { Card, Title, Muted } from '@/src/components/ui'
+import { Card, Title, Muted, EmptyState } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Icon } from '@/src/components/icon'
@@ -135,8 +135,7 @@ export default function BlogScreen() {
         }
         renderItem={({ item, index }) => (
           <Reveal dir="scale" delay={stagger(index)} duration={420}>
-          <TouchableOpacity onPress={() => router.push(`/blog-post?slug=${encodeURIComponent(item.slug)}` as Href)}>
-            <Card>
+            <Card onPress={() => router.push(`/blog-post?slug=${encodeURIComponent(item.slug)}` as Href)}>
               {item.cover_image ? (
                 <ExpoImage source={{ uri: item.cover_image }} style={{ width: '100%', height: 150, borderRadius: radius, marginBottom: SPACE.lg }} contentFit="cover" transition={150} />
               ) : null}
@@ -156,10 +155,15 @@ export default function BlogScreen() {
                 ) : null}
               </View>
             </Card>
-          </TouchableOpacity>
           </Reveal>
         )}
-        ListEmptyComponent={<Muted>No posts yet.</Muted>}
+        ListEmptyComponent={
+          <EmptyState
+            icon="blog"
+            title="No posts yet"
+            subtitle="Articles will appear here once published."
+          />
+        }
       />
     </Screen>
   )
