@@ -1,27 +1,9 @@
 """
 routers/__init__.py — Main router registry
 
-Mounts all feature modules in a structured way.
+Routers are mounted directly in main.py. This module only keeps
+back-compat imports so `from routers import X` still works.
 """
-
-def mount_all(app):
-    from .auth import mount_auth
-    from .admin import mount_admin
-    from .content import mount_content
-    from .community import mount_community
-    from .fivem import mount_fivem
-    from .store import mount_store
-    from .dev import mount_dev
-    from .mobile import mount_mobile
-
-    mount_auth(app)
-    mount_admin(app)
-    mount_content(app)
-    mount_community(app)
-    mount_fivem(app)
-    mount_store(app)
-    mount_dev(app)
-    mount_mobile(app)
 
 # Back-compat: direct router imports still work
 from . import auth
