@@ -58,7 +58,7 @@ function UptimeBar({ value, barColor }) {
   )
 }
 
-function ServiceRow({ s, index }) {
+function ServiceRow({ s, mounted }) {
   const isUp = s.status === 'up'
   const isUnknown = s.status === 'unknown'
   const statusColor = isUnknown ? 'var(--muted)' : isUp ? G : R
@@ -90,7 +90,7 @@ function ServiceRow({ s, index }) {
           <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <span>{s.latency_avg_ms != null ? `avg ${s.latency_avg_ms}ms` : 'no latency data'}</span>
             {s.latency_ms != null && <span>last {s.latency_ms}ms</span>}
-            <span>checked {timeAgo(s.last_checked)}</span>
+            <span>checked {mounted ? timeAgo(s.last_checked) : ''}</span>
           </div>
         </div>
 
@@ -127,7 +127,7 @@ function ServiceRow({ s, index }) {
   )
 }
 
-function IncidentTimeline({ incidents }) {
+function IncidentTimeline({ incidents, mounted }) {
   if (!incidents || incidents.length === 0) return null
   return (
     <div style={{ marginTop: 40 }}>
@@ -149,8 +149,8 @@ function IncidentTimeline({ incidents }) {
               <div style={{ flex: 1, minWidth: 170 }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{inc.label}</div>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>
-                  {inc.start ? new Date(inc.start).toLocaleString() : ''}
-                  {inc.end && inc.end !== inc.start ? ` → ${new Date(inc.end).toLocaleTimeString()}` : ''}
+                  {mounted && inc.start ? new Date(inc.start).toLocaleString() : ''}
+                  {mounted && inc.end && inc.end !== inc.start ? ` → ${new Date(inc.end).toLocaleTimeString()}` : ''}
                 </div>
               </div>
               <div style={{ fontFamily: MONO, fontSize: 10, color: inc.ongoing ? R : 'var(--muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>
@@ -164,10 +164,11 @@ function IncidentTimeline({ incidents }) {
   )
 }
 
-export default function StatusPage() {
-  const [status, setStatus] = useState(null)
+export default function StatusPage({ initialData = null }) {
+  const [status, setStatus] = useState(initialData)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!initialData)
+  const [mounted, setMounted] = useState(false)
   const [countdown, setCountdown] = useState(REFRESH_MS / 1000)
   const [nowTs, setNowTs] = useState(() => Date.now())
 
@@ -179,15 +180,17 @@ export default function StatusPage() {
   }
 
   useEffect(() => {
-    load()
+    const mountTick = setTimeout(() => setMounted(true), 0)
+    if (!initialData) load()
     const iv = setInterval(load, REFRESH_MS)
     const tick = setInterval(() => setCountdown(c => (c > 0 ? c - 1 : REFRESH_MS / 1000)), 1000)
     const clock = setInterval(() => setNowTs(Date.now()), 1000)
-    return () => { clearInterval(iv); clearInterval(tick); clearInterval(clock) }
+    return () => { clearTimeout(mountTick); clearInterval(iv); clearInterval(tick); clearInterval(clock) }
   }, [])
 
   const meta = status ? (STATUS_META[status.overall] || STATUS_META.degraded) : null
-  const updated = status?.generated_at ? new Date(status.generated_at).toLocaleString() : ''
+  const updated = mounted && status?.generated_at ? new Date(status.generated_at).toLocaleString() : ''
+  const updatedAgo = mounted && status?.generated_at ? timeAgo(status.generated_at) : ''
   const svcs = useMemo(() => status?.services || [], [status])
   const upCount = svcs.filter(s => s.status === 'up').length
   const downCount = svcs.filter(s => s.status === 'down').length
@@ -212,7 +215,7 @@ export default function StatusPage() {
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: 3, color: 'var(--text)' }}>AIFAZI<span style={{ color: C }}>·STATUS</span></span>
           <span style={{ flex: 1 }} />
-          <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>AUTO-REFRESH {countdown}s</span>
+          <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>AUTO-REFRESH {mounted ? countdown : REFRESH_MS / 1000}s</span>
           <button onClick={refreshNow} style={{
             fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '6px 12px', cursor: 'pointer',
             background: 'transparent', color: C, border: `1px solid ${C}45`, borderRadius: 8, fontWeight: 700,
@@ -249,7 +252,7 @@ export default function StatusPage() {
 
         {/* Updated line */}
         <div style={{ textAlign: 'center', fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 14 }}>
-          {updated ? `UPDATED ${updated} · ${timeAgo(status?.generated_at)}` : 'LIVE MONITORING'}
+          {updated ? `UPDATED ${updated} · ${updatedAgo}` : 'LIVE MONITORING'}
           {ongoing > 0 && <span style={{ color: R, fontWeight: 700 }}> · {ongoing} INCIDENT{ongoing > 1 ? 'S' : ''} ONGOING</span>}
         </div>
 
@@ -274,7 +277,7 @@ export default function StatusPage() {
               <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
               <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{svcs.length} TOTAL</span>
             </div>
-            {core.map((s, i) => <ServiceRow key={s.name || i} s={s} index={i} />)}
+            {core.map((s, i) => <ServiceRow key={s.name || i} s={s} mounted={mounted} />)}
 
             {custom.length > 0 && (
               <>
@@ -282,11 +285,11 @@ export default function StatusPage() {
                   <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C }}>CUSTOM CHECKS</span>
                   <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
                 </div>
-                {custom.map((s, i) => <ServiceRow key={s.name || i} s={s} index={i} />)}
+                {custom.map((s, i) => <ServiceRow key={s.name || i} s={s} mounted={mounted} />)}
               </>
             )}
 
-            <IncidentTimeline incidents={incidents} />
+            <IncidentTimeline incidents={incidents} mounted={mounted} />
 
             {/* About block */}
             <div style={{ marginTop: 40, border: '1px solid var(--border)', borderRadius: 14, padding: '22px 24px', background: 'var(--bg2)' }}>
