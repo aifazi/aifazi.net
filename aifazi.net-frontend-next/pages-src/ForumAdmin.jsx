@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
 import api, { getAuthToken, getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess } from '@/lib/api'
 import { notify } from '../core/notify.jsx'
+import { UserAvatar } from '@/lib/avatar'
 import { Checkbox, Select } from '../core/ui.jsx'
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
@@ -179,10 +180,12 @@ function UserEditModal({ userId, onClose, onSaved }) {
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <img
-                src={form.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${u?.username}`}
-                alt=""
-                style={{ width: 52, height: 52, borderRadius: '50%', border: `2px solid ${u?.banned ? 'var(--red)' : 'var(--border)'}` }}
+              <UserAvatar
+                avatar={form.avatar}
+                name={u?.username}
+                size={52}
+                imgStyle={{ border: `2px solid ${u?.banned ? 'var(--red)' : 'var(--border)'}` }}
+                fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${u?.username}`}
               />
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 3, marginBottom: 4 }}>EDIT USER</div>
@@ -230,10 +233,12 @@ function UserEditModal({ userId, onClose, onSaved }) {
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <input value={form.avatar} onChange={e => set('avatar', e.target.value)}
                     placeholder="https://..." style={S.input} />
-                  <img
-                    src={form.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${form.username}`}
-                    alt="preview"
-                    style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, border: '1px solid var(--border)', objectFit: 'cover' }}
+                  <UserAvatar
+                    avatar={form.avatar}
+                    name={form.username}
+                    size={40}
+                    imgStyle={{ border: '1px solid var(--border)' }}
+                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${form.username}`}
                   />
                 </div>
               </div>
@@ -883,8 +888,8 @@ export default function ForumAdmin({ embedded = false }) {
                 <div key={u._id} style={S.card}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                      <img src={u.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${u.username}`} alt=""
-                        style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--border)' }} />
+                      <UserAvatar avatar={u.avatar} name={u.username} size={32} imgStyle={{ border: '1px solid var(--border)' }}
+                        fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${u.username}`} />
                       <div>
                         <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600 }}>{u.username}</div>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{u.email} · {timeAgo(u.createdAt)}</div>
@@ -1046,10 +1051,11 @@ export default function ForumAdmin({ embedded = false }) {
             : users.map(u => (
               <div key={u._id} style={{ ...S.card, borderColor: u.banned ? 'rgba(255,71,87,0.2)' : 'var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                  <img
-                    src={u.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${u.username}`} alt=""
+                  <UserAvatar
+                    avatar={u.avatar} name={u.username} size={44}
                     onClick={() => setEditingUser(u._id)}
-                    style={{ width: 44, height: 44, borderRadius: '50%', border: `2px solid ${u.banned ? 'var(--red)' : 'var(--border)'}`, cursor: 'pointer', flexShrink: 0 }}
+                    imgStyle={{ border: `2px solid ${u.banned ? 'var(--red)' : 'var(--border)'}`, cursor: 'pointer' }}
+                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${u.username}`}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -1152,10 +1158,8 @@ export default function ForumAdmin({ embedded = false }) {
             : replies.map(r => (
               <div key={r._id} style={{ ...S.card, borderColor: r.author?.banned ? 'rgba(255,71,87,0.15)' : 'var(--border)' }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                  <img
-                    src={r.author?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${r.author?.username}`}
-                    alt="" style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid var(--border)', flexShrink: 0 }}
-                  />
+                  <UserAvatar avatar={r.author?.avatar} name={r.author?.username} size={36} imgStyle={{ border: '1px solid var(--border)' }}
+                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${r.author?.username}`} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8, flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>

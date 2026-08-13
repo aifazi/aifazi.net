@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
+import { UserAvatar, builtinAvatarEmoji, avatarUrl } from '@/lib/avatar'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
 
@@ -91,7 +92,7 @@ export default function CustomersTab() {
         customers.map(c => (
           <div key={c.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 8, overflow: 'hidden' }}>
             <div onClick={() => openId === c.id ? setOpenId(null) : openDetail(c)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, cursor: 'pointer', flexWrap: 'wrap' }}>
-              {c.avatar ? <img src={c.avatar} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }} />
+              {builtinAvatarEmoji(c.avatar) || avatarUrl(c.avatar) ? <UserAvatar avatar={c.avatar} name={c.username} size={36} imgStyle={{ border: '1px solid var(--border)' }} />
                 : <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontFamily: MONO }}>{(c.username || '?').slice(0, 2).toUpperCase()}</div>}
               <div style={{ flex: 1, minWidth: 140 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>

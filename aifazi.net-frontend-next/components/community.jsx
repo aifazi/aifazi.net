@@ -6,6 +6,7 @@
  */
 
 import { Link } from '@/lib/router-compat'
+import { UserAvatar } from '@/lib/avatar'
 
 export const CLR = {
   green: 'var(--green)',
@@ -104,10 +105,16 @@ export function RoleBadge({ role }) {
 // ── Avatar ────────────────────────────────────────────────────────────────────
 export function Avatar({ user, size = 40, online = false, style = {} }) {
   const seed = user?.username || user?.name || 'U'
-  const src = user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0b1118&textColor=00ff88`
   return (
     <div className="community-avatar-wrap" style={{ width: size, height: size, ...style }}>
-      <img src={src} alt={seed} loading="lazy" className="community-avatar" style={{ width: size, height: size }} />
+      <UserAvatar
+        avatar={user?.avatar}
+        name={seed}
+        size={size}
+        imgClassName="community-avatar"
+        imgStyle={{ width: size, height: size }}
+        fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0b1118&textColor=00ff88`}
+      />
       {online && <span className="community-avatar-online" />}
     </div>
   )

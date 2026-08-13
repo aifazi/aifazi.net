@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 
 import { Providers } from './providers'
 import { getSiteConfigServer } from '@/lib/siteSettingsServer'
-import { themeFontUrl, themeFontUrls } from '@/core/fonts'
+import { themeFontUrl } from '@/core/fonts'
 import './globals.css'
 
 // Light themes (mirrors LIGHT_THEMES in app/providers.tsx) — used to set
@@ -35,8 +35,7 @@ function escapeJsonForInline(value: unknown): string {
 function buildFoucScript(config: Record<string, any>): string {
   const cfgJson = escapeJsonForInline(config)
   const lightsJson = escapeJsonForInline(LIGHT_THEME_LIST)
-  const fontsJson = escapeJsonForInline(themeFontUrls())
-  return `(function(){try{var cfg=${cfgJson};var LIGHTS=${lightsJson};var FONTS=${fontsJson};var c=null;try{var _c=localStorage.getItem('site-config-cache');if(_c)c=JSON.parse(_c)}catch(e){}var conf=cfg||c;var u=!!localStorage.getItem('site-theme-user-set');var s=localStorage.getItem('site-theme');var t='cyber-dark';if(conf&&conf.lockTheme&&conf.globalTheme)t=conf.globalTheme;else if(u&&s)t=s;else if(conf&&conf.globalTheme)t=conf.globalTheme;else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:light)').matches)t='cyber-light';if(t!=='cyber-dark')document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-theme-mode',LIGHTS.indexOf(t)>=0?'light':'dark');var fu=FONTS[t];if(fu){var fl=document.createElement('link');fl.rel='stylesheet';fl.href=fu;document.head.appendChild(fl);}var ba=(conf&&conf.bgAnimation)||'none';if(ba&&ba!=='none'&&ba!=='clean')document.documentElement.setAttribute('data-bg-animation',ba);var bg=(conf&&(conf.gridPattern||conf.backgroundPattern))||'grid';if(bg&&bg!=='none'&&bg!=='clean')document.documentElement.setAttribute('data-bg-grid',bg)}catch(e){}})();`
+  return `(function(){try{var cfg=${cfgJson};var LIGHTS=${lightsJson};var c=null;try{var _c=localStorage.getItem('site-config-cache');if(_c)c=JSON.parse(_c)}catch(e){}var conf=cfg||c;var u=!!localStorage.getItem('site-theme-user-set');var s=localStorage.getItem('site-theme');var t='cyber-dark';if(conf&&conf.lockTheme&&conf.globalTheme)t=conf.globalTheme;else if(u&&s)t=s;else if(conf&&conf.globalTheme)t=conf.globalTheme;else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:light)').matches)t='cyber-light';if(t!=='cyber-dark')document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-theme-mode',LIGHTS.indexOf(t)>=0?'light':'dark');var ba=(conf&&conf.bgAnimation)||'none';if(ba&&ba!=='none'&&ba!=='clean')document.documentElement.setAttribute('data-bg-animation',ba);var bg=(conf&&(conf.gridPattern||conf.backgroundPattern))||'grid';if(bg&&bg!=='none'&&bg!=='clean')document.documentElement.setAttribute('data-bg-grid',bg)}catch(e){}})();`
 }
 
 export const metadata: Metadata = {

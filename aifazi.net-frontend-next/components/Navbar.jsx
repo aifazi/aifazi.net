@@ -14,6 +14,7 @@ import api from '@/lib/api'
 import NotificationBell from './NotificationBell'
 import { getUsername, getRole, getAuthToken } from '@/lib/api'
 import { getSiteSettings } from '@/lib/siteSettings'
+import { UserAvatar } from '@/lib/avatar'
 import { isFiveMHost, fivemRoute, useFiveMRoute, useFiveMLoginRoute } from '@/lib/fivemRoutes'
 
 // ── Theme Toggle — animated pill slider ───────────────────────────────────────
@@ -680,9 +681,9 @@ export default function Navbar() {
                   style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
                   title="Account"
                 >
-                  <img src={forumUser.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${forumUser.username}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`}
-                    alt={forumUser.username} loading="lazy"
-                    style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--green)', objectFit: 'cover' }} />
+                  <UserAvatar avatar={forumUser.avatar} name={forumUser.username} size={28}
+                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${forumUser.username}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`}
+                    imgStyle={{ border: '1px solid var(--green)' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
                 <button onClick={async () => { await forumLogout(); navigate(loginRoute, { state: { signedOut: true } }) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
@@ -795,7 +796,9 @@ export default function Navbar() {
             ) : forumUser ? (
               <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Link to={profileRoute} onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-                  <img src={forumUser.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${forumUser.username}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`} alt={forumUser.username} loading="lazy" style={{ width: 32, height: 32, borderRadius: '50%', border: '1px solid var(--green)', objectFit: 'cover' }} />
+                  <UserAvatar avatar={forumUser.avatar} name={forumUser.username} size={32}
+                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${forumUser.username}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`}
+                    imgStyle={{ border: '1px solid var(--green)' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
                 <button onClick={async () => { await forumLogout(); navigate(loginRoute, { state: { signedOut: true } }); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>

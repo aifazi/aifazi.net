@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
 import { useForum } from '../context/ForumContext'
 import api from '@/lib/api'
+import { UserAvatar } from '@/lib/avatar'
 
 const S = 'var(--green)', C = 'var(--cyan)'
 
@@ -131,10 +132,12 @@ export default function StoreHeader() {
           }}
           onMouseEnter={e => e.currentTarget.style.borderColor = S}
           onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
-            <img
-              src={user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.username || 'U')}&backgroundColor=00ff88,00d4ff&fontSize=36`}
-              alt=""
-              style={{ width: 28, height: 28, borderRadius: '50%', border: `1px solid ${S}` }}
+            <UserAvatar
+              avatar={user?.avatar}
+              name={user?.username || 'Account'}
+              size={28}
+              imgStyle={{ border: `1px solid ${S}` }}
+              fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.username || 'U')}&backgroundColor=00ff88,00d4ff&fontSize=36`}
             />
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user?.username || 'Account'}

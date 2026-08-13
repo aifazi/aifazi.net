@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
 import api, { ensureAdminGate } from '@/lib/api'
+import { builtinAvatarEmoji, avatarUrl, UserAvatar } from '@/lib/avatar'
 import { useForum } from '../context/ForumContext'
 import { Select, useDialog } from '../core/ui.jsx'
 import { useToast } from '../components/Toast'
@@ -140,8 +141,18 @@ function ago(d) {
 
 /* ─── Avatar ─────────────────────────────────────────────────────────────── */
 function Avatar({ user, size = 80 }) {
-  if (user?.avatar) return (
-    <img src={user.avatar} alt={user.username} loading="lazy"
+  const emoji = builtinAvatarEmoji(user?.avatar)
+  if (emoji) return (
+    <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: 'hsl(142,60%,25%)', border: `2px solid hsl(142,60%,40%)`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size * 0.5, ...M }}>
+      {emoji}
+    </div>
+  )
+  const avatar = avatarUrl(user?.avatar)
+  if (avatar) return (
+    <img src={avatar} alt={user.username} loading="lazy"
       style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover',
         border: '2px solid var(--border)', flexShrink: 0 }} />
   )
@@ -752,8 +763,7 @@ function ProfileEditTab({ user, onUpdate }) {
           <label htmlFor="pf-avatar" style={{ ...M, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>AVATAR</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             {form.avatar ? (
-              <img src={form.avatar} alt="avatar" onError={e => { e.currentTarget.style.display = 'none' }}
-                style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)', flexShrink: 0 }} />
+              <UserAvatar avatar={form.avatar} name={form.username} size={56} imgStyle={{ border: '1px solid var(--border)' }} />
             ) : (
               <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', ...M, fontSize: 20, color: 'var(--muted)', flexShrink: 0 }}>?</div>
             )}

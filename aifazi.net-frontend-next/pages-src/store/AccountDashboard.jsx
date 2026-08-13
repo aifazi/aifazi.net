@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { useForum } from '../../context/ForumContext'
 import { Card, NeonButton, Badge, EmptyState } from '../../components/community'
+import { UserAvatar } from '@/lib/avatar'
 
 const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
 const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)', Y = 'var(--orange)'
@@ -94,10 +95,12 @@ export default function AccountDashboard({ loginHref }) {
 
       {/* Profile Header */}
       <Card accent style={{ padding: 'clamp(22px, 3vw, 32px)', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-        <img
-          src={user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(avatarSeed)}&backgroundColor=00ff88,00d4ff,a855f7&fontSize=40`}
-          alt={user?.username || 'User'}
-          style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid var(--green)', flexShrink: 0 }}
+        <UserAvatar
+          avatar={user?.avatar}
+          name={user?.username || 'User'}
+          size={64}
+          imgStyle={{ border: '2px solid var(--green)' }}
+          fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(avatarSeed)}&backgroundColor=00ff88,00d4ff,a855f7&fontSize=40`}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
