@@ -61,21 +61,20 @@ export function LoginCard({ onAuthed }: { onAuthed?: () => void }) {
         <Card>
           <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>Two-factor authentication</Text>
           <Muted style={{ marginTop: SPACE.xs }}>
-            Enter the 6-digit code from your authenticator app{twoFA.username ? ` for @${twoFA.username}` : ''}.
+            Enter the 6-digit code from your authenticator app{twoFA.username ? ` for @${twoFA.username}` : ''}, or a backup recovery code.
           </Muted>
           <View style={{ marginTop: SPACE.xl }}>
             <Field
-              label="Authenticator code"
+              label="Authenticator / recovery code"
               value={twoFACode}
               onChangeText={setTwoFACode}
-              placeholder="000000"
-              keyboardType="number-pad"
-              maxLength={6}
+              placeholder="000000  ·  XXXX-XXXX-XXXX"
+              autoCapitalize="characters"
               autoFocus
             />
           </View>
           {err ? <Muted>{err}</Muted> : null}
-          <Btn title={busy ? 'Verifying…' : 'Verify'} onPress={submit2FA} disabled={busy || twoFACode.length < 6} />
+          <Btn title={busy ? 'Verifying…' : 'Verify'} onPress={submit2FA} disabled={busy || twoFACode.trim().length < 6} />
           <View style={{ marginTop: SPACE.xl }}>
             <Btn title="Back" variant="ghost" onPress={() => { setTwoFA(null); setErr('') }} />
           </View>

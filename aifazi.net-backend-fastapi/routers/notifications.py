@@ -26,6 +26,17 @@ async def get_notifications(user: dict = Depends(get_forum_user)):
     res = supabase.table("notifications").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(50).execute()
     return res.data or []
 
+@router.get("/unread-count")
+async def unread_count(user: dict = Depends(get_forum_user)):
+    user_id = user.get("id") or user.get("sub")
+    if not user_id:
+        return {"count": 0}
+    try:
+        res = supabase.table("notifications").select("id").eq("user_id", user_id).eq("read", False).execute()
+        return {"count": len(res.data or [])}
+    except Exception:
+        return {"count": 0}
+
 @router.patch("/{notif_id}/read")
 async def mark_read(notif_id: str, user: dict = Depends(get_forum_user)):
     user_id = user.get("id") or user.get("sub")

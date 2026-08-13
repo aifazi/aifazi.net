@@ -67,6 +67,7 @@ export default function NotificationBell({ forumUser }) {
   const [notifications, setNotifications] = useState([])
   const [open,          setOpen]          = useState(false)
   const [loading,       setLoading]       = useState(false)
+  const [badgeCount,    setBadgeCount]    = useState(0)
   // 'default' | 'granted' | 'denied' | 'unsupported' | 'loading'
   const [pushState,     setPushState]     = useState(() =>
     typeof window === 'undefined' || !isPushSupported() ? 'unsupported' : getPushPermission()
@@ -74,7 +75,7 @@ export default function NotificationBell({ forumUser }) {
   const dropdownRef = useRef(null)
   const now = useNow()
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  const unreadCount = badgeCount
 
   /* ── notification fetch ────────────────────────────────────────────────── */
   const fetchNotifications = async () => {
@@ -82,14 +83,26 @@ export default function NotificationBell({ forumUser }) {
     setLoading(true)
     try {
       const res = await api.get('/forum/notifications')
-      setNotifications(res.data || [])
+      const list = res.data || []
+      setNotifications(list)
+      setBadgeCount(list.filter(n => !n.read).length)
     } catch { /* silently fail */ } finally { setLoading(false) }
+  }
+
+  /* ── lightweight unread-count poll (realtime badge sync) ───────────────── */
+  const fetchUnread = async () => {
+    if (!forumUser || forumUser._staff) return
+    try {
+      const res = await api.get('/forum/notifications/unread-count')
+      if (typeof res.data?.count === 'number') setBadgeCount(res.data.count)
+    } catch { /* silently fail */ }
   }
 
   useEffect(() => {
     const init = setTimeout(fetchNotifications, 0)
     const interval = setInterval(fetchNotifications, 30000)
-    return () => { clearTimeout(init); clearInterval(interval) }
+    const unreadInterval = setInterval(fetchUnread, 10000)
+    return () => { clearTimeout(init); clearInterval(interval); clearInterval(unreadInterval) }
   }, [forumUser])
 
   /* ── close on outside click ───────────────────────────────────────────── */
@@ -106,6 +119,7 @@ export default function NotificationBell({ forumUser }) {
     try {
       await api.post('/forum/notifications/read-all')
       setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+      setBadgeCount(0)
     } catch {}
   }
 
@@ -113,6 +127,7 @@ export default function NotificationBell({ forumUser }) {
     try {
       await api.post(`/forum/notifications/${id}/read`)
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n))
+      setBadgeCount(prev => Math.max(0, prev - 1))
     } catch {}
   }
 

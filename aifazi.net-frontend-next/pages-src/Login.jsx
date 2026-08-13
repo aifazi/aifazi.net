@@ -736,9 +736,12 @@ function TwoFAStep({ challenge, onBack, shake }) {
     return () => clearTimeout(t)
   }, [expired, countdown, onBack])
 
-  async function verify(trimmed) {
-    if (trimmed.length !== 6) {
-      setError('Enter the 6-digit code from your authenticator app.')
+  async function verify(raw) {
+    const trimmed = raw.replace(/[\s-]/g, '')
+    const isTotp   = /^\d{6}$/.test(trimmed)
+    const isRecovery = /^[A-Za-z2-7]{12}$/.test(trimmed)
+    if (!isTotp && !isRecovery) {
+      setError('Enter the 6-digit code, or a 12-character recovery code.')
       shake?.(formRef.current)
       return
     }
@@ -772,7 +775,7 @@ function TwoFAStep({ challenge, onBack, shake }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    await verify(code.replace(/\s/g, ''))
+    await verify(code)
   }
 
   return (
@@ -814,20 +817,23 @@ function TwoFAStep({ challenge, onBack, shake }) {
 
       <FieldWrap label="Authenticator Code" htmlFor="twofa-code">
         <input
-          id="twofa-code" type="text" inputMode="numeric" pattern="[0-9 ]*"
-          placeholder="000 000" maxLength={7}
+          id="twofa-code" type="text" inputMode="text" pattern="[A-Za-z0-9 \-]*"
+          placeholder="000 000  ·  XXXX-XXXX-XXXX" maxLength={23}
           value={code}
           onChange={e => {
-            const val = e.target.value.replace(/[^0-9 ]/g, '')
+            const val = e.target.value.replace(/[^A-Za-z0-9 \-]/g, '')
             setCode(val)
-            const digits = val.replace(/\s/g, '')
-            if (digits.length === 6) verify(digits)
+            const clean = val.replace(/[\s-]/g, '')
+            if (/^\d{6}$/.test(clean) || /^[A-Za-z2-7]{12}$/.test(clean)) verify(clean)
           }}
           required autoComplete="one-time-code" autoFocus
           disabled={expired}
-          style={{ ...inputStyle, textAlign: 'center', fontSize: 22, letterSpacing: 8, fontFamily: 'var(--font-mono)', opacity: expired ? 0.4 : 1 }}
+          style={{ ...inputStyle, textAlign: 'center', fontSize: 20, letterSpacing: 3, fontFamily: 'var(--font-mono)', opacity: expired ? 0.4 : 1 }}
           onFocus={focusGreen} onBlur={blurGreen}
         />
+        <p style={{ textAlign: 'center', margin: '6px 0 0', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 1 }}>
+          Can&apos;t use your authenticator? Enter a backup recovery code instead.
+        </p>
       </FieldWrap>
 
       <button type="submit" className="auth-submit" disabled={loading || expired}>

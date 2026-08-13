@@ -266,7 +266,7 @@ function AdminProfilePanel() {
   }
 
   // ── Password change ──────────────────────────────────────────────────────────
-  const [form, setForm]   = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+  const [form, setForm]   = useState({ currentPassword: '', newPassword: '', confirmPassword: '', currentCode: '' })
   const [saving, setSaving] = useState(false)
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
@@ -276,9 +276,11 @@ function AdminProfilePanel() {
     loading:    true,
     qr:         null,   // base64 QR image from /auth/2fa/setup
     secret:     null,   // raw TOTP secret (for manual entry)
-    step:       null,   // null | 'setup' | 'confirm' | 'disable'
+    step:       null,   // null | 'setup' | 'confirm' | 'disable' | 'regen'
     code:       '',
     disablePw:  '',
+    regenPw:    '',
+    recoveryCodes: null, // shown exactly once, from enable/regenerate response
     working:    false,
     error:      '',
   })
@@ -291,7 +293,7 @@ function AdminProfilePanel() {
   }, [])
 
   const handleSetupStart = async () => {
-    setTF({ step: 'setup', working: true, error: '' })
+    setTF({ step: 'setup', working: true, error: '', recoveryCodes: null })
     try {
       const r = await api.post('/auth/2fa/setup')
       setTF({ qr: r.data?.qr_image, secret: r.data?.secret, working: false })
@@ -304,8 +306,8 @@ function AdminProfilePanel() {
     if (twoFA.code.replace(/\s/g, '').length !== 6) { setTF({ error: 'Enter the 6-digit code.' }); return }
     setTF({ working: true, error: '' })
     try {
-      await api.post('/auth/2fa/confirm', { code: twoFA.code.replace(/\s/g, '') })
-      setTF({ enabled: true, step: null, qr: null, secret: null, code: '', working: false })
+      const r = await api.post('/auth/2fa/confirm', { code: twoFA.code.replace(/\s/g, '') })
+      setTF({ enabled: true, step: null, qr: null, secret: null, code: '', working: false, recoveryCodes: r.data?.recovery_codes || null })
       toast.success('Two-factor authentication is now active', { title: '🔐 2FA Enabled' })
     } catch (err) {
       setTF({ error: err?.response?.data?.detail || 'Invalid code.', working: false })
@@ -315,12 +317,26 @@ function AdminProfilePanel() {
   const handleDisable = async () => {
     if (!twoFA.disablePw) { setTF({ error: 'Enter your current password to disable 2FA.' }); return }
     const codeClean = twoFA.code.replace(/\s/g, '')
-    if (codeClean.length !== 6) { setTF({ error: 'Enter the 6-digit code from your authenticator app.' }); return }
+    if (!/^\d{6}$/.test(codeClean) && !/^[A-Za-z2-7]{12}$/.test(codeClean)) { setTF({ error: 'Enter your 6-digit authenticator code or a recovery code.' }); return }
     setTF({ working: true, error: '' })
     try {
       await api.post('/auth/2fa/disable', { password: twoFA.disablePw, code: codeClean })
-      setTF({ enabled: false, step: null, disablePw: '', code: '', working: false })
+      setTF({ enabled: false, step: null, disablePw: '', code: '', working: false, recoveryCodes: null })
       toast.success('Two-factor authentication has been disabled', { title: '2FA Disabled' })
+    } catch (err) {
+      setTF({ error: err?.response?.data?.detail || 'Incorrect password or invalid code.', working: false })
+    }
+  }
+
+  const handleRegenCodes = async () => {
+    if (!twoFA.regenPw) { setTF({ error: 'Enter your current password to regenerate recovery codes.' }); return }
+    const codeClean = twoFA.code.replace(/\s/g, '')
+    if (!/^\d{6}$/.test(codeClean) && !/^[A-Za-z2-7]{12}$/.test(codeClean)) { setTF({ error: 'Enter your 6-digit authenticator code or a recovery code.' }); return }
+    setTF({ working: true, error: '' })
+    try {
+      const r = await api.post('/auth/2fa/recovery-codes', { password: twoFA.regenPw, code: codeClean })
+      setTF({ step: null, regenPw: '', code: '', working: false, recoveryCodes: r.data?.recovery_codes || null })
+      toast.success('New recovery codes generated', { title: '🔐 Recovery Codes' })
     } catch (err) {
       setTF({ error: err?.response?.data?.detail || 'Incorrect password or invalid code.', working: false })
     }
@@ -334,11 +350,15 @@ function AdminProfilePanel() {
     if (form.newPassword && form.newPassword.length < 8) {
       toast.error('New password must be at least 8 characters', { title: 'Error' }); return
     }
+    const codeClean = twoFA.enabled ? form.currentCode.replace(/\s/g, '') : ''
+    if (twoFA.enabled && !/^\d{6}$/.test(codeClean) && !/^[A-Za-z2-7]{12}$/.test(codeClean)) {
+      toast.error('Enter your 6-digit authenticator code or a recovery code', { title: '2FA Required' }); return
+    }
     setSaving(true)
     try {
-      await api.post('/auth/change-password', { currentPassword: form.currentPassword, newPassword: form.newPassword })
+      await api.post('/auth/change-password', { current_password: form.currentPassword, new_password: form.newPassword, code: codeClean })
       toast.success('Password updated successfully', { title: 'Saved' })
-      setForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setForm({ currentPassword: '', newPassword: '', confirmPassword: '', currentCode: '' })
     } catch (err) { toast.error(err.response?.data?.error || 'Update failed', { title: 'Error' }) }
     finally { setSaving(false) }
   }
@@ -396,6 +416,9 @@ function AdminProfilePanel() {
           <div><label style={T.label}>Current Password</label><input type="password" value={form.currentPassword} onChange={e => set('currentPassword', e.target.value)} placeholder="" style={T.inp} required /></div>
           <div><label style={T.label}>New Password</label><input type="password" value={form.newPassword} onChange={e => set('newPassword', e.target.value)} placeholder="" style={T.inp} required minLength={8} /></div>
           <div><label style={T.label}>Confirm New Password</label><input type="password" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} placeholder="" style={T.inp} required /></div>
+          {twoFA.enabled && (
+            <div><label style={T.label}>2FA Code</label><input type="text" value={form.currentCode} onChange={e => set('currentCode', e.target.value.replace(/[^A-Za-z0-9 \-]/g, ''))} placeholder="6-digit code or recovery code" style={T.inp} autoComplete="one-time-code" /></div>
+          )}
           {form.newPassword && form.confirmPassword && form.newPassword !== form.confirmPassword && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff4757' }}>❌ Passwords do not match</div>
           )}
@@ -478,15 +501,69 @@ function AdminProfilePanel() {
         )}
 
         {/* ── Enabled: show disable option ── */}
-        {!twoFA.loading && twoFA.enabled && twoFA.step !== 'disable' && (
+        {!twoFA.loading && twoFA.enabled && twoFA.step !== 'disable' && twoFA.step !== 'regen' && (
           <>
             <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 16 }}>
               2FA is active on your account. Every login requires a code from your authenticator app.
             </p>
-            <button onClick={() => setTF({ step: 'disable', error: '' })} style={{ padding: '10px 20px', background: 'transparent', color: '#ff4757', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: '1px solid rgba(255,71,87,0.4)', cursor: 'pointer', borderRadius: 2 }}>
-              DISABLE 2FA
-            </button>
+
+            {twoFA.recoveryCodes && (
+              <div style={{ border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', padding: 16, marginBottom: 16 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 8 }}>BACKUP RECOVERY CODES — SAVE THESE NOW</div>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, margin: '0 0 10px' }}>
+                  Each code can be used once to sign in if you lose your authenticator. Store them somewhere safe — they won&apos;t be shown again.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 6 }}>
+                  {twoFA.recoveryCodes.map(c => (
+                    <div key={c} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5, background: 'var(--bg2)', border: '1px solid var(--border)', padding: '8px 10px', borderRadius: 4, color: 'var(--text)', userSelect: 'all' }}>{c}</div>
+                  ))}
+                </div>
+                <button onClick={() => setTF({ recoveryCodes: null })} style={{ marginTop: 12, padding: '8px 14px', background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 2 }}>
+                  I&apos;VE SAVED THESE
+                </button>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button onClick={() => setTF({ step: 'disable', error: '' })} style={{ padding: '10px 20px', background: 'transparent', color: '#ff4757', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: '1px solid rgba(255,71,87,0.4)', cursor: 'pointer', borderRadius: 2 }}>
+                DISABLE 2FA
+              </button>
+              <button onClick={() => setTF({ step: 'regen', error: '', code: '' })} style={{ padding: '10px 20px', background: 'transparent', color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: '1px solid color-mix(in srgb, var(--cyan) 45%, transparent)', cursor: 'pointer', borderRadius: 2 }}>
+                REGENERATE RECOVERY CODES
+              </button>
+            </div>
           </>
+        )}
+
+        {/* ── Regenerate recovery codes confirmation ── */}
+        {!twoFA.loading && twoFA.step === 'regen' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
+              Generate a new set of recovery codes? Your current codes will be invalidated. Enter your password and an authenticator (or recovery) code to confirm.
+            </p>
+            <div>
+              <label style={T.label}>Current Password</label>
+              <input type="password" value={twoFA.regenPw} onChange={e => setTF({ regenPw: e.target.value, error: '' })} placeholder="" style={{ ...T.inp, maxWidth: 280 }} />
+            </div>
+            <div>
+              <label style={T.label}>Authenticator / Recovery Code</label>
+              <input
+                type="text" pattern="[A-Za-z0-9 \-]*" maxLength={23}
+                placeholder="000 000  ·  XXXX-XXXX-XXXX"
+                value={twoFA.code}
+                onChange={e => setTF({ code: e.target.value.replace(/[^A-Za-z0-9 \-]/g, ''), error: '' })}
+                style={{ ...T.inp, maxWidth: 260, textAlign: 'center', fontSize: 14, letterSpacing: 3, fontFamily: 'var(--font-mono)' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={handleRegenCodes} disabled={twoFA.working} style={{ padding: '10px 20px', background: twoFA.working ? 'var(--bg3)' : 'var(--cyan)', color: twoFA.working ? 'var(--muted)' : '#000', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: twoFA.working ? 'not-allowed' : 'pointer', borderRadius: 2 }}>
+                {twoFA.working ? 'GENERATING…' : 'GENERATE NEW CODES'}
+              </button>
+              <button onClick={() => setTF({ step: null, regenPw: '', code: '', error: '' })} style={{ padding: '10px 16px', background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 2 }}>
+                CANCEL
+              </button>
+            </div>
+          </div>
         )}
 
         {/* ── Disable confirmation ── */}
@@ -500,13 +577,13 @@ function AdminProfilePanel() {
               <input type="password" value={twoFA.disablePw} onChange={e => setTF({ disablePw: e.target.value, error: '' })} placeholder="" style={{ ...T.inp, maxWidth: 280 }} />
             </div>
             <div>
-              <label style={T.label}>Authenticator Code</label>
+              <label style={T.label}>Authenticator / Recovery Code</label>
               <input
-                type="text" inputMode="numeric" pattern="[0-9 ]*" maxLength={7}
-                placeholder="000 000"
+                type="text" pattern="[A-Za-z0-9 \-]*" maxLength={23}
+                placeholder="000 000  ·  XXXX-XXXX-XXXX"
                 value={twoFA.code}
-                onChange={e => setTF({ code: e.target.value.replace(/[^0-9 ]/g, ''), error: '' })}
-                style={{ ...T.inp, maxWidth: 160, textAlign: 'center', fontSize: 16, letterSpacing: 6, fontFamily: 'var(--font-mono)' }}
+                onChange={e => setTF({ code: e.target.value.replace(/[^A-Za-z0-9 \-]/g, ''), error: '' })}
+                style={{ ...T.inp, maxWidth: 260, textAlign: 'center', fontSize: 14, letterSpacing: 3, fontFamily: 'var(--font-mono)' }}
               />
             </div>
             <div style={{ display: 'flex', gap: 10 }}>

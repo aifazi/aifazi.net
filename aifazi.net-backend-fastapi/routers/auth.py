@@ -196,6 +196,82 @@ def _upsert_admin_2fa(updates: dict):
     else:
         supabase.table("admin_2fa").insert({"username": ADMIN_USERNAME, **updates}).execute()
 
+# ── 2FA recovery codes ──────────────────────────────────────────────────────────
+# One-time backup codes (bcrypt-hashed at rest). Stored in `recovery_codes`
+# (jsonb array of hashes) on the users row or the admin_2fa row. Each code is
+# single-use: verifying it removes it from the array. Plaintext codes are only
+# returned once, at enable / explicit regenerate time.
+_RECOVERY_CODE_COUNT = 8
+_RECOVERY_CODE_RE = re.compile(r"^[A-Z2-7]{12}$")
+
+def _gen_recovery_codes(n: int = _RECOVERY_CODE_COUNT) -> list[str]:
+    out = []
+    while len(out) < n:
+        code = "".join(secrets.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567") for _ in range(12))
+        fmt = f"{code[:4]}-{code[4:8]}-{code[8:]}"
+        if fmt not in out:
+            out.append(fmt)
+    return out
+
+def _recovery_codes_doc(user_type: str, user_id: str) -> dict:
+    """Fetch the account's stored recovery-code hashes doc (dict of hash->used)."""
+    if user_type == "admin":
+        row = _get_admin_2fa() or {}
+        raw = row.get("recovery_codes")
+    else:
+        try:
+            res = supabase.table("users").select("recovery_codes").eq("id", user_id).limit(1).execute()
+            raw = (res.data or [{}])[0].get("recovery_codes")
+        except Exception:
+            raw = None
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, list):
+        return {h: False for h in raw if isinstance(h, str)}
+    return {}
+
+def _store_recovery_codes(user_type: str, user_id: str, hashes: dict) -> None:
+    if user_type == "admin":
+        _upsert_admin_2fa({"recovery_codes": hashes})
+    else:
+        supabase.table("users").update({"recovery_codes": hashes}).eq("id", user_id).execute()
+
+def _rotate_recovery_codes(user_type: str, user_id: str) -> list[str]:
+    codes = _gen_recovery_codes()
+    _store_recovery_codes(user_type, user_id, {_hash(c): False for c in codes})
+    return codes
+
+def _consume_recovery_code(user_type: str, user_id: str, code: str) -> bool:
+    """Verify + consume a recovery code. Returns True if it was valid (and now used)."""
+    normalized = (code or "").replace(" ", "").replace("-", "").upper()
+    if not normalized or not _RECOVERY_CODE_RE.match(normalized):
+        return False
+    hashes = _recovery_codes_doc(user_type, user_id)
+    if not hashes:
+        return False
+    for stored_hash, used in hashes.items():
+        if used:
+            continue
+        try:
+            if _bcrypt.checkpw(normalized.encode("utf-8"), stored_hash.encode("utf-8")):
+                hashes[stored_hash] = True
+                _store_recovery_codes(user_type, user_id, hashes)
+                return True
+        except Exception:
+            continue
+    return False
+
+def _has_recovery_codes(user_type: str, user_id: str) -> bool:
+    hashes = _recovery_codes_doc(user_type, user_id)
+    return any(not used for used in hashes.values())
+
+def _verify_2fa_entry(user_type: str, user_id: str, secret: str, code: str) -> bool:
+    """True if the code is a valid TOTP code for the secret OR a valid recovery code."""
+    code_clean = (code or "").replace(" ", "")
+    if pyotp.TOTP(secret).verify(code_clean, valid_window=1):
+        return True
+    return _consume_recovery_code(user_type, user_id, code_clean)
+
 def _admin_profile_overrides() -> dict:
     row = _get_admin_2fa() or {}
     return {
@@ -509,16 +585,51 @@ def _find_username_email_html(username: str) -> str:
     </p>"""
     return _email_layout("Your username — aifazi.net", body)
 
-def _upsert_forum_session(user_id: str, username: str, ip: str, ua: str) -> None:
+def _upsert_forum_session(user_id: str, username: str, ip: str, ua: str) -> bool:
+    """Track a login session. Returns True when this is a NEW device (first time
+    this IP+UA is seen for the account) — used to fire a new-device email alert."""
     try:
         now = datetime.now(timezone.utc).isoformat()
         existing = supabase.table("forum_sessions").select("id").eq("user_id", user_id).eq("ip", ip).eq("user_agent", ua).execute()
         if existing.data:
             supabase.table("forum_sessions").update({"last_active": now}).eq("id", existing.data[0]["id"]).execute()
-        else:
-            supabase.table("forum_sessions").insert({"user_id": user_id, "username": username, "ip": ip, "user_agent": ua, "last_active": now, "created_at": now}).execute()
+            return False
+        supabase.table("forum_sessions").insert({"user_id": user_id, "username": username, "ip": ip, "user_agent": ua, "last_active": now, "created_at": now}).execute()
+        return True
     except Exception:
-        pass
+        return False
+
+def _send_new_device_alert(username: str, email: str, ip: str, ua: str) -> None:
+    """Email the account owner when a sign-in happens from a device we've never
+    seen before. Best-effort — a failure never blocks the login response."""
+    if not email:
+        return
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    device = (ua or "unknown device")[:120]
+    body = f"""
+<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0d1117;color:#e6edf3;padding:32px;border-radius:12px">
+  <h2 style="color:#00ff88;margin:0 0 8px">New sign-in to your account</h2>
+  <p style="color:#8b949e;font-size:14px">We noticed a new sign-in for <strong style="color:#e6edf3">@{username}</strong>.</p>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin:16px 0">
+    <div style="color:#8b949e;font-size:12px;margin-bottom:4px">TIME · <span style="color:#e6edf3">{now}</span></div>
+    <div style="color:#8b949e;font-size:12px;margin-bottom:4px">IP · <span style="color:#e6edf3">{ip or "unknown"}</span></div>
+    <div style="color:#8b949e;font-size:12px">DEVICE · <span style="color:#e6edf3">{device}</span></div>
+  </div>
+  <p style="color:#8b949e;font-size:13px">If this was you, you're all set. If not, change your password and enable 2FA, then revoke the session from your profile.</p>
+</div>"""
+    try:
+        import asyncio as _asio
+        _asio.get_event_loop().create_task(
+            queue_email(email, "New sign-in to your aifazi.net account", body, f"New sign-in: @{username}", "security_alert")
+        )
+    except Exception:
+        try:
+            import asyncio as _asio
+            _asio.get_event_loop().run_until_complete(
+                queue_email(email, "New sign-in to your aifazi.net account", body, f"New sign-in: @{username}", "security_alert")
+            )
+        except Exception:
+            pass
 
 def _make_discord_link_token(user_id: str) -> str:
     exp = datetime.now(timezone.utc) + timedelta(minutes=10)
@@ -568,6 +679,7 @@ class ProfileBody(BaseModel):
 class ChangePasswordBody(BaseModel):
     current_password: str | None = None
     new_password: str
+    code: str = ""  # required (TOTP or recovery code) when 2FA is enabled
 
 # SQL migration (run once in Supabase):
 #   CREATE TABLE IF NOT EXISTS admin_2fa (
@@ -664,6 +776,8 @@ async def login(body: LoginBody, request: Request, response: Response):
         if row and row.get("enabled") and row.get("totp_secret"):
             partial = make_token({"username": ADMIN_USERNAME, "role": "admin", "id": forum_id, "tfa_pending": True}, 5)
             return {"requires_2fa": True, "partial_token": partial}
+        if forum_id and _upsert_forum_session(forum_id, ADMIN_USERNAME, client_ip, user_agent):
+            _send_new_device_alert(ADMIN_USERNAME, (row or {}).get("email") or f"{ADMIN_USERNAME}@aifazi.net", client_ip, user_agent)
         _set_auth_cookies(response, token, refresh)
         return {"token": token, "refreshToken": refresh, "user": {"username": ADMIN_USERNAME, "role": "admin"}}
 
@@ -696,6 +810,8 @@ async def login(body: LoginBody, request: Request, response: Response):
             if staff.get("totp_enabled") and staff.get("totp_secret"):
                 partial = make_token({"username": staff["username"], "role": staff["role"], "id": staff["id"], "tfa_pending": True}, 5)
                 return {"requires_2fa": True, "partial_token": partial}
+            if _upsert_forum_session(staff["id"], staff["username"], client_ip, user_agent):
+                _send_new_device_alert(staff["username"], staff.get("email") or "", client_ip, user_agent)
             _set_auth_cookies(response, token, refresh)
             return {"token": token, "refreshToken": refresh, "user": {"username": staff["username"], "role": staff["role"], "permissions": perms}}
 
@@ -745,7 +861,8 @@ async def login(body: LoginBody, request: Request, response: Response):
     _auth_log(user["username"], success=True, ip=client_ip, user_agent=user_agent,
               role=user.get("role", ""), reason="login_success")
     _record_user_activity(user["id"], user["username"], "login", f"IP: {client_ip}", client_ip)
-    _upsert_forum_session(user["id"], user["username"], client_ip, user_agent)
+    if _upsert_forum_session(user["id"], user["username"], client_ip, user_agent):
+        _send_new_device_alert(user["username"], user.get("email") or "", client_ip, user_agent)
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
     refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
     # H4 — persist the refresh token so /refresh can validate + rotate it.
@@ -1174,9 +1291,15 @@ async def revoke_all_other_sessions(request: Request, user: dict = Depends(get_c
 async def tfa_status(user: dict = Depends(get_current_user)):
     if user.get("role") == "admin":
         row = _get_admin_2fa()
-        return {"enabled": bool(row and row.get("enabled"))}
+        return {
+            "enabled": bool(row and row.get("enabled")),
+            "recovery_codes": _has_recovery_codes("admin", ""),
+        }
     res = supabase.table("users").select("totp_enabled").eq("id", user["id"]).execute()
-    return {"enabled": bool(res.data and res.data[0].get("totp_enabled"))}
+    return {
+        "enabled": bool(res.data and res.data[0].get("totp_enabled")),
+        "recovery_codes": _has_recovery_codes("user", user["id"]),
+    }
 
 @router.post("/2fa/setup")
 async def tfa_setup(user: dict = Depends(get_current_user)):
@@ -1200,6 +1323,7 @@ async def tfa_enable(body: TwoFAEnableBody, user: dict = Depends(get_current_use
         if not pyotp.TOTP(row["totp_secret"]).verify(body.code, valid_window=1):
             raise HTTPException(400, "Invalid code")
         _upsert_admin_2fa({"enabled": True})
+        recovery = _rotate_recovery_codes("admin", "")
     else:
         res = supabase.table("users").select("totp_secret").eq("id", user["id"]).execute()
         if not res.data or not res.data[0].get("totp_secret"):
@@ -1207,8 +1331,9 @@ async def tfa_enable(body: TwoFAEnableBody, user: dict = Depends(get_current_use
         if not pyotp.TOTP(res.data[0]["totp_secret"]).verify(body.code, valid_window=1):
             raise HTTPException(400, "Invalid code")
         supabase.table("users").update({"totp_enabled": True}).eq("id", user["id"]).execute()
+        recovery = _rotate_recovery_codes("user", user["id"])
     _audit(user.get("username"), "2fa_enabled")
-    return {"enabled": True}
+    return {"enabled": True, "recovery_codes": recovery}
 
 # Alias: frontend calls /2fa/confirm → same logic as /2fa/enable
 @router.post("/2fa/confirm")
@@ -1222,9 +1347,9 @@ async def tfa_disable(body: TwoFADisableBody, user: dict = Depends(get_current_u
             raise HTTPException(400, "Invalid password")
         row = _get_admin_2fa()
         if row and row.get("enabled") and row.get("totp_secret"):
-            if not pyotp.TOTP(row["totp_secret"]).verify(body.code, valid_window=1):
+            if not _verify_2fa_entry("admin", "", row["totp_secret"], body.code):
                 raise HTTPException(400, "Invalid 2FA code")
-        _upsert_admin_2fa({"enabled": False, "totp_secret": None})
+        _upsert_admin_2fa({"enabled": False, "totp_secret": None, "recovery_codes": None})
     else:
         res = supabase.table("users").select(
             "password_hash,totp_secret,totp_enabled"
@@ -1235,13 +1360,46 @@ async def tfa_disable(body: TwoFADisableBody, user: dict = Depends(get_current_u
         if not _verify(body.password, s["password_hash"]):
             raise HTTPException(400, "Invalid password")
         if s.get("totp_enabled") and s.get("totp_secret"):
-            if not pyotp.TOTP(s["totp_secret"]).verify(body.code, valid_window=1):
+            if not _verify_2fa_entry("user", user["id"], s["totp_secret"], body.code):
                 raise HTTPException(400, "Invalid 2FA code")
         supabase.table("users").update(
-            {"totp_enabled": False, "totp_secret": None}
+            {"totp_enabled": False, "totp_secret": None, "recovery_codes": None}
         ).eq("id", user["id"]).execute()
     _audit(user.get("username"), "2fa_disabled")
     return {"enabled": False}
+
+class RecoveryCodesBody(BaseModel):
+    password: str = ""
+    code: str = ""
+
+@router.post("/2fa/recovery-codes")
+async def tfa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get_current_user)):
+    """Regenerate recovery codes. Requires the account password AND a valid 2FA
+    entry (TOTP or an existing recovery code) so a stolen session alone can't
+    mint new backup codes. Old codes are invalidated on success."""
+    if user.get("role") == "admin":
+        if not _check_admin_password(body.password):
+            raise HTTPException(400, "Invalid password")
+        row = _get_admin_2fa()
+        secret = (row or {}).get("totp_secret")
+        if secret and not _verify_2fa_entry("admin", "", secret, body.code):
+            raise HTTPException(400, "Invalid 2FA code")
+    else:
+        res = supabase.table("users").select(
+            "password_hash,totp_secret,totp_enabled"
+        ).eq("id", user["id"]).execute()
+        if not res.data:
+            raise HTTPException(404, "Not found")
+        s = res.data[0]
+        if not _verify(body.password, s["password_hash"]):
+            raise HTTPException(400, "Invalid password")
+        if s.get("totp_enabled") and s.get("totp_secret"):
+            if not _verify_2fa_entry("user", user["id"], s["totp_secret"], body.code):
+                raise HTTPException(400, "Invalid 2FA code")
+    codes = _rotate_recovery_codes("admin" if user.get("role") == "admin" else "user",
+                                   "" if user.get("role") == "admin" else user["id"])
+    _audit(user.get("username"), "2fa_recovery_codes_rotated")
+    return {"recovery_codes": codes}
 
 # ── 2FA brute-force lockout ──────────────────────────────────────────────
 # The middleware rate limit keys on IP+path, so a distributed attacker can
@@ -1283,7 +1441,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
         row = _get_admin_2fa()
         if not row or not row.get("totp_secret"):
             raise HTTPException(500, "2FA not configured on server")
-        if not pyotp.TOTP(row["totp_secret"]).verify(body.code, valid_window=1):
+        if not _verify_2fa_entry("admin", "", row["totp_secret"], body.code):
             _2fa_record_fail(username)
             _audit(username, "2fa_failed", ip=ip)
             raise HTTPException(400, "Invalid code")
@@ -1312,6 +1470,8 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
                 pass
         _2fa_clear_fails(username)
         _audit(username, "admin_login_2fa", target="admin_panel", ip=ip)
+        if forum_id and _upsert_forum_session(forum_id, username, ip, request.headers.get("user-agent", "")):
+            _send_new_device_alert(username, (row or {}).get("email") or f"{ADMIN_USERNAME}@aifazi.net", ip, request.headers.get("user-agent", ""))
         _set_auth_cookies(response, token, refresh)  # #1 #2
         return {"token": token, "refreshToken": refresh, "user": {"username": username, "role": role}}
     else:
@@ -1319,7 +1479,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
         if not res.data:
             raise HTTPException(404, "User not found")
         s = res.data[0]
-        if not pyotp.TOTP(s["totp_secret"]).verify(body.code, valid_window=1):
+        if not _verify_2fa_entry("user", user_id, s["totp_secret"], body.code):
             _2fa_record_fail(username)
             _audit(username, "2fa_failed", ip=ip)
             raise HTTPException(400, "Invalid code")
@@ -1330,6 +1490,8 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
         }).eq("id", s["id"]).execute()
         _2fa_clear_fails(username)
         _audit(username, "staff_login_2fa", target="admin_panel", ip=ip)
+        if _upsert_forum_session(s["id"], s["username"], ip, request.headers.get("user-agent", "")):
+            _send_new_device_alert(s["username"], s.get("email") or "", ip, request.headers.get("user-agent", ""))
         _set_auth_cookies(response, token, refresh)  # #1 #2
         return {"token": token, "refreshToken": refresh, "user": {"username": username, "role": role}}
 
@@ -1720,18 +1882,28 @@ async def change_password(body: ChangePasswordBody, creds: HTTPAuthorizationCred
             ok = _hmac.compare_digest((body.current_password or "").encode(), admin_pw.encode())
         if not ok:
             raise HTTPException(400, "Current password incorrect")
+        _row = _get_admin_2fa()
+        if _row and _row.get("enabled") and _row.get("totp_secret"):
+            if not _verify_2fa_entry("admin", "", _row["totp_secret"], body.code):
+                raise HTTPException(400, "2FA code required to change password")
         return {"message": "Password hash generated. Update ADMIN_PASSWORD in Vercel.", "bcrypt_hash": _hash(body.new_password)}
     if access and access.get("staff_id") and not access.get("forum_user_id"):
-        row = supabase.table("users").select("password_hash").eq("id", access["staff_id"]).limit(1).execute()
+        row = supabase.table("users").select("password_hash,totp_secret,totp_enabled").eq("id", access["staff_id"]).limit(1).execute()
         if not row.data or not _verify(body.current_password or "", row.data[0].get("password_hash") or ""):
             raise HTTPException(400, "Current password incorrect")
+        if row.data[0].get("totp_enabled") and row.data[0].get("totp_secret"):
+            if not _verify_2fa_entry("user", access["staff_id"], row.data[0]["totp_secret"], body.code):
+                raise HTTPException(400, "2FA code required to change password")
         supabase.table("users").update({"password_hash": _hash(body.new_password)}).eq("id", access["staff_id"]).execute()
         return {"message": "Password updated"}
     if not user_id:
         raise HTTPException(400, "A user account is required")
-    row = supabase.table("users").select("password_hash").eq("id", user_id).limit(1).execute()
+    row = supabase.table("users").select("password_hash,totp_secret,totp_enabled").eq("id", user_id).limit(1).execute()
     if not row.data or not _verify(body.current_password or "", row.data[0].get("password_hash") or ""):
         raise HTTPException(400, "Current password incorrect")
+    if row.data[0].get("totp_enabled") and row.data[0].get("totp_secret"):
+        if not _verify_2fa_entry("user", user_id, row.data[0]["totp_secret"], body.code):
+            raise HTTPException(400, "2FA code required to change password")
     supabase.table("users").update({"password_hash": _hash(body.new_password)}).eq("id", user_id).execute()
     _record_user_activity(user_id, payload.get("username", ""), "password_change")
     return {"message": "Password updated"}

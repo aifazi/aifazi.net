@@ -46,15 +46,16 @@ interface AuthCtx {
   refresh: () => Promise<void>
   updateProfile: (patch: { username?: string; bio?: string; avatar?: string; email?: string }) => Promise<void>
   uploadAvatar: (file: UploadAvatarFile) => Promise<string>
-  changePassword: (currentPassword: string, newPassword: string) => Promise<void>
+  changePassword: (currentPassword: string, newPassword: string, code?: string) => Promise<void>
   deleteAccount: (password: string) => Promise<void>
   listSessions: () => Promise<any[]>
   revokeSession: (id: string) => Promise<void>
   revokeAllSessions: () => Promise<void>
   get2FAStatus: () => Promise<boolean>
   setup2FA: () => Promise<{ secret: string; otpauth_uri: string; qr_image?: string }>
-  confirm2FA: (code: string) => Promise<void>
+  confirm2FA: (code: string) => Promise<string[]>
   disable2FA: (password: string, code?: string) => Promise<void>
+  regenerateRecoveryCodes: (password: string, code: string) => Promise<string[]>
 }
 
 const Ctx = createContext<AuthCtx>({
@@ -76,8 +77,9 @@ const Ctx = createContext<AuthCtx>({
   revokeAllSessions: async () => {},
   get2FAStatus: async () => false,
   setup2FA: async () => ({ secret: '', otpauth_uri: '' }),
-  confirm2FA: async () => {},
+  confirm2FA: async () => [],
   disable2FA: async () => {},
+  regenerateRecoveryCodes: async () => [],
 })
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
@@ -173,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (partialToken: string, code: string) => {
       const res = await api.post('/auth/2fa/verify', {
         partial_token: partialToken,
-        code: code.replace(/\s/g, ''),
+        code: code.replace(/[\s-]/g, ''),
       })
       const { token, refreshToken } = res.data ?? {}
       if (!token) throw new Error('2FA verification failed — no token returned')
@@ -218,8 +220,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
-    await api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword })
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string, code?: string) => {
+    await api.post('/auth/change-password', { current_password: currentPassword, new_password: newPassword, code: code || '' })
   }, [])
 
   const deleteAccount = useCallback(async (password: string) => {
@@ -253,11 +255,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const confirm2FA = useCallback(async (code: string) => {
-    await api.post('/auth/2fa/confirm', { code: code.replace(/\s/g, '') })
+    const res = await api.post('/auth/2fa/confirm', { code: code.replace(/\s/g, '') })
+    return (res.data?.recovery_codes || []) as string[]
   }, [])
 
   const disable2FA = useCallback(async (password: string, code?: string) => {
-    await api.post('/auth/2fa/disable', { password, code: code ? code.replace(/\s/g, '') : undefined })
+    await api.post('/auth/2fa/disable', { password, code: code ? code.replace(/[\s-]/g, '') : undefined })
+  }, [])
+
+  const regenerateRecoveryCodes = useCallback(async (password: string, code: string) => {
+    const res = await api.post('/auth/2fa/recovery-codes', { password, code: code.replace(/[\s-]/g, '') })
+    return (res.data?.recovery_codes || []) as string[]
   }, [])
 
   return (
@@ -283,6 +291,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setup2FA,
         confirm2FA,
         disable2FA,
+        regenerateRecoveryCodes,
       }}
     >
       {children}

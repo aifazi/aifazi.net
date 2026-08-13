@@ -15,11 +15,12 @@ export function SecurityTab() {
   const c = theme.colors
   const {
     changePassword, deleteAccount, listSessions, revokeSession, revokeAllSessions,
-    get2FAStatus, setup2FA, confirm2FA, disable2FA, logout,
+    get2FAStatus, setup2FA, confirm2FA, disable2FA, regenerateRecoveryCodes, logout,
   } = useAuth()
   const { confirm } = useOverlay()
   const [cur, setCur] = useState('')
   const [next, setNext] = useState('')
+  const [twoChangeCode, setTwoChangeCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
 
@@ -28,6 +29,9 @@ export function SecurityTab() {
   const [twoSecret, setTwoSecret] = useState<{ secret: string; otpauth_uri: string; qr_image?: string } | null>(null)
   const [twoCode, setTwoCode] = useState('')
   const [twoPw, setTwoPw] = useState('')
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null)
+  const [regenPw, setRegenPw] = useState('')
+  const [regenCode, setRegenCode] = useState('')
 
   // sessions
   const [sessions, setSessions] = useState<any[]>([])
@@ -41,8 +45,8 @@ export function SecurityTab() {
   const changePw = async () => {
     setMsg(''); setBusy(true)
     try {
-      await changePassword(cur, next)
-      setCur(''); setNext('')
+      await changePassword(cur, next, twoEnabled ? twoChangeCode.trim() : '')
+      setCur(''); setNext(''); setTwoChangeCode('')
       setMsg('Password updated.')
     } catch (e: any) {
       setMsg(e?.response?.data?.detail || 'Could not change password.')
@@ -62,9 +66,10 @@ export function SecurityTab() {
   const submit2faCode = async () => {
     setMsg(''); setBusy(true)
     try {
-      await confirm2FA(twoCode)
+      const codes = await confirm2FA(twoCode)
       setTwoCode(''); setTwoSecret(null); setTwoEnabled(true)
-      setMsg('Two-factor authentication enabled.')
+      if (codes.length) setRecoveryCodes(codes)
+      else setMsg('Two-factor authentication enabled.')
     } catch (e: any) {
       setMsg(e?.response?.data?.detail || 'Invalid code.')
     } finally { setBusy(false) }
@@ -74,11 +79,26 @@ export function SecurityTab() {
     setMsg(''); setBusy(true)
     try {
       await disable2FA(twoPw, twoCode)
-      setTwoPw(''); setTwoCode(''); setTwoEnabled(false)
+      setTwoPw(''); setTwoCode(''); setTwoEnabled(false); setRecoveryCodes(null)
       setMsg('Two-factor authentication disabled.')
     } catch (e: any) {
       setMsg(e?.response?.data?.detail || 'Could not disable 2FA.')
     } finally { setBusy(false) }
+  }
+
+  const regenerate = async () => {
+    setMsg(''); setBusy(true)
+    try {
+      const codes = await regenerateRecoveryCodes(regenPw, regenCode)
+      setRegenPw(''); setRegenCode(''); setRecoveryCodes(codes)
+    } catch (e: any) {
+      setMsg(e?.response?.data?.detail || 'Could not regenerate recovery codes.')
+    } finally { setBusy(false) }
+  }
+
+  const isCodeValid = (v: string) => {
+    const clean = v.replace(/[\s-]/g, '')
+    return /^\d{6}$/.test(clean) || /^[A-Za-z2-7]{12}$/.test(clean)
   }
 
   const onDelete = async () => {
@@ -102,7 +122,10 @@ export function SecurityTab() {
       <Card title="Change Password">
         <Field label="Current password" value={cur} onChangeText={setCur} secure placeholder="••••••••" />
         <Field label="New password" value={next} onChangeText={setNext} secure placeholder="At least 8 characters" />
-        <Btn title={busy ? 'Updating…' : 'Update Password'} onPress={changePw} disabled={busy || next.length < 8} />
+        {twoEnabled === true && (
+          <Field label="2FA code" value={twoChangeCode} onChangeText={setTwoChangeCode} placeholder="6-digit code or recovery code" autoCapitalize="characters" />
+        )}
+        <Btn title={busy ? 'Updating…' : 'Update Password'} onPress={changePw} disabled={busy || next.length < 8 || (twoEnabled === true && !isCodeValid(twoChangeCode))} />
       </Card>
 
       <Card title="Two-Factor Authentication">
@@ -114,9 +137,29 @@ export function SecurityTab() {
               <Icon name="check" size={14} color={c.accent} />
               <Muted>Two-factor authentication is enabled.</Muted>
             </View>
+
+            {recoveryCodes && recoveryCodes.length > 0 && (
+              <View style={{ marginTop: SPACE.md, padding: SPACE.md, borderWidth: 1, borderColor: c.border, borderRadius: 8 }}>
+                <Text style={{ color: c.accent2, fontSize: FONT.micro, fontWeight: '700', letterSpacing: 1, marginBottom: SPACE.xs }}>BACKUP RECOVERY CODES — SAVE THESE NOW</Text>
+                <Muted style={{ marginBottom: SPACE.md }}>Each code works once to sign in if you lose your authenticator. They won't be shown again.</Muted>
+                {recoveryCodes.map((code) => (
+                  <Text key={code} selectable style={{ color: c.text, fontFamily: 'monospace', letterSpacing: 2, paddingVertical: 2 }}>{code}</Text>
+                ))}
+                <Btn title="I've saved these" variant="ghost" onPress={() => setRecoveryCodes(null)} />
+              </View>
+            )}
+
             <Field label="Password" value={twoPw} onChangeText={setTwoPw} secure placeholder="Your password" />
-            <Field label="2FA code" value={twoCode} onChangeText={setTwoCode} placeholder="6-digit code" />
-            <Btn title={busy ? 'Disabling…' : 'Disable 2FA'} variant="danger" onPress={disable2fa} disabled={busy || !twoPw} />
+            <Field label="2FA code" value={twoCode} onChangeText={setTwoCode} placeholder="6-digit or recovery code" autoCapitalize="characters" />
+            <Btn title={busy ? 'Disabling…' : 'Disable 2FA'} variant="danger" onPress={disable2fa} disabled={busy || !twoPw || !isCodeValid(twoCode)} />
+
+            <View style={{ marginTop: SPACE.lg, paddingTop: SPACE.lg, borderTopWidth: 1, borderTopColor: c.border }}>
+              <Text style={{ color: c.text, fontSize: FONT.sm, fontWeight: '700', marginBottom: SPACE.xs }}>Recovery codes</Text>
+              <Muted style={{ marginBottom: SPACE.md }}>Generate a new set. Existing codes are invalidated.</Muted>
+              <Field label="Password" value={regenPw} onChangeText={setRegenPw} secure placeholder="Your password" />
+              <Field label="Authenticator / recovery code" value={regenCode} onChangeText={setRegenCode} placeholder="000000  ·  XXXX-XXXX-XXXX" autoCapitalize="characters" />
+              <Btn title={busy ? 'Generating…' : 'Generate new recovery codes'} onPress={regenerate} disabled={busy || !regenPw || !isCodeValid(regenCode)} />
+            </View>
           </>
         ) : twoSecret ? (
           <>
@@ -127,7 +170,7 @@ export function SecurityTab() {
               <Text selectable style={{ color: c.text, fontSize: FONT.sm, marginVertical: SPACE.md }}>{twoSecret.otpauth_uri}</Text>
             )}
             <Text selectable style={{ color: c.muted, fontSize: FONT.sm, textAlign: 'center', marginBottom: SPACE.md }}>{twoSecret.secret}</Text>
-            <Field label="6-digit code" value={twoCode} onChangeText={setTwoCode} placeholder="123456" />
+            <Field label="6-digit code" value={twoCode} onChangeText={setTwoCode} placeholder="123456" keyboardType="number-pad" maxLength={6} />
             <Btn title={busy ? 'Confirming…' : 'Confirm & Enable'} onPress={submit2faCode} disabled={busy || twoCode.trim().length !== 6} />
           </>
         ) : (
