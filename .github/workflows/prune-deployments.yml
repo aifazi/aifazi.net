@@ -51,28 +51,37 @@ jobs:
 
           while IFS='|' read -r NAME PROJ; do
             [ -z "$NAME" ] && continue
-            # Newest production deployment for this project (createdAt desc).
+            # Newest READY production deployment for this project. We only keep a
+            # finished, serving production build — if the newest production
+            # deployment is still BUILDING/ERROR/QUEUED we abort the prune so the
+            # live deployment (and any fallback before it) is never deleted while
+            # a replacement is not actually live yet.
             NEWEST=$(curl -fsS \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
               "https://api.vercel.com/v6/deployments?projectId=${PROJ}&target=production&limit=100&teamId=${TEAM_ID}" \
-              | jq -r '.deployments | sort_by(.created) | reverse | .[0].uid' 2>/dev/null || true)
-            echo "[$NAME] current deployment: ${NEWEST:-none}"
-            # Delete every deployment except the newest one (loop with pagination).
+              | jq -r '[.deployments[]? | select(.target == "production" and .state == "READY")] | sort_by(.created) | reverse | .[0].uid // empty' 2>/dev/null || true)
+            if [ -z "$NEWEST" ]; then
+              echo "::warning::[$NAME] no READY production deployment found — skipping prune to protect the live deployment."
+              continue
+            fi
+            echo "[$NAME] current production deployment: $NEWEST"
+            # Delete every PRODUCTION deployment except the newest READY one.
+            # Preview/staging deployments are a separate environment and are
+            # deliberately left untouched.
             CURSOR=""
             while :; do
               URL="https://api.vercel.com/v6/deployments?projectId=${PROJ}&limit=100&teamId=${TEAM_ID}"
               [ -n "$CURSOR" ] && URL="${URL}&until=${CURSOR}"
               RESP=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "$URL")
-              IDS=$(echo "$RESP" | jq -r '.deployments[]?.uid')
-              [ -z "$IDS" ] && break
+              COUNT=$(echo "$RESP" | jq '[.deployments[]?.uid] | length' 2>/dev/null || echo 0)
+              IDS=$(echo "$RESP" | jq -r '[.deployments[]? | select(.target == "production" and .uid != $newest) | .uid] | .[]' --arg newest "$NEWEST" 2>/dev/null || true)
+              [ "${COUNT:-0}" -eq 0 ] && break
               for ID in $IDS; do
-                if [ "$ID" != "$NEWEST" ]; then
-                  curl -fsS -X DELETE \
-                    -H "Authorization: Bearer $VERCEL_TOKEN" \
-                    "https://api.vercel.com/v13/deployments/${ID}?teamId=${TEAM_ID}" >/dev/null || \
-                    echo "::warning::Vercel delete failed: $ID"
-                  echo "[$NAME] deleted $ID"
-                fi
+                curl -fsS -X DELETE \
+                  -H "Authorization: Bearer $VERCEL_TOKEN" \
+                  "https://api.vercel.com/v13/deployments/${ID}?teamId=${TEAM_ID}" >/dev/null || \
+                  echo "::warning::Vercel delete failed: $ID"
+                echo "[$NAME] deleted $ID"
               done
               CURSOR=$(echo "$RESP" | jq -r '.pagination.next // empty')
               [ -z "$CURSOR" ] && break
@@ -89,7 +98,7 @@ jobs:
             exit 0
           fi
           SERVICE_ID="da51fadf-76d5-4f4a-96af-90877d7aafdc"
-          QUERY='query { service(id: "'"$SERVICE_ID"'") { deployments { edges { node { id status } } } } }'
+          QUERY='query { service(id: "'"$SERVICE_ID"'") { deployments(orderBy: {createdAt: DESC}) { edges { node { id status } } } } }'
           PAYLOAD=$(jq -nc --arg q "$QUERY" '{query:$q}')
           EDGES=$(curl -fsS \
             -H "Authorization: Bearer $RAILWAY_TOKEN" \
@@ -98,10 +107,17 @@ jobs:
             -d "$PAYLOAD" \
             https://backboard.railway.com/graphql/v2 \
             | jq -c '.data.service.deployments.edges[]?.node')
-          # Newest = the successful deployment that is serving traffic today.
-          NEWEST=$(echo "$EDGES" | jq -sr '.[0].id // empty')
-          echo "Current Railway deployment: ${NEWEST:-none}"
-          echo "$EDGES" | jq -r '.id' | while read -r DEP; do
+          # Newest SUCCESS deployment = the one serving traffic. Fail-closed: if
+          # there is no SUCCESS deployment yet (or the newest is still building),
+          # abort before deleting anything — never prune while a replacement may
+          # not be live, and never delete a build that could be rolled back to.
+          NEWEST=$(echo "$EDGES" | jq -sr '[.[] | select(.status == "SUCCESS")][0].id // empty')
+          if [ -z "$NEWEST" ]; then
+            echo "::warning::No SUCCESS Railway deployment found — skipping prune to protect the live deployment."
+            exit 0
+          fi
+          echo "Current Railway deployment: $NEWEST"
+          echo "$EDGES" | jq -sr '.[] | select(.status == "SUCCESS" and .id != $newest) | .id' --arg newest "$NEWEST" | while read -r DEP; do
             [ -z "$DEP" ] && continue
             if [ "$DEP" != "$NEWEST" ]; then
               MUT='mutation { deploymentRemove(id: "'"$DEP"'") { id } }'
