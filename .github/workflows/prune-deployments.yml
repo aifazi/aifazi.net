@@ -139,6 +139,10 @@ jobs:
               echo "[$ENV] keeping $ID"
               continue
             fi
+            # The GitHub API only allows deleting deployments whose latest
+            # status is "inactive". Other states (e.g. "success") make the
+            # DELETE fail with HTTP 422, which surfaces as noisy warnings.
+            gh api -X POST "repos/${GITHUB_REPO}/deployments/${ID}/statuses" -f state=inactive >/dev/null || true
             gh api -X DELETE "repos/${GITHUB_REPO}/deployments/${ID}" >/dev/null || \
               echo "::warning::GitHub record delete failed: $ID"
             echo "[$ENV] deleted record $ID"
