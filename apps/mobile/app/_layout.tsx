@@ -78,7 +78,11 @@ function RootNav() {
         if (!active || !update.isAvailable) return
         await Updates.fetchUpdateAsync()
         if (!active) return
-        if (segmentsRef.current.join('/').startsWith('call')) return
+        const route = segmentsRef.current.join('/')
+        // Never hot-reload mid-flow: the access token is memory-only (H4), so a
+        // reload while signing in / verifying 2FA / calling wipes it and the app
+        // lands back on the boot screen mid-auth. Apply on next launch instead.
+        if (route.startsWith('call') || route.startsWith('auth')) return
         await Updates.reloadAsync()
       } catch {
         // Best-effort OTA — never block boot on network/update failures.

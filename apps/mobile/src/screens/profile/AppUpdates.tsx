@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FONT, SPACE } from '@/src/design'
-import { View, Text } from 'react-native'
+import { AppState, AppStateStatus, View, Text } from 'react-native'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { checkForUpdate, downloadAndInstall, openInstallSettings, canRequestPackageInstalls, InstallBlockedError, type UpdateCheck } from '@/src/lib/updates'
@@ -34,13 +34,39 @@ export function AppUpdatesCard() {
   // Android 8+ requires the per-app "Install unknown apps" toggle before the
   // package installer will accept our APK. The OS silently resets this after
   // the app updates itself, so verify up front instead of hoping.
+  //
+  // Opening the settings intent backgrounds the app; `PermissionsAndroid.check`
+  // reports the app-op's OLD state until the user actually flips the toggle and
+  // returns, so re-checking immediately after launching the intent always reads
+  // "not granted" and sends the user back into Settings in a loop. Wait for the
+  // app to come back to the foreground (with a timeout fallback) before
+  // re-reading the permission.
+  const waitForForeground = (timeoutMs = 45_000): Promise<void> =>
+    new Promise((resolve) => {
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        sub.remove()
+        clearTimeout(timer)
+        resolve()
+      }
+      const sub = AppState.addEventListener('change', (s: AppStateStatus) => {
+        if (s === 'active') finish()
+      })
+      const timer = setTimeout(finish, timeoutMs)
+    })
+
   const ensureInstallPerm = async (): Promise<boolean> => {
     if (await canRequestPackageInstalls()) return true
     setNeedPerm(true)
     try {
       await openInstallSettings()
     } catch {}
-    return await canRequestPackageInstalls()
+    await waitForForeground()
+    const granted = await canRequestPackageInstalls()
+    setNeedPerm(!granted)
+    return granted
   }
 
   const retryAfterPerm = async () => {

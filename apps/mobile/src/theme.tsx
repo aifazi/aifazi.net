@@ -77,8 +77,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
    * Priority resolution — mirrors the web (providers.tsx):
    * 1. Admin lock            lockTheme + globalTheme  → forced
    * 2. User's explicit choice                        → user theme
-   * 3. Follow OS             followOsTheme           → light/dark
-   * 4. Site default          globalTheme             → site theme
+   * 3. Site default          globalTheme             → site theme
+   * 4. Follow OS             followOsTheme           → light/dark
    * 5. Fallback                                     → cyber-dark
    */
   const { id, source } = useMemo<{ id: ThemeId; source: ThemeSource }>(() => {
@@ -86,10 +86,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const locked = !!cfg.lockTheme && typeof cfg.globalTheme === 'string'
     if (locked) return { id: webThemeToMobile(cfg.globalTheme), source: 'locked' }
     if (userSet && userTheme) return { id: userTheme, source: 'user' }
+    if (typeof cfg.globalTheme === 'string') return { id: webThemeToMobile(cfg.globalTheme), source: 'global' }
     if (cfg.followOsTheme) {
       return { id: osScheme === 'light' ? 'light' : 'cyber-dark', source: 'os' }
     }
-    if (typeof cfg.globalTheme === 'string') return { id: webThemeToMobile(cfg.globalTheme), source: 'global' }
     return { id: 'cyber-dark', source: 'default' }
   }, [siteConfig, userSet, userTheme, osScheme])
 

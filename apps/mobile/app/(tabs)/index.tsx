@@ -447,8 +447,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tileWrap: {
-    flexBasis: '30%',
-    flexGrow: 1,
+    flexBasis: '28%',
+    flexGrow: 0,
+    maxWidth: 116,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 8,
