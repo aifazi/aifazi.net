@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
 import api, { ensureAdminGate } from '@/lib/api'
-import { builtinAvatarEmoji, avatarUrl, UserAvatar } from '@/lib/avatar'
+import { builtinAvatarEmoji, avatarUrl, UserAvatar, BUILTIN_AVATARS } from '@/lib/avatar'
 import { useForum } from '../context/ForumContext'
 import { Select, useDialog } from '../core/ui.jsx'
 import { useToast } from '../components/Toast'
@@ -775,6 +775,30 @@ function ProfileEditTab({ user, onUpdate }) {
           <input id="pf-avatar-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={onAvatarUpload} />
         </div>
         <Inp label="AVATAR URL" id="pf-avatar" value={form.avatar} onChange={e => set('avatar', e.target.value)} placeholder="https://…/avatar.png" />
+        <div style={{ marginTop: 10 }}>
+          <label style={{ ...M, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>BUILT-IN AVATARS</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {BUILTIN_AVATARS.map(a => {
+              const active = form.avatar === `avatar:${a.key}`
+              return (
+                <button key={a.key} type="button" title={a.label} aria-label={a.label} onClick={() => set('avatar', `avatar:${a.key}`)}
+                  style={{
+                    width: 34, height: 34, borderRadius: 8, fontSize: 18, cursor: 'pointer', lineHeight: 1,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: active ? 'color-mix(in srgb, var(--green) 18%, transparent)' : 'var(--bg3)',
+                    border: active ? '1px solid var(--green)' : '1px solid var(--border)',
+                  }}>{a.icon}</button>
+              )
+            })}
+            <button type="button" title="No built-in avatar" aria-label="Clear built-in avatar"
+              onClick={() => { if (form.avatar?.startsWith('avatar:')) set('avatar', '') }}
+              style={{
+                width: 34, height: 34, borderRadius: 8, cursor: 'pointer', lineHeight: 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)',
+                background: 'var(--bg3)', border: '1px solid var(--border)',
+              }}>✕</button>
+          </div>
+        </div>
         {status && <StatusMsg msg={status.msg} type={status.type} />}
         <Btn type="submit" disabled={saving || usernameCheck.state === 'error' || usernameCheck.state === 'checking' || emailCheck.state === 'error' || emailCheck.state === 'checking'}>{saving ? 'SAVING…' : 'SAVE CHANGES'}</Btn>
       </form>

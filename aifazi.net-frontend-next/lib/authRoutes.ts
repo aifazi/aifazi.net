@@ -28,6 +28,16 @@ export function safeNextPath(value: unknown): string | null {
   if (/[\u0000-\u001F\u007F]/.test(value)) return null
   // Reject backspace-encoded path escapes (e.g. '/\evil.com')
   if (value.includes('/\\')) return null
+  // Never redirect back onto an auth-only page (would show the login form again
+  // or loop). Callers default to /profile when this returns null.
+  const path = value.split('?')[0].split('#')[0].toLowerCase()
+  if (
+    path === '/login' || path === '/signin' || path === '/signup' ||
+    path === '/register' || path === '/forgot' || path === '/forgot-password' ||
+    path === '/reset' || path === '/reset-password' || path === '/verify' ||
+    path === '/verify-email' || path === '/2fa' || path === '/two-factor' ||
+    path === '/forum/auth' || path.startsWith('/auth/')
+  ) return null
   return value
 }
 
