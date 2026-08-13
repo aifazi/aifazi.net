@@ -364,7 +364,7 @@ async def scan_barcode(body: ScanBody, user: dict = Depends(get_current_user)):
 async def order_delivery_tracking(order_no: str):
     order = supabase.table("store_orders").select(
         "id,order_number,status,delivery_status,delivery_agent_id,estimated_delivery,carrier,tracking_number,tracking_url"
-    ).eq("order_number", order_no).single().execute()
+    ).eq("order_number", order_no).limit(1).execute()
 
     if not order.data:
         raise HTTPException(404, "Order not found")
