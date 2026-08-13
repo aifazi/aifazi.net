@@ -118,16 +118,20 @@ export function Reveal({
     return () => clearTimeout(t)
   }, [a, delay, duration, skip])
 
-  const transforms: Record<RevealDir, (v: number) => any[]> = {
-    up: (v) => [{ translateY: v === 1 ? 0 : distance }],
-    down: (v) => [{ translateY: v === 1 ? 0 : -distance }],
-    left: (v) => [{ translateX: v === 1 ? 0 : distance }],
-    right: (v) => [{ translateX: v === 1 ? 0 : -distance }],
-    scale: (v) => [{ scale: v === 1 ? 1 : 0.9 }, { translateY: v === 1 ? 0 : 14 }],
-  }
-  const opacity = a
+  const yOut = dir === 'up' ? distance : dir === 'down' ? -distance : 0
+  const xOut = dir === 'left' ? distance : dir === 'right' ? -distance : 0
+  const transform =
+    dir === 'scale'
+      ? [
+          { scale: a.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) },
+          { translateY: a.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
+        ]
+      : [
+          { translateY: a.interpolate({ inputRange: [0, 1], outputRange: [yOut, 0] }) },
+          { translateX: a.interpolate({ inputRange: [0, 1], outputRange: [xOut, 0] }) },
+        ]
   return (
-    <Animated.View style={[{ opacity, transform: transforms[dir](0) }, style]}>
+    <Animated.View style={[{ opacity: a, transform }, style]}>
       {children}
     </Animated.View>
   )

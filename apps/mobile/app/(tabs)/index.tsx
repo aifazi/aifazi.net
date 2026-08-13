@@ -234,7 +234,10 @@ export default function HomeScreen() {
                         backgroundColor: withAlpha(t.tint, 0.45),
                       }}
                     />
-                    <Icon name={t.icon} size={24} color={t.tint} />
+                    <View pointerEvents="none" style={{ position: 'absolute', bottom: -16, right: -8, width: 56, height: 56, borderRadius: 28, backgroundColor: withAlpha(t.tint, 0.12) }} />
+                    <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: withAlpha(t.tint, 0.16), alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon name={t.icon} size={22} color={t.tint} />
+                    </View>
                     <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '800', marginTop: SPACE.sm }}>{t.label}</Text>
                   </View>
                 </PressTile>
@@ -294,8 +297,10 @@ export default function HomeScreen() {
                     {p.image_url ? (
                       <ExpoImage source={{ uri: p.image_url }} style={{ width: '100%', height: 70, borderTopLeftRadius: radius, borderTopRightRadius: radius }} contentFit="cover" />
                     ) : (
-                      <View style={{ height: 56, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: FONT.h3 }}>🚀</Text>
+                      <View style={[styles.projectArt, { backgroundColor: withAlpha(c.accent2, 0.12) }]}>
+                        <View style={[styles.fallbackBadge, { backgroundColor: withAlpha(c.accent2, 0.2) }]}>
+                          <Icon name="rocket" size={20} color={c.accent2} />
+                        </View>
                       </View>
                     )}
                     <Text style={{ color: c.text, fontSize: FONT.md, fontWeight: '700', padding: SPACE.md }} numberOfLines={2}>
@@ -322,8 +327,10 @@ export default function HomeScreen() {
                     {p.image_url ? (
                       <ExpoImage source={{ uri: p.image_url }} style={{ width: '100%', height: 70, borderTopLeftRadius: radius, borderTopRightRadius: radius }} contentFit="cover" />
                     ) : (
-                      <View style={[styles.productArt, { backgroundColor: c.bg3 }]}>
-                        <Text style={{ fontSize: FONT.h2 }}>🛍️</Text>
+                      <View style={[styles.productArt, { backgroundColor: withAlpha(c.sale, 0.1) }]}>
+                        <View style={[styles.fallbackBadge, { backgroundColor: withAlpha(c.sale, 0.18) }]}>
+                          <Icon name="cart" size={20} color={c.sale} />
+                        </View>
                       </View>
                     )}
                     <View style={{ padding: SPACE.md }}>
@@ -341,22 +348,28 @@ export default function HomeScreen() {
             <Reveal dir="up" delay={240} duration={520}>
             <>
               <SectionTitle title="Forum threads" onMore={() => router.push('/forum')} />
-              <View style={{ marginBottom: SPACE.huge }}>
+              <View style={{ gap: SPACE.md, marginBottom: SPACE.huge }}>
                 {threads.slice(0, 4).map((t) => (
                   <TouchableOpacity
                     key={t.id}
                     onPress={() => router.push(`/forum-thread?id=${t.id}` as Href)}
-                    style={[styles.listRow, { borderBottomColor: c.border }]}
+                    style={[styles.cardRow, { borderRadius: radius, backgroundColor: withAlpha(c.bg2, 0.7), borderColor: withAlpha(c.border, 0.45) }]}
                   >
-                    <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }} numberOfLines={1}>
-                      {t.category?.icon ? `${t.category.icon} ` : ''}{t.title}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: SPACE.xxs }}>
-                      <Icon name="chat" size={12} color={c.muted} />
-                      <Text style={{ color: c.muted, fontSize: FONT.sm }}>
-                        {t.author?.username || '—'} · {t.replyCount ?? 0}
-                      </Text>
+                    <View style={[styles.rowIcon, { backgroundColor: withAlpha(c.accent, 0.14) }]}>
+                      <Icon name="forum" size={18} color={c.accent} />
                     </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }} numberOfLines={1}>
+                        {t.category?.icon ? `${t.category.icon} ` : ''}{t.title}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: SPACE.xxs }}>
+                        <Icon name="chat" size={12} color={c.muted} />
+                        <Text style={{ color: c.muted, fontSize: FONT.sm }}>
+                          {t.author?.username || '—'} · {t.replyCount ?? 0}
+                        </Text>
+                      </View>
+                    </View>
+                    <Icon name="forward" size={16} color={c.muted} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -368,17 +381,23 @@ export default function HomeScreen() {
             <Reveal dir="up" delay={280} duration={520}>
             <>
               <SectionTitle title="Blog" onMore={() => router.push('/blog')} />
-              <View>
+              <View style={{ gap: SPACE.md }}>
                 {posts.slice(0, 4).map((p) => (
                   <TouchableOpacity
                     key={p.id}
                     onPress={() => router.push(`/blog-post?slug=${encodeURIComponent(p.slug)}` as Href)}
-                    style={[styles.listRow, { borderBottomColor: c.border }]}
+                    style={[styles.cardRow, { borderRadius: radius, backgroundColor: withAlpha(c.bg2, 0.7), borderColor: withAlpha(c.border, 0.45) }]}
                   >
-                    <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }} numberOfLines={1}>{p.title}</Text>
-                    <Text style={{ color: c.muted, fontSize: FONT.sm, marginTop: SPACE.xxs }} numberOfLines={1}>
-                      {p.author_name ?? ''}{p.category ? ` · ${p.category}` : ''}
-                    </Text>
+                    <View style={[styles.rowIcon, { backgroundColor: withAlpha(c.star, 0.14) }]}>
+                      <Icon name="blog" size={18} color={c.star} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }} numberOfLines={1}>{p.title}</Text>
+                      <Text style={{ color: c.muted, fontSize: FONT.sm, marginTop: SPACE.xxs }} numberOfLines={1}>
+                        {p.author_name ?? ''}{p.category ? ` · ${p.category}` : ''}
+                      </Text>
+                    </View>
+                    <Icon name="forward" size={16} color={c.muted} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -403,6 +422,7 @@ function SectionTitle({ title, onMore }: { title: string; onMore: () => void }) 
           <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '700' }}>See all →</Text>
         </TouchableOpacity>
       </View>
+      <View style={{ height: 1, backgroundColor: withAlpha(c.border, 0.35), marginTop: SPACE.sm }} />
     </View>
   )
 }
@@ -451,8 +471,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  listRow: {
+  projectArt: {
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fallbackBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: SPACE.lg,
-    borderBottomWidth: 1,
+    paddingHorizontal: SPACE.lg,
+    borderWidth: 1,
+  },
+  rowIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

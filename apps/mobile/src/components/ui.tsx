@@ -6,6 +6,7 @@ import { webPillSnap } from '@/src/lib/carousel'
 import { CODE_FONT, FONT, SPACE, buttonLabel, frameworkStyles, micro, tagLabel } from '@/src/design'
 import { Icon, IconName } from '@/src/components/icon'
 import { Shimmer } from '@/src/components/motion'
+import { AmbientGlow } from '@/src/components/glow'
 
 /* ─── Surfaces / shapes ─────────────────────────────────────────────────── */
 
@@ -505,7 +506,25 @@ export function EmptyState({
   const c = theme.colors
   return (
     <View style={{ alignItems: 'center', paddingVertical: 44, paddingHorizontal: SPACE.mega }}>
-      {icon ? <Icon name={icon} size={34} color={withAlpha(c.muted, 0.7)} /> : null}
+      {icon ? (
+        <View style={{ width: 92, height: 92, alignItems: 'center', justifyContent: 'center' }}>
+          <AmbientGlow color={c.accent} size={130} intensity={0.16} style={{ top: -19, left: -19 }} />
+          <View
+            style={{
+              width: 68,
+              height: 68,
+              borderRadius: 34,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: withAlpha(c.accent2, 0.28),
+              backgroundColor: withAlpha(c.accent, 0.06),
+            }}
+          >
+            <Icon name={icon} size={30} color={withAlpha(c.accent, 0.85)} />
+          </View>
+        </View>
+      ) : null}
       <Text style={{ color: c.text2, fontSize: FONT.card, fontWeight: '800', marginTop: SPACE.lg, textAlign: 'center' }}>{title}</Text>
       {subtitle ? <Muted style={{ textAlign: 'center', marginTop: SPACE.xs }}>{subtitle}</Muted> : null}
       {actionLabel && onAction ? (

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { FONT, SPACE } from '@/src/design'
-import { View, Text, TouchableOpacity, FlatList, SectionList, RefreshControl } from 'react-native'
+import { View, Text, TouchableOpacity, SectionList, RefreshControl } from 'react-native'
 import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
