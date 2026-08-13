@@ -1243,6 +1243,28 @@ async def tfa_disable(body: TwoFADisableBody, user: dict = Depends(get_current_u
     _audit(user.get("username"), "2fa_disabled")
     return {"enabled": False}
 
+# ── 2FA brute-force lockout ──────────────────────────────────────────────
+# The middleware rate limit keys on IP+path, so a distributed attacker can
+# rotate IPs and keep guessing forever. Add a per-account sliding counter:
+# 5 failed codes inside the window locks this account's 2FA for the rest of
+# the window (15 minutes). A successful verify clears the counter.
+_2FA_LOCKOUT_WINDOW_S = 900
+_2FA_MAX_FAILURES    = 5
+_2fa_failures: dict[str, list[float]] = {}
+
+def _2fa_locked(username: str) -> bool:
+    now = datetime.now(timezone.utc).timestamp()
+    recent = [t for t in _2fa_failures.get(username, []) if now - t < _2FA_LOCKOUT_WINDOW_S]
+    _2fa_failures[username] = recent
+    return len(recent) >= _2FA_MAX_FAILURES
+
+def _2fa_record_fail(username: str) -> None:
+    _2fa_failures.setdefault(username, []).append(datetime.now(timezone.utc).timestamp())
+
+def _2fa_clear_fails(username: str) -> None:
+    _2fa_failures.pop(username, None)
+
+
 @router.post("/2fa/verify")
 async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response):
     try:
@@ -1251,15 +1273,18 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
         raise HTTPException(401, "Invalid or expired token")
     if not payload.get("tfa_pending"):
         raise HTTPException(400, "Not a 2FA challenge token")
-    username = payload.get("username")
+    username = payload.get("username") or "unknown"
     role     = payload.get("role")
     user_id  = payload.get("id")
     ip = request.client.host if request.client else ""
+    if _2fa_locked(username):
+        raise HTTPException(429, "Too many failed 2FA attempts. Try again later.")
     if role == "admin":
         row = _get_admin_2fa()
         if not row or not row.get("totp_secret"):
             raise HTTPException(500, "2FA not configured on server")
         if not pyotp.TOTP(row["totp_secret"]).verify(body.code, valid_window=1):
+            _2fa_record_fail(username)
             _audit(username, "2fa_failed", ip=ip)
             raise HTTPException(400, "Invalid code")
         token   = make_token({"username": username, "role": role})
@@ -1285,6 +1310,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
                 }).eq("id", forum_id).execute()
             except Exception:
                 pass
+        _2fa_clear_fails(username)
         _audit(username, "admin_login_2fa", target="admin_panel", ip=ip)
         _set_auth_cookies(response, token, refresh)  # #1 #2
         return {"token": token, "refreshToken": refresh, "user": {"username": username, "role": role}}
@@ -1294,6 +1320,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
             raise HTTPException(404, "User not found")
         s = res.data[0]
         if not pyotp.TOTP(s["totp_secret"]).verify(body.code, valid_window=1):
+            _2fa_record_fail(username)
             _audit(username, "2fa_failed", ip=ip)
             raise HTTPException(400, "Invalid code")
         token   = make_token({"username": s["username"], "role": s["role"], "id": s["id"]})
@@ -1301,6 +1328,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
         supabase.table("users").update({
             "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
         }).eq("id", s["id"]).execute()
+        _2fa_clear_fails(username)
         _audit(username, "staff_login_2fa", target="admin_panel", ip=ip)
         _set_auth_cookies(response, token, refresh)  # #1 #2
         return {"token": token, "refreshToken": refresh, "user": {"username": username, "role": role}}
