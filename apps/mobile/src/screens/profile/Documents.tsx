@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FONT, SPACE } from '@/src/design'
-import { View, Text, ScrollView, Linking } from 'react-native'
+import { View, Text, ScrollView } from 'react-native'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { Loader } from '@/src/components/Loader'
 import { useTheme } from '@/src/theme'
 import { useOverlay } from '@/src/components/overlay'
 import { api } from '@/src/lib/api'
+import { safeOpenURL } from '@/src/lib/url'
 import { pickLibraryImage, takeCameraPhoto, pickDocument, type PickedFile } from '@/src/lib/media'
 import { fmtBytes, fmtDate } from './helpers'
 
@@ -95,7 +96,7 @@ export function DocumentsTab() {
                 <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>{d.name}</Text>
                 <Muted style={{ fontSize: FONT.xs }}>{d.category} · {fmtBytes(d.file_size)} · {fmtDate(d.created_at)}</Muted>
               </View>
-              <Btn title="Open" variant="ghost" style={{ paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xl }} onPress={() => { if (d.file_url) Linking.openURL(d.file_url) }} />
+              <Btn title="Open" variant="ghost" style={{ paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xl }} onPress={() => { safeOpenURL(d.file_url) }} />
               <Btn title="Del" variant="danger" style={{ paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xl }} onPress={() => remove(d.id)} />
             </View>
           </Card>

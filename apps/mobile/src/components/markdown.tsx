@@ -1,6 +1,7 @@
-import { Text, Linking } from 'react-native'
+import { Text } from 'react-native'
 import { FONT } from '@/src/design'
 import { useTheme } from '@/src/theme'
+import { safeOpenURL } from '@/src/lib/url'
 
 function parseInline(text: string, baseColor: string, link: string, onLink?: (url: string) => void): any[] {
   const out: any[] = []
@@ -26,7 +27,7 @@ function parseInline(text: string, baseColor: string, link: string, onLink?: (ur
         <Text
           key={k++}
           style={{ color: link, textDecorationLine: 'underline' }}
-          onPress={() => (onLink ?? Linking.openURL)(url)}
+          onPress={() => { if (onLink) onLink(url); else safeOpenURL(url) }}
         >
           {m[5]}
         </Text>,

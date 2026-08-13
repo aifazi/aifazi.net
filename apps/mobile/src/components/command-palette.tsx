@@ -6,26 +6,28 @@ import type { Href } from 'expo-router'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
 import { useReducedMotion } from '@/src/lib/motion'
+import { Icon } from '@/src/components/icon'
+import type { IconName } from '@/src/components/icon'
 
 interface Command {
   label: string
   hint: string
-  icon: string
+  icon: IconName
   href: Href
 }
 
 const COMMANDS: Command[] = [
-  { label: 'Store', hint: 'Browse the shop', icon: '🛍️', href: '/store' },
-  { label: 'Forum', hint: 'Threads & discussions', icon: '💬', href: '/forum' },
-  { label: 'Blog', hint: 'Latest posts', icon: '📝', href: '/blog' },
-  { label: 'Chat', hint: 'Rooms & DMs', icon: '💬', href: '/chat' },
-  { label: 'Profile', hint: 'Account, orders, tickets', icon: '👤', href: '/profile' },
-  { label: 'Projects', hint: 'Our projects', icon: '🚀', href: '/projects' },
-  { label: 'Status', hint: 'Server & service status', icon: '🟢', href: '/status' as Href },
-  { label: 'Notifications', hint: 'Unread alerts', icon: '🔔', href: '/notifications' as Href },
-  { label: 'New Ticket', hint: 'Contact support', icon: '🎫', href: '/helpdesk-new' as Href },
-  { label: 'New Thread', hint: 'Start a forum thread', icon: '✨', href: '/forum-new' },
-  { label: 'Cart', hint: 'Review checkout', icon: '🛒', href: '/store-cart' },
+  { label: 'Store', hint: 'Browse the shop', icon: 'store', href: '/store' },
+  { label: 'Forum', hint: 'Threads & discussions', icon: 'forum', href: '/forum' },
+  { label: 'Blog', hint: 'Latest posts', icon: 'blog', href: '/blog' },
+  { label: 'Chat', hint: 'Rooms & DMs', icon: 'chat', href: '/chat' },
+  { label: 'Profile', hint: 'Account, orders, tickets', icon: 'profile', href: '/profile' },
+  { label: 'Projects', hint: 'Our projects', icon: 'rocket', href: '/projects' },
+  { label: 'Status', hint: 'Server & service status', icon: 'status', href: '/status' as Href },
+  { label: 'Notifications', hint: 'Unread alerts', icon: 'bell', href: '/notifications' as Href },
+  { label: 'New Ticket', hint: 'Contact support', icon: 'ticket', href: '/helpdesk-new' as Href },
+  { label: 'New Thread', hint: 'Start a forum thread', icon: 'edit', href: '/forum-new' },
+  { label: 'Cart', hint: 'Review checkout', icon: 'cart', href: '/store-cart' },
 ]
 
 interface CommandPaletteApi {
@@ -77,9 +79,9 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     <CommandPaletteContext.Provider value={{ open: doOpen, close: doClose }}>
       {children}
       <Modal visible={open} transparent animationType="none" onRequestClose={doClose}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <View style={{ flex: 1, backgroundColor: c.overlay }}>
           <Animated.View style={{ flex: 1, opacity: anim }}>
-            <Pressable style={{ flex: 1 }} onPress={doClose} />
+            <Pressable style={{ flex: 1 }} onPress={doClose} accessibilityLabel="Close command palette" accessibilityRole="button" />
             <View
               style={{
                 position: 'absolute',
@@ -107,9 +109,10 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                   onChangeText={setQuery}
                   placeholder="Search screens & actions…"
                   placeholderTextColor={c.muted}
+                  accessibilityLabel="Search commands"
                   style={{ flex: 1, color: c.text, fontSize: FONT.card, fontFamily: theme.mono ? 'monospace' : undefined }}
                 />
-                <TouchableOpacity onPress={doClose} hitSlop={8}>
+                <TouchableOpacity onPress={doClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="Close command palette">
                   <Text style={{ color: c.muted, fontSize: FONT.md, fontWeight: '700' }}>ESC</Text>
                 </TouchableOpacity>
               </View>
@@ -121,10 +124,14 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     onPress={() => select(item)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xl, paddingVertical: SPACE.lg, paddingHorizontal: SPACE.md, borderRadius: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Go to ${item.label}`}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xl, paddingVertical: SPACE.lg, paddingHorizontal: SPACE.md, borderRadius: theme.buttonRadius }}
                     activeOpacity={0.6}
                   >
-                    <Text style={{ fontSize: FONT.section, width: 22, textAlign: 'center' }}>{item.icon}</Text>
+                    <View style={{ width: 22, alignItems: 'center' }}>
+                      <Icon name={item.icon} size={FONT.section} color={c.text2} />
+                    </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }}>{item.label}</Text>
                       <Text style={{ color: c.muted, fontSize: FONT.sm }}>{item.hint}</Text>

@@ -287,7 +287,7 @@ export default function ChannelEditScreen() {
           borderBottomColor: c.border,
         }}
       >
-        <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10}>
           <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }}>

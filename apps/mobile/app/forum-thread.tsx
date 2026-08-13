@@ -154,7 +154,7 @@ export default function ForumThreadScreen() {
   if (!thread) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, padding: SPACE.giant }}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10}>
           <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
         <Text style={{ color: c.danger, marginTop: SPACE.giant }}>{err || 'Thread not found'}</Text>
@@ -169,7 +169,7 @@ export default function ForumThreadScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
       <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10}>
           <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>Thread</Text>

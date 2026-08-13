@@ -64,6 +64,7 @@ export type IconName =
   | 'logout'
   | 'verify'
   | 'rocket'
+  | 'cart'
 
 type Sym = { ios: string; android: string }
 
@@ -123,6 +124,7 @@ const SYMBOLS: Record<IconName, Sym> = {
   logout: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout' },
   verify: { ios: 'checkmark.seal.fill', android: 'verified' },
   rocket: { ios: 'paperplane.fill', android: 'rocket_launch' },
+  cart: { ios: 'cart.fill', android: 'shopping_cart' },
 }
 
 const GLYPHS: Record<IconName, string> = {
@@ -181,6 +183,7 @@ const GLYPHS: Record<IconName, string> = {
   logout: '⏻',
   verify: '✔',
   rocket: '➤',
+  cart: '🛒',
 }
 
 export function Icon({

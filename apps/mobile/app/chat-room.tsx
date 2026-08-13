@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import {
   View,
@@ -10,7 +10,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Linking,
   Pressable,
   AppState,
 } from 'react-native'
@@ -27,6 +26,7 @@ import { useMessageActions, SwipeReplyRow } from '@/src/lib/chat-actions'
 import { MarkdownText } from '@/src/components/markdown'
 import { useOverlay } from '@/src/components/overlay'
 import { withAlpha, contrastText } from '@/src/lib/color'
+import { safeOpenURL } from '@/src/lib/url'
 
 interface ChatMessage {
   id: string
@@ -121,6 +121,22 @@ export default function ChatRoomScreen() {
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pageRef = useRef(1)
+
+  // Decrypt once per message when messages/roomKey change; renderItem (which
+  // re-runs on every 4s poll) then only does a map lookup instead of a fresh
+  // AES-GCM decrypt per row per render.
+  const decryptedBodies = useMemo(() => {
+    const map: Record<string, string> = {}
+    if (roomKey) {
+      for (const m of messages) {
+        if (m.content && m.content.startsWith('ENC:')) map[`${m.id}:body`] = decryptIfEncrypted(m.content, roomKey)
+        if (m.reply_to?.content && m.reply_to.content.startsWith('ENC:')) {
+          map[`${m.id}:reply`] = decryptIfEncrypted(m.reply_to.content, roomKey)
+        }
+      }
+    }
+    return map
+  }, [messages, roomKey])
 
   const roomName = name || 'Chat'
 
@@ -275,7 +291,7 @@ export default function ChatRoomScreen() {
   }
 
   const openLink = (url: string) => {
-    Linking.openURL(url).catch(() => setErr('Could not open link'))
+    safeOpenURL(url).then((ok) => { if (!ok) setErr('Could not open link') })
   }
 
   const pickImage = async () => {
@@ -383,7 +399,7 @@ export default function ChatRoomScreen() {
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
       <View style={[styles.header, { borderBottomColor: c.border }]}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10} style={styles.backBtn}>
           <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>
@@ -436,7 +452,7 @@ export default function ChatRoomScreen() {
                 keyExtractor={(m) => m.id}
                 style={{ maxHeight: 260 }}
                 renderItem={({ item }) => {
-                  const body = decryptIfEncrypted(item.content, roomKey)
+                  const body = decryptedBodies[`${item.id}:body`] ?? item.content
                   return (
                     <TouchableOpacity
                       onPress={() => jumpTo(item.id)}
@@ -525,7 +541,7 @@ export default function ChatRoomScreen() {
               const preview = linkUrl ? previews[item.id] : undefined
               let replyContent = ''
               if (item.reply_to?.content) replyContent = item.reply_to.content
-              const body = decryptIfEncrypted(item.content, roomKey)
+              const body = decryptedBodies[`${item.id}:body`] ?? item.content
               const onLongPress = () =>
                 showMessageActions({
                   isMine: mine,
@@ -564,7 +580,7 @@ export default function ChatRoomScreen() {
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, marginBottom: SPACE.xs }}>
                               <Icon name="reply" size={FONT.sm} color={c.muted} />
                               <Text style={{ color: c.muted, fontSize: FONT.sm, fontStyle: 'italic', flexShrink: 1 }}>
-                                {decryptIfEncrypted(replyContent, roomKey)}
+                                {decryptedBodies[`${item.id}:reply`] ?? replyContent}
                               </Text>
                             </View>
                           ) : null}

@@ -267,7 +267,7 @@ export default function CallScreen() {
             <Icon name="alert" size={40} color={c.danger} />
             <Text style={{ color: c.danger, marginTop: SPACE.lg, textAlign: 'center' }}>{error || 'Call ended'}</Text>
           </View>
-          <TouchableOpacity onPress={leave} style={[styles.ctl, { backgroundColor: c.danger, marginTop: SPACE.giant }]}>
+          <TouchableOpacity onPress={leave} accessibilityRole="button" accessibilityLabel="Leave call" style={[styles.ctl, { backgroundColor: c.danger, marginTop: SPACE.giant }]}>
             <Text style={{ color: contrastText(c.danger), fontWeight: '800' }}>LEAVE</Text>
           </TouchableOpacity>
         </Reveal>
@@ -284,10 +284,10 @@ export default function CallScreen() {
         <Text style={{ color: c.muted, fontSize: FONT.sm }}>
           {count} participant{count !== 1 ? 's' : ''}
         </Text>
-        <TouchableOpacity onPress={() => setChatOpen((v) => !v)} hitSlop={10} style={{ marginLeft: SPACE.lg }}>
+        <TouchableOpacity onPress={() => setChatOpen((v) => !v)} hitSlop={10} style={{ marginLeft: SPACE.lg }} accessibilityRole="button" accessibilityLabel={chatOpen ? 'Close call chat' : 'Open call chat'}>
           <Icon name="chat" size={FONT.section} color={c.text} style={{ opacity: chatOpen ? 1 : 0.55 }} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={openDevices} hitSlop={10} style={{ marginLeft: SPACE.md }}>
+        <TouchableOpacity onPress={openDevices} hitSlop={10} style={{ marginLeft: SPACE.md }} accessibilityRole="button" accessibilityLabel="Audio devices">
           <Icon name="settings" size={FONT.section} color={c.text} style={{ opacity: 0.8 }} />
         </TouchableOpacity>
       </View>
@@ -352,6 +352,8 @@ export default function CallScreen() {
               <TouchableOpacity
                 onPress={sendChat}
                 disabled={chatSending || !chatText.trim()}
+                accessibilityRole="button"
+                accessibilityLabel="Send message"
                 style={[styles.chatSend, { backgroundColor: c.accent, opacity: chatSending || !chatText.trim() ? 0.5 : 1 }]}
               >
                 <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: FONT.md }}>
@@ -368,8 +370,8 @@ export default function CallScreen() {
           <VideoStream streamURL={screenUrl} objectFit="contain" style={StyleSheet.absoluteFill} />
           <View style={styles.screenTag}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs }}>
-              <Icon name="video" size={FONT.md} color="#fff" />
-              <Text style={{ color: '#fff', fontSize: FONT.micro }}>Screen Share</Text>
+              <Icon name="video" size={FONT.md} color={c.text2} />
+              <Text style={{ color: c.text2, fontSize: FONT.micro }}>Screen Share</Text>
             </View>
           </View>
         </View>
@@ -410,26 +412,30 @@ export default function CallScreen() {
           onPressIn={pttPressIn}
           onPressOut={pttPressOut}
           activeOpacity={0.85}
-          style={[styles.ctl, { backgroundColor: pttActive ? c.accent : 'rgba(255,255,255,0.12)' }]}
+          accessibilityRole="button"
+          accessibilityLabel="Push to talk"
+          style={[styles.ctl, { backgroundColor: pttActive ? c.accent : withAlpha(c.text2, 0.12) }]}
         >
-          <Icon name="mic" size={FONT.section} color={pttActive ? contrastText(c.accent) : '#fff'} />
+          <Icon name="mic" size={FONT.section} color={pttActive ? contrastText(c.accent) : c.text2} />
         </TouchableOpacity>
         </GlowPulse>
-        <TouchableOpacity onPress={toggleMute} style={[styles.ctl, { backgroundColor: muted ? c.danger : 'rgba(255,255,255,0.12)' }]}>
-          <Icon name={muted ? 'mic-off' : 'mic'} size={FONT.section} color={muted ? contrastText(c.danger) : '#fff'} />
+        <TouchableOpacity onPress={toggleMute} accessibilityRole="button" accessibilityLabel={muted ? 'Unmute microphone' : 'Mute microphone'} style={[styles.ctl, { backgroundColor: muted ? c.danger : withAlpha(c.text2, 0.12) }]}>
+          <Icon name={muted ? 'mic-off' : 'mic'} size={FONT.section} color={muted ? contrastText(c.danger) : c.text2} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={toggleCam} style={[styles.ctl, { backgroundColor: camOff ? c.danger : 'rgba(255,255,255,0.12)' }]}>
-          <Icon name={camOff ? 'video-off' : 'camera'} size={FONT.section} color={camOff ? contrastText(c.danger) : '#fff'} />
+        <TouchableOpacity onPress={toggleCam} accessibilityRole="button" accessibilityLabel={camOff ? 'Turn camera on' : 'Turn camera off'} style={[styles.ctl, { backgroundColor: camOff ? c.danger : withAlpha(c.text2, 0.12) }]}>
+          <Icon name={camOff ? 'video-off' : 'camera'} size={FONT.section} color={camOff ? contrastText(c.danger) : c.text2} />
         </TouchableOpacity>
         {canScreenShare && (
           <TouchableOpacity
             onPress={toggleScreen}
-            style={[styles.ctl, { backgroundColor: screenActive ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.12)' }]}
+            accessibilityRole="button"
+            accessibilityLabel={screenActive ? 'Stop screen share' : 'Share screen'}
+            style={[styles.ctl, { backgroundColor: screenActive ? withAlpha(c.success, 0.25) : withAlpha(c.text2, 0.12) }]}
           >
-            <Icon name="video" size={FONT.section} color={screenActive ? '#22c55e' : '#fff'} />
+            <Icon name="video" size={FONT.section} color={screenActive ? c.success : c.text2} />
           </TouchableOpacity>
         )}
-        <TouchableOpacity onPress={leave} style={[styles.ctl, { backgroundColor: c.danger }]}>
+        <TouchableOpacity onPress={leave} accessibilityRole="button" accessibilityLabel="Leave call" style={[styles.ctl, { backgroundColor: c.danger }]}>
           <Icon name="close" size={FONT.section} color={contrastText(c.danger)} />
         </TouchableOpacity>
       </View>

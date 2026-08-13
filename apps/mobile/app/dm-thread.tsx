@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { FONT, SPACE, frameworkStyles } from '@/src/design'
 import {
   View,
@@ -66,10 +66,10 @@ interface RowProps {
   c: any
   theme: any
   item: DMMessage
-  threadKey: string
+  body: string
+  replyBody: string
   isImage: boolean
   isVoice: boolean
-  replyContent: string
   reactions: [string, string[]][]
   onReply: () => void
   onReact: () => void
@@ -80,7 +80,7 @@ interface RowProps {
 }
 
 function MessageRow(props: RowProps) {
-  const { mine, c, theme, item, threadKey, isImage, isVoice, replyContent, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress } = props
+  const { mine, c, theme, item, body, replyBody, isImage, isVoice, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress } = props
   const { pan, panHandlers } = useSwipeToReply({ onReply })
   const mineText = mine ? contrastText(c.accent2) : c.text
   const mineMuted = mine ? withAlpha(contrastText(c.accent2), 0.65) : c.muted
@@ -105,11 +105,11 @@ function MessageRow(props: RowProps) {
               },
             ]}
           >
-            {replyContent ? (
+            {replyBody ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, marginBottom: SPACE.xs }}>
                 <Icon name="reply" size={FONT.sm} color={c.muted} />
                 <Text style={{ color: c.muted, fontSize: FONT.sm, fontStyle: 'italic', flexShrink: 1 }}>
-                  {decryptIfEncrypted(replyContent, threadKey)}
+                  {replyBody}
                 </Text>
               </View>
             ) : null}
@@ -124,7 +124,7 @@ function MessageRow(props: RowProps) {
               <VoiceNotePlay uri={item.content} duration={item.duration} color={mine ? mineText : c.accent2} />
             ) : (
               <Text style={{ color: mine ? mineText : c.text, fontSize: FONT.base, lineHeight: 19 }}>
-                {decryptIfEncrypted(item.content, threadKey)}
+                {body}
               </Text>
             )}
             {item.type === 'file' && item.file_name ? (
@@ -218,6 +218,21 @@ export default function DMThreadScreen() {
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isTyping = useRef(false)
+
+  // Decrypt once per message when messages/threadKey change; renderItem then
+  // only does map lookups instead of a fresh AES-GCM decrypt per row per render.
+  const decryptedBodies = useMemo(() => {
+    const map: Record<string, string> = {}
+    if (threadKey) {
+      for (const m of messages) {
+        if (m.content && m.content.startsWith('ENC:')) map[`${m.id}:body`] = decryptIfEncrypted(m.content, threadKey)
+        if (m.reply_to?.content && m.reply_to.content.startsWith('ENC:')) {
+          map[`${m.id}:reply`] = decryptIfEncrypted(m.reply_to.content, threadKey)
+        }
+      }
+    }
+    return map
+  }, [messages, threadKey])
 
   useEffect(() => {
     if (!thread_id) return
@@ -488,7 +503,7 @@ export default function DMThreadScreen() {
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
       <View style={[styles.header, { borderBottomColor: c.border }]}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10} style={styles.backBtn}>
           <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>
@@ -562,8 +577,8 @@ export default function DMThreadScreen() {
               const isVoice = item.type === 'voice'
               const reactions = item.reactions ?? {}
               const reactionEntries = Object.entries(reactions)
-              let replyContent = ''
-              if (item.reply_to?.content) replyContent = item.reply_to.content
+              const body = decryptedBodies[`${item.id}:body`] ?? item.content ?? ''
+              const replyBody = item.reply_to?.content ? (decryptedBodies[`${item.id}:reply`] ?? item.reply_to.content) : ''
               // Read receipt: mark my last message as seen when the peer read it.
               const seen = mine && item.created_at && peerLastRead && item.created_at <= peerLastRead
               return (
@@ -573,10 +588,10 @@ export default function DMThreadScreen() {
                     c={c}
                     theme={theme}
                     item={item}
-                    threadKey={threadKey}
+                    body={body}
+                    replyBody={replyBody}
                     isImage={isImage}
                     isVoice={isVoice}
-                    replyContent={replyContent}
                     reactions={reactionEntries}
                     onReply={() => setReplying(item)}
                     onReact={() => showEmojiPicker((emoji) => toggleReact(item.id, emoji))}

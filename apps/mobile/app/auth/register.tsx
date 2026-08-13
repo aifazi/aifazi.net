@@ -43,7 +43,7 @@ export default function RegisterScreen() {
       <Screen>
         <Reveal dir="up" duration={420}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACE.md }}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
+          <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10}>
             <Text style={{ color: c.text, fontSize: FONT.lead, fontFamily: theme.mono ? 'monospace' : undefined }}>←</Text>
           </TouchableOpacity>
         </View>

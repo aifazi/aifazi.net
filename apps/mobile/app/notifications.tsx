@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { FONT, SPACE } from '@/src/design'
-import { View, Text, TouchableOpacity, FlatList, RefreshControl, Linking } from 'react-native'
+import { View, Text, TouchableOpacity, FlatList, RefreshControl } from 'react-native'
 import { useRouter, useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -13,6 +13,7 @@ import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
 import { fmtWhen } from '@/src/screens/profile/helpers'
 import { withAlpha } from '@/src/lib/color'
+import { isSafeHttpUrl, safeOpenURL } from '@/src/lib/url'
 import { Reveal, stagger } from '@/src/components/motion'
 
 interface Notification {
@@ -65,7 +66,7 @@ export default function NotificationsScreen() {
       setNotifs((prev) => prev.map((x) => ((x.id || x._id) === id ? { ...x, read: true } : x)))
     }
     if (n.link) {
-      if (n.link.startsWith('http')) Linking.openURL(n.link).catch(() => {})
+      if (isSafeHttpUrl(n.link)) safeOpenURL(n.link)
       else router.push(n.link as Href)
     }
   }
@@ -92,7 +93,7 @@ export default function NotificationsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
       <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10}>
           <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }}>Notifications{unread > 0 ? ` (${unread})` : ''}</Text>

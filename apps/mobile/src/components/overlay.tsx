@@ -171,14 +171,14 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
       {/* ── Simple OK dialog ──────────────────────────────────────── */}
       {alertState && (
         <Modal transparent visible animationType="fade" statusBarTranslucent onRequestClose={dismissAlert}>
-          <View style={styles.backdrop}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={dismissAlert} />
+          <View style={[styles.backdrop, { backgroundColor: c.overlay }]}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={dismissAlert} accessibilityLabel="Dismiss" accessibilityRole="button" />
             <View style={[styles.card, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.3), borderRadius: radius }]}>
               <View style={[styles.accentBar, { backgroundColor: c.accent }]} />
               <Text style={[styles.message, { color: c.text2, fontFamily: CODE_FONT, lineHeight: 22 }]}>{alertState.message}</Text>
               <TouchableOpacity
                 onPress={dismissAlert}
-                style={[styles.primaryBtn, { borderColor: c.accent, borderRadius: theme.buttonRadius, backgroundColor: `${c.accent}14` }]}
+                style={[styles.primaryBtn, { borderColor: c.accent, borderRadius: theme.buttonRadius, backgroundColor: withAlpha(c.accent, 0.08) }]}
               >
                 <Text style={[micro(11, 2, '800'), { color: c.accent }]}>{alertState.okText.toUpperCase()}</Text>
               </TouchableOpacity>
@@ -190,7 +190,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
       {/* ── Confirm dialog ────────────────────────────────────────── */}
       {confirm && (
         <Modal transparent visible animationType="fade" statusBarTranslucent onRequestClose={() => dismissConfirm(false)}>
-          <View style={styles.backdrop}>
+          <View style={[styles.backdrop, { backgroundColor: c.overlay }]}>
             <Pressable style={StyleSheet.absoluteFill} onPress={() => dismissConfirm(false)} />
             <View style={[styles.card, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.3), borderRadius: radius }]}>
               <View style={[styles.accentBar, { backgroundColor: confirm.destructive ? withAlpha(c.danger, 0.8) : c.accent }]} />
@@ -212,7 +212,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
                     {
                       borderColor: confirm.destructive ? c.danger : c.accent,
                       borderRadius: theme.buttonRadius,
-                      backgroundColor: confirm.destructive ? `${c.danger}14` : `${c.accent}14`,
+                      backgroundColor: confirm.destructive ? withAlpha(c.danger, 0.08) : withAlpha(c.accent, 0.08),
                     },
                   ]}
                 >
@@ -229,7 +229,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
       {/* ── Action sheet / menu ───────────────────────────────────── */}
       {sheet && (
         <Modal transparent visible animationType="slide" statusBarTranslucent onRequestClose={() => dismissSheet(null)}>
-          <View style={styles.backdropJustify}>
+          <View style={[styles.backdropJustify, { backgroundColor: c.overlay }]}>
             <Pressable style={StyleSheet.absoluteFill} onPress={() => dismissSheet(null)} />
             <View style={[styles.sheetCard, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.25), borderTopLeftRadius: radius, borderTopRightRadius: radius }]}>
               <View style={[styles.accentBar, { backgroundColor: c.accent }]} />
@@ -263,7 +263,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
       {/* ── Loading modal ─────────────────────────────────────────── */}
       {loading && (
         <Modal transparent visible animationType="fade" statusBarTranslucent>
-          <View style={styles.backdrop}>
+          <View style={[styles.backdrop, { backgroundColor: c.overlay }]}>
             <View style={[styles.card, { backgroundColor: c.bg2, borderColor: withAlpha(c.accent2, 0.3), borderRadius: radius, alignItems: 'center', minWidth: 160 }]}>
               <ActivityIndicator color={c.accent} size="large" />
               {loading.text ? (
@@ -295,14 +295,12 @@ function toastLayerStyle(pos: string): ViewStyle {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: SPACE.mega,
   },
   backdropJustify: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   card: {
