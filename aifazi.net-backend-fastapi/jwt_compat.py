@@ -11,7 +11,7 @@ Usage in routers:
 
 All tokens created through this module use PASETO v4 format (v4.local.*).
 The algorithm parameter is accepted but ignored (PASETO v4 always uses XChaCha20-Poly1305).
-Requires: cryptography>=42.0 (XChaCha20-Poly1305)
+Requires: PyNaCl>=1.5.0 (cryptography does not ship XChaCha20-Poly1305)
 """
 import os
 import time
@@ -22,8 +22,7 @@ import logging
 from typing import Optional, Union
 from datetime import datetime, timezone
 
-from cryptography.hazmat.primitives.ciphers.aead import XChaCha20Poly1305
-from paseto_token import _derive_key
+from paseto_token import _derive_key, XChaCha20Poly1305
 
 log = logging.getLogger("jwt_compat")
 

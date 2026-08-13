@@ -9,7 +9,7 @@ Replaces JWT with a secure, unambiguous token format.
 - 24-hour default expiry
 
 Format: v4.local.<encrypted_base64url>.<optional_footer>
-Requires: cryptography>=42.0 (XChaCha20-Poly1305)
+Requires: PyNaCl>=1.5.0 (cryptography does not ship XChaCha20-Poly1305)
 """
 import os
 import json
@@ -19,7 +19,7 @@ import hashlib
 import logging
 from typing import Optional
 
-from cryptography.hazmat.primitives.ciphers.aead import XChaCha20Poly1305
+import nacl.bindings
 
 log = logging.getLogger("token")
 
@@ -31,6 +31,34 @@ TOKEN_HEADER_B64 = base64.urlsafe_b64encode(
 TOKEN_EXPIRY_SECONDS = 24 * 60 * 60  # 24 hours
 NONCE_SIZE = 24  # XChaCha20 nonce
 KEY_SIZE = 32   # XChaCha20 key
+
+
+class XChaCha20Poly1305:
+    """XChaCha20-Poly1305 AEAD backed by libsodium (PyNaCl).
+
+    `cryptography` does not provide XChaCha20-Poly1305 (only the short-nonce
+    ChaCha20Poly1305), so this adapter wraps libsodium's IETF construction used
+    by the PASETO v4 spec (24-byte nonce, 32-byte key).
+    """
+
+    def __init__(self, key: bytes) -> None:
+        if len(key) != KEY_SIZE:
+            raise ValueError(f"Key must be {KEY_SIZE} bytes, got {len(key)}")
+        self._key = bytes(key)
+
+    def encrypt(self, nonce: bytes, data: bytes, aad: Optional[bytes]) -> bytes:
+        if len(nonce) != NONCE_SIZE:
+            raise ValueError(f"Nonce must be {NONCE_SIZE} bytes, got {len(nonce)}")
+        return nacl.bindings.crypto_aead_xchacha20poly1305_ietf_encrypt(
+            data, aad, nonce, self._key
+        )
+
+    def decrypt(self, nonce: bytes, data: bytes, aad: Optional[bytes]) -> bytes:
+        if len(nonce) != NONCE_SIZE:
+            raise ValueError(f"Nonce must be {NONCE_SIZE} bytes, got {len(nonce)}")
+        return nacl.bindings.crypto_aead_xchacha20poly1305_ietf_decrypt(
+            data, aad, nonce, self._key
+        )
 
 
 def _b64url_encode(data: bytes) -> str:
