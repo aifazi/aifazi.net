@@ -106,11 +106,14 @@
       }
     },
     "owner": "aifazi",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
-      "url": "https://u.expo.dev/4cd9069e-469a-410f-90d3-942f4901470c"
+      "url": "https://u.expo.dev/4cd9069e-469a-410f-90d3-942f4901470c",
+      "channel": "production",
+      "checkAutomatically": "NEVER",
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
     }
   }
 }

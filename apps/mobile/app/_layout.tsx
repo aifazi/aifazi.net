@@ -1,4 +1,6 @@
-import { Stack } from 'expo-router'
+import { useEffect, useRef } from 'react'
+import { Stack, useSegments } from 'expo-router'
+import * as Updates from 'expo-updates'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ThemeProvider, useTheme } from '@/src/theme'
@@ -16,6 +18,36 @@ export const unstable_settings = {
 function RootNav() {
   const { theme } = useTheme()
   const { loading: authLoading } = useAuth()
+
+  // EAS Update OTA wiring: native side is configured with checkAutomatically
+  // "NEVER", so this is the single place that checks for a newer bundle for the
+  // current runtime. If one exists it is downloaded and applied by reloading —
+  // but never while a call is in progress (it would then apply on next launch).
+  // Best-effort only; a failed check must never block boot. Skipped in __DEV__.
+  const segments = useSegments()
+  const segmentsRef = useRef(segments)
+  segmentsRef.current = segments
+  useEffect(() => {
+    if (__DEV__ || !Updates.isEnabled) return
+    let active = true
+    const applyOtaUpdate = async () => {
+      try {
+        const update = await Updates.checkForUpdateAsync()
+        if (!active || !update.isAvailable) return
+        await Updates.fetchUpdateAsync()
+        if (!active) return
+        if (segmentsRef.current.join('/').startsWith('call')) return
+        await Updates.reloadAsync()
+      } catch {
+        // Best-effort OTA — never block boot on network/update failures.
+      }
+    }
+    applyOtaUpdate()
+    return () => {
+      active = false
+    }
+  }, [])
+
   if (authLoading) return <BootScreen label="LOADING PLATFORM" />
   return (
     <>

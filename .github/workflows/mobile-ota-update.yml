@@ -1,10 +1,17 @@
 name: Mobile OTA Update
 
-# Runtime version policy is "appVersion", so an OTA published while app.json
-# carries a stale version silently targets a runtime no installed device uses.
-# To keep one source of truth, this workflow only runs AFTER a native release
-# build has committed its app.json version bump back to main, and it refuses to
-# publish if the checked-out version still disagrees with the latest release.
+# Runtime version is the static string "1.0.0", and the client sends the
+# "expo-channel-name: production" request header baked from app.json
+# (updates.requestHeaders), so a raw-Gradle APK fetches the "production" channel
+# exactly like an EAS-built binary. OTA updates therefore reach every installed
+# binary whose runtime is "1.0.0" — no native rebuild is needed for JS-only fixes.
+#
+# When a change touches native code/config (app.json, android/**, ios/**,
+# plugins/**), bump runtimeVersion in app.json to a new string so old binaries
+# stop receiving OTAs that require the new native layer.
+#
+# The version-match guard below still protects against publishing an OTA from a
+# checkout whose version trails the latest release (e.g. a stray manual run).
 on:
   workflow_run:
     workflows: ["Mobile Release Build"]
