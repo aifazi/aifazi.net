@@ -55,7 +55,7 @@ export function TicketsTab() {
   }
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled">
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: SPACE.colossal + SPACE.huge }}>
       <View style={{ flexDirection: 'row', gap: SPACE.sm, marginBottom: SPACE.md }}>
         {[
           { label: 'TOTAL', value: stats.total, color: c.accent2 },

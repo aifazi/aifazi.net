@@ -26,7 +26,19 @@ import { useMessageActions, useSwipeToReply } from '@/src/lib/chat-actions'
 import { useOverlay } from '@/src/components/overlay'
 import { Loader } from '@/src/components/Loader'
 import { VoiceRecorder, VoiceNotePlay } from '@/src/components/VoiceNote'
+import { MediaViewer } from '@/src/components/MediaViewer'
+import { MarkdownText } from '@/src/components/markdown'
+import { openInApp } from '@/src/lib/url'
+import { extractUrl, isImageUrl } from '@/src/lib/links'
 import { withAlpha, contrastText } from '@/src/lib/color'
+
+interface LinkPreview {
+  title?: string
+  description?: string
+  image?: string
+  site?: string
+  url?: string
+}
 
 interface DMMessage {
   id: string
@@ -70,6 +82,7 @@ interface RowProps {
   replyBody: string
   isImage: boolean
   isVoice: boolean
+  preview?: LinkPreview | null
   reactions: [string, string[]][]
   onReply: () => void
   onReact: () => void
@@ -77,10 +90,11 @@ interface RowProps {
   onDelete: () => void
   onToggleReact: (emoji: string) => void
   onLongPress: () => void
+  onOpenLink: (url: string) => void
 }
 
 function MessageRow(props: RowProps) {
-  const { mine, c, theme, item, body, replyBody, isImage, isVoice, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress } = props
+  const { mine, c, theme, item, body, replyBody, isImage, isVoice, preview, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress, onOpenLink } = props
   const { pan, panHandlers } = useSwipeToReply({ onReply })
   const mineText = mine ? contrastText(c.accent2) : c.text
   const mineMuted = mine ? withAlpha(contrastText(c.accent2), 0.65) : c.muted
@@ -114,19 +128,55 @@ function MessageRow(props: RowProps) {
               </View>
             ) : null}
             {isImage ? (
-              <ExpoImage
-                source={{ uri: item.content }}
-                style={{ width: 220, height: 220, borderRadius: 10 }}
-                contentFit="cover"
-                transition={150}
-              />
+              <TouchableOpacity onPress={() => onOpenLink(item.content ?? '')}>
+                <ExpoImage
+                  source={{ uri: item.content }}
+                  style={{ width: 220, height: 220, borderRadius: 10 }}
+                  contentFit="cover"
+                  transition={150}
+                />
+              </TouchableOpacity>
             ) : isVoice ? (
               <VoiceNotePlay uri={item.content} duration={item.duration} color={mine ? mineText : c.accent2} />
             ) : (
-              <Text style={{ color: mine ? mineText : c.text, fontSize: FONT.base, lineHeight: 19 }}>
-                {body}
-              </Text>
+              <MarkdownText content={body} color={mine ? mineText : c.text} onLink={onOpenLink} />
             )}
+            {preview && preview.title ? (
+              <TouchableOpacity onPress={() => onOpenLink(preview.url ?? item.content ?? '')}>
+                <View
+                  style={[
+                    styles.previewCard,
+                    {
+                      backgroundColor: mine ? withAlpha(mineText, 0.1) : c.bg,
+                      borderColor: mine ? withAlpha(mineText, 0.25) : c.border,
+                    },
+                  ]}
+                >
+                  {preview.image ? (
+                    <ExpoImage
+                      source={{ uri: preview.image }}
+                      style={{ width: '100%', height: 120, borderTopLeftRadius: 10, borderTopRightRadius: 10 }}
+                      contentFit="cover"
+                    />
+                  ) : null}
+                  <View style={{ padding: SPACE.md }}>
+                    {preview.site ? (
+                      <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        {preview.site}
+                      </Text>
+                    ) : null}
+                    <Text style={{ color: mine ? mineText : c.text, fontSize: FONT.md, fontWeight: '700', marginTop: SPACE.xxs }}>
+                      {preview.title}
+                    </Text>
+                    {preview.description ? (
+                      <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.sm, marginTop: SPACE.xxs }} numberOfLines={2}>
+                        {preview.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ) : null}
             {item.type === 'file' && item.file_name ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs, marginTop: SPACE.sm }}>
                 <Icon name="attach" size={FONT.body} color={mine ? mineText : c.text} />
@@ -213,6 +263,8 @@ export default function DMThreadScreen() {
   const [replying, setReplying] = useState<DMMessage | null>(null)
   const [peerLastRead, setPeerLastRead] = useState('')
   const [typing, setTyping] = useState<string[]>([])
+  const [previews, setPreviews] = useState<Record<string, LinkPreview>>({})
+  const [viewer, setViewer] = useState<string | null>(null)
   const listRef = useRef<FlatList<DMMessage>>(null)
   const stick = useRef(true)
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -233,6 +285,20 @@ export default function DMThreadScreen() {
     }
     return map
   }, [messages, threadKey])
+
+  useEffect(() => {
+    for (const m of messages) {
+      const raw = decryptedBodies[`${m.id}:body`] ?? m.content ?? ''
+      const url = extractUrl(raw)
+      if (url && !previews[m.id]) {
+        api
+          .get('/chat/link-preview', { params: { url }, timeout: 8000 })
+          .then((r) => setPreviews((prev) => ({ ...prev, [m.id]: (r.data ?? {}) as LinkPreview })))
+          .catch(() => setPreviews((prev) => ({ ...prev, [m.id]: { url } })))
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages])
 
   useEffect(() => {
     if (!thread_id) return
@@ -478,6 +544,14 @@ export default function DMThreadScreen() {
 
   const isMine = (m: DMMessage) => m.sender === user?.username
 
+  const openLink = (url: string) => {
+    if (isImageUrl(url)) {
+      setViewer(url)
+      return
+    }
+    openInApp(url).then((ok) => { if (!ok) setErr('Could not open link') })
+  }
+
   const openMenu = async () => {
     if (!peer) return
     const picked = await menu({
@@ -592,6 +666,7 @@ export default function DMThreadScreen() {
                     replyBody={replyBody}
                     isImage={isImage}
                     isVoice={isVoice}
+                    preview={previews[item.id]}
                     reactions={reactionEntries}
                     onReply={() => setReplying(item)}
                     onReact={() => showEmojiPicker((emoji) => toggleReact(item.id, emoji))}
@@ -599,6 +674,7 @@ export default function DMThreadScreen() {
                     onDelete={() => confirmDelete(item.id)}
                     onToggleReact={(emoji) => toggleReact(item.id, emoji)}
                     onLongPress={() => onLongPress(item)}
+                    onOpenLink={openLink}
                   />
                   {seen ? (
                     <View style={{ alignItems: 'flex-end', marginTop: -4, marginBottom: SPACE.xs }}>
@@ -669,6 +745,8 @@ export default function DMThreadScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <MediaViewer uri={viewer} title={peer || 'Media'} onClose={() => setViewer(null)} />
     </SafeAreaView>
   )
 }
@@ -689,6 +767,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: SPACE.xl,
     paddingVertical: SPACE.md,
+  },
+  previewCard: {
+    marginTop: SPACE.md,
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
+    width: 230,
   },
   inputBar: {
     flexDirection: 'row',

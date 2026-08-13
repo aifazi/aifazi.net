@@ -81,7 +81,7 @@ export function DocumentsTab() {
   }
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled">
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: SPACE.colossal + SPACE.huge }}>
       <View style={{ marginBottom: SPACE.lg }}>
         <Btn title={uploading ? 'Uploading…' : '⬆ Upload file'} onPress={pick} disabled={uploading} />
         <Muted style={{ marginTop: SPACE.sm }}>Documents are stored privately in your account.</Muted>

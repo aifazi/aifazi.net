@@ -35,6 +35,8 @@ export function VoiceRecorder({
     setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true }).catch(() => {})
     return () => {
       if (timer.current) clearInterval(timer.current)
+      // Release the recording session so playback isn't routed/held by the mic.
+      setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {})
     }
   }, [])
 
@@ -46,6 +48,8 @@ export function VoiceRecorder({
       } catch {}
       if (timer.current) clearInterval(timer.current)
       setRecording(false)
+      // Switch back to playback mode so the recorded note is audible on Android.
+      setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {})
       const uri = recorder.uri
       if (uri && dur >= 0.5) onRecorded(uri, dur)
       else onError?.('Recording was too short')
@@ -110,8 +114,11 @@ export function VoiceNotePlay({
 
   const toggle = () => {
     if (!uri) return
-    if (player.playing) player.pause()
-    else {
+    if (player.playing) {
+      player.pause()
+    } else {
+      // Ensure the audio session is in playback mode (not leftover recording).
+      setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {})
       player.seekTo(0)
       player.play()
     }

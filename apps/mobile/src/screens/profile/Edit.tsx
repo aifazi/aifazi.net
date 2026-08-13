@@ -79,7 +79,7 @@ export function EditTab() {
   }
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled">
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: SPACE.colossal + SPACE.huge }}>
       <Card title="Edit Profile">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xxl, marginBottom: SPACE.xxl }}>
           <Avatar name={username} avatar={avatar} size={56} />

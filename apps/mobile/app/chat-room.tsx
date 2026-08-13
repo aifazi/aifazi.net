@@ -14,7 +14,7 @@ import {
   AppState,
   Animated,
 } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { askImageSourceAsync, pickDocument, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
@@ -28,7 +28,10 @@ import { useMessageActions, SwipeReplyRow } from '@/src/lib/chat-actions'
 import { MarkdownText } from '@/src/components/markdown'
 import { useOverlay } from '@/src/components/overlay'
 import { withAlpha, contrastText } from '@/src/lib/color'
-import { safeOpenURL } from '@/src/lib/url'
+import { openInApp } from '@/src/lib/url'
+import { VoiceRecorder, VoiceNotePlay } from '@/src/components/VoiceNote'
+import { MediaViewer } from '@/src/components/MediaViewer'
+import { extractUrl, isImageUrl } from '@/src/lib/links'
 
 interface ChatMessage {
   id: string
@@ -39,6 +42,7 @@ interface ChatMessage {
   content?: string
   file_name?: string
   file_size?: string
+  duration?: string
   reply_to?: { id: string; sender: string; content: string } | null
   reactions?: Record<string, string[]>
   created_at?: string
@@ -86,18 +90,6 @@ function fmtSize(size?: string) {
   if (n > 1048576) return `${(n / 1048576).toFixed(1)} MB`
   if (n > 1024) return `${(n / 1024).toFixed(0)} KB`
   return `${n} B`
-}
-
-const URL_RE = /\bhttps?:\/\/[^\s<>"']{6,}\b/i
-
-function extractUrl(content?: string): string {
-  if (!content) return ''
-  const m = content.match(URL_RE)
-  return m ? m[0] : ''
-}
-
-function isImageUrl(url: string) {
-  return /\.(jpe?g|png|gif|webp)(\?.*)?$/i.test(url)
 }
 
 /** Small bouncing dot for the "typing…" indicator (staggered loop). */
@@ -150,6 +142,7 @@ export default function ChatRoomScreen() {
   const [reactTarget, setReactTarget] = useState<ChatMessage | null>(null)
   const [previews, setPreviews] = useState<Record<string, LinkPreview>>({})
   const [uploading, setUploading] = useState(false)
+  const [viewer, setViewer] = useState<string | null>(null)
   const [typingUsers, setTypingUsers] = useState<string[]>([])
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQ, setSearchQ] = useState('')
@@ -331,7 +324,11 @@ export default function ChatRoomScreen() {
   }
 
   const openLink = (url: string) => {
-    safeOpenURL(url).then((ok) => { if (!ok) setErr('Could not open link') })
+    if (isImageUrl(url)) {
+      setViewer(url)
+      return
+    }
+    openInApp(url).then((ok) => { if (!ok) setErr('Could not open link') })
   }
 
   const pickImage = async () => {
@@ -367,6 +364,37 @@ export default function ChatRoomScreen() {
       await load(true)
     } catch (e: any) {
       setErr(e?.response?.data?.detail || e?.message || 'Failed to upload')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const uploadVoice = async (uri: string, durSec: number) => {
+    if (!room) return
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', {
+        uri,
+        name: 'voice.m4a',
+        type: 'audio/mp4',
+      } as any)
+      const up = await api.post(`/upload/chat?room_id=${room}`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 30000,
+      })
+      const url = (up.data?.url ?? '') as string
+      if (!url) throw new Error('Upload returned no URL')
+      await api.post(`/chat/rooms/${room}/messages`, {
+        content: url,
+        type: 'voice',
+        file_name: 'voice.m4a',
+        file_size: String(up.data?.size ?? 0),
+        duration: String(Math.max(1, Math.round(durSec))),
+      })
+      await load(true)
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || e?.message || 'Failed to send voice note')
     } finally {
       setUploading(false)
     }
@@ -446,9 +474,18 @@ export default function ChatRoomScreen() {
           {searchOpen ? 'Search chat' : roomName}
         </Text>
         {!searchOpen ? (
-          <TouchableOpacity onPress={() => setSearchOpen(true)} hitSlop={10}>
-            <Icon name="search" size={FONT.section} color={c.text} />
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              onPress={() => router.push(`/call?room=${encodeURIComponent(room)}&name=${encodeURIComponent(roomName)}&type=voice` as Href)}
+              hitSlop={10}
+              style={{ marginRight: SPACE.sm }}
+            >
+              <Icon name="phone" size={FONT.section} color={c.accent2} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setSearchOpen(true)} hitSlop={10}>
+              <Icon name="search" size={FONT.section} color={c.text} />
+            </TouchableOpacity>
+          </>
         ) : (
           <TouchableOpacity
             onPress={() => {
@@ -577,6 +614,7 @@ export default function ChatRoomScreen() {
               const reactions = item.reactions ?? {}
               const reactionEntries = Object.entries(reactions)
               const isImage = item.type === 'image' || isImageUrl(item.content ?? '')
+              const isVoice = item.type === 'voice'
               const linkUrl = !isImage ? extractUrl(item.content ?? '') : ''
               const preview = linkUrl ? previews[item.id] : undefined
               let replyContent = ''
@@ -641,7 +679,7 @@ export default function ChatRoomScreen() {
                             </View>
                           ) : null}
                           {isImage ? (
-                            <TouchableOpacity onPress={() => openLink(item.content ?? '')}>
+                            <TouchableOpacity onPress={() => setViewer(item.content ?? '')}>
                               <ExpoImage
                                 source={{ uri: item.content }}
                                 style={{ width: 220, height: 220, borderRadius: 10 }}
@@ -649,6 +687,8 @@ export default function ChatRoomScreen() {
                                 transition={150}
                               />
                             </TouchableOpacity>
+                          ) : isVoice ? (
+                            <VoiceNotePlay uri={item.content} duration={item.duration} color={mine ? mineText : c.accent2} />
                           ) : (
                             <MarkdownText
                               content={body || item.content}
@@ -798,6 +838,7 @@ export default function ChatRoomScreen() {
             <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
               <Icon name="attach" size={FONT.lead} color={c.text} style={uploading ? { opacity: 0.4 } : undefined} />
             </TouchableOpacity>
+            <VoiceRecorder onRecorded={uploadVoice} onError={(m) => setErr(m)} />
           </>
         ) : null}
         <View style={{ flex: 1 }}>
@@ -869,6 +910,8 @@ export default function ChatRoomScreen() {
           </View>
         </View>
       ) : null}
+
+      <MediaViewer uri={viewer} title={roomName} onClose={() => setViewer(null)} />
     </SafeAreaView>
   )
 }

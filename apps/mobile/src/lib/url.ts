@@ -1,4 +1,5 @@
 import { Linking } from 'react-native'
+import * as WebBrowser from 'expo-web-browser'
 
 /**
  * Allow only http(s) URLs for Linking.openURL. Blocks file://, tel:, javascript:,
@@ -24,5 +25,22 @@ export async function safeOpenURL(url: string | undefined | null): Promise<boole
     return true
   } catch {
     return false
+  }
+}
+
+/**
+ * Opens `url` inside an in-app browser tab (Chrome Custom Tabs /
+ * SFSafariViewController) when possible, falling back to the OS handler.
+ * Keeps the user inside the app instead of jumping to a separate browser.
+ * Returns true when the URL was opened.
+ */
+export async function openInApp(url: string | undefined | null): Promise<boolean> {
+  if (!isSafeHttpUrl(url)) return false
+  const target = (url as string).trim()
+  try {
+    await WebBrowser.openBrowserAsync(target)
+    return true
+  } catch {
+    return safeOpenURL(target)
   }
 }

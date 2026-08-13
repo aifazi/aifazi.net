@@ -98,7 +98,7 @@ export function SecurityTab() {
   }
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled">
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: SPACE.colossal + SPACE.huge }}>
       <Card title="Change Password">
         <Field label="Current password" value={cur} onChangeText={setCur} secure placeholder="••••••••" />
         <Field label="New password" value={next} onChangeText={setNext} secure placeholder="At least 8 characters" />

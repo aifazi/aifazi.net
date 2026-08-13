@@ -235,10 +235,15 @@ export default function HomeScreen() {
                       }}
                     />
                     <View pointerEvents="none" style={{ position: 'absolute', bottom: -16, right: -8, width: 56, height: 56, borderRadius: 28, backgroundColor: withAlpha(t.tint, 0.12) }} />
-                    <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: withAlpha(t.tint, 0.16), alignItems: 'center', justifyContent: 'center' }}>
-                      <Icon name={t.icon} size={22} color={t.tint} />
+                    <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: withAlpha(t.tint, 0.16), alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon name={t.icon} size={24} color={t.tint} />
                     </View>
-                    <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '800', marginTop: SPACE.sm }}>{t.label}</Text>
+                    <Text
+                      numberOfLines={1}
+                      style={{ position: 'absolute', bottom: SPACE.lg, left: 0, right: 0, textAlign: 'center', color: c.text, fontSize: FONT.body, fontWeight: '800' }}
+                    >
+                      {t.label}
+                    </Text>
                   </View>
                 </PressTile>
               </Reveal>
@@ -442,7 +447,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tileWrap: {
-    width: '30%',
+    flexBasis: '30%',
+    flexGrow: 1,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 8,

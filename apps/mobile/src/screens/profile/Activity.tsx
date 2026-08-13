@@ -41,7 +41,7 @@ export function ActivityTab() {
   }
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled">
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: SPACE.colossal + SPACE.huge }}>
       <Card title="Recent Threads" subtitle="FORUM">
         {threads.length === 0 ? (
           <Muted style={{ textAlign: 'center', padding: SPACE.xl }}>No threads yet</Muted>

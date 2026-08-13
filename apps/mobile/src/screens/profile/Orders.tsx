@@ -51,7 +51,7 @@ export function OrdersTab() {
   }
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled">
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: SPACE.colossal + SPACE.huge }}>
       {orders.map((o) => (
         <Card key={o.id} style={{ padding: SPACE.xl }}>
           <TouchableOpacity onPress={() => openDetail(o)}>

@@ -10,73 +10,31 @@ import { useAuth } from '@/src/lib/auth'
 import { THEME_IDS, THEMES, type ThemeId } from '@/src/themes'
 import { withAlpha, statusTone } from '@/src/lib/color'
 import { useOverlay } from '@/src/components/overlay'
+import { ThemeToggle } from '@/src/components/ThemeToggle'
 import { fmtDate, fmtWhen } from './helpers'
 import { AppUpdatesCard } from './AppUpdates'
 
-/**
- * Compact live theme preview: the theme's bg, a mini surface + text sample and
- * its accent/secondary dots. Active theme gets an accent ring + glow so the
- * picker reads as a gallery instead of a row of buttons.
- */
-function ThemeSwatch({ id, active, disabled, onPress }: { id: ThemeId; active: boolean; disabled?: boolean; onPress: () => void }) {
-  const { theme } = useTheme()
-  const c = theme.colors
-  const t = THEMES[id]
-  const tc = t.colors
-  const radius = Math.max(4, Math.min(t.radius, 12))
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
-      activeOpacity={0.75}
-      style={{
-        flexBasis: '31%',
-        flexGrow: 1,
-        marginBottom: SPACE.lg,
-        borderWidth: 1,
-        borderColor: active ? withAlpha(c.accent, 0.95) : withAlpha(c.accent2, 0.18),
-        borderRadius: radius,
-        overflow: 'hidden',
-        backgroundColor: tc.bg2,
-        shadowColor: active ? c.accent : '#000',
-        shadowOpacity: active ? 0.45 : theme.dark ? 0.25 : 0.15,
-        shadowRadius: active ? 14 : 6,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: active ? 6 : 2,
-        opacity: disabled ? 0.55 : 1,
-      }}
-    >
-      <View style={{ backgroundColor: tc.bg, padding: SPACE.lg, gap: SPACE.sm }}>
-        <View style={{ flexDirection: 'row', gap: 5 }}>
-          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: tc.accent }} />
-          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: tc.accent2 }} />
-          <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: tc.star }} />
-        </View>
-        <View style={{ backgroundColor: tc.bg2, borderRadius: Math.max(2, radius - 4), padding: 7, gap: SPACE.xs }}>
-          <View style={{ width: '80%', height: 3, borderRadius: 2, backgroundColor: tc.text }} />
-          <View style={{ width: '55%', height: 3, borderRadius: 2, backgroundColor: withAlpha(tc.text2, 0.6) }} />
-          <View style={{ width: '40%', height: 3, borderRadius: 2, backgroundColor: withAlpha(tc.muted, 0.5) }} />
-        </View>
-      </View>
-      <View style={{ alignItems: 'center', paddingVertical: SPACE.sm, paddingHorizontal: SPACE.sm }}>
-        <Text
-          numberOfLines={1}
-          style={{ color: active ? c.accent : c.text2, fontSize: FONT.micro, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 }}
-        >
-          {t.name}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  )
-}
-
 export function OverviewTab({ goEdit }: { goEdit: () => void }) {
-  const { theme, setTheme, toggleTheme, source, isLocked } = useTheme()
+  const { theme, setTheme, source, isLocked } = useTheme()
   const c = theme.colors
   const radius = Math.max(6, theme.radius)
   const { user, logout, refresh } = useAuth()
   const router = useRouter()
-  const { confirm } = useOverlay()
+  const { confirm, menu } = useOverlay()
+
+  const openThemeMenu = async () => {
+    if (isLocked) return
+    const pick = await menu({
+      title: 'Choose theme',
+      options: THEME_IDS.map((id) => ({
+        value: id,
+        label: `${THEMES[id].name}${theme.id === id ? '  ·  current' : ''}`,
+        icon: '●',
+        color: theme.id === id ? c.accent : THEMES[id].colors.accent,
+      })),
+    })
+    if (pick && (THEME_IDS as string[]).includes(pick)) setTheme(pick as ThemeId)
+  }
 
   const linked: { label: string; value?: string }[] = [
     { label: 'Discord', value: user?.discord_username },
@@ -92,7 +50,11 @@ export function OverviewTab({ goEdit }: { goEdit: () => void }) {
   }
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled">
+    <ScrollView
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ paddingBottom: SPACE.colossal + SPACE.huge }}
+      showsVerticalScrollIndicator={false}
+    >
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xxl }}>
           <View>
@@ -181,34 +143,38 @@ export function OverviewTab({ goEdit }: { goEdit: () => void }) {
             <Muted>Theme switching is disabled — the admin has forced a theme site-wide.</Muted>
           </View>
         ) : (
-          <View style={{ flexDirection: 'row', gap: SPACE.md, marginBottom: SPACE.xxl }}>
-            <Btn
-              title={theme.dark ? '☀️ Light' : '🌙 Dark'}
-              variant="ghost"
-              onPress={toggleTheme}
-              style={{ paddingVertical: SPACE.md, paddingHorizontal: SPACE.xxl, flex: 1 }}
-            />
-            <Btn
-              title="⏭ Next"
-              variant="ghost"
-              onPress={() => {
-                const idx = THEME_IDS.indexOf(theme.id)
-                setTheme(THEME_IDS[(idx + 1) % THEME_IDS.length])
-              }}
-              style={{ paddingVertical: SPACE.md, paddingHorizontal: SPACE.xxl, flex: 1 }}
-            />
-          </View>
-        )}
-        {(['dark', 'light'] as const).map((grp) => (
-          <View key={grp} style={{ marginBottom: grp === 'dark' ? 14 : 0 }}>
-            <MicroLabel style={{ marginBottom: SPACE.md }}>{grp === 'dark' ? 'Dark themes' : 'Light themes'}</MicroLabel>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md }}>
-              {THEME_IDS.filter((id) => THEMES[id].dark === (grp === 'dark')).map((id) => (
-                <ThemeSwatch key={id} id={id} active={theme.id === id} disabled={isLocked} onPress={() => setTheme(id)} />
-              ))}
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACE.lg, marginBottom: SPACE.xl }}>
+              <View style={{ flex: 1 }}>
+                <MicroLabel style={{ marginBottom: SPACE.xs }}>APPEARANCE</MicroLabel>
+                <Muted>Flip between light and dark</Muted>
+              </View>
+              <ThemeToggle />
             </View>
-          </View>
-        ))}
+            <TouchableOpacity
+              onPress={openThemeMenu}
+              disabled={isLocked}
+              accessibilityRole="button"
+              accessibilityLabel="Choose theme"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: SPACE.md,
+                borderWidth: 1,
+                borderColor: c.border,
+                borderRadius: radius,
+                backgroundColor: withAlpha(c.bg, 0.7),
+                paddingHorizontal: SPACE.xl,
+                paddingVertical: SPACE.xl,
+                opacity: isLocked ? 0.55 : 1,
+              }}
+            >
+              <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: THEMES[theme.id].colors.accent }} />
+              <Text style={{ flex: 1, color: c.text, fontSize: FONT.md, fontWeight: '700' }}>{THEMES[theme.id].name}</Text>
+              <Icon name="down" size={16} color={c.muted} />
+            </TouchableOpacity>
+          </>
+        )}
       </Card>
 
       <AppUpdatesCard />
