@@ -69,6 +69,33 @@ jobs:
           console.log("version=" + v + " versionCode=" + app.expo.android.versionCode);
           EOF
 
+      - name: Check versionCode monotonicity
+        working-directory: apps/mobile
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_VERSION: ${{ steps.tag.outputs.tag }}
+        run: |
+          # versionCode = maj*1e6 + min*1e3 + pat (formula in the stamp step).
+          # It must be strictly greater than every previously released versionCode
+          # or Android rejects the APK (invalid downgrade) or ignores it as a
+          # same-version re-install. A stale tag (e.g. re-releasing v1.0.15 after
+          # v1.0.21) would otherwise silently lower the code — fail closed instead.
+          v=$(echo "$APP_VERSION" | sed 's/^v//I' | tr -d '[:space:]')
+          if ! echo "$v" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Release tag '$APP_VERSION' is not a semver vX.Y.Z tag; cannot compute versionCode." >&2
+            exit 1
+          fi
+          IFS='.' read -r maj min pat <<< "$v"
+          new=$(( maj * 1000000 + min * 1000 + pat ))
+          prev=$(gh release list --limit 200 --json tagName -q '.[].tagName' | \
+            grep -oE '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//I' | \
+            awk -F. '{print $1*1000000 + $2*1000 + $3}' | sort -n | tail -1)
+          if [ -n "$prev" ] && [ "$new" -le "$prev" ]; then
+            echo "::error::versionCode $new is not above the last released versionCode $prev — refusing to build a non-monotonic release. Use a higher version tag (e.g. bump minor/patch past $APP_VERSION)." >&2
+            exit 1
+          fi
+          echo "versionCode $new is monotonic (last released: ${prev:-none})"
+
       - name: Commit and push version bump back to main
         working-directory: apps/mobile
         env:
@@ -131,6 +158,28 @@ jobs:
             TAG=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Check versionCode monotonicity
+        working-directory: apps/mobile
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_VERSION: ${{ steps.tag.outputs.tag }}
+        run: |
+          v=$(echo "$APP_VERSION" | sed 's/^v//I' | tr -d '[:space:]')
+          if ! echo "$v" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Release tag '$APP_VERSION' is not a semver vX.Y.Z tag; cannot compute versionCode." >&2
+            exit 1
+          fi
+          IFS='.' read -r maj min pat <<< "$v"
+          new=$(( maj * 1000000 + min * 1000 + pat ))
+          prev=$(gh release list --limit 200 --json tagName -q '.[].tagName' | \
+            grep -oE '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//I' | \
+            awk -F. '{print $1*1000000 + $2*1000 + $3}' | sort -n | tail -1)
+          if [ -n "$prev" ] && [ "$new" -le "$prev" ]; then
+            echo "::error::versionCode $new is not above the last released versionCode $prev — refusing to build a non-monotonic release." >&2
+            exit 1
+          fi
+          echo "versionCode $new is monotonic (last released: ${prev:-none})"
 
       - name: Set app version from release tag
         working-directory: apps/mobile
