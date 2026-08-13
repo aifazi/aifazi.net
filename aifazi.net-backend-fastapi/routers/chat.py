@@ -376,9 +376,10 @@ class RoomBody(BaseModel):
 
 class MessageBody(BaseModel):
     content: str
-    type: str = "text"           # text | image | file
+    type: str = "text"           # text | image | file | voice
     file_name: str = ""
     file_size: str = ""
+    duration: str = ""           # seconds for voice notes
     reply_to: dict | None = None  # {id, sender, content}
 
 class EditBody(BaseModel):
@@ -756,7 +757,7 @@ async def send_message(
         raise HTTPException(400, "Message cannot be empty")
     if len(content) > 4000:
         raise HTTPException(400, "Message too long (max 4000 chars)")
-    if body.type not in ("text", "image", "file"):
+    if body.type not in ("text", "image", "file", "voice"):
         raise HTTPException(400, "Invalid message type")
 
     # Sanitise reply_to to prevent injection
@@ -778,6 +779,7 @@ async def send_message(
         "content":    content,
         "file_name":  body.file_name,
         "file_size":  body.file_size,
+        "duration":   (body.duration or "")[:32],
         "reply_to":   safe_reply,
         "created_at": _now(),
     }).execute()

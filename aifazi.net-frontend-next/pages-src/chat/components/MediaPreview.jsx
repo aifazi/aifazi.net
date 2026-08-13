@@ -1,7 +1,8 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { T, IMG_EXTS, VID_EXTS, AUD_EXTS, ENCRYPTED_PREFIX } from '../chat-constants'
 import { decryptText, isEncrypted, getRoomKey } from '../chat-encryption'
+import api from '@/lib/api'
 
 function isImageUrl(url) {
   const clean = url.replace(/[.,;:!?)\]]+$/, '')
@@ -27,6 +28,90 @@ function cleanUrl(url) {
 
 function getDomain(url) {
   try { return new URL(url).hostname } catch { return url }
+}
+
+const _previewCache = new Map()
+
+function useLinkPreview(urlRef) {
+  const [preview, setPreview] = useState(() => _previewCache.get(urlRef))
+  const [lastUrl, setLastUrl] = useState(urlRef)
+  if (lastUrl !== urlRef) {
+    setLastUrl(urlRef)
+    setPreview(_previewCache.get(urlRef))
+  }
+  useEffect(() => {
+    if (_previewCache.has(urlRef)) return
+    let cancelled = false
+    const run = async () => {
+      try {
+        const r = await api.get('/chat/link-preview', { params: { url: urlRef }, timeout: 8000 })
+        if (cancelled) return
+        const data = r.data || {}
+        _previewCache.set(urlRef, data)
+        setPreview(data)
+      } catch {
+        if (cancelled) return
+        const data = { url: urlRef }
+        _previewCache.set(urlRef, data)
+        setPreview(data)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [urlRef])
+  return preview
+}
+
+function RichLinkCard({ url, right }) {
+  const preview = useLinkPreview(url)
+  const hasCard = preview && (preview.title || preview.description || preview.image || preview.site)
+  const domain = getDomain(url)
+  if (!hasCard) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8,
+          border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.03)', textDecoration: 'none', color: T.text, maxWidth: 420 }}>
+        <span style={{ fontSize: 14, flexShrink: 0 }}>🔗</span>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 11, color: T.accentB, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {domain}
+          </div>
+          <div style={{ fontSize: 10, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {url.length > 60 ? url.slice(0, 60) + '…' : url}
+          </div>
+        </div>
+        <span style={{ marginLeft: 'auto', fontSize: 10, color: T.muted, flexShrink: 0 }}>↗</span>
+      </a>
+    )
+  }
+  return (
+    <div style={{ maxWidth: 420, minWidth: 220, borderRadius: 10, overflow: 'hidden', border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.03)' }}>
+      <a href={preview.url || url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+        {preview.image && (
+          <img src={preview.image} alt="" loading="lazy"
+            style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block', borderBottom: `1px solid ${T.border}` }}
+            onError={e => { e.target.style.display = 'none' }} />
+        )}
+        <div style={{ padding: '8px 12px' }}>
+          {preview.site ? (
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: T.muted }}>
+              {preview.site}
+            </div>
+          ) : null}
+          {preview.title ? (
+            <div style={{ fontSize: 12, fontWeight: 700, color: T.text, marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {preview.title}
+            </div>
+          ) : null}
+          {preview.description ? (
+            <div style={{ fontSize: 11, color: T.muted, marginTop: 3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {preview.description}
+            </div>
+          ) : null}
+        </div>
+      </a>
+    </div>
+  )
 }
 
 export function MediaPreviews({ text, onMediaClick, right }) {
@@ -88,21 +173,8 @@ export function MediaPreviews({ text, onMediaClick, right }) {
             <audio src={clean} controls preload="metadata" style={{ width: '100%', height: 36 }} />
           </div>
         }
-        return <div key={i}>
-          <a href={clean} target="_blank" rel="noopener noreferrer"
-            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8,
-              border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.03)', textDecoration: 'none', color: T.text, maxWidth: 420 }}>
-            <span style={{ fontSize: 14, flexShrink: 0 }}>🔗</span>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: T.accentB, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {getDomain(clean)}
-              </div>
-              <div style={{ fontSize: 10, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {clean.length > 60 ? clean.slice(0, 60) + '…' : clean}
-              </div>
-            </div>
-            <span style={{ marginLeft: 'auto', fontSize: 10, color: T.muted, flexShrink: 0 }}>↗</span>
-          </a>
+        return <div key={i} style={{ maxWidth: 420 }}>
+          <RichLinkCard url={clean} right={right} />
         </div>
       })}
     </div>

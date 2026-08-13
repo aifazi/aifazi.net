@@ -75,6 +75,8 @@ export default function AdminChat({ embedded=false }) {
   const [showSidebar, setShowSidebar] = useState(false)
   const [showAdminMenu, setShowAdminMenu] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const [recSecs, setRecSecs] = useState(0)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [muted, setMuted] = useState(false)
@@ -121,6 +123,9 @@ export default function AdminChat({ embedded=false }) {
   const listRef = useRef(null)
   const fileRef = useRef(null)
   const adminMenuRef = useRef(null)
+  const recRef = useRef(null)
+  const recTimer = useRef(null)
+  const recDur = useRef(0)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
@@ -467,6 +472,45 @@ export default function AdminChat({ embedded=false }) {
       })
     } catch { notify.error('Upload failed') }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = '' }
+  }
+
+  // ── Voice note recorder (room chat) ─────────────────────────────────────
+  const startRec = async () => {
+    if (!room) return
+    if (isMutedByStaff) { notify.error('You are muted in this channel'); return }
+    if (!navigator.mediaDevices?.getUserMedia) { notify.error('Recording not supported in this browser'); return }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mr = new MediaRecorder(stream)
+      const chunks = []
+      mr.ondataavailable = ev => { if (ev.data.size) chunks.push(ev.data) }
+      mr.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop())
+        const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' })
+        const file = new File([blob], 'voice.webm', { type: blob.type })
+        if (!room || !file) { setRecording(false); return }
+        setUploading(true)
+        try {
+          const form = new FormData(); form.append('file', file)
+          const up = await api.post(`/upload/chat?room_id=${room.id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
+          await api.post(`/chat/rooms/${room.id}/messages`, {
+            content: up.data.url, type: 'voice', file_name: 'voice.webm',
+            file_size: String(file.size || up.data?.size || 0),
+            duration: String(Math.max(1, Math.round(recDur.current))),
+          })
+        } catch { notify.error('Voice note upload failed') }
+        finally { setUploading(false) }
+      }
+      recRef.current = mr
+      recDur.current = 0; setRecSecs(0); setRecording(true)
+      mr.start()
+      recTimer.current = setInterval(() => { recDur.current += 1; setRecSecs(s => s + 1) }, 1000)
+    } catch { notify.error('Microphone access denied') }
+  }
+  const stopRec = () => {
+    if (recRef.current) { try { recRef.current.stop() } catch {} recRef.current = null }
+    if (recTimer.current) clearInterval(recTimer.current)
+    setRecording(false)
   }
 
   const handlePaste = async (e) => {
@@ -912,6 +956,12 @@ export default function AdminChat({ embedded=false }) {
                         color:uploading?T.muted:T.text, fontSize:16, cursor:uploading?'default':'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                       {uploading ? '⏳' : '📎'}
                     </button>
+                    <button onClick={recording ? stopRec : startRec} disabled={uploading||isMutedByStaff} title={isMutedByStaff ? 'You are muted' : recording ? 'Stop recording' : 'Record voice note'}
+                      style={{ width:36, height:36, border:`1px solid ${recording ? T.danger : T.border}`, borderRadius:9, background:recording ? 'rgba(255,71,87,0.15)' : 'transparent',
+                        color:recording ? T.danger : (isMutedByStaff ? T.muted : T.text), fontSize:16, cursor:(uploading||isMutedByStaff)?'default':'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      {recording ? '⏹' : '🎙'}
+                    </button>
+                    {recording && <span style={{ fontFamily:T.mono, fontSize:11, color:T.danger, flexShrink:0 }}>0:{String(recSecs).padStart(2, '0')}</span>}
                     <input value={input} onChange={onInput} onPaste={handlePaste}
                       onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey)sendMsg(e)}}
                       placeholder={isMutedByStaff?'You are muted':`Message #${room.name}…`}

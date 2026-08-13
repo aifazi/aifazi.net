@@ -13,6 +13,7 @@ import { Avatar } from './Avatar'
 import { RolePill } from './RolePill'
 import { Markdown } from './Markdown'
 import { MediaPreviews } from './MediaPreview'
+import { MediaViewer } from './MediaViewer'
 
 const LIST_POLL = 15000
 const MSG_POLL = 4000
@@ -41,6 +42,7 @@ export default function DMPanel({ me, onClose }) {
   const [recording, setRecording] = useState(false)
   const [recSecs, setRecSecs] = useState(0)
   const [playingId, setPlayingId] = useState(null)
+  const [mediaViewer, setMediaViewer] = useState(null)
   const listRef = useRef(null)
   const fileRef = useRef(null)
   const recRef = useRef(null)
@@ -226,6 +228,8 @@ export default function DMPanel({ me, onClose }) {
 
   // ── Render: left thread list + right conversation ───────────────────────
   return (
+    <>
+      {mediaViewer && <MediaViewer media={mediaViewer} onClose={()=>setMediaViewer(null)} />}
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: T.main, minWidth: 0 }}>
       {/* Thread list */}
       <div style={{ width: 230, flexShrink: 0, background: T.sidebar, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -313,7 +317,7 @@ export default function DMPanel({ me, onClose }) {
                               ↪ {m.reply_to.sender}: {m.reply_to.content}
                             </div>
                           )}
-                          {m.type === 'image' && <MediaPreviews text={m.content} onMediaClick={() => window.open(m.content, '_blank')} right={isMine} />}
+                          {m.type === 'image' && <MediaPreviews text={m.content} onMediaClick={setMediaViewer} right={isMine} />}
                           {m.type === 'file' && <div>📎 <a href={m.content} target="_blank" rel="noreferrer" style={{ color: T.accentB }}>{m.file_name}</a></div>}
                           {m.type === 'voice' && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -328,6 +332,7 @@ export default function DMPanel({ me, onClose }) {
                             </div>
                           )}
                           {m.type === 'text' && <Markdown text={m.content} />}
+                          {m.type === 'text' && <MediaPreviews text={m.content} onMediaClick={setMediaViewer} right={isMine} />}
                           <div style={{ marginTop: 2, fontSize: 9, color: T.muted, fontFamily: T.mono, textAlign: 'right' }}>
                             {fmt(m.created_at)}{m.edited ? ' · edited' : ''}
                           </div>
@@ -390,5 +395,6 @@ export default function DMPanel({ me, onClose }) {
         )}
       </div>
     </div>
+    </>
   )
 }

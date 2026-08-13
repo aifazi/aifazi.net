@@ -12,8 +12,18 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
   const [activeMsg, setActiveMsg] = useState(null)
   const [multiSelect, setMultiSelect] = useState(false)
   const [selectedIds, setSelectedIds] = useState([])
+  const [playingId, setPlayingId] = useState(null)
   const { openContextMenu } = useMenu()
   const REACTIONS = ['👍','❤️','😂','😮','😢','🎉','🔥','👀']
+
+  const togglePlay = (m) => {
+    if (playingId === m.id) { const el = document.getElementById(`voice-${m.id}`); if (el) { el.pause(); setPlayingId(null) }; return }
+    setPlayingId(m.id)
+    setTimeout(() => {
+      const el = document.getElementById(`voice-${m.id}`)
+      if (el) { el.play().catch(() => {}); el.onended = () => setPlayingId(null) }
+    }, 50)
+  }
 
   const grouped = useMemo(() => {
     const g = []
@@ -143,6 +153,17 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                     {m.type === 'image' ? (
                       <img src={m.content} alt="" loading="lazy" style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, objectFit: 'contain', cursor: 'pointer' }}
                         onClick={() => onMediaClick?.({ url: m.content, type: m.type })} />
+                    ) : m.type === 'voice' ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button onClick={() => togglePlay(m)} style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'color-mix(in srgb, var(--cyan) 20%, transparent)', color: T.accentB, cursor: 'pointer', fontSize: 12, flexShrink: 0 }}>
+                          {playingId === m.id ? '⏸' : '▶'}
+                        </button>
+                        <div style={{ height: 4, width: 120, borderRadius: 2, background: 'rgba(255,255,255,0.12)', overflow: 'hidden' }}>
+                          <div style={{ width: 0, height: '100%', background: T.accentB }} />
+                        </div>
+                        <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>{m.duration ? `${Math.round(m.duration)}s` : '♪'}</span>
+                        <audio id={`voice-${m.id}`} src={m.content} preload="none" />
+                      </div>
                     ) : m.type === 'file' ? (
                       <div><a href={/^https?:\/\//i.test(m.content || '') ? m.content : '#'} target='_blank' rel='noopener noreferrer' style={{ color: T.accentB, textDecoration: 'none' }}>📎 {m.file_name || 'file'}</a> <span style={{ fontSize: 10, color: T.muted }}>{fmtSz(m.file_size)}</span></div>
                     ) : <Markdown text={m.content} />}
