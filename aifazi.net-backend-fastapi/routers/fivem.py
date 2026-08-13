@@ -886,7 +886,8 @@ async def apply_whitelist(body: WhitelistApply, user: dict = Depends(get_current
     return {"message": "Application submitted!", "id": app.get("id")}
 
 @router.get("/whitelist/check/{identifier}")
-async def check_whitelist(identifier: str):
+async def check_whitelist(request: Request, identifier: str):
+    _check_token(request)
     q = supabase.table("fivem_whitelist").select("status,steam_hex,fivem_id,fivem_license,character_name,priority_tier,priority_level,priority_expires_at").eq("status", "approved")
     if identifier.startswith("license:"):             q = q.eq("fivem_license", identifier)
     elif identifier.startswith("steam:"):             q = q.eq("steam_hex", identifier)

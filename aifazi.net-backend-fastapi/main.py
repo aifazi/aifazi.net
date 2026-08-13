@@ -160,7 +160,6 @@ _OPEN_EXACT: set[str] = {
     "/api/cron/monitor",
     "/api/monitor/status",
     "/api/monitor/ping",
-    "/api/monitor/errors",
     # Store: Stripe webhook (signature verified inside route) + Lua subscription sync
     "/api/store/webhook",
     "/api/store/stripe/webhook",
@@ -220,7 +219,6 @@ _STATIC_ORIGINS = {
     "https://aifazi.net",
     "https://www.aifazi.net",
     "https://admin.aifazi.net",
-    "https://aifazi-website-new.vercel.app",
     FRONTEND_URL,
 }
 
