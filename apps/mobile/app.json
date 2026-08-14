@@ -78,7 +78,7 @@
         {
           "photosPermission": "aifazi accesses your photos so you can share images in chat.",
           "cameraPermission": "aifazi uses the camera so you can share photos in chat.",
-          "microphonePermission": false
+          "microphonePermission": "aifazi uses the microphone for voice notes and voice/video calls."
         }
       ],
       [
