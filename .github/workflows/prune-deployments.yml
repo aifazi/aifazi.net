@@ -98,7 +98,10 @@ jobs:
             exit 0
           fi
           SERVICE_ID="da51fadf-76d5-4f4a-96af-90877d7aafdc"
-          QUERY='query { service(id: "'"$SERVICE_ID"'") { deployments(orderBy: {createdAt: DESC}) { edges { node { id status } } } } }'
+          # Current Railway GraphQL schema: Service.deployments was removed in
+          # favour of a top-level deployments(input: {serviceId}) connection.
+          # Newest-first order is guaranteed by the API for a single service.
+          QUERY='query { deployments(input: { serviceId: "'"$SERVICE_ID"'" }) { edges { node { id status } } } }'
           PAYLOAD=$(jq -nc --arg q "$QUERY" '{query:$q}')
           EDGES=$(curl -fsS \
             -H "Authorization: Bearer $RAILWAY_TOKEN" \
@@ -106,7 +109,7 @@ jobs:
             -H "User-Agent: railway-cli" \
             -d "$PAYLOAD" \
             https://backboard.railway.com/graphql/v2 \
-            | jq -c '.data.service.deployments.edges[]?.node')
+            | jq -c '.data.deployments.edges[]?.node')
           # Newest SUCCESS deployment = the one serving traffic. Fail-closed: if
           # there is no SUCCESS deployment yet (or the newest is still building),
           # abort before deleting anything — never prune while a replacement may
