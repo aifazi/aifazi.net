@@ -51,17 +51,18 @@ jobs:
 
           while IFS='|' read -r NAME PROJ; do
             [ -z "$NAME" ] && continue
-            # Newest READY production deployment for this project. We only keep a
-            # finished, serving production build — if the newest production
-            # deployment is still BUILDING/ERROR/QUEUED we abort the prune so the
-            # live deployment (and any fallback before it) is never deleted while
-            # a replacement is not actually live yet.
+            # Newest PRODUCTION deployment by created time, regardless of state.
+            # Fail-closed: only prune when the newest production deployment is
+            # actually READY (serving). If the newest is still BUILDING/ERROR/
+            # QUEUED we abort — never delete the live deployment (or an in-flight
+            # build that the Vercel commit check may still reference) while a
+            # replacement is not yet live.
             NEWEST=$(curl -fsS \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
               "https://api.vercel.com/v6/deployments?projectId=${PROJ}&target=production&limit=100&teamId=${TEAM_ID}" \
-              | jq -r '[.deployments[]? | select(.target == "production" and .state == "READY")] | sort_by(.created) | reverse | .[0].uid // empty' 2>/dev/null || true)
+              | jq -r '[.deployments[]? | select(.target == "production")] | sort_by(.created) | reverse | .[0] | select(.state == "READY") | .uid // empty' 2>/dev/null || true)
             if [ -z "$NEWEST" ]; then
-              echo "::warning::[$NAME] no READY production deployment found — skipping prune to protect the live deployment."
+              echo "::warning::[$NAME] newest production deployment is not READY yet — skipping prune to protect the live deployment and in-flight build."
               continue
             fi
             echo "[$NAME] current production deployment: $NEWEST"
