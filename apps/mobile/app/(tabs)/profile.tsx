@@ -105,13 +105,13 @@ export default function ProfileScreen() {
       </ScrollView>
       </Reveal>
 
-      {tab === 'overview' && <Reveal dir="up" delay={160} duration={520}><OverviewTab goEdit={() => setTab('edit')} /></Reveal>}
-      {tab === 'orders' && <Reveal dir="up" delay={160} duration={520}><OrdersTab /></Reveal>}
-      {tab === 'tickets' && <Reveal dir="up" delay={160} duration={520}><TicketsTab /></Reveal>}
-      {tab === 'activity' && <Reveal dir="up" delay={160} duration={520}><ActivityTab /></Reveal>}
-      {tab === 'documents' && <Reveal dir="up" delay={160} duration={520}><DocumentsTab /></Reveal>}
-      {tab === 'security' && <Reveal dir="up" delay={160} duration={520}><SecurityTab /></Reveal>}
-      {tab === 'edit' && <Reveal dir="up" delay={160} duration={520}><EditTab /></Reveal>}
+      {tab === 'overview' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><OverviewTab goEdit={() => setTab('edit')} /></Reveal>}
+      {tab === 'orders' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><OrdersTab /></Reveal>}
+      {tab === 'tickets' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><TicketsTab /></Reveal>}
+      {tab === 'activity' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><ActivityTab /></Reveal>}
+      {tab === 'documents' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><DocumentsTab /></Reveal>}
+      {tab === 'security' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><SecurityTab /></Reveal>}
+      {tab === 'edit' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><EditTab /></Reveal>}
     </Screen>
   )
 }

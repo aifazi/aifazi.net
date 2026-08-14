@@ -10,7 +10,7 @@ import { OverlayProvider } from '@/src/components/overlay'
 import { BootScreen } from '@/src/components/BootScreen'
 import { AmbientBackground } from '@/src/components/motion'
 
-export { ErrorBoundary } from 'expo-router'
+export { ErrorBoundary } from '@/src/components/ErrorBoundary'
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',

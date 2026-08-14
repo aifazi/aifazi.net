@@ -115,7 +115,17 @@ export function Reveal({
     const t = setTimeout(() => {
       Animated.timing(a, { toValue: 1, duration, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }).start()
     }, delay)
-    return () => clearTimeout(t)
+    // Guarantee visibility: if the animation is interrupted or the native
+    // driver silently fails (e.g. after an interrupted tab transition), force
+    // the node fully opaque so content never stays invisible behind the theme
+    // background — that presents as a blank "gray" screen.
+    const failSafe = setTimeout(() => {
+      a.setValue(1)
+    }, delay + duration + 150)
+    return () => {
+      clearTimeout(t)
+      clearTimeout(failSafe)
+    }
   }, [a, delay, duration, skip])
 
   const yOut = dir === 'up' ? distance : dir === 'down' ? -distance : 0
