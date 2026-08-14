@@ -141,7 +141,7 @@ export function SecurityTab() {
             {recoveryCodes && recoveryCodes.length > 0 && (
               <View style={{ marginTop: SPACE.md, padding: SPACE.md, borderWidth: 1, borderColor: c.border, borderRadius: 8 }}>
                 <Text style={{ color: c.accent2, fontSize: FONT.micro, fontWeight: '700', letterSpacing: 1, marginBottom: SPACE.xs }}>BACKUP RECOVERY CODES — SAVE THESE NOW</Text>
-                <Muted style={{ marginBottom: SPACE.md }}>Each code works once to sign in if you lose your authenticator. They won't be shown again.</Muted>
+                <Muted style={{ marginBottom: SPACE.md }}>Each code works once to sign in if you lose your authenticator. They won’t be shown again.</Muted>
                 {recoveryCodes.map((code) => (
                   <Text key={code} selectable style={{ color: c.text, fontFamily: 'monospace', letterSpacing: 2, paddingVertical: 2 }}>{code}</Text>
                 ))}
