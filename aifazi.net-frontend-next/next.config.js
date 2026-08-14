@@ -48,10 +48,11 @@ const nextConfig = {
     ],
   },
 
-  // Security headers — hardening (CSP is emitted by proxy.ts. Nonce-based
-  // script CSP was dropped there because per-request nonces cannot reach
-  // statically-prerendered pages or the root layout's inline scripts — a nonce
-  // disables 'unsafe-inline', which silently blocked hydration site-wide.)
+  // Security headers — hardening (CSP is emitted by proxy.ts. The app is fully
+  // dynamically rendered — the root layout calls await headers(), which forces
+  // dynamic rendering — so proxy.ts now mints a per-request nonce, forwards it
+  // via the request CSP header + x-nonce, and uses 'strict-dynamic' instead of
+  // 'unsafe-inline' in script-src. See the CSP comment block in proxy.ts.)
   async headers() {
     return [
       {

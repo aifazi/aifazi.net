@@ -224,25 +224,38 @@ function isRelaxedLocalRuntime(hostname: string): boolean {
   return process.env.NODE_ENV === 'development' && isLocalHost(hostname)
 }
 
-// ── CSP ──────────────────────────────────────────────────────────────────────
-// No per-request nonce and no script hash may appear in script-src. Per the CSP
-// spec, 'unsafe-inline' is IGNORED whenever the directive also contains a nonce
-// or hash value. A nonce/hash cannot cover this app's inline scripts anyway:
-//   1. Many pages are statically prerendered — Next.js cannot inject a runtime
-//      nonce into build-time HTML, so every inline script there would be blocked.
-//   2. The root layout emits inline FOUC / site-config scripts via
-//      dangerouslySetInnerHTML which have no way to carry a request nonce.
-// With a nonce or hash present, ALL inline scripts (including the framework's
-// hydration bootstrap) are blocked and hydration never runs (pages stuck on
-// their loading skeletons, then "Connection closed" once the fetch times out).
-// So neither is emitted: 'unsafe-inline' is the operative allowance for inline
-// scripts, while script-src still restricts origins to self + the explicit
-// third-party allowlist below.
-function buildCsp(): string {
+// ── CSP (per-request nonce + strict-dynamic) ─────────────────────────────────
+// Next.js 16 requires dynamic rendering to attach a nonce to its framework
+// inline scripts (hydration bootstrap, page data, RSC payload). The root layout
+// already calls `await headers()` (app/layout.tsx) and every route under it is
+// `force-dynamic` (or inherits dynamic from the layout), so this app is fully
+// dynamic and per-request nonces are safe to use.
+//
+// How it wires together (per the official Next.js CSP guide):
+//   1. proxy.ts mints a fresh nonce per request, sets `x-nonce` AND the CSP
+//      header on the REQUEST headers passed to NextResponse.next/rewrite.
+//   2. Next.js reads the CSP header off the request during SSR, extracts the
+//      nonce, and applies it to all of its own inline scripts automatically.
+//   3. The root layout reads `x-nonce` and tags its own inline scripts
+//      (FOUC / site-config) with the same nonce.
+//   4. 'strict-dynamic' lets scripts that were loaded by a trusted (nonced)
+//      script load further scripts, so runtime-injected CDN libs (lordicon,
+//      pdf.js, mammoth, xlsx, tesseract) keep working without host allowlists.
+//
+// The host allowlist below is kept only as a fallback for browsers that do not
+// support 'strict-dynamic'; supporting browsers ignore host sources in
+// script-src when strict-dynamic is present.
+function generateNonce(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
+}
+
+function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === 'development'
   return [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ''}https://cdn.lordicon.com https://cdnjs.cloudflare.com`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval' " : ''}https://cdn.lordicon.com https://cdnjs.cloudflare.com`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://cdn.aifazi.net https://*.supabase.co https://res.cloudinary.com https://api.dicebear.com https://*.aifazi.net https://*.imgur.com https://i.imgur.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://*.unsplash.com https://*.googleusercontent.com https://*.githubusercontent.com",
@@ -257,13 +270,19 @@ function buildCsp(): string {
   ].join('; ')
 }
 
-function secureRequest(request: NextRequest): { headers: Headers } {
+function secureRequest(request: NextRequest): { headers: Headers; nonce: string } {
+  const nonce = generateNonce()
   const headers = new Headers(request.headers)
-  return { headers }
+  // x-nonce is read by the root layout to tag its own inline scripts.
+  headers.set('x-nonce', nonce)
+  // The CSP header on the REQUEST is what Next.js parses during SSR to attach
+  // the nonce to its framework inline scripts — response-only is not enough.
+  headers.set('Content-Security-Policy', buildCsp(nonce))
+  return { headers, nonce }
 }
 
-function withCsp(response: NextResponse): NextResponse {
-  response.headers.set('Content-Security-Policy', buildCsp())
+function withCsp(response: NextResponse, nonce: string): NextResponse {
+  response.headers.set('Content-Security-Policy', buildCsp(nonce))
   return response
 }
 
@@ -324,8 +343,8 @@ export async function proxy(request: NextRequest) {
     }
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/api/cdn${pathname}`
-    const { headers } = secureRequest(request)
-    return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }))
+    const { headers, nonce } = secureRequest(request)
+    return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce)
   }
 
   // ── 2. Canonicalize FiveM URLs to fivem.aifazi.net ─────────────────────
@@ -351,19 +370,19 @@ export async function proxy(request: NextRequest) {
       FIVEM_SHARED_PATHS.has(pathname) ||
       FIVEM_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
     ) {
-      const { headers } = secureRequest(request)
+      const { headers, nonce } = secureRequest(request)
       headers.set('x-fivem-domain', 'true')
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
         headers.set('X-Internal-Token', INTERNAL_API_SECRET)
       }
-      return withCors(withCsp(NextResponse.next({ request: { headers } })), origin)
+      return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
     }
     if (pathname === '/' || pathname === '') {
       const rewriteUrl = request.nextUrl.clone()
       rewriteUrl.pathname = '/fivem'
-      const { headers } = secureRequest(request)
+      const { headers, nonce } = secureRequest(request)
       headers.set('x-fivem-domain', 'true')
-      return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
+      return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
     }
     if (pathname.startsWith('/fivem')) {
       const redirectUrl = request.nextUrl.clone()
@@ -372,9 +391,9 @@ export async function proxy(request: NextRequest) {
     }
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/fivem${pathname}`
-    const { headers } = secureRequest(request)
+    const { headers, nonce } = secureRequest(request)
     headers.set('x-fivem-domain', 'true')
-    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
+    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
   }
 
   // ── 4. Store — canonicalize root /store to store.aifazi.net ──────────────
@@ -395,19 +414,19 @@ export async function proxy(request: NextRequest) {
       STORE_SHARED_PATHS.has(pathname) ||
       STORE_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
     ) {
-      const { headers } = secureRequest(request)
+      const { headers, nonce } = secureRequest(request)
       headers.set('x-store-domain', 'true')
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
         headers.set('X-Internal-Token', INTERNAL_API_SECRET)
       }
-      return withCors(withCsp(NextResponse.next({ request: { headers } })), origin)
+      return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
     }
     if (pathname === '/' || pathname === '') {
       const rewriteUrl = request.nextUrl.clone()
       rewriteUrl.pathname = '/store'
-      const { headers } = secureRequest(request)
+      const { headers, nonce } = secureRequest(request)
       headers.set('x-store-domain', 'true')
-      return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
+      return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
     }
     if (pathname.startsWith('/store')) {
       const redirectUrl = request.nextUrl.clone()
@@ -416,9 +435,9 @@ export async function proxy(request: NextRequest) {
     }
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/store${pathname}`
-    const { headers } = secureRequest(request)
+    const { headers, nonce } = secureRequest(request)
     headers.set('x-store-domain', 'true')
-    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
+    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
   }
 
   // ── 5b. status.aifazi.net → /status page (monitor) ──────────────────────
@@ -428,18 +447,18 @@ export async function proxy(request: NextRequest) {
       STATUS_SHARED_PATHS.has(pathname) ||
       STATUS_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
     ) {
-      const { headers } = secureRequest(request)
+      const { headers, nonce } = secureRequest(request)
       headers.set('x-status-domain', 'true')
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
         headers.set('X-Internal-Token', INTERNAL_API_SECRET)
       }
-      return withCors(withCsp(NextResponse.next({ request: { headers } })), origin)
+      return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
     }
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/status${pathname === '/' || pathname === '' ? '/' : pathname}`
-    const { headers } = secureRequest(request)
+    const { headers, nonce } = secureRequest(request)
     headers.set('x-status-domain', 'true')
-    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } })), origin)
+    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
   }
 
   // ── 6. Admin route protection ─────────────────────────────────────────────
@@ -457,12 +476,12 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── 5. Internal token injection ───────────────────────────────────────────
-  const { headers } = secureRequest(request)
+  const { headers, nonce } = secureRequest(request)
   if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
     headers.set('X-Internal-Token', INTERNAL_API_SECRET)
   }
 
-  return withCsp(NextResponse.next({ request: { headers } }))
+  return withCsp(NextResponse.next({ request: { headers } }), nonce)
 }
 
 export const config = {

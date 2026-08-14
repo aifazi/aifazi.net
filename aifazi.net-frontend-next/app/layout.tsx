@@ -64,6 +64,7 @@ export const viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers()
+  const nonce = headersList.get('x-nonce') || ''
   const isStoreDomain = headersList.get('x-store-domain') === 'true'
   const isFiveMDomain = headersList.get('x-fivem-domain') === 'true'
 
@@ -103,8 +104,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           dangerouslySetInnerHTML={{ __html: escapeJsonForInline(siteConfig) }}
         />
         {/* FOUC prevention: set data-theme before React hydrates, using the
-            admin's global config baked in at render time */}
-        <script dangerouslySetInnerHTML={{ __html: foucScript }} />
+            admin's global config baked in at render time. The nonce is injected
+            by proxy.ts per request; the site-config JSON block below is a data
+            block (type="application/json") and is exempt from script-src. */}
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: foucScript }} />
         {/* FIX #12: Only render preconnect when the env var is actually set */}
         {process.env.NEXT_PUBLIC_API_URL && (
           <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL} />
