@@ -64,7 +64,7 @@ from starlette.responses import Response
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net")
 
-_CORS_ALLOW_HEADERS = "Authorization, Content-Type, X-Internal-Token, X-CSRF-Token, Accept, Origin"
+_CORS_ALLOW_HEADERS = "Authorization, Content-Type, X-Internal-Token, X-CSRF-Token, Accept, Origin, RSC, Next-Router-State-Tree, Next-Url, Next-Router-Prefetch, Next-Router-Segment-Prefetch"
 
 # ── Block direct browser visits to api.aifazi.net ──────────────────────────────
 # If someone navigates to api.aifazi.net in a browser (Accept: text/html, no
