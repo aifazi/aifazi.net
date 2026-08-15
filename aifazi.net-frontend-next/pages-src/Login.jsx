@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import gsap from 'gsap'
-import api, { saveTokens, clearAuthTokens, getAuthToken } from '@/lib/api'
+import api, { saveTokens, clearAuthTokens, getRole } from '@/lib/api'
 import { authProviderLoginRoute, safeNextPath } from '@/lib/authRoutes'
 
 // Theme-reactive animation helpers — colors always come from var(--tokens).
@@ -951,7 +951,6 @@ export default function Login() {
 
   // ── Already logged in? Redirect away from /login ───────────────────────────
   useEffect(() => {
-    const token = getAuthToken()
     const nextPath = safeNextPath(searchParams?.get('next'))
     const go = (role) => {
       if (nextPath) { router.replace(nextPath); return }
@@ -961,20 +960,13 @@ export default function Login() {
         router.replace('/profile')
       }
     }
-    // Fast path: in-memory access token (same-tab session after login).
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        go(payload?.role || '')
-        return
-      } catch {
-        // Malformed token — clear it and stay on login
-        clearAuthTokens()
-      }
+    // Fast path: role from localStorage (set by /auth/verify on previous visits).
+    const role = getRole()
+    if (role) {
+      go(role)
+      return
     }
-    // Cookie session path: after a reload _memToken is null, but the HttpOnly
-    // auth_token/refresh_token cookies may still authenticate the visitor.
-    // Probe /auth/me so a logged-in user isn't shown the login form.
+    // Cookie session path: probe /auth/me so a logged-in user isn't shown the login form.
     api.get('/auth/me')
       .then(r => {
         const u = r.data?.user || r.data
