@@ -8,6 +8,7 @@ import os
 import time
 import logging
 from typing import Optional
+from datetime import datetime, timezone
 
 log = logging.getLogger("rate_limit")
 
@@ -20,12 +21,68 @@ _RL_CLEANUP_INTERVAL = 300
 _ip_bans_cache: dict = {"networks": [], "fetched_at": 0.0}
 _IP_BANS_TTL = 60.0
 
-# Redis client (lazy initialization)
-_redis_client = None
-_redis_available = False
+# 2FA lockout storage (distributed via Redis, in-memory fallback)
+_2FA_LOCKOUT_WINDOW_S = 900
+_2FA_MAX_FAILURES = 5
+_2fa_failures_local: dict[str, list[float]] = {}
 
 
-def _get_redis():
+def _2fa_redis_key(username: str) -> str:
+    return f"2fa:lockout:{username.lower()}"
+
+
+def _2fa_locked_redis(username: str) -> bool:
+    """Check if username is locked out via Redis (distributed)."""
+    redis = _get_redis()
+    if redis and _redis_available:
+        try:
+            key = _2fa_redis_key(username)
+            count = redis.get(key)
+            if count and int(count) >= _2FA_MAX_FAILURES:
+                return True
+        except Exception as e:
+            log.warning("Redis 2FA lockout check failed: %s — falling back to in-memory", e)
+    
+    # Fallback to in-memory
+    now = time.time()
+    recent = [t for t in _2fa_failures_local.get(username, []) if now - t < _2FA_LOCKOUT_WINDOW_S]
+    _2fa_failures_local[username] = recent
+    return len(recent) >= _2FA_MAX_FAILURES
+
+
+def _2fa_record_fail_redis(username: str) -> None:
+    """Record a failed 2FA attempt via Redis (distributed)."""
+    redis = _get_redis()
+    if redis and _redis_available:
+        try:
+            key = _2fa_redis_key(username)
+            # Use pipeline for atomicity
+            pipe = redis.pipeline()
+            pipe.incr(key)
+            pipe.expire(key, _2FA_LOCKOUT_WINDOW_S)
+            pipe.exec()
+            return
+        except Exception as e:
+            log.warning("Redis 2FA record fail failed: %s — falling back to in-memory", e)
+    
+    # Fallback to in-memory
+    now = time.time()
+    _2fa_failures_local.setdefault(username, []).append(now)
+    _2fa_failures_local[username] = [t for t in _2fa_failures_local[username] if now - t < _2FA_LOCKOUT_WINDOW_S]
+
+
+def _2fa_clear_fails_redis(username: str) -> None:
+    """Clear 2FA failures for username (success clears lockout)."""
+    redis = _get_redis()
+    if redis and _redis_available:
+        try:
+            key = _2fa_redis_key(username)
+            redis.delete(key)
+        except Exception as e:
+            log.warning("Redis 2FA clear fails failed: %s", e)
+    
+    # Also clear in-memory
+    _2fa_failures_local.pop(username, None)
     """Lazy-initialize Upstash Redis client."""
     global _redis_client, _redis_available
     if _redis_client is not None:

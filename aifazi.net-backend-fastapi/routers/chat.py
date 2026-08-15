@@ -656,15 +656,24 @@ async def search_messages(
     user: dict = Depends(get_current_user),
 ):
     """Search a channel's message history (decrypts messages server-side using the
-    room key so encrypted channels are searchable too)."""
+    room key so encrypted channels are searchable too).
+    
+    For E2EE-enabled rooms, server cannot decrypt messages. Search falls back to
+    searching unencrypted metadata (sender name, file names) only."""
     room = _ensure_room_access(room_id, user)
     _require_room_perm(room, user, "read_messages")
     query = q.strip().lower()
     if not query:
         return []
 
-    keyrow = supabase.table("chat_rooms").select("encryption_key").eq("id", room_id).limit(1).execute().data
-    room_key = (keyrow[0].get("encryption_key") or "") if keyrow else ""
+    # Check if room has E2EE enabled
+    room_res = supabase.table("chat_rooms").select("encryption_key, e2ee_enabled").eq("id", room_id).limit(1).execute().data
+    if not room_res:
+        raise HTTPException(404, "Room not found")
+    
+    room_data = room_res[0]
+    room_key = room_data.get("encryption_key") or ""
+    e2ee_enabled = room_data.get("e2ee_enabled", False)
 
     res = (
         supabase.table("chat_messages")
@@ -678,8 +687,12 @@ async def search_messages(
     for m in res.data or []:
         text = m.get("content") or ""
         if text.startswith("ENC:"):
-            dec = _decrypt_aesgcm(text[4:], room_key)
-            plain = dec or ""
+            if e2ee_enabled:
+                # E2EE: server cannot decrypt, skip content search
+                plain = ""
+            else:
+                dec = _decrypt_aesgcm(text[4:], room_key)
+                plain = dec or ""
         else:
             plain = text
         hay = f"{plain} {m.get('sender') or ''} {m.get('file_name') or ''}".lower()

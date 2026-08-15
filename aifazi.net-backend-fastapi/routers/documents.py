@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from database import supabase
 from dependencies import get_current_user
 from routers.cdn_upload import upload_media, delete_media
+from routers.upload import _sniff_mimetype, scan_for_malware
 
 log = logging.getLogger("documents")
 router = APIRouter()
@@ -52,10 +53,16 @@ async def upload_document(
     content = await file.read()
     if len(content) > MAX_UPLOAD_BYTES:
         raise HTTPException(413, f"File exceeds {MAX_UPLOAD_BYTES // 1024 // 1024} MB limit")
+    if not content:
+        raise HTTPException(400, "Empty file")
 
     mimetype = file.content_type or "application/octet-stream"
-    if mimetype not in ALLOWED_MIMETYPES:
-        raise HTTPException(415, f"File type '{mimetype}' is not allowed")
+    sniffed = _sniff_mimetype(content, mimetype)
+    if sniffed not in ALLOWED_MIMETYPES:
+        raise HTTPException(415, f"File type '{sniffed}' is not allowed")
+
+    # Malware scan (fail-open)
+    scan_for_malware(content, file.filename or name or "document")
 
     filename = _safe_filename(file.filename or name or "document")
 
@@ -63,7 +70,7 @@ async def upload_document(
     # grouped under the 'documents' folder for easy management in R2.
     try:
         file_url, storage_path, provider = await upload_media(
-            content, filename, mimetype, folder="documents"
+            content, filename, sniffed, folder="documents"
         )
     except Exception as exc:
         raise HTTPException(500, f"Upload failed: {str(exc)[:200]}")

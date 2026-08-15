@@ -254,7 +254,7 @@ async def create_pos_order(body: PosOrderBody, _: dict = Depends(POS)):
         "coupon_id": coupon_id,
         "created_at": now,
         "updated_at": now,
-    }).execute()
+}).execute()
     if not order.data:
         raise HTTPException(500, "Could not create POS order")
     order_id = order.data[0]["id"]
@@ -266,6 +266,20 @@ async def create_pos_order(body: PosOrderBody, _: dict = Depends(POS)):
             "quantity": l["quantity"], "unit_price_cents": l["unit_price_cents"],
             "line_total_cents": l["line_total_cents"],
         }).execute()
+
+    # Reserve stock (atomic, fails if insufficient stock — mirrors web checkout)
+    for l in lines:
+        vid = l.get("variant_id")
+        pid = l.get("product_id")
+        qty = l.get("quantity", 1)
+        try:
+            from routers.store_inventory import reserve_quant
+            reserve_quant(vid if vid else pid, l["quantity"], order_id)
+        except Exception as exc:
+            # Release any already-reserved quantities for this order
+            from routers.store_inventory import release_stock_reservations
+            release_stock_reservations(order_id)
+            raise HTTPException(400, f"Insufficient stock for {l.get('product_name')}: {exc}")
 
     try:
         s.table("store_order_events").insert({

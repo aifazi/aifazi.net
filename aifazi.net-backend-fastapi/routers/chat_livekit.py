@@ -21,6 +21,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 import jwt  # PyJWT — LiveKit access tokens are standard HS256 JWTs
 import httpx
+
+
+class StoreE2EEKeyRequest(BaseModel):
+    encrypted_key: str
+
+
+class EnableE2EERequest(BaseModel):
+    enabled: bool
 from database import supabase
 from dependencies import get_current_user, require_staff, require_admin
 from routers.chat import _ensure_room_access, _role_allowed
@@ -223,14 +231,80 @@ async def get_text_encryption_key(
     room_id: str,
     user: dict = Depends(get_current_user),
 ):
-    """Return the room's encryption key for client-side text message encryption."""
+    """Return the room's encryption key for client-side text message encryption.
+    
+    For E2EE-enabled rooms, returns the user's encrypted key (decrypt client-side).
+    For legacy rooms, returns the server-side key (backward compatibility)."""
     _ensure_room_access(room_id, user)
-    encryption_key = _get_or_create_room_key(room_id)
+    user_id = user.get("id") or user.get("sub")
+    if not user_id:
+        raise HTTPException(401, "Login required")
+    
+    # Check if room has E2EE enabled
+    room_res = supabase.table("chat_rooms").select("e2ee_enabled, encryption_key").eq("id", room_id).single().execute()
+    room = room_res.data
+    if not room:
+        raise HTTPException(404, "Room not found")
+    
+    e2ee_enabled = room.get("e2ee_enabled", False)
+    legacy_key = room.get("encryption_key", "")
+    
+    if not e2ee_enabled:
+        # Legacy mode: return server-side key (backward compatibility)
+        key = legacy_key or _get_or_create_room_key(room_id)
+        return {
+            "room_id": room_id,
+            "encryption_key": key,
+            "identity": user.get("username", "unknown"),
+            "e2ee": False,
+        }
+    
+    # E2EE mode: fetch user's encrypted key
+    key_res = supabase.table("chat_room_user_keys").select("encrypted_key").eq("room_id", room_id).eq("user_id", user_id).single().execute()
+    if not key_res.data or not key_res.data.get("encrypted_key"):
+        raise HTTPException(404, "No encryption key found for this room. Rejoin to generate one.")
+    
     return {
         "room_id": room_id,
-        "encryption_key": encryption_key,
+        "encryption_key": key_res.data["encrypted_key"],
         "identity": user.get("username", "unknown"),
+        "e2ee": True,
     }
+
+
+@router.post("/rooms/{room_id}/e2ee-key")
+async def store_e2ee_key(
+    room_id: str,
+    body: dict,
+    user: dict = Depends(get_current_user),
+):
+    """Store client-generated room key encrypted with user's public key.
+    
+    Body: { "encrypted_key": "base64_encrypted_key" }
+    Client generates room key, encrypts with their public key, sends encrypted blob."""
+    _ensure_room_access(room_id, user)
+    user_id = user.get("id") or user.get("sub")
+    if not user_id:
+        raise HTTPException(401, "Login required")
+    
+    encrypted_key = body.get("encrypted_key")
+    if not encrypted_key:
+        raise HTTPException(400, "encrypted_key required")
+    
+    # Ensure room has E2EE enabled
+    room_res = supabase.table("chat_rooms").select("e2ee_enabled").eq("id", room_id).single().execute()
+    if not room_res.data or not room_res.data.get("e2ee_enabled"):
+        raise HTTPException(400, "E2EE not enabled for this room")
+    
+    # Upsert user's encrypted key
+    supabase.table("chat_room_user_keys").upsert({
+        "room_id": room_id,
+        "user_id": user_id,
+        "encrypted_key": encrypted_key,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }).execute()
+    
+    return {"ok": True, "room_id": room_id}
 
 
 @router.post("/rooms/{room_id}/rotate-key")
@@ -250,6 +324,33 @@ async def rotate_encryption_key(
         "rotated_by": user.get("username", "unknown"),
         "rotated_at": datetime.now(timezone.utc).isoformat(),
         "warning": "Messages sent before this rotation will not be decryptable with the new key. Inform users to rejoin.",
+    }
+
+
+@router.post("/rooms/{room_id}/e2ee")
+async def toggle_e2ee(
+    room_id: str,
+    body: EnableE2EERequest,
+    user: dict = Depends(require_admin),
+):
+    """Enable or disable E2EE for a room. Admin-only.
+    
+    When enabling: existing members will need to rejoin to generate their keys.
+    When disabling: falls back to server-side encryption key."""
+    room_res = supabase.table("chat_rooms").select("id").eq("id", room_id).single().execute()
+    if not room_res.data:
+        raise HTTPException(404, "Room not found")
+    
+    supabase.table("chat_rooms").update({"e2ee_enabled": body.enabled}).eq("id", room_id).execute()
+    
+    if not body.enabled:
+        # Clean up per-user keys when disabling E2EE
+        supabase.table("chat_room_user_keys").delete().eq("room_id", room_id).execute()
+    
+    return {
+        "room_id": room_id,
+        "e2ee_enabled": body.enabled,
+        "message": f"E2EE {'enabled' if body.enabled else 'disabled'} for room",
     }
 
 

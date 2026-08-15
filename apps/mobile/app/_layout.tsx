@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from '@/src/lib/auth'
 import { OverlayProvider } from '@/src/components/overlay'
 import { BootScreen } from '@/src/components/BootScreen'
 import { AmbientBackground } from '@/src/components/motion'
+import { startIntegrityChecks, stopIntegrityChecks } from '@/src/lib/integrity'
 
 export { ErrorBoundary } from '@/src/components/ErrorBoundary'
 
@@ -60,6 +61,12 @@ function RootNav() {
   const { theme } = useTheme()
   const c = theme.colors
   const { loading: authLoading } = useAuth()
+
+  // Start anti-tamper integrity checks
+  useEffect(() => {
+    startIntegrityChecks()
+    return () => stopIntegrityChecks()
+  }, [])
 
   // EAS Update OTA wiring: native side is configured with checkAutomatically
   // "NEVER", so this is the single place that checks for a newer bundle for the

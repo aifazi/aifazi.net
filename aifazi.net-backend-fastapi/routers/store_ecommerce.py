@@ -27,6 +27,7 @@ from __future__ import annotations
 import os
 import secrets
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -879,18 +880,43 @@ async def my_downloads(user: dict = Depends(get_current_user)):
 async def download_content(token: str):
     """Token-gated download. The token itself is the credential (generated on
     payment), so no auth is required — mirroring a signed delivery link."""
+    from routers.cdn_upload import generate_presigned_download_url, get_cdn_config
+    from datetime import datetime, timezone
+    
     res = supabase.table("store_downloads").select("*").eq("token", token).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Download not found")
     d = res.data[0]
+    
+    # Check token expiry
+    expires_at = d.get("expires_at")
+    if expires_at:
+        try:
+            if datetime.fromisoformat(expires_at.replace('Z', '+00:00')) < datetime.now(timezone.utc):
+                raise HTTPException(410, "Download link has expired")
+        except Exception:
+            pass  # If parsing fails, skip expiry check
+    
     # Resolve the file BEFORE consuming quota — a row without a usable file must
     # not burn a download (the old code incremented first, so a bad record
     # silently ate the buyer's allowance).
     file_url = d.get("file_url") or ""
-    if not file_url:
+    storage_path = d.get("storage_path") or ""
+    provider = d.get("provider") or ""
+    
+    if not file_url and not storage_path:
         raise HTTPException(404, "File is not available")
-    if not file_url.startswith(("http://", "https://")):
-        file_url = f"{SUPABASE_URL}/storage/v1/object/public/{STORE_FILES_BUCKET}/{file_url.lstrip('/')}"
+    
+    # If stored in R2, generate a presigned URL for secure time-limited access
+    final_url = file_url
+    if provider == "r2" and storage_path:
+        cfg = get_cdn_config()
+        presigned = generate_presigned_download_url(storage_path, cfg, expires_in=900)  # 15 min
+        if presigned:
+            final_url = presigned
+    elif not file_url.startswith(("http://", "https://")):
+        final_url = f"{SUPABASE_URL}/storage/v1/object/public/{STORE_FILES_BUCKET}/{file_url.lstrip('/')}"
+    
     # Atomic claim: the RPC increments ONLY while downloads_used < downloads_allowed
     # (single UPDATE, so parallel requests can't both slip past the limit).
     try:
@@ -901,7 +927,7 @@ async def download_content(token: str):
         raise
     except Exception:
         raise HTTPException(503, "Download limit could not be checked")
-    return RedirectResponse(file_url)
+    return RedirectResponse(final_url)
 
 
 # ── Invoices ───────────────────────────────────────────────────────────────────
@@ -1001,6 +1027,13 @@ async def product_order_webhook(request: Request):
         event = _stripe_module().Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET).to_dict()
     except Exception as exc:
         raise HTTPException(400, f"Webhook signature verification failed: {exc}")
+
+    # Reject stale events (replay protection): Stripe includes `created` as Unix timestamp.
+    # Reject if event is older than 5 minutes (300s) to prevent replay attacks.
+    event_created = event.get("created")
+    if event_created and abs(time.time() - event_created) > 300:
+        log.warning("Rejected stale Stripe webhook event (created=%s)", event_created)
+        raise HTTPException(400, "Webhook event too old")
 
     if event.get("type") == "checkout.session.completed":
         session = event.get("data", {}).get("object", {})
@@ -1158,6 +1191,7 @@ def _mark_order_paid(order_id: str, payment_intent_id: str | None,
                                   note=f"Sale of {it.get('product_name')}")
         if pid and prods.get(pid) and prods[pid].get("type") == "digital" and prods[pid].get("digital_file_url"):
             try:
+                expires_at = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
                 supabase.table("store_downloads").insert({
                     "order_id": order_id,
                     "order_item_id": it.get("id"),
@@ -1167,6 +1201,7 @@ def _mark_order_paid(order_id: str, payment_intent_id: str | None,
                     "file_url": prods[pid].get("digital_file_url"),
                     "filename": _download_filename(prods[pid].get("digital_file_url")),
                     "downloads_allowed": int(prods[pid].get("download_limit") or 5),
+                    "expires_at": expires_at,
                 }).execute()
             except Exception as exc:
                 log.warning("digital download insert failed for %s: %s", pid, exc)
@@ -1219,3 +1254,35 @@ def _mark_order_paid(order_id: str, payment_intent_id: str | None,
             "paid_at": now,
         }).execute()
     log.info("product order %s marked paid", order.get("order_number"))
+
+
+# ── Cron: cleanup stale pending orders ──────────────────────────────────────────
+_PENDING_ORDER_TTL_MINUTES = int(os.getenv("PENDING_ORDER_TTL_MINUTES", "30"))
+
+@router.post("/cron/cleanup-pending-orders")
+async def cron_cleanup_pending_orders(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    """Cron job to clean up stale pending orders and release stock reservations.
+    
+    Requires CRON_SECRET bearer token. Called by external scheduler (e.g., Vercel cron, GitHub Actions).
+    """
+    if not os.getenv("CRON_SECRET"):
+        raise HTTPException(503, "Cron not configured")
+    if not creds or creds.credentials != os.getenv("CRON_SECRET"):
+        raise HTTPException(401, "Invalid cron secret")
+
+    ttl_cutoff = datetime.now(timezone.utc) - timedelta(minutes=_PENDING_ORDER_TTL_MINUTES)
+    ttl_iso = ttl_cutoff.isoformat()
+
+    # Find stale pending orders
+    res = supabase.table("store_orders").select("id").eq("status", "pending").lt("created_at", ttl_iso).execute()
+    stale_orders = res.data or []
+    
+    cleaned = 0
+    for order in stale_orders:
+        order_id = order["id"]
+        _release_reservations(order_id)
+        supabase.table("store_orders").update({"status": "cancelled", "updated_at": _now()}).eq("id", order_id).execute()
+        cleaned += 1
+        log.info("cleaned up stale pending order %s (created before %s)", order_id, ttl_iso)
+
+    return {"cleaned": cleaned, "ttl_minutes": _PENDING_ORDER_TTL_MINUTES, "cutoff": ttl_iso}

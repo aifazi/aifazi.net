@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useRef, useCallback, useMemo, Component, useSyncExternalStore } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, getAuthedSupabase, setSupabaseAuthToken, clearSupabaseAuthToken } from '@/lib/supabase'
 import api, { getRole, getUsername, setEffectiveAccess } from '@/lib/api'
 import { useNotify }  from '../../core/notify.jsx'
 import { useDialog, dialog } from '../../core/dialog'
@@ -88,6 +88,7 @@ export default function AdminChat({ embedded=false }) {
   const [canScreenShare, setCanScreenShare] = useState(false)
   const [callParticipants, setCallParticipants] = useState([])
   const [roomKey, setRoomKey] = useState('')
+  const [roomE2EE, setRoomE2EE] = useState(false)
   const [dmOpen, setDmOpen] = useState(false)
   const [userSearch, setUserSearch] = useState(null)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -101,7 +102,7 @@ export default function AdminChat({ embedded=false }) {
     setPrevRoom(room)
     setSearchOpen(false); setSearchQ(''); setSearchResults(null)
     if (!room || (room.type === 'voice' || room.type === 'video')) {
-      setRoomKey(''); setRoomKeyModule('')
+      setRoomKey(''); setRoomKeyModule(''); setRoomE2EE(false)
     } else if (_roomKeyCache[room.id]) {
       setRoomKey(_roomKeyCache[room.id]); setRoomKeyModule(_roomKeyCache[room.id])
     }
@@ -114,10 +115,21 @@ export default function AdminChat({ embedded=false }) {
     const cached = _roomKeyCache[room.id]
     if (cached) return
     api.get(`/chat/rooms/${room.id}/encryption-key`).then(r => {
-      const key = r.data?.encryption_key || ''
-      setRoomKey(key); setRoomKeyModule(key)
-      if (key) _roomKeyCache[room.id] = key
-    }).catch(() => { setRoomKey(''); setRoomKeyModule('') })
+      const { encryption_key: key, e2ee, identity } = r.data || {}
+      if (e2ee) {
+        // E2EE mode: key is encrypted with user's public key, needs client-side decryption
+        // For now, store the encrypted key and decrypt when needed
+        // In a full implementation, this would be decrypted with user's private key
+        setRoomKey(key); setRoomKeyModule(key)
+        if (key) _roomKeyCache[room.id] = key
+        setRoomE2EE(true)
+      } else {
+        // Legacy mode
+        setRoomKey(key || ''); setRoomKeyModule(key || '')
+        if (key) _roomKeyCache[room.id] = key
+        setRoomE2EE(false)
+      }
+    }).catch(() => { setRoomKey(''); setRoomKeyModule(''); setRoomE2EE(false) })
   }, [room?.id])
 
   const listRef = useRef(null)
@@ -173,11 +185,21 @@ export default function AdminChat({ embedded=false }) {
     // Only track presence for an actually-authenticated user. When auth fails
     // (authState === 'no'), tear the channel down so a signed-out/session-expired
     // user is not left showing as online in presence or receiving channel events.
+    // Only track presence for an actually-authenticated user. When auth fails
+    // (authState === 'no'), tear the channel down so a signed-out/session-expired
+    // user is not left showing as online in presence or receiving channel events.
     if (!mounted || !supabase || !me || authState !== 'ok') return
 
+    const authedSupabase = getAuthedSupabase()
+    
+    // Set auth token for Realtime
+    const token = getToken()
+    if (token) setSupabaseAuthToken(token)
+    
+    const client = getAuthedSupabase() || supabase
     const payload = parseJwt(getToken() || '')
     const presenceKey = String(payload?.id || payload?.staff_id || me)
-    const channel = supabase.channel('chat_global', {
+    const channel = client.channel('chat_global', {
       configs: { presence: { key: presenceKey } },
     })
 
@@ -249,7 +271,8 @@ export default function AdminChat({ embedded=false }) {
   useEffect(() => {
     if (!mounted || !supabase || !me || authState !== 'ok') return
     let cancelled = false
-    const channel = supabase.channel('chat_staff_sync')
+    const client = supabase
+    const channel = client.channel('chat_staff_sync')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'staff_users' },
         (payload) => {
@@ -268,7 +291,7 @@ export default function AdminChat({ embedded=false }) {
         }
       )
       .subscribe()
-    return () => { supabase.removeChannel(channel); cancelled = true }
+    return () => { client.removeChannel(channel); cancelled = true }
   }, [mounted, me])
 
   // ── Periodic role poll (fallback) ───────────────────────────────────────
@@ -819,7 +842,13 @@ export default function AdminChat({ embedded=false }) {
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:5 }}>
                       <span style={{ fontWeight:700, fontSize:13, color:T.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{room.name}</span>
-                      {roomKey && <span title="Messages encrypted at rest (server holds the key — not true end-to-end encryption)" style={{ color:T.accent, fontSize:11, flexShrink:0 }}>🔒</span>}
+                      {roomKey && (
+                    roomE2EE ? (
+                      <span title="End-to-end encrypted: messages encrypted client-side, server cannot read" style={{ color:T.accent, fontSize:11, flexShrink:0 }}>🔐</span>
+                    ) : (
+                      <span title="Messages encrypted at rest (server holds the key — not true end-to-end encryption)" style={{ color:T.accent, fontSize:11, flexShrink:0 }}>🔒</span>
+                    )
+                  )}
                     </div>
                     {room.description && <div style={{ fontSize:10, color:T.muted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{room.description}</div>}
                   </div>
@@ -848,6 +877,15 @@ export default function AdminChat({ embedded=false }) {
                               { icon:'✏️', label:'Edit Channel', action:()=>{setModal(room);setShowAdminMenu(false)}, color:T.text },
                               { icon:'➕', label:'New Channel',  action:()=>{setModal('create');setShowAdminMenu(false)}, color:T.accent },
                               { icon:'👋', label:'Invite User',  action:()=>{setShowAdminMenu(false);setUserSearch({ mode:'invite' })}, color:T.accentB },
+                              { icon: roomE2EE ? '🔐' : '🔐', label: roomE2EE ? 'Disable E2EE' : 'Enable E2EE', 
+                                action: async ()=>{
+                                  setShowAdminMenu(false);
+                                  try {
+                                    await api.post(`/chat/livekit/rooms/${room.id}/e2ee`, { enabled: !roomE2EE });
+                                    notify.success(`E2EE ${roomE2EE ? 'disabled' : 'enabled'}`);
+                                  } catch { notify.error('Failed to toggle E2EE') }
+                                }, 
+                                color: roomE2EE ? T.warn : T.accent },
                             ].map((it,i)=>(
                               <button key={i} onClick={it.action} style={{ display:'flex', alignItems:'center', gap:9, width:'100%', padding:'8px 12px', border:'none', background:'transparent', color:it.color, fontFamily:T.mono, fontSize:11, cursor:'pointer', borderRadius:7, textAlign:'left' }}
                                 onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.06)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>

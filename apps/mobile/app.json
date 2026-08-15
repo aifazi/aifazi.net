@@ -15,8 +15,35 @@
         "NSScreenCaptureUsageDescription": "aifazi shares your screen during calls.",
         "UIBackgroundModes": [
           "audio",
-          "voip"
-        ]
+          "voip",
+          "remote-notification"
+        ],
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "api.aifazi.net": {
+              "NSExceptionRequiresForwardSecrecy": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSIncludesSubdomains": true,
+              "NSRequiresCertificateTransparency": true
+            },
+            "cdn.aifazi.net": {
+              "NSExceptionRequiresForwardSecrecy": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSIncludesSubdomains": true
+            },
+            "aifazi.net": {
+              "NSExceptionRequiresForwardSecrecy": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSIncludesSubdomains": true
+            },
+            "u.expo.dev": {
+              "NSExceptionRequiresForwardSecrecy": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSIncludesSubdomains": true
+            }
+          }
+        }
       },
       "bitcode": false
     },
@@ -32,8 +59,10 @@
         "FOREGROUND_SERVICE_MEDIA_PROJECTION",
         "FOREGROUND_SERVICE_MICROPHONE",
         "WAKE_LOCK",
-        "REQUEST_INSTALL_PACKAGES"
+        "REQUEST_INSTALL_PACKAGES",
+        "POST_NOTIFICATIONS"
       ],
+      "networkSecurityConfig": "@xml/network_security_config",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -60,6 +89,18 @@
         }
       ],
       "expo-secure-store",
+      "expo-local-authentication",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#00ff88",
+          "sounds": [
+            "./assets/sounds/notification.wav"
+          ],
+          "mode": "production"
+        }
+      ],
       [
         "@livekit/react-native-expo-plugin",
         {

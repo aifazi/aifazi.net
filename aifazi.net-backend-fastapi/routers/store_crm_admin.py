@@ -1,15 +1,10 @@
-"""
-routers/store_crm_admin.py - Customers (CRM), payments/transactions/refunds,
-and review/testimonial moderation. Mounted at /api/store/admin. Permission
-gated per module (store.customers / store.payments / store.reviews).
-"""
 from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from database import supabase
 from permissions import require_any_permission
@@ -110,7 +105,12 @@ async def customer_detail(user_id: str, _: dict = Depends(CUSTOMERS)):
         "documents": docs,
         "notes": notes,
         "transactions": txns,
-    }
+}
+ 
+
+
+class RefundBody(BaseModel):
+    amount_cents: int | None = Field(None, ge=1, description="Partial refund amount in cents. If omitted, full refund.")
 
 
 class CustomerNoteBody(BaseModel):
@@ -167,7 +167,7 @@ async def list_transactions(kind: str | None = None, limit: int = 300, _: dict =
 
 
 @router.post("/orders/{order_id}/refund")
-async def refund_order(order_id: str, staff: dict = Depends(REFUND)):
+async def refund_order(order_id: str, body: RefundBody, staff: dict = Depends(REFUND)):
     now = _now()
     # Atomic claim: only ONE concurrent refund proceeds. The conditional update
     # flips paid → refunded; a second caller (double-click / Stripe retry) claims

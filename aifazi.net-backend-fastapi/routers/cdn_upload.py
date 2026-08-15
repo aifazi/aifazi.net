@@ -153,3 +153,52 @@ async def delete_media(provider: str, storage_path: str) -> None:
             supabase.storage.from_(SUPABASE_BUCKET).remove([storage_path])
     except Exception as exc:
         log.warning("media delete failed (%s): %s", provider, exc)
+
+
+def generate_presigned_download_url(storage_path: str, cfg: dict | None = None, expires_in: int = 900) -> str | None:
+    """
+    Generate a presigned GET URL for an R2 object.
+    
+    Args:
+        storage_path: The storage key/path of the object in R2
+        cfg: Optional CDN config (will fetch if not provided)
+        expires_in: URL expiration time in seconds (default 15 minutes)
+    
+    Returns:
+        Presigned URL string, or None if R2 not configured
+    """
+    if cfg is None:
+        cfg = get_cdn_config()
+    
+    provider = ((cfg.get("provider") or cfg.get("activeProvider") or "supabase") or "").lower()
+    if provider != "r2":
+        return None
+    
+    account = (cfg.get("r2AccountId") or "").strip()
+    key_id = (cfg.get("r2AccessKeyId") or "").strip()
+    secret = (cfg.get("r2SecretAccessKey") or "").strip()
+    bucket = _bucket_name(cfg)
+    
+    if not (account and key_id and secret and bucket and storage_path):
+        return None
+    
+    import boto3
+    from botocore.client import Config
+    client = boto3.client(
+        "s3",
+        endpoint_url=f"https://{account}.r2.cloudflarestorage.com",
+        aws_access_key_id=key_id,
+        aws_secret_access_key=secret,
+        config=Config(signature_version="s3v4"),
+        region_name="auto",
+    )
+    
+    try:
+        return client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket, "Key": storage_path},
+            ExpiresIn=expires_in
+        )
+    except Exception as exc:
+        logging.getLogger("cdn_upload").warning("Failed to generate presigned URL: %s", exc)
+        return None

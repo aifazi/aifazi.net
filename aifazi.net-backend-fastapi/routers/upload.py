@@ -6,7 +6,7 @@ Reads cdn_config.settings to decide where to store files:
 
 All providers save a record in the `media` table after upload.
 """
-import os, uuid, mimetypes, base64
+import os, uuid, mimetypes, base64, logging
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from database import supabase
 from dependencies import require_staff, get_current_user
@@ -18,6 +18,45 @@ router = APIRouter()
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_BUCKET = "media"
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB hard cap
+
+# ── ClamAV malware scanning ────────────────────────────────────────────────────
+_CLAMD_HOST = os.getenv("CLAMD_HOST", "localhost")
+_CLAMD_PORT = int(os.getenv("CLAMD_PORT", "3310"))
+_MALWARE_SCAN_ENABLED = os.getenv("MALWARE_SCAN_ENABLED", "false").lower() == "true"
+
+log = logging.getLogger("upload")
+
+def scan_for_malware(content: bytes, filename: str) -> None:
+    """
+    Scan file content for malware using ClamAV daemon.
+    Raises HTTPException 415 if malware detected or scan fails critically.
+    """
+    if not _MALWARE_SCAN_ENABLED:
+        return
+    
+    try:
+        import pyclamd
+        cd = pyclamd.ClamdUnixSocket() if _CLAMD_HOST == "localhost" else pyclamd.ClamdNetworkSocket(_CLAMD_HOST, _CLAMD_PORT)
+        
+        # Ping to verify connection
+        if not cd.ping():
+            log.warning("ClamAV daemon not reachable; skipping malware scan for %s", filename)
+            return
+        
+        result = cd.scan_stream(content)
+        if result:
+            status, details = list(result.items())[0]
+            if status == "FOUND":
+                log.warning("Malware detected in %s: %s", filename, details)
+                raise HTTPException(415, f"File rejected: malware detected ({details})")
+    except ImportError:
+        log.warning("pyclamd not installed; skipping malware scan for %s", filename)
+    except pyclamd.ConnectionError:
+        log.warning("ClamAV connection failed; skipping malware scan for %s", filename)
+    except Exception as exc:
+        log.warning("Malware scan error for %s: %s", filename, exc)
+        # Fail-open: log but don't block upload on scan errors
+        # Change to fail-closed by raising if desired
 
 # Member-facing chat/media uploads are more conservative than the staff library:
 # images + short-form media only, capped at 10 MB.
@@ -350,6 +389,9 @@ async def upload_file(
         raise HTTPException(415, f"File type '{sniffed}' is not allowed")
     mimetype = sniffed
 
+    # Malware scan (fail-open)
+    scan_for_malware(content, file.filename or "upload")
+
     filename = file.filename or f"upload_{uuid.uuid4()}"
     filename = _safe_storage_filename(filename)  # M11 — strip traversal/separators
 
@@ -403,6 +445,9 @@ async def upload_multiple(
         if sniffed not in ALLOWED_MIMETYPES:
             raise HTTPException(415, f"File type '{sniffed}' is not allowed")
         mimetype = sniffed
+
+        # Malware scan (fail-open)
+        scan_for_malware(content, file.filename or "upload")
 
         filename = file.filename or f"upload_{uuid.uuid4()}"
         filename = _safe_storage_filename(filename)  # M11 — strip traversal/separators
@@ -459,6 +504,9 @@ async def upload_chat_media(
     if sniffed not in CHAT_ALLOWED_MIMETYPES:
         raise HTTPException(415, f"File type '{sniffed}' is not allowed in chat")
     mimetype = sniffed
+
+    # Malware scan (fail-open)
+    scan_for_malware(content, file.filename or "chat")
 
     filename = _safe_storage_filename(file.filename or f"chat_{uuid.uuid4()}")
 
