@@ -13,9 +13,24 @@ export default function Admin() {
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
+    // Read server-rendered user data from SSR
+    const script = document.getElementById('admin-user-data')
+    if (script) {
+      try {
+        const userData = JSON.parse(script.textContent || '{}')
+        if (userData.role) {
+          setEffectiveAccess(userData)
+          if (userData.role !== 'user' || hasStaffAccess()) {
+            setAuthed(true)
+            setChecking(false)
+            return
+          }
+        }
+      } catch {}
+    }
+
+    // Fallback: verify via API if SSR data missing/invalid
     const verify = async () => {
-      // H4 — /auth/verify accepts the HttpOnly cookie, so no localStorage token
-      // is required anymore. A 401 here means genuinely not authenticated.
       try {
         const verified = await api.get('/auth/verify')
         setEffectiveAccess(verified.data?.user)
@@ -33,7 +48,6 @@ export default function Admin() {
 
   const handleLogout = async () => {
     try { await api.post('/auth/logout') } catch {}
-    // Clear ALL tokens including refresh_token so silent re-auth cannot happen
     clearAuthTokens()
     navigate('/login', { replace: true, state: { signedOut: true } })
   }
