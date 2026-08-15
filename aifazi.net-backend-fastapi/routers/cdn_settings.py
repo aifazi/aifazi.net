@@ -8,10 +8,12 @@ Migration (run once in Supabase SQL editor):
         VALUES ('global', '{}')
         ON CONFLICT (key) DO NOTHING;
 """
-from fastapi import APIRouter, Depends, HTTPException, Request
-from database import supabase, call_with_retry
-from dependencies import require_staff
 import httpx
+from fastapi import APIRouter, Depends, HTTPException
+
+from database import call_with_retry, supabase
+from dependencies import require_staff
+
 router = APIRouter()
 
 def _get_row():

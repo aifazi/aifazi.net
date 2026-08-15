@@ -10,25 +10,39 @@ Fixes in v5.1:
 """
 
 from __future__ import annotations
-from typing import Optional, Literal, List, Any
-from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
+
+from datetime import datetime, timedelta, timezone
+from typing import Any, Literal
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
+
 import txadmin_service as txa
 from database import supabase
 from dependencies import get_current_user, require_admin, require_staff
-from utils.fivem_shared import push_realtime as shared_push_realtime, active_priority as shared_active_priority, now as shared_now
+from utils.fivem_shared import active_priority as shared_active_priority
+from utils.fivem_shared import now as shared_now
+from utils.fivem_shared import push_realtime as shared_push_realtime
+
 _push_realtime = shared_push_realtime
 _active_priority = shared_active_priority
 _now = shared_now
-import os, hmac, logging, httpx, secrets
-from jwt_compat import jwt
+import hmac
+import logging
+import os
+import secrets
 
 # H19 â€” escape helper. The f-string email templates below previously inlined
 # raw `reason`, `note`, `name`, and `char` straight into HTML email bodies. A
 # staff member (or a txAdmin event payload) containing <script>...</script> or
 # <img onerror=...> would be reflected verbatim into the victim's email client.
 from html import escape as _fivem_html_escape
+
+import httpx
+
+from jwt_compat import jwt
+
+
 def _e(value) -> str:
     """HTML-escape user/staff-controlled free-text before splicing into HTML."""
     return _fivem_html_escape(str(value if value is not None else ""), quote=True)
@@ -182,7 +196,7 @@ def _stamp_application_activity(player_ids: dict[str, Any], player_name: str, no
         log.warning("Could not stamp application activity: %s", exc)
 
 
-def _stamp_whitelist_activity(players: List[Any] | None, now_iso: str) -> None:
+def _stamp_whitelist_activity(players: list[Any] | None, now_iso: str) -> None:
     if not players:
         return
     # Throttle: only run the N+1 stamping pass once per _STAMP_INTERVAL_SECONDS.
@@ -347,7 +361,7 @@ def _email_unbanned(name: str, char: str) -> tuple[str, str]:
 </div>"""
     return subject, html
 
-async def _send_whitelist_email(app: dict, status: str, note: str | None = None, extra: Optional[dict] = None) -> None:
+async def _send_whitelist_email(app: dict, status: str, note: str | None = None, extra: dict | None = None) -> None:
     """
     Send email to the player.
     Priority: email stored on the application row > discord_users > forum_users.
@@ -502,84 +516,84 @@ def _last_seen_str(age):
 
 # â”€â”€â”€ Pydantic models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class WhitelistApply(BaseModel):
-    discord_id: Optional[str] = None; discord_name: Optional[str] = None; steam_hex: Optional[str] = None
-    fivem_id: Optional[str] = None; character_name: str; character_backstory: str
+    discord_id: str | None = None; discord_name: str | None = None; steam_hex: str | None = None
+    fivem_id: str | None = None; character_name: str; character_backstory: str
     age: int; rp_experience: str; why_join: str; rules_accepted: bool
-    email: Optional[str] = None   # collected on the apply form so we can email results
-    extra_answers: Optional[dict] = None
+    email: str | None = None   # collected on the apply form so we can email results
+    extra_answers: dict | None = None
 
 class WhitelistReview(BaseModel):
-    status: str; reviewer_note: Optional[str] = None
-    priority_tier: Optional[str] = None
-    priority_level: Optional[int] = None
-    priority_expires_at: Optional[str] = None
+    status: str; reviewer_note: str | None = None
+    priority_tier: str | None = None
+    priority_level: int | None = None
+    priority_expires_at: str | None = None
 
 class WhitelistManualAdd(BaseModel):
     discord_id: str; discord_name: str; character_name: str
-    steam_hex: Optional[str] = None; fivem_license: Optional[str] = None; fivem_id: Optional[str] = None
-    reviewer_note: Optional[str] = None
-    priority_tier: Optional[str] = None
-    priority_level: Optional[int] = None
-    priority_expires_at: Optional[str] = None
+    steam_hex: str | None = None; fivem_license: str | None = None; fivem_id: str | None = None
+    reviewer_note: str | None = None
+    priority_tier: str | None = None
+    priority_level: int | None = None
+    priority_expires_at: str | None = None
 
 class WhitelistPriorityUpdate(BaseModel):
-    priority_tier: Optional[str] = None
-    priority_level: Optional[int] = None
-    priority_expires_at: Optional[str] = None
+    priority_tier: str | None = None
+    priority_level: int | None = None
+    priority_expires_at: str | None = None
 
 class BanCreate(BaseModel):
     # identifiers can be a comma-separated string OR a list (from frontend player picker)
-    identifier:  Optional[str] = None          # single steam hex / fivem id
-    identifiers: Optional[list[str]] = None    # multiple ids (all player identifiers)
-    net_id:      Optional[int] = None          # server netId (if player is online)
+    identifier:  str | None = None          # single steam hex / fivem id
+    identifiers: list[str] | None = None    # multiple ids (all player identifiers)
+    net_id:      int | None = None          # server netId (if player is online)
     player_name: str
     reason:      str
     duration:    str = "permanent"
-    expires_at:  Optional[str] = None          # ISO datetime (kept for DB compat)
+    expires_at:  str | None = None          # ISO datetime (kept for DB compat)
 
 class BanUpdate(BaseModel):
-    reason: Optional[str] = None; expires_at: Optional[str] = None; active: Optional[bool] = None
+    reason: str | None = None; expires_at: str | None = None; active: bool | None = None
 
 class BanSyncAck(BaseModel):
     ban_id: str
     ok: bool = True
-    message: Optional[str] = None
+    message: str | None = None
 
 class StatusUpdate(BaseModel):
     players_online: int
     max_players: int
-    server_name: Optional[str] = None
-    server_version: Optional[str] = None
+    server_name: str | None = None
+    server_version: str | None = None
     uptime_seconds: int = 0
     resource_count: int = 0
     force_offline: bool = False
     # FIX: accept 'players' list sent by Lua heartbeat (was silently ignored)
-    players: Optional[List[Any]] = None
+    players: list[Any] | None = None
 
 class DevOverride(BaseModel):
-    override: Optional[Literal["force_online", "maintenance"]] = None
+    override: Literal["force_online", "maintenance"] | None = None
 
 class MarkSynced(BaseModel):
-    license: Optional[str] = None   # kept for Lua compat
-    app_id:  Optional[str] = None
+    license: str | None = None   # kept for Lua compat
+    app_id:  str | None = None
     success: bool = True
-    error:   Optional[str] = None
+    error:   str | None = None
 
 class ApplicationActionSyncBody(BaseModel):
     submission_id: str
     status: Literal["synced", "failed", "skipped"] = "synced"
-    message: Optional[str] = None
+    message: str | None = None
 
 class ServerSyncRefresh(BaseModel):
-    app_id: Optional[str] = None
-    reason: Optional[str] = None
+    app_id: str | None = None
+    reason: str | None = None
 
 class TxAdminEvent(BaseModel):
-    event: str; data: dict = {}; ts: Optional[int] = None
+    event: str; data: dict = {}; ts: int | None = None
 
 # _active_priority imported from utils.fivem_shared
 
-def _priority_update_fields(priority_tier: Optional[str], priority_level: Optional[int], priority_expires_at: Optional[str]) -> dict:
+def _priority_update_fields(priority_tier: str | None, priority_level: int | None, priority_expires_at: str | None) -> dict:
     if priority_level is None and priority_tier is None and priority_expires_at is None:
         return {}
 
@@ -590,7 +604,7 @@ def _priority_update_fields(priority_tier: Optional[str], priority_level: Option
         "priority_expires_at": priority_expires_at or None if level > 0 else None,
     }
 
-def _identifier_update_fields(identifier: Optional[str], existing: Optional[dict] = None) -> dict:
+def _identifier_update_fields(identifier: str | None, existing: dict | None = None) -> dict:
     ident = (identifier or "").strip()
     if not ident:
         return {}
@@ -625,14 +639,14 @@ def _normalize_identifier_list(values: Any) -> list[str]:
             out.append(text)
     return out
 
-def _first_identifier(ids: list[str], prefixes: tuple[str, ...]) -> Optional[str]:
+def _first_identifier(ids: list[str], prefixes: tuple[str, ...]) -> str | None:
     for ident in ids:
         low = ident.lower()
         if any(low.startswith(prefix) for prefix in prefixes):
             return ident
     return None
 
-def _primary_ban_identifier(ids: list[str]) -> Optional[str]:
+def _primary_ban_identifier(ids: list[str]) -> str | None:
     return (
         _first_identifier(ids, ("license:", "license2:"))
         or _first_identifier(ids, ("steam:",))
@@ -641,7 +655,7 @@ def _primary_ban_identifier(ids: list[str]) -> Optional[str]:
         or (ids[0] if ids else None)
     )
 
-def _find_whitelist_by_identifiers(ids: list[str]) -> Optional[dict]:
+def _find_whitelist_by_identifiers(ids: list[str]) -> dict | None:
     filters: list[str] = []
     for ident in ids:
         value = (ident or "").strip()
@@ -679,7 +693,7 @@ def _find_whitelist_by_identifiers(ids: list[str]) -> Optional[dict]:
         log.warning("Could not match whitelist app for ban identifiers: %s", exc)
         return None
 
-def _parse_datetime(value: Optional[str]) -> Optional[datetime]:
+def _parse_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
     text = value.strip()
@@ -692,7 +706,7 @@ def _parse_datetime(value: Optional[str]) -> Optional[datetime]:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc)
 
-def _duration_seconds(duration: Optional[str]) -> Optional[int]:
+def _duration_seconds(duration: str | None) -> int | None:
     text = (duration or "permanent").strip().lower()
     if text in {"", "permanent", "perm", "never", "custom"}:
         return None
@@ -707,7 +721,7 @@ def _duration_seconds(duration: Optional[str]) -> Optional[int]:
     }
     return mapping.get(text)
 
-def _ban_expires_at(duration: Optional[str], expires_at: Optional[str]) -> Optional[str]:
+def _ban_expires_at(duration: str | None, expires_at: str | None) -> str | None:
     parsed = _parse_datetime(expires_at)
     if parsed:
         return parsed.isoformat()
@@ -716,7 +730,7 @@ def _ban_expires_at(duration: Optional[str], expires_at: Optional[str]) -> Optio
         return None
     return (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat()
 
-def _ban_expire_epoch(expires_at: Optional[str]) -> int:
+def _ban_expire_epoch(expires_at: str | None) -> int:
     try:
         parsed = _parse_datetime(expires_at)
     except ValueError:
@@ -909,7 +923,7 @@ async def check_whitelist(request: Request, identifier: str):
 @router.get("/whitelist/search")
 async def search_whitelist(
     q: str = "",
-    status: Optional[str] = None,
+    status: str | None = None,
     limit: int = 50,
     _: dict = Depends(require_staff),
 ):
@@ -959,8 +973,8 @@ async def search_whitelist(
 
 @router.get("/whitelist")
 async def list_whitelist(
-    status: Optional[str] = None, limit: int = 50, offset: int = 0,
-    since_seconds: Optional[int] = None, _: dict = Depends(require_staff)
+    status: str | None = None, limit: int = 50, offset: int = 0,
+    since_seconds: int | None = None, _: dict = Depends(require_staff)
 ):
     q = supabase.table("fivem_whitelist").select("*", count="exact")
     if status: q = q.eq("status", status)
@@ -1024,7 +1038,7 @@ async def pending_sync(request: Request):
         out.append(r)
     return out
 
-def _pending_count(table: str, filters: dict[str, Any], in_filters: Optional[dict[str, list[Any]]] = None) -> int:
+def _pending_count(table: str, filters: dict[str, Any], in_filters: dict[str, list[Any]] | None = None) -> int:
     q = supabase.table(table).select("id", count="exact")
     for key, val in filters.items():
         q = q.eq(key, val)
@@ -1624,7 +1638,7 @@ async def receive_txadmin_event(
 
 # â”€â”€â”€ Bans â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @router.get("/bans")
-async def list_bans(active: Optional[bool] = None, limit: int = 50, offset: int = 0,
+async def list_bans(active: bool | None = None, limit: int = 50, offset: int = 0,
                     _: dict = Depends(require_staff)):
     q = supabase.table("fivem_bans").select("*", count="exact")
     if active is not None: q = q.eq("active", active)
@@ -1710,7 +1724,7 @@ def _ban_duration_txadmin(ban: dict) -> str:
     return dur if dur in {"permanent", "2 hours", "12 hours", "1 day", "2 days", "1 week", "2 weeks", "1 month"} else "permanent"
 
 
-def _resolve_net_id(ids: list[str]) -> Optional[int]:
+def _resolve_net_id(ids: list[str]) -> int | None:
     """Find the current netId of an online player from the latest fivem_players snapshot."""
     try:
         res = supabase.table("fivem_players").select("players").eq("id", "main").execute()
@@ -1742,7 +1756,7 @@ async def _push_ban_to_txadmin(ban_id: str) -> dict:
             ids.insert(0, ident)
         reason = ban.get("reason") or "Banned via aifazi.net"
         duration = _ban_duration_txadmin(ban)
-        action_id: Optional[str] = None
+        action_id: str | None = None
         net_id = _resolve_net_id(ids)
         if net_id:
             ok, result = await txa.ban_online_player(int(net_id), reason, duration)
@@ -2275,21 +2289,21 @@ async def list_player_sessions(
 class PlayerJoinBody(BaseModel):
     server_id: int
     player_name: str
-    license: Optional[str] = None
-    license2: Optional[str] = None
-    steam_hex: Optional[str] = None
-    fivem_id: Optional[str] = None
-    discord_id: Optional[str] = None
+    license: str | None = None
+    license2: str | None = None
+    steam_hex: str | None = None
+    fivem_id: str | None = None
+    discord_id: str | None = None
     identifiers: list[str] = []
 
 
 class PlayerLeaveBody(BaseModel):
     server_id: int
-    player_name: Optional[str] = None
-    license: Optional[str] = None
-    license2: Optional[str] = None
+    player_name: str | None = None
+    license: str | None = None
+    license2: str | None = None
     identifiers: list[str] = []
-    disconnect_reason: Optional[str] = None
+    disconnect_reason: str | None = None
 
 
 class PlayerHeartbeatBody(BaseModel):
@@ -2297,17 +2311,17 @@ class PlayerHeartbeatBody(BaseModel):
 
 
 class WhitelistIdentifiersBody(BaseModel):
-    discord_id: Optional[str] = None
-    license: Optional[str] = None
-    license2: Optional[str] = None
-    steam_hex: Optional[str] = None
-    fivem_id: Optional[str] = None
+    discord_id: str | None = None
+    license: str | None = None
+    license2: str | None = None
+    steam_hex: str | None = None
+    fivem_id: str | None = None
     identifiers: list[str] = []
 
 
 def _player_ids_from_fields(
-    license_: Optional[str], license2: Optional[str], steam_hex: Optional[str],
-    fivem_id: Optional[str], discord_id: Optional[str], identifiers: list[str],
+    license_: str | None, license2: str | None, steam_hex: str | None,
+    fivem_id: str | None, discord_id: str | None, identifiers: list[str],
 ) -> dict:
     raw = [str(x or "").strip() for x in (identifiers or []) if str(x or "").strip()]
     ids = _player_identifiers({
@@ -2479,10 +2493,10 @@ async def update_whitelist_identifiers(body: WhitelistIdentifiersBody, request: 
 # â”€â”€â”€ Bulk whitelist approve â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class BulkWhitelistApproveBody(BaseModel):
     app_ids: list[str]
-    reviewer_note: Optional[str] = None
-    priority_tier: Optional[str] = None
-    priority_level: Optional[int] = None
-    priority_expires_at: Optional[str] = None
+    reviewer_note: str | None = None
+    priority_tier: str | None = None
+    priority_level: int | None = None
+    priority_expires_at: str | None = None
 
 
 @router.post("/whitelist/bulk-approve")
@@ -2583,12 +2597,12 @@ class VerifyTokenRequest(BaseModel):
 
 
 class ConnectSessionRequest(BaseModel):
-    player_name: Optional[str] = None
-    fivem_license: Optional[str] = None
-    license2: Optional[str] = None
-    steam_hex: Optional[str] = None
-    fivem_id: Optional[str] = None
-    discord_id: Optional[str] = None
+    player_name: str | None = None
+    fivem_license: str | None = None
+    license2: str | None = None
+    steam_hex: str | None = None
+    fivem_id: str | None = None
+    discord_id: str | None = None
     identifiers: list[str] = []
 
 

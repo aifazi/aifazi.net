@@ -1,10 +1,12 @@
 """routers/notifications.py — Forum notifications"""
-from fastapi import APIRouter, Depends, HTTPException
-from database import supabase
-from dependencies import CookieHTTPBearer, get_current_user
 import os
-from jwt_compat import jwt, JWTError
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
+
+from database import supabase
+from dependencies import CookieHTTPBearer
+from jwt_compat import JWTError, jwt
 
 router = APIRouter()
 bearer = CookieHTTPBearer(auto_error=False)

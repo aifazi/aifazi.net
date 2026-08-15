@@ -1,5 +1,7 @@
 import asyncio
+
 from database import supabase
+
 
 async def check():
     try:

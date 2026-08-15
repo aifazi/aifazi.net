@@ -6,10 +6,11 @@ import hashlib
 import hmac
 import logging
 import os
-from datetime import datetime, timezone, timedelta
-from typing import Optional
-from fastapi import APIRouter, Depends, Query, HTTPException, Request
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
+
 from database import supabase
 from dependencies import require_staff
 from utils.email import send_email
@@ -51,8 +52,9 @@ def _cron_or_staff_auth(request: Request) -> dict:
             return {"role": "system", "username": "cron"}
 
     # Staff path — decode the JWT and resolve staff access from the DB.
-    from fastapi.security import HTTPBearer
     from fastapi import HTTPException
+    from fastapi.security import HTTPBearer
+
     from dependencies import get_current_user
     from permissions import resolve_staff_access
     bearer_dep = HTTPBearer(auto_error=False)
@@ -107,11 +109,11 @@ def _apply_search(q, term: str):
 async def list_queue(
     page:   int = Query(1, ge=1),
     limit:  int = Query(25, ge=1, le=200),
-    status: Optional[str] = None,
-    search: Optional[str] = None,
+    status: str | None = None,
+    search: str | None = None,
     sort:   str = "newest",
-    date_from: Optional[str] = None,
-    date_to:   Optional[str] = None,
+    date_from: str | None = None,
+    date_to:   str | None = None,
     _: dict = Depends(require_staff),
 ):
     q = supabase.table("mail_queue").select("*", count="exact")
@@ -273,8 +275,8 @@ class WebhookEvent(BaseModel):
     event:     str  # "delivered" | "bounced" | "opened" | "clicked" | "complained"
     msg_id:    str
     recipient: str
-    timestamp: Optional[str] = None
-    details:   Optional[dict] = None
+    timestamp: str | None = None
+    details:   dict | None = None
 
 
 @router.post("/webhook/inbound")
@@ -378,7 +380,7 @@ async def process_pending(
 @router.delete("/purge")
 async def purge_old(
     days: int = Query(30, ge=1),
-    status: Optional[str] = None,
+    status: str | None = None,
     _: dict = Depends(require_staff),
 ):
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()

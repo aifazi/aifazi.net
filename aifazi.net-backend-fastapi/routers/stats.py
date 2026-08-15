@@ -1,16 +1,18 @@
 """routers/stats.py — Admin analytics dashboard + collection browser + user/content actions
 Structured to match frontend DatabaseGUI shape.
 """
-from datetime import datetime, timezone, timedelta
-from typing import Optional
-from html import escape
 import asyncio
+from datetime import datetime, timedelta, timezone
+from html import escape
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from database import supabase, call_with_retry
-from dependencies import require_staff, require_admin
-from utils.email import send_email, render_template
+
+from database import call_with_retry, supabase
+from dependencies import require_admin, require_staff
+from utils.email import render_template
 from utils.email_queue import queue_email
+
 router = APIRouter()
 
 # H9 — fields that must NEVER be returned to the admin collection browser.
@@ -265,7 +267,8 @@ def _collection_browse_sync(coll: str, page: int, limit: int, search: str) -> di
         pages = max(1, (total + limit - 1) // limit)
         return {"docs": docs, "total": total, "page": page, "pages": pages}
     except Exception as e:
-        import os, logging
+        import logging
+        import os
         logging.getLogger(__name__).error("collection_docs error: %s", e, exc_info=True)
         detail = str(e) if os.getenv("ENV", "production") != "production" else "An internal error occurred."
         raise HTTPException(status_code=500, detail=detail)
@@ -294,10 +297,10 @@ def db_health(_: dict = Depends(require_staff)):
 
 # ── User actions ──────────────────────────────────────────────────────────────
 class UserActionBody(BaseModel):
-    role:    Optional[str] = None
-    reason:  Optional[str] = None
-    subject: Optional[str] = None
-    message: Optional[str] = None
+    role:    str | None = None
+    reason:  str | None = None
+    subject: str | None = None
+    message: str | None = None
 
 @router.post("/actions/users/{user_id}/verify")
 async def user_verify(user_id: str, _: dict = Depends(require_staff)):

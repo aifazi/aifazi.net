@@ -15,17 +15,21 @@ Vercel env vars required:
   PASETO_SECRET           — already set
 """
 
-import os, secrets, httpx, urllib.parse as _urlparse
-from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, HTTPException, Request, Depends
-from fastapi.responses import RedirectResponse, JSONResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from dependencies import CookieHTTPBearer
-from jwt_compat import jwt, JWTError
+import os
+import urllib.parse as _urlparse
+from datetime import datetime, timedelta, timezone
+
+import httpx
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
+from fastapi.security import HTTPAuthorizationCredentials
+
 from database import supabase
+from dependencies import CookieHTTPBearer
+from jwt_compat import JWTError, jwt
 from utils.email import render_template
 from utils.email_queue import queue_email
-from utils.oauth_state import make_oauth_state, verify_oauth_state, _safe_relative_path
+from utils.oauth_state import _safe_relative_path, make_oauth_state, verify_oauth_state
 
 router = APIRouter()
 
@@ -179,7 +183,7 @@ async def discord_callback(code: str = "", error: str = "", state: str = ""):
     # Upsert into Supabase
     try:
         db_user, is_new = _upsert_discord_user(discord_user)
-    except Exception as e:
+    except Exception:
         return RedirectResponse(f"{FRONTEND_URL}/whitelist?discord_error=db")
 
     # Send welcome email to brand-new Discord signups (queued, reliable on serverless)

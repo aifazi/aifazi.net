@@ -25,7 +25,11 @@ from pydantic import BaseModel
 from database import supabase
 from permissions import require_any_permission
 from routers.store_inventory import (
-    default_location_id, get_quant, set_quant, change_quant, move_quant,
+    change_quant,
+    default_location_id,
+    get_quant,
+    move_quant,
+    set_quant,
 )
 from routers.store_ledger import log_stock_change as _ledger_log
 

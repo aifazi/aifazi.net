@@ -2,15 +2,16 @@
 routers/helpdesk.py — Ticket CRUD + threaded messages + admin settings
 """
 import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from html import escape as _html_escape
-from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
+
 from database import supabase
 from dependencies import bearer, decode_token, require_staff
-from utils.email import send_email, render_template
+from utils.email import render_template
 from utils.email_queue import queue_email
 
 router = APIRouter()
@@ -174,12 +175,12 @@ class MessageBody(BaseModel):
 
 
 class AdminUpdateBody(BaseModel):
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    response: Optional[str] = None
-    responded_by: Optional[str] = None
-    internal_note: Optional[str] = None
-    message: Optional[str] = None
+    status: str | None = None
+    priority: str | None = None
+    response: str | None = None
+    responded_by: str | None = None
+    internal_note: str | None = None
+    message: str | None = None
 
 
 class SettingsBody(BaseModel):

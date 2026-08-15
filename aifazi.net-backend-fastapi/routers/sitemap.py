@@ -8,9 +8,12 @@ still serves it for direct api.aifazi.net visits and the sitemap.py router is
 already mounted at root prefix in main.py).
 """
 import os
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
+
 from database import supabase
+
 router = APIRouter()
 SITE_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 

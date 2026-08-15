@@ -6,13 +6,16 @@ Frontend NewsletterPanel calls:
   POST   /newsletter/unsubscribe     { email }  (legacy)
   POST   /newsletter/send            { subject, html, text }
 """
+import asyncio
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, EmailStr
+
 from database import supabase
 from dependencies import require_staff
 from utils.email import render_template
 from utils.email_queue import queue_email_bulk
-import asyncio
+
 router = APIRouter()
 
 class SubBody(BaseModel):

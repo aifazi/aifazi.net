@@ -1,16 +1,19 @@
 """routers/txadmin_webhook.py — Real-time txAdmin ↔ Website whitelist sync"""
 
 from __future__ import annotations
-import os, hmac, hashlib, logging
-from datetime import datetime, timezone, timedelta
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
+import hashlib
+import hmac
+import logging
+import os
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from database import supabase
-from dependencies import require_admin, require_staff
-from utils.fivem_shared import push_realtime, active_priority, identifier_updates, now
+from dependencies import require_staff
+from utils.fivem_shared import active_priority, identifier_updates, push_realtime
 
 log = logging.getLogger("txadmin_webhook")
 router = APIRouter()
@@ -74,19 +77,19 @@ def cleanup_realtime_events() -> None:
 
 # ─── Pydantic models ──────────────────────────────────────────────────────────
 class TxAdminApprovalPayload(BaseModel):
-    discord_id:    Optional[str] = None
-    steam_hex:     Optional[str] = None
-    fivem_license: Optional[str] = None
-    player_name:   Optional[str] = None
-    approved_by:   Optional[str] = None
-    txadmin_id:    Optional[str] = None
+    discord_id:    str | None = None
+    steam_hex:     str | None = None
+    fivem_license: str | None = None
+    player_name:   str | None = None
+    approved_by:   str | None = None
+    txadmin_id:    str | None = None
 
 class PlayerConnectingPayload(BaseModel):
     player_name:   str
-    steam_hex:     Optional[str] = None
-    fivem_license: Optional[str] = None
-    discord_id:    Optional[str] = None
-    fivem_id:      Optional[str] = None
+    steam_hex:     str | None = None
+    fivem_license: str | None = None
+    discord_id:    str | None = None
+    fivem_id:      str | None = None
 
 # _active_priority and _identifier_updates moved to utils.fivem_shared
 

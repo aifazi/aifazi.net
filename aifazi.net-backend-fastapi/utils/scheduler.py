@@ -4,11 +4,13 @@ FIX #10: Replaced deprecated asyncio.get_event_loop() with run_coroutine_threads
 """
 import asyncio
 import logging
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.triggers.cron import CronTrigger
-from database import supabase
 from datetime import datetime, timezone
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+
+from database import supabase
 
 logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler()

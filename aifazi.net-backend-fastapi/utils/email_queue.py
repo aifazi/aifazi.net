@@ -46,10 +46,17 @@ Use `queue_email` for transactional sends (send immediately inline). Use
 `queue_email_bulk` only for large fire-and-forget fan-outs (newsletters).
 """
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from database import supabase
-from utils.email import send_email, _get_config, _c, _send_brevo, _send_resend, _send_smtp
+from utils.email import (
+    _c,
+    _get_config,
+    _send_brevo,
+    _send_resend,
+    _send_smtp,
+    send_email,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -283,8 +290,7 @@ async def dispatch_pending(limit: int = DEFAULT_BATCH) -> dict:
     status=..., so two concurrent cron runs can never send the same row.
     Safe to schedule aggressively.
     """
-    if limit > MAX_BATCH:
-        limit = MAX_BATCH
+    limit = min(limit, MAX_BATCH)
 
     items = _claim(limit)
     if not items:

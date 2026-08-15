@@ -10,16 +10,18 @@ Frontend AuditPanel expects:
 Frontend log fields used: log.actor, log.action, log.target, log.details, log.createdAt
 Auth log fields: log.username, log.success, log.ip, log.userAgent, log.role, log.reason, log.createdAt
 """
-import logging
 import csv
 import io
 import json as _json
-from datetime import datetime, timezone, timedelta
+import logging
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, Query, Response
+
 from database import supabase
-from dependencies import require_staff
 from permissions import require_permission
-from utils.audit import record as audit_record, record_auth, migrate as audit_migrate
+from utils.audit import migrate as audit_migrate
+from utils.audit import record as audit_record
 
 logger = logging.getLogger("audit.router")
 router = APIRouter()

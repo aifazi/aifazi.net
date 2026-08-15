@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 
 from database import supabase
 from permissions import require_any_permission
-from routers.store_ledger import log_stock_change
 from routers.store_inventory import restock
 
 log = logging.getLogger("store.crm")

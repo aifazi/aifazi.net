@@ -2,10 +2,17 @@
 routers/file_tools.py — All file processing tools (Foxit-grade, backend Python)
 Libraries: PyMuPDF (fitz), Pillow, python-docx, openpyxl, reportlab
 """
-import io, json, csv, zipfile, base64, re, html
-from typing import Optional, List
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Response, Depends
+import base64
+import csv
+import html
+import io
+import json
+import re
+import zipfile
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+
 from dependencies import require_staff
 
 router = APIRouter()
@@ -42,7 +49,7 @@ async def _read(f: UploadFile) -> bytes:
 # ════════════════════════════════════════════════════════
 
 @router.post("/pdf/merge")
-async def merge_pdf(files: List[UploadFile] = File(...), _: dict = Depends(require_staff)):
+async def merge_pdf(files: list[UploadFile] = File(...), _: dict = Depends(require_staff)):
     import fitz
     if len(files) < 2: raise HTTPException(400, "Need at least 2 PDFs")
     out = fitz.open()
@@ -151,7 +158,7 @@ async def page_numbers(file: UploadFile = File(...), position: str = Form("botto
     return _pdf_stream(doc, "numbered.pdf")
 
 @router.post("/pdf/images-to-pdf")
-async def images_to_pdf(files: List[UploadFile] = File(...), _: dict = Depends(require_staff)):
+async def images_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(require_staff)):
     import fitz
     from PIL import Image as PILImage
     out = fitz.open()
@@ -295,7 +302,7 @@ async def flatten_pdf(file: UploadFile = File(...), _: dict = Depends(require_st
 
 @router.post("/pdf/sign")
 async def sign_pdf(file: UploadFile = File(...), name: str = Form(""),
-    sig_image: Optional[UploadFile] = File(None),
+    sig_image: UploadFile | None = File(None),
     page: int = Form(0), x: float = Form(50), y: float = Form(700),
     width: float = Form(200), height: float = Form(60),
     _: dict = Depends(require_staff)):
@@ -391,7 +398,8 @@ async def word_to_pdf(file: UploadFile = File(...), _: dict = Depends(require_st
 
 @router.post("/convert/excel-to-pdf")
 async def excel_to_pdf(file: UploadFile = File(...), _: dict = Depends(require_staff)):
-    import fitz, openpyxl
+    import fitz
+    import openpyxl
     raw = await _read(file)
     wb = openpyxl.load_workbook(io.BytesIO(raw), data_only=True)
     # Build HTML table then convert
@@ -422,7 +430,7 @@ async def csv_to_pdf(file: UploadFile = File(...), _: dict = Depends(require_sta
     return _pdf_stream(doc, "csv_table.pdf")
 
 @router.post("/convert/jpg-to-pdf")
-async def jpg_to_pdf(files: List[UploadFile] = File(...), _: dict = Depends(require_staff)):
+async def jpg_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(require_staff)):
     import fitz
     from PIL import Image as PILImage
     out = fitz.open()
@@ -434,7 +442,7 @@ async def jpg_to_pdf(files: List[UploadFile] = File(...), _: dict = Depends(requ
     return _pdf_stream(out, "images.pdf")
 
 @router.post("/convert/html-to-pdf")
-async def html_to_pdf(file: Optional[UploadFile] = File(None),
+async def html_to_pdf(file: UploadFile | None = File(None),
     html_content: str = Form(""), _: dict = Depends(require_staff)):
     import fitz
     raw = (await _read(file)).decode('utf-8','replace') if file else html_content
@@ -444,7 +452,7 @@ async def html_to_pdf(file: Optional[UploadFile] = File(None),
     return _pdf_stream(doc, "page.pdf")
 
 @router.post("/convert/text-to-pdf")
-async def text_to_pdf(file: Optional[UploadFile]=File(None), text: str=Form(""),
+async def text_to_pdf(file: UploadFile | None=File(None), text: str=Form(""),
     font_size: int=Form(11), title: str=Form(""), _: dict = Depends(require_staff)):
     import fitz
     raw = (await _read(file)).decode('utf-8','replace') if file else text
@@ -512,7 +520,8 @@ async def flip_image(file: UploadFile = File(...), direction: str = Form("horizo
 @router.post("/image/watermark")
 async def watermark_image(file: UploadFile = File(...), text: str = Form("SAMPLE"),
     opacity: int = Form(50), color: str = Form("#ffffff"), font_size: int = Form(40), _: dict = Depends(require_staff)):
-    from PIL import Image as PILImage, ImageDraw, ImageFont
+    from PIL import Image as PILImage
+    from PIL import ImageDraw, ImageFont
     img = PILImage.open(io.BytesIO(await _read(file))).convert("RGBA")
     overlay = PILImage.new("RGBA", img.size, (0,0,0,0))
     draw = ImageDraw.Draw(overlay)
@@ -531,7 +540,8 @@ async def watermark_image(file: UploadFile = File(...), text: str = Form("SAMPLE
 
 @router.post("/image/ocr")
 async def image_ocr(file: UploadFile = File(...), _: dict = Depends(require_staff)):
-    import fitz, os
+
+    import fitz
     raw = await _read(file)
     # Try PyMuPDF's built-in OCR (uses Tesseract if available)
     try:
@@ -590,7 +600,7 @@ async def csv_to_xlsx(file: UploadFile = File(...), _: dict = Depends(require_st
 # ════════════════════════════════════════════════════════
 
 @router.post("/text/stats")
-async def text_stats(file: Optional[UploadFile]=File(None), text: str=Form(""), _: dict = Depends(require_staff)):
+async def text_stats(file: UploadFile | None=File(None), text: str=Form(""), _: dict = Depends(require_staff)):
     raw = (await _read(file)).decode('utf-8','replace') if file else text
     words = raw.split(); sentences = re.split(r'[.!?]+', raw)
     freq: dict = {}
@@ -618,7 +628,7 @@ async def compare_text(file1: UploadFile=File(...), file2: UploadFile=File(...),
             "removed": sum(1 for l in diff if l.startswith('-'))}
 
 @router.post("/text/base64-encode")
-async def base64_encode(file: Optional[UploadFile]=File(None), text: str=Form(""), _: dict = Depends(require_staff)):
+async def base64_encode(file: UploadFile | None=File(None), text: str=Form(""), _: dict = Depends(require_staff)):
     if file:
         raw = await _read(file)
         return {"encoded": base64.b64encode(raw).decode(), "original_size": len(raw)}
@@ -634,7 +644,7 @@ async def base64_decode(text: str=Form(...), _: dict = Depends(require_staff)):
         raise HTTPException(400, f"Invalid base64: {e}")
 
 @router.post("/text/json-format")
-async def json_format(file: Optional[UploadFile]=File(None), text: str=Form(""),
+async def json_format(file: UploadFile | None=File(None), text: str=Form(""),
     indent: int=Form(2), minify: bool=Form(False), _: dict = Depends(require_staff)):
     raw = (await _read(file)).decode('utf-8','replace') if file else text
     try:

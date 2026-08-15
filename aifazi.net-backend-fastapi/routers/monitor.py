@@ -13,12 +13,20 @@ Alerts are sent via the existing mail queue (Resend/Brevo/SMTP) using the
 `monitor_alert` template when a service transitions to DOWN (or is still down
 after a configurable consecutive-failure threshold).
 """
-import os, hmac, asyncio, logging, time, socket, ipaddress
-from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Request, HTTPException, Depends, Query
+import asyncio
+import hmac
+import ipaddress
+import logging
+import os
+import socket
+import time
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+
 from database import supabase
-from dependencies import get_current_user, require_staff
+from dependencies import require_staff
 
 router = APIRouter()
 logger = logging.getLogger("monitor")
@@ -264,8 +272,9 @@ async def _safe_http_get(url: str, timeout: float = 8.0, max_hops: int = 5) -> t
 
     Returns (ok, latency_ms, detail, body_text).
     """
-    import httpx
     from urllib.parse import urlparse
+
+    import httpx
     start = time.perf_counter()
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, verify=True) as client:
         current = url

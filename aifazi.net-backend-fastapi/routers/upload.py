@@ -6,12 +6,19 @@ Reads cdn_config.settings to decide where to store files:
 
 All providers save a record in the `media` table after upload.
 """
-import os, uuid, mimetypes, base64, logging
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-from database import supabase
-from dependencies import require_staff, get_current_user
-from routers.cdn_upload import get_cdn_config as _get_cdn_config, _upload_r2, _delete_r2
+import base64
+import logging
+import mimetypes
+import os
+import uuid
+
 import httpx
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+
+from database import supabase
+from dependencies import get_current_user, require_staff
+from routers.cdn_upload import _delete_r2, _upload_r2
+from routers.cdn_upload import get_cdn_config as _get_cdn_config
 
 router = APIRouter()
 
@@ -205,7 +212,8 @@ async def _upload_to_provider(content: bytes, filename: str, mimetype: str, cfg:
 
 async def _upload_cloudinary(content: bytes, filename: str, mimetype: str, cfg: dict) -> tuple[str, str]:
     """Upload via Cloudinary REST API. Returns (secure_url, public_id)."""
-    import hashlib, time
+    import hashlib
+    import time
     cloud  = cfg.get("cloudinaryCloudName", "").strip()
     key    = cfg.get("cloudinaryApiKey", "").strip()
     secret = cfg.get("cloudinaryApiSecret", "").strip()
@@ -329,7 +337,7 @@ async def _upload_bunny(content: bytes, filename: str, mimetype: str, cfg: dict)
     if not (zone and access_key):
         raise HTTPException(500, "BunnyCDN credentials not configured.")
 
-    host = f"storage.bunnycdn.com" if not region else f"{region}.storage.bunnycdn.com"
+    host = "storage.bunnycdn.com" if not region else f"{region}.storage.bunnycdn.com"
     storage_key = f"uploads/{uuid.uuid4()}_{_safe_storage_filename(filename)}"
     url = f"https://{host}/{zone}/{storage_key}"
     async with httpx.AsyncClient(timeout=30) as client:
@@ -560,7 +568,8 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
         elif provider == "cloudinary":
             # Cloudinary destroy uses the public_id (stored in storage_path) +
             # a signed request. We use the timestamp+signature approach.
-            import hashlib, time as _time
+            import hashlib
+            import time as _time
             cloud  = cfg.get("cloudinaryCloudName", "").strip()
             key    = cfg.get("cloudinaryApiKey", "").strip()
             secret = cfg.get("cloudinaryApiSecret", "").strip()

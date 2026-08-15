@@ -4,6 +4,7 @@ live bell notification (the admin header listens via Supabase Realtime).
 """
 from datetime import datetime, timezone
 
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 

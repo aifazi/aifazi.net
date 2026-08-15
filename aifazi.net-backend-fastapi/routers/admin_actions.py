@@ -1,11 +1,12 @@
 """routers/admin_actions.py — Admin collection CRUD, maintenance ops, sessions, IP bans.
 Mounted at /api/admin in main.py
 """
-from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+
 from database import supabase
-from dependencies import require_staff, require_admin
+from dependencies import require_staff
 from utils.rate_limit import invalidate_ip_bans_cache
 
 router = APIRouter()
@@ -113,7 +114,7 @@ async def clear_sessions(_: dict = Depends(require_staff)):
 
 @router.post("/actions/db/purge-unverified")
 async def purge_unverified(_: dict = Depends(require_staff)):
-    from datetime import datetime, timezone, timedelta
+    from datetime import datetime, timedelta, timezone
     cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
     res = supabase.table("users").delete().eq("email_verified", False).lt("created_at", cutoff).execute()
     deleted = len(res.data or [])
@@ -177,7 +178,7 @@ async def revoke_session(session_id: str, _: dict = Depends(require_staff)):
 # ── IP Bans ───────────────────────────────────────────────────────────────────
 class IpBanBody(BaseModel):
     ip: str
-    reason: Optional[str] = ""
+    reason: str | None = ""
 
 def _validate_ip(ip_str: str) -> bool:
     import ipaddress
@@ -207,7 +208,8 @@ async def add_ip_ban(body: IpBanBody, _: dict = Depends(require_staff)):
         invalidate_ip_bans_cache()
         return {"message": f"Banned {body.ip}", "ban": _normalize((res.data or [{}])[0])}
     except Exception as e:
-        import os, logging
+        import logging
+        import os
         logging.getLogger(__name__).error("ban_ip error: %s", e, exc_info=True)
         detail = str(e) if os.getenv("ENV", "production") != "production" else "An internal error occurred."
         raise HTTPException(status_code=500, detail=detail)

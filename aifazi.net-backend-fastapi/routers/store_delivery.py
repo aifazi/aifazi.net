@@ -1,11 +1,13 @@
 """
 routers/store_delivery.py — Delivery agent management, assignments, scanning
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
 from database import supabase
 from dependencies import get_current_user, require_staff
-from datetime import datetime, timezone
 
 router = APIRouter()
 

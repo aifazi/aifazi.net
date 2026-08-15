@@ -23,9 +23,10 @@ Security:
   Set at least one in backend .env
 """
 from __future__ import annotations
-import os
+
 import hmac
 import logging
+import os
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request
@@ -118,7 +119,7 @@ async def fivem_whitelist_approved(request: Request, body: WhitelistApprovedPayl
     fivem_license = body.license.strip()
     raw_discord   = body.discord.strip()
     # Strip "discord:" prefix so we store just the numeric ID
-    discord_id = raw_discord[8:] if raw_discord.startswith("discord:") else raw_discord
+    discord_id = raw_discord.removeprefix("discord:")
 
     if not fivem_license and not discord_id:
         raise HTTPException(422, "At least one of license or discord is required")

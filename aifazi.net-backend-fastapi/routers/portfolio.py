@@ -1,7 +1,9 @@
 """routers/portfolio.py — Projects, SkillCategories, Certifications CRUD"""
 from fastapi import APIRouter, Depends, HTTPException
+
 from database import supabase
 from dependencies import require_staff
+
 router = APIRouter()
 
 # ── Projects ────────────────────────────────────────────────────────────────────

@@ -4,7 +4,11 @@ reset_password.py — Generate a bcrypt hash for ADMIN_PASSWORD
 Run:  python reset_password.py
 Then copy the BCRYPT HASH into Render dashboard → ADMIN_PASSWORD env var.
 """
-import bcrypt, getpass, sys
+import getpass
+import sys
+
+import bcrypt
+
 
 def main():
     print("=" * 55)
@@ -29,7 +33,7 @@ def main():
     print("=" * 55)
     print("✅ Paste this into Render → Environment Variables:")
     print()
-    print(f"  Key:   ADMIN_PASSWORD")
+    print("  Key:   ADMIN_PASSWORD")
     print(f"  Value: {hashed}")
     print()
     print("Then click 'Save Changes' and redeploy (or 'Manual Deploy').")

@@ -7,14 +7,16 @@ Migrated from JWT (HS256) to PASETO v4 local (XChaCha20-Poly1305):
 - No "none" algorithm bypass
 - Random nonces prevent replay attacks
 """
-import os
 import asyncio
 import logging
+import os
 import time
-from fastapi import Depends, HTTPException, status, Request
-from permissions import resolve_staff_access, require_permission, has_permission
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from paseto_token import create_token, decode_token as _paseto_decode
+
+from fastapi import Depends, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from paseto_token import decode_token as _paseto_decode
+from permissions import has_permission, resolve_staff_access
 
 log = logging.getLogger("dependencies")
 

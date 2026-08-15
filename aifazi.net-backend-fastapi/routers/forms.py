@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from html import escape
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -58,7 +58,7 @@ class FormSubmissionBody(BaseModel):
 
 class SubmissionReviewBody(BaseModel):
     status: str
-    reviewer_note: Optional[str] = None
+    reviewer_note: str | None = None
 
 
 def _form_public(row: dict) -> dict:
@@ -233,7 +233,7 @@ def _validate_answers(form: dict, answers: dict[str, Any]) -> None:
 
 
 def _render_template(purpose: str, variables: dict[str, str], fallback_subject: str, fallback_html: str) -> tuple[str, str]:
-    from utils.email import render_template, _esc
+    from utils.email import _esc, render_template
     try:
         return render_template(purpose, variables)
     except Exception:

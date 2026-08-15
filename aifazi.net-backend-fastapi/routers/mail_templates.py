@@ -3,8 +3,10 @@ CRUD for email templates stored in mail_templates table.
 Mounted at /api/admin/mail/templates in main.py
 """
 from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
 from database import supabase
 from dependencies import require_staff
 

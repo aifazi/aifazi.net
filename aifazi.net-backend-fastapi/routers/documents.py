@@ -6,13 +6,14 @@ enforce ownership (a user can only see/manage their own documents).
 from __future__ import annotations
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 from database import supabase
 from dependencies import get_current_user
-from routers.cdn_upload import upload_media, delete_media
+from routers.cdn_upload import delete_media, upload_media
 from routers.upload import _sniff_mimetype, scan_for_malware
 
 log = logging.getLogger("documents")

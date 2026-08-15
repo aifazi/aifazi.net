@@ -17,9 +17,9 @@ on the order + transaction and surfaced in /terminal/payments.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
-import asyncio
 import random
 from datetime import datetime, timezone
 

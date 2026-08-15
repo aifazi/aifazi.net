@@ -8,7 +8,6 @@ attacker can't swap the target between validation and connect.
 """
 import ipaddress
 import socket
-from typing import Union
 
 BLOCKED_NETWORKS = [
     ipaddress.ip_network("0.0.0.0/8"),        # "this host" / unspecified
@@ -30,7 +29,7 @@ BLOCKED_NETWORKS = [
 ]
 
 
-def is_blocked_ip(ip_obj: Union[ipaddress.IPv4Address, ipaddress.IPv6Address]) -> bool:
+def is_blocked_ip(ip_obj: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     return any(ip_obj in net for net in BLOCKED_NETWORKS)
 
 

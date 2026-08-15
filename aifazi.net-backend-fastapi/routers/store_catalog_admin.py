@@ -13,8 +13,8 @@ from pydantic import BaseModel
 
 from database import supabase
 from permissions import require_any_permission
-from routers.store_ledger import log_stock_change
 from routers.store_inventory import default_location_id, set_quant
+from routers.store_ledger import log_stock_change
 
 log = logging.getLogger("store.catalog")
 router = APIRouter()

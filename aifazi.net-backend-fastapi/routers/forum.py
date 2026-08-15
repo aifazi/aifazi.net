@@ -2,15 +2,16 @@
 routers/forum.py — Threads, replies, reactions, likes, categories
 FIX #5: Added None guards in pin_thread / lock_thread before accessing thread fields.
 """
-import os
-import uuid
 import math
+import uuid
 from datetime import datetime, timezone
+
+import bcrypt as _bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from dependencies import get_current_user
+
 from database import supabase
-import bcrypt as _bcrypt
+from dependencies import get_current_user
 
 router = APIRouter()
 ACCOUNT_LOCKED_MESSAGE = "Account locked. Contact support if you believe this is a mistake."
@@ -98,7 +99,8 @@ def _category_payload(body: dict) -> dict:
 # ── Categories ──────────────────────────────────────────────────────────────────
 @router.get("/categories")
 async def get_categories():
-    from utils.cache import get as cache_get, set as cache_set
+    from utils.cache import get as cache_get
+    from utils.cache import set as cache_set
     cached = cache_get("forum_categories")
     if cached is not None:
         return cached

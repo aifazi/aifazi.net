@@ -4,10 +4,14 @@
 # H6: Constant-time comparison for the cron secret (previously used `!=`).
 # P2: Also drains the mail_queue (Hobby plan allows a single daily cron, so the
 #     daily cleanup tick doubles as the mail dispatcher).
-import os, hmac, logging
-from fastapi import APIRouter, Request, HTTPException
-from database import supabase
+import hmac
+import logging
+import os
 from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, HTTPException, Request
+
+from database import supabase
 from utils.email_queue import dispatch_pending
 
 router = APIRouter()
