@@ -6,18 +6,20 @@ from fastapi.security import HTTPAuthorizationCredentials
 
 from database import supabase
 from dependencies import CookieHTTPBearer
-from jwt_compat import JWTError, jwt
+from paseto_token import decode_token as _paseto_decode_token
 
 router = APIRouter()
 bearer = CookieHTTPBearer(auto_error=False)
-SECRET = os.getenv("PASETO_SECRET", ""); ALGO = "HS256"
 
 def get_forum_user(creds: HTTPAuthorizationCredentials | None = Depends(bearer)) -> dict:
     if not creds:
         raise HTTPException(401, "Login required")
     try:
-        return jwt.decode(creds.credentials, SECRET, algorithms=[ALGO])
-    except JWTError:
+        payload = _paseto_decode_token(creds.credentials, purpose="auth")
+        if not payload:
+            raise HTTPException(401, "Invalid token")
+        return payload
+    except Exception:
         raise HTTPException(401, "Invalid token")
 
 @router.get("")

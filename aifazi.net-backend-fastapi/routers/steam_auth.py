@@ -66,9 +66,10 @@ MOBILE_AUTH_URL = os.getenv("MOBILE_AUTH_URL", "aifazi:///oauth/callback").rstri
 STEAM_OPENID   = "https://steamcommunity.com/openid/login"
 STEAM_PROF_API = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/"
 
-JWT_SECRET = os.getenv("PASETO_SECRET", "")
-JWT_ALGO   = "HS256"
-JWT_EXPIRE = 60 * 24 * 7   # 7 days in minutes
+from paseto_token import create_token as _paseto_create_token, decode_token as _paseto_decode_token
+
+# PASETO token settings
+PASETO_EXPIRE = 60 * 24 * 7   # 7 days in minutes
 
 bearer = CookieHTTPBearer(auto_error=False)
 ACTIVE_IDENTITY_MESSAGE = "Your player identity is active. Contact an admin or open a ticket to change Discord or Steam."
@@ -87,36 +88,32 @@ def _steam64_to_hex(steam64: str) -> str | None:
 
 
 def _make_forum_token(user_id: str, username: str, role: str) -> str:
-    exp = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE)
-    return jwt.encode({"id": user_id, "username": username, "role": role, "token_type": "access", "exp": exp},
-                      JWT_SECRET, algorithm=JWT_ALGO)
+    return _paseto_create_token({"id": user_id, "username": username, "role": role, "token_type": "access"}, expires_in=PASETO_EXPIRE * 60, purpose="auth")
 
 
 def _make_forum_2fa_token(user_id: str, username: str, role: str, provider: str = "steam") -> str:
-    exp = datetime.now(timezone.utc) + timedelta(minutes=5)
-    return jwt.encode({
+    return _paseto_create_token({
         "id": user_id,
         "username": username,
         "role": role,
         "tfa_pending": True,
         "provider": provider,
-        "exp": exp,
-    }, JWT_SECRET, algorithm=JWT_ALGO)
+    }, expires_in=5 * 60, purpose="auth")
 
 
 def _make_steam_link_token(user_id: str) -> str:
-    exp = datetime.now(timezone.utc) + timedelta(minutes=10)
-    return jwt.encode({"id": user_id, "purpose": "steam_link", "exp": exp},
-                      JWT_SECRET, algorithm=JWT_ALGO)
+    return _paseto_create_token({"id": user_id, "purpose": "steam_link"}, expires_in=10 * 60, purpose="auth")
 
 
 def _decode_steam_link_token(token: str | None) -> dict | None:
     if not token:
         return None
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+        payload = _paseto_decode_token(token, purpose="auth")
+        if not payload:
+            return None
         return payload if payload.get("purpose") == "steam_link" else None
-    except JWTError:
+    except Exception:
         return None
 
 
@@ -124,8 +121,11 @@ def _get_forum_user(creds: HTTPAuthorizationCredentials | None) -> dict | None:
     if not creds:
         return None
     try:
-        return jwt.decode(creds.credentials, JWT_SECRET, algorithms=[JWT_ALGO])
-    except JWTError:
+        payload = _paseto_decode_token(creds.credentials, purpose="auth")
+        if not payload:
+            return None
+        return payload
+    except Exception:
         return None
 
 
