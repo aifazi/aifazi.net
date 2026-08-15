@@ -25,16 +25,19 @@ const api = axios.create({ baseURL: BASE, timeout: 15000 })
 // 401-refresh interceptor below and the cookie re-hydration in ForumContext.
 let _memToken: string | null = null
 
-/** Set (or clear) the in-memory access token. Replaces localStorage persistence. */
+/** Set (or clear) the in-memory access token. */
 export function setAccessToken(token: string | null) {
   _memToken = token
 }
 
-/** Remove the legacy localStorage/sessionStorage token keys after the cookie
- *  session has been proven to work. Keeps role/permission caches. */
+/** Get the current access token from memory. */
+export function getAuthToken(): string | null {
+  return _memToken
+}
+
+/** Remove the legacy localStorage/sessionStorage token keys. */
 export function clearLegacyTokens() {
   if (typeof window === 'undefined') return
-  clearAccessTokenCookie()
   localStorage.removeItem('auth_token')
   localStorage.removeItem('forum_token')
   localStorage.removeItem('admin_token')
@@ -50,8 +53,8 @@ export function clearLegacyTokens() {
 }
 
 api.interceptors.request.use((config) => {
-  const token = getAuthToken()
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  // Pure HttpOnly cookie auth - no Authorization header
+  // withCredentials: true sends HttpOnly cookies automatically
   config.withCredentials = true
   return config
 })
@@ -70,25 +73,18 @@ api.interceptors.response.use(
       !original.url?.includes('/auth/login')
     ) {
       original._retry = true
-      // #2 — refresh_token is now an HttpOnly cookie sent automatically by the browser.
-      // We no longer read it from localStorage. The POST body is empty; the backend
-      // reads the cookie from the request headers directly.
+      // Refresh uses HttpOnly cookie automatically via withCredentials
       try {
         if (!_refreshing) {
           _refreshing = axios
             .post(`${BASE}/auth/refresh`, {}, { withCredentials: true })
             .finally(() => { _refreshing = null })
         }
-        const { data } = await _refreshing
-        // H4 — keep the refreshed token in memory and readable cookie for rehydration.
-        setAccessToken(data.token)
-        setAccessTokenCookie(data.token)
-        original.headers.Authorization = `Bearer ${data.token}`
+        await _refreshing
+        // Cookies are refreshed by backend, just retry original request
         return api(original)
       } catch {
-        // Soft clear: keep the HttpOnly cookies + server session so a transient
-        // refresh failure (network blip, cross-tab rotation race) self-heals on
-        // the next hydrate instead of permanently logging the user out.
+        // Soft clear: keep HttpOnly cookies for self-healing
         clearAuthTokens({ revoke: false })
         if (!_expiredDispatched) {
           _expiredDispatched = true
@@ -158,72 +154,29 @@ export function mediaUrl(path: string): string {
   return `${process.env.NEXT_PUBLIC_API_URL || ''}${path}`
 }
 
-function decodeToken(token: string): Record<string, any> | null {
-  try { return JSON.parse(atob(token.split('.')[1])) } catch { return null }
-}
-
-const ACCESS_TOKEN_COOKIE = 'aifazi_access_token'
-
-function setAccessTokenCookie(token: string) {
-  if (typeof window === 'undefined') return
-  // Non-HttpOnly cookie for JS access — used for rehydration on page reload
-  // SameSite=lax + Secure for security; domain handled by browser
-  document.cookie = `${ACCESS_TOKEN_COOKIE}=${token}; Path=/; Secure; SameSite=Lax; Max-Age=${60 * 60 * 24}`
-}
-
-function getAccessTokenCookie(): string | null {
-  if (typeof window === 'undefined') return null
-  const match = document.cookie.match(new RegExp('(^| )' + ACCESS_TOKEN_COOKIE + '=([^;]+)'))
-  return match ? match[2] : null
-}
-
-function clearAccessTokenCookie() {
-  if (typeof window === 'undefined') return
-  document.cookie = `${ACCESS_TOKEN_COOKIE}=; Path=/; Secure; SameSite=Lax; Max-Age=0`
-}
-
-export function getAuthToken(): string | null {
-  // H4 — memory-first. Fallback to readable cookie for page-reload rehydration.
-  if (_memToken) return _memToken
-  const cookieToken = getAccessTokenCookie()
-  if (cookieToken) {
-    _memToken = cookieToken
-    return cookieToken
-  }
-  return null
-}
-
-/** @deprecated #2 — refresh_token is now an HttpOnly cookie set by the backend.
- *  Returns null — the browser sends the cookie automatically. */
-export function getRefreshToken(): string | null {
-  return null
-}
-
+/** Get role from localStorage (set by /auth/verify) */
 export function getRole(): string | null {
   if (typeof window !== 'undefined') {
-    const effective = localStorage.getItem('aifazi_effective_role')
-    if (effective) return effective
+    return localStorage.getItem('aifazi_effective_role')
   }
-  const token = getAuthToken()
-  if (!token) return null
-  return decodeToken(token)?.role || null
+  return null
 }
 
+/** Get username from localStorage (set by /auth/verify) */
 export function getUsername(): string | null {
   if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('aifazi_username')
-    if (stored) return stored
+    return localStorage.getItem('aifazi_username')
   }
-  const token = getAuthToken()
-  if (!token) return null
-  return decodeToken(token)?.username || null
+  return null
 }
 
+/** Get stored permissions from localStorage */
 export function getStoredPermissions(): Record<string, string[]> {
   if (typeof window === 'undefined') return {}
   try { return JSON.parse(localStorage.getItem('aifazi_permissions') || '{}') || {} } catch { return {} }
 }
 
+/** Store role, username, permissions from /auth/verify response */
 export function setEffectiveAccess(user: any) {
   if (typeof window === 'undefined' || !user) return
   if (user.role) localStorage.setItem('aifazi_effective_role', user.role)
@@ -231,6 +184,7 @@ export function setEffectiveAccess(user: any) {
   if (user.permissions || user.module_permissions) localStorage.setItem('aifazi_permissions', JSON.stringify(user.permissions || user.module_permissions || {}))
 }
 
+/** Check if user has permission for module/action */
 export function hasPermission(module: string, action = 'view') {
   const role = getRole()
   if (role === 'admin') return true
@@ -239,6 +193,7 @@ export function hasPermission(module: string, action = 'view') {
   return actions.has('manage') || actions.has(action)
 }
 
+/** Role check helpers */
 export function isAdmin()        { return getRole() === 'admin' }
 export function isModerator()    { return getRole() === 'moderator' }
 export function isEditor()       { return getRole() === 'editor' }
@@ -282,15 +237,6 @@ export async function ensureAdminGate(): Promise<boolean> {
 export function clearAuthTokens(opts?: { revoke?: boolean }) {
   if (typeof window === 'undefined') return
   _memToken = null
-  clearAccessTokenCookie()
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('forum_token')
-  localStorage.removeItem('admin_token')
-  localStorage.removeItem('staff_token')
-  localStorage.removeItem('refresh_token')
-  sessionStorage.removeItem('forum_token')
-  sessionStorage.removeItem('admin_token')
-  sessionStorage.removeItem('staff_token')
   localStorage.removeItem('aifazi_effective_role')
   localStorage.removeItem('aifazi_permissions')
   localStorage.removeItem('aifazi_username')
@@ -305,11 +251,7 @@ export function clearAuthTokens(opts?: { revoke?: boolean }) {
   window.dispatchEvent(new Event('auth-change'))
 }
 
-/** H4 — save the access token in memory and readable cookie for rehydration.
- *  The backend sets the HttpOnly refresh_token/auth_token cookies on login/refresh.
- *  This readable cookie allows JS rehydration on page reload without localStorage. */
+/** Save access token in memory. Backend sets HttpOnly cookies on login/refresh. */
 export function saveTokens({ token, refreshToken: _ignored }: { token?: string; refreshToken?: string }) {
   setAccessToken(token ?? null)
-  if (token) setAccessTokenCookie(token)
-  else clearAccessTokenCookie()
 }
