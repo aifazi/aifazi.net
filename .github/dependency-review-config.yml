@@ -1,0 +1,56 @@
+# Configuration for actions/dependency-review-action
+# https://github.com/actions/dependency-review-action
+
+# Fail the build if any vulnerability is found with severity >= high
+fail-on-severity: high
+
+# Allow specific licenses (SPDX identifiers)
+allow-licenses:
+  - MIT
+  - Apache-2.0
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - ISC
+  - CC0-1.0
+  - CC-BY-4.0
+  - CC-BY-SA-4.0
+  - Unlicense
+  - Zlib
+  - Python-2.0
+
+# Deny specific licenses
+deny-licenses:
+  - GPL-2.0
+  - GPL-3.0
+  - AGPL-3.0
+  - LGPL-2.0
+  - LGPL-2.1
+  - LGPL-3.0
+
+# Fail if a dependency has a vulnerability with severity >= high
+fail-on-severity: high
+
+# Configuration for npm
+npm:
+  # Ignore specific vulnerabilities (use sparingly, with justification)
+  # ignored-vulnerabilities:
+  #   - GHSA-xxxx-xxxx-xxxx: "Reason for ignoring"
+
+# Configuration for pip
+pip:
+  # Ignore specific vulnerabilities
+  # ignored-vulnerabilities:
+  #   - GHSA-xxxx-xxxx-xxxx: "Reason for ignoring"
+
+# Maximum number of vulnerabilities to report (default: 100)
+max-vulnerabilities: 50
+
+# Severity threshold for failing the build
+# Options: low, medium, high, critical
+severity-threshold: high
+
+# Allow scoped packages from specific registries
+allowed-registries:
+  - "https://registry.npmjs.org"
+  - "https://registry.yarnpkg.com"
+  - "https://pypi.org/simple"

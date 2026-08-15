@@ -1401,26 +1401,16 @@ async def tfa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get_c
     _audit(user.get("username"), "2fa_recovery_codes_rotated")
     return {"recovery_codes": codes}
 
-# ── 2FA brute-force lockout ──────────────────────────────────────────────
+# 2FA brute-force lockout (distributed via Redis, in-memory fallback)
 # The middleware rate limit keys on IP+path, so a distributed attacker can
 # rotate IPs and keep guessing forever. Add a per-account sliding counter:
 # 5 failed codes inside the window locks this account's 2FA for the rest of
 # the window (15 minutes). A successful verify clears the counter.
-_2FA_LOCKOUT_WINDOW_S = 900
-_2FA_MAX_FAILURES    = 5
-_2fa_failures: dict[str, list[float]] = {}
-
-def _2fa_locked(username: str) -> bool:
-    now = datetime.now(timezone.utc).timestamp()
-    recent = [t for t in _2fa_failures.get(username, []) if now - t < _2FA_LOCKOUT_WINDOW_S]
-    _2fa_failures[username] = recent
-    return len(recent) >= _2FA_MAX_FAILURES
-
-def _2fa_record_fail(username: str) -> None:
-    _2fa_failures.setdefault(username, []).append(datetime.now(timezone.utc).timestamp())
-
-def _2fa_clear_fails(username: str) -> None:
-    _2fa_failures.pop(username, None)
+from utils.rate_limit import (
+    _2fa_locked_redis as _2fa_locked,
+    _2fa_record_fail_redis as _2fa_record_fail,
+    _2fa_clear_fails_redis as _2fa_clear_fails,
+)
 
 
 @router.post("/2fa/verify")
@@ -1894,7 +1884,7 @@ async def change_password(body: ChangePasswordBody, creds: HTTPAuthorizationCred
         if row.data[0].get("totp_enabled") and row.data[0].get("totp_secret"):
             if not _verify_2fa_entry("user", access["staff_id"], row.data[0]["totp_secret"], body.code):
                 raise HTTPException(400, "2FA code required to change password")
-        supabase.table("users").update({"password_hash": _hash(body.new_password)}).eq("id", access["staff_id"]).execute()
+        supabase.table("users").update({"password_hash": _hash(body.new_password), "refresh_token": None, "previous_refresh_token": None}).eq("id", access["staff_id"]).execute()
         return {"message": "Password updated"}
     if not user_id:
         raise HTTPException(400, "A user account is required")
@@ -1904,7 +1894,7 @@ async def change_password(body: ChangePasswordBody, creds: HTTPAuthorizationCred
     if row.data[0].get("totp_enabled") and row.data[0].get("totp_secret"):
         if not _verify_2fa_entry("user", user_id, row.data[0]["totp_secret"], body.code):
             raise HTTPException(400, "2FA code required to change password")
-    supabase.table("users").update({"password_hash": _hash(body.new_password)}).eq("id", user_id).execute()
+    supabase.table("users").update({"password_hash": _hash(body.new_password), "refresh_token": None, "previous_refresh_token": None}).eq("id", user_id).execute()
     _record_user_activity(user_id, payload.get("username", ""), "password_change")
     return {"message": "Password updated"}
 

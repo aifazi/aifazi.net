@@ -155,9 +155,11 @@ async def github_login(dest: str = "/forum/profile", mobile: int = 0):
 
 
 @router.get("/connect-url")
-async def github_connect_url(dest: str = "/profile",
+async def github_connect_url(dest: str = "/forum/profile",
                              creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
-    """Return a GitHub OAuth URL that links GitHub to the current forum user."""
+    """Return a GitHub OAuth URL that links GitHub to the current forum user.
+    
+    Uses HMAC-signed state (like Discord/Steam) to prevent login-CSRF."""
     if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
         raise HTTPException(500, "GitHub OAuth not configured — set GITHUB_CLIENT_ID")
     payload = _get_forum_user(creds)
@@ -166,8 +168,12 @@ async def github_connect_url(dest: str = "/profile",
     if _active_identity_locked(payload["id"]):
         raise HTTPException(423, ACTIVE_IDENTITY_MESSAGE)
     link_token = _make_github_link_token(payload["id"])
-    safe_dest = _safe_relative_path(dest, default="/profile")
-    state = f"connect:{link_token}:{safe_dest}"
+    safe_dest = _safe_relative_path(dest, default="/forum/profile")
+    # Use HMAC-signed state for connect flow (includes link_token + dest)
+    signed_state = make_oauth_state("github", dest=safe_dest, mobile=False)
+    # Embed the link_token in the state's dest for the callback to extract
+    # Format: connect:<link_token>:<dest>:<signed_state>
+    state = f"connect:{link_token}:{safe_dest}:{signed_state}"
     return {"url": _github_oauth_url(state)}
 
 
@@ -184,12 +190,18 @@ async def github_callback(code: str = None, state: str = None, error: str = None
     _st = {"dest": dest, "mobile": False}
 
     if state_value.startswith("connect:"):
-        parts = state_value.split(":", 2)
-        if len(parts) != 3:
+        parts = state_value.split(":", 3)
+        if len(parts) != 4:
             return RedirectResponse(f"{front}/profile?github_error=link")
         mode = "connect"
         link_payload = _decode_github_link_token(parts[1])
         dest = _safe_relative_path(parts[2], default="/forum/profile")
+        # Verify the HMAC-signed state
+        signed_state = parts[3]
+        try:
+            verify_oauth_state_full(signed_state, "github")
+        except ValueError:
+            return RedirectResponse(f"{front}/profile?github_error=state")
         if not link_payload:
             return RedirectResponse(f"{front}/profile?github_error=link")
     else:

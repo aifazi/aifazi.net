@@ -629,18 +629,33 @@ async def resync_subscription(sub_id: str, _: dict = Depends(SETTINGS)):
 
 
 # ── Store file upload (digital product files) ──────────────────────────────────
+from routers.upload import _sniff_mimetype, ALLOWED_MIMETYPES as STAFF_ALLOWED_MIMETYPES, scan_for_malware
+
 @router.post("/files/upload")
 async def upload_store_file(file: UploadFile = File(...), _: dict = Depends(CATALOG)):
     content = await file.read()
     if len(content) > 100 * 1024 * 1024:
         raise HTTPException(413, "File exceeds 100 MB limit")
+    if not content:
+        raise HTTPException(400, "Empty file")
+
+    # H11 — magic-byte sniffing: reject files whose actual content doesn't match
+    # an allowed type, regardless of the client-supplied Content-Type header.
+    mimetype = file.content_type or "application/octet-stream"
+    sniffed = _sniff_mimetype(content, mimetype)
+    if sniffed not in STAFF_ALLOWED_MIMETYPES:
+        raise HTTPException(415, f"File type '{sniffed}' is not allowed for digital products")
+
+    # Malware scan (fail-open)
+    scan_for_malware(content, file.filename or "store_file")
+
     filename = (file.filename or "file").replace("\\", "/").rsplit("/", 1)[-1]
     filename = filename.replace("..", "").strip()[:80] or "file"
     # Digital product files are stored via the active CDN provider (R2),
     # grouped under the 'store' folder for easy management in R2.
     try:
         url, storage_path, provider = await upload_media(
-            content, filename, file.content_type or "application/octet-stream",
+            content, filename, sniffed,
             folder="store",
         )
     except Exception as exc:

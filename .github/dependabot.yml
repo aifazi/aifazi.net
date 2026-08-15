@@ -1,0 +1,131 @@
+version: 2
+updates:
+  # Frontend dependencies (Next.js, React, etc.)
+  - package-ecosystem: "npm"
+    directory: "aifazi.net-frontend-next"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "aifazi"
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "chore(frontend)"
+      prefix-development: "chore(frontend)"
+    groups:
+      react-ecosystem:
+        patterns:
+          - "react*"
+          - "@types/react*"
+          - "next*"
+          - "@next/*"
+      tailwind-ui:
+        patterns:
+          - "tailwind*"
+          - "@tailwindcss/*"
+          - "postcss*"
+          - "autoprefixer"
+      testing:
+        patterns:
+          - "jest*"
+          - "@testing-library/*"
+          - "vitest*"
+          - "playwright*"
+      linting:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint/*"
+          - "prettier*"
+          - "stylelint*"
+      build-tools:
+        patterns:
+          - "webpack*"
+          - "vite*"
+          - "turbo*"
+          - "esbuild*"
+
+  # Backend dependencies (Python)
+  - package-ecosystem: "pip"
+    directory: "aifazi.net-backend-fastapi"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "aifazi"
+    labels:
+      - "dependencies"
+      - "backend"
+    commit-message:
+      prefix: "chore(backend)"
+      prefix-development: "chore(backend)"
+    groups:
+      fastapi-ecosystem:
+        patterns:
+          - "fastapi*"
+          - "uvicorn*"
+          - "starlette*"
+          - "pydantic*"
+      database:
+        patterns:
+          - "supabase*"
+          - "psycopg*"
+          - "asyncpg*"
+          - "sqlalchemy*"
+          - "alembic*"
+      security:
+        patterns:
+          - "cryptography*"
+          - "bcrypt*"
+          - "pyjwt*"
+          - "paseto*"
+          - "cryptography*"
+      monitoring:
+        patterns:
+          - "sentry*"
+          - "prometheus*"
+          - "opentelemetry*"
+
+  # Mobile dependencies (npm via Expo)
+  - package-ecosystem: "npm"
+    directory: "apps/mobile"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "aifazi"
+    labels:
+      - "dependencies"
+      - "mobile"
+    commit-message:
+      prefix: "chore(mobile)"
+      prefix-development: "chore(mobile)"
+    groups:
+      expo-ecosystem:
+        patterns:
+          - "expo*"
+          - "@expo/*"
+          - "react-native*"
+          - "@react-native/*"
+      react-navigation:
+        patterns:
+          - "@react-navigation/*"
+          - "react-native-gesture-handler"
+          - "react-native-reanimated"
+          - "react-native-screens"
+      ui:
+        patterns:
+          - "nativewind*"
+          - "tailwindcss*"
+          - "lucide-react-native*"
+          - "@gorhom/*"

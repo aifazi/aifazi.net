@@ -27,6 +27,7 @@ import os
 import asyncio
 import logging
 import hmac
+import time
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -367,6 +368,13 @@ async def stripe_webhook(request: Request):
         event = _stripe_module().Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET).to_dict()
     except Exception as exc:
         raise HTTPException(400, f"Webhook signature verification failed: {exc}")
+
+    # Reject stale events (replay protection): Stripe includes `created` as Unix timestamp.
+    # Reject if event is older than 5 minutes (300s) to prevent replay attacks.
+    event_created = event.get("created")
+    if event_created and abs(time.time() - event_created) > 300:
+        log.warning("Rejected stale Stripe webhook event (created=%s)", event_created)
+        raise HTTPException(400, "Webhook event too old")
 
     event_type = event.get("type", "")
     data = event.get("data", {}).get("object", {})
