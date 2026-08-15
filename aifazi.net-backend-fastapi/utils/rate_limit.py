@@ -87,6 +87,9 @@ def _2fa_clear_fails_redis(username: str) -> None:
     
     # Also clear in-memory
     _2fa_failures_local.pop(username, None)
+
+
+def _get_redis():
     """Lazy-initialize Upstash Redis client."""
     global _redis_client, _redis_available
     if _redis_client is not None:
