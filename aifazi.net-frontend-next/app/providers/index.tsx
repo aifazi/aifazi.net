@@ -21,7 +21,7 @@ import { useSiteConfig } from './SiteConfigProvider'
 import { useAuth } from './AuthProvider'
 import { useTheme } from './ThemeProvider'
 import { usePathname } from 'next/navigation'
-import { useSyncExternalStore, Suspense, lazy, useCallback, useState, useEffect } from 'react'
+import { useSyncExternalStore, Suspense, lazy, useCallback, useState, useEffect, useRef } from 'react'
 
 const MaintenanceScreen = lazy(() => import('@/components/MaintenanceScreen'))
 
@@ -39,11 +39,14 @@ function ProvidersInner({ children, isStoreDomain, isFiveMDomain, serverMaintena
   const { theme } = useTheme()
 
   const [loading, setLoading] = useState(false)
+  const mountedRef = useRef(true)
 
   // Show loading screen only when this build hasn't been booted before
   useEffect(() => {
     const BUILD_ID = process.env.BUILD_ID || 'dev'
-    if (localStorage.getItem('site-loaded') !== BUILD_ID) setLoading(true)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (localStorage.getItem('site-loaded') !== BUILD_ID && mountedRef.current) setLoading(true)
+    return () => { mountedRef.current = false }
   }, [])
 
   const onLoadComplete = useCallback(() => {
