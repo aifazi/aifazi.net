@@ -7,26 +7,32 @@ import api, { getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaf
 // The dashboard shell (and all its sub-panels) only loads once staff access is verified.
 const Dashboard = dynamic(() => import('./admin/Dashboard').then(m => m.default || m), { ssr: false })
 
+// Read server-rendered user data synchronously for initial state
+function getServerUserData() {
+  if (typeof window === 'undefined') return null
+  const script = document.getElementById('admin-user-data')
+  if (!script) return null
+  try {
+    return JSON.parse(script.textContent || '{}')
+  } catch {
+    return null
+  }
+}
+
 export default function Admin() {
   const navigate  = useNavigate()
-  const [authed,   setAuthed]   = useState(false)
-  const [checking, setChecking] = useState(true)
+  const serverUser = getServerUserData()
+  const hasServerAuth = serverUser && serverUser.role && (serverUser.role !== 'user' || (serverUser.permissions && Object.keys(serverUser.permissions).length > 0))
+
+  const [authed, setAuthed] = useState(hasServerAuth)
+  const [checking, setChecking] = useState(!hasServerAuth)
 
   useEffect(() => {
-    // Read server-rendered user data from SSR
-    const script = document.getElementById('admin-user-data')
-    if (script) {
-      try {
-        const userData = JSON.parse(script.textContent || '{}')
-        if (userData.role) {
-          setEffectiveAccess(userData)
-          if (userData.role !== 'user' || hasStaffAccess()) {
-            setAuthed(true)
-            setChecking(false)
-            return
-          }
-        }
-      } catch {}
+    if (hasServerAuth) {
+      // Server already verified - hydrate localStorage from server data
+      setEffectiveAccess(serverUser)
+      setChecking(false)
+      return
     }
 
     // Fallback: verify via API if SSR data missing/invalid
