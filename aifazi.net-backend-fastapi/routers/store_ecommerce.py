@@ -36,7 +36,7 @@ from pydantic import BaseModel
 from postgrest.exceptions import APIError
 
 from database import supabase
-from dependencies import get_current_user
+from dependencies import get_current_user, bearer
 from routers.store_ledger import log_stock_change
 from routers.store_inventory import consume_stock, restock
 
