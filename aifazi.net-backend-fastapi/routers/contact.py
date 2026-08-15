@@ -1,11 +1,14 @@
 """routers/contact.py"""
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, EmailStr
+
 from database import supabase
 from dependencies import require_staff
-from utils.email import send_email, render_template, _esc
+from utils.email import _esc, render_template
 from utils.email_queue import queue_email
-from datetime import datetime, timezone
+
 router = APIRouter()
 
 class ContactBody(BaseModel):

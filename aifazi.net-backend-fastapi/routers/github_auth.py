@@ -21,8 +21,8 @@ Vercel env vars needed:
   OAuth app callback URL:  https://api.aifazi.net/api/forum/auth/github/callback
 """
 
-import os
 import logging
+import os
 import urllib.parse as _urlparse
 from datetime import datetime, timezone
 
@@ -37,25 +37,28 @@ try:
 except ImportError:
     _httpx = None
 
-from jwt_compat import JWTError
 from database import supabase
-from utils.oauth_state import make_oauth_state, verify_oauth_state_full, _safe_relative_path
-
+from jwt_compat import JWTError
 from routers.auth import (
-    make_forum_token,
-    make_forum_2fa_token,
-    _record_user_activity,
-    _get_forum_user,
+    ACTIVE_IDENTITY_MESSAGE,
+    ALGO,
+    SECRET,
+    SITE_URL,
     _active_identity_locked,
     _ensure_identity_available,
+    _find_user_by_ci,
+    _get_forum_user,
     _next_available_username,
     _normalized_email,
-    _find_user_by_ci,
-    SITE_URL,
-    SECRET,
-    ALGO,
+    _record_user_activity,
     bearer,
-    ACTIVE_IDENTITY_MESSAGE,
+    make_forum_2fa_token,
+    make_forum_token,
+)
+from utils.oauth_state import (
+    _safe_relative_path,
+    make_oauth_state,
+    verify_oauth_state_full,
 )
 
 router = APIRouter()
@@ -353,7 +356,7 @@ async def github_callback(code: str = None, state: str = None, error: str = None
 
     # 5. Redirect to frontend callback page with token
     try:
-        from routers.auth import make_refresh_token, _set_auth_cookies
+        from routers.auth import _set_auth_cookies, make_refresh_token
         refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
         try:
             supabase.table("users").update({

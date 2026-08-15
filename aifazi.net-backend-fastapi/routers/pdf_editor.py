@@ -16,9 +16,12 @@ Endpoints:
 SQL migration (run once in Supabase — only needed if you persist sessions):
   None — sessions are fully in-memory.
 """
-import io, uuid, base64, time
-from typing import Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, Request, Response
+import base64
+import io
+import time
+import uuid
+
+from fastapi import APIRouter, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 

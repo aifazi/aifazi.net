@@ -3,12 +3,13 @@ routers/blog.py — Blog posts CRUD + comments + reactions + related posts
 FIX #2: Moved /meta/categories and /admin/all ABOVE /{slug} wildcard.
 FIX #6: Pagination count now respects published filter.
 """
-import math
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+
 from database import supabase
-from dependencies import require_staff, get_current_user
-from datetime import datetime, timezone
+from dependencies import get_current_user, require_staff
 
 router = APIRouter()
 

@@ -24,21 +24,20 @@ Authenticated (JWT):
 """
 from __future__ import annotations
 
+import logging
 import os
 import secrets
-import logging
 import time
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
 from postgrest.exceptions import APIError
+from pydantic import BaseModel
 
 from database import supabase
-from dependencies import get_current_user, bearer
-from routers.store_ledger import log_stock_change
-from routers.store_inventory import consume_stock, restock
+from dependencies import bearer, get_current_user
+from routers.store_inventory import consume_stock
 
 log = logging.getLogger("store.ecommerce")
 router = APIRouter()
@@ -880,8 +879,9 @@ async def my_downloads(user: dict = Depends(get_current_user)):
 async def download_content(token: str):
     """Token-gated download. The token itself is the credential (generated on
     payment), so no auth is required — mirroring a signed delivery link."""
-    from routers.cdn_upload import generate_presigned_download_url, get_cdn_config
     from datetime import datetime, timezone
+
+    from routers.cdn_upload import generate_presigned_download_url, get_cdn_config
     
     res = supabase.table("store_downloads").select("*").eq("token", token).limit(1).execute()
     if not res.data:

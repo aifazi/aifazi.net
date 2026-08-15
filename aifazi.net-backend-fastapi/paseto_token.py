@@ -11,13 +11,12 @@ Replaces JWT with a secure, unambiguous token format.
 Format: v4.local.<encrypted_base64url>.<optional_footer>
 Requires: PyNaCl>=1.5.0 (cryptography does not ship XChaCha20-Poly1305)
 """
-import os
-import json
-import time
 import base64
 import hashlib
+import json
 import logging
-from typing import Optional
+import os
+import time
 
 import nacl.bindings
 
@@ -46,14 +45,14 @@ class XChaCha20Poly1305:
             raise ValueError(f"Key must be {KEY_SIZE} bytes, got {len(key)}")
         self._key = bytes(key)
 
-    def encrypt(self, nonce: bytes, data: bytes, aad: Optional[bytes]) -> bytes:
+    def encrypt(self, nonce: bytes, data: bytes, aad: bytes | None) -> bytes:
         if len(nonce) != NONCE_SIZE:
             raise ValueError(f"Nonce must be {NONCE_SIZE} bytes, got {len(nonce)}")
         return nacl.bindings.crypto_aead_xchacha20poly1305_ietf_encrypt(
             data, aad, nonce, self._key
         )
 
-    def decrypt(self, nonce: bytes, data: bytes, aad: Optional[bytes]) -> bytes:
+    def decrypt(self, nonce: bytes, data: bytes, aad: bytes | None) -> bytes:
         if len(nonce) != NONCE_SIZE:
             raise ValueError(f"Nonce must be {NONCE_SIZE} bytes, got {len(nonce)}")
         return nacl.bindings.crypto_aead_xchacha20poly1305_ietf_decrypt(
@@ -127,7 +126,7 @@ def create_token(payload: dict, expires_in: int = TOKEN_EXPIRY_SECONDS, purpose:
     return f"{TOKEN_HEADER_B64}.{_b64url_encode(encrypted)}"
 
 
-def decode_token(token: str, purpose: str = "auth") -> Optional[dict]:
+def decode_token(token: str, purpose: str = "auth") -> dict | None:
     """
     Decode and verify a PASETO v4 local token.
 
@@ -186,7 +185,7 @@ def verify_token_signature(token: str) -> bool:
         return False
 
 
-def decode_token_payload(token: str) -> Optional[dict]:
+def decode_token_payload(token: str) -> dict | None:
     """
     Decode a PASETO token's payload without verifying signature/encryption.
     ONLY use for trusted tokens (e.g., after verify_token_signature returns True).

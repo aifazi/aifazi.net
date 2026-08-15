@@ -5,14 +5,16 @@ Mounts: /api/pdf-editor, /api/file-tools, /api/network, /api/upload, /api/cron, 
 """
 
 def mount_dev(app):
-    from .. import pdf_editor
-    from .. import file_tools
-    from .. import network
-    from .. import upload
-    from .. import cron
-    from .. import monitor
-    from .. import webhooks
-    from .. import db_console
+    from .. import (
+        cron,
+        db_console,
+        file_tools,
+        monitor,
+        network,
+        pdf_editor,
+        upload,
+        webhooks,
+    )
 
     app.include_router(pdf_editor.router, prefix="/api/pdf-editor")
     app.include_router(file_tools.router, prefix="/api/file-tools")

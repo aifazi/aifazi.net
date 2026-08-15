@@ -5,16 +5,18 @@ Mounts: /api/forum, /api/chat, /api/helpdesk, /api/newsletter, /api/notification
 """
 
 def mount_community(app):
-    from .. import forum
-    from .. import chat
-    from .. import chat_ai
-    from .. import chat_livekit
-    from .. import chat_dm
-    from .. import chat_admin
-    from .. import chat_url_preview
-    from .. import helpdesk
-    from .. import newsletter
-    from .. import notifications
+    from .. import (
+        chat,
+        chat_admin,
+        chat_ai,
+        chat_dm,
+        chat_livekit,
+        chat_url_preview,
+        forum,
+        helpdesk,
+        newsletter,
+        notifications,
+    )
 
     app.include_router(notifications.router, prefix="/api/forum/notifications")
     app.include_router(forum.router, prefix="/api/forum")

@@ -4,19 +4,54 @@ FIX #3: Admin self-update now handles plain-text ADMIN_PASSWORD (mirrors login()
 FIX #4: Refresh token is validated against DB before issuing a new access token.
 FIX #5: bcrypt errors are no longer silently swallowed — logged and surfaced as 500.
 """
-import os, re, secrets, asyncio, bcrypt as _bcrypt, pyotp, qrcode, io, base64, hmac as _hmac, logging, urllib.parse as _urlparse
+import asyncio
+import base64
+import hmac as _hmac
+import io
+import logging
+import os
+import re
+import secrets
+import urllib.parse as _urlparse
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, File
+
+import bcrypt as _bcrypt
+import pyotp
+import qrcode
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+)
 from fastapi.responses import RedirectResponse as _Redir
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
-from jwt_compat import jwt, JWTError
+
 from database import supabase
-from dependencies import CookieHTTPBearer, get_current_user, require_admin, require_staff
-from permissions import MODULES, ACTIONS, ROLE_PERMISSION_PRESETS, normalize_permissions, role_permissions, resolve_staff_access
-from utils.audit import record as _audit, record_auth as _auth_log
+from dependencies import (
+    CookieHTTPBearer,
+    get_current_user,
+    require_admin,
+    require_staff,
+)
+from jwt_compat import JWTError, jwt
+from permissions import (
+    ACTIONS,
+    MODULES,
+    ROLE_PERMISSION_PRESETS,
+    normalize_permissions,
+    resolve_staff_access,
+    role_permissions,
+)
+from utils.audit import record as _audit
+from utils.audit import record_auth as _auth_log
 from utils.email import render_template
 from utils.email_queue import queue_email
+
 try:
     import httpx as _httpx
 except ImportError:
@@ -85,7 +120,12 @@ if os.getenv("ENV") == "production" and not os.getenv("COOKIE_DOMAIN"):
     raise RuntimeError("COOKIE_DOMAIN is required in production. Set it in Railway environment variables (e.g., .aifazi.net).")
 
 # OAuth state helper for C2 (login-CSRF / open-redirect).
-from utils.oauth_state import make_oauth_state, verify_oauth_state_full, _safe_relative_path
+from utils.oauth_state import (
+    _safe_relative_path,
+    make_oauth_state,
+    verify_oauth_state_full,
+)
+
 
 def make_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
     """Mint an ACCESS token. Carries `token_type: "access"` so it can never be
@@ -1407,9 +1447,13 @@ async def tfa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get_c
 # 5 failed codes inside the window locks this account's 2FA for the rest of
 # the window (15 minutes). A successful verify clears the counter.
 from utils.rate_limit import (
-    _2fa_locked_redis as _2fa_locked,
-    _2fa_record_fail_redis as _2fa_record_fail,
     _2fa_clear_fails_redis as _2fa_clear_fails,
+)
+from utils.rate_limit import (
+    _2fa_locked_redis as _2fa_locked,
+)
+from utils.rate_limit import (
+    _2fa_record_fail_redis as _2fa_record_fail,
 )
 
 
@@ -2009,9 +2053,7 @@ async def user_my_tickets(creds: HTTPAuthorizationCredentials | None = Depends(b
             if t_uid and t_em:
                 if t_uid == user_id and t_em == email.lower():
                     seen[t["id"]] = t
-            elif t_uid and t_uid == user_id:
-                seen[t["id"]] = t
-            elif t_em and t_em == email.lower():
+            elif t_uid and t_uid == user_id or t_em and t_em == email.lower():
                 seen[t["id"]] = t
     except Exception:
         pass
@@ -2026,9 +2068,7 @@ async def user_my_tickets(creds: HTTPAuthorizationCredentials | None = Depends(b
                 if t_uid and t_em:
                     if t_uid == user_id and t_em == email.lower():
                         seen[t["id"]] = t
-                elif t_uid and t_uid == user_id:
-                    seen[t["id"]] = t
-                elif t_em and t_em == email.lower():
+                elif t_uid and t_uid == user_id or t_em and t_em == email.lower():
                     seen[t["id"]] = t
         except Exception:
             pass

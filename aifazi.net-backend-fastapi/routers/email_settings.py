@@ -8,11 +8,16 @@ Migration (run once in Supabase SQL editor):
         VALUES ('global', '{}')
         ON CONFLICT (key) DO NOTHING;
 """
+import logging
+import socket
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
+
 from database import supabase
 from dependencies import require_staff
-import httpx, socket, logging
+
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
@@ -122,7 +127,7 @@ async def test_outgoing(body: dict, _: dict = Depends(require_staff)):
             if r.status_code == 200:
                 domains = r.json().get("data", [])
                 domain_names = [d.get("name") for d in domains] if domains else []
-                msg = f"Resend connected."
+                msg = "Resend connected."
                 if domain_names:
                     msg += f" Domains: {', '.join(domain_names)}"
                 return {"message": msg}
@@ -143,7 +148,7 @@ async def test_outgoing(body: dict, _: dict = Depends(require_staff)):
             sock = socket.create_connection((host, port), timeout=6)
             sock.close()
             return {"message": f"SMTP port {port} on {host} is reachable."}
-        except (socket.timeout, ConnectionRefusedError, OSError):
+        except (TimeoutError, ConnectionRefusedError, OSError):
             from fastapi.responses import JSONResponse
             return JSONResponse(status_code=400, content={
                 "error": "SMTP connection failed. Cloud hosts (Render, Railway, Vercel) block outbound SMTP ports 587 & 465. "
@@ -160,7 +165,7 @@ class SendTestBody(BaseModel):
 
 @router.post("/send-test")
 async def send_test(body: SendTestBody, _: dict = Depends(require_staff)):
-    from utils.email import send_email, render_template
+    from utils.email import render_template, send_email
     try:
         subject, html = render_template("mail_test", {
             "site_name": "aifazi.net",
@@ -179,7 +184,7 @@ async def send_test(body: SendTestBody, _: dict = Depends(require_staff)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(500, f"Failed to send test email: {str(e)}")
+        raise HTTPException(500, f"Failed to send test email: {e!s}")
 
 # ── Test incoming connection ───────────────────────────────────────────────────
 @router.post("/test-incoming")
@@ -197,7 +202,8 @@ async def test_incoming(body: dict, _: dict = Depends(require_staff)):
         raise HTTPException(400, "Host, username and password are required.")
 
     try:
-        import asyncio, ssl as _ssl
+        import asyncio
+        import ssl as _ssl
         ctx = _ssl.create_default_context() if encrypt in ("ssl", "starttls") else None
 
         if protocol == "imap":
@@ -235,4 +241,4 @@ async def test_incoming(body: dict, _: dict = Depends(require_staff)):
             return {"message": f"POP3 connected. {count} message(s) available."}
 
     except Exception as e:
-        raise HTTPException(400, f"Incoming connection failed: {str(e)}")
+        raise HTTPException(400, f"Incoming connection failed: {e!s}")

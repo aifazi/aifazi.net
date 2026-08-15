@@ -3,15 +3,15 @@ main.py — FastAPI application entry point
 FIX #10: Passes running event loop to scheduler so run_coroutine_threadsafe() works.
 """
 import asyncio
-import os
-import time
 import hmac
 import logging
+import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+
 import sentry_sdk
 from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, RedirectResponse
 
 load_dotenv()
 
@@ -23,7 +23,7 @@ if dsn.startswith("https://"):
     sentry_sdk.init(dsn=dsn, traces_sample_rate=0.1,
                     environment=os.getenv("ENV", "production"))
 
-from utils.rate_limit import check_rate_limit, _ip_is_banned, _refresh_ip_bans, invalidate_ip_bans_cache
+from utils.rate_limit import _ip_is_banned, _refresh_ip_bans, check_rate_limit
 from utils.request_ip import client_ip
 from utils.scheduler import scheduler, set_event_loop
 
@@ -41,8 +41,9 @@ async def lifespan(app: FastAPI):
     # or delays the health check response on Render's starter plan.
     async def _bg_migrate():
         try:
-            from utils.audit import migrate as _audit_migrate
             import logging as _logging
+
+            from utils.audit import migrate as _audit_migrate
             result = _audit_migrate()
             _logging.getLogger("main").info("audit migrate: %s", result.get("message", result))
         except Exception as _exc:
@@ -57,6 +58,7 @@ app = FastAPI(title="aifazi.net API", version="2.0.0", lifespan=lifespan,
               docs_url=None, redoc_url=None, openapi_url=None)
 
 import re
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
@@ -485,36 +487,61 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 app.add_middleware(SecurityMiddleware)
 
 from routers import (
-    auth, blog, upload, contact, content,
-    forum, notifications,
-    chat, chat_ai, chat_livekit, chat_dm, chat_url_preview, chat_admin,
-    helpdesk, newsletter, banners,
-    site_settings, email_settings, cdn_settings,
-    search, stats, audit, backup, admin_actions,
-    portfolio, seo_proxy, sitemap, cron, network, content_aggregator,
-    pdf_editor, file_tools,
-    mail_queue, mail_templates,
+    admin_actions,
+    audit,
+    auth,
+    backup,
+    banners,
+    blog,
+    cdn_settings,
+    chat,
+    chat_admin,
+    chat_ai,
+    chat_dm,
+    chat_livekit,
+    chat_url_preview,
+    contact,
+    content,
+    content_aggregator,
+    cron,
+    db_console,
+    discord_auth,
+    documents,
+    email_settings,
+    file_tools,
     fivem,
     forms,
+    forum,
+    github_auth,
+    helpdesk,
+    mail_queue,
+    mail_templates,
+    mobile_admin,
+    mobile_release,
+    monitor,
+    network,
+    newsletter,
+    notifications,
+    pdf_editor,
+    portfolio,
+    search,
+    seo_proxy,
+    site_settings,
+    sitemap,
+    stats,
+    steam_auth,
     store,
-    store_ecommerce,
     store_admin,
     store_catalog_admin,
     store_crm_admin,
-    store_marketing_admin,
-    store_inventory_admin,
-    store_terminal_admin,
     store_delivery,
-    documents,
+    store_ecommerce,
+    store_inventory_admin,
+    store_marketing_admin,
+    store_terminal_admin,
     txadmin_webhook,
+    upload,
     webhooks,
-    discord_auth,
-    steam_auth,
-    github_auth,
-    db_console,
-    monitor,
-    mobile_release,
-    mobile_admin,
 )
 
 app.include_router(auth.router,           prefix="/api/auth")
@@ -596,6 +623,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     # Record + alert via the in-project monitor (Sentry-like, deduped email)
     try:
         import traceback
+
         from routers.monitor import _record_error
         await _record_error(
             source="backend",

@@ -3,9 +3,11 @@ routers/network.py — Network utilities (Ping, Traceroute, DNS Lookup)
 Proves networking expertise via live backend tools.
 """
 import asyncio
-import socket
 import platform
-from fastapi import APIRouter, Query, HTTPException, Depends
+import socket
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+
 from dependencies import require_staff
 from utils.ssrf import resolve_public_ips
 

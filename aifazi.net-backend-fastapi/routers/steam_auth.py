@@ -28,23 +28,28 @@ Uniqueness guarantees:
   - register/discord flows are unaffected (can't register with a Steam ID)
 """
 
-import os, re
-from datetime import datetime, timezone, timedelta
+import os
+import re
 import urllib.parse as _urlparse
-from fastapi import APIRouter, HTTPException, Request, Depends
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials
 
 try:
     import httpx as _httpx
 except ImportError:
     _httpx = None
 
-from jwt_compat import jwt, JWTError
 from database import supabase
 from dependencies import CookieHTTPBearer
-from utils.audit import record as _audit
-from utils.oauth_state import make_oauth_state, verify_oauth_state_full, _safe_relative_path
+from jwt_compat import JWTError, jwt
+from utils.oauth_state import (
+    _safe_relative_path,
+    make_oauth_state,
+    verify_oauth_state_full,
+)
 
 router = APIRouter()
 
@@ -406,7 +411,7 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     # H4 — also set HttpOnly auth cookies so the session survives without
     # localStorage; the fragment token stays as a legacy fallback.
     try:
-        from routers.auth import make_refresh_token, _set_auth_cookies
+        from routers.auth import _set_auth_cookies, make_refresh_token
         refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
         try:
             supabase.table("users").update({

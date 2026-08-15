@@ -7,6 +7,7 @@ becoming full admins.
 from __future__ import annotations
 
 from typing import Any
+
 from fastapi import Depends, HTTPException
 
 STAFF_ROLES = {"admin", "moderator", "editor", "chat"}

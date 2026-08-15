@@ -14,18 +14,25 @@ Model
 Security: threads are PRIVATE — every handler resolves the thread and verifies
 the caller is one of the two parties before reading/writing anything.
 """
-import secrets
 import base64
+import json
+import secrets
 import threading
 import time
-import json
 from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+
 from database import supabase
 from dependencies import get_current_user
 from routers.chat import _EMOJI_RE
-from routers.chat_livekit import _generate_token, LIVEKIT_URL, LIVEKIT_KEY, LIVEKIT_SECRET
+from routers.chat_livekit import (
+    LIVEKIT_KEY,
+    LIVEKIT_SECRET,
+    LIVEKIT_URL,
+    _generate_token,
+)
 
 router = APIRouter()
 

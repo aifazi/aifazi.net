@@ -16,7 +16,8 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 
 from dependencies import require_staff
-from utils.cache import get as cache_get, set as cache_set
+from utils.cache import get as cache_get
+from utils.cache import set as cache_set
 from utils.github import GITHUB_REPO, TIMEOUT, asset_sha256, gh_get_json
 
 log = logging.getLogger("mobile_admin")

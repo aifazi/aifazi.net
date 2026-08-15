@@ -10,20 +10,22 @@ Now includes:
   POST   /rooms/{id}/ban       — ban a user (staff, room-level)
   DELETE /rooms/{id}/ban/{user_id} — unban a user (staff)
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
-from database import supabase
-from dependencies import require_staff, get_current_user
-from datetime import datetime, timezone
-from html import escape
-import re
-import os
 import asyncio
+import base64
+import os
+import re
 import threading
 import time
-import base64
+from datetime import datetime, timezone
+from html import escape
+
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from utils.email import send_email, render_template
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+
+from database import supabase
+from dependencies import get_current_user, require_staff
+from utils.email import render_template
 from utils.email_queue import queue_email, queue_email_bulk
 
 router = APIRouter()

@@ -1,8 +1,11 @@
 """routers/content.py — Editable content blocks for frontend"""
 from fastapi import APIRouter, Depends
+
 from database import supabase
 from dependencies import require_staff
-from utils.cache import get as cache_get, set as cache_set
+from utils.cache import get as cache_get
+from utils.cache import set as cache_set
+
 router = APIRouter()
 
 def _unwrap(val):

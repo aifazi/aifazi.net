@@ -10,17 +10,18 @@ Set in .env:
   LIVEKIT_API_SECRET   — from LiveKit Cloud dashboard
   LIVEKIT_URL          — wss://<project>.livekit.cloud
 """
-import os
-import logging
-import secrets
 import base64
 import json
+import logging
+import os
+import secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
+
+import httpx
+import jwt  # PyJWT — LiveKit access tokens are standard HS256 JWTs
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-import jwt  # PyJWT — LiveKit access tokens are standard HS256 JWTs
-import httpx
 
 
 class StoreE2EEKeyRequest(BaseModel):
@@ -30,7 +31,7 @@ class StoreE2EEKeyRequest(BaseModel):
 class EnableE2EERequest(BaseModel):
     enabled: bool
 from database import supabase
-from dependencies import get_current_user, require_staff, require_admin
+from dependencies import get_current_user, require_admin, require_staff
 from routers.chat import _ensure_room_access, _role_allowed
 
 log = logging.getLogger("chat_livekit")

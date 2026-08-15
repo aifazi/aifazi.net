@@ -4,11 +4,9 @@ utils/rate_limit.py — Distributed rate limiting using Upstash Redis.
 Provides sliding-window rate limiting that works across multiple serverless instances.
 Falls back to in-memory if Redis is not configured (for local dev).
 """
+import logging
 import os
 import time
-import logging
-from typing import Optional
-from datetime import datetime, timezone
 
 log = logging.getLogger("rate_limit")
 

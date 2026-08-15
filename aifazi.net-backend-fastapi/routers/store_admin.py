@@ -4,14 +4,12 @@ inventory, orders, invoices, quotes, sales stats). Mounted at /api/store/admin.
 """
 from __future__ import annotations
 
-import os
-import secrets
 import logging
 import random
-import uuid as _uuid
+import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from database import supabase
@@ -629,7 +627,9 @@ async def resync_subscription(sub_id: str, _: dict = Depends(SETTINGS)):
 
 
 # ── Store file upload (digital product files) ──────────────────────────────────
-from routers.upload import _sniff_mimetype, ALLOWED_MIMETYPES as STAFF_ALLOWED_MIMETYPES, scan_for_malware
+from routers.upload import ALLOWED_MIMETYPES as STAFF_ALLOWED_MIMETYPES
+from routers.upload import _sniff_mimetype, scan_for_malware
+
 
 @router.post("/files/upload")
 async def upload_store_file(file: UploadFile = File(...), _: dict = Depends(CATALOG)):

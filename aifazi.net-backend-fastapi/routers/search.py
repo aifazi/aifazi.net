@@ -1,6 +1,8 @@
 """routers/search.py — Full-text search across posts, forum threads"""
 from fastapi import APIRouter, Query
+
 from database import supabase
+
 router = APIRouter()
 
 @router.get("")

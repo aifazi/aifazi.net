@@ -13,13 +13,15 @@ re-resolve, which closes the classic DNS-rebinding TOCTOU. Every redirect hop
 is re-validated and re-pinned too. Only http/https allowed; capped response;
 hard timeout.
 """
+import asyncio
 import re
 import time
-import asyncio
-from urllib.parse import urljoin, urlparse
 from html.parser import HTMLParser
-from fastapi import APIRouter, HTTPException, Query
+from urllib.parse import urljoin, urlparse
+
 import httpx
+from fastapi import APIRouter, HTTPException, Query
+
 from routers.seo_proxy import _validate_resolved_host
 
 router = APIRouter()

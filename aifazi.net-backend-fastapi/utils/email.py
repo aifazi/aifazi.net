@@ -3,8 +3,13 @@ utils/email.py — Email sender with queue logging and template support.
 Every send attempt is recorded in mail_queue with status sent/failed.
 Templates are fetched from mail_templates by purpose key.
 """
-import httpx, logging, re, os, html as _html_mod
+import html as _html_mod
+import logging
+import re
 from datetime import datetime, timezone
+
+import httpx
+
 from database import supabase
 
 logger = logging.getLogger(__name__)
@@ -530,9 +535,10 @@ async def _send_resend(cfg, to, subject, html, text):
 
 
 async def _send_smtp(cfg, to, subject, html, text):
-    import aiosmtplib
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
+
+    import aiosmtplib
     host       = _c(cfg, "smtpHost",       "smtp_host")
     port       = int(_c(cfg, "smtpPort",   "smtp_port",      default="587"))
     username   = _c(cfg, "smtpUsername",   "smtp_username")

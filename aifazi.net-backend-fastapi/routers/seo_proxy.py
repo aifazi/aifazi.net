@@ -11,7 +11,7 @@ import socket
 from urllib.parse import urljoin, urlparse
 
 import httpx
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 router = APIRouter()
 
@@ -157,9 +157,9 @@ async def seo_proxy(url: str = Query(...)):
         except Exception as e:
             raise HTTPException(502, f"Fetch failed: {e}")
     def meta(name):
-        m = re.search(rf'<meta[^>]+(?:name|property)=["\'](?:og:)?{re.escape(name)}["\'][^>]+content=["\']([^"\']+)', content, re.I)
+        m = re.search(rf'<meta[^>]+(?:name|property)=["\'](?:og:)?{re.escape(name)}["\'][^>]+content=["\']([^"\']+)', content, re.IGNORECASE)
         return m.group(1) if m else ""
-    title = re.search(r"<title>([^<]+)</title>", content, re.I)
+    title = re.search(r"<title>([^<]+)</title>", content, re.IGNORECASE)
     return {
         "url": url,
         "title": title.group(1).strip() if title else "",

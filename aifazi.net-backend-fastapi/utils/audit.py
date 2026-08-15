@@ -32,6 +32,7 @@ the SQL below into the Supabase SQL editor manually):
     CREATE INDEX IF NOT EXISTS auth_logs_username_idx   ON auth_logs (username);
 """
 import logging
+
 from database import supabase
 
 logger = logging.getLogger("audit")

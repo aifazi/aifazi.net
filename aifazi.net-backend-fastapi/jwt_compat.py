@@ -13,16 +13,14 @@ All tokens created through this module use PASETO v4 format (v4.local.*).
 The algorithm parameter is accepted but ignored (PASETO v4 always uses XChaCha20-Poly1305).
 Requires: PyNaCl>=1.5.0 (cryptography does not ship XChaCha20-Poly1305)
 """
+import base64
+import json
+import logging
 import os
 import time
-import json
-import base64
-import hashlib
-import logging
-from typing import Optional, Union
-from datetime import datetime, timezone
+from datetime import datetime
 
-from paseto_token import _derive_key, XChaCha20Poly1305
+from paseto_token import XChaCha20Poly1305, _derive_key
 
 log = logging.getLogger("jwt_compat")
 
@@ -50,9 +48,9 @@ class _JWTCompat:
     def encode(
         self,
         payload: dict,
-        key: Union[str, bytes],
+        key: str | bytes,
         algorithm: str = "HS256",
-        headers: Optional[dict] = None,
+        headers: dict | None = None,
     ) -> str:
         """
         Create a PASETO v4 local token (ignoring algorithm parameter).
@@ -90,13 +88,13 @@ class _JWTCompat:
     def decode(
         self,
         token: str,
-        key: Union[str, bytes],
-        algorithms: Optional[list] = None,
-        options: Optional[dict] = None,
-        audience: Optional[str] = None,
-        issuer: Optional[str] = None,
-        subject: Optional[str] = None,
-        leeway: Union[int, float] = 0,
+        key: str | bytes,
+        algorithms: list | None = None,
+        options: dict | None = None,
+        audience: str | None = None,
+        issuer: str | None = None,
+        subject: str | None = None,
+        leeway: float = 0,
     ) -> dict:
         """
         Decode and verify a PASETO v4 token.
@@ -175,7 +173,7 @@ class _JWTCompat:
         return base64.urlsafe_b64decode(s)
 
     @staticmethod
-    def _resolve_key(key: Union[str, bytes]) -> bytes:
+    def _resolve_key(key: str | bytes) -> bytes:
         if isinstance(key, bytes):
             return key
         return _derive_key(key)
@@ -189,4 +187,4 @@ class _JWTCompat:
 
 jwt = _JWTCompat()
 
-__all__ = ["jwt", "JWTError", "ExpiredSignatureError"]
+__all__ = ["ExpiredSignatureError", "JWTError", "jwt"]

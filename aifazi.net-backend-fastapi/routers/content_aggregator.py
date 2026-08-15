@@ -3,13 +3,14 @@ Consolidates global site data (settings, active banners, social links)
 into a single request to reduce TTFB and frontend waterfalling.
 """
 from fastapi import APIRouter
-from database import supabase
-from routers.site_settings import get_settings
+
 from routers.banners import list_banners
+from routers.site_settings import get_settings
 
 router = APIRouter()
 
 import asyncio
+
 
 @router.get("/global")
 async def get_global_content():

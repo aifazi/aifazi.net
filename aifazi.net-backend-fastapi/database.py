@@ -2,11 +2,13 @@
 database.py — Supabase client (service role, bypasses RLS)
 All backend queries use this client; the frontend uses the anon key.
 """
-import os
 import logging
+import os
+
 import httpx
-from supabase import create_client, Client
 from dotenv import load_dotenv
+
+from supabase import Client, create_client
 
 load_dotenv()
 

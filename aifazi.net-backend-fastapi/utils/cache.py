@@ -2,7 +2,8 @@
 Each worker process maintains its own cache; invalidates after TTL or on write.
 """
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 _cache: dict[str, tuple[float, Any]] = {}
 DEFAULT_TTL = 60

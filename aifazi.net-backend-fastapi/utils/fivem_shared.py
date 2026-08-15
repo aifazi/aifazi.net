@@ -1,8 +1,8 @@
 """Shared utilities for FiveM routers — single source of truth."""
 
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Any, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from database import supabase
 
@@ -58,7 +58,7 @@ def identifier_updates(body: Any, app: dict | None = None) -> dict:
     return updates
 
 
-def parse_datetime(value: Optional[str]) -> Optional[datetime]:
+def parse_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
     text = value.strip()
@@ -119,7 +119,7 @@ def normalize_identifier_list(values: Any) -> list[str]:
     return out
 
 
-def first_identifier(ids: list[str], prefixes: tuple[str, ...]) -> Optional[str]:
+def first_identifier(ids: list[str], prefixes: tuple[str, ...]) -> str | None:
     for ident in ids:
         low = ident.lower()
         if any(low.startswith(prefix) for prefix in prefixes):
@@ -127,7 +127,7 @@ def first_identifier(ids: list[str], prefixes: tuple[str, ...]) -> Optional[str]
     return None
 
 
-def primary_ban_identifier(ids: list[str]) -> Optional[str]:
+def primary_ban_identifier(ids: list[str]) -> str | None:
     return (
         first_identifier(ids, ("license:", "license2:"))
         or first_identifier(ids, ("steam:",))
@@ -137,7 +137,7 @@ def primary_ban_identifier(ids: list[str]) -> Optional[str]:
     )
 
 
-def duration_seconds(duration: Optional[str]) -> Optional[int]:
+def duration_seconds(duration: str | None) -> int | None:
     text = (duration or "permanent").strip().lower()
     if text in {"", "permanent", "perm", "never", "custom"}:
         return None
@@ -153,7 +153,7 @@ def duration_seconds(duration: Optional[str]) -> Optional[int]:
     return mapping.get(text)
 
 
-def ban_expires_at(duration: Optional[str], expires_at: Optional[str]) -> Optional[str]:
+def ban_expires_at(duration: str | None, expires_at: str | None) -> str | None:
     parsed = parse_datetime(expires_at)
     if parsed:
         return parsed.isoformat()
@@ -163,7 +163,7 @@ def ban_expires_at(duration: Optional[str], expires_at: Optional[str]) -> Option
     return (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat()
 
 
-def ban_expire_epoch(expires_at: Optional[str]) -> int:
+def ban_expire_epoch(expires_at: str | None) -> int:
     try:
         parsed = parse_datetime(expires_at)
     except ValueError:
