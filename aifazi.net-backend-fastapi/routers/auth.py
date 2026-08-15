@@ -39,6 +39,7 @@ from dependencies import (
     require_staff,
 )
 from jwt_compat import JWTError, jwt
+from paseto_token import create_token as _paseto_create_token, decode_token as _paseto_decode_token
 from permissions import (
     ACTIONS,
     MODULES,
@@ -126,28 +127,23 @@ from utils.oauth_state import (
     verify_oauth_state_full,
 )
 
-
 def make_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
-    """Mint an ACCESS token. Carries `token_type: "access"` so it can never be
-    replayed as a refresh token (see /refresh + decode_token)."""
+    """Mint an ACCESS token (PASETO v4 local). Carries `token_type: "access"`."""
     if not SECRET:
         raise HTTPException(503, "PASETO_SECRET is not configured")
     data = payload.copy()
     data["token_type"] = "access"
-    data["exp"] = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
-    return jwt.encode(data, SECRET, algorithm=ALGO)
+    return _paseto_create_token(data, expires_in=expires_minutes * 60, purpose="auth")
 
 
 def make_refresh_token(payload: dict, expires_minutes: int = 60 * 24 * 7) -> str:
-    """Mint a REFRESH token. Distinguished from access tokens by
-    `token_type: "refresh"`; rejected by decode_token on access endpoints and
-    rotated server-side on every /refresh."""
+    """Mint a REFRESH token (PASETO v4 local). Distinguished by `token_type: "refresh"`."""
     if not SECRET:
         raise HTTPException(503, "PASETO_SECRET is not configured")
     data = payload.copy()
     data["token_type"] = "refresh"
-    data["exp"] = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
-    return jwt.encode(data, SECRET, algorithm=ALGO)
+    return _paseto_create_token(data, expires_in=expires_minutes * 60, purpose="auth")
+
 
 def make_admin_gate_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
     if not ADMIN_GATE_SECRET:
@@ -156,13 +152,23 @@ def make_admin_gate_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
         "username": payload.get("username"),
         "role": payload.get("role"),
         "purpose": "admin_gate",
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=expires_minutes),
     }
     if payload.get("id"):
         data["id"] = payload.get("id")
     if payload.get("staff_id"):
         data["staff_id"] = payload.get("staff_id")
-    return jwt.encode(data, ADMIN_GATE_SECRET, algorithm=ALGO)
+    # Use PASETO for admin gate token too (proxy.ts expects PASETO)
+    # Temporarily override SECRET for admin gate
+    import os
+    old_secret = os.environ.get("PASETO_SECRET")
+    os.environ["PASETO_SECRET"] = ADMIN_GATE_SECRET
+    try:
+        return _paseto_create_token(data, expires_in=expires_minutes * 60, purpose="admin_gate")
+    finally:
+        if old_secret is not None:
+            os.environ["PASETO_SECRET"] = old_secret
+        else:
+            os.environ.pop("PASETO_SECRET", None)
 
 def _check_admin_password(submitted: str) -> bool:
     """Admin password verification. Requires a bcrypt hash (starting with $2b$, $2a$,
@@ -458,12 +464,10 @@ def _make_qr_b64(uri: str) -> str:
 bearer = CookieHTTPBearer(auto_error=False)
 
 def make_forum_token(user_id: str, username: str, role: str) -> str:
-    exp = datetime.now(timezone.utc) + timedelta(days=7)
-    return jwt.encode({"id": user_id, "username": username, "role": role, "token_type": "access", "exp": exp}, SECRET, ALGO)
+    return _paseto_create_token({"id": user_id, "username": username, "role": role, "token_type": "access"}, expires_in=7 * 86400, purpose="auth")
 
 def make_forum_2fa_token(user_id: str, username: str, role: str, provider: str = "password") -> str:
-    exp = datetime.now(timezone.utc) + timedelta(minutes=5)
-    return jwt.encode({"id": user_id, "username": username, "role": role, "tfa_pending": True, "provider": provider, "exp": exp}, SECRET, ALGO)
+    return _paseto_create_token({"id": user_id, "username": username, "role": role, "tfa_pending": True, "provider": provider}, expires_in=5 * 60, purpose="auth")
 
 def _staff_profile_from_payload(payload: dict) -> dict:
     role = payload.get("role", "")
@@ -505,11 +509,13 @@ def _get_forum_user(creds: HTTPAuthorizationCredentials | None) -> dict | None:
     if not creds:
         return None
     try:
-        payload = jwt.decode(creds.credentials, SECRET, algorithms=[ALGO])
-        if payload.get("purpose") not in (None, "auth") or payload.get("tfa_pending"):
+        payload = _paseto_decode_token(creds.credentials, purpose="auth")
+        if not payload:
+            return None
+        if payload.get("purpose") not in ("auth",) or payload.get("tfa_pending"):
             return None
         return payload
-    except JWTError:
+    except Exception:
         return None
 
 def _is_staff_payload(payload: dict | None) -> bool:
@@ -673,15 +679,17 @@ def _send_new_device_alert(username: str, email: str, ip: str, ua: str) -> None:
 
 def _make_discord_link_token(user_id: str) -> str:
     exp = datetime.now(timezone.utc) + timedelta(minutes=10)
-    return jwt.encode({"id": user_id, "purpose": "discord_link", "exp": exp}, SECRET, ALGO)
+    return _paseto_create_token({"id": user_id, "purpose": "discord_link"}, expires_in=10 * 60, purpose="auth")
 
 def _decode_discord_link_token(token: str | None) -> dict | None:
     if not token:
         return None
     try:
-        payload = jwt.decode(token, SECRET, algorithms=[ALGO])
+        payload = _paseto_decode_token(token, purpose="auth")
+        if not payload:
+            return None
         return payload if payload.get("purpose") == "discord_link" else None
-    except JWTError:
+    except Exception:
         return None
 
 def _discord_oauth_url(state: str) -> str:
@@ -731,17 +739,10 @@ class ChangePasswordBody(BaseModel):
 
 def _set_auth_cookies(response: Response, access: str, refresh: str):
     """Set auth cookies via Set-Cookie headers.
-    auth_token: HttpOnly Secure cookie containing the JWT access token.
-      The backend reads this on every request; localStorage is kept as fallback.
+    auth_token: HttpOnly Secure cookie containing the PASETO access token.
     refresh_token: HttpOnly Secure cookie for token refresh.
     admin_session: HttpOnly signed gate token for Next.js Edge middleware.
       It carries purpose=admin_gate and is rejected by backend bearer auth.
-
-    C1 — `SameSite=lax` + `Domain=.aifazi.net` so the cookie is actually visible to
-    the Next.js middleware on aifazi.net (a different subdomain than api.aifazi.net).
-    The previous `SameSite=strict` + host-only cookie was dead-on-arrival in the
-    cross-subdomain deploy topology, leaving bearer-JWT-in-localStorage as the only
-    working auth path.
     """
     is_prod = (os.getenv("ENVIRONMENT") or os.getenv("ENV") or "production").lower() == "production"
     response.set_cookie(
@@ -756,8 +757,10 @@ def _set_auth_cookies(response: Response, access: str, refresh: str):
         domain=COOKIE_DOMAIN or None,
         max_age=60 * 60 * 24 * 7, path="/",
     )
+    # Decode PASETO access token for admin gate
+    access_payload = _paseto_decode_token(access, purpose="auth") or {}
     response.set_cookie(
-        key="admin_session", value=make_admin_gate_token(jwt.decode(access, SECRET, algorithms=[ALGO]), 60 * 24 * 7),
+        key="admin_session", value=make_admin_gate_token(access_payload, 60 * 24 * 7),
         httponly=True,
         secure=is_prod, samesite="lax",
         domain=COOKIE_DOMAIN or None,
@@ -928,10 +931,12 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
     if not token_str:
         raise HTTPException(401, "No refresh token provided")
     try:
-        payload = jwt.decode(token_str, SECRET, algorithms=[ALGO])
+        payload = _paseto_decode_token(token_str, purpose="auth")
+        if not payload:
+            raise HTTPException(401, "Invalid refresh token")
     except Exception:
         raise HTTPException(401, "Invalid refresh token")
-    if payload.get("purpose") not in (None, "auth") or payload.get("tfa_pending"):
+    if payload.get("purpose") not in ("auth",) or payload.get("tfa_pending"):
         raise HTTPException(401, "Invalid refresh token")
     # H4 — access tokens must never be replayed as refresh tokens.
     if payload.get("token_type") == "access":
@@ -993,7 +998,7 @@ async def logout(request: Request, response: Response):
     auth_header = request.headers.get("authorization", "")
     token_str = auth_header.replace("Bearer ", "", 1) if auth_header.startswith("Bearer ") else ""
     try:
-        user = jwt.decode(token_str, SECRET, algorithms=[ALGO]) if token_str else {}
+        user = _paseto_decode_token(token_str, purpose="auth") if token_str else {}
     except Exception:
         user = {}
     if user.get("id"):
@@ -1212,9 +1217,11 @@ async def update_self(body: AdminSelfUpdateBody, request: Request, user: dict = 
 
 # ── Active sessions — list, heartbeat, revoke ───────────────────────────────────
 def _session_id_from_token(token_str: str) -> str | None:
-    """Derive a stable session identifier from the JWT jti or iat+sub combo."""
+    """Derive a stable session identifier from the PASETO token."""
     try:
-        p = jwt.decode(token_str, SECRET, algorithms=[ALGO])
+        p = _paseto_decode_token(token_str, purpose="auth")
+        if not p:
+            return None
         return p.get("jti") or f"{p.get('username','?')}-{p.get('iat','?')}"
     except Exception:
         return None
@@ -1460,7 +1467,9 @@ from utils.rate_limit import (
 @router.post("/2fa/verify")
 async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response):
     try:
-        payload = jwt.decode(body.partial_token, SECRET, algorithms=[ALGO])
+        payload = _paseto_decode_token(body.partial_token, purpose="auth")
+        if not payload:
+            raise HTTPException(401, "Invalid or expired token")
     except Exception:
         raise HTTPException(401, "Invalid or expired token")
     if not payload.get("tfa_pending"):
@@ -1706,8 +1715,10 @@ async def get_current_user_profile(creds: HTTPAuthorizationCredentials | None = 
     if not creds:
         raise HTTPException(401, "Not authenticated")
     try:
-        payload = jwt.decode(creds.credentials, SECRET, algorithms=[ALGO])
-    except JWTError:
+        payload = _paseto_decode_token(creds.credentials, purpose="auth")
+        if not payload:
+            raise HTTPException(401, "Invalid or expired token")
+    except Exception:
         raise HTTPException(401, "Invalid or expired token")
     user_id = payload.get("id")
     if not user_id:
@@ -1976,8 +1987,10 @@ async def _verify_email_token(token: str):
     res = supabase.table("users").select("*").eq("verify_token", token).execute()
     if not res.data:
         try:
-            payload = jwt.decode(token, SECRET, algorithms=[ALGO])
-        except JWTError:
+            payload = _paseto_decode_token(token, purpose="email_verify")
+            if not payload:
+                raise HTTPException(400, "Invalid or expired token")
+        except Exception:
             raise HTTPException(400, "Invalid or expired token")
         if payload.get("purpose") != "email_verify":
             raise HTTPException(400, "Invalid or expired token")

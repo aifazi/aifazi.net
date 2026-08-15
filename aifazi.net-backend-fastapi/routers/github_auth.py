@@ -78,20 +78,21 @@ GITHUB_API       = "https://api.github.com"
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+from paseto_token import create_token as _paseto_create_token, decode_token as _paseto_decode_token
+
 def _make_github_link_token(user_id: str) -> str:
-    exp = datetime.now(timezone.utc).timestamp() + 10 * 60
-    from jwt_compat import jwt
-    return jwt.encode({"id": user_id, "purpose": "github_link", "exp": exp}, SECRET, algorithm=ALGO)
+    return _paseto_create_token({"id": user_id, "purpose": "github_link"}, expires_in=10 * 60, purpose="auth")
 
 
 def _decode_github_link_token(token: str | None) -> dict | None:
     if not token:
         return None
-    from jwt_compat import jwt
     try:
-        payload = jwt.decode(token, SECRET, algorithms=[ALGO])
+        payload = _paseto_decode_token(token, purpose="auth")
+        if not payload:
+            return None
         return payload if payload.get("purpose") == "github_link" else None
-    except JWTError:
+    except Exception:
         return None
 
 
