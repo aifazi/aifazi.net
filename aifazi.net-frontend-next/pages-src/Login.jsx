@@ -964,15 +964,7 @@ export default function Login() {
     const role = getRole()
     if (role) {
       go(role)
-      return
     }
-    // Cookie session path: probe /auth/me so a logged-in user isn't shown the login form.
-    api.get('/auth/me')
-      .then(r => {
-        const u = r.data?.user || r.data
-        if (u?.username) go(u?.role || '')
-      })
-      .catch(() => { /* genuinely signed out — stay on login */ })
   }, [])
 
   const switchTab = (t) => {
