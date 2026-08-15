@@ -40,6 +40,9 @@ export function clearLegacyTokens() {
   localStorage.removeItem('admin_token')
   localStorage.removeItem('staff_token')
   localStorage.removeItem('refresh_token')
+  localStorage.removeItem('aifazi_effective_role')
+  localStorage.removeItem('aifazi_permissions')
+  localStorage.removeItem('aifazi_username')
   sessionStorage.removeItem('forum_token')
   sessionStorage.removeItem('admin_token')
   sessionStorage.removeItem('staff_token')
@@ -207,6 +210,10 @@ export function getRole(): string | null {
 }
 
 export function getUsername(): string | null {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('aifazi_username')
+    if (stored) return stored
+  }
   const token = getAuthToken()
   if (!token) return null
   return decodeToken(token)?.username || null
@@ -220,6 +227,7 @@ export function getStoredPermissions(): Record<string, string[]> {
 export function setEffectiveAccess(user: any) {
   if (typeof window === 'undefined' || !user) return
   if (user.role) localStorage.setItem('aifazi_effective_role', user.role)
+  if (user.username) localStorage.setItem('aifazi_username', user.username)
   if (user.permissions || user.module_permissions) localStorage.setItem('aifazi_permissions', JSON.stringify(user.permissions || user.module_permissions || {}))
 }
 
@@ -285,6 +293,7 @@ export function clearAuthTokens(opts?: { revoke?: boolean }) {
   sessionStorage.removeItem('staff_token')
   localStorage.removeItem('aifazi_effective_role')
   localStorage.removeItem('aifazi_permissions')
+  localStorage.removeItem('aifazi_username')
   // revoke (default) also calls /auth/logout, which deletes the HttpOnly cookies
   // AND nulls the server-side refresh token. For a failed background refresh this
   // is destructive: a transient failure (network blip, cross-tab rotation race)
