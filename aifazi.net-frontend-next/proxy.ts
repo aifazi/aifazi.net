@@ -475,7 +475,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // ── 5. Internal token injection + cookie forwarding ─────────────────────────
+  // ── 5. Internal token injection + cookie + auth header forwarding ──────────────
   const { headers, nonce } = secureRequest(request)
   if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
     headers.set('X-Internal-Token', INTERNAL_API_SECRET)
@@ -485,6 +485,11 @@ export async function proxy(request: NextRequest) {
     const cookieHeader = request.headers.get('cookie')
     if (cookieHeader) {
       headers.set('cookie', cookieHeader)
+    }
+    // Explicitly forward Authorization header (may not be preserved by NextResponse.next)
+    const authHeader = request.headers.get('authorization')
+    if (authHeader) {
+      headers.set('authorization', authHeader)
     }
   }
 
