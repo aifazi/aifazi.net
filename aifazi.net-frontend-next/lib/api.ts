@@ -34,6 +34,7 @@ export function setAccessToken(token: string | null) {
  *  session has been proven to work. Keeps role/permission caches. */
 export function clearLegacyTokens() {
   if (typeof window === 'undefined') return
+  clearAccessTokenCookie()
   localStorage.removeItem('auth_token')
   localStorage.removeItem('forum_token')
   localStorage.removeItem('admin_token')
@@ -76,8 +77,9 @@ api.interceptors.response.use(
             .finally(() => { _refreshing = null })
         }
         const { data } = await _refreshing
-        // H4 — keep the refreshed token in memory only (never localStorage).
+        // H4 — keep the refreshed token in memory and readable cookie for rehydration.
         setAccessToken(data.token)
+        setAccessTokenCookie(data.token)
         original.headers.Authorization = `Bearer ${data.token}`
         return api(original)
       } catch {
@@ -157,11 +159,35 @@ function decodeToken(token: string): Record<string, any> | null {
   try { return JSON.parse(atob(token.split('.')[1])) } catch { return null }
 }
 
+const ACCESS_TOKEN_COOKIE = 'aifazi_access_token'
+
+function setAccessTokenCookie(token: string) {
+  if (typeof window === 'undefined') return
+  // Non-HttpOnly cookie for JS access — used for rehydration on page reload
+  // SameSite=lax + Secure for security; domain handled by browser
+  document.cookie = `${ACCESS_TOKEN_COOKIE}=${token}; Path=/; Secure; SameSite=Lax; Max-Age=${60 * 60 * 24}`
+}
+
+function getAccessTokenCookie(): string | null {
+  if (typeof window === 'undefined') return null
+  const match = document.cookie.match(new RegExp('(^| )' + ACCESS_TOKEN_COOKIE + '=([^;]+)'))
+  return match ? match[2] : null
+}
+
+function clearAccessTokenCookie() {
+  if (typeof window === 'undefined') return
+  document.cookie = `${ACCESS_TOKEN_COOKIE}=; Path=/; Secure; SameSite=Lax; Max-Age=0`
+}
+
 export function getAuthToken(): string | null {
-  // H4 — memory-only. No localStorage/sessionStorage reads. Session persistence
-  // across reloads is handled by the HttpOnly refresh_token cookie via the
-  // 401-refresh interceptor and ForumContext cookie re-hydration.
-  return _memToken
+  // H4 — memory-first. Fallback to readable cookie for page-reload rehydration.
+  if (_memToken) return _memToken
+  const cookieToken = getAccessTokenCookie()
+  if (cookieToken) {
+    _memToken = cookieToken
+    return cookieToken
+  }
+  return null
 }
 
 /** @deprecated #2 — refresh_token is now an HttpOnly cookie set by the backend.
@@ -248,6 +274,7 @@ export async function ensureAdminGate(): Promise<boolean> {
 export function clearAuthTokens(opts?: { revoke?: boolean }) {
   if (typeof window === 'undefined') return
   _memToken = null
+  clearAccessTokenCookie()
   localStorage.removeItem('auth_token')
   localStorage.removeItem('forum_token')
   localStorage.removeItem('admin_token')
@@ -269,9 +296,11 @@ export function clearAuthTokens(opts?: { revoke?: boolean }) {
   window.dispatchEvent(new Event('auth-change'))
 }
 
-/** H4 — save the access token in memory only. The backend sets the HttpOnly
- *  refresh_token/auth_token cookies on login/refresh, so nothing sensitive is
- *  written to localStorage. The refreshToken parameter is intentionally ignored. */
+/** H4 — save the access token in memory and readable cookie for rehydration.
+ *  The backend sets the HttpOnly refresh_token/auth_token cookies on login/refresh.
+ *  This readable cookie allows JS rehydration on page reload without localStorage. */
 export function saveTokens({ token, refreshToken: _ignored }: { token?: string; refreshToken?: string }) {
   setAccessToken(token ?? null)
+  if (token) setAccessTokenCookie(token)
+  else clearAccessTokenCookie()
 }

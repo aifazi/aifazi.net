@@ -12,4 +12,4 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import the FastAPI app (not socket_app — WebSockets don't work serverless)
-from main import app  # noqa: F401  — Vercel picks this up automatically
+from main import app

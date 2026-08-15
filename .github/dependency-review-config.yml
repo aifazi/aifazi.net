@@ -1,7 +1,7 @@
 # Configuration for actions/dependency-review-action
 # https://github.com/actions/dependency-review-action
 
-# Fail the build if any vulnerability is found with severity >= high
+# Fail if a dependency has a vulnerability with severity >= high
 fail-on-severity: high
 
 # Allow specific licenses (SPDX identifiers)
@@ -26,9 +26,6 @@ deny-licenses:
   - LGPL-2.0
   - LGPL-2.1
   - LGPL-3.0
-
-# Fail if a dependency has a vulnerability with severity >= high
-fail-on-severity: high
 
 # Configuration for npm
 npm:

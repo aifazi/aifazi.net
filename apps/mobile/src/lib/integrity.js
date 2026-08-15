@@ -6,7 +6,7 @@
  */
 
 import { Platform } from 'react-native';
-import * as Application from 'expo-application';
+import { applicationId, version, buildVersion, getAndroidId, getIosIdForVendorAsync } from 'expo-application';
 import * as Crypto from 'expo-crypto';
 
 const INTEGRITY_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -98,11 +98,11 @@ async function verifyAppSignature() {
   try {
     if (Platform.OS === 'ios') {
       // iOS: Check provisioning profile
-      const bundleId = Application.nativeApplicationId;
+      const bundleId = applicationId;
       // In production, verify against known bundle IDs
     } else if (Platform.OS === 'android') {
       // Android: Check signing certificate
-      const appSignature = await Application.getAndroidId();
+      const appSignature = await getAndroidId();
       // Verify against known certificate fingerprint
     }
     return true;
@@ -156,15 +156,15 @@ async function performIntegrityCheck() {
  */
 async function reportTampering(reason) {
   try {
-    const deviceId = await Application.getIosIdForVendorAsync() || 
-                     await Application.getAndroidId();
+    const deviceId = await getIosIdForVendorAsync() || 
+                     await getAndroidId();
     
     const report = {
       device_id: deviceId,
       reason,
       timestamp: Date.now(),
-      app_version: Application.nativeApplicationVersion,
-      build_version: Application.nativeBuildVersion,
+      app_version: version,
+      build_version: buildVersion,
       platform: Platform.OS,
     };
 
