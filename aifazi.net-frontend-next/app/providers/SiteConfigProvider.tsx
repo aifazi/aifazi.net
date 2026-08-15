@@ -25,6 +25,7 @@ interface SiteConfigProviderProps {
 export function SiteConfigProvider({ children }: SiteConfigProviderProps) {
   const [siteConfig, setSiteConfig] = useState<Record<string, any>>({ maintenanceMode: false, animationPreset: 'smooth', loadingScreenStyle: 'terminal' })
   const [siteConfigReady, setSiteConfigReady] = useState(false)
+  const mountedRef = useRef(true)
 
   const refreshSiteConfig = useCallback(async () => {
     try {
@@ -113,7 +114,8 @@ export function SiteConfigProvider({ children }: SiteConfigProviderProps) {
         const parsed = JSON.parse(el.textContent)
         const keys = Object.keys(parsed)
         const isCorrupted = keys.length > 0 && keys.slice(0, 5).every((k) => /^\d+$/.test(k))
-        if (!isCorrupted && keys.length > 0) {
+        if (!isCorrupted && keys.length > 0 && mountedRef.current) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setSiteConfig((prev) => ({ ...prev, ...parsed }))
           cachedConfig = parsed
           setSiteConfigReady(true)
@@ -127,7 +129,8 @@ export function SiteConfigProvider({ children }: SiteConfigProviderProps) {
           const parsed = JSON.parse(cached)
           const keys = Object.keys(parsed)
           const isCorrupted = keys.length > 0 && keys.slice(0, 5).every((k) => /^\d+$/.test(k))
-          if (!isCorrupted) {
+          if (!isCorrupted && mountedRef.current) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSiteConfig((prev) => ({ ...prev, ...parsed }))
             cachedConfig = parsed
             setSiteConfigReady(true)
@@ -135,6 +138,7 @@ export function SiteConfigProvider({ children }: SiteConfigProviderProps) {
         }
       } catch {}
     }
+    return () => { mountedRef.current = false }
   }, [])
 
   return (
