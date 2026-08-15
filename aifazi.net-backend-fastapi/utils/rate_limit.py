@@ -26,6 +26,10 @@ _2FA_LOCKOUT_WINDOW_S = 900
 _2FA_MAX_FAILURES = 5
 _2fa_failures_local: dict[str, list[float]] = {}
 
+# Redis client (lazy initialization)
+_redis_client = None
+_redis_available = False
+
 
 def _2fa_redis_key(username: str) -> str:
     return f"2fa:lockout:{username.lower()}"
