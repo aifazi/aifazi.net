@@ -304,13 +304,13 @@ function withCors(response: NextResponse, origin: string): NextResponse {
   // served to store.aifazi.net (CORS cache poisoning).
   // Always emit, because even a non-allowed origin produced one of two outcomes.
   response.headers.append('Vary', 'Origin')
-  if (allow) {
-    response.headers.set('Access-Control-Allow-Origin', origin)
-    response.headers.set('Access-Control-Allow-Credentials', 'true')
-    response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type,Authorization,RSC,Next-Router-State-Tree,Next-Url,Next-Router-Prefetch')
-    response.headers.set('Access-Control-Expose-Headers', 'RSC,Next-Router-State-Tree,Next-Url,Next-Router-Prefetch')
-  }
+if (allow) {
+      response.headers.set('Access-Control-Allow-Origin', origin)
+      response.headers.set('Access-Control-Allow-Credentials', 'true')
+      response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type,Authorization,RSC,Next-Router-State-Tree,Next-Url,Next-Router-Prefetch,Next-Router-Segment-Prefetch')
+      response.headers.set('Access-Control-Expose-Headers', 'RSC,Next-Router-State-Tree,Next-Url,Next-Router-Prefetch,Next-Router-Segment-Prefetch')
+    }
   return response
 }
 

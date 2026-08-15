@@ -961,9 +961,12 @@ export default function Login() {
       }
     }
     // Fast path: role from localStorage (set by /auth/verify on previous visits).
-    const role = getRole()
-    if (role) {
-      go(role)
+    // Only runs on client — avoids hydration mismatch (React #418).
+    if (typeof window !== 'undefined') {
+      const role = getRole()
+      if (role) {
+        go(role)
+      }
     }
   }, [])
 
