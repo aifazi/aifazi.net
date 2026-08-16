@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from database import supabase
 from dependencies import get_current_user
+from utils.link_safety import schedule_scan
 
 router = APIRouter()
 ACCOUNT_LOCKED_MESSAGE = "Account locked. Contact support if you believe this is a mistake."
@@ -305,6 +306,7 @@ async def create_thread(body: ThreadBody, user: dict = Depends(require_forum_use
     c = supabase.table("forum_categories").select("thread_count").eq("id", body.category_id).single().execute()
     if c.data:
         supabase.table("forum_categories").update({"thread_count": (c.data["thread_count"] or 0)+1}).eq("id", body.category_id).execute()
+    schedule_scan(f"{body.title} {body.content}")
     return res.data[0]
 
 @router.put("/threads/{thread_id}")
@@ -405,6 +407,7 @@ async def create_reply(thread_id: str, body: ReplyBody, user: dict = Depends(req
     u = supabase.table("users").select("reply_count").eq("id", uid).execute()
     if u.data:
         supabase.table("users").update({"reply_count": (u.data[0]["reply_count"] or 0)+1}).eq("id", uid).execute()
+    schedule_scan(body.content)
     return res.data[0]
 
 class ReplyBodyAlias(ReplyBody):

@@ -23,6 +23,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Query
 
 from routers.seo_proxy import _validate_resolved_host
+from utils.link_safety import check_link_safety
 
 router = APIRouter()
 
@@ -194,6 +195,7 @@ async def link_preview(url: str = Query(..., min_length=8, max_length=2048)):
         text = ""
 
     data = _extract_meta(text, url)
+    data["safety"] = await check_link_safety(url)
     async with _lock:
         _preview_cache[url] = (time.time(), data)
     return data

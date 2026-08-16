@@ -27,6 +27,7 @@ from database import supabase
 from dependencies import get_current_user, require_staff
 from utils.email import render_template
 from utils.email_queue import queue_email, queue_email_bulk
+from utils.link_safety import schedule_scan
 
 router = APIRouter()
 
@@ -800,6 +801,7 @@ async def send_message(
     }).execute()
     _invalidate_history(room_id)
     await _queue_chat_message_notifications(room, room_id, user, content)
+    schedule_scan(content)
     return res.data[0]
 
 @router.patch("/messages/{msg_id}")

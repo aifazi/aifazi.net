@@ -33,6 +33,7 @@ from routers.chat_livekit import (
     LIVEKIT_URL,
     _generate_token,
 )
+from utils.link_safety import schedule_scan
 
 router = APIRouter()
 
@@ -613,6 +614,7 @@ async def send_dm_message(thread_id: str, body: DMMessageBody, user: dict = Depe
     )
     _bump_thread(thread_id)
     _touch_read(thread_id, user["username"])
+    schedule_scan(content)
     return row.data[0]
 
 
