@@ -6,7 +6,7 @@
  * ║  Imperative:  notify.success('Done!')                       ║
  * ╚══════════════════════════════════════════════════════════════╝
  */
-import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react'
+import { useState, useEffect, useCallback, useRef, createContext, useContext, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { t, VARIANTS, zIndex } from './tokens'
 
@@ -18,8 +18,7 @@ import { t, VARIANTS, zIndex } from './tokens'
  * toasts pinned to the real viewport on every route.
  */
 function FixedHost({ children, style }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
   if (!mounted) return null
   return createPortal(
     <div aria-live="polite" aria-label="Notifications" style={style}>{children}</div>,

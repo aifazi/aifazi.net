@@ -1,21 +1,42 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
+
+const reducedMotionQuery = () =>
+  typeof window === 'undefined' ? null : window.matchMedia('(prefers-reduced-motion: reduce)')
+const coarsePointerQuery = () =>
+  typeof window === 'undefined' ? null : window.matchMedia('(hover: none)')
+
+// Hydration-safe: the server snapshot is always false so server and client
+// first render both return null. After hydration the client snapshot enables
+// the cursor only when the environment actually has a fine pointer, without
+// calling setState inside an effect.
+function subscribeCursorEnabled(cb) {
+  const rm = reducedMotionQuery()
+  const cp = coarsePointerQuery()
+  if (!rm || !cp) return () => {}
+  rm.addEventListener('change', cb)
+  cp.addEventListener('change', cb)
+  return () => {
+    rm.removeEventListener('change', cb)
+    cp.removeEventListener('change', cb)
+  }
+}
+
+function getCursorEnabled() {
+  const rm = reducedMotionQuery()
+  const cp = coarsePointerQuery()
+  if (!rm || !cp) return false
+  return !rm.matches && !cp.matches
+}
+
+const getServerCursorEnabled = () => false
 
 export default function Cursor() {
   const dotRef  = useRef()
   const ringRef = useRef()
-  const hidden  = useRef(false)
-  // Hydration-safe: start hidden on both server and client, then enable inside
-  // the effect below once matchMedia can be queried. An initializer that reads
-  // window would render different trees on server vs client and break hydration.
-  const [show, setShow] = useState(false)
+  const show    = useSyncExternalStore(subscribeCursorEnabled, getCursorEnabled, getServerCursorEnabled)
 
   useEffect(() => {
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const isTouch        = window.matchMedia('(hover: none)').matches
-    if (prefersReduced || isTouch) return
-    setShow(true)
-
     const pos   = { x: -200, y: -200 }
     const ring  = { x: -200, y: -200 }
     const vel   = { x: 0, y: 0 }

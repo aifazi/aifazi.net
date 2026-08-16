@@ -32,9 +32,9 @@ export default function Admin({ serverUser: serverUserProp }) {
 
   useEffect(() => {
     if (hasServerAuth) {
-      // Server already verified - hydrate localStorage from server data
+      // Server already verified - hydrate localStorage from server data.
+      // `checking` already starts false when hasServerAuth, so no setState here.
       setEffectiveAccess(serverUser)
-      setChecking(false)
       return
     }
 
