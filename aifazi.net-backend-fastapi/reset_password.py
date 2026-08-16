@@ -2,7 +2,7 @@
 """
 reset_password.py — Generate a bcrypt hash for ADMIN_PASSWORD
 Run:  python reset_password.py
-Then copy the BCRYPT HASH into Render dashboard → ADMIN_PASSWORD env var.
+Then copy the BCRYPT HASH into the Railway service's ADMIN_PASSWORD env var.
 """
 import getpass
 import sys
