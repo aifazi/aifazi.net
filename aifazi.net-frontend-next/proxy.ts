@@ -57,6 +57,8 @@ const PASETO_HEADER_B64 = 'eyJ2IjoidjQiLCJ0IjoibG9jYWwifQ'
 // using Python's default separators (", ", ": "), which inserts spaces and yields
 // a DIFFERENT base64 header than the compact form above. Accept both so tokens
 // minted by the backend verify regardless of which format the backend emits.
+// (ADMIN_GATE_SECRET must match the backend's value exactly — it is verified on
+// this header, not via any fallback chain.)
 const PASETO_HEADER_B64_PY = 'eyJ2IjogInY0IiwgInQiOiAibG9jYWwifQ'
 
 function isPasetoToken(token: string): boolean {
