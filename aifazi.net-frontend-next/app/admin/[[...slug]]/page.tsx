@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { revalidatePath } from 'next/cache'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.aifazi.net'
 
@@ -51,8 +50,8 @@ export default async function AdminPage({ params }: { params: Promise<{ slug?: s
     redirect(loginUrl.toString())
   }
 
-  // Revalidate on session changes
-  revalidatePath('/admin', 'layout')
+  // Page is always dynamic (cookies/headers/fetch no-store), so no
+  // revalidatePath here — calling it during render throws.
 
   // Server-side render the admin shell - client component for interactivity
   const AdminClient = (await import('@/pages-src/Admin')).default
