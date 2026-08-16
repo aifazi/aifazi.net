@@ -7,7 +7,10 @@ import api, { getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaf
 // The dashboard shell (and all its sub-panels) only loads once staff access is verified.
 const Dashboard = dynamic(() => import('./admin/Dashboard').then(m => m.default || m), { ssr: false })
 
-// Read server-rendered user data synchronously for initial state
+// Read server-rendered user data synchronously for initial state. Only used as
+// a fallback — AdminPage passes `serverUser` as a prop so the server render and
+// client hydration compute the SAME initial state (reading the DOM here returns
+// null on the server, which caused a guaranteed hydration mismatch / React #441).
 function getServerUserData() {
   if (typeof window === 'undefined') return null
   const script = document.getElementById('admin-user-data')
@@ -19,9 +22,9 @@ function getServerUserData() {
   }
 }
 
-export default function Admin() {
+export default function Admin({ serverUser: serverUserProp }) {
   const navigate  = useNavigate()
-  const serverUser = getServerUserData()
+  const serverUser = serverUserProp || getServerUserData()
   const hasServerAuth = serverUser && serverUser.role && (serverUser.role !== 'user' || (serverUser.permissions && Object.keys(serverUser.permissions).length > 0))
 
   const [authed, setAuthed] = useState(hasServerAuth)
