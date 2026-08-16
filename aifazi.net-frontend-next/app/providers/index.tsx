@@ -133,7 +133,7 @@ function ProvidersInner({ children, isStoreDomain, isFiveMDomain, serverMaintena
         {!isFullScreen && <FunDragLayer enabled={siteConfig.funDragEnabled !== false} />}
         {children}
         {!isFullScreen && <Footer />}
-        {!isFullScreen && <FloatingNav />}
+        {!pathname.startsWith('/admin') && <FloatingNav />}
         {!isFullScreen && siteConfigReady && siteConfig?.showRoamingRobot !== false && (
           <Suspense fallback={null}><RoamingRobot /></Suspense>
         )}

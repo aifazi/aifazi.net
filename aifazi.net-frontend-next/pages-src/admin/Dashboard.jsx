@@ -26,6 +26,8 @@ const ThemeHub = dynamic(() => import('./ThemeHub').then(m => m.default || m), {
 const NewsletterPanel = dynamic(() => import('./AdminPanels').then(m => m.NewsletterPanel), { ssr: false })
 const StatsPanel = dynamic(() => import('./AdminPanels').then(m => m.StatsPanel), { ssr: false })
 const PageContentPanel = dynamic(() => import('./AdminPanels').then(m => m.PageContentPanel), { ssr: false })
+const ContentManager = dynamic(() => import('./ContentManager').then(m => m.default || m), { ssr: false })
+const PageBuilder = dynamic(() => import('./PageBuilder').then(m => m.default || m), { ssr: false })
 const HelpDeskPanel = dynamic(() => import('./HelpDeskPanel').then(m => m.default || m), { ssr: false })
 const Changelog = dynamic(() => import('./Changelog').then(m => m.default || m), { ssr: false })
 const FiveMPanel = dynamic(() => import('./FiveMPanel').then(m => m.default || m), { ssr: false })
@@ -83,6 +85,8 @@ const PRESET_PERMISSIONS = {
 }
 const NAV_PERMISSION = {
   home:'home', posts:'content.posts', editor:'content.editor', media:'content.media', pages:'content.pages', themes:'content.themes',
+  'content-blocks':'content.pages',
+  'page-builder':'content.pages',
   content:['content.posts', 'content.editor', 'community.forum'], communications:['community.contacts', 'community.newsletter'],
   contacts:'community.contacts', staff:'community.staff', forum:'community.forum', chat:'community.chat', newsletter:'community.newsletter',
   'chat-admin':'community.chat',
@@ -449,6 +453,8 @@ function Dashboard({ onLogout }) {
     { key: 'content',      label: 'Content Hub',   group: 'CONTENT',    icon: '📝',   badge: null, aliases: ['posts', 'editor', 'forum'] },
     { key: 'media',        label: 'Media',         group: 'CONTENT',    icon: '🖼️',  badge: null },
     { key: 'pages',        label: 'Pages',         group: 'CONTENT',    icon: '🧩',  badge: null },
+    { key: 'content-blocks', label: 'Content Blocks', group: 'CONTENT', icon: '🧱', badge: null },
+    { key: 'page-builder', label: 'Page Builder', group: 'CONTENT', icon: '📐', badge: null },
     { key: 'themes',       label: 'Theme Library', group: 'CONTENT',    icon: '🎨',    badge: null },
     { key: 'communications', label: 'Communications', group: 'COMMUNITY', icon: '📧',  badge: null, aliases: ['contacts', 'newsletter'] },
     { key: 'staff',        label: 'Staff',         group: 'COMMUNITY',  icon: '👥',  badge: null },
@@ -823,6 +829,8 @@ function Dashboard({ onLogout }) {
             </div>
           )}
           {view === 'pages' && adminUser && <PanelErrorBoundary label="Pages"><PageContentPanel /></PanelErrorBoundary>}
+          {view === 'content-blocks' && adminUser && <PanelErrorBoundary label="Content Blocks"><ContentManager /></PanelErrorBoundary>}
+          {view === 'page-builder' && adminUser && <PanelErrorBoundary label="Page Builder"><PageBuilder /></PanelErrorBoundary>}
 
           {/* CONTACTS */}
           {(view === 'communications' || view === 'contacts') && (
