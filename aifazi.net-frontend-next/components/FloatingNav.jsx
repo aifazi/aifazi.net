@@ -51,9 +51,10 @@ export default function FloatingNav() {
   const isFullScreen = /^\/(admin|chat|users\/chat)/.test(location.pathname)
 
   const [hoveredIdx, setHoveredIdx] = useState(-1)
-  const [visible, setVisible]       = useState(() =>
-    typeof window === 'undefined' ? false : (!isFullScreen && window.scrollY > 200)
-  )
+  // Hydration-safe: start hidden on both server and client; the scroll effect
+  // below syncs the real value immediately after mount. Reading window.scrollY
+  // here would render different trees on server vs client and break hydration.
+  const [visible, setVisible]       = useState(false)
   const [expanded, setExpanded]     = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
 
@@ -81,10 +82,11 @@ export default function FloatingNav() {
   }
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 200)
+    const onScroll = () => setVisible(!isFullScreen && window.scrollY > 200)
+    onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  }, [isFullScreen])
 
   useEffect(() => {
     if (!expanded) return

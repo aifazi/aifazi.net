@@ -5,17 +5,16 @@ export default function Cursor() {
   const dotRef  = useRef()
   const ringRef = useRef()
   const hidden  = useRef(false)
-  const [show] = useState(() => {
-    if (typeof window === 'undefined') return false
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const isTouch        = window.matchMedia('(hover: none)').matches
-    return !(prefersReduced || isTouch)
-  })
+  // Hydration-safe: start hidden on both server and client, then enable inside
+  // the effect below once matchMedia can be queried. An initializer that reads
+  // window would render different trees on server vs client and break hydration.
+  const [show, setShow] = useState(false)
 
   useEffect(() => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const isTouch        = window.matchMedia('(hover: none)').matches
     if (prefersReduced || isTouch) return
+    setShow(true)
 
     const pos   = { x: -200, y: -200 }
     const ring  = { x: -200, y: -200 }

@@ -18,7 +18,9 @@ import { t, VARIANTS, zIndex } from './tokens'
  * toasts pinned to the real viewport on every route.
  */
 function FixedHost({ children, style }) {
-  if (typeof document === 'undefined') return null
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  if (!mounted) return null
   return createPortal(
     <div aria-live="polite" aria-label="Notifications" style={style}>{children}</div>,
     document.body,
