@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from database import supabase
 from dependencies import get_current_user, require_staff
+from utils.link_safety import schedule_scan
 
 router = APIRouter()
 
@@ -109,6 +110,7 @@ async def create_comment(post_id_or_slug: str, body: CommentBody, user: dict = D
         "content": body.content.strip(),
         "created_at": now,
     }).execute()
+    schedule_scan(body.content.strip())
     row = res.data[0]
     return {
         "_id": row["id"], "id": row["id"],
@@ -243,6 +245,7 @@ async def create_post(body: PostBody, user: dict = Depends(require_staff)):
         **body.model_dump(),
         "created_at": now, "updated_at": now,
     }).execute()
+    schedule_scan(f"{body.title} {body.content}")
     return res.data[0]
 
 # ── Update post ─────────────────────────────────────────────────────────────────

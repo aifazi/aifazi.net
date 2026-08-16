@@ -8,6 +8,7 @@ from database import supabase
 from dependencies import require_staff
 from utils.email import _esc, render_template
 from utils.email_queue import queue_email
+from utils.link_safety import schedule_scan
 
 router = APIRouter()
 
@@ -35,6 +36,7 @@ async def submit(body: ContactBody):
         "name": body.name, "email": body.email,
         "subject": body.subject, "message": body.message, "created_at": now,
     }).execute()
+    schedule_scan(body.message)
     subject, html = render_template("contact_confirm", {
         "site_name": "aifazi.net",
         "name": body.name,
