@@ -47,8 +47,9 @@ export default function FloatingNav() {
   const location = useLocation()
   const editCtx  = useEdit()
 
-  // Hide on full-screen admin/chat pages; show everywhere else after scroll
-  const isFullScreen = /^\/(admin|chat|users\/chat)/.test(location.pathname)
+  // Hide only on the admin console (it has its own chrome); the inline edit
+  // entry is available on every public page, including fullscreen routes.
+  const isFullScreen = /^\/(admin)/.test(location.pathname)
 
   const [hoveredIdx, setHoveredIdx] = useState(-1)
   // Hydration-safe: start hidden on both server and client; the scroll effect

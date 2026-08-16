@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
-import api, { canEdit as checkCanEdit, getRole } from '@/lib/api'
+import api, { canEdit as checkCanEdit, getRole, hasPermission } from '@/lib/api'
 import { IconPickerModal, IconDisplay } from '../components/IconPicker'
 import AnimationPicker from '../components/AnimationPicker'
 import DOMPurify from 'isomorphic-dompurify'
@@ -27,7 +27,7 @@ function _unwrap(val) {
   return val
 }
 
-export function useInlineEdit(contentKey, defaultValue) {
+export function useInlineEdit(contentKey, defaultValue, opts) {
   const ctx = useContext(EditContext)
   // Show pending value if one exists, else committed content, else default
   // _unwrap: guard against double-nested {"value": x} stored in DB
@@ -35,14 +35,33 @@ export function useInlineEdit(contentKey, defaultValue) {
     ? ctx.pendingChanges[contentKey]
     : (ctx?.content?.[contentKey] ?? defaultValue)
   const value = _unwrap(raw)
+  const allowed = opts ? canEditBlock(contentKey, opts) : true
 
   // Stage change in pendingChanges — does NOT hit backend yet
   const save = useCallback((newValue) => {
-    if (!ctx?.isAdmin || !ctx?.editingEnabled) return
+    if (!ctx?.isAdmin || !ctx?.editingEnabled || !allowed) return
     ctx.stagePending(contentKey, newValue)
-  }, [contentKey, ctx])
+  }, [contentKey, ctx, allowed])
 
-  return { value, save, isAdmin: !!(ctx?.isAdmin && ctx?.editingEnabled) }
+  return { value, save, isAdmin: !!(ctx?.isAdmin && ctx?.editingEnabled && allowed) }
+}
+
+// ── Per-block access gating ──────────────────────────────────────────────────
+// Lets a page restrict WHO can edit a specific content block:
+//   minRole — minimum staff role ('editor' default | 'moderator' | 'admin')
+//   module  — require a module permission (e.g. 'store' → hasPermission('store','edit'))
+// Admin always passes. The backend `require_staff` dependency is the hard gate;
+// this only controls the inline edit UI + save staging on the client.
+const ROLE_RANK = { user: 0, chat: 1, editor: 2, moderator: 3, admin: 4 }
+export function canEditBlock(contentKey, opts = {}) {
+  if (!checkCanEdit()) return false
+  const { minRole, module } = opts
+  if (module && !hasPermission(module, 'edit')) return false
+  if (minRole) {
+    const rank = ROLE_RANK[getRole() || 'user'] ?? 0
+    if (rank < (ROLE_RANK[minRole] ?? 0)) return false
+  }
+  return true
 }
 
 // ── Floating Toolbar ──────────────────────────────────────────────────────────
@@ -294,12 +313,17 @@ function FloatingToolbar({ position, onCommand, onClose }) {
 function decodeEntities(str) {
   if (typeof str !== 'string') return str
   if (typeof document === 'undefined') {
+    // Server-side decode — must mirror the browser's textarea decode below so
+    // SSR and hydration render identical text (esp. &nbsp; / numeric entities).
+    const named = {
+      amp:'&', lt:'<', gt:'>', quot:'"', apos:"'", nbsp:'\u00a0', ndash:'\u2013', mdash:'\u2014',
+      hellip:'\u2026', copy:'\u00a9', reg:'\u00ae', trade:'\u2122', times:'\u00d7', divide:'\u00f7',
+      middot:'\u00b7', bull:'\u2022', lsquo:'\u2018', rsquo:'\u2019', ldquo:'\u201c', rdquo:'\u201d',
+      deg:'\u00b0', para:'\u00b6', sect:'\u00a7', laquo:'\u00ab', raquo:'\u00bb', euro:'\u20ac', pound:'\u00a3',
+    }
     return str
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
+      .replace(/&#(\d+);/g, (m, num) => { try { return String.fromCodePoint(Number(num)) } catch { return m } })
+      .replace(/&([a-zA-Z]+);/g, (m, name) => (name in named ? named[name] : m))
   }
   const txt = document.createElement('textarea')
   txt.innerHTML = str
@@ -307,8 +331,8 @@ function decodeEntities(str) {
 }
 
 // ── EditableText — rich contentEditable with floating toolbar ──────────────────
-export function EditableText({ contentKey, defaultValue, as: Tag = 'span', style, className, multiline = false }) {
-  const { value, save, isAdmin } = useInlineEdit(contentKey, defaultValue)
+export function EditableText({ contentKey, defaultValue, as: Tag = 'span', style, className, multiline = false, minRole, module }) {
+  const { value, save, isAdmin } = useInlineEdit(contentKey, defaultValue, minRole || module ? { minRole, module } : undefined)
   const [editing, setEditing] = useState(false)
   const [toolbar, setToolbar] = useState(null)
   const editRef = useRef()
@@ -392,6 +416,7 @@ export function EditableText({ contentKey, defaultValue, as: Tag = 'span', style
         className={className}
         onClick={startEdit}
         title="Click to edit"
+        data-contentkey={contentKey}
         onMouseEnter={e => e.currentTarget.style.outlineColor = 'rgba(0,255,136,0.4)'}
         onMouseLeave={e => e.currentTarget.style.outlineColor = 'transparent'}
       >
@@ -692,8 +717,9 @@ const toolBtn = { fontFamily: 'monospace', fontSize: 11, padding: '4px 8px', bac
 const modalInput = { width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 15, padding: '10px 14px', outline: 'none' }
 
 // ── Edit Mode Bar — persistent bottom-left panel ─────────────────────────────
-function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpenPageAnimation }) {
+function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpenPageAnimation, pending = {}, committed = {} }) {
   const [confirmDiscard, setConfirmDiscard] = useState(false)
+  const [showDiff, setShowDiff] = useState(false)
   const [visible, setVisible] = useState(false)
   useEffect(() => { const t = setTimeout(() => setVisible(true), 20); return () => clearTimeout(t) }, [])
 
@@ -725,6 +751,25 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
             }}>{pendingCount} change{pendingCount !== 1 ? 's' : ''}</span>
           </div>
           {saveError && <div style={{ fontSize: 9, color: '#ff4757', letterSpacing: 1, background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.3)', padding: '5px 8px', borderRadius: 4 }}>⚠ {saveError}</div>}
+          <button
+            type="button"
+            onClick={() => setShowDiff(true)}
+            disabled={saving || pendingCount === 0}
+            style={{
+              padding: '8px 0',
+              background: 'rgba(255,183,77,0.08)',
+              border: `1px solid ${pendingCount > 0 ? 'rgba(255,183,77,0.35)' : 'rgba(255,183,77,0.12)'}`,
+              color: pendingCount > 0 ? '#ffb74d' : '#2a3a48',
+              fontFamily: "'Share Tech Mono', monospace",
+              fontSize: 9,
+              letterSpacing: 2,
+              cursor: saving || pendingCount === 0 ? 'not-allowed' : 'pointer',
+              borderRadius: 5,
+              opacity: saving ? 0.45 : 1,
+            }}
+            onMouseEnter={e => { if (!saving && pendingCount > 0) e.currentTarget.style.background = 'rgba(255,183,77,0.16)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,183,77,0.08)' }}
+          >⧉ REVIEW CHANGES</button>
           <button
             type="button"
             onClick={onOpenPageAnimation}
@@ -769,6 +814,49 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
         </div>
       </div>
       <style>{`@keyframes emBlink { 0%,100%{opacity:1} 50%{opacity:0.2} }`}</style>
+
+      {/* ── Review Changes (diff preview) ─────────────────────────────────── */}
+      {showDiff && (
+        <>
+          <div onClick={() => setShowDiff(false)} style={{ position: 'fixed', inset: 0, zIndex: 999995, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 999996,
+            width: '100%', maxWidth: 640, maxHeight: '80vh', overflowY: 'auto',
+            background: '#0b1118', border: '1px solid rgba(255,183,77,0.4)', borderRadius: 8,
+            boxShadow: '0 0 60px rgba(255,183,77,0.1), 0 24px 64px rgba(0,0,0,0.9)',
+            padding: '24px 28px', fontFamily: "'Share Tech Mono', monospace",
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ fontSize: 10, letterSpacing: 3, color: '#ffb74d' }}>REVIEW CHANGES — {pendingCount} pending</div>
+              <button onClick={() => setShowDiff(false)} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#4a6070', cursor: 'pointer', fontSize: 14 }}>✕</button>
+            </div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {Object.entries(pending).sort(([a], [b]) => a.localeCompare(b)).map(([key, newVal]) => {
+                const oldVal = committed[key]
+                const show = (v) => {
+                  if (v === undefined || v === null) return <span style={{ color: '#2a3a48' }}>∅ (default)</span>
+                  const s = typeof v === 'string' ? v : JSON.stringify(v, null, 1)
+                  const truncated = s.length > 500 ? s.slice(0, 500) + '…' : s
+                  return <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{truncated}</span>
+                }
+                const typeTag = (v) => v === undefined ? 'NONE' : Array.isArray(v) ? 'ARRAY' : (v === null ? 'NULL' : typeof v).toUpperCase()
+                return (
+                  <div key={key} style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '10px 12px', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10, color: '#c8d8e8', wordBreak: 'break-all' }}>{key}</span>
+                      <span style={{ fontSize: 8, color: '#ffb74d', border: '1px solid rgba(255,183,77,0.4)', borderRadius: 3, padding: '1px 5px' }}>{typeTag(oldVal)} → {typeTag(newVal)}</span>
+                    </div>
+                    <div style={{ fontSize: 9, color: '#4a6070', letterSpacing: 2, marginBottom: 2 }}>BEFORE</div>
+                    <div style={{ fontSize: 10, color: '#7a8ea0', maxHeight: 120, overflowY: 'auto', marginBottom: 6 }}>{show(oldVal)}</div>
+                    <div style={{ fontSize: 9, color: '#ffb74d', letterSpacing: 2, marginBottom: 2 }}>AFTER</div>
+                    <div style={{ fontSize: 10, color: '#00ff88', maxHeight: 120, overflowY: 'auto' }}>{show(newVal)}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -947,9 +1035,103 @@ function PageAnimationFrame({ children, animationValue, editingEnabled }) {
   )
 }
 
+// ── Ctrl+K content search palette ─────────────────────────────────────────────
+// Lists every editable element on the current page (data-contentkey), filters
+// live, and jumps to the match. Only available in edit mode (admin).
+function ContentSearchPalette({ open, query, onQuery, onClose }) {
+  const [targets, setTargets] = useState([])
+  useEffect(() => {
+    if (!open) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTargets(Array.from(document.querySelectorAll('[data-contentkey]')).map(el => ({
+      key: el.getAttribute('data-contentkey') || '',
+      text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60),
+      el,
+    })))
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  if (!open) return null
+
+  const q = query.trim().toLowerCase()
+  const filtered = targets.filter(t =>
+    !q || t.key.toLowerCase().includes(q) || t.text.toLowerCase().includes(q)
+  )
+
+  const jump = (t) => {
+    t.el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    t.el.style.outline = '2px solid var(--cyan)'
+    t.el.style.outlineOffset = '4px'
+    setTimeout(() => { t.el.style.outline = ''; t.el.style.outlineOffset = '' }, 1800)
+    onClose()
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: 560, background: 'var(--bg2)', border: '1px solid var(--border)',
+        borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflow: 'hidden',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ fontSize: 13, opacity: 0.6 }}>🔍</span>
+          <input autoFocus value={query} onChange={e => onQuery(e.target.value)} placeholder="Search content keys on this page…"
+            spellCheck={false} style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13 }} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>ESC</span>
+        </div>
+        <div style={{ maxHeight: 300, overflowY: 'auto', padding: 6 }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: '18px 14px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>
+              {targets.length === 0 ? 'No editable content on this page.' : `No matches for "${query}".`}
+            </div>
+          ) : filtered.map(t => (
+            <button key={t.key} onClick={() => jump(t)} style={{
+              display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none',
+              padding: '8px 10px', borderRadius: 6, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)',
+              transition: 'background 0.15s',
+            }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,212,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <span style={{ color: 'var(--cyan)', wordBreak: 'break-all' }}>{t.key}</span>
+              <span style={{ display: 'block', color: 'var(--muted)', fontSize: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.text || '…'}</span>
+            </button>
+          ))}
+        </div>
+        <div style={{ padding: '6px 14px', borderTop: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>
+          {filtered.length} / {targets.length} EDITABLES
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Provider ──────────────────────────────────────────────────────────────────
-export function EditProvider({ children }) {
-  const [content, setContent] = useState({})
+// Seeds `content` from the `initialContent` prop threaded in by the server
+// layout (see lib/contentServer.ts) so SSR and the first client render both
+// show the admin's saved values — no default-value flash, no hydration
+// mismatch. The in-page fetch below then refreshes/keeps it in sync.
+function readEmbeddedContent() {
+  if (typeof window === 'undefined') return {}
+  try {
+    const el = document.getElementById('content-blocks-data')
+    if (!el || !el.textContent) return {}
+    const data = JSON.parse(el.textContent)
+    return data && typeof data === 'object' && !Array.isArray(data) ? data : {}
+  } catch {
+    return {}
+  }
+}
+
+export function EditProvider({ children, initialContent = {} }) {
+  const [content, setContent] = useState(() =>
+    initialContent && typeof initialContent === 'object' && !Array.isArray(initialContent) && Object.keys(initialContent).length > 0
+      ? initialContent
+      : readEmbeddedContent()
+  )
   const [isAdmin, setIsAdmin] = useState(() => (typeof window === 'undefined' ? false : checkCanEdit()))
   const [loading, setLoading] = useState(true)
   // ── new state ──
@@ -957,6 +1139,9 @@ export function EditProvider({ children }) {
   const [pendingChanges, setPendingChanges] = useState({})
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  // ── Ctrl+K content search palette ──
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   // ── Animation Picker state ──────────────────────────────────────────────────
   const [animPickerOpen, setAnimPickerOpen]     = useState(false)
   const [animPickerTarget, setAnimPickerTarget] = useState(null) // { key, label, currentAnim }
@@ -1046,6 +1231,31 @@ export function EditProvider({ children }) {
     document.body.classList.remove('editing-mode')
   }, [])
 
+  // Global edit-mode shortcut — Ctrl/Cmd + E toggles inline editing for any
+  // staff member on ANY page (admin/editor/mod by role + module permission).
+  const editingRef = useRef(editingEnabled)
+  useEffect(() => { editingRef.current = editingEnabled }, [editingEnabled])
+  useEffect(() => {
+    if (!isAdmin) return
+    const onKey = (e) => {
+      const t = e.target
+      if (t?.tagName === 'INPUT' || t?.tagName === 'TEXTAREA' || t?.isContentEditable || t?.closest?.('[data-toolbar]')) return
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
+        e.preventDefault()
+        if (editingRef.current) commitDiscard()
+        else startEditing()
+      }
+      // Ctrl/Cmd+K — search the page's editable content keys (edit mode only)
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k' && editingRef.current) {
+        e.preventDefault()
+        setSearchQuery('')
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isAdmin, startEditing, commitDiscard])
+
   const role = getRole()
   const pendingCount = Object.keys(pendingChanges).length
   const pageAnimation = pendingChanges['anim.page.preview'] ?? content['anim.page.preview'] ?? 'none'
@@ -1064,8 +1274,15 @@ export function EditProvider({ children }) {
           onDiscard={commitDiscard}
           saving={saving}
           saveError={saveError}
+          pending={pendingChanges}
+          committed={content}
           onOpenPageAnimation={() => openAnimPicker('page.preview', 'Page Preview', pageAnimation)}
         />
+      )}
+
+      {/* ── Ctrl+K content search palette (edit mode) ─────────────────────── */}
+      {isAdmin && editingEnabled && (
+        <ContentSearchPalette open={searchOpen} query={searchQuery} onQuery={setSearchQuery} onClose={() => setSearchOpen(false)} />
       )}
 
       {/* ── Animation Picker drawer ────────────────────────────────────────── */}
@@ -1155,6 +1372,183 @@ export function EditableIcon({ contentKey, defaultValue = '❓', size = 36, styl
           onSave={v => { save(v); setOpen(false) }}
           onClose={() => setOpen(false)}
         />
+      )}
+    </>
+  )
+}
+
+// ─── EditableImage ────────────────────────────────────────────────────────────
+// In view mode renders the image normally. In edit mode clicking opens a small
+// dialog to change the image URL and alt text. Value is a string URL; alt is
+// stored in a separate `<contentKey>.alt` block.
+//
+// Usage:
+//   <EditableImage contentKey="about.portrait" altKey="about.portrait.alt"
+//     defaultValue="/img/portrait.png" defaultAlt="Tanvir portrait"
+//     style={{ width: 180, borderRadius: 12 }} />
+//
+export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAlt = '', style = {}, imgStyle = {}, minRole, module }) {
+  const { value, save, isAdmin } = useInlineEdit(contentKey, defaultValue, minRole || module ? { minRole, module } : undefined)
+  const { value: altValue, save: saveAlt } = useInlineEdit(altKey || `${contentKey}.alt`, defaultAlt, minRole || module ? { minRole, module } : undefined)
+  const [open, setOpen] = useState(false)
+  const [draftUrl, setDraftUrl] = useState(value)
+  const [draftAlt, setDraftAlt] = useState(altValue)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef()
+
+  if (!isAdmin) {
+    return <img src={value || defaultValue} alt={altValue || defaultAlt} style={style} />
+  }
+
+  const openModal = () => { setDraftUrl(value || defaultValue); setDraftAlt(altValue || defaultAlt); setOpen(true) }
+  const confirm = () => { save(draftUrl); saveAlt(draftAlt); setOpen(false) }
+
+  const onPickFile = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await api.post('/upload/single', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const url = res?.data?.url
+      if (url) setDraftUrl(url)
+    } catch {
+      setUploading(false)
+      setDraftUrl('')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <>
+      <span
+        onClick={openModal}
+        title="Click to edit image"
+        data-contentkey={contentKey}
+        style={{
+          position: 'relative', display: 'inline-block', cursor: 'pointer',
+          outline: '1px dashed rgba(0,212,255,0.35)', outlineOffset: 3, borderRadius: 4,
+          transition: 'outline 0.2s', ...style,
+        }}
+        onMouseEnter={e => e.currentTarget.style.outline = '2px solid var(--cyan)'}
+        onMouseLeave={e => e.currentTarget.style.outline = '1px dashed rgba(0,212,255,0.35)'}
+      >
+        <img src={value || defaultValue} alt={altValue || defaultAlt} style={imgStyle} />
+        <span style={{
+          position: 'absolute', bottom: -8, right: -8,
+          background: 'var(--cyan)', color: '#000',
+          fontSize: 8, fontFamily: 'var(--font-mono)',
+          padding: '1px 5px', borderRadius: 2, letterSpacing: 1,
+          pointerEvents: 'none',
+        }}>IMAGE</span>
+      </span>
+
+      {open && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', fontFamily: 'var(--font-mono)', padding: 16,
+        }} onClick={() => setOpen(false)}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 12 }}>EDIT IMAGE · {contentKey}</div>
+            <img src={draftUrl} alt={draftAlt} style={{ width: '100%', maxHeight: 180, objectFit: 'contain', marginBottom: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }} onError={e => { e.currentTarget.style.opacity = 0.25 }} onLoad={e => { e.currentTarget.style.opacity = 1 }} />
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ fontSize: 9, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>IMAGE URL</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input value={draftUrl} onChange={e => setDraftUrl(e.target.value)} spellCheck={false} style={{ flex: 1, minWidth: 0, boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
+                <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} style={{ display: 'none' }} />
+                <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '8px 12px', flexShrink: 0, cursor: uploading ? 'not-allowed' : 'pointer',
+                  background: uploading ? 'rgba(0,212,255,0.05)' : 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.4)', color: uploading ? '#2a3a48' : 'var(--cyan)', borderRadius: 6,
+                }}>{uploading ? '⏳…' : '⬆ UPLOAD'}</button>
+              </div>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 9, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>ALT TEXT</label>
+              <input value={draftAlt} onChange={e => setDraftAlt(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
+              <button onClick={confirm} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'var(--cyan)', border: 'none', color: '#000', cursor: 'pointer', fontWeight: 700, borderRadius: 6 }}>SAVE</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// ─── EditableLink ─────────────────────────────────────────────────────────────
+// Edits a link's visible label and href. Label lives at `contentKey`, href at
+// `<contentKey>.href` (or a shared `hrefKey`). Renders an <a> in view mode.
+//
+// Usage:
+//   <EditableLink contentKey="store.cta" defaultHref="/store" defaultValue="Visit Store" />
+//
+export function EditableLink({ contentKey, hrefKey, defaultValue = 'Learn more', defaultHref = '#', style = {}, as: Tag = 'a', children, minRole, module }) {
+  const { value, save, isAdmin } = useInlineEdit(contentKey, defaultValue, minRole || module ? { minRole, module } : undefined)
+  const { value: href, save: saveHref } = useInlineEdit(hrefKey || `${contentKey}.href`, defaultHref, minRole || module ? { minRole, module } : undefined)
+  const [open, setOpen] = useState(false)
+  const [draftLabel, setDraftLabel] = useState(value)
+  const [draftHref, setDraftHref] = useState(href)
+
+  if (!isAdmin) {
+    const props = Tag === 'a' ? { href: href || defaultHref, style } : { style }
+    return <Tag {...props}>{children !== undefined ? children : (value || defaultValue)}</Tag>
+  }
+
+  const openModal = () => { setDraftLabel(value || defaultValue); setDraftHref(href || defaultHref); setOpen(true) }
+  const confirm = () => { save(draftLabel); saveHref(draftHref); setOpen(false) }
+
+  return (
+    <>
+      <span
+        onClick={openModal}
+        title="Click to edit link"
+        data-contentkey={contentKey}
+        style={{
+          position: 'relative', display: 'inline-flex', cursor: 'pointer',
+          outline: '1px dashed rgba(255,183,77,0.4)', outlineOffset: 3, borderRadius: 4,
+          transition: 'outline 0.2s',
+        }}
+        onMouseEnter={e => e.currentTarget.style.outline = '2px solid #ffb74d'}
+        onMouseLeave={e => e.currentTarget.style.outline = '1px dashed rgba(255,183,77,0.4)'}
+      >
+        <span style={style}>
+          {children !== undefined ? children : (value || defaultValue)}
+        </span>
+        <span style={{
+          position: 'absolute', bottom: -8, right: -8,
+          background: '#ffb74d', color: '#000',
+          fontSize: 8, fontFamily: 'var(--font-mono)',
+          padding: '1px 5px', borderRadius: 2, letterSpacing: 1,
+          pointerEvents: 'none',
+        }}>LINK</span>
+      </span>
+
+      {open && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', fontFamily: 'var(--font-mono)', padding: 16,
+        }} onClick={() => setOpen(false)}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: '#ffb74d', marginBottom: 12 }}>EDIT LINK · {contentKey}</div>
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ fontSize: 9, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>LABEL</label>
+              <input value={draftLabel} onChange={e => setDraftLabel(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 9, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>DESTINATION URL</label>
+              <input value={draftHref} onChange={e => setDraftHref(e.target.value)} spellCheck={false} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
+              <button onClick={confirm} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: '#ffb74d', border: 'none', color: '#000', cursor: 'pointer', fontWeight: 700, borderRadius: 6 }}>SAVE</button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )

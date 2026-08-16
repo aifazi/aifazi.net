@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { Link } from '@/lib/router-compat'
+import { EditableText } from '../context/EditContext'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = 'var(--green)'
@@ -145,13 +146,17 @@ export default function AppPage() {
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
         {/* Hero */}
         <div style={{ textAlign: 'center', marginBottom: 10 }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 4, color: C, marginBottom: 12 }}>AIFAZI.NET · MOBILE APP</div>
+          <EditableText contentKey="app.eyebrow" defaultValue="AIFAZI.NET · MOBILE APP" as="div" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 4, color: C, marginBottom: 12 }} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 800, margin: '0 0 10px', color: 'var(--text)' }}>
-            aifazi, <span style={{ color: G }}>in your pocket</span>
+            <EditableText contentKey="app.title" defaultValue="aifazi, in your pocket" />
           </h1>
-          <p style={{ fontFamily: MONO, fontSize: 12, lineHeight: 1.8, color: 'var(--muted)', maxWidth: 620, margin: '0 auto 8px' }}>
-            The entire aifazi.net network — chat, voice & video, blog, forum, store and live server status — as a native Android app.
-          </p>
+          <EditableText
+            contentKey="app.subtitle"
+            defaultValue="The entire aifazi.net network — chat, voice & video, blog, forum, store and live server status — as a native Android app."
+            as="p"
+            multiline
+            style={{ fontFamily: MONO, fontSize: 12, lineHeight: 1.8, color: 'var(--muted)', maxWidth: 620, margin: '0 auto 8px' }}
+          />
         </div>
 
         {/* Download card */}
@@ -178,7 +183,7 @@ export default function AppPage() {
         </div>
 
         {/* Features grid */}
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: G, margin: '26px 0 14px' }}>FEATURES</div>
+        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: G, margin: '26px 0 14px' }}><EditableText contentKey="app.featuresLabel" defaultValue="FEATURES" /></div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
           {FEATURES.map(f => (
             <div key={f.title} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '16px', background: 'var(--bg2)' }}>
@@ -190,7 +195,7 @@ export default function AppPage() {
         </div>
 
         {/* FAQ */}
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C, margin: '34px 0 14px' }}>FAQ</div>
+        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C, margin: '34px 0 14px' }}><EditableText contentKey="app.faqLabel" defaultValue="FAQ" /></div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {FAQ.map(f => (
             <details key={f.q} style={{ border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg2)' }}>
