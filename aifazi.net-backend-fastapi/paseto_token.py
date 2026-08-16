@@ -25,7 +25,7 @@ log = logging.getLogger("token")
 TOKEN_VERSION = "v4"
 TOKEN_PURPOSE = "local"
 TOKEN_HEADER_B64 = base64.urlsafe_b64encode(
-    json.dumps({"v": TOKEN_VERSION, "t": TOKEN_PURPOSE}).encode()
+    json.dumps({"v": TOKEN_VERSION, "t": TOKEN_PURPOSE}, separators=(",", ":")).encode()
 ).rstrip(b"=").decode()
 TOKEN_EXPIRY_SECONDS = 24 * 60 * 60  # 24 hours
 NONCE_SIZE = 24  # XChaCha20 nonce
