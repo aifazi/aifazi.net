@@ -9,6 +9,32 @@
 # The backend connects to production Supabase via its service role key.
 
 services:
+  clamav:
+    image: clamav/clamav:stable
+    container_name: aifazi-clamav
+    # No host ports — the backend reaches clamd via the compose network as
+    # `clamav:3310`. Virus definitions persist in the named volume across
+    # container rebuilds (freshclam downloads signatures on first boot).
+    volumes:
+      - clamav-db:/var/lib/clamav
+    environment:
+      - CLAMD_STARTUP_TIMEOUT=180s
+      - CLAMAV_NO_FRESHCLAMD=false
+    networks:
+      - aifazi-net
+    restart: unless-stopped
+    mem_limit: 2g
+    mem_reservation: 1g
+    cpus: 2
+    # First boot downloads the signature DB, so clamd can take a while to
+    # become responsive — give the healthcheck a generous start period.
+    healthcheck:
+      test: ['CMD', 'clamdcheck.sh']
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 90s
+
   backend:
     build:
       context: .
@@ -21,6 +47,14 @@ services:
       - /app/__pycache__
     env_file:
       - .env.local
+    environment:
+      # Point the backend at the compose ClamAV service. Scanning stays opt-in:
+      # uploads are only scanned when MALWARE_SCAN_ENABLED=true is also set.
+      - CLAMD_HOST=clamav
+      - CLAMD_PORT=3310
+    depends_on:
+      clamav:
+        condition: service_healthy
     networks:
       - aifazi-net
     restart: unless-stopped
@@ -65,3 +99,7 @@ services:
 networks:
   aifazi-net:
     driver: bridge
+
+volumes:
+  clamav-db:
+    driver: local
