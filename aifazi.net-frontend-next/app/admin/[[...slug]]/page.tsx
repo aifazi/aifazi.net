@@ -33,6 +33,14 @@ async function verifyAdminSession(): Promise<{ valid: boolean; user?: any }> {
 
 export const metadata: Metadata = { title: 'Admin Portal', robots: { index: false } }
 
+/** Escape JSON so it can never break out of an inline <script> (`</script>`). */
+function escapeJsonForInline(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+}
+
 export default async function AdminPage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { valid, user } = await verifyAdminSession()
 
@@ -56,7 +64,7 @@ export default async function AdminPage({ params }: { params: Promise<{ slug?: s
         id="admin-user-data"
         type="application/json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: escapeJsonForInline({
             role: user?.role || 'admin',
             username: user?.username || '',
             permissions: user?.permissions || {},
