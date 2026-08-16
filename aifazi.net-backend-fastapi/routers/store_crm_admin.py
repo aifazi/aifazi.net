@@ -71,7 +71,11 @@ async def list_customers(search: str = "", limit: int = 100, _: dict = Depends(C
 
 @router.get("/customers/{user_id}")
 async def customer_detail(user_id: str, _: dict = Depends(CUSTOMERS)):
-    res = supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
+    # Explicit allowlist — never select("*"): the users row holds password_hash,
+    # refresh_token and totp_secret. list_customers uses the same safe columns.
+    res = supabase.table("users").select(
+        "id,username,email,role,created_at,last_seen,profile_avatar,profile_bio,email_verified,banned"
+    ).eq("id", user_id).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Customer not found")
     u = res.data[0]
