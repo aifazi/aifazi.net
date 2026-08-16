@@ -72,7 +72,7 @@ export default async function AdminPage({ params }: { params: Promise<{ slug?: s
           }),
         }}
       />
-      <AdminClient />
+      <AdminClient serverUser={user} />
     </>
   )
 }
