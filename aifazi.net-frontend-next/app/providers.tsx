@@ -125,12 +125,15 @@ function loadFontForTheme(themeId: string) {
   return loadThemeFont(themeId)
 }
 
-export function Providers({ children, isStoreDomain = false, isFiveMDomain = false, serverMaintenance = false, serverSubdomainMaintenance = {} }: {
+export function Providers({ children, isStoreDomain = false, isFiveMDomain = false, serverMaintenance = false, serverSubdomainMaintenance = {}, initialContent = {}, initialConfig = {}, initialTheme = 'cyber-dark' }: {
   children: React.ReactNode;
   isStoreDomain?: boolean;
   isFiveMDomain?: boolean;
   serverMaintenance?: boolean;
   serverSubdomainMaintenance?: Record<string, any>;
+  initialContent?: Record<string, any>;
+  initialConfig?: Record<string, any>;
+  initialTheme?: string;
 }) {
   const pathname = usePathname()
 
@@ -142,18 +145,21 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   })
   const firstThemeSync = useRef(true)
 
-  // Synchronous initializer — always return server-safe defaults to avoid hydration mismatch
-  // Client-side values are restored in the useEffect below
+  // Synchronous initializer — always return server-safe defaults to avoid
+  // hydration mismatch. When the root layout SSR-fetched the real global config
+  // (initialConfig), seed from it so the FIRST client render already uses the
+  // admin's settings (no default-config flash before the mount effect below).
   function initSiteConfig(): Record<string, any> {
-    return { maintenanceMode: false, animationPreset: 'smooth', loadingScreenStyle: 'terminal' }
+    const cfg = initialConfig && typeof initialConfig === 'object' && !Array.isArray(initialConfig) ? initialConfig : {}
+    return { maintenanceMode: false, animationPreset: 'smooth', loadingScreenStyle: 'terminal', ...cfg }
   }
 
   function initTheme(): string {
-    return 'cyber-dark'
+    return initialTheme && VALID_THEMES.includes(initialTheme) ? initialTheme : 'cyber-dark'
   }
 
   const [siteConfig, setSiteConfig] = useState<Record<string, any>>(initSiteConfig)
-  const [siteConfigReady, setSiteConfigReady] = useState(false)
+  const [siteConfigReady, setSiteConfigReady] = useState(() => !!initialConfig && typeof initialConfig === 'object' && !Array.isArray(initialConfig) && Object.keys(initialConfig).length > 0)
 
   const [userIsAdmin, setUserIsAdmin] = useState(false)
 
@@ -610,7 +616,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
       <NotifyProvider notifyStyle={eff.notifyStyle || 'cyber'} position={eff.notifyPosition || 'bottom-right'}>
       <DialogProvider dialogStyle={eff.dialogStyle || 'cyber'}>
       <MenuProvider menuStyle={eff.menuStyle || 'cyber'}>
-      <EditProvider>
+      <EditProvider initialContent={initialContent}>
         <ErrorBoundary>
         <ForumProvider>
           {!showMaintenance && loading && (

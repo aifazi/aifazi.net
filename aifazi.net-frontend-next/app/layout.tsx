@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 
 import { Providers } from './providers'
 import { getSiteConfigServer } from '@/lib/siteSettingsServer'
+import { getContentBlocksServer } from '@/lib/contentServer'
 import { themeFontUrl } from '@/core/fonts'
 import './globals.css'
 
@@ -73,6 +74,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const siteConfig = await getSiteConfigServer()
   const foucScript = buildFoucScript(siteConfig)
 
+  // Server-side content blocks (cached 30s) — injected so every EditableText on
+  // every page renders the admin's saved value on first paint (no default flash).
+  const contentBlocks = await getContentBlocksServer()
+
   // Apply the admin's global theme/styles directly on <html> at render time.
   // This guarantees no default-theme flash even before any JS runs (and is
   // independent of the CSP nonce behaviour for inline scripts).
@@ -108,6 +113,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             by proxy.ts per request; the site-config JSON block below is a data
             block (type="application/json") and is exempt from script-src. */}
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: foucScript }} />
+        {/* Content blocks are threaded to EditProvider via the `initialContent`
+            prop on <Providers> below — SSR and hydration both render the admin's
+            saved values, so no default flash and no hydration mismatch. */}
         {/* FIX #12: Only render preconnect when the env var is actually set */}
         {process.env.NEXT_PUBLIC_API_URL && (
           <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL} />
@@ -140,6 +148,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           isFiveMDomain={isFiveMDomain}
           serverMaintenance={!!siteConfig.maintenanceMode}
           serverSubdomainMaintenance={siteConfig.subdomainMaintenance || {}}
+          initialContent={contentBlocks}
+          initialConfig={siteConfig}
+          initialTheme={serverTheme}
         >{children}</Providers>
       </body>
     </html>
