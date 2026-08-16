@@ -119,13 +119,15 @@ export function ForumProvider({ children }) {
             const ref = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
             if (ref.ok) {
               const j = await ref.json()
-              if (j.token) {
-                setAccessToken(j.token)
-                window.dispatchEvent(new Event('auth-change'))
-              }
+              if (j.token) setAccessToken(j.token)
             }
           } catch {}
         }
+        // Always notify consumers (EditProvider, FloatingNav, …) that the
+        // effective role is known now — even if the refresh above failed — so
+        // the inline "Edit Site" entry appears as soon as an admin cookie
+        // session is confirmed.
+        window.dispatchEvent(new Event('auth-change'))
         setLoading(false)
         setProfileLoading(false)
         return

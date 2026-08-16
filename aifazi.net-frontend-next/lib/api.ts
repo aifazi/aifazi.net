@@ -35,7 +35,15 @@ export function getAuthToken(): string | null {
   return _memToken
 }
 
-/** Remove the legacy localStorage/sessionStorage token keys. */
+/** Remove the legacy localStorage/sessionStorage token keys.
+ *
+ * NOTE: `aifazi_effective_role` / `aifazi_permissions` / `aifazi_username` are
+ * deliberately NOT purged here — `setEffectiveAccess()` writes them during
+ * session hydration and `getRole()`/`canEdit()`/`hasPermission()` read them to
+ * gate the inline "Edit Site" UI. Wiping them here (right after a successful
+ * /auth/me) left the role null on the public site, so admins could never enter
+ * edit mode. Logout clears them via `clearAuthTokens()`.
+ */
 export function clearLegacyTokens() {
   if (typeof window === 'undefined') return
   localStorage.removeItem('auth_token')
@@ -43,9 +51,6 @@ export function clearLegacyTokens() {
   localStorage.removeItem('admin_token')
   localStorage.removeItem('staff_token')
   localStorage.removeItem('refresh_token')
-  localStorage.removeItem('aifazi_effective_role')
-  localStorage.removeItem('aifazi_permissions')
-  localStorage.removeItem('aifazi_username')
   sessionStorage.removeItem('forum_token')
   sessionStorage.removeItem('admin_token')
   sessionStorage.removeItem('staff_token')
