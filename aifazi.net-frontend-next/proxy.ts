@@ -53,9 +53,16 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
 // tokens as `<header_b64>.<encrypted>` (NOT a literal "v4." prefix), so matching
 // on this header is the only correct way to detect PASETO tokens.
 const PASETO_HEADER_B64 = 'eyJ2IjoidjQiLCJ0IjoibG9jYWwifQ'
+// Backend paseto_token.py computes this with `json.dumps({"v":"v4","t":"local"})`
+// using Python's default separators (", ", ": "), which inserts spaces and yields
+// a DIFFERENT base64 header than the compact form above. Accept both so tokens
+// minted by the backend verify regardless of which format the backend emits.
+const PASETO_HEADER_B64_PY = 'eyJ2IjogInY0IiwgInQiOiAibG9jYWwifQ'
 
 function isPasetoToken(token: string): boolean {
-  return token.startsWith(`${PASETO_HEADER_B64}.`) || token.startsWith('v4.local.')
+  return token.startsWith(`${PASETO_HEADER_B64}.`) ||
+    token.startsWith(`${PASETO_HEADER_B64_PY}.`) ||
+    token.startsWith('v4.local.')
 }
 
 const PASETO_KEY_SALT = new TextEncoder().encode('paseto-v4-aifazi')
@@ -100,7 +107,7 @@ async function decryptPasetoV4(token: string, secret: string): Promise<Record<st
   if (!secret) return null
   const parts = token.split('.')
   if (parts.length !== 2) return null
-  if (parts[0] !== PASETO_HEADER_B64) return null
+  if (parts[0] !== PASETO_HEADER_B64 && parts[0] !== PASETO_HEADER_B64_PY) return null
   try {
     const encrypted = base64UrlToBuffer(parts[1])
     if (encrypted.byteLength < PASETO_NONCE_SIZE + PASETO_TAG_SIZE) return null
