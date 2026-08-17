@@ -2,15 +2,22 @@
 // The AES-256-GCM primitives live in the shared package so web + mobile always
 // use the same wire format. Web-specific E2EE room-key helpers stay here.
 import {
-  encryptText,
-  decryptText,
+  encryptText as _encryptText,
+  decryptText as _decryptText,
   isEncrypted,
   decryptIfEncrypted,
   generateRoomKey,
   ENCRYPTED_PREFIX,
 } from '@fazi/shared'
 
-export { encryptText, decryptText, isEncrypted, decryptIfEncrypted, generateRoomKey, ENCRYPTED_PREFIX }
+export { isEncrypted, decryptIfEncrypted, generateRoomKey, ENCRYPTED_PREFIX }
+
+// The web chat historically used async encrypt/decrypt (Markdown.jsx and
+// MediaPreview.jsx chain `.then()` off decryptText; senders `await` encryptText).
+// The shared primitives are synchronous, so wrap them to keep the promise
+// contract the existing call sites expect.
+export const encryptText = async (plaintext, key) => _encryptText(plaintext, key)
+export const decryptText = async (cipher, key) => _decryptText(cipher, key)
 
 let _roomKeyModule = ''
 export const _roomKeyCache = {}
