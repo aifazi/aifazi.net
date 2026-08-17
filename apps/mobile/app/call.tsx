@@ -14,6 +14,7 @@ import {
 } from 'react-native'
 import VideoStream from '@/src/components/VideoStream'
 import { useLiveKitCall } from '@/src/lib/livekit'
+import { useMessagesRealtime } from '@/src/lib/chat-realtime'
 import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
@@ -149,6 +150,18 @@ export default function CallScreen() {
 
   const baseChatId = isDm ? thread_id ?? '' : (room ?? '')
 
+  // ── Realtime in-call chat (instant, mirrors web) with polling fallback ────
+  const { active: rtActive } = useMessagesRealtime<CallMessage>(
+    isDm ? 'dm_messages' : 'chat_messages',
+    baseChatId || null,
+    isDm ? 'thread_id' : 'room_id',
+    {
+      onInsert: (m) => setChatMsgs((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m])),
+      onUpdate: (m) => setChatMsgs((prev) => prev.map((x) => (x.id === m.id ? m : x))),
+      onDelete: (oldM) => setChatMsgs((prev) => prev.filter((x) => x.id !== oldM.id)),
+    },
+  )
+
   useEffect(() => {
     if (!baseChatId) return
     const keyPath = isDm
@@ -174,11 +187,12 @@ export default function CallScreen() {
   useEffect(() => {
     if (!chatOpen) return
     loadChat()
-    chatPoll.current = setInterval(() => loadChat(true), POLL_MS)
+    if (!rtActive) chatPoll.current = setInterval(() => loadChat(true), POLL_MS)
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        if (!chatPoll.current) chatPoll.current = setInterval(() => loadChat(true), POLL_MS)
+        // Realtime can drop events while backgrounded — resync on focus.
         loadChat(true)
+        if (!rtActive && !chatPoll.current) chatPoll.current = setInterval(() => loadChat(true), POLL_MS)
       } else if (chatPoll.current) {
         clearInterval(chatPoll.current)
         chatPoll.current = null
@@ -188,7 +202,7 @@ export default function CallScreen() {
       if (chatPoll.current) clearInterval(chatPoll.current)
       sub.remove()
     }
-  }, [chatOpen, loadChat])
+  }, [chatOpen, loadChat, rtActive])
 
   const openDevices = useCallback(async () => {
     const kind = await menu({
@@ -293,7 +307,7 @@ export default function CallScreen() {
       </View>
 
       {chatOpen ? (
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={[styles.chatPane, { borderBottomColor: c.border }]}>
             <ScrollView
               style={{ flex: 1 }}

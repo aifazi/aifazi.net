@@ -1,5 +1,14 @@
-import { useEffect, useRef } from 'react'
-import { Stack, useSegments, useRouter } from 'expo-router'
+import { useEffect, useRef, type ReactNode } from 'react'
+import {
+  Stack,
+  useSegments,
+  useRouter,
+  ThemeProvider as NavigationThemeProvider,
+  DefaultTheme,
+  DarkTheme,
+  type Theme as NavigationTheme,
+  type Href,
+} from 'expo-router'
 import * as Updates from 'expo-updates'
 import { StatusBar } from 'expo-status-bar'
 import { Animated, Easing, View } from 'react-native'
@@ -12,12 +21,36 @@ import { AmbientBackground } from '@/src/components/motion'
 import { startIntegrityChecks, stopIntegrityChecks } from '@/src/lib/integrity'
 import { configurePushNotifications, registerPushToken, unregisterPushToken } from '@/src/lib/push'
 import * as Notifications from 'expo-notifications'
-import type { Href } from 'expo-router'
 
 export { ErrorBoundary } from '@/src/components/ErrorBoundary'
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
+}
+
+/**
+ * Feeds the active app theme into React Navigation so the native-stack
+ * container and scenes use the app's background instead of the light default
+ * (`rgb(242, 242, 242)`). Without this, any transparent area in a screen leaks
+ * the white default background in dark themes.
+ */
+function ThemedNavigation({ children }: { children: ReactNode }) {
+  const { theme } = useTheme()
+  const c = theme.colors
+  const base = theme.dark ? DarkTheme : DefaultTheme
+  const navTheme: NavigationTheme = {
+    ...base,
+    dark: theme.dark,
+    colors: {
+      primary: c.accent,
+      background: c.bg,
+      card: c.bg2,
+      text: c.text,
+      border: c.border,
+      notification: c.danger,
+    },
+  }
+  return <NavigationThemeProvider value={navTheme}>{children}</NavigationThemeProvider>
 }
 
 /**
@@ -91,7 +124,18 @@ function RootNav() {
     sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data ?? {}
       const room = data.room as string | undefined
-      if (room) router.push(`/chat-room?room=${encodeURIComponent(room)}` as Href)
+      if (room) {
+        router.push(`/chat-room?room=${encodeURIComponent(room)}` as Href)
+        return
+      }
+      // Incoming call invite — land on the DM thread where the call card
+      // (type: 'call') renders with an Accept button.
+      if (data.call) {
+        const threadId = data.thread_id as string | undefined
+        if (threadId) {
+          router.push(`/dm-thread?thread_id=${encodeURIComponent(threadId)}` as Href)
+        }
+      }
     })
     return () => {
       if (sub) sub.remove()
@@ -168,7 +212,9 @@ export default function RootLayout() {
       <ThemeProvider>
         <AuthProvider>
           <OverlayProvider>
-            <RootNav />
+            <ThemedNavigation>
+              <RootNav />
+            </ThemedNavigation>
           </OverlayProvider>
         </AuthProvider>
       </ThemeProvider>

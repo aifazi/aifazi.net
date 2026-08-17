@@ -14,6 +14,8 @@ import { RolePill } from './RolePill'
 import { Markdown } from './Markdown'
 import { MediaPreviews } from './MediaPreview'
 import { MediaViewer } from './MediaViewer'
+import { DMCallBar } from './DMCallBar'
+import { dmLiveKitInvitePath, parseCallInvite, normalizeTypingActivity, typingSummary } from '@fazi/shared'
 
 const LIST_POLL = 15000
 const MSG_POLL = 4000
@@ -43,6 +45,7 @@ export default function DMPanel({ me, onClose }) {
   const [recSecs, setRecSecs] = useState(0)
   const [playingId, setPlayingId] = useState(null)
   const [mediaViewer, setMediaViewer] = useState(null)
+  const [inCall, setInCall] = useState(false)
   const listRef = useRef(null)
   const fileRef = useRef(null)
   const recRef = useRef(null)
@@ -98,7 +101,7 @@ export default function DMPanel({ me, onClose }) {
   useEffect(() => {
     if (!threadId) return
     const pollTyping = () => {
-      api.get(`/chat/dm/threads/${threadId}/typing`).then(r => setTyping(Array.isArray(r.data) ? r.data : [])).catch(() => {})
+      api.get(`/chat/dm/threads/${threadId}/typing`).then(r => setTyping(Array.isArray(r.data) ? r.data.map(normalizeTypingActivity) : [])).catch(() => {})
     }
     pollTyping()
     const iv = setInterval(pollTyping, TYP_POLL)
@@ -149,11 +152,14 @@ export default function DMPanel({ me, onClose }) {
     } finally { setSending(false) }
   }
 
-  const heartbeat = () => {
-    if (!threadId || isTyping.current) return
-    isTyping.current = true
-    api.post(`/chat/dm/threads/${threadId}/typing`).catch(() => {})
-    typingSent.current = setTimeout(() => { isTyping.current = false }, 2500)
+  const heartbeat = (activity = 'typing') => {
+    if (!threadId) return
+    if (activity === 'typing' && isTyping.current) return
+    if (activity === 'typing') {
+      isTyping.current = true
+      typingSent.current = setTimeout(() => { isTyping.current = false }, 2500)
+    }
+    api.post(`/chat/dm/threads/${threadId}/typing`, { activity }).catch(() => {})
   }
   useEffect(() => () => { if (typingSent.current) clearTimeout(typingSent.current) }, [])
 
@@ -171,9 +177,19 @@ export default function DMPanel({ me, onClose }) {
     try { await api.patch(`/chat/dm/messages/${id}`, { content: encrypted }); setEditing(null); loadMsgs(threadId) } catch {}
   }
 
+  // ── DM call: ring the peer (call message + push) and open the call bar ───
+  const startCall = async () => {
+    if (!threadId) return
+    api.post(dmLiveKitInvitePath(threadId)).catch(() => {})
+    setInCall(true)
+  }
+
+  const parseCall = (m) => parseCallInvite(m.content)
+
   // ── Media / voice upload ────────────────────────────────────────────────
   const uploadMsg = async (file, type, extra = {}) => {
     if (!threadId || !file) return
+    heartbeat(type === 'voice' ? 'voice' : (file.type?.startsWith('image/') ? 'image' : 'file'))
     setSending(true)
     try {
       const form = new FormData(); form.append('file', file)
@@ -188,6 +204,7 @@ export default function DMPanel({ me, onClose }) {
   }
 
   const startRec = async () => {
+    heartbeat('voice')
     if (!navigator.mediaDevices?.getUserMedia) { alert('Recording not supported in this browser'); return }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -222,7 +239,7 @@ export default function DMPanel({ me, onClose }) {
   }
 
   const mine = (m) => m.sender === me
-  const typLabel = typing.length ? (typing.length === 1 ? `${typing[0]} is typing…` : `${typing.slice(0, 2).join(', ')} are typing…`) : null
+  const typLabel = typing.length ? typingSummary(typing) : null
 
   const thread = threads.find(t => t.id === threadId)
 
@@ -290,7 +307,13 @@ export default function DMPanel({ me, onClose }) {
                   {online(thread?.peer_last_seen) ? 'Online' : 'Offline'}
                 </div>
               </div>
+              <button onClick={startCall} title={`Call ${peer}`}
+                style={{ width: 30, height: 30, border: `1px solid ${T.border}`, borderRadius: '50%', background: 'transparent', color: T.text, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                📞
+              </button>
             </div>
+
+            {inCall && <DMCallBar threadId={threadId} peer={peer} me={me} onEnd={() => setInCall(false)} />}
 
             {/* Messages */}
             <div ref={listRef} onScroll={onScroll} style={{ flex: 1, overflowY: 'auto', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 4, minHeight: 0 }}>
@@ -329,6 +352,29 @@ export default function DMPanel({ me, onClose }) {
                               </div>
                               <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>{m.duration ? `${Math.round(m.duration)}s` : '♪'}</span>
                               <audio id={`voice-${m.id}`} src={m.content} preload="none" />
+                            </div>
+                          )}
+                          {m.type === 'call' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '2px 4px' }}>
+                              <div style={{ fontSize: 20 }}>📞</div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: T.text }}>
+                                {isMine ? 'Outgoing call' : `Incoming call from ${m.sender}`}
+                              </div>
+                              {!isMine && (
+                                <button onClick={() => setInCall(true)}
+                                  style={{ marginTop: 4, padding: '5px 16px', border: 'none', borderRadius: 999,
+                                    background: 'linear-gradient(135deg,color-mix(in srgb, var(--green) 85%, transparent),color-mix(in srgb, var(--cyan) 85%, transparent))',
+                                    color: '#000', fontSize: 11, fontWeight: 700, fontFamily: T.mono, cursor: 'pointer' }}>
+                                  ACCEPT
+                                </button>
+                              )}
+                              {isMine && (
+                                <button onClick={startCall}
+                                  style={{ marginTop: 4, padding: '5px 16px', border: `1px solid ${T.border}`, borderRadius: 999,
+                                    background: 'transparent', color: T.text, fontSize: 11, fontWeight: 700, fontFamily: T.mono, cursor: 'pointer' }}>
+                                  JOIN
+                                </button>
+                              )}
                             </div>
                           )}
                           {m.type === 'text' && <Markdown text={m.content} />}

@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fazi/shared": "file:../packages/shared",
     "@livekit/components-react": "^2.6.11",
     "@noble/ciphers": "^1.3.0",
     "@sentry/nextjs": "^10.69.0",

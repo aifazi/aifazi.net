@@ -5,6 +5,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@noble/ciphers/*": [
+        "./node_modules/@noble/ciphers/*"
       ]
     }
   },

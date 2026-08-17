@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Room, RoomEvent } from 'livekit-client'
 import { registerGlobals, mediaDevices, streamUrl } from './lk-native'
 import { api } from './api'
+import { dmLiveKitTokenPath, roomLiveKitTokenPath, apiErrorMessage } from '@fazi/shared'
 
 // Registers react-native-webrtc globals so livekit-client works on RN
 // (native); no-op on web. Safe to call once at module load (idempotent).
@@ -119,8 +120,8 @@ export function useLiveKitCall(roomId: string | null, opts?: LiveKitCallOptions)
       setError('')
       try {
         const tokenPath = isDm
-          ? `/chat/dm/threads/${encodeURIComponent((opts?.dmThreadId as string) || '')}/livekit/token`
-          : `/chat/livekit/token?room_id=${encodeURIComponent((roomId as string) || '')}`
+          ? dmLiveKitTokenPath((opts?.dmThreadId as string) || '')
+          : roomLiveKitTokenPath((roomId as string) || '')
         const res = await api.get(tokenPath)
         const d = res.data
         const room = new Room({ adaptiveStream: false, dynacast: false })
@@ -174,7 +175,7 @@ export function useLiveKitCall(roomId: string | null, opts?: LiveKitCallOptions)
       } catch (e: any) {
         if (!cancelled) {
           setStatus('error')
-          setError(e?.response?.data?.detail || e?.message || 'Could not join the call')
+          setError(apiErrorMessage(e) || 'Could not join the call')
         }
       }
     }

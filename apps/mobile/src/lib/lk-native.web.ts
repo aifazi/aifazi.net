@@ -17,7 +17,15 @@ export const mediaDevices: any = {
   },
 }
 
-export function streamUrl(): string | null {
+export function streamUrl(tracks?: any[]): string | null {
+  try {
+    if (typeof window !== 'undefined' && window.MediaStream && Array.isArray(tracks) && tracks.length) {
+      const stream = new window.MediaStream(tracks as MediaStreamTrack[])
+      return URL.createObjectURL(stream as unknown as Blob)
+    }
+  } catch {
+    // fall through to null
+  }
   return null
 }
 
