@@ -91,14 +91,23 @@ def _derive_key(secret: str) -> bytes:
     return key
 
 
-def _get_xcha() -> XChaCha20Poly1305:
-    secret = os.environ.get("PASETO_SECRET", "")
+def _get_xcha(secret: str | None = None) -> XChaCha20Poly1305:
+    """Return the XChaCha20-Poly1305 primitive for the given secret.
+
+    H4 — an explicit `secret` argument lets callers sign/verify with a specific
+    key (e.g. the admin-gate secret) without mutating the process-global
+    PASETO_SECRET env var, which raced concurrent token mints. When `secret` is
+    None (the default for every non-admin-gate call site) it falls back to
+    os.environ["PASETO_SECRET"] exactly as before.
+    """
+    if secret is None:
+        secret = os.environ.get("PASETO_SECRET", "")
     if not secret:
         raise RuntimeError("PASETO_SECRET is not set. Cannot create tokens.")
     return XChaCha20Poly1305(_derive_key(secret))
 
 
-def create_token(payload: dict, expires_in: int = TOKEN_EXPIRY_SECONDS, purpose: str = "auth") -> str:
+def create_token(payload: dict, expires_in: int = TOKEN_EXPIRY_SECONDS, purpose: str = "auth", secret: str | None = None) -> str:
     """
     Create a PASETO v4 local token using XChaCha20-Poly1305.
 
@@ -106,6 +115,9 @@ def create_token(payload: dict, expires_in: int = TOKEN_EXPIRY_SECONDS, purpose:
         payload: Claims to encode (must be JSON-serializable).
         expires_in: Seconds until expiry (default 24h).
         purpose: Token purpose label stored in payload.
+        secret: Optional signing secret override (H4). Defaults to
+            os.environ["PASETO_SECRET"] — only admin-gate callers pass a
+            different key, and they must never mutate the env var.
 
     Returns:
         PASETO v4 local token string.
@@ -119,14 +131,14 @@ def create_token(payload: dict, expires_in: int = TOKEN_EXPIRY_SECONDS, purpose:
     }
     payload_bytes = json.dumps(data, separators=(",", ":"), sort_keys=True).encode()
 
-    xcha = _get_xcha()
+    xcha = _get_xcha(secret)
     nonce = os.urandom(NONCE_SIZE)
     ciphertext = xcha.encrypt(nonce, payload_bytes, None)
     encrypted = nonce + ciphertext  # nonce prepended per PASETO v4 spec
     return f"{TOKEN_HEADER_B64}.{_b64url_encode(encrypted)}"
 
 
-def decode_token(token: str, purpose: str = "auth") -> dict | None:
+def decode_token(token: str, purpose: str = "auth", secret: str | None = None) -> dict | None:
     """
     Decode and verify a PASETO v4 local token.
 
@@ -135,6 +147,7 @@ def decode_token(token: str, purpose: str = "auth") -> dict | None:
     Args:
         token: The PASETO token string.
         purpose: Expected purpose (must match token's purpose claim).
+        secret: Optional key override (H4). Defaults to os.environ["PASETO_SECRET"].
 
     Returns:
         Decoded payload dict, or None if invalid/expired.
@@ -143,7 +156,7 @@ def decode_token(token: str, purpose: str = "auth") -> dict | None:
     if len(parts) != 2:
         return None
 
-    xcha = _get_xcha()
+    xcha = _get_xcha(secret)
     try:
         encrypted = _b64url_decode(parts[1])
         if len(encrypted) < NONCE_SIZE + 16:
@@ -163,7 +176,7 @@ def decode_token(token: str, purpose: str = "auth") -> dict | None:
         return None
 
 
-def verify_token_signature(token: str) -> bool:
+def verify_token_signature(token: str, secret: str | None = None) -> bool:
     """
     Verify the encryption AND expiry of a PASETO token.
     """
@@ -171,7 +184,7 @@ def verify_token_signature(token: str) -> bool:
     if len(parts) != 2:
         return False
 
-    xcha = _get_xcha()
+    xcha = _get_xcha(secret)
     try:
         encrypted = _b64url_decode(parts[1])
         if len(encrypted) < NONCE_SIZE + 16:
@@ -185,7 +198,7 @@ def verify_token_signature(token: str) -> bool:
         return False
 
 
-def decode_token_payload(token: str) -> dict | None:
+def decode_token_payload(token: str, secret: str | None = None) -> dict | None:
     """
     Decode a PASETO token's payload without verifying signature/encryption.
     ONLY use for trusted tokens (e.g., after verify_token_signature returns True).
@@ -195,7 +208,7 @@ def decode_token_payload(token: str) -> dict | None:
         return None
     try:
         encrypted = _b64url_decode(parts[1])
-        xcha = _get_xcha()
+        xcha = _get_xcha(secret)
         if len(encrypted) < NONCE_SIZE + 16:
             return None
         nonce = encrypted[:NONCE_SIZE]
