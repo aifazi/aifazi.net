@@ -30,11 +30,13 @@ MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB hard cap
 _CLAMD_HOST = os.getenv("CLAMD_HOST", "localhost")
 _CLAMD_PORT = int(os.getenv("CLAMD_PORT", "3310"))
 _MALWARE_SCAN_ENABLED = os.getenv("MALWARE_SCAN_ENABLED", "false").lower() == "true"
-# Fail-closed: when true, any scan failure (daemon unreachable, connection error,
-# unexpected exception) rejects the upload with a 503 instead of silently
-# skipping the scan. `ImportError` (pyclamd not installed) always stays fail-open
-# so a missing optional dependency never bricks uploads.
-_MALWARE_SCAN_FAIL_CLOSED = os.getenv("MALWARE_SCAN_FAIL_CLOSED", "false").lower() == "true"
+# Fail-closed by default (H3): when true, any scan failure (daemon unreachable,
+# connection error, unexpected exception, pyclamd ERROR status) rejects the
+# upload with a 503 instead of silently skipping the scan. Set
+# MALWARE_SCAN_FAIL_CLOSED=false only if you explicitly want fail-open behavior.
+# `ImportError` (pyclamd not installed) always stays fail-open so a missing
+# optional dependency never bricks uploads.
+_MALWARE_SCAN_FAIL_CLOSED = os.getenv("MALWARE_SCAN_FAIL_CLOSED", "true").lower() == "true"
 
 log = logging.getLogger("upload")
 
@@ -72,6 +74,12 @@ def scan_for_malware(content: bytes, filename: str) -> None:
                 if st == "FOUND":
                     log.warning("Malware detected in %s: %s", filename, reason)
                     raise HTTPException(415, f"File rejected: malware detected ({reason})")
+                if st == "ERROR":
+                    # A scan ERROR means the file was NOT scanned. Fail closed:
+                    # reject rather than assume the payload is safe.
+                    log.error("ClamAV scan returned ERROR for %s: %s", filename, reason)
+                    _scan_unavailable(filename, f"clamd scan error: {reason}")
+                    return
     except ImportError:
         log.warning("pyclamd not installed; skipping malware scan for %s", filename)
     except pyclamd.ConnectionError:
