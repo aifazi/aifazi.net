@@ -25,6 +25,8 @@ import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
 import { useMessageActions, SwipeReplyRow } from '@/src/lib/chat-actions'
+import { useMessagesRealtime, useTypingBroadcast, sendTypingBroadcast } from '@/src/lib/chat-realtime'
+import { typingSummary, normalizeTypingActivity, type TypingActivity, type TypingActivityKind } from '@fazi/shared'
 import { MarkdownText } from '@/src/components/markdown'
 import { useOverlay } from '@/src/components/overlay'
 import { withAlpha, contrastText } from '@/src/lib/color'
@@ -143,7 +145,7 @@ export default function ChatRoomScreen() {
   const [previews, setPreviews] = useState<Record<string, LinkPreview>>({})
   const [uploading, setUploading] = useState(false)
   const [viewer, setViewer] = useState<string | null>(null)
-  const [typingUsers, setTypingUsers] = useState<string[]>([])
+  const [typingUsers, setTypingUsers] = useState<TypingActivity[]>([])
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQ, setSearchQ] = useState('')
   const [searchResults, setSearchResults] = useState<ChatMessage[] | null>(null)
@@ -200,13 +202,40 @@ export default function ChatRoomScreen() {
     [room],
   )
 
+  // ── Realtime messages (instant, mirrors web) with polling fallback ────────
+  const { active: rtActive } = useMessagesRealtime<ChatMessage>(
+    'chat_messages',
+    room,
+    'room_id',
+    {
+      onInsert: (m) => {
+        setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]))
+      },
+      onUpdate: (m) => setMessages((prev) => prev.map((x) => (x.id === m.id ? m : x))),
+      onDelete: (oldM) => setMessages((prev) => prev.filter((x) => x.id !== oldM.id)),
+    },
+  )
+
+  // ── Typing: Realtime broadcast (web parity) + REST poll fallback ──────────
+  useTypingBroadcast(room, (t) => {
+    setTypingUsers((prev) => {
+      if (prev.some((u) => u.username === t.username)) return prev
+      const next = [...prev, t]
+      setTimeout(() => setTypingUsers((cur) => cur.filter((x) => x.username !== t.username)), 3000)
+      return next
+    })
+  })
+
   useEffect(() => {
     load()
-    pollTimer.current = setInterval(() => load(true), POLL_MS)
+    if (!rtActive) {
+      pollTimer.current = setInterval(() => load(true), POLL_MS)
+    }
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        if (!pollTimer.current) pollTimer.current = setInterval(() => load(true), POLL_MS)
+        // Realtime can drop events while backgrounded — resync on focus.
         load(true)
+        if (!rtActive && !pollTimer.current) pollTimer.current = setInterval(() => load(true), POLL_MS)
       } else if (pollTimer.current) {
         clearInterval(pollTimer.current)
         pollTimer.current = null
@@ -216,7 +245,7 @@ export default function ChatRoomScreen() {
       if (pollTimer.current) clearInterval(pollTimer.current)
       sub.remove()
     }
-  }, [load])
+  }, [load, rtActive])
 
   const loadOlder = async () => {
     if (!room || !messages.length || loadingMore) return
@@ -237,10 +266,20 @@ export default function ChatRoomScreen() {
     }
   }
 
+  /** Signal an activity (typing/image/file/voice/video) via REST + realtime. */
+  const sendActivity = useCallback(
+    (activity: TypingActivityKind) => {
+      if (!room) return
+      api.post(`/chat/rooms/${room}/typing`, { activity }).catch(() => {})
+      if (user?.username) sendTypingBroadcast(room, user.username, activity)
+    },
+    [room, user?.username],
+  )
+
   const sendTyping = useCallback(() => {
     if (!room || !text.trim()) return
-    api.post(`/chat/rooms/${room}/typing`).catch(() => {})
-  }, [room, text])
+    sendActivity('typing')
+  }, [room, text.trim(), sendActivity])
 
   const onChangeText = (v: string) => {
     if (editing) {
@@ -257,7 +296,7 @@ export default function ChatRoomScreen() {
       if (!room) return
       api
         .get(`/chat/rooms/${room}/typing`)
-        .then((r) => setTypingUsers((r.data ?? []) as string[]))
+        .then((r) => setTypingUsers(((r.data ?? []) as unknown[]).map(normalizeTypingActivity)))
         .catch(() => {})
     }, POLL_MS)
     return () => clearInterval(t)
@@ -332,11 +371,13 @@ export default function ChatRoomScreen() {
   }
 
   const pickImage = async () => {
+    sendActivity('image')
     const f = await askImageSourceAsync(overlay)
     if (f) uploadFile(f, 'image')
   }
 
   const pickDoc = () => {
+    sendActivity('file')
     pickDocument().then((f) => f && uploadFile(f, 'file'))
   }
 
@@ -371,6 +412,7 @@ export default function ChatRoomScreen() {
 
   const uploadVoice = async (uri: string, durSec: number) => {
     if (!room) return
+    sendActivity('voice')
     setUploading(true)
     try {
       const form = new FormData()
@@ -559,7 +601,7 @@ export default function ChatRoomScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {loading ? (
           <View style={{ paddingTop: SPACE.colossal, alignItems: 'center' }}>
@@ -661,6 +703,7 @@ export default function ChatRoomScreen() {
                               borderColor: mine ? c.accent2 : c.border,
                               maxWidth: '85%',
                               borderRadius: radius,
+                              overflow: 'hidden',
                             },
                           ]}
                         >
@@ -682,7 +725,7 @@ export default function ChatRoomScreen() {
                             <TouchableOpacity onPress={() => setViewer(item.content ?? '')}>
                               <ExpoImage
                                 source={{ uri: item.content }}
-                                style={{ width: 220, height: 220, borderRadius: 10 }}
+                                style={{ width: 220, height: 220, borderRadius: radius }}
                                 contentFit="cover"
                                 transition={150}
                               />
@@ -801,8 +844,6 @@ export default function ChatRoomScreen() {
             }}
           />
         )}
-      </KeyboardAvoidingView>
-
       {reactTarget ? (
         <View style={[styles.reactBar, { borderTopColor: c.border, backgroundColor: c.bg2 }]}>
           <Text style={{ color: c.muted, fontSize: FONT.sm, marginRight: SPACE.sm }}>React to</Text>
@@ -905,11 +946,12 @@ export default function ChatRoomScreen() {
               ))}
             </View>
             <Text style={{ color: c.muted, fontSize: FONT.sm }}>
-              {typingUsers.length === 1 ? `${typingUsers[0]} is typing…` : `${typingUsers.slice(0, 2).join(', ')}${typingUsers.length > 2 ? ` +${typingUsers.length - 2}` : ''} typing…`}
+              {typingSummary(typingUsers)}
             </Text>
           </View>
         </View>
       ) : null}
+      </KeyboardAvoidingView>
 
       <MediaViewer uri={viewer} title={roomName} onClose={() => setViewer(null)} />
     </SafeAreaView>

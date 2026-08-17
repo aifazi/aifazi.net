@@ -34,6 +34,7 @@ from routers.chat_livekit import (
     _generate_token,
 )
 from utils.link_safety import schedule_scan
+from routers.push import send_push
 
 router = APIRouter()
 
@@ -241,7 +242,7 @@ class StartThreadBody(BaseModel):
 
 class DMMessageBody(BaseModel):
     content: str
-    type: str = "text"           # text | image | file | voice
+    type: str = "text"           # text | image | file | voice | call
     file_name: str = ""
     file_size: str = ""
     duration: str = ""           # seconds for voice notes
@@ -399,6 +400,47 @@ async def dm_livekit_status(_: dict = Depends(get_current_user)):
         "available": bool(LIVEKIT_URL and LIVEKIT_KEY and LIVEKIT_SECRET),
         "configured": bool(LIVEKIT_URL),
     }
+
+
+@router.post("/dm/threads/{thread_id}/livekit/invite")
+async def dm_livekit_invite(thread_id: str, user: dict = Depends(get_current_user)):
+    """Ring the DM peer: insert a `call` message into the thread and push a
+    notification so they can join the LiveKit DM room. The joining client mints
+    its own token via /dm/threads/{thread_id}/livekit/token on Accept."""
+    if not LIVEKIT_URL or not LIVEKIT_KEY or not LIVEKIT_SECRET:
+        raise HTTPException(503, "LiveKit env vars not set: LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET")
+    thread = _get_thread(thread_id, user)
+    peer = _peer_of(thread, user)
+    if _blocked_by(user["username"], peer) or _blocked_by(peer, user["username"]):
+        raise HTTPException(403, "Direct messages are not available with this user")
+
+    content = json.dumps({"video": False, "caller": (user.get("username") or ""), "at": _now()}, ensure_ascii=False)
+    row = (
+        supabase.table("dm_messages")
+        .insert({
+            "thread_id": thread_id,
+            "sender": user["username"],
+            "content": content[:4000],
+            "type": "call",
+        })
+        .execute()
+    )
+    _bump_thread(thread_id)
+    # Best-effort push to the peer so their phone rings even when the app is
+    # backgrounded. Never breaks the invite path.
+    try:
+        peer_rec = _get_user(peer)
+        peer_uid = str(peer_rec.get("id") or "")
+        if peer_uid:
+            await send_push(
+                [peer_uid],
+                f"Incoming call from {user['username']}",
+                "Tap to join the call",
+                {"call": True, "mode": "dm", "thread_id": thread_id, "peer": user["username"]},
+            )
+    except Exception:
+        pass
+    return row.data[0]
 
 
 # ── DM requests + blocks ──────────────────────────────────────────────────────
@@ -589,7 +631,7 @@ async def send_dm_message(thread_id: str, body: DMMessageBody, user: dict = Depe
         raise HTTPException(400, "Message cannot be empty")
     if len(content) > 4000:
         raise HTTPException(400, "Message too long (max 4000 chars)")
-    if body.type not in ("text", "image", "file", "voice"):
+    if body.type not in ("text", "image", "file", "voice", "call"):
         raise HTTPException(400, "Invalid message type")
     safe_reply = None
     if body.reply_to and body.reply_to.get("id"):
@@ -679,33 +721,40 @@ async def delete_dm_message(msg_id: str, user: dict = Depends(get_current_user))
 # Supabase Realtime broadcast. This REST variant powers the mobile clients.
 _DM_TYPING_TTL = 6.0
 _dm_typing_lock = threading.Lock()
-_dm_typing: dict[tuple[str, str], float] = {}
+_dm_typing: dict[tuple[str, str], tuple[float, str]] = {}
+_DM_TYPING_ACTIVITIES = ("typing", "image", "file", "voice", "video")
 
 
 @router.post("/dm/threads/{thread_id}/typing")
-async def set_dm_typing(thread_id: str, user: dict = Depends(get_current_user)):
-    """Heartbeat that the caller is typing in a DM thread (expires ~6s)."""
+async def set_dm_typing(thread_id: str, body: dict | None = None, user: dict = Depends(get_current_user)):
+    """Heartbeat that the caller is doing something in a DM thread (expires ~6s).
+
+    `activity` describes the action: typing / image / file / voice / video.
+    """
     _get_thread(thread_id, user)
+    activity = "typing"
+    if isinstance(body, dict) and isinstance(body.get("activity"), str):
+        activity = body["activity"] if body["activity"] in _DM_TYPING_ACTIVITIES else "typing"
     with _dm_typing_lock:
-        _dm_typing[(thread_id, user["username"])] = time.monotonic()
+        _dm_typing[(thread_id, user["username"])] = (time.monotonic(), activity)
     return {"ok": True}
 
 
 @router.get("/dm/threads/{thread_id}/typing")
 async def get_dm_typing(thread_id: str, user: dict = Depends(get_current_user)):
-    """Usernames currently typing in a thread (excluding the caller)."""
+    """Users currently active in a thread (excluding the caller), with activity."""
     _get_thread(thread_id, user)
     now = time.monotonic()
-    names = []
+    names: list[dict[str, str]] = []
     with _dm_typing_lock:
-        for (tid, uname), ts in list(_dm_typing.items()):
+        for (tid, uname), (ts, activity) in list(_dm_typing.items()):
             if tid != thread_id:
                 continue
             if now - ts > _DM_TYPING_TTL:
                 _dm_typing.pop((tid, uname), None)
                 continue
             if uname != user["username"]:
-                names.append(uname)
+                names.append({"username": uname, "activity": activity})
     return names
 
 

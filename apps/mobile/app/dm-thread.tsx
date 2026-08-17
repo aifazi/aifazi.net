@@ -22,7 +22,9 @@ import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
+import { dmLiveKitInvitePath, parseCallInvite, normalizeTypingActivity, typingSummary, type TypingActivity, type TypingActivityKind } from '@fazi/shared'
 import { useMessageActions, useSwipeToReply } from '@/src/lib/chat-actions'
+import { useMessagesRealtime } from '@/src/lib/chat-realtime'
 import { useOverlay } from '@/src/components/overlay'
 import { Loader } from '@/src/components/Loader'
 import { VoiceRecorder, VoiceNotePlay } from '@/src/components/VoiceNote'
@@ -82,6 +84,7 @@ interface RowProps {
   replyBody: string
   isImage: boolean
   isVoice: boolean
+  isCall: boolean
   preview?: LinkPreview | null
   reactions: [string, string[]][]
   onReply: () => void
@@ -91,10 +94,11 @@ interface RowProps {
   onToggleReact: (emoji: string) => void
   onLongPress: () => void
   onOpenLink: (url: string) => void
+  onJoinCall: () => void
 }
 
 function MessageRow(props: RowProps) {
-  const { mine, c, theme, item, body, replyBody, isImage, isVoice, preview, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress, onOpenLink } = props
+  const { mine, c, theme, item, body, replyBody, isImage, isVoice, isCall, preview, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress, onOpenLink, onJoinCall } = props
   const { pan, panHandlers } = useSwipeToReply({ onReply })
   const mineText = mine ? contrastText(c.accent2) : c.text
   const mineMuted = mine ? withAlpha(contrastText(c.accent2), 0.65) : c.muted
@@ -116,6 +120,7 @@ function MessageRow(props: RowProps) {
                 borderColor: mine ? c.accent2 : c.border,
                 maxWidth: '85%',
                 borderRadius: radius,
+                overflow: 'hidden',
               },
             ]}
           >
@@ -127,11 +132,39 @@ function MessageRow(props: RowProps) {
                 </Text>
               </View>
             ) : null}
-            {isImage ? (
+            {isCall ? (
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderRadius: radius,
+                  padding: SPACE.lg,
+                  alignItems: 'center',
+                  borderColor: c.accent2,
+                  backgroundColor: withAlpha(c.accent2, 0.08),
+                  minWidth: 150,
+                }}
+              >
+                <Icon name="phone" size={FONT.section} color={c.accent2} />
+                <Text style={{ color: c.text, fontSize: FONT.md, fontWeight: '700', marginTop: SPACE.sm }}>
+                  {mine ? 'Outgoing call' : 'Incoming call'}
+                </Text>
+                <Text style={{ color: c.muted, fontSize: FONT.sm, marginTop: SPACE.xxs }}>
+                  {mine ? 'You placed a call' : `${parseCallInvite(item.content)?.caller || item.sender} is calling you`}
+                </Text>
+                <TouchableOpacity
+                  onPress={onJoinCall}
+                  accessibilityRole="button"
+                  accessibilityLabel={mine ? 'Join call' : 'Accept call'}
+                  style={{ backgroundColor: c.accent, borderRadius: 999, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.sm, marginTop: SPACE.lg }}
+                >
+                  <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: FONT.md }}>{mine ? 'JOIN' : 'ACCEPT'}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : isImage ? (
               <TouchableOpacity onPress={() => onOpenLink(item.content ?? '')}>
                 <ExpoImage
                   source={{ uri: item.content }}
-                  style={{ width: 220, height: 220, borderRadius: 10 }}
+                  style={{ width: 220, height: 220, borderRadius: radius }}
                   contentFit="cover"
                   transition={150}
                 />
@@ -262,7 +295,7 @@ export default function DMThreadScreen() {
   const [editText, setEditText] = useState('')
   const [replying, setReplying] = useState<DMMessage | null>(null)
   const [peerLastRead, setPeerLastRead] = useState('')
-  const [typing, setTyping] = useState<string[]>([])
+  const [typing, setTyping] = useState<TypingActivity[]>([])
   const [previews, setPreviews] = useState<Record<string, LinkPreview>>({})
   const [viewer, setViewer] = useState<string | null>(null)
   const listRef = useRef<FlatList<DMMessage>>(null)
@@ -345,22 +378,40 @@ export default function DMThreadScreen() {
     }
   }, [thread_id, messages, loadingOlder])
 
+  // ── Realtime messages (instant, mirrors web) with polling fallback ────────
+  const { active: rtActive } = useMessagesRealtime<DMMessage>(
+    'dm_messages',
+    thread_id,
+    'thread_id',
+    {
+      onInsert: (m) => {
+        setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]))
+        setErr('')
+      },
+      onUpdate: (m) => setMessages((prev) => prev.map((x) => (x.id === m.id ? m : x))),
+      onDelete: (oldM) => setMessages((prev) => prev.filter((x) => x.id !== oldM.id)),
+    },
+  )
+
   useEffect(() => {
     load()
-    pollTimer.current = setInterval(() => load(true), POLL_MS)
+    if (!rtActive) {
+      pollTimer.current = setInterval(() => load(true), POLL_MS)
+    }
     const pollTyping = () => {
       api
         .get(`/chat/dm/threads/${thread_id}/typing`)
-        .then((r) => setTyping((r.data ?? []) as string[]))
+        .then((r) => setTyping(((r.data ?? []) as unknown[]).map(normalizeTypingActivity)))
         .catch(() => {})
     }
     pollTyping()
     const typingTimer = setInterval(pollTyping, 3000)
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        if (!pollTimer.current) pollTimer.current = setInterval(() => load(true), POLL_MS)
+        // Realtime can drop events while backgrounded — resync on focus.
         load(true)
         pollTyping()
+        if (!rtActive && !pollTimer.current) pollTimer.current = setInterval(() => load(true), POLL_MS)
       } else if (pollTimer.current) {
         clearInterval(pollTimer.current)
         pollTimer.current = null
@@ -371,7 +422,7 @@ export default function DMThreadScreen() {
       clearInterval(typingTimer)
       sub.remove()
     }
-  }, [load, thread_id])
+  }, [load, rtActive, thread_id])
 
   const send = async () => {
     const content = text.trim()
@@ -393,15 +444,18 @@ export default function DMThreadScreen() {
     }
   }
 
-  /** Heartbeat to the server that we're typing (throttled to ~2s). */
-  const heartbeatTyping = useCallback(() => {
-    if (!thread_id || isTyping.current) return
-    isTyping.current = true
-    api.post(`/chat/dm/threads/${thread_id}/typing`).catch(() => {})
-    if (typingTimer.current) clearTimeout(typingTimer.current)
-    typingTimer.current = setTimeout(() => {
-      isTyping.current = false
-    }, 2500)
+  /** Heartbeat to the server with what we're doing (throttled for typing). */
+  const heartbeatTyping = useCallback((activity: TypingActivityKind = 'typing') => {
+    if (!thread_id) return
+    if (activity === 'typing' && isTyping.current) return
+    if (activity === 'typing') {
+      isTyping.current = true
+      if (typingTimer.current) clearTimeout(typingTimer.current)
+      typingTimer.current = setTimeout(() => {
+        isTyping.current = false
+      }, 2500)
+    }
+    api.post(`/chat/dm/threads/${thread_id}/typing`, { activity }).catch(() => {})
   }, [thread_id])
 
   const onTextChange = (t: string) => {
@@ -412,6 +466,7 @@ export default function DMThreadScreen() {
 
   const uploadVoice = async (uri: string, durSec: number) => {
     if (!thread_id) return
+    heartbeatTyping('voice')
     setUploading(true)
     try {
       const form = new FormData()
@@ -505,11 +560,13 @@ export default function DMThreadScreen() {
   }
 
   const pickImage = async () => {
+    heartbeatTyping('image')
     const f = await askImageSourceAsync(overlay)
     if (f) uploadFile(f, 'image')
   }
 
   const pickDoc = () => {
+    heartbeatTyping('file')
     pickDocument().then((f) => f && uploadFile(f, 'file'))
   }
 
@@ -574,6 +631,20 @@ export default function DMThreadScreen() {
     }
   }
 
+  // Start a DM call: open the call screen and ring the peer via a `call`
+  // message + push so they can accept from either platform.
+  const startCall = useCallback(() => {
+    if (!thread_id) return
+    router.push(`/call?mode=dm&thread_id=${encodeURIComponent(thread_id)}&peer=${encodeURIComponent(peer || '')}` as Href)
+    api.post(dmLiveKitInvitePath(thread_id)).catch(() => {})
+  }, [thread_id, peer, router])
+
+  // Join an incoming/outgoing call from a rendered `call` message card.
+  const joinCall = useCallback(() => {
+    if (!thread_id) return
+    router.push(`/call?mode=dm&thread_id=${encodeURIComponent(thread_id)}&peer=${encodeURIComponent(peer || '')}` as Href)
+  }, [thread_id, peer, router])
+
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
       <View style={[styles.header, { borderBottomColor: c.border }]}>
@@ -584,10 +655,7 @@ export default function DMThreadScreen() {
           {peer || 'Direct message'}
         </Text>
         <TouchableOpacity
-          onPress={() => {
-            if (!thread_id) return
-            router.push(`/call?mode=dm&thread_id=${encodeURIComponent(thread_id)}&peer=${encodeURIComponent(peer || '')}` as Href)
-          }}
+          onPress={startCall}
           hitSlop={10}
         >
           <Icon name="phone" size={FONT.section} color={c.text} />
@@ -599,7 +667,7 @@ export default function DMThreadScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {loading ? (
           <View style={{ paddingTop: SPACE.colossal, alignItems: 'center' }}>
@@ -649,6 +717,7 @@ export default function DMThreadScreen() {
               const mine = isMine(item)
               const isImage = item.type === 'image'
               const isVoice = item.type === 'voice'
+              const isCall = item.type === 'call'
               const reactions = item.reactions ?? {}
               const reactionEntries = Object.entries(reactions)
               const body = decryptedBodies[`${item.id}:body`] ?? item.content ?? ''
@@ -666,6 +735,7 @@ export default function DMThreadScreen() {
                     replyBody={replyBody}
                     isImage={isImage}
                     isVoice={isVoice}
+                    isCall={isCall}
                     preview={previews[item.id]}
                     reactions={reactionEntries}
                     onReply={() => setReplying(item)}
@@ -675,6 +745,7 @@ export default function DMThreadScreen() {
                     onToggleReact={(emoji) => toggleReact(item.id, emoji)}
                     onLongPress={() => onLongPress(item)}
                     onOpenLink={openLink}
+                    onJoinCall={joinCall}
                   />
                   {seen ? (
                     <View style={{ alignItems: 'flex-end', marginTop: -4, marginBottom: SPACE.xs }}>
@@ -689,14 +760,11 @@ export default function DMThreadScreen() {
             }}
           />
         )}
-      </KeyboardAvoidingView>
-
       <View style={[styles.inputBar, { borderTopColor: c.border, backgroundColor: c.bg2 }]}>
         {typing.length > 0 ? (
           <View style={{ position: 'absolute', top: -26, left: 0, right: 0, alignItems: 'center' }}>
             <Text style={{ color: c.muted, fontSize: FONT.sm, fontStyle: 'italic' }}>
-              {typing[0]}
-              {typing.length > 1 ? ` +${typing.length - 1} others` : ''} typing…
+              {typingSummary(typing)}
             </Text>
           </View>
         ) : null}
@@ -745,6 +813,7 @@ export default function DMThreadScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
 
       <MediaViewer uri={viewer} title={peer || 'Media'} onClose={() => setViewer(null)} />
     </SafeAreaView>

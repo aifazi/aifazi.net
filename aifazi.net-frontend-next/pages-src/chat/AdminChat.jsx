@@ -14,6 +14,7 @@ import { Avatar } from './components/Avatar'
 import { RolePill } from './components/RolePill'
 import { VoicePanel } from './components/VoicePanel'
 import { MiniCallBar } from './components/MiniCallBar'
+import { normalizeTypingActivity, typingSummary } from '@fazi/shared'
 import { MediaViewer } from './components/MediaViewer'
 import { ChannelModal } from './components/ChannelModal'
 import { EditBar } from './components/EditBar'
@@ -361,12 +362,13 @@ export default function AdminChat({ embedded=false }) {
 
     const typCh = supabase.channel(`typing:${room.id}`)
     typCh.on('broadcast', { event: 'typing' }, (payload) => {
-      if (payload.payload?.username && payload.payload?.username !== me) {
+      const t = normalizeTypingActivity(payload.payload)
+      if (t.username && t.username !== me) {
         setTyping(prev => {
-          if (prev.find(t => t === payload.payload.username)) return prev
-          return [...prev, payload.payload.username]
+          if (prev.find(u => u.username === t.username)) return prev
+          return [...prev, t]
         })
-        setTimeout(() => setTyping(prev => prev.filter(t => t !== payload.payload.username)), 3000)
+        setTimeout(() => setTyping(prev => prev.filter(u => u.username !== t.username)), 3000)
       }
     })
     typCh.subscribe()
@@ -387,9 +389,9 @@ export default function AdminChat({ embedded=false }) {
     return () => { supabase.removeChannel(typCh); supabase.removeChannel(modCh) }
   }, [room?.id, me])
 
-  const broadcastTyping = useCallback(() => {
+  const broadcastTyping = useCallback((activity = 'typing') => {
     if (!room || !supabase || !me) return
-    supabase.channel(`typing:${room.id}`).send({ type:'broadcast', event:'typing', payload:{ username: me } })
+    supabase.channel(`typing:${room.id}`).send({ type:'broadcast', event:'typing', payload:{ username: me, activity } })
   }, [room?.id, me])
 
   // ── Join voice/video room ─────────────────────────────────────────────────
@@ -486,6 +488,7 @@ export default function AdminChat({ embedded=false }) {
     const file = e.target.files?.[0]
     if (!file || !room) return
     if (file.size > 10*1024*1024) { notify.error('File too large (max 10 MB)'); return }
+    broadcastTyping(file.type?.startsWith('image/') ? 'image' : 'file')
     setUploading(true)
     try {
       const form = new FormData(); form.append('file', file)
@@ -500,6 +503,7 @@ export default function AdminChat({ embedded=false }) {
   // ── Voice note recorder (room chat) ─────────────────────────────────────
   const startRec = async () => {
     if (!room) return
+    broadcastTyping('voice')
     if (isMutedByStaff) { notify.error('You are muted in this channel'); return }
     if (!navigator.mediaDevices?.getUserMedia) { notify.error('Recording not supported in this browser'); return }
     try {
@@ -763,7 +767,7 @@ export default function AdminChat({ embedded=false }) {
     </div>
   )
 
-  const typLabel = typing.length>0 ? (typing.length===1?`${typing[0]} is typing…`:`${typing.slice(0,2).join(', ')} are typing…`) : null
+  const typLabel = typing.length>0 ? typingSummary(typing) : null
   const isVC = callRoom && (callRoom.type==='voice'||callRoom.type==='video')
   const showFullCall = isVC && room && (room.type==='voice'||room.type==='video') && room.id === callRoom.id
 

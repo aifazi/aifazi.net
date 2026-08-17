@@ -728,33 +728,40 @@ async def search_messages(
 # broadcast; this REST variant powers the mobile clients (which poll).
 _TYPING_TTL = 6.0
 _typing_lock = threading.Lock()
-_typing: dict[tuple[str, str], float] = {}
+_typing: dict[tuple[str, str], tuple[float, str]] = {}
+_TYPING_ACTIVITIES = ("typing", "image", "file", "voice", "video")
 
 
 @router.post("/rooms/{room_id}/typing")
-async def set_typing(room_id: str, user: dict = Depends(get_current_user)):
-    """Heartbeat that this user is typing in a room (expires after ~6s)."""
+async def set_typing(room_id: str, body: dict | None = None, user: dict = Depends(get_current_user)):
+    """Heartbeat that this user is doing something in a room (expires ~6s).
+
+    `activity` describes the action: typing / image / file / voice / video.
+    """
     _ensure_room_access(room_id, user)
+    activity = "typing"
+    if isinstance(body, dict) and isinstance(body.get("activity"), str):
+        activity = body["activity"] if body["activity"] in _TYPING_ACTIVITIES else "typing"
     with _typing_lock:
-        _typing[(room_id, user["username"])] = time.monotonic()
+        _typing[(room_id, user["username"])] = (time.monotonic(), activity)
     return {"ok": True}
 
 
 @router.get("/rooms/{room_id}/typing")
 async def get_typing(room_id: str, user: dict = Depends(get_current_user)):
-    """Users currently typing in a room (excluding the caller)."""
+    """Users currently active in a room (excluding the caller), with activity."""
     _ensure_room_access(room_id, user)
     now = time.monotonic()
-    names = []
+    names: list[dict[str, str]] = []
     with _typing_lock:
-        for (rid, uname), ts in list(_typing.items()):
+        for (rid, uname), (ts, activity) in list(_typing.items()):
             if rid != room_id:
                 continue
             if now - ts > _TYPING_TTL:
                 _typing.pop((rid, uname), None)
                 continue
             if uname != user["username"]:
-                names.append(uname)
+                names.append({"username": uname, "activity": activity})
     return names
 
 @router.post("/rooms/{room_id}/messages")
