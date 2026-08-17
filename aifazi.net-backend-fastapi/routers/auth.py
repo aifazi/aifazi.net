@@ -157,18 +157,13 @@ def make_admin_gate_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
         data["id"] = payload.get("id")
     if payload.get("staff_id"):
         data["staff_id"] = payload.get("staff_id")
-    # Use PASETO for admin gate token too (proxy.ts expects PASETO)
-    # Temporarily override SECRET for admin gate
-    import os
-    old_secret = os.environ.get("PASETO_SECRET")
-    os.environ["PASETO_SECRET"] = ADMIN_GATE_SECRET
-    try:
-        return _paseto_create_token(data, expires_in=expires_minutes * 60, purpose="admin_gate")
-    finally:
-        if old_secret is not None:
-            os.environ["PASETO_SECRET"] = old_secret
-        else:
-            os.environ.pop("PASETO_SECRET", None)
+    # Use PASETO for admin gate token too (proxy.ts expects PASETO).
+    # H4 — pass ADMIN_GATE_SECRET explicitly instead of mutating the
+    # process-global os.environ["PASETO_SECRET"]. The old env-var swap raced
+    # concurrent make_token() calls: a login happening during the swap window
+    # could mint an access token with the admin-gate secret (or an admin-gate
+    # token with the access secret), a subtle cross-role trust break.
+    return _paseto_create_token(data, expires_in=expires_minutes * 60, purpose="admin_gate", secret=ADMIN_GATE_SECRET)
 
 def _check_admin_password(submitted: str) -> bool:
     """Admin password verification. Requires a bcrypt hash (starting with $2b$, $2a$,
