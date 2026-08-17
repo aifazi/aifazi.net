@@ -27,7 +27,7 @@ jobs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           fetch-depth: 0
 
@@ -79,7 +79,7 @@ jobs:
           # It must be strictly greater than every previously released versionCode
           # or Android rejects the APK (invalid downgrade) or ignores it as a
           # same-version re-install. A stale tag (e.g. re-releasing v1.0.15 after
-          # v1.0.21) would otherwise silently lower the code — fail closed instead.
+          # v1.0.21) would otherwise silently lower the code â€” fail closed instead.
           v=$(echo "$APP_VERSION" | sed 's/^v//I' | tr -d '[:space:]')
           if ! echo "$v" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "::error::Release tag '$APP_VERSION' is not a semver vX.Y.Z tag; cannot compute versionCode." >&2
@@ -92,7 +92,7 @@ jobs:
             grep -vxF "$v" | \
             awk -F. '{print $1*1000000 + $2*1000 + $3}' | sort -n | tail -1)
           if [ -n "$prev" ] && [ "$new" -le "$prev" ]; then
-            echo "::error::versionCode $new is not above the last released versionCode $prev — refusing to build a non-monotonic release. Use a higher version tag (e.g. bump minor/patch past $APP_VERSION)." >&2
+            echo "::error::versionCode $new is not above the last released versionCode $prev â€” refusing to build a non-monotonic release. Use a higher version tag (e.g. bump minor/patch past $APP_VERSION)." >&2
             exit 1
           fi
           echo "versionCode $new is monotonic (last released: ${prev:-none})"
@@ -103,7 +103,7 @@ jobs:
           APP_VERSION: ${{ steps.tag.outputs.tag }}
         run: |
           if git diff --quiet -- app.json; then
-            echo "app.json is already at $APP_VERSION — nothing to commit"
+            echo "app.json is already at $APP_VERSION â€” nothing to commit"
             exit 0
           fi
           git config user.name "github-actions[bot]"
@@ -125,19 +125,19 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
 
       - name: Setup JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
           distribution: temurin
           java-version: '17'
@@ -178,7 +178,7 @@ jobs:
             grep -vxF "$v" | \
             awk -F. '{print $1*1000000 + $2*1000 + $3}' | sort -n | tail -1)
           if [ -n "$prev" ] && [ "$new" -le "$prev" ]; then
-            echo "::error::versionCode $new is not above the last released versionCode $prev — refusing to build a non-monotonic release." >&2
+            echo "::error::versionCode $new is not above the last released versionCode $prev â€” refusing to build a non-monotonic release." >&2
             exit 1
           fi
           echo "versionCode $new is monotonic (last released: ${prev:-none})"
@@ -226,7 +226,7 @@ jobs:
           fi
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/release.keystore
           if [ ! -s app/release.keystore ]; then
-            echo "Decoded keystore is empty — check the ANDROID_KEYSTORE_BASE64 secret." >&2
+            echo "Decoded keystore is empty â€” check the ANDROID_KEYSTORE_BASE64 secret." >&2
             exit 1
           fi
 
