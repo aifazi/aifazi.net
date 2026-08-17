@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
-from database import supabase
+from database import safe_search_term, supabase
 from dependencies import require_staff
 from utils.email import send_email
 from utils.email_queue import dispatch_pending
@@ -92,7 +92,7 @@ def _row_to_email(r: dict) -> dict:
 
 
 def _apply_search(q, term: str):
-    term = term.strip()
+    term = safe_search_term(term)
     if not term:
         return q
     return q.or_(

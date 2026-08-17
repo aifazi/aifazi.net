@@ -109,24 +109,35 @@ def _extract_meta(html: str, url: str) -> dict:
 MAX_REDIRECTS = 5
 
 
-def _pinned_get(client: httpx.AsyncClient, url: str, *, hostname: str, pinned_ip: str) -> httpx.Response:
-    """GET url but connect to the PRE-VALIDATED pinned IP, not re-resolved DNS.
-    The IP is substituted into the URL netloc and the original host is restored
-    via the Host header so SNI / vhost routing still works. Follows seo_proxy."""
+async def _pinned_stream(client: httpx.AsyncClient, url: str, *, hostname: str, pinned_ip: str) -> tuple[int, httpx.Headers, bytes]:
+    """GET url (pinned IP, as _pinned_get) but STREAM the body, reading at most
+    MAX_RESPONSE_BYTES. `response.content` would buffer the whole payload first,
+    so a malicious multi-GB link could exhaust memory despite the later slice;
+    streaming bounds memory to MAX_RESPONSE_BYTES regardless of what the server
+    sends. Redirect responses are returned with an empty body."""
     parsed = urlparse(url)
     netloc = pinned_ip if ":" not in pinned_ip else f"[{pinned_ip}]"  # bracket IPv6
     if parsed.port:
         netloc = f"{netloc}:{parsed.port}"
     pinned_url = parsed._replace(netloc=netloc).geturl()
-    return client.get(
-        pinned_url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (aifazi.net link previews; +https://aifazi.net) AppleWebKit/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Host": hostname,
-        },
-    )
+    headers = {
+        "User-Agent": "Mozilla/5.0 (aifazi.net link previews; +https://aifazi.net) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Host": hostname,
+    }
+    async with client.stream("GET", pinned_url, headers=headers) as resp:
+        if resp.status_code in (301, 302, 303, 307, 308):
+            return resp.status_code, resp.headers, b""
+        body = b""
+        async for chunk in resp.aiter_bytes():
+            if not chunk:
+                continue
+            if len(body) + len(chunk) > MAX_RESPONSE_BYTES:
+                body += chunk[: MAX_RESPONSE_BYTES - len(body)]
+                break
+            body += chunk
+        return resp.status_code, resp.headers, body
 
 
 # ── route ─────────────────────────────────────────────────────────────────────
@@ -161,16 +172,19 @@ async def link_preview(url: str = Query(..., min_length=8, max_length=2048)):
 
     try:
         async with httpx.AsyncClient(timeout=FETCH_TIMEOUT, verify=True) as client:
-            final = None
+            final_status = 0
+            final_body = b""
             current_url, current_host, current_ip = url, host, pinned_ip
             for _ in range(MAX_REDIRECTS):
-                final = await _pinned_get(client, current_url, hostname=current_host, pinned_ip=current_ip)
-                if final.status_code not in (301, 302, 303, 307, 308):
+                final_status, _final_headers, final_body = await _pinned_stream(
+                    client, current_url, hostname=current_host, pinned_ip=current_ip
+                )
+                if final_status not in (301, 302, 303, 307, 308):
                     break
-                location = final.headers.get("location", "")
+                location = _final_headers.get("location", "")
                 if not location:
                     break
-                next_url = urljoin(str(final.url), location)
+                next_url = urljoin(current_url, location)
                 next_parsed = urlparse(next_url)
                 if next_parsed.scheme not in ("http", "https"):
                     raise HTTPException(400, "Only http/https URLs supported")
@@ -185,10 +199,10 @@ async def link_preview(url: str = Query(..., min_length=8, max_length=2048)):
         raise
     except Exception:
         raise HTTPException(422, "Could not fetch URL")
-    if final is None or final.status_code >= 400:
-        raise HTTPException(422, f"Could not fetch URL — status {getattr(final, 'status_code', '?')}")
+    if final_status == 0 or final_status >= 400:
+        raise HTTPException(422, f"Could not fetch URL — status {final_status}")
 
-    raw = (final.content or b"")[:MAX_RESPONSE_BYTES]
+    raw = final_body or b""
     try:
         text = raw.decode("utf-8", errors="replace")
     except Exception:

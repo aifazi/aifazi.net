@@ -31,7 +31,7 @@ from fastapi.responses import RedirectResponse as _Redir
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 
-from database import supabase
+from database import safe_search_term, supabase
 from dependencies import (
     CookieHTTPBearer,
     get_current_user,
@@ -1080,7 +1080,7 @@ async def get_staff(_: dict = Depends(require_admin)):
 
 @router.get("/staff/search-users")
 async def search_staff_users(q: str = "", _: dict = Depends(require_admin)):
-    query = (q or "").strip()
+    query = safe_search_term(q)
     if len(query) < 2:
         return {"users": []}
     try:

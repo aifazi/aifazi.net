@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from database import supabase
+from database import safe_search_term, supabase
 from permissions import require_any_permission
 from routers.store_inventory import restock
 
@@ -31,7 +31,8 @@ async def list_customers(search: str = "", limit: int = 100, _: dict = Depends(C
     q = supabase.table("users").select(
         "id,username,email,role,created_at,last_seen,profile_avatar,email_verified,banned")
     if search.strip():
-        s = search.strip()
+        s = safe_search_term(search)
+    if s:
         q = q.or_(f"username.ilike.%{s}%,email.ilike.%{s}%")
     rows = q.limit(min(max(limit, 1), 500)).execute().data or []
 
