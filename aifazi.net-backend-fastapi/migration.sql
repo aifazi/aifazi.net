@@ -1212,29 +1212,28 @@ EXCEPTION WHEN duplicate_object THEN RAISE NOTICE 'chat_messages already in publ
 END;
 $$;
 
--- RLS policies for chat_messages — allow anon users to read (needed for Realtime)
+-- RLS policies for chat_messages — FAIL-CLOSED (audit C1 2026-08-17).
+-- Base migration.sql previously granted anon/PUBLIC full CRUD here; hardening
+-- lives in migrations 005/010/022/037/039. Ship the scoped anon SELECT for
+-- Realtime (public rooms only) directly so a fresh replay is never exposed.
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS chat_messages_select ON chat_messages;
-CREATE POLICY chat_messages_select ON chat_messages
-    FOR SELECT USING (true);
 DROP POLICY IF EXISTS chat_messages_insert ON chat_messages;
-CREATE POLICY chat_messages_insert ON chat_messages
-    FOR INSERT WITH CHECK (true);
 DROP POLICY IF EXISTS chat_messages_update ON chat_messages;
-CREATE POLICY chat_messages_update ON chat_messages
-    FOR UPDATE USING (true);
 DROP POLICY IF EXISTS chat_messages_delete ON chat_messages;
-CREATE POLICY chat_messages_delete ON chat_messages
-    FOR DELETE USING (true);
--- Also grant anon access so Supabase Realtime subscriptions work
 DROP POLICY IF EXISTS anon_read_chat_messages ON chat_messages;
-CREATE POLICY anon_read_chat_messages ON chat_messages FOR SELECT TO anon USING (true);
 DROP POLICY IF EXISTS anon_insert_chat_messages ON chat_messages;
-CREATE POLICY anon_insert_chat_messages ON chat_messages FOR INSERT TO anon WITH CHECK (true);
 DROP POLICY IF EXISTS anon_update_chat_messages ON chat_messages;
-CREATE POLICY anon_update_chat_messages ON chat_messages FOR UPDATE TO anon USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS anon_delete_chat_messages ON chat_messages;
-CREATE POLICY anon_delete_chat_messages ON chat_messages FOR DELETE TO anon USING (true);
+DROP POLICY IF EXISTS chat_messages_select_public ON chat_messages;
+CREATE POLICY chat_messages_select_public ON chat_messages
+    FOR SELECT TO anon
+    USING (EXISTS (
+        SELECT 1 FROM public.chat_rooms r
+        WHERE r.id::text = chat_messages.room_id::text
+          AND COALESCE(r.allowed_roles, '{}') = '{}'
+    ));
+REVOKE INSERT, UPDATE, DELETE ON public.chat_messages FROM anon, authenticated;
 
 -- chat_rooms
 DO $$
@@ -1250,73 +1249,68 @@ EXCEPTION WHEN duplicate_object THEN RAISE NOTICE 'chat_rooms already in publica
 END;
 $$;
 
--- RLS policies for chat_rooms — allow public read for room listing
+-- RLS policies for chat_rooms — anon SELECT only (room listing + Realtime),
+-- with the E2EE encryption_key column revoked from anon. No anon writes.
+-- NOTE: named chat_rooms_select (NOT anon_select_chat_rooms_safe) because
+-- migration 005 drops chat_rooms_select and then creates anon_select_chat_rooms_safe
+-- without a preceding DROP — creating that name here would break replay.
 ALTER TABLE chat_rooms ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS chat_rooms_select ON chat_rooms;
-CREATE POLICY chat_rooms_select ON chat_rooms
-    FOR SELECT USING (true);
 DROP POLICY IF EXISTS chat_rooms_insert ON chat_rooms;
-CREATE POLICY chat_rooms_insert ON chat_rooms
-    FOR INSERT WITH CHECK (true);
 DROP POLICY IF EXISTS chat_rooms_update ON chat_rooms;
-CREATE POLICY chat_rooms_update ON chat_rooms
-    FOR UPDATE USING (true);
+DROP POLICY IF EXISTS anon_select_chat_rooms ON chat_rooms;
+CREATE POLICY chat_rooms_select ON chat_rooms
+    FOR SELECT TO anon USING (true);
+REVOKE SELECT (encryption_key) ON chat_rooms FROM anon;
+REVOKE INSERT, UPDATE, DELETE ON public.chat_rooms FROM anon, authenticated;
 
 -- ── chat_mutes RLS + realtime ────────────────────────────────
 ALTER TABLE chat_mutes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS anon_read_chat_mutes ON chat_mutes;
-CREATE POLICY anon_read_chat_mutes ON chat_mutes FOR SELECT TO anon USING (true);
 DROP POLICY IF EXISTS anon_all_chat_mutes ON chat_mutes;
-CREATE POLICY anon_all_chat_mutes ON chat_mutes FOR INSERT TO anon WITH CHECK (true);
 DROP POLICY IF EXISTS anon_update_chat_mutes ON chat_mutes;
-CREATE POLICY anon_update_chat_mutes ON chat_mutes FOR UPDATE TO anon USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS anon_delete_chat_mutes ON chat_mutes;
-CREATE POLICY anon_delete_chat_mutes ON chat_mutes FOR DELETE TO anon USING (true);
+DROP POLICY IF EXISTS chat_mutes_member_select ON chat_mutes;
+REVOKE ALL ON public.chat_mutes FROM anon;
 DO $$ BEGIN ALTER TABLE public.chat_mutes REPLICA IDENTITY FULL; EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'chat_mutes REPLICA IDENTITY: %', SQLERRM; END $$;
 
 -- ── chat_bans RLS + realtime ─────────────────────────────────
 ALTER TABLE chat_bans ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS anon_read_chat_bans ON chat_bans;
-CREATE POLICY anon_read_chat_bans ON chat_bans FOR SELECT TO anon USING (true);
 DROP POLICY IF EXISTS anon_all_chat_bans ON chat_bans;
-CREATE POLICY anon_all_chat_bans ON chat_bans FOR INSERT TO anon WITH CHECK (true);
 DROP POLICY IF EXISTS anon_update_chat_bans ON chat_bans;
-CREATE POLICY anon_update_chat_bans ON chat_bans FOR UPDATE TO anon USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS anon_delete_chat_bans ON chat_bans;
-CREATE POLICY anon_delete_chat_bans ON chat_bans FOR DELETE TO anon USING (true);
+DROP POLICY IF EXISTS chat_bans_member_select ON chat_bans;
+REVOKE ALL ON public.chat_bans FROM anon;
 DO $$ BEGIN ALTER TABLE public.chat_bans REPLICA IDENTITY FULL; EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'chat_bans REPLICA IDENTITY: %', SQLERRM; END $$;
 
 -- ── chat_members RLS + realtime ───────────────────────────────
 ALTER TABLE chat_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS anon_read_chat_members ON chat_members;
-CREATE POLICY anon_read_chat_members ON chat_members FOR SELECT TO anon USING (true);
 DROP POLICY IF EXISTS anon_insert_chat_members ON chat_members;
-CREATE POLICY anon_insert_chat_members ON chat_members FOR INSERT TO anon WITH CHECK (true);
 DROP POLICY IF EXISTS anon_delete_chat_members ON chat_members;
-CREATE POLICY anon_delete_chat_members ON chat_members FOR DELETE TO anon USING (true);
+CREATE POLICY anon_read_chat_members ON chat_members FOR SELECT TO anon USING (true);
+REVOKE INSERT, UPDATE, DELETE ON public.chat_members FROM anon, authenticated;
 DO $$ BEGIN ALTER TABLE public.chat_members REPLICA IDENTITY FULL; EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'chat_members REPLICA IDENTITY: %', SQLERRM; END $$;
 
 -- ── chat_room_roles RLS + realtime ────────────────────────────
 ALTER TABLE chat_room_roles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS anon_read_chat_room_roles ON chat_room_roles;
-CREATE POLICY anon_read_chat_room_roles ON chat_room_roles FOR SELECT TO anon USING (true);
 DROP POLICY IF EXISTS anon_all_chat_room_roles ON chat_room_roles;
-CREATE POLICY anon_all_chat_room_roles ON chat_room_roles FOR INSERT TO anon WITH CHECK (true);
+DROP POLICY IF EXISTS anon_insert_chat_room_roles ON chat_room_roles;
 DROP POLICY IF EXISTS anon_update_chat_room_roles ON chat_room_roles;
-CREATE POLICY anon_update_chat_room_roles ON chat_room_roles FOR UPDATE TO anon USING (true) WITH CHECK (true);
 DROP POLICY IF EXISTS anon_delete_chat_room_roles ON chat_room_roles;
-CREATE POLICY anon_delete_chat_room_roles ON chat_room_roles FOR DELETE TO anon USING (true);
+CREATE POLICY anon_read_chat_room_roles ON chat_room_roles FOR SELECT TO anon USING (true);
+REVOKE INSERT, UPDATE, DELETE ON public.chat_room_roles FROM anon;
 DO $$ BEGIN ALTER TABLE public.chat_room_roles REPLICA IDENTITY FULL; EXCEPTION WHEN OTHERS THEN RAISE NOTICE 'chat_room_roles REPLICA IDENTITY: %', SQLERRM; END $$;
 DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_room_roles; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ── fivem_connect_tokens RLS ────────────────────────────────────
 ALTER TABLE fivem_connect_tokens ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS anon_read_fivem_tokens ON fivem_connect_tokens;
-CREATE POLICY anon_read_fivem_tokens ON fivem_connect_tokens FOR SELECT TO anon USING (true);
 DROP POLICY IF EXISTS anon_insert_fivem_tokens ON fivem_connect_tokens;
-CREATE POLICY anon_insert_fivem_tokens ON fivem_connect_tokens FOR INSERT TO anon WITH CHECK (true);
 DROP POLICY IF EXISTS anon_update_fivem_tokens ON fivem_connect_tokens;
-CREATE POLICY anon_update_fivem_tokens ON fivem_connect_tokens FOR UPDATE TO anon USING (true) WITH CHECK (true);
+REVOKE ALL ON public.fivem_connect_tokens FROM anon;
 
 -- posts
 DO $$
