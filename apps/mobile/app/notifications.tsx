@@ -34,6 +34,25 @@ const TYPE_ICON: Record<string, IconName> = {
   system: 'bell',
 }
 
+/**
+ * Extract a chat room id from a notification link. Chat notifications point at
+ * the web app's `/chat?room=<id>` URL; pull the room out so we can deep-link
+ * into the native chat-room screen instead of bouncing to the browser.
+ * Returns null when the link is not a chat link.
+ */
+function parseChatRoomFromLink(link: string | undefined | null): string | null {
+  if (!link) return null
+  try {
+    const url = new URL(link)
+    if (url.pathname.replace(/\/+$/, '') === '/chat' && url.searchParams.get('room')) {
+      return url.searchParams.get('room')
+    }
+  } catch {
+    // Not a URL — ignore
+  }
+  return null
+}
+
 export default function NotificationsScreen() {
   const { theme } = useTheme()
   const c = theme.colors
@@ -66,6 +85,14 @@ export default function NotificationsScreen() {
       setNotifs((prev) => prev.map((x) => ((x.id || x._id) === id ? { ...x, read: true } : x)))
     }
     if (n.link) {
+      // Chat notifications carry a web URL (https://aifazi.net/chat?room=…).
+      // Open them in-app so the message lands in the native chat room, not the
+      // browser. Other app-domain deep links get the same treatment.
+      const room = parseChatRoomFromLink(n.link)
+      if (room) {
+        router.push(`/chat-room?room=${encodeURIComponent(room)}` as Href)
+        return
+      }
       if (isSafeHttpUrl(n.link)) safeOpenURL(n.link)
       else router.push(n.link as Href)
     }

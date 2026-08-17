@@ -571,6 +571,7 @@ from routers import (
     notifications,
     pdf_editor,
     portfolio,
+    push,
     search,
     seo_proxy,
     site_settings,
@@ -598,6 +599,7 @@ app.include_router(contact.router,        prefix="/api/contact")
 app.include_router(content_aggregator.router, prefix="/api/content")  # /global first — avoids shadowing by content's /{key} catch-all
 app.include_router(content.router,        prefix="/api/content")
 app.include_router(notifications.router,  prefix="/api/forum/notifications")
+app.include_router(push.router,           prefix="/api/push")
 app.include_router(forum.router,          prefix="/api/forum")
 
 app.include_router(chat_ai.router,        prefix="/api/chat/ai")

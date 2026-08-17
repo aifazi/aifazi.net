@@ -219,8 +219,8 @@ export default function HomeScreen() {
           ) : null}
           <View style={[styles.grid, { marginBottom: SPACE.huge }]}>
             {tiles.map((t, i) => (
-              <Reveal key={t.label} dir="scale" delay={stagger(i)} duration={420}>
-                <PressTile onPress={() => router.push(t.href)} style={[styles.tileWrap, { borderRadius: radius }]}>
+              <Reveal key={t.label} dir="scale" delay={stagger(i)} duration={420} style={styles.tileWrap}>
+                <PressTile onPress={() => router.push(t.href)} style={{ width: '100%' }}>
                   <View style={[styles.tile, { borderColor: withAlpha(t.tint, 0.35), backgroundColor: withAlpha(c.bg2, 0.9), borderRadius: radius }]}>
                     <View
                       style={{
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tileWrap: {
-    flexBasis: '28%',
+    flexBasis: '31%',
     flexGrow: 0,
     maxWidth: 116,
     shadowColor: '#000',

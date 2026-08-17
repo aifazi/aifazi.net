@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Stack, useSegments } from 'expo-router'
+import { Stack, useSegments, useRouter } from 'expo-router'
 import * as Updates from 'expo-updates'
 import { StatusBar } from 'expo-status-bar'
 import { Animated, Easing, View } from 'react-native'
@@ -10,6 +10,9 @@ import { OverlayProvider } from '@/src/components/overlay'
 import { BootScreen } from '@/src/components/BootScreen'
 import { AmbientBackground } from '@/src/components/motion'
 import { startIntegrityChecks, stopIntegrityChecks } from '@/src/lib/integrity'
+import { configurePushNotifications, registerPushToken, unregisterPushToken } from '@/src/lib/push'
+import * as Notifications from 'expo-notifications'
+import type { Href } from 'expo-router'
 
 export { ErrorBoundary } from '@/src/components/ErrorBoundary'
 
@@ -60,13 +63,44 @@ function ThemeTransitionOverlay() {
 function RootNav() {
   const { theme } = useTheme()
   const c = theme.colors
-  const { loading: authLoading } = useAuth()
+  const { loading: authLoading, isAuthed } = useAuth()
+  const router = useRouter()
+  const pushTokenRef = useRef<string | null>(null)
 
   // Start anti-tamper integrity checks
   useEffect(() => {
     startIntegrityChecks()
     return () => stopIntegrityChecks()
   }, [])
+
+  // Native push (expo-notifications). Configure the foreground handler + Android
+  // channel once; register the Expo push token with the backend once the user is
+  // authed; on notification tap, deep-link into the room carried in the payload.
+  useEffect(() => {
+    configurePushNotifications()
+    let tokenRegistered = false
+    let sub: ReturnType<typeof Notifications.addNotificationResponseReceivedListener> | undefined
+    if (isAuthed) {
+      registerPushToken().then((token) => {
+        if (token) {
+          pushTokenRef.current = token
+          tokenRegistered = true
+        }
+      })
+    }
+    sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data ?? {}
+      const room = data.room as string | undefined
+      if (room) router.push(`/chat-room?room=${encodeURIComponent(room)}` as Href)
+    })
+    return () => {
+      if (sub) sub.remove()
+      if (tokenRegistered && pushTokenRef.current) {
+        unregisterPushToken(pushTokenRef.current)
+        pushTokenRef.current = null
+      }
+    }
+  }, [isAuthed, router])
 
   // EAS Update OTA wiring: native side is configured with checkAutomatically
   // "NEVER", so this is the single place that checks for a newer bundle for the

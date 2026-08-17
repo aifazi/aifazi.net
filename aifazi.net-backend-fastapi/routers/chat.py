@@ -28,6 +28,7 @@ from dependencies import get_current_user, require_staff
 from utils.email import render_template
 from utils.email_queue import queue_email, queue_email_bulk
 from utils.link_safety import schedule_scan
+from routers.push import _send_push_sync
 
 router = APIRouter()
 
@@ -350,6 +351,21 @@ def _queue_chat_message_notifications_sync(room: dict, room_id: str, sender: dic
     if notif_rows:
         try:
             supabase.table("notifications").insert(notif_rows).execute()
+        except Exception:
+            pass
+
+    # Native push: fan out to every recipient's registered devices (best-effort,
+    # never blocks the request). The data payload carries the room id so the app
+    # can deep-link straight into the room on tap.
+    push_user_ids = [row.get("id") for row in recipients.values() if row.get("id")]
+    if push_user_ids:
+        try:
+            _send_push_sync(
+                push_user_ids,
+                f"New message in {room_name}",
+                f"{sender_name}: {snippet}",
+                {"room": room_id},
+            )
         except Exception:
             pass
 
