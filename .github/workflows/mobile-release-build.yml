@@ -144,7 +144,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: apps/mobile
-        run: npm ci
+        run: npm ci --install-links
 
       - name: Resolve release tag
         id: tag

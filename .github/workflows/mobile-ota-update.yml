@@ -68,7 +68,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: apps/mobile
-        run: npm ci
+        run: npm ci --install-links
 
       - name: Verify app.json version matches the latest release tag
         working-directory: apps/mobile
