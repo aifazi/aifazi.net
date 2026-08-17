@@ -42,6 +42,33 @@ function base64UrlToBuffer(input: string): ArrayBuffer {
   return bytes.buffer
 }
 
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i])
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+// ── H1: per-request internal token (HMAC-SHA256, time+method+path bound) ─────
+// The backend gate no longer trusts a static X-Internal-Token value. Each /api/*
+// request gets a short-lived token: base64url(ts).base64url(hmac(secret, `${method}:${pathname}:${ts}`)).
+// Even if a token is captured it expires (~5 min) and can only be replayed to
+// the same method+path it was minted for. The static secret itself is never sent.
+async function makeInternalToken(method: string, pathname: string): Promise<string> {
+  if (!INTERNAL_API_SECRET) return ''
+  const ts = String(Math.floor(Date.now() / 1000))
+  const msg = `${method}:${pathname}:${ts}`
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(INTERNAL_API_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(msg))
+  return `${bytesToBase64Url(enc.encode(ts))}.${bytesToBase64Url(new Uint8Array(sig))}`
+}
+
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new Uint8Array(bytes.length)
   copy.set(bytes)
@@ -345,6 +372,38 @@ export async function proxy(request: NextRequest) {
   const hostname = (request.nextUrl.hostname || request.headers.get('host') || '').split(':')[0]
   const { pathname } = request.nextUrl
 
+  // ── 6b. Admin API protection (defense-in-depth) ──────────────────────────
+  // H2 — the backend's require_staff/require_permission remain authoritative;
+  // this gate mirrors it in middleware so admin/content APIs are never reachable
+  // without a valid admin_session cookie, matching how /admin pages are gated.
+  // Public reads (banners, site-settings, content blocks) and self-auth webhooks
+  // stay open — they mirror _OPEN_GET_PREFIXES / _OPEN_EXACT in the backend.
+  // Checked before the hostname branches so it applies on every subdomain
+  // (fivem/store/status shared /api prefixes return early below).
+  const isAdminApiRoute =
+    pathname.toLowerCase().startsWith('/api/admin/') ||
+    pathname.toLowerCase().startsWith('/api/content/')
+  if (isAdminApiRoute) {
+    const isPreflight = request.method === 'OPTIONS'
+    const isPublicAdminGet =
+      request.method === 'GET' && (
+        pathname.startsWith('/api/admin/banners') ||
+        pathname.startsWith('/api/admin/site-settings')
+      )
+    const isPublicContentGet =
+      request.method === 'GET' &&
+      (pathname === '/api/content' || pathname.startsWith('/api/content/'))
+    const isSelfAuthWebhook =
+      pathname === '/api/admin/mail/queue/webhook/inbound' ||
+      pathname === '/api/admin/mail/queue/process-pending'
+    if (!isPreflight && !isPublicAdminGet && !isPublicContentGet && !isSelfAuthWebhook) {
+      const sessionCookie = request.cookies.get('admin_session')?.value
+      if (!sessionCookie || !(await isAdminSessionValid(sessionCookie, hostname))) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+    }
+  }
+
   // ── 1. cdn.aifazi.net — true reverse proxy via /api/cdn ──────────────────
   if (hostname === CDN_HOSTNAME) {
     if (pathname === '/' || pathname === '') {
@@ -382,7 +441,7 @@ export async function proxy(request: NextRequest) {
       const { headers, nonce } = secureRequest(request)
       headers.set('x-fivem-domain', 'true')
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
-        headers.set('X-Internal-Token', INTERNAL_API_SECRET)
+        headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname))
       }
       return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
     }
@@ -426,7 +485,7 @@ export async function proxy(request: NextRequest) {
       const { headers, nonce } = secureRequest(request)
       headers.set('x-store-domain', 'true')
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
-        headers.set('X-Internal-Token', INTERNAL_API_SECRET)
+        headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname))
       }
       return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
     }
@@ -459,7 +518,7 @@ export async function proxy(request: NextRequest) {
       const { headers, nonce } = secureRequest(request)
       headers.set('x-status-domain', 'true')
       if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
-        headers.set('X-Internal-Token', INTERNAL_API_SECRET)
+        headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname))
       }
       return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
     }
@@ -487,7 +546,7 @@ export async function proxy(request: NextRequest) {
   // ── 5. Internal token injection + cookie + auth header forwarding ──────────────
   const { headers, nonce } = secureRequest(request)
   if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
-    headers.set('X-Internal-Token', INTERNAL_API_SECRET)
+    headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname))
   }
   // Forward cookies from frontend to backend for API routes
   if (pathname.startsWith('/api/')) {

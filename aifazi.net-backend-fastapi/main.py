@@ -3,9 +3,12 @@ main.py — FastAPI application entry point
 FIX #10: Passes running event loop to scheduler so run_coroutine_threadsafe() works.
 """
 import asyncio
+import base64
+import hashlib
 import hmac
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 
 import sentry_sdk
@@ -87,6 +90,50 @@ if not INTERNAL_API_SECRET:
         "INTERNAL_API_SECRET is not set. Protected API endpoints will return 503 "
         "until the secret is configured."
     )
+
+# ── H1: per-request internal token verification ────────────────────────────────
+# The Next.js middleware no longer forwards the raw INTERNAL_API_SECRET on every
+# /api/* request. Instead each request carries a short-lived, method+path-bound
+# HMAC-SHA256 token: base64url(ts) + "." + base64url(hmac(secret, "METHOD:path:ts")).
+# Verification enforces:
+#   * signature — recomputed with the shared secret (constant-time compare)
+#   * freshness — token must be minted within _INTERNAL_TOKEN_TTL seconds
+#   * binding   — method+path must match the request being authorized
+# A captured token therefore expires quickly and can only be replayed to the same
+# endpoint, never reused across paths or methods.
+_INTERNAL_TOKEN_TTL = 300  # seconds (±150s skew tolerance)
+
+def _verify_internal_token(submitted: str, method: str, path: str) -> bool:
+    """Verify a per-request HMAC token from the Next.js middleware.
+
+    Returns True only if the token is structurally valid, fresh, and its HMAC
+    matches the current method+path. Falls back to legacy exact-secret matches
+    (pre-H1 middleware that sent the raw secret) so a rolling deploy stays safe.
+    """
+    if not submitted:
+        return False
+    # Legacy: raw secret sent verbatim by pre-H1 middleware.
+    if hmac.compare_digest(submitted, INTERNAL_API_SECRET):
+        return True
+    if "." not in submitted:
+        return False
+    ts_b64, sig_b64 = submitted.rsplit(".", 1)
+    try:
+        ts = int(base64.urlsafe_b64decode(ts_b64 + "==").decode())
+    except Exception:
+        return False
+    if abs(time.time() - ts) > _INTERNAL_TOKEN_TTL:
+        return False
+    expected = hmac.new(
+        INTERNAL_API_SECRET.encode(),
+        f"{method}:{path}:{ts}".encode(),
+        hashlib.sha256,
+    ).digest()
+    try:
+        provided = base64.urlsafe_b64decode(sig_b64 + "==")
+    except Exception:
+        return False
+    return hmac.compare_digest(provided, expected)
 
 # Paths that are freely accessible without the internal token
 _OPEN_EXACT: set[str] = {
@@ -415,7 +462,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         content={"error": "Invalid or expired token"},
                     )
                 submitted = request.headers.get("X-Internal-Token", "")
-                if not hmac.compare_digest(submitted, INTERNAL_API_SECRET):
+                if not _verify_internal_token(submitted, method, path):
                     return JSONResponse(
                         status_code=403,
                         content={"error": "Direct API access is not permitted."},
