@@ -24,11 +24,15 @@ export function ThemeToggle() {
   const pulse = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
-    Animated.spring(slide, { toValue: dark ? 1 : 0, useNativeDriver: true, damping: 15, stiffness: 210, mass: 0.7 }).start()
+    // The knob view mixes `slide` (transform) and `trackVal` (backgroundColor),
+    // so every value here must use the same driver — a JS animation on a node
+    // previously moved to the native driver throws on mount. This toggle is
+    // tiny; JS driver for all three keeps them consistent.
+    Animated.spring(slide, { toValue: dark ? 1 : 0, useNativeDriver: false, damping: 15, stiffness: 210, mass: 0.7 }).start()
     Animated.timing(trackVal, { toValue: dark ? 1 : 0, duration: 280, useNativeDriver: false }).start()
     Animated.sequence([
-      Animated.timing(pulse, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.spring(pulse, { toValue: 0, useNativeDriver: true, damping: 10, stiffness: 80 }),
+      Animated.timing(pulse, { toValue: 1, duration: 200, useNativeDriver: false }),
+      Animated.spring(pulse, { toValue: 0, useNativeDriver: false, damping: 10, stiffness: 80 }),
     ]).start()
   }, [dark, slide, trackVal, pulse])
 

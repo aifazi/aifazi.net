@@ -54,17 +54,17 @@ export function AmbientBackground() {
   const Orb = ({ val, size, color, baseX, baseY, dx, dy }: {
     val: Animated.Value; size: number; color: string; baseX: number; baseY: number; dx: number; dy: number
   }) => {
-    const x = val.interpolate({ inputRange: [0, 1], outputRange: [baseX, baseX + dx] })
-    const y = val.interpolate({ inputRange: [0, 1], outputRange: [baseY, baseY + dy] })
+    const tx = val.interpolate({ inputRange: [0, 1], outputRange: [0, dx] })
+    const ty = val.interpolate({ inputRange: [0, 1], outputRange: [0, dy] })
     const sc = val.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.08, 1] })
     return (
       <Animated.View
         pointerEvents="none"
         style={{
           position: 'absolute',
-          left: x, top: y, width: size, height: size, borderRadius: size / 2,
+          left: baseX, top: baseY, width: size, height: size, borderRadius: size / 2,
           backgroundColor: withAlpha(color, 0.05),
-          transform: [{ scale: sc }],
+          transform: [{ translateX: tx }, { translateY: ty }, { scale: sc }],
           shadowColor: color, shadowOpacity: 0.18, shadowRadius: size / 2, shadowOffset: { width: 0, height: 0 },
         }}
       />
@@ -88,7 +88,8 @@ export function AmbientBackground() {
 
       <Animated.View
         style={{
-          position: 'absolute', left: 0, right: 0, top: scanY, height: 2,
+          position: 'absolute', left: 0, right: 0, top: 0, height: 2,
+          transform: [{ translateY: scanY }],
           backgroundColor: withAlpha(c.accent, theme.dark ? 0.05 : 0.04),
         }}
       />
