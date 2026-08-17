@@ -4,6 +4,7 @@ All backend queries use this client; the frontend uses the anon key.
 """
 import logging
 import os
+import re
 
 import httpx
 from dotenv import load_dotenv
@@ -87,3 +88,31 @@ class _SupabaseProxy:
 
 
 supabase = _SupabaseProxy()  # type: ignore[misc]
+
+# PostgREST filter-grammar characters inside an `or=(...)` string. A comma
+# separates predicates, parens group them, and a double quote starts a quoted
+# segment. Interpolating raw user input into `.or_(f"...ilike.%{term}%...")`
+# lets a caller break out of the ilike value and inject arbitrary predicates
+# (e.g. `term = "x,role.eq.admin"` → an extra `role.eq.admin` clause). There is
+# no PostgREST escape that keeps the `%` substring wildcards working, so user
+# terms are sanitized instead.
+_PG_FILTER_GRAMMAR_CHARS = re.compile(r'[,()"\\]')
+_PG_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def safe_search_term(term: str | None, max_len: int = 200) -> str:
+    """Return a PostgREST-filter-safe substring-search term.
+
+    Strips PostgREST filter-grammar characters (`,`, `(`, `)`, `"`, `\\`) and
+    control characters so a user-controlled search term cannot inject extra
+    predicates into an `or_`/`ilike` filter built as a raw string. The `%` and
+    `_` SQL wildcards are intentionally preserved (they are what make the
+    surrounding `%...%` substring match work).
+    """
+    if not term:
+        return ""
+    t = str(term).strip()
+    t = _PG_CONTROL_CHARS.sub(" ", t)
+    t = _PG_FILTER_GRAMMAR_CHARS.sub("", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    return t[:max_len]

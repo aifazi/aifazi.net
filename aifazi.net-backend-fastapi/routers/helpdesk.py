@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 
-from database import supabase
+from database import safe_search_term, supabase
 from dependencies import bearer, decode_token, require_staff
 from utils.email import render_template
 from utils.email_queue import queue_email
@@ -591,6 +591,8 @@ async def list_tickets(
         q = q.eq("status", status)
     if priority:
         q = q.eq("priority", priority)
+    if search:
+        search = safe_search_term(search)
     if search:
         q = q.or_(f"name.ilike.%{search}%,email.ilike.%{search}%,subject.ilike.%{search}%,ticket_id.ilike.%{search}%")
     offset = (page - 1) * limit
