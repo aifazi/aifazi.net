@@ -70,7 +70,7 @@ def scan_for_malware(content: bytes, filename: str) -> None:
             # pyclamd returns {filename: ('FOUND'|'ERROR', reason)} — the dict
             # key is the stream/file name, the *status* is the tuple's first
             # element. Check each value, not the key.
-            for _fname, (st, reason) in result.items():
+            for st, reason in result.values():
                 if st == "FOUND":
                     log.warning("Malware detected in %s: %s", filename, reason)
                     raise HTTPException(415, f"File rejected: malware detected ({reason})")
