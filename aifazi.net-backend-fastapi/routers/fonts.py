@@ -12,11 +12,17 @@ Mounted at /api/admin/fonts. All endpoints require staff.
 """
 from __future__ import annotations
 
+import ipaddress
 import logging
 import os
 import re
+import socket
+import uuid
+from urllib.parse import urlparse
 
+import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel
 
 from database import supabase
 from dependencies import require_staff
@@ -39,6 +45,23 @@ _FONT_TYPES = {
 }
 
 _FAMILY_SAFE = re.compile(r"[^A-Za-z0-9 _-]+")
+_WEIGHTS = ("100", "200", "300", "400", "500", "600", "700", "800", "900")
+
+
+def _host_is_private(hostname: str) -> bool:
+    """True when a host resolves to a non-public IP (SSRF guard)."""
+    if not hostname:
+        return True
+    try:
+        infos = socket.getaddrinfo(hostname, None)
+    except Exception:
+        return True  # unresolvable — refuse rather than guess
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if (ip.is_private or ip.is_loopback or ip.is_link_local
+                or ip.is_multicast or ip.is_reserved or ip.is_unspecified):
+            return True
+    return False
 
 
 def _css_escape(value: str) -> str:
@@ -76,6 +99,49 @@ def _sniff_font(content: bytes, ext: str) -> tuple[str, str, bool]:
     return "", "", False
 
 
+def _insert_font_record(
+    family_name: str,
+    weight: str,
+    style: str,
+    css_format: str,
+    file_url: str,
+    storage_path: str,
+    provider: str,
+    filename: str,
+    size: int,
+) -> dict:
+    if weight not in _WEIGHTS:
+        weight = "400"
+    if style not in ("normal", "italic"):
+        style = "normal"
+    try:
+        row = supabase.table("fonts").insert({
+            "family":        family_name,
+            "weight":        weight,
+            "style":         style,
+            "format":        css_format,
+            "file_url":      file_url,
+            "storage_path":  storage_path,
+            "provider":      provider,
+            "original_name": filename,
+            "file_size":     size,
+        }).execute()
+        rec = row.data[0] if row.data else {}
+    except Exception as exc:
+        log.error("fonts insert failed: %s", exc)
+        raise HTTPException(500, f"Font record failed: {exc}")
+    return {
+        "id":            rec.get("id"),
+        "family":        family_name,
+        "weight":        weight,
+        "style":         style,
+        "format":        css_format,
+        "url":           file_url,
+        "original_name": filename,
+        "file_size":     size,
+    }
+
+
 @router.post("/upload")
 async def upload_font(
     file: UploadFile = File(...),
@@ -102,11 +168,6 @@ async def upload_font(
     # Malware scan (fail-open)
     scan_for_malware(content, filename or "font")
 
-    if weight not in ("100", "200", "300", "400", "500", "600", "700", "800", "900"):
-        weight = "400"
-    if style not in ("normal", "italic"):
-        style = "normal"
-
     family_name = _css_escape((family or "").strip() or _family_from_filename(filename))
 
     try:
@@ -116,33 +177,81 @@ async def upload_font(
     except Exception as exc:
         raise HTTPException(500, f"Upload failed: {str(exc)[:200]}")
 
-    try:
-        row = supabase.table("fonts").insert({
-            "family":        family_name,
-            "weight":        weight,
-            "style":         style,
-            "format":        css_format,
-            "file_url":      file_url,
-            "storage_path":  storage_path,
-            "provider":      provider,
-            "original_name": filename,
-            "file_size":     len(content),
-        }).execute()
-        rec = row.data[0] if row.data else {}
-    except Exception as exc:
-        log.error("fonts insert failed: %s", exc)
-        raise HTTPException(500, f"Font record failed: {exc}")
+    return _insert_font_record(
+        family_name, weight, style, css_format,
+        file_url, storage_path, provider, filename, len(content),
+    )
 
-    return {
-        "id":           rec.get("id"),
-        "family":       family_name,
-        "weight":       weight,
-        "style":        style,
-        "format":       css_format,
-        "url":          file_url,
-        "original_name": filename,
-        "file_size":    len(content),
-    }
+
+class FontFromUrlBody(BaseModel):
+    url: str
+    family: str = ""
+    weight: str = "400"
+    style: str = "normal"
+
+
+@router.post("/from-url")
+async def import_font_from_url(
+    body: FontFromUrlBody,
+    _: dict = Depends(require_staff),
+):
+    """Download a font file from an external URL and import it into the library.
+
+    Works with direct .woff2/.ttf/.otf/.woff URLs from any CDN, including
+    Google Fonts' gstatic file URLs. The payload is streamed (25 MB cap),
+    magic-byte sniffed, malware scanned, then stored in R2 like an upload.
+    """
+    url = (body.url or "").strip()
+    if not url:
+        raise HTTPException(400, "url is required")
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise HTTPException(400, "Only http(s) URLs are supported")
+    if _host_is_private(parsed.hostname):
+        raise HTTPException(400, "URL host is not publicly reachable")
+
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client, \
+                client.stream("GET", url) as resp:
+                if resp.status_code != 200:
+                    raise HTTPException(502, f"Could not download font (HTTP {resp.status_code})")
+                content = b""
+                async for chunk in resp.aiter_bytes():
+                    content += chunk
+                    if len(content) > FONT_MAX_BYTES:
+                        raise HTTPException(413, f"Font exceeds {FONT_MAX_BYTES // 1024 // 1024} MB limit")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(502, f"Could not download font: {str(exc)[:150]}")
+
+    if not content:
+        raise HTTPException(400, "Empty font file")
+
+    filename = (parsed.path.rsplit("/", 1)[-1] or f"font_{uuid.uuid4().hex}").replace("..", "").strip()[:80]
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in _FONT_TYPES:
+        raise HTTPException(415, "URL must point to a .ttf, .otf, .woff or .woff2 file")
+
+    mime, css_format, ok = _sniff_font(content, ext)
+    if not ok:
+        raise HTTPException(415, "Downloaded file does not match the declared font type")
+
+    scan_for_malware(content, filename or "font")
+
+    family_name = _css_escape((body.family or "").strip() or _family_from_filename(filename))
+
+    try:
+        file_url, storage_path, provider = await upload_media(
+            content, filename, mime, folder="fonts"
+        )
+    except Exception as exc:
+        raise HTTPException(500, f"Upload failed: {str(exc)[:200]}")
+
+    return _insert_font_record(
+        family_name, body.weight, body.style, css_format,
+        file_url, storage_path, provider, filename, len(content),
+    )
 
 
 @router.get("")

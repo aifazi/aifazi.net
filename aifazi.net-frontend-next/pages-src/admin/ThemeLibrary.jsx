@@ -411,6 +411,136 @@ function ColorRow({ label, value, onChange }) {
   )
 }
 
+// ── Theme-styled font picker (replaces the native <select>) ───────────────────
+// Custom dropdown matching the admin theme: groups uploaded + Google options,
+// highlights the active choice, closes on outside click / Escape.
+function FontPicker({ value, options, groups, placeholder = '↺ Theme default', onChange }) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const onKey = e => { if (e.key === 'Escape' || e.keyCode === 27) setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey) }
+  }, [open])
+
+  const q = query.trim().toLowerCase()
+  const list = options.filter(o => groups.includes(o.group) && (!q || String(o.label || '').toLowerCase().includes(q)))
+  const sections = ['Uploaded', 'Display', 'Mono']
+    .filter(g => groups.includes(g))
+    .map(g => ({ g, items: list.filter(o => o.group === g) }))
+    .filter(s => s.items.length > 0)
+
+  return (
+    <div ref={ref} style={{ position: 'relative', marginBottom: 14 }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: 'var(--bg3)', border: `1px solid ${open ? 'var(--green)' : 'var(--border)'}`, color: 'var(--text)', padding: '8px 10px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer', transition: 'border-color 0.15s' }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: value ? `'${value}', sans-serif` : 'var(--font-mono)', fontSize: value ? 13 : 10, color: value ? 'var(--text)' : 'var(--muted)' }}>
+          {value || placeholder}
+        </span>
+        <span style={{ color: open ? 'var(--green)' : 'var(--muted)', flexShrink: 0, fontSize: 9 }}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', zIndex: 60, left: 0, right: 0, top: 'calc(100% + 6px)', background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 8, boxShadow: '0 18px 40px rgba(0,0,0,0.5), 0 0 18px color-mix(in srgb, var(--green) 12%, transparent)', overflow: 'hidden' }}>
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="🔍 Search fonts…"
+            style={{ width: '100%', background: 'var(--bg)', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
+          <div style={{ maxHeight: 250, overflowY: 'auto' }}>
+            {sections.length === 0 && (
+              <div style={{ padding: '14px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>No fonts match &quot;{query}&quot;.</div>
+            )}
+            {sections.map(({ g, items }) => (
+              <div key={g}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: g === 'Uploaded' ? 'var(--purple)' : 'var(--muted)', padding: '8px 12px 4px', background: 'var(--bg)' }}>
+                  {g === 'Uploaded' ? '⬆ UPLOADED' : `${g.toUpperCase()} · GOOGLE`}
+                </div>
+                {items.map(o => {
+                  const active = value === o.id
+                  return (
+                    <button key={`${g}-${o.id}`} type="button"
+                      onClick={() => { onChange(o.id); setOpen(false); setQuery('') }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '7px 12px', background: active ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.03)', color: 'var(--text)', cursor: 'pointer' }}>
+                      <span style={{ fontFamily: `'${o.label}', sans-serif`, fontSize: 14, width: 36, flexShrink: 0, color: active ? 'var(--green)' : 'var(--text)' }}>Aa</span>
+                      <span style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.label}</span>
+                      {active && <span style={{ color: 'var(--green)', fontSize: 10, flexShrink: 0 }}>✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Live preview popup — shows exactly where color/font changes apply ─────────
+// Renders a mini site (navbar, heading, body, buttons, card, code block) using
+// the draft token values so the admin sees the impact while editing.
+function CustomizePreviewModal({ open, onClose, draft }) {
+  const colors = draft?.colors || {}
+  const c = k => colors[k] || 'transparent'
+  const glowPct = Math.max(0, Math.min(100, Math.round((typeof draft?.glow === 'number' ? draft.glow : 0.5) * 60)))
+  const fD = draft?.fontDisplay ? `'${draft.fontDisplay}', 'Outfit', sans-serif` : 'var(--font-display)'
+  const fM = draft?.fontMono ? `'${draft.fontMono}', 'JetBrains Mono', monospace` : 'var(--font-mono)'
+  const fC = draft?.fontCode ? `'${draft.fontCode}', monospace` : 'var(--font-code)'
+  const vars = {
+    '--bg': c('bg'), '--bg2': c('bg2'), '--bg3': c('bg3'),
+    '--green': c('green'), '--cyan': c('cyan'), '--orange': c('orange'),
+    '--red': c('red'), '--purple': c('purple'), '--text': c('text'),
+    '--text2': c('text2'), '--muted': c('muted'), '--link': c('link'), '--border': c('border'),
+    '--glow': `0 0 20px color-mix(in srgb, var(--green) ${glowPct}%, transparent)`,
+    '--glow-cyan': `0 0 20px color-mix(in srgb, var(--cyan) ${glowPct}%, transparent)`,
+  }
+  return (
+    <Modal open={open} onClose={onClose} title="LIVE PREVIEW  where your changes apply" width={680}>
+      <div style={{ padding: 22, ...vars }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 16 }}>
+          <span style={{ fontFamily: fD, fontWeight: 700, fontSize: 15, color: 'var(--text)', letterSpacing: 1 }}>◈ NEON<span style={{ color: 'var(--green)' }}>CITY</span></span>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {['HOME', 'FORUM', 'STORE'].map(x => (
+              <span key={x} style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: x === 'HOME' ? 'var(--green)' : 'var(--muted)' }}>{x}</span>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ fontFamily: fD, fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Headline — <span style={{ color: 'var(--green)' }}>display</span> font</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>{'// SUBTITLE — mono font'}</div>
+
+        <p style={{ fontFamily: fD, fontSize: 13, lineHeight: 1.7, color: 'var(--text2)', marginBottom: 16 }}>
+          Body copy uses <span style={{ color: 'var(--text)' }}>text</span>, secondary text uses <span style={{ color: 'var(--text2)' }}>text2</span>, hints are{' '}
+          <span style={{ color: 'var(--muted)' }}>muted</span> and this is a <a href="#" onClick={e => e.preventDefault()} style={{ color: 'var(--link)' }}>link</a>.
+        </p>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 18 }}>
+          <span style={{ padding: '8px 16px', background: 'var(--green)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 2, borderRadius: 6, boxShadow: 'var(--glow)' }}>PRIMARY (green)</span>
+          <span style={{ padding: '8px 16px', background: 'var(--cyan)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 2, borderRadius: 6, boxShadow: 'var(--glow-cyan)' }}>SECONDARY (cyan)</span>
+          <span style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--red)', color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, borderRadius: 6 }}>DANGER (red)</span>
+        </div>
+
+        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, boxShadow: 'var(--glow)', marginBottom: 18 }}>
+          <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, marginBottom: 10 }}>
+            <div style={{ fontFamily: fD, fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>Card surface</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>bg2 = surface · bg3 = elevated · border = border · glow = glow</div>
+          </div>
+          <div style={{ fontFamily: fM, fontSize: 10, lineHeight: 1.7, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
+            <span style={{ color: 'var(--muted)' }}>$</span> deploy --prod&nbsp;&nbsp;<span style={{ color: 'var(--muted)' }}># mono font</span>
+            <br />const <span style={{ color: 'var(--green)' }}>glow</span> = <span style={{ color: 'var(--orange)' }}>true</span><span style={{ color: 'var(--muted)' }}>;</span>
+          </div>
+        </div>
+
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
+          Inline code: <span style={{ fontFamily: fC, color: 'var(--purple)', background: 'var(--bg3)', border: '1px solid var(--border)', padding: '2px 6px', borderRadius: 4 }}>font-code</span> token · Accent: <span style={{ color: 'var(--purple)' }}>purple</span> · Warning: <span style={{ color: 'var(--orange)' }}>orange</span>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 // ── Theme customization helpers ──────────────────────────────────────────────
 // Per-theme default color values (used to prefill the CUSTOMIZE pickers when
 // the theme hasn't been customized yet).
@@ -705,6 +835,15 @@ function ThemeLibrary() {
   const [deletingFontId, setDeletingFontId] = useState(null)
   const fontInputRef = useRef(null)
 
+  // Live-preview popup (auto-opens when a color or font is changed)
+  const [customizePreviewOpen, setCustomizePreviewOpen] = useState(false)
+
+  // Import a font from a direct file URL (Google Fonts gstatic / any CDN)
+  const [urlModalOpen, setUrlModalOpen] = useState(false)
+  const [fontUrlInput, setFontUrlInput] = useState('')
+  const [fontUrlFamily, setFontUrlFamily] = useState('')
+  const [savingUrlFont, setSavingUrlFont] = useState(false)
+
   const uploadedFonts = useMemo(
     () => (Array.isArray(siteConfig?.uploadedFonts) ? siteConfig.uploadedFonts : []),
     [siteConfig]
@@ -752,6 +891,31 @@ function ThemeLibrary() {
     } catch (err) {
       toast.error(err?.response?.data?.error || 'Failed to delete font', { title: 'Error' })
     } finally { setDeletingFontId(null) }
+  }
+
+  const importFontFromUrl = async () => {
+    const url = fontUrlInput.trim()
+    if (!/^https?:\/\//i.test(url)) {
+      toast.error('Paste a valid font file URL (https://… .woff2 / .ttf) first', { title: 'Invalid URL' })
+      return
+    }
+    setSavingUrlFont(true)
+    try {
+      const { data } = await api.post('/admin/fonts/from-url', {
+        url,
+        family: fontUrlFamily.trim(),
+        weight: '400',
+        style: 'normal',
+      })
+      const next = [...uploadedFonts, data]
+      await saveUploadedFonts(next)
+      setUrlModalOpen(false)
+      setFontUrlInput('')
+      setFontUrlFamily('')
+      toast.success(`${data.family} imported from URL — pick it in the font selectors below`, { title: '✅ Font Imported' })
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Failed to import font', { title: 'Error' })
+    } finally { setSavingUrlFont(false) }
   }
 
   // P2 — sync the CUSTOMIZE draft when the target theme or saved config changes
@@ -2306,47 +2470,46 @@ function ThemeLibrary() {
             <div style={T.card}>
               <div style={T.sec}>FONTS</div>
 
-              {/* Search + upload */}
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14 }}>
+              {/* Search + upload + url + preview */}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
                 <input value={fontSearch} onChange={e => setFontSearch(e.target.value)}
                   placeholder="🔍 Search fonts… (Google CDN + your uploads)"
-                  style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
+                  style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
                 <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" style={{ display: 'none' }}
                   onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadFont(f) }} />
                 <button onClick={() => fontInputRef.current?.click()} disabled={uploadingFont}
                   style={{ flexShrink: 0, padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: uploadingFont ? 'wait' : 'pointer', background: uploadingFont ? 'var(--bg3)' : 'color-mix(in srgb, var(--purple) 18%, transparent)', color: uploadingFont ? 'var(--muted)' : 'var(--purple)', border: '1px solid color-mix(in srgb, var(--purple) 40%, transparent)', borderRadius: 8 }}>
                   {uploadingFont ? 'UPLOADING…' : '⬆ UPLOAD FONT'}
                 </button>
+                <button onClick={() => setUrlModalOpen(true)}
+                  style={{ flexShrink: 0, padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--cyan) 14%, transparent)', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', borderRadius: 8 }}>
+                  🔗 ADD FROM URL
+                </button>
+                <button onClick={() => setCustomizePreviewOpen(true)}
+                  style={{ flexShrink: 0, padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--green) 12%, transparent)', color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 8 }}>
+                  👁 PREVIEW
+                </button>
               </div>
               <div style={{ ...T.sub, marginBottom: 16, marginTop: -8 }}>
-                Upload <strong style={{ color: 'var(--text)' }}>.ttf / .otf / .woff / .woff2</strong> — stored on the CDN (Cloudflare R2) and served to visitors via @font-face. Google CDN fonts load from Google&apos;s servers.
+                Add fonts from <strong style={{ color: 'var(--text)' }}>multiple sources</strong>: upload <strong style={{ color: 'var(--text)' }}>.ttf / .otf / .woff / .woff2</strong>, import from a <strong style={{ color: 'var(--text)' }}>URL</strong> (e.g. Google Fonts), or pick from the <strong style={{ color: 'var(--text)' }}>Google CDN</strong> list. Uploads are stored on the CDN (Cloudflare R2) and served to visitors via @font-face.
               </div>
               {fontOpts.length === 0 && (
                 <div style={{ ...T.sub, marginBottom: 16, color: 'var(--orange)' }}>No fonts match &quot;{fontSearch}&quot; — clear the search or upload the font.</div>
               )}
 
               <label style={T.label}>DISPLAY FONT</label>
-              <select value={customDraft.fontDisplay || ''} onChange={e => setDraft({ fontDisplay: e.target.value })}
-                style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer', marginBottom: 14 }}>
-                <option value="">↺ Theme default</option>
-                {fontOpts.filter(f => f.group === 'Display' || f.group === 'Uploaded').map(f => <option key={`d-${f.id}`} value={f.id}>{f.group === 'Uploaded' ? `⬆ ${f.label}` : f.label}</option>)}
-              </select>
+              <FontPicker value={customDraft.fontDisplay || ''} options={fontOpts} groups={['Display', 'Uploaded']}
+                onChange={v => { setDraft({ fontDisplay: v }); setCustomizePreviewOpen(true) }} />
               <div style={{ ...T.sub, marginBottom: 14, marginTop: -8 }}>Headings & accent text. Preview: <span style={{ fontFamily: `'${customDraft.fontDisplay}', 'Outfit', sans-serif`, color: 'var(--text)', fontSize: 15, fontWeight: 700 }}>{customDraft.fontDisplay ? `AaBb  ${customDraft.fontDisplay}` : 'AaBb  (theme default)'}</span></div>
 
               <label style={T.label}>MONO FONT</label>
-              <select value={customDraft.fontMono || ''} onChange={e => setDraft({ fontMono: e.target.value })}
-                style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer', marginBottom: 14 }}>
-                <option value="">↺ Theme default</option>
-                {fontOpts.filter(f => f.group === 'Mono' || f.group === 'Uploaded').map(f => <option key={`m-${f.id}`} value={f.id}>{f.group === 'Uploaded' ? `⬆ ${f.label}` : f.label}</option>)}
-              </select>
+              <FontPicker value={customDraft.fontMono || ''} options={fontOpts} groups={['Mono', 'Uploaded']}
+                onChange={v => { setDraft({ fontMono: v }); setCustomizePreviewOpen(true) }} />
               <div style={{ ...T.sub, marginBottom: 14, marginTop: -8 }}>Body / terminal / code text. Preview: <span style={{ fontFamily: `'${customDraft.fontMono}', 'JetBrains Mono', monospace`, color: 'var(--text)', fontSize: 13 }}>{customDraft.fontMono ? `AaBb  ${customDraft.fontMono}` : 'AaBb  (theme default)'}</span></div>
 
               <label style={T.label}>CODE FONT</label>
-              <select value={customDraft.fontCode || ''} onChange={e => setDraft({ fontCode: e.target.value })}
-                style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
-                <option value="">↺ Theme default</option>
-                {fontOpts.filter(f => f.group === 'Mono' || f.group === 'Uploaded').map(f => <option key={`c-${f.id}`} value={f.id}>{f.group === 'Uploaded' ? `⬆ ${f.label}` : f.label}</option>)}
-              </select>
+              <FontPicker value={customDraft.fontCode || ''} options={fontOpts} groups={['Mono', 'Uploaded']}
+                onChange={v => { setDraft({ fontCode: v }); setCustomizePreviewOpen(true) }} />
               <div style={{ ...T.sub, marginTop: 8 }}>Inline code / pre blocks. Falls back to the mono font when empty.</div>
 
               {/* Uploaded font library */}
@@ -2372,12 +2535,18 @@ function ThemeLibrary() {
 
             {/* Colors */}
             <div style={T.card}>
-              <div style={T.sec}>COLOR TOKENS</div>
+              <div style={{ ...T.sec, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>COLOR TOKENS</span>
+                <button onClick={() => setCustomizePreviewOpen(true)}
+                  style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--green) 12%, transparent)', color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 6 }}>
+                  👁 PREVIEW
+                </button>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0 18px' }}>
                 {CUSTOM_COLOR_TOKENS.map(token => (
                   <ColorRow key={token.key} label={token.label}
                     value={customDraft.colors?.[token.key] || ''}
-                    onChange={v => setCustomDraft(prev => ({ ...prev, colors: { ...prev.colors, [token.key]: v } }))} />
+                    onChange={v => { setCustomDraft(prev => ({ ...prev, colors: { ...prev.colors, [token.key]: v } })); setCustomizePreviewOpen(true) }} />
                 ))}
               </div>
             </div>
@@ -2419,6 +2588,37 @@ function ThemeLibrary() {
                 {siteConfig.themeCustom?.[customTarget] ? 'Edited version is being previewed — save to persist.' : 'Previewing changes live.'}
               </div>
             </div>
+
+            {/* Live preview popup — shows where colors/fonts apply */}
+            <CustomizePreviewModal open={customizePreviewOpen} onClose={() => setCustomizePreviewOpen(false)} draft={customDraft} />
+
+            {/* Import a font from a direct file URL */}
+            <Modal open={urlModalOpen} onClose={() => setUrlModalOpen(false)} title="IMPORT FONT FROM URL" width={520}>
+              <div style={{ padding: 20 }}>
+                <div style={{ ...T.sub, marginBottom: 14 }}>
+                  Paste a direct <strong style={{ color: 'var(--text)' }}>.ttf / .otf / .woff / .woff2</strong> file URL from any CDN — including Google Fonts gstatic links. The file is downloaded, validated, stored on our CDN (Cloudflare R2) and added to your library.
+                </div>
+                <label style={T.label}>FONT FILE URL *</label>
+                <input value={fontUrlInput} onChange={e => setFontUrlInput(e.target.value)}
+                  placeholder="https://fonts.gstatic.com/…/font.woff2"
+                  onKeyDown={e => { if (e.key === 'Enter' && !savingUrlFont) importFontFromUrl() }}
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 14 }} />
+                <label style={T.label}>FAMILY NAME (optional — auto-detected from the filename)</label>
+                <input value={fontUrlFamily} onChange={e => setFontUrlFamily(e.target.value)}
+                  placeholder="e.g. My Custom Font"
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 20 }} />
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button onClick={() => setUrlModalOpen(false)}
+                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                    CANCEL
+                  </button>
+                  <button onClick={importFontFromUrl} disabled={savingUrlFont}
+                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: savingUrlFont ? 'wait' : 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
+                    {savingUrlFont ? 'IMPORTING…' : '⬇ IMPORT FONT'}
+                  </button>
+                </div>
+              </div>
+            </Modal>
           </div>
         )
       })()}
