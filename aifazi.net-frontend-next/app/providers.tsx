@@ -24,8 +24,8 @@ import { MenuProvider } from '@/core/menu'
 import { NotifyProvider } from '@/core/notify'
 import { DialogProvider } from '@/core/dialog'
 import { loadFontForTheme as loadThemeFont } from '@/core/fonts'
-import { applyThemeCustom } from '@/core/themeCustom'
-import { isAdmin as checkIsAdmin } from '@/lib/api'
+import { applyThemeCustom, resolveThemeCustom } from '@/core/themeCustom'
+import { isAdmin as checkIsAdmin, getAuthToken } from '@/lib/api'
 import { usePathname } from 'next/navigation'
 
 const LoadingScreen     = lazy(() => import('@/components/LoadingScreen'))
@@ -163,6 +163,9 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   const [siteConfigReady, setSiteConfigReady] = useState(() => !!initialConfig && typeof initialConfig === 'object' && !Array.isArray(initialConfig) && Object.keys(initialConfig).length > 0)
 
   const [userIsAdmin, setUserIsAdmin] = useState(false)
+  // Bumped on login/logout so targeted-rollout customizations (audience:
+  // logged-in / anonymous) re-resolve the moment the session changes.
+  const [authEpoch, setAuthEpoch] = useState(0)
 
   const [theme, setThemeState] = useState(initTheme)
 
@@ -344,15 +347,13 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   }, [theme])
 
   // Apply per-theme customization (fonts / colors / glow / custom CSS) from the
-  // admin's saved `themeCustom` map, re-applying whenever the theme or config
-  // changes. No-op for themes without customizations.
+  // admin's saved `themeCustom` map — or a matching targeted-rollout override —
+  // re-applying whenever the theme, config, or session changes.
   useEffect(() => {
-    const tc = siteConfig.themeCustom && typeof siteConfig.themeCustom === 'object' && !Array.isArray(siteConfig.themeCustom)
-      ? siteConfig.themeCustom[theme]
-      : undefined
+    const tc = resolveThemeCustom(siteConfig, theme, { loggedIn: !!getAuthToken() })
     const uploadedFonts = Array.isArray(siteConfig.uploadedFonts) ? siteConfig.uploadedFonts : []
     applyThemeCustom(theme, tc, 'theme-custom-css', uploadedFonts)
-  }, [theme, siteConfig.themeCustom, siteConfig.uploadedFonts])
+  }, [theme, siteConfig.themeCustom, siteConfig.themeCustomTargets, siteConfig.uploadedFonts, authEpoch])
 
   // Effective framework config = site-wide admin settings, layered with the
   // user's locally-applied package (per-user override wins for this browser).
@@ -437,7 +438,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   useEffect(() => { refreshSiteConfig() }, [refreshSiteConfig])
 
   useEffect(() => {
-    const refresh = () => setUserIsAdmin(checkIsAdmin())
+    const refresh = () => { setUserIsAdmin(checkIsAdmin()); setAuthEpoch(e => e + 1) }
     window.addEventListener('auth-change', refresh)
     window.addEventListener('storage', refresh)
     return () => {

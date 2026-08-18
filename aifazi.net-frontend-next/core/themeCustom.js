@@ -4,10 +4,15 @@
  * ║  Stored in site_config.settings under the `themeCustom` key: ║
  * ║    themeCustom: { "<themeId>": {                             ║
  * ║      fontDisplay, fontMono, fontCode, glow,                  ║
+ * ║      radius, borderWidth, bgPattern, bgGradientFrom,         ║
+ * ║      bgGradientTo, bgGradientAngle,                          ║
  * ║      colors: { bg, bg2, bg3, green, cyan, orange, red,      ║
  * ║                purple, text, text2, muted, link, border },   ║
  * ║      css: "<arbitrary CSS>"                                  ║
  * ║    } }                                                       ║
+ * ║  Targeted overrides live under `themeCustomTargets`:         ║
+ * ║    [{ id, name, themeId, draft, audience, active,           ║
+ * ║       start, end }]                                          ║
  * ║  Applied by injecting a scoped <style> block so overrides    ║
  * ║  only apply when that theme is active.                       ║
  * ╚══════════════════════════════════════════════════════════════╝
@@ -111,6 +116,12 @@ export function buildFontFaceCss(uploadedFonts, usedFamilies = []) {
 }
 
 // ── Pure CSS builder (server + client safe) ───────────────────────────────────
+const BG_PATTERN_CSS = {
+  grid:   `  background-image: linear-gradient(color-mix(in srgb, var(--cyan) 7%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--cyan) 7%, transparent) 1px, transparent 1px);\n  background-size: 34px 34px;`,
+  dots:   `  background-image: radial-gradient(color-mix(in srgb, var(--cyan) 10%, transparent) 1px, transparent 1.5px);\n  background-size: 22px 22px;`,
+  matrix: `  background-image: repeating-linear-gradient(0deg, color-mix(in srgb, var(--green) 6%, transparent) 0 1px, transparent 1px 3px);`,
+}
+
 export function buildThemeCustomCss(themeId, custom, uploadedFonts = []) {
   if (!custom || typeof custom !== 'object') return ''
   const sel = themeSelector(themeId)
@@ -120,6 +131,23 @@ export function buildThemeCustomCss(themeId, custom, uploadedFonts = []) {
   for (const token of CUSTOM_COLOR_TOKENS) {
     const v = colors[token.key]
     if (v && typeof v === 'string') lines.push(`  --${token.key}: ${v};`)
+  }
+
+  if (typeof custom.radius === 'number' && !Number.isNaN(custom.radius)) {
+    lines.push(`  --radius: ${Math.max(0, Math.min(48, Math.round(custom.radius)))}px;`)
+  }
+  if (typeof custom.borderWidth === 'number' && !Number.isNaN(custom.borderWidth)) {
+    lines.push(`  --border-w: ${Math.max(0, Math.min(6, custom.borderWidth))}px;`)
+  }
+
+  const bgPattern = custom.bgPattern
+  if (bgPattern === 'gradient') {
+    const from = String(custom.bgGradientFrom || '').trim() || 'transparent'
+    const to = String(custom.bgGradientTo || '').trim() || from
+    const angle = typeof custom.bgGradientAngle === 'number' ? custom.bgGradientAngle : 180
+    lines.push(`  background-image: linear-gradient(${angle}deg, ${from}, ${to});`)
+  } else if (bgPattern && bgPattern !== 'none' && BG_PATTERN_CSS[bgPattern]) {
+    lines.push(BG_PATTERN_CSS[bgPattern])
   }
 
   if (custom.fontDisplay && typeof custom.fontDisplay === 'string') {
@@ -167,6 +195,27 @@ export function themeCustomFontUrl(custom, uploadedFonts = []) {
     .filter(Boolean)
     .filter(f => !isUploadedFontFamily(f, uploadedFonts))
   return buildGoogleFontUrl(families)
+}
+
+// ── Targeted rollout resolution ───────────────────────────────────────────────
+// Admin can publish targeted overrides (themeCustomTargets) for a theme: each
+// has an audience (everyone / logged-in / anonymous), an optional start/end
+// schedule and an active flag. The first match wins and overrides the base
+// `themeCustom[themeId]`. Used by both the SSR layout and the client providers.
+export function resolveThemeCustom(siteConfig, themeId, opts = {}) {
+  const targets = Array.isArray(siteConfig?.themeCustomTargets) ? siteConfig.themeCustomTargets : []
+  const now = Date.now()
+  const match = targets.find(t => {
+    if (!t || t.themeId !== themeId || t.active === false || !t.draft) return false
+    if (t.start) { const s = new Date(t.start).getTime(); if (Number.isFinite(s) && s > now) return false }
+    if (t.end) { const e = new Date(t.end).getTime(); if (Number.isFinite(e) && e < now) return false }
+    const aud = t.audience || 'everyone'
+    if (aud === 'everyone') return true
+    return aud === 'logged-in' ? !!opts.loggedIn : !opts.loggedIn
+  })
+  if (match && match.draft && typeof match.draft === 'object') return match.draft
+  const tc = siteConfig?.themeCustom
+  return tc && typeof tc === 'object' && !Array.isArray(tc) ? tc[themeId] : undefined
 }
 
 // ── Client-side applier ───────────────────────────────────────────────────────

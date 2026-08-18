@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef, useReducer } from 'react'
 import api from '@/lib/api'
 import AnimationPicker from '../../components/AnimationPicker'
 import ThemePicker from '../../components/ThemePicker'
@@ -532,14 +532,89 @@ function PreviewTarget({ token, label, edit, hover, onHover, onEdit, children, s
   )
 }
 
-function CustomizePreviewModal({ open, onClose, draft, options, colorDefaults, onColor, onFont, onGlow }) {
+// ── WCAG contrast helpers (for the live preview inspector) ───────────────────
+function parseColor(hex) {
+  const h = String(hex || '').trim().replace(/^#/, '')
+  if (h.length === 3) return { r: parseInt(h[0] + h[0], 16), g: parseInt(h[1] + h[1], 16), b: parseInt(h[2] + h[2], 16) }
+  if (h.length === 6) return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) }
+  return null
+}
+function relLum(c) {
+  const f = v => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4) }
+  return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b)
+}
+function contrastRatio(a, b) {
+  const ca = parseColor(a), cb = parseColor(b)
+  if (!ca || !cb) return null
+  const la = relLum(ca), lb = relLum(cb)
+  const [hi, lo] = la >= lb ? [la, lb] : [lb, la]
+  return (hi + 0.05) / (lo + 0.05)
+}
+function mixHex(hex, target, amount) {
+  const c = parseColor(hex); if (!c) return target
+  const t = parseColor(target); if (!t) return hex
+  const m = (a, b) => Math.round(a + (b - a) * amount)
+  return `#${[m(c.r, t.r), m(c.g, t.g), m(c.b, t.b)].map(v => v.toString(16).padStart(2, '0')).join('')}`
+}
+function ContrastBadge({ fg, bg }) {
+  const ratio = contrastRatio(fg, bg)
+  if (!ratio) return <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>— no contrast data</span>
+  const pass = ratio >= 4.5
+  const large = ratio >= 3
+  const color = pass ? 'var(--green)' : large ? 'var(--orange)' : 'var(--red)'
+  return (
+    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, padding: '3px 8px', borderRadius: 5, border: `1px solid color-mix(in srgb, ${color} 55%, transparent)`, color, background: 'color-mix(in srgb, var(--bg3) 60%, transparent)' }}>
+      contrast {ratio.toFixed(2)}:1 · {pass ? 'AA ✓' : large ? 'AA (large) ~' : 'FAIL ✗'}
+    </span>
+  )
+}
+
+// Background patterns mirroring core/themeCustom.js BG_PATTERN_CSS (var(--bg) is the custom bg color in preview).
+const PREVIEW_BG_PATTERNS = {
+  grid:   'linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)',
+  dots:   'radial-gradient(var(--border) 1.2px, transparent 1.6px)',
+  matrix: 'linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px), radial-gradient(circle, var(--border) 1px, transparent 1.6px)',
+}
+const PREVIEW_BG_SIZES = {
+  grid:   '34px 34px',
+  dots:   '22px 22px',
+  matrix: '34px 34px, 34px 34px, 22px 22px',
+}
+
+function CustomizePreviewModal({ open, onClose, draft, options, colorDefaults, onColor, onFont, onGlow, onRadius, onBorderWidth }) {
   const [edit, setEdit] = useState(null)
   const [hover, setHover] = useState(null)
+  const [frame, setFrame] = useState('desktop')
+  const [scheme, setScheme] = useState('dark')
 
   const colors = draft?.colors || {}
   const c = k => colors[k] || 'transparent'
   const glowVal = typeof draft?.glow === 'number' ? draft.glow : 0.5
   const glowPct = Math.max(0, Math.min(100, Math.round(glowVal * 60)))
+  const radiusVal = typeof draft?.radius === 'number' ? draft.radius : 10
+  const borderWVal = typeof draft?.borderWidth === 'number' ? draft.borderWidth : 1
+  const bgStyle = (() => {
+    if (draft?.bgGradientFrom || draft?.bgGradientTo) {
+      const angle = typeof draft?.bgGradientAngle === 'number' ? draft.bgGradientAngle : 180
+      return { backgroundImage: `linear-gradient(${angle}deg, ${draft.bgGradientFrom || '#0a0a12'}, ${draft.bgGradientTo || '#111827'})`, backgroundSize: '100% 100%' }
+    }
+    const pat = draft?.bgPattern
+    if (pat && pat !== 'none' && PREVIEW_BG_PATTERNS[pat]) {
+      return { backgroundImage: PREVIEW_BG_PATTERNS[pat], backgroundSize: PREVIEW_BG_SIZES[pat] }
+    }
+    return null
+  })()
+  const schemeVars = scheme === 'light'
+    ? {
+        '--bg':     mixHex(c('bg') || '#0b0e14', '#ffffff', 0.86),
+        '--bg2':    mixHex(c('bg2') || '#11151d', '#ffffff', 0.9),
+        '--bg3':    mixHex(c('bg3') || '#161b26', '#ffffff', 0.94),
+        '--text':   mixHex(c('text') || '#e8ecf4', '#10142a', 0.88),
+        '--text2':  mixHex(c('text2') || '#9aa3b5', '#1c2333', 0.8),
+        '--muted':  mixHex(c('muted') || '#5b6478', '#39415a', 0.5),
+        '--border': mixHex(c('border') || '#2a3140', '#c4cad6', 0.65),
+      }
+    : null
   const fD = draft?.fontDisplay ? `'${draft.fontDisplay}', 'Outfit', sans-serif` : 'var(--font-display)'
   const fM = draft?.fontMono ? `'${draft.fontMono}', 'JetBrains Mono', monospace` : 'var(--font-mono)'
   const fC = draft?.fontCode ? `'${draft.fontCode}', monospace` : 'var(--font-code)'
@@ -550,97 +625,141 @@ function CustomizePreviewModal({ open, onClose, draft, options, colorDefaults, o
     '--text2': c('text2'), '--muted': c('muted'), '--link': c('link'), '--border': c('border'),
     '--glow': `0 0 20px color-mix(in srgb, var(--green) ${glowPct}%, transparent)`,
     '--glow-cyan': `0 0 20px color-mix(in srgb, var(--cyan) ${glowPct}%, transparent)`,
+    '--radius': `${radiusVal}px`,
+    '--border-w': `${borderWVal}px`,
   }
 
   const fontGroups = { fontDisplay: ['Display', 'Uploaded'], fontMono: ['Mono', 'Uploaded'], fontCode: ['Mono', 'Uploaded'] }
   const targetColor = edit && !fontGroups[edit] && edit !== 'surface' ? edit : null
 
   return (
-    <Modal open={open} onClose={onClose} title="LIVE PREVIEW  change colors & fonts right here" width={720}>
-      <div style={{ padding: 22, ...vars }}>
-        <div style={{ marginBottom: 14, fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)', display: 'flex', gap: 6, alignItems: 'center' }}>
-          <span style={{ color: 'var(--green)' }}>✎</span> Hover any element to see what it controls — click it to edit below. Changes update the live preview instantly.
+    <Modal open={open} onClose={onClose} title="LIVE PREVIEW  change colors & fonts right here" width={760}>
+      <div style={{ padding: 18, ...vars, ...schemeVars }}>
+        {/* Toolbar — device frame + color scheme */}
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+            {['desktop', 'mobile'].map(f => (
+              <button key={f} onClick={() => setFrame(f)}
+                style={{ padding: '6px 14px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: frame === f ? 'var(--green)' : 'transparent', color: frame === f ? '#000' : 'var(--muted)', border: 'none' }}>
+                {f === 'desktop' ? '🖥 DESKTOP' : '📱 MOBILE'}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+            {['dark', 'light'].map(s => (
+              <button key={s} onClick={() => setScheme(s)}
+                style={{ padding: '6px 14px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: scheme === s ? 'var(--purple)' : 'transparent', color: scheme === s ? '#000' : 'var(--muted)', border: 'none' }}>
+                {s === 'dark' ? '🌙 DARK' : '☀ LIGHT'}
+              </button>
+            ))}
+          </div>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)' }}>
+            <span style={{ color: 'var(--green)' }}>✎</span> Hover any element → click to edit below. Live-updates instantly.
+            {scheme === 'light' && ' Light simulation blends the neutral tokens only — accents stay as configured.'}
+          </span>
         </div>
 
-        {/* Navbar */}
-        <PreviewTarget token="bg2" label="Navbar · bg2" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}
-          style={{ width: '100%', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, width: '100%' }}>
-            <PreviewTarget token="fontDisplay" label="Logo · display font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
-              <span style={{ fontFamily: fD, fontWeight: 700, fontSize: 15, color: 'var(--text)', letterSpacing: 1 }}>◈ NEON<span style={{ color: 'var(--green)' }}>CITY</span></span>
-            </PreviewTarget>
-            <div style={{ display: 'flex', gap: 10 }}>
-              {['HOME', 'FORUM', 'STORE'].map(x => (
-                <PreviewTarget key={x} token="fontMono" label="Nav links · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: x === 'HOME' ? 'var(--green)' : 'var(--muted)' }}>{x}</span>
+        {/* Device frame */}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div style={{
+            width: frame === 'mobile' ? 320 : '100%',
+            border: `${borderWVal}px solid var(--border)`,
+            borderRadius: frame === 'mobile' ? 24 : 10,
+            overflow: 'hidden',
+            padding: frame === 'mobile' ? 8 : 0,
+            background: 'var(--bg)',
+            ...(bgStyle || {}),
+          }}>
+            {frame === 'mobile' && (
+              <div style={{ display: 'flex', justifyContent: 'center', paddingBottom: 8 }}>
+                <div style={{ width: 46, height: 5, borderRadius: 3, background: 'var(--border)' }} />
+              </div>
+            )}
+            <div style={{ padding: frame === 'mobile' ? '4px 10px 14px' : 22 }}>
+              {/* Navbar */}
+              <PreviewTarget token="bg2" label="Navbar · bg2" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}
+                style={{ width: '100%', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: 'var(--border-w) solid var(--border)', borderRadius: 'var(--radius)', width: '100%' }}>
+                  <PreviewTarget token="fontDisplay" label="Logo · display font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+                    <span style={{ fontFamily: fD, fontWeight: 700, fontSize: 15, color: 'var(--text)', letterSpacing: 1 }}>◈ NEON<span style={{ color: 'var(--green)' }}>CITY</span></span>
+                  </PreviewTarget>
+                  {frame !== 'mobile' && (
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {['HOME', 'FORUM', 'STORE'].map(x => (
+                        <PreviewTarget key={x} token="fontMono" label="Nav links · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: x === 'HOME' ? 'var(--green)' : 'var(--muted)' }}>{x}</span>
+                        </PreviewTarget>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </PreviewTarget>
+
+              {/* Heading */}
+              <PreviewTarget token="fontDisplay" label="Heading · display font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 6 }}>
+                <div style={{ fontFamily: fD, fontSize: frame === 'mobile' ? 20 : 26, fontWeight: 700, color: 'var(--text)' }}>Headline — display font</div>
+              </PreviewTarget>
+
+              {/* Subtitle */}
+              <PreviewTarget token="fontMono" label="Subtitle · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 12 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--cyan)' }}>{'// SUBTITLE — mono font'}</div>
+              </PreviewTarget>
+
+              {/* Body */}
+              <PreviewTarget token="fontMono" label="Body · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 16 }}>
+                <p style={{ fontFamily: fM, fontSize: 13, lineHeight: 1.7, color: 'var(--text2)', margin: 0 }}>
+                  Body copy uses <PreviewTarget token="text" label="text" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--text)' }}>text</span></PreviewTarget>, secondary uses{' '}
+                  <PreviewTarget token="text2" label="text2" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--text2)' }}>text2</span></PreviewTarget>, hints are{' '}
+                  <PreviewTarget token="muted" label="muted" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--muted)' }}>muted</span></PreviewTarget> and this is a{' '}
+                  <PreviewTarget token="link" label="link" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><a href="#" onClick={e => e.preventDefault()} style={{ color: 'var(--link)' }}>link</a></PreviewTarget>.
+                </p>
+              </PreviewTarget>
+
+              {/* Buttons */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 18 }}>
+                <PreviewTarget token="green" label="Primary · green" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+                  <span style={{ padding: '8px 16px', background: 'var(--green)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 2, borderRadius: 'var(--radius)', boxShadow: 'var(--glow)' }}>PRIMARY</span>
                 </PreviewTarget>
-              ))}
+                <PreviewTarget token="cyan" label="Secondary · cyan" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+                  <span style={{ padding: '8px 16px', background: 'var(--cyan)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 2, borderRadius: 'var(--radius)', boxShadow: 'var(--glow-cyan)' }}>SECONDARY</span>
+                </PreviewTarget>
+                <PreviewTarget token="red" label="Danger · red" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+                  <span style={{ padding: '8px 16px', background: 'transparent', border: 'var(--border-w) solid var(--red)', color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, borderRadius: 'var(--radius)' }}>DANGER</span>
+                </PreviewTarget>
+              </div>
+
+              {/* Card */}
+              <PreviewTarget token="surface" label="Card · bg2 / bg3 / border / glow" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}
+                style={{ width: '100%', marginBottom: 18 }}>
+                <div style={{ background: 'var(--bg2)', border: 'var(--border-w) solid var(--border)', borderRadius: 'var(--radius)', padding: 16, boxShadow: 'var(--glow)', width: '100%' }}>
+                  <PreviewTarget token="bg3" label="Elevated · bg3" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', width: '100%', marginBottom: 10 }}>
+                    <div style={{ background: 'var(--bg3)', border: 'var(--border-w) solid var(--border)', borderRadius: 'var(--radius)', padding: 12 }}>
+                      <PreviewTarget token="fontDisplay" label="Card title · display font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 3 }}>
+                        <div style={{ fontFamily: fD, fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Card surface</div>
+                      </PreviewTarget>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>bg2 = surface · bg3 = elevated · border = border · glow = glow</div>
+                    </div>
+                  </PreviewTarget>
+                  <PreviewTarget token="fontMono" label="Code block · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', width: '100%' }}>
+                    <div style={{ fontFamily: fM, fontSize: 10, lineHeight: 1.7, color: 'var(--text)', background: 'var(--bg)', border: 'var(--border-w) solid var(--border)', borderRadius: 'var(--radius)', padding: 12 }}>
+                      <span style={{ color: 'var(--muted)' }}>$</span> deploy --prod&nbsp;&nbsp;<span style={{ color: 'var(--muted)' }}># mono font</span>
+                      <br />const <span style={{ color: 'var(--green)' }}>glow</span> = <span style={{ color: 'var(--orange)' }}>true</span><span style={{ color: 'var(--muted)' }}>;</span>
+                    </div>
+                  </PreviewTarget>
+                </div>
+              </PreviewTarget>
+
+              {/* Inline code + accents */}
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
+                Inline code:{' '}
+                <PreviewTarget token="fontCode" label="Inline code · code font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+                  <span style={{ fontFamily: fC, color: 'var(--purple)', background: 'var(--bg3)', border: 'var(--border-w) solid var(--border)', padding: '2px 6px', borderRadius: 'var(--radius)' }}>font-code</span>
+                </PreviewTarget>{' '}· Accent:{' '}
+                <PreviewTarget token="purple" label="Accent · purple" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--purple)' }}>purple</span></PreviewTarget>{' '}· Warning:{' '}
+                <PreviewTarget token="orange" label="Warning · orange" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--orange)' }}>orange</span></PreviewTarget>
+              </div>
             </div>
           </div>
-        </PreviewTarget>
-
-        {/* Heading */}
-        <PreviewTarget token="fontDisplay" label="Heading · display font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 6 }}>
-          <div style={{ fontFamily: fD, fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>Headline — display font</div>
-        </PreviewTarget>
-
-        {/* Subtitle */}
-        <PreviewTarget token="fontMono" label="Subtitle · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 12 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--cyan)' }}>{'// SUBTITLE — mono font'}</div>
-        </PreviewTarget>
-
-        {/* Body */}
-        <PreviewTarget token="fontMono" label="Body · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 16 }}>
-          <p style={{ fontFamily: fM, fontSize: 13, lineHeight: 1.7, color: 'var(--text2)', margin: 0 }}>
-            Body copy uses <PreviewTarget token="text" label="text" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--text)' }}>text</span></PreviewTarget>, secondary uses{' '}
-            <PreviewTarget token="text2" label="text2" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--text2)' }}>text2</span></PreviewTarget>, hints are{' '}
-            <PreviewTarget token="muted" label="muted" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--muted)' }}>muted</span></PreviewTarget> and this is a{' '}
-            <PreviewTarget token="link" label="link" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><a href="#" onClick={e => e.preventDefault()} style={{ color: 'var(--link)' }}>link</a></PreviewTarget>.
-          </p>
-        </PreviewTarget>
-
-        {/* Buttons */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 18 }}>
-          <PreviewTarget token="green" label="Primary · green" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
-            <span style={{ padding: '8px 16px', background: 'var(--green)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 2, borderRadius: 6, boxShadow: 'var(--glow)' }}>PRIMARY</span>
-          </PreviewTarget>
-          <PreviewTarget token="cyan" label="Secondary · cyan" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
-            <span style={{ padding: '8px 16px', background: 'var(--cyan)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 2, borderRadius: 6, boxShadow: 'var(--glow-cyan)' }}>SECONDARY</span>
-          </PreviewTarget>
-          <PreviewTarget token="red" label="Danger · red" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
-            <span style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--red)', color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, borderRadius: 6 }}>DANGER</span>
-          </PreviewTarget>
-        </div>
-
-        {/* Card */}
-        <PreviewTarget token="surface" label="Card · bg2 / bg3 / border / glow" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}
-          style={{ width: '100%', marginBottom: 18 }}>
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, boxShadow: 'var(--glow)', width: '100%' }}>
-            <PreviewTarget token="bg3" label="Elevated · bg3" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', width: '100%', marginBottom: 10 }}>
-              <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
-                <PreviewTarget token="fontDisplay" label="Card title · display font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 3 }}>
-                  <div style={{ fontFamily: fD, fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Card surface</div>
-                </PreviewTarget>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>bg2 = surface · bg3 = elevated · border = border · glow = glow</div>
-              </div>
-            </PreviewTarget>
-            <PreviewTarget token="fontMono" label="Code block · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', width: '100%' }}>
-              <div style={{ fontFamily: fM, fontSize: 10, lineHeight: 1.7, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
-                <span style={{ color: 'var(--muted)' }}>$</span> deploy --prod&nbsp;&nbsp;<span style={{ color: 'var(--muted)' }}># mono font</span>
-                <br />const <span style={{ color: 'var(--green)' }}>glow</span> = <span style={{ color: 'var(--orange)' }}>true</span><span style={{ color: 'var(--muted)' }}>;</span>
-              </div>
-            </PreviewTarget>
-          </div>
-        </PreviewTarget>
-
-        {/* Inline code + accents */}
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
-          Inline code:{' '}
-          <PreviewTarget token="fontCode" label="Inline code · code font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
-            <span style={{ fontFamily: fC, color: 'var(--purple)', background: 'var(--bg3)', border: '1px solid var(--border)', padding: '2px 6px', borderRadius: 4 }}>font-code</span>
-          </PreviewTarget>{' '}· Accent:{' '}
-          <PreviewTarget token="purple" label="Accent · purple" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--purple)' }}>purple</span></PreviewTarget>{' '}· Warning:{' '}
-          <PreviewTarget token="orange" label="Warning · orange" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--orange)' }}>orange</span></PreviewTarget>
         </div>
       </div>
 
@@ -666,12 +785,28 @@ function CustomizePreviewModal({ open, onClose, draft, options, colorDefaults, o
                     style={{ width: 110, accentColor: 'var(--green)', cursor: 'pointer' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--green)' }}>{glowPct}%</span>
                 </div>
+                <div style={{ height: 8 }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)' }}>RADIUS</span>
+                  <input type="range" min={0} max={28} step={1} value={radiusVal}
+                    onChange={e => onRadius && onRadius(Number(e.target.value))}
+                    style={{ width: 90, accentColor: 'var(--purple)', cursor: 'pointer' }} />
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--purple)' }}>{radiusVal}px</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)' }}>BORDER</span>
+                  <input type="range" min={0} max={4} step={1} value={borderWVal}
+                    onChange={e => onBorderWidth && onBorderWidth(Number(e.target.value))}
+                    style={{ width: 90, accentColor: 'var(--purple)', cursor: 'pointer' }} />
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--purple)' }}>{borderWVal}px</span>
+                </div>
               </div>
             </div>
           ) : targetColor ? (
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--green)', marginBottom: 8 }}>{COLOR_LABELS[targetColor] || targetColor}</div>
-              <ColorEdit token={targetColor} label={COLOR_LABELS[targetColor] || targetColor} value={colors[targetColor] || ''} defaultValue={colorDefaults?.[targetColor]} onColor={onColor} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                <ColorEdit token={targetColor} label={COLOR_LABELS[targetColor] || targetColor} value={colors[targetColor] || ''} defaultValue={colorDefaults?.[targetColor]} onColor={onColor} />
+                <ContrastBadge fg={colors[targetColor] || colorDefaults?.[targetColor]} bg={colors.bg || colorDefaults?.bg} />
+              </div>
             </div>
           ) : fontGroups[edit] ? (
             <div style={{ flex: 1 }}>
@@ -717,8 +852,38 @@ function seedCustomDraft(themeId, saved) {
     fontMono:    saved?.fontMono    || '',
     fontCode:    saved?.fontCode    || '',
     glow:        typeof saved?.glow === 'number' ? saved.glow : 0.5,
+    radius:      typeof saved?.radius === 'number' ? saved.radius : 10,
+    borderWidth: typeof saved?.borderWidth === 'number' ? saved.borderWidth : 1,
+    bgPattern:   saved?.bgPattern || 'none',
+    bgGradientFrom:  saved?.bgGradientFrom || '',
+    bgGradientTo:    saved?.bgGradientTo   || '',
+    bgGradientAngle: typeof saved?.bgGradientAngle === 'number' ? saved.bgGradientAngle : 180,
     colors:      { ...defaults, ...(saved?.colors || {}) },
     css:         saved?.css || '',
+  }
+}
+
+// Undo/redo history reducer for the CUSTOMIZE draft. State = { draft, undo, redo }.
+function customHistReducer(state, action) {
+  switch (action.type) {
+    case 'apply': {
+      const undo = [...state.undo, state.draft]
+      if (undo.length > 50) undo.shift()
+      return { draft: action.next, undo, redo: [] }
+    }
+    case 'undo': {
+      if (!state.undo.length) return state
+      return { draft: state.undo[state.undo.length - 1], undo: state.undo.slice(0, -1), redo: [...state.redo, state.draft] }
+    }
+    case 'redo': {
+      if (!state.redo.length) return state
+      return { draft: state.redo[state.redo.length - 1], undo: [...state.undo, state.draft], redo: state.redo.slice(0, -1) }
+    }
+    case 'reset': {
+      return { draft: action.draft, undo: [], redo: [] }
+    }
+    default:
+      return state
   }
 }
 
@@ -975,7 +1140,10 @@ function ThemeLibrary() {
 
   // ── Per-theme CUSTOMIZE tab state ─────────────────────────────────────────
   const [customTarget, setCustomTarget] = useState('cyber-dark')
-  const [customDraft, setCustomDraft] = useState(() => seedCustomDraft('cyber-dark', undefined))
+  const [customHist, dispatchHist] = useReducer(customHistReducer, null, () => ({ draft: seedCustomDraft('cyber-dark', undefined), undo: [], redo: [] }))
+  const customDraft = customHist.draft
+  const undoCount = customHist.undo.length
+  const redoCount = customHist.redo.length
   const [savingCustom, setSavingCustom] = useState(false)
 
   // ── Font library state (search + upload of custom fonts to the CDN) ───────
@@ -991,6 +1159,8 @@ function ThemeLibrary() {
   const [urlModalOpen, setUrlModalOpen] = useState(false)
   const [fontUrlInput, setFontUrlInput] = useState('')
   const [fontUrlFamily, setFontUrlFamily] = useState('')
+  const [fontUrlWeight, setFontUrlWeight] = useState('400')
+  const [fontUrlStyle, setFontUrlStyle] = useState('normal')
   const [savingUrlFont, setSavingUrlFont] = useState(false)
 
   const uploadedFonts = useMemo(
@@ -1053,8 +1223,8 @@ function ThemeLibrary() {
       const { data } = await api.post('/admin/fonts/from-url', {
         url,
         family: fontUrlFamily.trim(),
-        weight: '400',
-        style: 'normal',
+        weight: fontUrlWeight,
+        style: fontUrlStyle,
       })
       const next = [...uploadedFonts, data]
       await saveUploadedFonts(next)
@@ -1067,13 +1237,195 @@ function ThemeLibrary() {
     } finally { setSavingUrlFont(false) }
   }
 
+  // ── Undo / redo history for the customize draft (reducer-backed, ref-free) ──
+  const applyDraft = useCallback(next => dispatchHist({ type: 'apply', next }), [])
+  const undoCustom = useCallback(() => dispatchHist({ type: 'undo' }), [])
+  const redoCustom = useCallback(() => dispatchHist({ type: 'redo' }), [])
+
+  useEffect(() => {
+    if (activeTab !== 'customize') return
+    const onKey = e => {
+      const mod = e.ctrlKey || e.metaKey
+      if (!mod) return
+      const k = e.key.toLowerCase()
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); undoCustom() }
+      else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redoCustom() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [activeTab, undoCustom, redoCustom])
+
+  // ── Theme presets (save / apply / export / import / copy-to-theme) ─────────
+  const themePresets = useMemo(
+    () => (Array.isArray(siteConfig?.themePresets) ? siteConfig.themePresets : []),
+    [siteConfig]
+  )
+  const [presetModalOpen, setPresetModalOpen] = useState(false)
+  const [presetName, setPresetName] = useState('')
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const [importText, setImportText] = useState('')
+
+  const persistSettings = async (patch) => {
+    await api.put('/admin/site-settings', patch)
+    clearSiteSettingsCache()
+    window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: patch }))
+    if (refreshSiteConfig) await refreshSiteConfig()
+  }
+
+  const savePreset = async () => {
+    const name = presetName.trim()
+    if (!name) { toast.error('Give the preset a name first', { title: 'Name Required' }); return }
+    const list = [...themePresets]
+    list.push({ id: `p_${Date.now().toString(36)}`, name, originTheme: customTarget, createdAt: new Date().toISOString(), draft: JSON.parse(JSON.stringify(customDraft)) })
+    await persistSettings({ themePresets: list })
+    setPresetModalOpen(false)
+    setPresetName('')
+    toast.success(`Preset "${name}" saved — apply it to any theme`, { title: '💾 Preset Saved' })
+  }
+
+  const applyPreset = (p) => {
+    if (!p?.draft || typeof p.draft !== 'object') return
+    applyDraft({ ...p.draft })
+    toast.success(`Preset "${p.name}" loaded into ${THEME_DEFS.find(t => t.id === customTarget)?.name}`, { title: '✅ Preset Applied' })
+  }
+
+  const deletePreset = async (p) => {
+    const ok = await dlg.confirm({ title: 'Delete Preset', message: `Delete preset "${p?.name || ''}"?`, variant: 'danger', confirmLabel: 'DELETE' })
+    if (!ok) return
+    const list = themePresets.filter(x => x.id !== p.id)
+    await persistSettings({ themePresets: list })
+    toast.success('Preset deleted', { title: '🗑 Deleted' })
+  }
+
+  const exportPreset = (p) => {
+    navigator.clipboard.writeText(JSON.stringify({ name: p.name, draft: p.draft }, null, 2)).catch(() => {})
+    toast.success('Preset JSON copied to clipboard', { title: '📋 Exported' })
+  }
+
+  const importPreset = async () => {
+    try {
+      const parsed = JSON.parse(importText.trim())
+      const draft = parsed?.draft || parsed
+      if (!draft || typeof draft !== 'object' || Array.isArray(draft)) throw new Error('bad shape')
+      const name = parsed?.name || `${THEME_DEFS.find(t => t.id === customTarget)?.name} import`
+      const list = [...themePresets]
+      list.push({ id: `p_${Date.now().toString(36)}`, name: String(name).slice(0, 60), originTheme: customTarget, createdAt: new Date().toISOString(), draft })
+      await persistSettings({ themePresets: list })
+      setImportModalOpen(false)
+      setImportText('')
+      toast.success(`Preset "${name}" imported`, { title: '📥 Imported' })
+    } catch {
+      toast.error('Invalid preset JSON — paste an exported preset or a theme customization object', { title: 'Import Failed' })
+    }
+  }
+
+  const copyCustomToTheme = async (targetThemeId) => {
+    if (targetThemeId === customTarget) { toast.error('That is already the active theme', { title: 'Same Theme' }); return }
+    const tc = { ...(siteConfig.themeCustom && typeof siteConfig.themeCustom === 'object' && !Array.isArray(siteConfig.themeCustom) ? siteConfig.themeCustom : {}) }
+    tc[targetThemeId] = { ...customDraft }
+    await persistSettings({ themeCustom: tc })
+    setCustomTarget(targetThemeId)
+    toast.success(`Current look copied to ${THEME_DEFS.find(t => t.id === targetThemeId)?.name}`, { title: '📤 Copied' })
+  }
+
+  // ── Targeted rollout (audience + schedule) ─────────────────────────────────
+  const targets = useMemo(
+    () => (Array.isArray(siteConfig?.themeCustomTargets) ? siteConfig.themeCustomTargets : []),
+    [siteConfig]
+  )
+  const [targetModalOpen, setTargetModalOpen] = useState(false)
+  const [targetEditingId, setTargetEditingId] = useState(null)
+  const [targetForm, setTargetForm] = useState({ name: '', themeId: customTarget, audience: 'everyone', active: true, start: '', end: '' })
+
+  const openNewTarget = () => {
+    setTargetEditingId(null)
+    setTargetForm({ name: '', themeId: customTarget, audience: 'everyone', active: true, start: '', end: '' })
+    setTargetModalOpen(true)
+  }
+  const openEditTarget = (t) => {
+    setTargetEditingId(t.id)
+    setTargetForm({ name: t.name || '', themeId: t.themeId || customTarget, audience: t.audience || 'everyone', active: t.active !== false, start: t.start || '', end: t.end || '' })
+    setTargetModalOpen(true)
+  }
+  const saveTarget = async () => {
+    const name = targetForm.name.trim()
+    if (!name) { toast.error('Name the rollout target', { title: 'Name Required' }); return }
+    const draftSource = targetForm.themeId === customTarget ? customDraft : (siteConfig.themeCustom?.[targetForm.themeId])
+    const draft = draftSource && typeof draftSource === 'object' ? JSON.parse(JSON.stringify(draftSource)) : {}
+    const list = targets.filter(t => t.id !== targetEditingId)
+    const rec = {
+      id: targetEditingId || `t_${Date.now().toString(36)}`,
+      name, themeId: targetForm.themeId, draft, audience: targetForm.audience,
+      active: targetForm.active, start: targetForm.start || '', end: targetForm.end || '',
+      createdAt: new Date().toISOString(),
+    }
+    list.push(rec)
+    await persistSettings({ themeCustomTargets: list })
+    setTargetModalOpen(false)
+    setTargetEditingId(null)
+    toast.success(`Target "${name}" saved`, { title: '🎯 Target Saved' })
+  }
+  const deleteTarget = async (t) => {
+    const ok = await dlg.confirm({ title: 'Delete Target', message: `Delete rollout target "${t?.name || ''}"?`, variant: 'danger', confirmLabel: 'DELETE' })
+    if (!ok) return
+    const list = targets.filter(x => x.id !== t.id)
+    await persistSettings({ themeCustomTargets: list })
+    toast.success('Target deleted', { title: '🗑 Deleted' })
+  }
+
+  // ── Font weight / style / family editing ───────────────────────────────────
+  const [fontMetaOpen, setFontMetaOpen] = useState(false)
+  const [editFont, setEditFont] = useState(null)
+  const [editFontForm, setEditFontForm] = useState({ family: '', weight: '400', style: 'normal' })
+  const openFontMeta = (f) => {
+    setEditFont(f)
+    setEditFontForm({ family: f.family || '', weight: f.weight || '400', style: f.style || 'normal' })
+    setFontMetaOpen(true)
+  }
+  const saveFontMeta = async () => {
+    if (!editFont) return
+    try {
+      const { data } = await api.patch(`/admin/fonts/${editFont.id}`, editFontForm)
+      const next = uploadedFonts.map(f => (f.id === editFont.id ? { ...f, ...data } : f))
+      await saveUploadedFonts(next)
+      setFontMetaOpen(false)
+      toast.success(`${data.family} updated`, { title: '✅ Font Updated' })
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Failed to update font', { title: 'Error' })
+    }
+  }
+
+  // ── Diff view ──────────────────────────────────────────────────────────────
+  const [diffOpen, setDiffOpen] = useState(false)
+  const diffRows = useMemo(() => {
+    const defaults = themeColorDefaults(customTarget)
+    const saved = siteConfig.themeCustom?.[customTarget] || {}
+    const rows = []
+    for (const t of CUSTOM_COLOR_TOKENS) {
+      const cur = customDraft.colors?.[t.key]
+      if (cur !== undefined && cur !== defaults[t.key]) {
+        rows.push({ label: `${t.label} color`, key: t.key, kind: 'color', saved: saved.colors?.[t.key], current: cur, def: defaults[t.key] })
+      }
+    }
+    const fonts = [['fontDisplay', 'Display font'], ['fontMono', 'Mono font'], ['fontCode', 'Code font']]
+    for (const [k, label] of fonts) {
+      if (customDraft[k]) rows.push({ label, key: k, kind: 'font', saved: saved[k], current: customDraft[k] })
+    }
+    if (typeof customDraft.glow === 'number' && customDraft.glow !== 0.5) rows.push({ label: 'Glow', key: 'glow', kind: 'glow', saved: saved.glow, current: `${Math.round(customDraft.glow * 100)}%` })
+    if (typeof customDraft.radius === 'number' && customDraft.radius !== 10) rows.push({ label: 'Radius', key: 'radius', kind: 'value', saved: saved.radius, current: `${customDraft.radius}px` })
+    if (typeof customDraft.borderWidth === 'number' && customDraft.borderWidth !== 1) rows.push({ label: 'Border width', key: 'borderWidth', kind: 'value', saved: saved.borderWidth, current: `${customDraft.borderWidth}px` })
+    if (customDraft.bgPattern && customDraft.bgPattern !== 'none') rows.push({ label: 'Background pattern', key: 'bgPattern', kind: 'value', saved: saved.bgPattern, current: customDraft.bgPattern })
+    if (customDraft.css) rows.push({ label: 'Custom CSS', key: 'css', kind: 'value', saved: saved.css ? 'yes' : '—', current: 'yes' })
+    return rows
+  }, [customDraft, customTarget, siteConfig.themeCustom])
+
   // P2 — sync the CUSTOMIZE draft when the target theme or saved config changes
   // (mirrors the fwSyncKey/gAppSyncKey render-phase sync patterns below)
   const customSyncKey = siteConfig ? `${customTarget}\u0001${JSON.stringify(siteConfig.themeCustom?.[customTarget] || null)}` : null
   const [prevCustomSyncKey, setPrevCustomSyncKey] = useState(customSyncKey)
   if (siteConfig && !savingCustom && customSyncKey !== prevCustomSyncKey) {
     setPrevCustomSyncKey(customSyncKey)
-    setCustomDraft(seedCustomDraft(customTarget, siteConfig.themeCustom?.[customTarget]))
+    dispatchHist({ type: 'reset', draft: seedCustomDraft(customTarget, siteConfig.themeCustom?.[customTarget]) })
   }
 
   const toggleFav = (id) => {
@@ -1249,7 +1601,7 @@ function ThemeLibrary() {
       clearSiteSettingsCache()
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { themeCustom: tc } }))
       if (refreshSiteConfig) await refreshSiteConfig()
-      setCustomDraft(seedCustomDraft(customTarget, undefined))
+      dispatchHist({ type: 'reset', draft: seedCustomDraft(customTarget, undefined) })
       toast.success('Customization removed', { title: '↺ Reset' })
     } catch {
       toast.error('Failed to reset customization')
@@ -2586,7 +2938,8 @@ function ThemeLibrary() {
           row:   { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 },
         }
         const fontOpts = filterFontOptions(combineFontOptions(uploadedFonts), fontSearch)
-        const setDraft = patch => setCustomDraft(prev => ({ ...prev, ...patch }))
+        // All draft edits flow through applyDraft so undo/redo (Ctrl+Z/Y) work.
+        const setDraft = patch => applyDraft({ ...customDraft, ...patch })
         return (
           <div>
             {/* Info banner */}
@@ -2670,6 +3023,10 @@ function ThemeLibrary() {
                       <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg3)', border: '1px solid var(--border)', padding: '5px 6px 5px 10px', borderRadius: 6 }}>
                         <span style={{ fontFamily: `'${f.family}', sans-serif`, fontSize: 13, color: 'var(--text)' }}>Aa</span>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text)' }}>{f.family}{f.weight && f.weight !== '400' ? ` · ${f.weight}` : ''}{f.style === 'italic' ? ' · italic' : ''}</span>
+                        <button onClick={() => openFontMeta(f)} title="Edit family / weight / style"
+                          style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1, padding: '2px 4px' }}>
+                          ⚙
+                        </button>
                         <button onClick={() => deleteFont(f)} disabled={deletingFontId === f.id}
                           title="Delete font"
                           style={{ background: 'transparent', border: 'none', color: 'var(--red)', cursor: deletingFontId === f.id ? 'wait' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1, padding: '2px 4px' }}>
@@ -2695,7 +3052,7 @@ function ThemeLibrary() {
                 {CUSTOM_COLOR_TOKENS.map(token => (
                   <ColorRow key={token.key} label={token.label}
                     value={customDraft.colors?.[token.key] || ''}
-                    onChange={v => { setCustomDraft(prev => ({ ...prev, colors: { ...prev.colors, [token.key]: v } })); setCustomizePreviewOpen(true) }} />
+                    onChange={v => { applyDraft({ ...customDraft, colors: { ...customDraft.colors, [token.key]: v } }); setCustomizePreviewOpen(true) }} />
                 ))}
               </div>
             </div>
@@ -2711,6 +3068,144 @@ function ThemeLibrary() {
                 <span>OFF</span><span>{Math.round((typeof customDraft.glow === 'number' ? customDraft.glow : 0.5) * 100)}%</span><span>MAX</span>
               </div>
               <div style={{ ...T.sub, marginTop: 8 }}>Multiplies the neon glow on cards, buttons and borders (uses the theme&apos;s primary/secondary colors).</div>
+            </div>
+
+            {/* Surface & Effects */}
+            <div style={T.card}>
+              <div style={T.sec}>SURFACE &amp; EFFECTS</div>
+
+              <label style={T.label}>CORNER RADIUS  ({typeof customDraft.radius === 'number' ? customDraft.radius : 10}px)</label>
+              <input type="range" min={0} max={28} step={1}
+                value={typeof customDraft.radius === 'number' ? customDraft.radius : 10}
+                onChange={e => setDraft({ radius: Number(e.target.value) })}
+                style={{ width: '100%', accentColor: 'var(--purple)', cursor: 'pointer' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
+                <span>SHARP</span><span>ROUND</span>
+              </div>
+
+              <label style={{ ...T.label, marginTop: 16 }}>BORDER WIDTH  ({typeof customDraft.borderWidth === 'number' ? customDraft.borderWidth : 1}px)</label>
+              <input type="range" min={0} max={4} step={1}
+                value={typeof customDraft.borderWidth === 'number' ? customDraft.borderWidth : 1}
+                onChange={e => setDraft({ borderWidth: Number(e.target.value) })}
+                style={{ width: '100%', accentColor: 'var(--purple)', cursor: 'pointer' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
+                <span>NONE</span><span>THICK</span>
+              </div>
+
+              <label style={{ ...T.label, marginTop: 16 }}>BACKGROUND PATTERN</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {[['none', 'None'], ['grid', 'Grid'], ['dots', 'Dots'], ['matrix', 'Matrix']].map(([val, label]) => {
+                  const on = (customDraft.bgPattern || 'none') === val
+                  return (
+                    <button key={val} onClick={() => setDraft({ bgPattern: val })}
+                      style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', background: on ? 'color-mix(in srgb, var(--purple) 18%, transparent)' : 'var(--bg3)', border: `1px solid ${on ? 'var(--purple)' : 'var(--border)'}`, color: on ? 'var(--purple)' : 'var(--muted)', borderRadius: 4 }}>
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <label style={{ ...T.label, marginTop: 16 }}>BACKGROUND GRADIENT</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <label style={T.label}>FROM</label>
+                <input type="color" value={customDraft.bgGradientFrom || '#0a0a12'}
+                  onChange={e => setDraft({ bgGradientFrom: e.target.value })}
+                  style={{ width: 44, height: 32, background: 'transparent', border: 'none', cursor: 'pointer' }} />
+                <label style={T.label}>TO</label>
+                <input type="color" value={customDraft.bgGradientTo || '#111827'}
+                  onChange={e => setDraft({ bgGradientTo: e.target.value })}
+                  style={{ width: 44, height: 32, background: 'transparent', border: 'none', cursor: 'pointer' }} />
+                <label style={T.label}>ANGLE {typeof customDraft.bgGradientAngle === 'number' ? customDraft.bgGradientAngle : 180}°</label>
+                <input type="range" min={0} max={360} step={5}
+                  value={typeof customDraft.bgGradientAngle === 'number' ? customDraft.bgGradientAngle : 180}
+                  onChange={e => setDraft({ bgGradientAngle: Number(e.target.value) })}
+                  style={{ flex: 1, minWidth: 120, accentColor: 'var(--purple)', cursor: 'pointer' }} />
+              </div>
+              <div style={{ ...T.sub, marginTop: 10 }}>A gradient overrides the pattern. Both are layered over the theme&apos;s default background.</div>
+            </div>
+
+            {/* Presets */}
+            <div style={T.card}>
+              <div style={{ ...T.sec, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>THEME PRESETS  ({themePresets.length})</span>
+                <button onClick={() => setPresetModalOpen(true)}
+                  style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--cyan) 14%, transparent)', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', borderRadius: 6 }}>
+                  + SAVE CURRENT AS PRESET
+                </button>
+              </div>
+              <div style={{ ...T.sub, marginBottom: 12 }}>Presets snapshot the whole customization draft and can be applied to any theme in one click — no more re-typing the same look on every theme.</div>
+              {themePresets.length === 0 && <div style={{ ...T.sub, color: 'var(--orange)' }}>No presets yet. Save the current look (any theme) as a reusable preset.</div>}
+              {themePresets.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 10 }}>
+                  {themePresets.map(p => (
+                    <div key={p.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)' }}>{p.name}</div>
+                      <div style={{ ...T.sub, margin: 0 }}>from {THEME_DEFS.find(t => t.id === p.originTheme)?.name || p.originTheme} · {new Date(p.createdAt).toLocaleDateString()}</div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button onClick={() => applyPreset(p)}
+                          style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, cursor: 'pointer', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 6 }}>
+                          APPLY
+                        </button>
+                        <button onClick={() => copyCustomToTheme(p.originTheme)}
+                          style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, cursor: 'pointer', background: 'transparent', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 50%, transparent)', borderRadius: 6 }}>
+                          COPY TO {THEME_DEFS.find(t => t.id === p.originTheme)?.name?.toUpperCase()}
+                        </button>
+                        <button onClick={() => exportPreset(p)}
+                          style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, cursor: 'pointer', background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 6 }}>
+                          EXPORT
+                        </button>
+                        <button onClick={() => deletePreset(p)}
+                          style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, cursor: 'pointer', background: 'transparent', color: 'var(--red)', border: '1px solid color-mix(in srgb, var(--red) 50%, transparent)', borderRadius: 6 }}>
+                          DEL
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => setImportModalOpen(true)}
+                style={{ marginTop: 12, padding: '7px 14px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', background: 'transparent', color: 'var(--muted)', border: '1px dashed var(--border)', borderRadius: 6 }}>
+                📥 IMPORT PRESET (PASTE JSON)
+              </button>
+            </div>
+
+            {/* Targeted rollout */}
+            <div style={T.card}>
+              <div style={{ ...T.sec, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>TARGETED ROLLOUT  ({targets.length})</span>
+                <button onClick={openNewTarget}
+                  style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--green) 12%, transparent)', color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 6 }}>
+                  + NEW TARGET
+                </button>
+              </div>
+              <div style={{ ...T.sub, marginBottom: 12 }}>Show a customized theme to a slice of visitors — logged-in users only, anonymous only, or everyone — between optional start/end dates.</div>
+              {targets.length === 0 && <div style={{ ...T.sub, color: 'var(--orange)' }}>No rollout targets yet.</div>}
+              {targets.map(t => {
+                const the = THEME_DEFS.find(x => x.id === t.themeId)
+                const now = Date.now()
+                const inWindow = (!t.start || new Date(t.start).getTime() <= now) && (!t.end || new Date(t.end).getTime() >= now)
+                return (
+                  <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 12px', marginBottom: 8, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)' }}>{t.name}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{the?.name || t.themeId} · {t.audience}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: t.active && inWindow ? 'var(--green)' : 'var(--orange)' }}>
+                      {t.active && inWindow ? '● LIVE' : t.active ? '○ SCHEDULED' : '● PAUSED'}
+                    </span>
+                    {t.start && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>from {new Date(t.start).toLocaleDateString()}</span>}
+                    {t.end && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>until {new Date(t.end).toLocaleDateString()}</span>}
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                      <button onClick={() => openEditTarget(t)}
+                        style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, cursor: 'pointer', background: 'transparent', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 50%, transparent)', borderRadius: 6 }}>
+                        EDIT
+                      </button>
+                      <button onClick={() => deleteTarget(t)}
+                        style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, cursor: 'pointer', background: 'transparent', color: 'var(--red)', border: '1px solid color-mix(in srgb, var(--red) 50%, transparent)', borderRadius: 6 }}>
+                        DEL
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
 
             {/* Custom CSS */}
@@ -2733,8 +3228,23 @@ function ThemeLibrary() {
                 style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', background: 'transparent', color: 'var(--red)', border: '1px solid color-mix(in srgb, var(--red) 50%, transparent)', borderRadius: 8, transition: 'all 0.15s' }}>
                 ↺ RESET THEME
               </button>
+              <button onClick={undoCustom} disabled={undoCount === 0}
+                title="Undo (Ctrl+Z)"
+                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, cursor: undoCount === 0 ? 'not-allowed' : 'pointer', background: 'transparent', color: undoCount === 0 ? 'var(--border)' : 'var(--muted)', border: '1px solid var(--border)', borderRadius: 8, transition: 'all 0.15s' }}>
+                ↶ UNDO
+              </button>
+              <button onClick={redoCustom} disabled={redoCount === 0}
+                title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
+                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, cursor: redoCount === 0 ? 'not-allowed' : 'pointer', background: 'transparent', color: redoCount === 0 ? 'var(--border)' : 'var(--muted)', border: '1px solid var(--border)', borderRadius: 8, transition: 'all 0.15s' }}>
+                ↷ REDO
+              </button>
+              <button onClick={() => setDiffOpen(true)}
+                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', background: 'transparent', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 50%, transparent)', borderRadius: 8, transition: 'all 0.15s' }}>
+                ⤓ VIEW DIFF
+              </button>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginLeft: 'auto' }}>
                 {siteConfig.themeCustom?.[customTarget] ? 'Edited version is being previewed — save to persist.' : 'Previewing changes live.'}
+                {' '}{undoCount > 0 && `· ${undoCount} undo steps`}
               </div>
             </div>
 
@@ -2746,9 +3256,11 @@ function ThemeLibrary() {
               draft={customDraft}
               options={combineFontOptions(uploadedFonts)}
               colorDefaults={themeColorDefaults(customTarget)}
-              onColor={(k, v) => setCustomDraft(prev => ({ ...prev, colors: { ...prev.colors, [k]: v } }))}
-              onFont={(k, v) => setDraft({ [k]: v })}
-              onGlow={v => setDraft({ glow: v })}
+              onColor={(k, v) => applyDraft({ ...customDraft, colors: { ...customDraft.colors, [k]: v } })}
+              onFont={(k, v) => applyDraft({ ...customDraft, [k]: v })}
+              onGlow={v => applyDraft({ ...customDraft, glow: v })}
+              onRadius={v => applyDraft({ ...customDraft, radius: v })}
+              onBorderWidth={v => applyDraft({ ...customDraft, borderWidth: v })}
             />
 
             {/* Import a font from a direct file URL */}
@@ -2762,10 +3274,27 @@ function ThemeLibrary() {
                   placeholder="https://fonts.gstatic.com/…/font.woff2"
                   onKeyDown={e => { if (e.key === 'Enter' && !savingUrlFont) importFontFromUrl() }}
                   style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 14 }} />
-                <label style={T.label}>FAMILY NAME (optional — auto-detected from the filename)</label>
+                <label style={T.label}>FAMILY NAME (optional — auto-detected from the file)</label>
                 <input value={fontUrlFamily} onChange={e => setFontUrlFamily(e.target.value)}
                   placeholder="e.g. My Custom Font"
-                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 20 }} />
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 14 }} />
+                <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={T.label}>WEIGHT</label>
+                    <select value={fontUrlWeight} onChange={e => setFontUrlWeight(e.target.value)}
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      {['100', '200', '300', '400', '500', '600', '700', '800', '900'].map(w => <option key={w} value={w}>{w}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={T.label}>STYLE</label>
+                    <select value={fontUrlStyle} onChange={e => setFontUrlStyle(e.target.value)}
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      <option value="normal">normal</option>
+                      <option value="italic">italic</option>
+                    </select>
+                  </div>
+                </div>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   <button onClick={() => setUrlModalOpen(false)}
                     style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
@@ -2775,6 +3304,185 @@ function ThemeLibrary() {
                     style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: savingUrlFont ? 'wait' : 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
                     {savingUrlFont ? 'IMPORTING…' : '⬇ IMPORT FONT'}
                   </button>
+                </div>
+              </div>
+            </Modal>
+
+            {/* Save current draft as a preset */}
+            <Modal open={presetModalOpen} onClose={() => setPresetModalOpen(false)} title="SAVE THEME PRESET" width={440}>
+              <div style={{ padding: 20 }}>
+                <div style={{ ...T.sub, marginBottom: 14 }}>
+                  Snapshots the current <strong style={{ color: 'var(--text)' }}>{THEME_DEFS.find(t => t.id === customTarget)?.name || customTarget}</strong> customization
+                  (fonts, colors, glow, radius, borders, background, CSS) as a preset you can apply to any theme.
+                </div>
+                <label style={T.label}>PRESET NAME</label>
+                <input value={presetName} onChange={e => setPresetName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') savePreset() }}
+                  placeholder="e.g. Midnight Lab"
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 20 }} />
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button onClick={() => setPresetModalOpen(false)}
+                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                    CANCEL
+                  </button>
+                  <button onClick={savePreset}
+                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
+                    💾 SAVE PRESET
+                  </button>
+                </div>
+              </div>
+            </Modal>
+
+            {/* Import preset from JSON */}
+            <Modal open={importModalOpen} onClose={() => setImportModalOpen(false)} title="IMPORT PRESET" width={520}>
+              <div style={{ padding: 20 }}>
+                <div style={{ ...T.sub, marginBottom: 14 }}>
+                  Paste the JSON copied from an exported preset, or any plain theme-customization object
+                  (<code style={{ color: 'var(--purple)', fontSize: 9 }}>{'{ fontDisplay, fontMono, colors: {}, glow, radius, borderWidth, bgPattern, css }'}</code>).
+                </div>
+                <textarea value={importText} onChange={e => setImportText(e.target.value)} spellCheck={false}
+                  rows={7}
+                  placeholder={`{\n  "name": "My Look",\n  "draft": { "fontDisplay": "…", "colors": { … }, "glow": 0.5, "css": "" }\n}`}
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 20, resize: 'vertical' }} />
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button onClick={() => setImportModalOpen(false)}
+                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                    CANCEL
+                  </button>
+                  <button onClick={importPreset}
+                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
+                    📥 IMPORT
+                  </button>
+                </div>
+              </div>
+            </Modal>
+
+            {/* Create / edit a targeted rollout */}
+            <Modal open={targetModalOpen} onClose={() => setTargetModalOpen(false)} title="ROLLOUT TARGET" width={520}>
+              <div style={{ padding: 20 }}>
+                <label style={T.label}>TARGET NAME</label>
+                <input value={targetForm.name} onChange={e => setTargetForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g. Logged-in users beta"
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 14 }} />
+                <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={T.label}>THEME</label>
+                    <select value={targetForm.themeId} onChange={e => setTargetForm(f => ({ ...f, themeId: e.target.value }))}
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      {THEME_DEFS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={T.label}>AUDIENCE</label>
+                    <select value={targetForm.audience} onChange={e => setTargetForm(f => ({ ...f, audience: e.target.value }))}
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      <option value="everyone">everyone</option>
+                      <option value="logged-in">logged-in only</option>
+                      <option value="anonymous">anonymous only</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ ...T.sub, marginBottom: 14 }}>
+                  Theme snapshots the customization that is currently loaded for the chosen theme (including your un-saved edits). Edit the draft <strong style={{ color: 'var(--text)' }}>before</strong> saving the target to bake it in.
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={T.label}>START (optional)</label>
+                    <input type="date" value={targetForm.start} onChange={e => setTargetForm(f => ({ ...f, start: e.target.value }))}
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', colorScheme: 'dark' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={T.label}>END (optional)</label>
+                    <input type="date" value={targetForm.end} onChange={e => setTargetForm(f => ({ ...f, end: e.target.value }))}
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', colorScheme: 'dark' }} />
+                  </div>
+                </div>
+                <div style={{ ...T.row, marginBottom: 20 }}>
+                  <Toggle on={targetForm.active} onChange={() => setTargetForm(f => ({ ...f, active: !f.active }))} color="var(--green)" />
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>Active</div>
+                    <div style={T.sub}>Pause without deleting. Schedule windows only count while active.</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button onClick={() => setTargetModalOpen(false)}
+                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                    CANCEL
+                  </button>
+                  <button onClick={saveTarget}
+                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 8 }}>
+                    💾 SAVE TARGET
+                  </button>
+                </div>
+              </div>
+            </Modal>
+
+            {/* Edit font family / weight / style */}
+            <Modal open={fontMetaOpen} onClose={() => setFontMetaOpen(false)} title="EDIT FONT" width={440}>
+              <div style={{ padding: 20 }}>
+                <label style={T.label}>FAMILY NAME</label>
+                <input value={editFontForm.family} onChange={e => setEditFontForm(f => ({ ...f, family: e.target.value }))}
+                  placeholder="e.g. Orbitron"
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 14 }} />
+                <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={T.label}>WEIGHT</label>
+                    <select value={editFontForm.weight} onChange={e => setEditFontForm(f => ({ ...f, weight: e.target.value }))}
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      {['100', '200', '300', '400', '500', '600', '700', '800', '900'].map(w => <option key={w} value={w}>{w}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={T.label}>STYLE</label>
+                    <select value={editFontForm.style} onChange={e => setEditFontForm(f => ({ ...f, style: e.target.value }))}
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      <option value="normal">normal</option>
+                      <option value="italic">italic</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ ...T.sub, marginBottom: 20 }}>Weight and style are used for the @font-face descriptor (font-weight / font-style) so browsers pick the right file.</div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button onClick={() => setFontMetaOpen(false)}
+                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                    CANCEL
+                  </button>
+                  <button onClick={saveFontMeta}
+                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
+                    💾 SAVE FONT
+                  </button>
+                </div>
+              </div>
+            </Modal>
+
+            {/* Diff view */}
+            <Modal open={diffOpen} onClose={() => setDiffOpen(false)} title={`DIFF — ${THEME_DEFS.find(t => t.id === customTarget)?.name.toUpperCase() || customTarget.toUpperCase()}`} width={560}>
+              <div style={{ padding: 20 }}>
+                <div style={{ ...T.sub, marginBottom: 14 }}>
+                  What the current draft changes vs the theme&apos;s built-in defaults, and what is already saved to <code style={{ color: 'var(--purple)', fontSize: 9 }}>themeCustom</code>.
+                </div>
+                {diffRows.length === 0 && <div style={{ ...T.sub, color: 'var(--green)' }}>No differences from the built-in look yet — everything is at default.</div>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {diffRows.map(r => (
+                    <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 10 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)', flex: 1 }}>{r.label}</span>
+                      {r.kind === 'color' && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {r.saved ? <><span style={{ width: 12, height: 12, borderRadius: 3, background: r.saved, border: '1px solid var(--border)' }} /><span style={{ color: 'var(--muted)' }}>saved</span></> : <span style={{ color: 'var(--muted)' }}>default</span>}
+                          <span style={{ color: 'var(--border)' }}>→</span>
+                          <span style={{ width: 12, height: 12, borderRadius: 3, background: r.current, border: '1px solid var(--border)' }} />
+                          <span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)' }}>{r.current}</span>
+                        </span>
+                      )}
+                      {r.kind === 'font' && (
+                        <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>
+                          {r.saved ? <span style={{ color: 'var(--muted)' }}>{r.saved}</span> : <span>default</span>} → <span style={{ color: 'var(--cyan)' }}>{r.current}</span>
+                        </span>
+                      )}
+                      {r.kind === 'glow' && <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>default 50% → <span style={{ color: 'var(--cyan)' }}>{r.current}</span></span>}
+                      {(r.kind === 'value') && <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>default → <span style={{ color: 'var(--cyan)' }}>{r.current}</span></span>}
+                    </div>
+                  ))}
                 </div>
               </div>
             </Modal>

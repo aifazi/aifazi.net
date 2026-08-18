@@ -17,6 +17,7 @@ import logging
 import os
 import re
 import socket
+import struct
 import uuid
 from urllib.parse import urlparse
 
@@ -77,6 +78,72 @@ def _family_from_filename(filename: str) -> str:
     words = [w for w in re.split(r"[_\-\s]+", base) if w]
     name = " ".join(w[:1].upper() + w[1:] for w in words)
     return (name or "UploadedFont")[:60]
+
+
+def _sfnt_name_family(content: bytes) -> str | None:
+    """Read the family name embedded in a TTF/OTF `name` table.
+
+    Only uncompressed sfnt containers (ttf/otf) are parsed — woff/woff2 wrap
+    the same tables in a compressed format, so those fall back to the filename.
+    Prefers the typographic family (nameID 16) over the legacy family (1), and
+    the Windows Unicode record (platform 3, encoding 1) over Mac Roman.
+    """
+    try:
+        if len(content) < 12:
+            return None
+        num_tables = struct.unpack(">H", content[4:6])[0]
+        for i in range(num_tables):
+            off = 12 + i * 16
+            if off + 16 > len(content):
+                return None
+            tag = content[off:off + 4]
+            if tag != b"name":
+                continue
+            table_off, table_len = struct.unpack(">II", content[off + 8:off + 16])
+            return _parse_name_table(content[table_off:table_off + table_len])
+    except Exception:
+        return None
+    return None
+
+
+def _parse_name_table(data: bytes) -> str | None:
+    if len(data) < 6:
+        return None
+    count = struct.unpack(">H", data[2:4])[0]
+    string_off = struct.unpack(">H", data[4:6])[0]
+    families: dict[int, str] = {}
+    for i in range(count):
+        rec_off = 6 + i * 12
+        if rec_off + 12 > len(data):
+            break
+        pid, eid, _lid, name_id, length, offset = struct.unpack(">HHHHHH", data[rec_off:rec_off + 12])
+        start = string_off + offset
+        if start < 0 or start + length > len(data):
+            continue
+        raw = data[start:start + length]
+        text: str | None = None
+        if pid == 3 and eid == 1:  # Windows Unicode (UTF-16BE)
+            text = raw.decode("utf-16-be", errors="ignore")
+        elif pid == 1:  # Mac Roman
+            try:
+                text = raw.decode("mac_roman", errors="ignore")
+            except Exception:
+                text = raw.decode("latin-1", errors="ignore")
+        elif pid == 0:  # Unicode
+            text = raw.decode("utf-16-be", errors="ignore")
+        if not text:
+            continue
+        text = re.sub(r"\s+", " ", text).strip()
+        if not text or len(text) > 60:
+            continue
+        families[name_id] = text
+    return families.get(16) or families.get(1)
+
+
+def _auto_family(content: bytes, filename: str) -> str:
+    """Best-effort family name: embedded font metadata → filename."""
+    embedded = _sfnt_name_family(content)
+    return (embedded or _family_from_filename(filename))[:60]
 
 
 def _sniff_font(content: bytes, ext: str) -> tuple[str, str, bool]:
@@ -168,7 +235,7 @@ async def upload_font(
     # Malware scan (fail-open)
     scan_for_malware(content, filename or "font")
 
-    family_name = _css_escape((family or "").strip() or _family_from_filename(filename))
+    family_name = _css_escape((family or "").strip() or _auto_family(content, filename))
 
     try:
         file_url, storage_path, provider = await upload_media(
@@ -239,7 +306,7 @@ async def import_font_from_url(
 
     scan_for_malware(content, filename or "font")
 
-    family_name = _css_escape((body.family or "").strip() or _family_from_filename(filename))
+    family_name = _css_escape((body.family or "").strip() or _auto_family(content, filename))
 
     try:
         file_url, storage_path, provider = await upload_media(
@@ -252,6 +319,41 @@ async def import_font_from_url(
         family_name, body.weight, body.style, css_format,
         file_url, storage_path, provider, filename, len(content),
     )
+
+
+class FontPatchBody(BaseModel):
+    family: str = ""
+    weight: str = "400"
+    style: str = "normal"
+
+
+@router.patch("/{font_id}")
+async def update_font(font_id: str, body: FontPatchBody, _: dict = Depends(require_staff)):
+    """Edit a registered font's family name / weight / style (e.g. add variants)."""
+    res = (supabase.table("fonts")
+           .select("id,family,weight,style,format,file_url,original_name,file_size")
+           .eq("id", font_id).limit(1).execute())
+    if not res.data:
+        raise HTTPException(404, "Font not found")
+    rec = res.data[0]
+    family = _css_escape((body.family or "").strip() or rec.get("family") or "UploadedFont")
+    weight = body.weight if body.weight in _WEIGHTS else (rec.get("weight") or "400")
+    style = body.style if body.style in ("normal", "italic") else (rec.get("style") or "normal")
+
+    supabase.table("fonts").update({
+        "family": family, "weight": weight, "style": style,
+    }).eq("id", font_id).execute()
+
+    return {
+        "id":            rec.get("id"),
+        "family":        family,
+        "weight":        weight,
+        "style":         style,
+        "format":        rec.get("format"),
+        "url":           rec.get("file_url"),
+        "original_name": rec.get("original_name"),
+        "file_size":     rec.get("file_size"),
+    }
 
 
 @router.get("")
