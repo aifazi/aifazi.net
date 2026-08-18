@@ -8,6 +8,8 @@
     "scheme": "aifazi",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "net.aifazi.mobile",
+      "buildNumber": "33",
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "aifazi uses the microphone for voice and video calls.",
