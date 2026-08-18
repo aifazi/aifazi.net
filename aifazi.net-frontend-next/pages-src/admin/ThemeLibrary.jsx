@@ -414,7 +414,7 @@ function ColorRow({ label, value, onChange }) {
 // ── Theme-styled font picker (replaces the native <select>) ───────────────────
 // Custom dropdown matching the admin theme: groups uploaded + Google options,
 // highlights the active choice, closes on outside click / Escape.
-function FontPicker({ value, options, groups, placeholder = '↺ Theme default', onChange }) {
+function FontPicker({ value, options, groups, placeholder = '↺ Theme default', onChange, dir = 'down', bare = false }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const ref = useRef(null)
@@ -436,7 +436,7 @@ function FontPicker({ value, options, groups, placeholder = '↺ Theme default',
     .filter(s => s.items.length > 0)
 
   return (
-    <div ref={ref} style={{ position: 'relative', marginBottom: 14 }}>
+    <div ref={ref} style={{ position: 'relative', marginBottom: bare ? 0 : 14 }}>
       <button type="button" onClick={() => setOpen(o => !o)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: 'var(--bg3)', border: `1px solid ${open ? 'var(--green)' : 'var(--border)'}`, color: 'var(--text)', padding: '8px 10px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer', transition: 'border-color 0.15s' }}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: value ? `'${value}', sans-serif` : 'var(--font-mono)', fontSize: value ? 13 : 10, color: value ? 'var(--text)' : 'var(--muted)' }}>
@@ -445,7 +445,7 @@ function FontPicker({ value, options, groups, placeholder = '↺ Theme default',
         <span style={{ color: open ? 'var(--green)' : 'var(--muted)', flexShrink: 0, fontSize: 9 }}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <div style={{ position: 'absolute', zIndex: 60, left: 0, right: 0, top: 'calc(100% + 6px)', background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 8, boxShadow: '0 18px 40px rgba(0,0,0,0.5), 0 0 18px color-mix(in srgb, var(--green) 12%, transparent)', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', zIndex: 60, left: 0, right: 0, ...(dir === 'up' ? { bottom: 'calc(100% + 6px)' } : { top: 'calc(100% + 6px)' }), background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 8, boxShadow: '0 18px 40px rgba(0,0,0,0.5), 0 0 18px color-mix(in srgb, var(--green) 12%, transparent)', overflow: 'hidden' }}>
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="🔍 Search fonts…"
             style={{ width: '100%', background: 'var(--bg)', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
           <div style={{ maxHeight: 250, overflowY: 'auto' }}>
@@ -478,13 +478,68 @@ function FontPicker({ value, options, groups, placeholder = '↺ Theme default',
   )
 }
 
-// ── Live preview popup — shows exactly where color/font changes apply ─────────
-// Renders a mini site (navbar, heading, body, buttons, card, code block) using
-// the draft token values so the admin sees the impact while editing.
-function CustomizePreviewModal({ open, onClose, draft }) {
+// ── Interactive live-preview popup ────────────────────────────────────────────
+// Shows a mini site (navbar, heading, body, buttons, card, code block) rendered
+// with the draft token values. Hover an element to see which token it uses,
+// click it to open the inspector bar at the bottom and change colors/fonts right
+// from the preview. Every edit flows back into the customize draft (and the
+// live left-side preview) via the callbacks.
+const COLOR_LABELS = { bg: 'Background', bg2: 'Surface', bg3: 'Elevated', green: 'Primary', cyan: 'Secondary', orange: 'Warning', red: 'Danger', purple: 'Accent', text: 'Text', text2: 'Text Secondary', muted: 'Muted', link: 'Link', border: 'Border' }
+const NEON_SWATCHES = ['#00ff88', '#00d4ff', '#ff4757', '#ff6b35', '#7c5cbf', '#54a0ff', '#c8d8e8', '#ffffff', '#0b1118', '#000000']
+
+function ColorEdit({ token, label, value, defaultValue, onColor }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <input type="color" value={String(value || '').startsWith('rgba') ? '#888888' : (value || '#000000')}
+        onChange={e => onColor(token, e.target.value)}
+        style={{ width: 26, height: 26, padding: 1, border: '1px solid var(--border)', background: 'none', cursor: 'pointer', borderRadius: 4 }} />
+      <div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)' }}>{label.toUpperCase()}</div>
+        <input value={value || ''} onChange={e => onColor(token, e.target.value)}
+          style={{ width: 128, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', borderRadius: 4 }} />
+      </div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', maxWidth: 200 }}>
+        {NEON_SWATCHES.map(s => (
+          <button key={s} onClick={() => onColor(token, s)} title={s}
+            style={{ width: 16, height: 16, borderRadius: 3, background: s, border: '1px solid var(--border)', cursor: 'pointer', padding: 0 }} />
+        ))}
+        <button onClick={() => onColor(token, defaultValue || '')} title="Reset to theme default"
+          style={{ width: 16, height: 16, borderRadius: 3, border: '1px dashed var(--border)', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', background: 'transparent', lineHeight: 1 }}>↺</button>
+      </div>
+    </div>
+  )
+}
+
+function PreviewTarget({ token, label, edit, hover, onHover, onEdit, children, style }) {
+  const active = edit === token
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      style={{ position: 'relative', display: 'inline-flex', cursor: 'pointer', borderRadius: 4, outline: 'none', boxShadow: active ? '0 0 0 2px color-mix(in srgb, var(--green) 60%, transparent)' : 'none', ...style }}
+      onMouseEnter={() => onHover(token)}
+      onMouseLeave={() => onHover(null)}
+      onClick={e => { e.stopPropagation(); onEdit(token) }}
+      onKeyDown={e => { if (e.key === 'Enter') { e.stopPropagation(); onEdit(token) } }}
+    >
+      {children}
+      {(hover === token || active) && (
+        <span style={{ position: 'absolute', top: -8, right: 0, transform: 'translateY(-100%)', fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '3px 8px', background: 'var(--bg)', border: '1px solid var(--green)', borderRadius: 4, color: 'var(--green)', pointerEvents: 'none', zIndex: 80, whiteSpace: 'nowrap' }}>
+          {label} <span style={{ opacity: 0.7 }}>{active ? '· editing' : '✎'}</span>
+        </span>
+      )}
+    </span>
+  )
+}
+
+function CustomizePreviewModal({ open, onClose, draft, options, colorDefaults, onColor, onFont, onGlow }) {
+  const [edit, setEdit] = useState(null)
+  const [hover, setHover] = useState(null)
+
   const colors = draft?.colors || {}
   const c = k => colors[k] || 'transparent'
-  const glowPct = Math.max(0, Math.min(100, Math.round((typeof draft?.glow === 'number' ? draft.glow : 0.5) * 60)))
+  const glowVal = typeof draft?.glow === 'number' ? draft.glow : 0.5
+  const glowPct = Math.max(0, Math.min(100, Math.round(glowVal * 60)))
   const fD = draft?.fontDisplay ? `'${draft.fontDisplay}', 'Outfit', sans-serif` : 'var(--font-display)'
   const fM = draft?.fontMono ? `'${draft.fontMono}', 'JetBrains Mono', monospace` : 'var(--font-mono)'
   const fC = draft?.fontCode ? `'${draft.fontCode}', monospace` : 'var(--font-code)'
@@ -496,47 +551,141 @@ function CustomizePreviewModal({ open, onClose, draft }) {
     '--glow': `0 0 20px color-mix(in srgb, var(--green) ${glowPct}%, transparent)`,
     '--glow-cyan': `0 0 20px color-mix(in srgb, var(--cyan) ${glowPct}%, transparent)`,
   }
+
+  const fontGroups = { fontDisplay: ['Display', 'Uploaded'], fontMono: ['Mono', 'Uploaded'], fontCode: ['Mono', 'Uploaded'] }
+  const targetColor = edit && !fontGroups[edit] && edit !== 'surface' ? edit : null
+
   return (
-    <Modal open={open} onClose={onClose} title="LIVE PREVIEW  where your changes apply" width={680}>
+    <Modal open={open} onClose={onClose} title="LIVE PREVIEW  change colors & fonts right here" width={720}>
       <div style={{ padding: 22, ...vars }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 16 }}>
-          <span style={{ fontFamily: fD, fontWeight: 700, fontSize: 15, color: 'var(--text)', letterSpacing: 1 }}>◈ NEON<span style={{ color: 'var(--green)' }}>CITY</span></span>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {['HOME', 'FORUM', 'STORE'].map(x => (
-              <span key={x} style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: x === 'HOME' ? 'var(--green)' : 'var(--muted)' }}>{x}</span>
-            ))}
-          </div>
+        <div style={{ marginBottom: 14, fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <span style={{ color: 'var(--green)' }}>✎</span> Hover any element to see what it controls — click it to edit below. Changes update the live preview instantly.
         </div>
 
-        <div style={{ fontFamily: fD, fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Headline — <span style={{ color: 'var(--green)' }}>display</span> font</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>{'// SUBTITLE — mono font'}</div>
+        {/* Navbar */}
+        <PreviewTarget token="bg2" label="Navbar · bg2" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}
+          style={{ width: '100%', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, width: '100%' }}>
+            <PreviewTarget token="fontDisplay" label="Logo · display font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+              <span style={{ fontFamily: fD, fontWeight: 700, fontSize: 15, color: 'var(--text)', letterSpacing: 1 }}>◈ NEON<span style={{ color: 'var(--green)' }}>CITY</span></span>
+            </PreviewTarget>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {['HOME', 'FORUM', 'STORE'].map(x => (
+                <PreviewTarget key={x} token="fontMono" label="Nav links · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: x === 'HOME' ? 'var(--green)' : 'var(--muted)' }}>{x}</span>
+                </PreviewTarget>
+              ))}
+            </div>
+          </div>
+        </PreviewTarget>
 
-        <p style={{ fontFamily: fD, fontSize: 13, lineHeight: 1.7, color: 'var(--text2)', marginBottom: 16 }}>
-          Body copy uses <span style={{ color: 'var(--text)' }}>text</span>, secondary text uses <span style={{ color: 'var(--text2)' }}>text2</span>, hints are{' '}
-          <span style={{ color: 'var(--muted)' }}>muted</span> and this is a <a href="#" onClick={e => e.preventDefault()} style={{ color: 'var(--link)' }}>link</a>.
-        </p>
+        {/* Heading */}
+        <PreviewTarget token="fontDisplay" label="Heading · display font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 6 }}>
+          <div style={{ fontFamily: fD, fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>Headline — display font</div>
+        </PreviewTarget>
 
+        {/* Subtitle */}
+        <PreviewTarget token="fontMono" label="Subtitle · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 12 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--cyan)' }}>{'// SUBTITLE — mono font'}</div>
+        </PreviewTarget>
+
+        {/* Body */}
+        <PreviewTarget token="fontMono" label="Body · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 16 }}>
+          <p style={{ fontFamily: fM, fontSize: 13, lineHeight: 1.7, color: 'var(--text2)', margin: 0 }}>
+            Body copy uses <PreviewTarget token="text" label="text" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--text)' }}>text</span></PreviewTarget>, secondary uses{' '}
+            <PreviewTarget token="text2" label="text2" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--text2)' }}>text2</span></PreviewTarget>, hints are{' '}
+            <PreviewTarget token="muted" label="muted" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--muted)' }}>muted</span></PreviewTarget> and this is a{' '}
+            <PreviewTarget token="link" label="link" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><a href="#" onClick={e => e.preventDefault()} style={{ color: 'var(--link)' }}>link</a></PreviewTarget>.
+          </p>
+        </PreviewTarget>
+
+        {/* Buttons */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 18 }}>
-          <span style={{ padding: '8px 16px', background: 'var(--green)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 2, borderRadius: 6, boxShadow: 'var(--glow)' }}>PRIMARY (green)</span>
-          <span style={{ padding: '8px 16px', background: 'var(--cyan)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 2, borderRadius: 6, boxShadow: 'var(--glow-cyan)' }}>SECONDARY (cyan)</span>
-          <span style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--red)', color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, borderRadius: 6 }}>DANGER (red)</span>
+          <PreviewTarget token="green" label="Primary · green" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+            <span style={{ padding: '8px 16px', background: 'var(--green)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 2, borderRadius: 6, boxShadow: 'var(--glow)' }}>PRIMARY</span>
+          </PreviewTarget>
+          <PreviewTarget token="cyan" label="Secondary · cyan" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+            <span style={{ padding: '8px 16px', background: 'var(--cyan)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 2, borderRadius: 6, boxShadow: 'var(--glow-cyan)' }}>SECONDARY</span>
+          </PreviewTarget>
+          <PreviewTarget token="red" label="Danger · red" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+            <span style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--red)', color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, borderRadius: 6 }}>DANGER</span>
+          </PreviewTarget>
         </div>
 
-        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, boxShadow: 'var(--glow)', marginBottom: 18 }}>
-          <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, marginBottom: 10 }}>
-            <div style={{ fontFamily: fD, fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>Card surface</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>bg2 = surface · bg3 = elevated · border = border · glow = glow</div>
+        {/* Card */}
+        <PreviewTarget token="surface" label="Card · bg2 / bg3 / border / glow" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}
+          style={{ width: '100%', marginBottom: 18 }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, boxShadow: 'var(--glow)', width: '100%' }}>
+            <PreviewTarget token="bg3" label="Elevated · bg3" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', width: '100%', marginBottom: 10 }}>
+              <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
+                <PreviewTarget token="fontDisplay" label="Card title · display font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', marginBottom: 3 }}>
+                  <div style={{ fontFamily: fD, fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Card surface</div>
+                </PreviewTarget>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>bg2 = surface · bg3 = elevated · border = border · glow = glow</div>
+              </div>
+            </PreviewTarget>
+            <PreviewTarget token="fontMono" label="Code block · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', width: '100%' }}>
+              <div style={{ fontFamily: fM, fontSize: 10, lineHeight: 1.7, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
+                <span style={{ color: 'var(--muted)' }}>$</span> deploy --prod&nbsp;&nbsp;<span style={{ color: 'var(--muted)' }}># mono font</span>
+                <br />const <span style={{ color: 'var(--green)' }}>glow</span> = <span style={{ color: 'var(--orange)' }}>true</span><span style={{ color: 'var(--muted)' }}>;</span>
+              </div>
+            </PreviewTarget>
           </div>
-          <div style={{ fontFamily: fM, fontSize: 10, lineHeight: 1.7, color: 'var(--text)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12 }}>
-            <span style={{ color: 'var(--muted)' }}>$</span> deploy --prod&nbsp;&nbsp;<span style={{ color: 'var(--muted)' }}># mono font</span>
-            <br />const <span style={{ color: 'var(--green)' }}>glow</span> = <span style={{ color: 'var(--orange)' }}>true</span><span style={{ color: 'var(--muted)' }}>;</span>
-          </div>
-        </div>
+        </PreviewTarget>
 
+        {/* Inline code + accents */}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
-          Inline code: <span style={{ fontFamily: fC, color: 'var(--purple)', background: 'var(--bg3)', border: '1px solid var(--border)', padding: '2px 6px', borderRadius: 4 }}>font-code</span> token · Accent: <span style={{ color: 'var(--purple)' }}>purple</span> · Warning: <span style={{ color: 'var(--orange)' }}>orange</span>
+          Inline code:{' '}
+          <PreviewTarget token="fontCode" label="Inline code · code font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}>
+            <span style={{ fontFamily: fC, color: 'var(--purple)', background: 'var(--bg3)', border: '1px solid var(--border)', padding: '2px 6px', borderRadius: 4 }}>font-code</span>
+          </PreviewTarget>{' '}· Accent:{' '}
+          <PreviewTarget token="purple" label="Accent · purple" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--purple)' }}>purple</span></PreviewTarget>{' '}· Warning:{' '}
+          <PreviewTarget token="orange" label="Warning · orange" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit}><span style={{ color: 'var(--orange)' }}>orange</span></PreviewTarget>
         </div>
       </div>
+
+      {/* Inspector bar — docked to the bottom of the popup */}
+      {edit && (
+        <div style={{ position: 'sticky', bottom: 0, borderTop: '1px solid var(--border)', background: 'color-mix(in srgb, var(--bg) 94%, transparent)', backdropFilter: 'blur(8px)', padding: '14px 22px', display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          {edit === 'surface' ? (
+            <div style={{ flex: 1, display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--green)', marginBottom: 8 }}>CARD SURFACE</div>
+                <ColorEdit token="bg2" label="Surface" value={colors.bg2 || ''} defaultValue={colorDefaults?.bg2} onColor={onColor} />
+                <div style={{ height: 8 }} />
+                <ColorEdit token="bg3" label="Elevated" value={colors.bg3 || ''} defaultValue={colorDefaults?.bg3} onColor={onColor} />
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)', marginBottom: 8 }}>BORDER & GLOW</div>
+                <ColorEdit token="border" label="Border" value={colors.border || ''} defaultValue={colorDefaults?.border} onColor={onColor} />
+                <div style={{ height: 8 }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)' }}>GLOW</span>
+                  <input type="range" min={0} max={1} step={0.05} value={glowVal}
+                    onChange={e => onGlow(Number(e.target.value))}
+                    style={{ width: 110, accentColor: 'var(--green)', cursor: 'pointer' }} />
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--green)' }}>{glowPct}%</span>
+                </div>
+              </div>
+            </div>
+          ) : targetColor ? (
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--green)', marginBottom: 8 }}>{COLOR_LABELS[targetColor] || targetColor}</div>
+              <ColorEdit token={targetColor} label={COLOR_LABELS[targetColor] || targetColor} value={colors[targetColor] || ''} defaultValue={colorDefaults?.[targetColor]} onColor={onColor} />
+            </div>
+          ) : fontGroups[edit] ? (
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--green)', marginBottom: 8 }}>{(edit === 'fontDisplay' ? 'Display font' : edit === 'fontMono' ? 'Mono font' : 'Code font')}</div>
+              <FontPicker value={draft?.[edit] || ''} options={options} groups={fontGroups[edit]} dir="up" bare
+                onChange={v => onFont(edit, v)} />
+            </div>
+          ) : null}
+          <button onClick={() => setEdit(null)}
+            style={{ padding: '8px 14px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 6 }}>
+            ✓ DONE
+          </button>
+        </div>
+      )}
     </Modal>
   )
 }
@@ -2589,8 +2738,18 @@ function ThemeLibrary() {
               </div>
             </div>
 
-            {/* Live preview popup — shows where colors/fonts apply */}
-            <CustomizePreviewModal open={customizePreviewOpen} onClose={() => setCustomizePreviewOpen(false)} draft={customDraft} />
+            {/* Interactive live preview popup — change colors & fonts from here */}
+            <CustomizePreviewModal
+              key={customizePreviewOpen ? 'preview-open' : 'preview-closed'}
+              open={customizePreviewOpen}
+              onClose={() => setCustomizePreviewOpen(false)}
+              draft={customDraft}
+              options={combineFontOptions(uploadedFonts)}
+              colorDefaults={themeColorDefaults(customTarget)}
+              onColor={(k, v) => setCustomDraft(prev => ({ ...prev, colors: { ...prev.colors, [k]: v } }))}
+              onFont={(k, v) => setDraft({ [k]: v })}
+              onGlow={v => setDraft({ glow: v })}
+            />
 
             {/* Import a font from a direct file URL */}
             <Modal open={urlModalOpen} onClose={() => setUrlModalOpen(false)} title="IMPORT FONT FROM URL" width={520}>
