@@ -572,21 +572,26 @@ async def watermark_image(file: UploadFile = File(...), text: str = Form("SAMPLE
 
 @router.post("/image/ocr")
 async def image_ocr(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
-
+    from PIL import Image as PILImage
     import fitz
     raw = await _read(file)
-    # Try PyMuPDF's built-in OCR (uses Tesseract if available)
     try:
-        pix = fitz.Pixmap(raw)
-        text = pix.pdfocr_tobytes()  # returns PDF bytes with text layer
-        # Extract text from the OCR'd PDF
-        doc = fitz.open("pdf", text)
-        extracted = "\n".join(doc[i].get_text() for i in range(doc.page_count))
-        doc.close()
+        # Normalize any image (JPEG/PNG/WebP/BMP/TIFF, incl. RGBA) to an RGB
+        # PNG pixmap — `fitz.Pixmap(raw_bytes)` cannot decode arbitrary inputs,
+        # which is why this endpoint 503'd while PDF OCR (page.get_pixmap) worked.
+        img = PILImage.open(io.BytesIO(raw)).convert("RGB")
+        buf = io.BytesIO(); img.save(buf, format="PNG"); buf.seek(0)
+        doc = fitz.open(stream=buf.getvalue(), filetype="png")
+        pix = doc[0].get_pixmap(alpha=False)
+        text = pix.pdfocr_tobytes(language="eng")
+        ocr = fitz.open("pdf", text)
+        extracted = "\n".join(ocr[i].get_text() for i in range(ocr.page_count))
+        ocr.close(); doc.close()
         if extracted.strip():
             return {"text": extracted}
-    except Exception: pass
-    raise HTTPException(503, "No OCR engine available")
+    except Exception:
+        raise HTTPException(503, "No OCR engine available")
+    raise HTTPException(400, "No text found in image")
 
 # ════════════════════════════════════════════════════════
 # DOCUMENT TOOLS
