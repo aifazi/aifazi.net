@@ -173,11 +173,11 @@ async def images_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(g
     return _pdf_stream(out, "images.pdf")
 
 @router.post("/pdf/to-images")
-async def pdf_to_images(file: UploadFile = File(...), scale: float = Form(1.5),
+async def pdf_to_images(file: UploadFile = File(...), dpi: float = Form(150),
     fmt: str = Form("png"), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
-    scale = max(0.5, min(scale, 4.0)); fmt = fmt.lower()
+    scale = max(0.5, min(dpi / 72, 4.0)); fmt = fmt.lower()
     mime = "image/jpeg" if fmt == "jpg" else "image/png"
     zfiles = []
     for i in range(doc.page_count):
@@ -303,22 +303,42 @@ async def flatten_pdf(file: UploadFile = File(...), _: dict = Depends(get_curren
 @router.post("/pdf/sign")
 async def sign_pdf(file: UploadFile = File(...), name: str = Form(""),
     sig_image: UploadFile | None = File(None),
-    page: int = Form(0), x: float = Form(50), y: float = Form(700),
+    signature: str = Form(""), page: int = Form(1), position: str = Form("bottom-right"),
     width: float = Form(200), height: float = Form(60),
     _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
-    if page >= doc.page_count: raise HTTPException(400, "Invalid page")
-    p = doc[page]; rect = fitz.Rect(x, y, x+width, y+height)
-    if sig_image:
+    if page < 1 or page > doc.page_count: raise HTTPException(400, "Invalid page")
+    p = doc[page - 1]; r = p.rect
+    w = min(width, r.width * 0.6); h = min(height, r.height * 0.25)
+    pad = 20
+    pos_map = {
+        "bottom-right":  (r.width - w - pad, r.height - h - pad),
+        "bottom-left":   (pad, r.height - h - pad),
+        "bottom-center": ((r.width - w) / 2, r.height - h - pad),
+        "top-right":     (r.width - w - pad, pad),
+        "top-left":      (pad, pad),
+        "center":        ((r.width - w) / 2, (r.height - h) / 2),
+    }
+    x, y = pos_map.get(position, pos_map["bottom-right"])
+    rect = fitz.Rect(x, y, x + w, y + h)
+    if signature:
+        try:
+            raw = base64.b64decode(signature.split(",")[-1])
+        except Exception:
+            raise HTTPException(400, "Invalid signature image data")
+        p.insert_image(rect, stream=raw)
+    elif sig_image:
         raw = await _read(sig_image)
         p.insert_image(rect, stream=raw)
     elif name:
         shape = p.new_shape(); shape.draw_rect(rect)
         shape.finish(color=(0.2,0.2,0.2), width=0.5)
         shape.commit()
-        p.insert_text((x+6, y+height/2+5), name, fontsize=min(height*0.45, 24),
+        p.insert_text((x+6, y+h/2+5), name, fontsize=min(h*0.45, 24),
                       color=(0.05, 0.1, 0.6), fontname="helv")
+    else:
+        raise HTTPException(400, "Provide a signature image, signature data, or name")
     return _pdf_stream(doc, "signed.pdf")
 
 @router.post("/pdf/repair")
@@ -377,10 +397,10 @@ async def pdf_to_excel(file: UploadFile = File(...), _: dict = Depends(get_curre
 # ════════════════════════════════════════════════════════
 
 @router.post("/pdf/to-jpg")
-async def pdf_to_jpg(file: UploadFile = File(...), scale: float = Form(1.5), _: dict = Depends(get_current_user)):
+async def pdf_to_jpg(file: UploadFile = File(...), dpi: float = Form(150), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
-    scale = max(0.5, min(scale, 4.0))
+    scale = max(0.5, min(dpi / 72, 4.0))
     zfiles = [(f"page_{i+1:03d}.jpg",
                doc[i].get_pixmap(matrix=fitz.Matrix(scale,scale),alpha=False).tobytes("jpg"))
               for i in range(doc.page_count)]
@@ -519,21 +539,33 @@ async def flip_image(file: UploadFile = File(...), direction: str = Form("horizo
 
 @router.post("/image/watermark")
 async def watermark_image(file: UploadFile = File(...), text: str = Form("SAMPLE"),
-    opacity: int = Form(50), color: str = Form("#ffffff"), font_size: int = Form(40), _: dict = Depends(get_current_user)):
+    opacity: float = Form(0.3), position: str = Form("bottom-right"),
+    color: str = Form("#ffffff"), font_size: int = Form(40), _: dict = Depends(get_current_user)):
     from PIL import Image as PILImage
     from PIL import ImageDraw, ImageFont
     img = PILImage.open(io.BytesIO(await _read(file))).convert("RGBA")
     overlay = PILImage.new("RGBA", img.size, (0,0,0,0))
     draw = ImageDraw.Draw(overlay)
     h = color.lstrip('#').ljust(6,'0')
-    try: rgb = (int(h[:2],16), int(h[2:4],16), int(h[4:6],16), int(opacity*2.55))
-    except: rgb = (255,255,255,128)
+    alpha = max(0, min(int(opacity * 255), 255))
+    try: rgb = (int(h[:2],16), int(h[2:4],16), int(h[4:6],16), alpha)
+    except: rgb = (255,255,255,alpha)
     w, ht = img.size
     try: font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
     except: font = ImageFont.load_default()
     bbox = draw.textbbox((0,0), text, font=font)
     tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
-    draw.text(((w-tw)//2, (ht-th)//2), text, fill=rgb, font=font)
+    pad = 20
+    pos_map = {
+        "bottom-right":  (w - tw - pad, ht - th - pad),
+        "bottom-left":   (pad, ht - th - pad),
+        "bottom-center": ((w - tw)//2, ht - th - pad),
+        "top-right":     (w - tw - pad, pad),
+        "top-left":      (pad, pad),
+        "center":        ((w - tw)//2, (ht - th)//2),
+    }
+    x, y = pos_map.get(position, pos_map["bottom-right"])
+    draw.text((x, y), text, fill=rgb, font=font)
     out = PILImage.alpha_composite(img, overlay).convert("RGB")
     fmt = "JPEG"; buf = io.BytesIO(); out.save(buf, format=fmt, quality=92); buf.seek(0)
     return _bytes_stream(buf.read(), "image/jpeg", "watermarked.jpg")
@@ -623,7 +655,7 @@ async def compare_text(file1: UploadFile=File(...), file2: UploadFile=File(...),
                                      tofile=file2.filename or "File 2", lineterm=''))
     html_diff = difflib.HtmlDiff().make_file(t1, t2,
         fromdesc=file1.filename or "File 1", todesc=file2.filename or "File 2")
-    return {"diff": "\n".join(diff), "diff_html": html_diff,
+    return {"diff": diff, "diff_text": "\n".join(diff), "diff_html": html_diff,
             "added": sum(1 for l in diff if l.startswith('+')),
             "removed": sum(1 for l in diff if l.startswith('-'))}
 

@@ -115,21 +115,6 @@ async function callTool(endpoint, formData, outName) {
   setTimeout(() => URL.revokeObjectURL(url), 3000)
 }
 
-// JSON API call — for text-in/text-out tools
-async function callJSON(endpoint, body) {
-  const res = await fetch(`${API}${endpoint}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    let msg = `Server error ${res.status}`
-    try { const j = await res.json(); msg = j.detail || j.error || msg } catch {}
-    throw new Error(msg)
-  }
-  return res.json()
-}
-
 // Reusable hook for simple single-file tools
 function useTool() {
   const [files, setFiles] = useState([])
@@ -843,7 +828,7 @@ export function ResizeImageB() {
     if (!width && !height) throw new Error('Enter at least one dimension.')
     const fd = new FormData()
     fd.append('file', files[0]); fd.append('width', width || '0')
-    fd.append('height', height || '0'); fd.append('keep_aspect', keepAspect ? '1' : '0')
+    fd.append('height', height || '0'); fd.append('keep_ratio', keepAspect ? '1' : '0')
     await callTool('/image/resize', fd, 'resized.' + (files[0].name.split('.').pop() || 'jpg'))
   })
   return (
@@ -866,7 +851,7 @@ export function ConvertImageB() {
   const [fmt, setFmt] = useState('png')
   const go = () => run(async () => {
     if (!files.length) throw new Error('Select at least one image.')
-    const fd = new FormData(); files.forEach(f => fd.append('files', f)); fd.append('format', fmt)
+    const fd = new FormData(); files.forEach(f => fd.append('files', f)); fd.append('to_format', fmt)
     await callTool('/image/convert', fd, `converted_${fmt}.zip`)
   })
   return (
@@ -1056,17 +1041,30 @@ export function CsvToXlsxB() {
 
 export function TextStatsB() {
   const [text, setText] = useState('')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [stats, setStats] = useState(null)
-  const run = async () => {
+  const run = () => {
     if (!text.trim()) return
-    setError(''); setStats(null); setLoading(true)
-    try {
-      const data = await callJSON('/text/stats', { text })
-      setStats(data)
-    } catch (e) { setError(e.message) }
-    finally { setLoading(false) }
+    setError('')
+    const words = text.trim().split(/\s+/).filter(Boolean)
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0)
+    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0)
+    const freq = {}
+    for (const w of words) {
+      const w2 = w.toLowerCase().replace(/[^a-z]/g, '')
+      if (w2.length > 3) freq[w2] = (freq[w2] || 0) + 1
+    }
+    const top = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 20)
+    const letters = text.replace(/[^a-zA-Z]/g, '')
+    setStats({
+      characters: text.length,
+      words: words.length,
+      sentences: sentences.length,
+      paragraphs: paragraphs.length,
+      reading_time: Math.max(1, Math.round(words.length / 200)),
+      avg_word_length: words.length ? Math.round(letters.length / words.length * 10) / 10 : 0,
+      top_words: top,
+    })
   }
   return (
     <div>
@@ -1075,7 +1073,7 @@ export function TextStatsB() {
           style={{ ...S.input, resize: 'vertical' }} placeholder="Paste any text here…" />
       </Field>
       <StatusBox error={error} />
-      <RunBtn onClick={run} loading={loading} disabled={!text.trim()} label="ANALYSE →" />
+      <RunBtn onClick={run} disabled={!text.trim()} label="ANALYSE →" />
       {stats && (
         <div style={{ ...S.panel, marginTop: 16 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>TEXT STATISTICS</div>
@@ -1155,16 +1153,17 @@ export function CompareTextB() {
 export function Base64ToolB() {
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const run = async (mode) => {
+  const run = (mode) => {
     if (!input.trim()) return
-    setError(''); setOutput(''); setLoading(true)
+    setError(''); setOutput('')
     try {
-      const data = await callJSON(`/text/base64-${mode}`, { text: input })
-      setOutput(data.result || '')
-    } catch (e) { setError(e.message) }
-    finally { setLoading(false) }
+      if (mode === 'encode') {
+        setOutput(btoa(unescape(encodeURIComponent(input))))
+      } else {
+        setOutput(decodeURIComponent(escape(atob(input.trim()))))
+      }
+    } catch (e) { setError('Invalid Base64 input') }
   }
   const copy = () => navigator.clipboard.writeText(output).catch(() => {})
   return (
@@ -1176,8 +1175,8 @@ export function Base64ToolB() {
       </Field>
       <StatusBox error={error} />
       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-        <button onClick={() => run('encode')} disabled={loading || !input.trim()} style={{ ...S.btn, background: 'var(--green)', color: '#000' }}>ENCODE →</button>
-        <button onClick={() => run('decode')} disabled={loading || !input.trim()} style={{ ...S.btnOut }}>DECODE →</button>
+        <button onClick={() => run('encode')} disabled={!input.trim()} style={{ ...S.btn, background: 'var(--green)', color: '#000' }}>ENCODE →</button>
+        <button onClick={() => run('decode')} disabled={!input.trim()} style={{ ...S.btnOut }}>DECODE →</button>
       </div>
       {output && (
         <div style={{ ...S.panel, marginTop: 16 }}>
@@ -1195,17 +1194,17 @@ export function Base64ToolB() {
 export function JsonFormatterB() {
   const [input, setInput] = useState('')
   const [output, setOutput] = useState('')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [indent, setIndent] = useState('2')
-  const run = async (mode) => {
+  const run = (mode) => {
     if (!input.trim()) return
-    setError(''); setOutput(''); setLoading(true)
+    setError(''); setOutput('')
     try {
-      const data = await callJSON('/text/json-format', { json: input, indent: Number(indent), minify: mode === 'minify' })
-      setOutput(data.result || '')
-    } catch (e) { setError(e.message) }
-    finally { setLoading(false) }
+      const obj = JSON.parse(input)
+      setOutput(mode === 'minify'
+        ? JSON.stringify(obj)
+        : JSON.stringify(obj, null, Number(indent)))
+    } catch (e) { setError('Invalid JSON: ' + e.message) }
   }
   const copy = () => navigator.clipboard.writeText(output).catch(() => {})
   return (
@@ -1225,8 +1224,8 @@ export function JsonFormatterB() {
       </div>
       <StatusBox error={error} />
       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-        <button onClick={() => run('format')} disabled={loading || !input.trim()} style={{ ...S.btn }}>FORMAT →</button>
-        <button onClick={() => run('minify')} disabled={loading || !input.trim()} style={{ ...S.btnOut }}>MINIFY →</button>
+        <button onClick={() => run('format')} disabled={!input.trim()} style={{ ...S.btn }}>FORMAT →</button>
+        <button onClick={() => run('minify')} disabled={!input.trim()} style={{ ...S.btnOut }}>MINIFY →</button>
       </div>
       {output && (
         <div style={{ ...S.panel, marginTop: 16 }}>
