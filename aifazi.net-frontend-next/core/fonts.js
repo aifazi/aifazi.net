@@ -128,5 +128,31 @@ export function isFontLoaded(themeId) {
   return !url || _loadedUrls.has(url)
 }
 
+// ── Custom font loading (theme customization) ────────────────────────────────
+// Build a Google Fonts css2 URL from arbitrary family names (used by the admin
+// per-theme font customizer). Request a broad weight range so display text and
+// code both render correctly regardless of where the family is applied.
+export function buildGoogleFontUrl(families) {
+  const list = (families || []).map(f => (f || '').trim()).filter(Boolean)
+  if (!list.length) return ''
+  const q = list
+    .map(fam => `family=${fam.replace(/ /g, '+')}:wght@300;400;500;600;700;800;900`)
+    .join('&')
+  return `https://fonts.googleapis.com/css2?${q}&display=swap`
+}
+
+// Load Google Fonts for arbitrary families (idempotent, deduped by URL).
+export function loadCustomFonts(families) {
+  if (typeof document === 'undefined') return
+  const url = buildGoogleFontUrl(families)
+  if (!url || _loadedUrls.has(url)) return
+  _loadedUrls.add(url)
+  const link = Object.assign(document.createElement('link'), {
+    rel: 'stylesheet',
+    href: url,
+  })
+  document.head.appendChild(link)
+}
+
 // All registered theme IDs
 export const FONT_THEMES = Object.keys(REGISTRY)

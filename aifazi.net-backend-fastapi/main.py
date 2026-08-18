@@ -523,7 +523,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             f"script-src 'self' 'unsafe-inline'{_script_extra}; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com https://cdn.aifazi.net; "
-            "font-src 'self' https://fonts.gstatic.com; "
+            "font-src 'self' https://fonts.gstatic.com https://cdn.aifazi.net https://*.r2.dev; "
             f"connect-src {_connect_src}; "
             "frame-src https://www.youtube.com https://player.vimeo.com; "
             "frame-ancestors 'none';"
@@ -557,6 +557,7 @@ from routers import (
     email_settings,
     file_tools,
     fivem,
+    fonts,
     forms,
     forum,
     github_auth,
@@ -642,6 +643,7 @@ app.include_router(store_inventory_admin.router, prefix="/api/store/admin")
 app.include_router(store_terminal_admin.router,  prefix="/api/store/admin")
 app.include_router(store_delivery.router,        prefix="/api/store/delivery")
 app.include_router(documents.router,       prefix="/api/documents")
+app.include_router(fonts.router,           prefix="/api/admin/fonts")
 app.include_router(forms.router,          prefix="/api/forms")
 app.include_router(txadmin_webhook.router, prefix="/api/txadmin")
 app.include_router(webhooks.router,         prefix="/api/webhook")

@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import api from '@/lib/api'
 import AnimationPicker from '../../components/AnimationPicker'
 import ThemePicker from '../../components/ThemePicker'
@@ -18,6 +18,10 @@ import {
 import {
   FRAMEWORK_CATEGORIES, DEFAULT_FRAMEWORK, NOTIFY_POSITIONS, THEME_PACKAGES,
 } from '../../core/framework-styles.js'
+import {
+  CUSTOM_COLOR_TOKENS, applyThemeCustom, themeSelector,
+  combineFontOptions, filterFontOptions,
+} from '@/core/themeCustom'
 
 // ── Framework preview tokens ──────────────────────────────────────────────────
 const _G   = 'var(--green)', _CY = 'var(--cyan)'
@@ -407,6 +411,38 @@ function ColorRow({ label, value, onChange }) {
   )
 }
 
+// ── Theme customization helpers ──────────────────────────────────────────────
+// Per-theme default color values (used to prefill the CUSTOMIZE pickers when
+// the theme hasn't been customized yet).
+function themeColorDefaults(themeId) {
+  const def = THEME_DEFS.find(t => t.id === themeId) || THEME_DEFS[0]
+  const byKey = Object.fromEntries(CUSTOM_COLOR_TOKENS.map(t => [t.key, t.def]))
+  if (def) {
+    byKey.bg     = def.bg     || byKey.bg
+    byKey.bg2    = def.bg2    || byKey.bg2
+    byKey.bg3    = def.bg3    || byKey.bg3
+    byKey.green  = def.primary   || byKey.green
+    byKey.cyan   = def.secondary || byKey.cyan
+    byKey.orange = def.orange || byKey.orange
+    byKey.text   = def.text   || byKey.text
+    byKey.muted  = def.muted  || byKey.muted
+    byKey.border = def.border || byKey.border
+  }
+  return byKey
+}
+
+function seedCustomDraft(themeId, saved) {
+  const defaults = themeColorDefaults(themeId)
+  return {
+    fontDisplay: saved?.fontDisplay || '',
+    fontMono:    saved?.fontMono    || '',
+    fontCode:    saved?.fontCode    || '',
+    glow:        typeof saved?.glow === 'number' ? saved.glow : 0.5,
+    colors:      { ...defaults, ...(saved?.colors || {}) },
+    css:         saved?.css || '',
+  }
+}
+
 function TabBtn({ id, label, active, onSelect }) {
   return (
     <button onClick={onSelect} style={{
@@ -658,6 +694,75 @@ function ThemeLibrary() {
   // -- Custom theme builder state (was missing — caused Builder tab crash) ---
   const [custom, setCustom] = useState(DEFAULT_CUSTOM)
 
+  // ── Per-theme CUSTOMIZE tab state ─────────────────────────────────────────
+  const [customTarget, setCustomTarget] = useState('cyber-dark')
+  const [customDraft, setCustomDraft] = useState(() => seedCustomDraft('cyber-dark', undefined))
+  const [savingCustom, setSavingCustom] = useState(false)
+
+  // ── Font library state (search + upload of custom fonts to the CDN) ───────
+  const [fontSearch, setFontSearch] = useState('')
+  const [uploadingFont, setUploadingFont] = useState(false)
+  const [deletingFontId, setDeletingFontId] = useState(null)
+  const fontInputRef = useRef(null)
+
+  const uploadedFonts = useMemo(
+    () => (Array.isArray(siteConfig?.uploadedFonts) ? siteConfig.uploadedFonts : []),
+    [siteConfig]
+  )
+  const saveUploadedFonts = async (next) => {
+    await api.put('/admin/site-settings', { uploadedFonts: next })
+    clearSiteSettingsCache()
+    window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { uploadedFonts: next } }))
+    if (refreshSiteConfig) await refreshSiteConfig()
+  }
+
+  const uploadFont = async (file) => {
+    if (!file) return
+    if (!/\.(ttf|otf|woff|woff2)$/i.test(file.name)) {
+      toast.error('Only .ttf, .otf, .woff or .woff2 font files are supported', { title: 'Invalid File' })
+      return
+    }
+    setUploadingFont(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const { data } = await api.post('/admin/fonts/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const next = [...uploadedFonts, data]
+      await saveUploadedFonts(next)
+      toast.success(`${data.family} added to the font library — pick it in the font selectors below`, { title: '✅ Font Uploaded' })
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Failed to upload font', { title: 'Error' })
+    } finally { setUploadingFont(false) }
+  }
+
+  const deleteFont = async (font) => {
+    const ok = await dlg.confirm({
+      title: 'Delete Font',
+      message: `Delete "${font?.family || ''}" from the library? The file will also be removed from the CDN and any theme using it falls back to its default font.`,
+      variant: 'danger',
+      confirmLabel: 'DELETE',
+    })
+    if (!ok) return
+    setDeletingFontId(font?.id)
+    try {
+      await api.delete(`/admin/fonts/${font.id}`)
+      const next = uploadedFonts.filter(f => f.id !== font.id)
+      await saveUploadedFonts(next)
+      toast.success('Font deleted', { title: '🗑 Deleted' })
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Failed to delete font', { title: 'Error' })
+    } finally { setDeletingFontId(null) }
+  }
+
+  // P2 — sync the CUSTOMIZE draft when the target theme or saved config changes
+  // (mirrors the fwSyncKey/gAppSyncKey render-phase sync patterns below)
+  const customSyncKey = siteConfig ? `${customTarget}\u0001${JSON.stringify(siteConfig.themeCustom?.[customTarget] || null)}` : null
+  const [prevCustomSyncKey, setPrevCustomSyncKey] = useState(customSyncKey)
+  if (siteConfig && !savingCustom && customSyncKey !== prevCustomSyncKey) {
+    setPrevCustomSyncKey(customSyncKey)
+    setCustomDraft(seedCustomDraft(customTarget, siteConfig.themeCustom?.[customTarget]))
+  }
+
   const toggleFav = (id) => {
     setFavorites(prev => {
       const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
@@ -782,6 +887,61 @@ function ThemeLibrary() {
       toast.error('Failed to save appearance')
     } finally { setSavingAppearance(false) }
   }, [refreshSiteConfig, toast])
+
+  // Live preview — apply the draft to the target theme while editing so the
+  // admin sees changes immediately (restores saved state on leave). Written to
+  // a separate style element so the preview never clobbers the persisted CSS.
+  const savedCustomForPreview = siteConfig?.themeCustom?.[customTarget]
+  useEffect(() => {
+    if (activeTab !== 'customize') return
+    applyThemeCustom(customTarget, { ...customDraft }, 'theme-custom-preview', uploadedFonts)
+    return () => {
+      // Restore the persisted customization (or clear) when leaving the tab so
+      // the live preview doesn't leak into the saved site styles.
+      applyThemeCustom(customTarget, savedCustomForPreview, 'theme-custom-preview', uploadedFonts)
+    }
+  }, [activeTab, customTarget, customDraft, savedCustomForPreview, uploadedFonts])
+
+  const saveThemeCustom = async () => {
+    setSavingCustom(true)
+    try {
+      const tc = {
+        ...(siteConfig.themeCustom && typeof siteConfig.themeCustom === 'object' && !Array.isArray(siteConfig.themeCustom)
+          ? siteConfig.themeCustom : {}),
+        [customTarget]: customDraft,
+      }
+      await api.put('/admin/site-settings', { themeCustom: tc })
+      clearSiteSettingsCache()
+      window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { themeCustom: tc } }))
+      if (refreshSiteConfig) await refreshSiteConfig()
+      const name = THEME_DEFS.find(t => t.id === customTarget)?.name || customTarget
+      toast.success(`Custom look saved for ${name}`, { title: '✅ Theme Customized' })
+    } catch {
+      toast.error('Failed to save theme customization')
+    } finally { setSavingCustom(false) }
+  }
+
+  const resetThemeCustom = async () => {
+    const ok = await dlg.confirm({
+      title: 'Reset Customization',
+      message: `Remove all custom fonts, colors and CSS for the "${THEME_DEFS.find(t => t.id === customTarget)?.name || customTarget}" theme?`,
+      variant: 'danger',
+      confirmLabel: 'RESET',
+    })
+    if (!ok) return
+    try {
+      const tc = { ...(siteConfig.themeCustom || {}) }
+      delete tc[customTarget]
+      await api.put('/admin/site-settings', { themeCustom: tc })
+      clearSiteSettingsCache()
+      window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { themeCustom: tc } }))
+      if (refreshSiteConfig) await refreshSiteConfig()
+      setCustomDraft(seedCustomDraft(customTarget, undefined))
+      toast.success('Customization removed', { title: '↺ Reset' })
+    } catch {
+      toast.error('Failed to reset customization')
+    }
+  }
 
   // Preview-before-apply: clicking APPLY opens a modal with a per-part selector.
   const handleThemePackageApply = useCallback((pkg) => {
@@ -1097,6 +1257,7 @@ function ThemeLibrary() {
         <TabBtn id="framework"  label="🧩 FRAMEWORK" active={activeTab === 'framework'} onSelect={() => { setActiveTab('framework'); setFocusedIdx(-1) }} />
         <TabBtn id="backgrounds" label="🖼️ BACKGROUNDS" active={activeTab === 'backgrounds'} onSelect={() => { setActiveTab('backgrounds'); setFocusedIdx(-1) }} />
         <TabBtn id="global"     label="⚙️ GLOBAL SETTINGS" active={activeTab === 'global'} onSelect={() => { setActiveTab('global'); setFocusedIdx(-1) }} />
+        <TabBtn id="customize"  label="🎛️ CUSTOMIZE" active={activeTab === 'customize'} onSelect={() => { setActiveTab('customize'); setFocusedIdx(-1) }} />
       </div>
 
       {/* -- THEME PACKAGES TAB -- */}
@@ -2097,6 +2258,166 @@ function ThemeLibrary() {
                 ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)' }}>⏳ Applying…</div>
                 : <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>✅ Changes are saved and applied automatically when selected.</div>
               }
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* -- CUSTOMIZE TAB — per-theme fonts / colors / glow / CSS --------- */}
+      {activeTab === 'customize' && (() => {
+        const T = {
+          card:  { background: 'var(--bg2)', border: '1px solid var(--border)', padding: '22px', marginBottom: 20, borderRadius: 12 },
+          sec:   { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid var(--border)' },
+          label: { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, display: 'block' },
+          sub:   { fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4, lineHeight: 1.5 },
+          row:   { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 },
+        }
+        const fontOpts = filterFontOptions(combineFontOptions(uploadedFonts), fontSearch)
+        const setDraft = patch => setCustomDraft(prev => ({ ...prev, ...patch }))
+        return (
+          <div>
+            {/* Info banner */}
+            <div style={{ marginBottom: 20, padding: '14px 18px', background: 'color-mix(in srgb, var(--purple) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--purple) 25%, transparent)', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>🎛️</span>
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--purple)', letterSpacing: 1, marginBottom: 4 }}>THEME CUSTOMIZATION  per-theme fonts, colors, glow & CSS</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7 }}>
+                  Pick a theme, then override its display/mono fonts, core color tokens, glow intensity or inject custom CSS.
+                  Changes apply only to the selected theme and only while it&apos;s active. Everything is stored in the free-form
+                  <strong style={{ color: 'var(--text)' }}> themeCustom </strong> settings key — live previewed on the left while you edit.
+                </div>
+              </div>
+            </div>
+
+            {/* Theme selector */}
+            <div style={T.card}>
+              <div style={T.sec}>SELECT THEME TO CUSTOMIZE</div>
+              <select value={customTarget} onChange={e => setCustomTarget(e.target.value)}
+                style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
+                {THEME_DEFS.map(t => <option key={t.id} value={t.id}>{t.name}  ({t.id})</option>)}
+              </select>
+              <div style={{ ...T.sub, marginTop: 10 }}>
+                Currently customizing <strong style={{ color: 'var(--purple)' }}>{THEME_DEFS.find(t => t.id === customTarget)?.name || customTarget}</strong>.
+                {' '}{siteConfig.themeCustom?.[customTarget] ? 'This theme has a saved customization.' : 'This theme uses its built-in look.'}
+              </div>
+            </div>
+
+            {/* Fonts */}
+            <div style={T.card}>
+              <div style={T.sec}>FONTS</div>
+
+              {/* Search + upload */}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14 }}>
+                <input value={fontSearch} onChange={e => setFontSearch(e.target.value)}
+                  placeholder="🔍 Search fonts… (Google CDN + your uploads)"
+                  style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
+                <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" style={{ display: 'none' }}
+                  onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadFont(f) }} />
+                <button onClick={() => fontInputRef.current?.click()} disabled={uploadingFont}
+                  style={{ flexShrink: 0, padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: uploadingFont ? 'wait' : 'pointer', background: uploadingFont ? 'var(--bg3)' : 'color-mix(in srgb, var(--purple) 18%, transparent)', color: uploadingFont ? 'var(--muted)' : 'var(--purple)', border: '1px solid color-mix(in srgb, var(--purple) 40%, transparent)', borderRadius: 8 }}>
+                  {uploadingFont ? 'UPLOADING…' : '⬆ UPLOAD FONT'}
+                </button>
+              </div>
+              <div style={{ ...T.sub, marginBottom: 16, marginTop: -8 }}>
+                Upload <strong style={{ color: 'var(--text)' }}>.ttf / .otf / .woff / .woff2</strong> — stored on the CDN (Cloudflare R2) and served to visitors via @font-face. Google CDN fonts load from Google&apos;s servers.
+              </div>
+              {fontOpts.length === 0 && (
+                <div style={{ ...T.sub, marginBottom: 16, color: 'var(--orange)' }}>No fonts match &quot;{fontSearch}&quot; — clear the search or upload the font.</div>
+              )}
+
+              <label style={T.label}>DISPLAY FONT</label>
+              <select value={customDraft.fontDisplay || ''} onChange={e => setDraft({ fontDisplay: e.target.value })}
+                style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer', marginBottom: 14 }}>
+                <option value="">↺ Theme default</option>
+                {fontOpts.filter(f => f.group === 'Display' || f.group === 'Uploaded').map(f => <option key={`d-${f.id}`} value={f.id}>{f.group === 'Uploaded' ? `⬆ ${f.label}` : f.label}</option>)}
+              </select>
+              <div style={{ ...T.sub, marginBottom: 14, marginTop: -8 }}>Headings & accent text. Preview: <span style={{ fontFamily: `'${customDraft.fontDisplay}', 'Outfit', sans-serif`, color: 'var(--text)', fontSize: 15, fontWeight: 700 }}>{customDraft.fontDisplay ? `AaBb  ${customDraft.fontDisplay}` : 'AaBb  (theme default)'}</span></div>
+
+              <label style={T.label}>MONO FONT</label>
+              <select value={customDraft.fontMono || ''} onChange={e => setDraft({ fontMono: e.target.value })}
+                style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer', marginBottom: 14 }}>
+                <option value="">↺ Theme default</option>
+                {fontOpts.filter(f => f.group === 'Mono' || f.group === 'Uploaded').map(f => <option key={`m-${f.id}`} value={f.id}>{f.group === 'Uploaded' ? `⬆ ${f.label}` : f.label}</option>)}
+              </select>
+              <div style={{ ...T.sub, marginBottom: 14, marginTop: -8 }}>Body / terminal / code text. Preview: <span style={{ fontFamily: `'${customDraft.fontMono}', 'JetBrains Mono', monospace`, color: 'var(--text)', fontSize: 13 }}>{customDraft.fontMono ? `AaBb  ${customDraft.fontMono}` : 'AaBb  (theme default)'}</span></div>
+
+              <label style={T.label}>CODE FONT</label>
+              <select value={customDraft.fontCode || ''} onChange={e => setDraft({ fontCode: e.target.value })}
+                style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                <option value="">↺ Theme default</option>
+                {fontOpts.filter(f => f.group === 'Mono' || f.group === 'Uploaded').map(f => <option key={`c-${f.id}`} value={f.id}>{f.group === 'Uploaded' ? `⬆ ${f.label}` : f.label}</option>)}
+              </select>
+              <div style={{ ...T.sub, marginTop: 8 }}>Inline code / pre blocks. Falls back to the mono font when empty.</div>
+
+              {/* Uploaded font library */}
+              {uploadedFonts.length > 0 && (
+                <div style={{ marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+                  <div style={{ ...T.label, marginBottom: 10 }}>UPLOADED FONTS  ({uploadedFonts.length})</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {uploadedFonts.map(f => (
+                      <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg3)', border: '1px solid var(--border)', padding: '5px 6px 5px 10px', borderRadius: 6 }}>
+                        <span style={{ fontFamily: `'${f.family}', sans-serif`, fontSize: 13, color: 'var(--text)' }}>Aa</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text)' }}>{f.family}{f.weight && f.weight !== '400' ? ` · ${f.weight}` : ''}{f.style === 'italic' ? ' · italic' : ''}</span>
+                        <button onClick={() => deleteFont(f)} disabled={deletingFontId === f.id}
+                          title="Delete font"
+                          style={{ background: 'transparent', border: 'none', color: 'var(--red)', cursor: deletingFontId === f.id ? 'wait' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1, padding: '2px 4px' }}>
+                          {deletingFontId === f.id ? '…' : '✕'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Colors */}
+            <div style={T.card}>
+              <div style={T.sec}>COLOR TOKENS</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0 18px' }}>
+                {CUSTOM_COLOR_TOKENS.map(token => (
+                  <ColorRow key={token.key} label={token.label}
+                    value={customDraft.colors?.[token.key] || ''}
+                    onChange={v => setCustomDraft(prev => ({ ...prev, colors: { ...prev.colors, [token.key]: v } }))} />
+                ))}
+              </div>
+            </div>
+
+            {/* Glow */}
+            <div style={T.card}>
+              <div style={T.sec}>GLOW INTENSITY</div>
+              <input type="range" min={0} max={1} step={0.05}
+                value={typeof customDraft.glow === 'number' ? customDraft.glow : 0.5}
+                onChange={e => setDraft({ glow: Number(e.target.value) })}
+                style={{ width: '100%', accentColor: 'var(--green)', cursor: 'pointer' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
+                <span>OFF</span><span>{Math.round((typeof customDraft.glow === 'number' ? customDraft.glow : 0.5) * 100)}%</span><span>MAX</span>
+              </div>
+              <div style={{ ...T.sub, marginTop: 8 }}>Multiplies the neon glow on cards, buttons and borders (uses the theme&apos;s primary/secondary colors).</div>
+            </div>
+
+            {/* Custom CSS */}
+            <div style={T.card}>
+              <div style={T.sec}>CUSTOM CSS  (the &quot;and more&quot; part)</div>
+              <textarea value={customDraft.css || ''} onChange={e => setDraft({ css: e.target.value })}
+                spellCheck={false}
+                placeholder={`/* Drop any CSS rules here. Bare declarations are auto-scoped\nto [data-theme="${customTarget}"] — you can also write full rules. */\n\n/* e.g. */\n--radius: 16px;   /* (only works if the theme reads it) */\n.footer { opacity: 0.8; }`}
+                style={{ width: '100%', minHeight: 150, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', resize: 'vertical', lineHeight: 1.6 }} />
+              <div style={{ ...T.sub, marginTop: 8 }}>Advanced: fully arbitrary CSS for this theme. Wrapped in <code style={{ color: 'var(--purple)', fontSize: 9 }}>{themeSelector(customTarget)}</code> when you paste bare declarations.</div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button onClick={saveThemeCustom} disabled={savingCustom}
+                style={{ padding: '10px 22px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 2, cursor: savingCustom ? 'wait' : 'pointer', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 8, transition: 'all 0.15s' }}>
+                {savingCustom ? 'SAVING…' : `💾 SAVE CUSTOM ${THEME_DEFS.find(t => t.id === customTarget)?.name?.toUpperCase() || customTarget.toUpperCase()}`}
+              </button>
+              <button onClick={resetThemeCustom}
+                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', background: 'transparent', color: 'var(--red)', border: '1px solid color-mix(in srgb, var(--red) 50%, transparent)', borderRadius: 8, transition: 'all 0.15s' }}>
+                ↺ RESET THEME
+              </button>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginLeft: 'auto' }}>
+                {siteConfig.themeCustom?.[customTarget] ? 'Edited version is being previewed — save to persist.' : 'Previewing changes live.'}
+              </div>
             </div>
           </div>
         )

@@ -182,6 +182,7 @@ def _request_permission(path: str, method: str) -> tuple[str, str] | None:
         ("/network", "dev.network"),
         ("/file", "dev.files"),
         ("/upload", "content.media"),
+        ("/fonts", "system.settings"),
     ]
     for prefix, module in rules:
         if p.startswith(prefix):

@@ -24,6 +24,7 @@ import { MenuProvider } from '@/core/menu'
 import { NotifyProvider } from '@/core/notify'
 import { DialogProvider } from '@/core/dialog'
 import { loadFontForTheme as loadThemeFont } from '@/core/fonts'
+import { applyThemeCustom } from '@/core/themeCustom'
 import { isAdmin as checkIsAdmin } from '@/lib/api'
 import { usePathname } from 'next/navigation'
 
@@ -341,6 +342,17 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     localStorage.setItem('site-theme', theme)
     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme, mode: LIGHT_THEMES.includes(theme) ? 'light' : 'dark' } }))
   }, [theme])
+
+  // Apply per-theme customization (fonts / colors / glow / custom CSS) from the
+  // admin's saved `themeCustom` map, re-applying whenever the theme or config
+  // changes. No-op for themes without customizations.
+  useEffect(() => {
+    const tc = siteConfig.themeCustom && typeof siteConfig.themeCustom === 'object' && !Array.isArray(siteConfig.themeCustom)
+      ? siteConfig.themeCustom[theme]
+      : undefined
+    const uploadedFonts = Array.isArray(siteConfig.uploadedFonts) ? siteConfig.uploadedFonts : []
+    applyThemeCustom(theme, tc, 'theme-custom-css', uploadedFonts)
+  }, [theme, siteConfig.themeCustom, siteConfig.uploadedFonts])
 
   // Effective framework config = site-wide admin settings, layered with the
   // user's locally-applied package (per-user override wins for this browser).

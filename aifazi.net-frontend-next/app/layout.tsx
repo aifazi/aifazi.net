@@ -5,6 +5,7 @@ import { Providers } from './providers'
 import { getSiteConfigServer } from '@/lib/siteSettingsServer'
 import { getContentBlocksServer } from '@/lib/contentServer'
 import { themeFontUrl } from '@/core/fonts'
+import { buildThemeCustomCss, themeCustomFontUrl } from '@/core/themeCustom'
 import './globals.css'
 
 // Light themes (mirrors LIGHT_THEMES in app/providers.tsx) — used to set
@@ -139,6 +140,28 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <link rel="stylesheet" href={url} />
             </>
           ) : null
+        })()}
+        {/* Per-theme customization (fonts / colors / glow / custom CSS) for the
+            admin's global theme is injected server-side so first paint already
+            uses the custom look — no flash before React hydrates. */}
+        {(() => {
+          const tc = siteConfig.themeCustom && typeof siteConfig.themeCustom === 'object' && !Array.isArray(siteConfig.themeCustom)
+            ? siteConfig.themeCustom[serverTheme]
+            : undefined
+          const uploadedFonts = Array.isArray(siteConfig.uploadedFonts) ? siteConfig.uploadedFonts : []
+          const css = buildThemeCustomCss(serverTheme, tc, uploadedFonts)
+          const fontUrl = themeCustomFontUrl(tc, uploadedFonts)
+          return (
+            <>
+              {css ? <style id="theme-custom-css" dangerouslySetInnerHTML={{ __html: css }} /> : null}
+              {fontUrl ? (
+                <>
+                  <link rel="preload" as="style" href={fontUrl} />
+                  <link rel="stylesheet" href={fontUrl} />
+                </>
+              ) : null}
+            </>
+          )
         })()}
       </head>
       <body suppressHydrationWarning>
