@@ -273,13 +273,21 @@ async def create_pos_order(body: PosOrderBody, _: dict = Depends(POS)):
         pid = l.get("product_id")
         qty = l.get("quantity", 1)
         try:
-            from routers.store_inventory import reserve_quant
-            reserve_quant(vid if vid else pid, l["quantity"], order_id)
+            res = supabase.rpc("reserve_quant", {
+                "p_order_id": order_id,
+                "p_product_id": pid,
+                "p_variant_id": vid,
+                "p_location_id": loc,
+                "p_qty": qty,
+            }).execute()
+            if res.data is None:
+                raise HTTPException(400, f"Insufficient stock for {l.get('product_name')}")
         except Exception as exc:
             # Release any already-reserved quantities for this order
-            from routers.store_inventory import release_stock_reservations
-            release_stock_reservations(order_id)
-            raise HTTPException(400, f"Insufficient stock for {l.get('product_name')}: {exc}")
+            supabase.rpc("release_stock_reservations", {"p_order_id": order_id}).execute()
+            if isinstance(exc, HTTPException):
+                raise
+            raise HTTPException(400, f"Stock reservation failed for {l.get('product_name')}") from exc
 
     try:
         s.table("store_order_events").insert({

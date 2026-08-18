@@ -239,7 +239,7 @@ async def update_assignment(assignment_id: str, body: StatusUpdateBody, user: di
         raise HTTPException(400, f"Invalid status. Must be one of: {', '.join(valid_statuses)}")
 
     now = datetime.now(timezone.utc).isoformat()
-    updates = {"status": body.status, "notes": body.notes or "", "updated_at": now}
+    updates = {"status": body.status, "notes": body.note or "", "updated_at": now}
 
     if body.status == "picked_up":
         updates["picked_up_at"] = now

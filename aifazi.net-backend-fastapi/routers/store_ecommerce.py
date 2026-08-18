@@ -24,6 +24,7 @@ Authenticated (JWT):
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import secrets
@@ -32,6 +33,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from fastapi.security import HTTPAuthorizationCredentials
 from postgrest.exceptions import APIError
 from pydantic import BaseModel
 

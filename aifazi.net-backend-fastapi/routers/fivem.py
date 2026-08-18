@@ -40,7 +40,7 @@ from html import escape as _fivem_html_escape
 
 import httpx
 
-from jwt_compat import jwt
+from jwt_compat import JWTError, ExpiredSignatureError, jwt
 
 
 def _e(value) -> str:
@@ -51,6 +51,8 @@ from utils.email_queue import queue_email
 
 log = logging.getLogger("fivem")
 router = APIRouter()
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 
 # Hot-path throttle: the Lua heartbeat fires every ~30s and each stamping pass
 # runs up to 64 players x (1 fivem_whitelist UPDATE + 2 application_submissions
@@ -2083,11 +2085,11 @@ async def get_public_status_overview(hours: int = 24):
                       "last_seen": d.get("updated_at"), "last_seen_label": "Force Online (dev)"}
         else:
             status_label, age = _compute_status(d.get("updated_at"))
-            players = d.get("players_online", 0) if status_label != "offline" else 0
-            if status_label == "online":     msg = f"Online — {players}/{d.get('max_players',48)} players"
+            online_players = d.get("players_online", 0) if status_label != "offline" else 0
+            if status_label == "online":     msg = f"Online — {online_players}/{d.get('max_players',48)} players"
             elif status_label == "degraded": msg = f"Starting up… (last seen {_last_seen_str(age)})"
             else:                            msg = f"Offline (last seen {_last_seen_str(age)})"
-            status = {"status": status_label, "players_online": players, "max_players": d.get("max_players", 48),
+            status = {"status": status_label, "players_online": online_players, "max_players": d.get("max_players", 48),
                       "last_seen": d.get("updated_at"), "last_seen_label": _last_seen_str(age),
                       "uptime_seconds": uptime, "uptime_label": _uptime_str(uptime),
                       "resource_count": d.get("resource_count", 0), "server_name": d.get("server_name", "AIFAZI RP"),
@@ -2302,6 +2304,7 @@ class PlayerLeaveBody(BaseModel):
     player_name: str | None = None
     license: str | None = None
     license2: str | None = None
+    steam_hex: str | None = None
     identifiers: list[str] = []
     disconnect_reason: str | None = None
 
@@ -3005,9 +3008,9 @@ async def verify_connect_token(body: VerifyTokenRequest, request: Request):
 
     try:
         payload = jwt.decode(body.token, _jwt_secret(), algorithms=["HS256"])
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(401, "Token expired")
-    except jwt.InvalidTokenError:
+    except JWTError:
         raise HTTPException(401, "Invalid token")
 
     if payload.get("purpose") != "fivem_connect" or not payload.get("jti"):
