@@ -157,7 +157,7 @@ function UploadPhase({ onFile, loading, error }) {
 function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
   lineWidth, setLineWidth, fontSize, setFontSize,
   onUndo, canUndo, onRedo, canRedo, zoomIdx, setZoomIdx,
-  onExport, exporting, opsCount, onClose }) {
+  onExport, exporting, opsCount, onClose, onSearch, searchOpen, onOCR, ocring }) {
 
   const [shapeMenuOpen, setShapeMenuOpen] = useState(false)
 
@@ -299,6 +299,24 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
             <button onClick={()=>setZoomIdx(i=>Math.min(ZOOM_STEPS.length-1,i+1))} disabled={zoomIdx===ZOOM_STEPS.length-1}
               style={{ width:24, height:24, border:'none', background:'none', color:C.text, cursor:'pointer', fontSize:14 }}>+</button>
           </div>
+
+          {/* Search & Replace */}
+          <button onClick={onSearch} disabled={ocring}
+            style={{ padding:'6px 12px', fontFamily:C.mono, fontSize:9, letterSpacing:1, fontWeight:700,
+              background:searchOpen?C.accent:'transparent', border:`1px solid ${searchOpen?C.accent:'color-mix(in srgb, var(--cyan) 40%, transparent)'}`,
+              color:searchOpen?'#fff':C.cyan, cursor:ocring?'not-allowed':'pointer', borderRadius:6,
+              display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
+            🔍 FIND & REPLACE
+          </button>
+
+          {/* OCR */}
+          <button onClick={onOCR} disabled={ocring}
+            style={{ padding:'6px 12px', fontFamily:C.mono, fontSize:9, letterSpacing:1, fontWeight:700,
+              background:ocring?C.bg3:'color-mix(in srgb, var(--accent) 14%, transparent)', border:`1px solid ${ocring?C.border:'color-mix(in srgb, var(--accent) 50%, transparent)'}`,
+              color:ocring?C.muted:C.accent, cursor:ocring?'not-allowed':'pointer', borderRadius:6,
+              display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
+            {ocring ? '⏳ OCRING…' : '✨ OCR TEXT'}
+          </button>
 
           {/* Export */}
           <button onClick={onExport} disabled={exporting}
@@ -487,6 +505,11 @@ export default function PDFEditor() {
   // ── Export / status ──
   const [exporting, setExporting] = useState(false)
   const [status, setStatus]     = useState('')
+  // ── Search / replace ──
+  const [searchOpen, setSearchOpen]   = useState(false)
+  const [searchResults, setSearchResults] = useState(null)  // {total, matches:[{page, matches:[{x,y,width,height}]}]}
+  const [searchCurrent, setSearchCurrent] = useState(0)
+  const [ocring, setOcring]       = useState(false)
   // ── Refs ──
   const canvasRef  = useRef()
   const imgRef     = useRef()
@@ -797,6 +820,47 @@ export default function PDFEditor() {
     setSession(null); setOps([]); setRedoStack([]); setPhase('upload'); setError('')
   }, [session])
 
+  const doSearch = useCallback(async (query, matchCase) => {
+    if (!session || !query.trim()) return
+    try {
+      const r = await fetch('/api/pdf-editor/search', {method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({session_id:session.session_id, query, match_case:matchCase})})
+      if (!r.ok) throw new Error(`Search failed (${r.status})`)
+      const data = await r.json()
+      setSearchResults(data); setSearchCurrent(0)
+      if (data.matches?.[0]) setCurrentPage(data.matches[0].page)
+    } catch(e) { setStatus('Search failed: ' + e.message) }
+  }, [session])
+
+  const doReplaceAll = useCallback(async (query, replacement, matchCase) => {
+    if (!session || !query.trim()) return
+    const pages = (session.pages || []).map((_, i) => i)
+    pages.forEach(page => addOp({
+      type:'replace_text', page, find:query, replacement, match_case:matchCase,
+      x:0,y:0,width:0,height:0,color:'#000000',line_width:1,opacity:1, font_size:11,
+    }))
+    setStatus(`Replace All queued (${pages.length} pages)`)
+    if (searchOpen) setSearchOpen(false)
+  }, [session, addOp, searchOpen])
+
+  const doOCR = useCallback(async () => {
+    if (!session) return
+    setOcring(true); setStatus('Running OCR on all pages…')
+    try {
+      const r = await fetch('/api/pdf-editor/ocr', {method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({session_id:session.session_id})})
+      if (!r.ok) throw new Error(`OCR failed (${r.status})`)
+      const data = await r.json()
+      setSession(prev => ({ ...prev, page_count:data.page_count,
+        pages:Array.from({length:data.page_count},(_,i)=>({width:612,height:792})) }))
+      setOps([]); setRedoStack([]); setSearchResults(null)
+      setStatus(data.ocr_errors ? `OCR done — ${data.ocr_errors} page(s) fell back to original` : 'OCR complete — text layer added')
+    } catch(e) { setStatus('OCR failed: ' + e.message) }
+    finally { setOcring(false) }
+  }, [session])
+
   const deletePage = useCallback(pageIdx => {
     addOp({type:'delete_page', page:pageIdx, x:0,y:0,width:0,height:0,color:'',line_width:0,opacity:1})
     setCurrentPageRaw(p => Math.max(0, p >= pageIdx ? p - 1 : p))
@@ -837,10 +901,12 @@ export default function PDFEditor() {
         onUndo={undo} canUndo={ops.length>0} onRedo={redo} canRedo={redoStack.length>0}
         zoomIdx={zoomIdx} setZoomIdx={setZoomIdx}
         onExport={exportPDF} exporting={exporting} opsCount={ops.length}
-        onClose={closeEditor} />
+        onClose={closeEditor}
+        onSearch={()=>setSearchOpen(v=>!v)} searchOpen={searchOpen}
+        onOCR={doOCR} ocring={ocring} />
 
       {/* Body */}
-      <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+      <div style={{ display:'flex', flex:1, overflow:'hidden', position:'relative' }}>
         {/* Sidebar */}
         <PageSidebar session={effectiveSession || session}
           currentPage={currentPage} setCurrentPage={setCurrentPage}
@@ -880,8 +946,29 @@ export default function PDFEditor() {
               </div>
             )}
 
+            {/* Search result highlights */}
+            {searchResults?.matches?.map(({page:p, matches}) =>
+              p === currentPage && matches.map((m, i) => (
+                <div key={i} style={{ position:'absolute',
+                  left: m.x * RS * zoom, top: m.y * RS * zoom,
+                  width: m.width * RS * zoom, height: m.height * RS * zoom,
+                  background:'rgba(255,204,0,0.35)', border:'1px solid rgba(255,204,0,0.9)',
+                  zIndex:8, pointerEvents:'none' }} />
+              ))
+            )}
+
           </div>
         </div>
+
+        {/* Search & Replace panel */}
+        {searchOpen && (
+          <SearchPanel onClose={()=>setSearchOpen(false)}
+            onSearch={doSearch}
+            onReplace={doReplaceAll}
+            onReplaceAll={doReplaceAll}
+            results={searchResults?.total || 0}
+            current={searchCurrent} />
+        )}
       </div>
 
       {/* Status bar */}

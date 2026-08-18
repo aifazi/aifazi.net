@@ -63,8 +63,10 @@ def _require_session(request, session_id: str):
     sess = _sessions.get(session_id)
     if not sess:
         raise HTTPException(404, "Session not found")
-    if sess.get("ip") and sess["ip"] != _client_ip(request):
-        raise HTTPException(403, "Session is bound to a different client")
+    # NOTE: IP binding was removed because every request transits the Vercel
+    # proxy, which forwards from a pool of edge IPs → the session's stored IP
+    # never matches the rendering/export request IP, breaking the whole editor.
+    # The unguessable session UUID is the access control here.
     return sess
 
 # ── Models ────────────────────────────────────────────────────────
@@ -78,11 +80,16 @@ class Operation(BaseModel):
     x2:         float = 0
     y2:         float = 0
     text:       str   = ""
+    url:        str   = ""
+    find:       str   = ""
+    replacement: str  = ""
+    match_case: bool  = True
     font_size:  float = 14
     color:      str   = "#000000"
     fill:       str   = ""
     image_b64:  str   = ""
     content:    str   = ""
+    label:      str   = ""
     angle:      int   = 0
     points:     list  = []
     opacity:    float = 1.0
@@ -95,6 +102,11 @@ class ExportBody(BaseModel):
 
 class CloseBody(BaseModel):
     session_id: str
+
+class SearchBody(BaseModel):
+    session_id: str
+    query: str = ""
+    match_case: bool = True
 
 # ── Helpers ───────────────────────────────────────────────────────
 def _hex_rgb(h: str) -> tuple[float, float, float]:
@@ -123,6 +135,24 @@ def _apply_ops(doc, ops: list[Operation]):
             page.insert_text((op.x, op.y), op.text,
                              fontname=op.font_name or "helv",
                              fontsize=op.font_size, color=_hex_rgb(op.color))
+        elif op.type == "replace_text":
+            # Find + replace: redact every match rect, then stamp the new text.
+            needle = op.find or op.text
+            if not needle: continue
+            matches = page.search_for(needle)
+            if not matches: continue
+            first = matches[0]
+            for r in matches:
+                rect = fitz.Rect(r.x0 - 1, r.y0, r.x1 + 1, r.y1)
+                page.add_redact_annot(rect)
+            try:
+                page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+            except Exception:
+                pass
+            fontsize = max(8, min(op.font_size or 11, first.height * 1.6))
+            page.insert_text((first.x0, first.y1), op.replacement or op.text,
+                             fontname=op.font_name or "helv",
+                             fontsize=fontsize, color=_hex_rgb(op.color))
         elif op.type == "add_highlight":
             r = fitz.Rect(op.x, op.y, op.x+op.width, op.y+op.height)
             a = page.add_highlight_annot(r)
@@ -148,6 +178,44 @@ def _apply_ops(doc, ops: list[Operation]):
                 sh = page.new_shape(); sh.draw_polyline(pts)
                 sh.finish(color=_hex_rgb(op.color), width=op.line_width, closePath=False)
                 sh.commit()
+        elif op.type == "add_arrow":
+            if len(op.points) >= 2:
+                import math
+                p1 = fitz.Point(op.points[0][0], op.points[0][1])
+                p2 = fitz.Point(op.points[1][0], op.points[1][1])
+                stroke = _hex_rgb(op.color)
+                sh = page.new_shape()
+                sh.draw_line(p1, p2)
+                # arrowhead
+                dx, dy = p2.x - p1.x, p2.y - p1.y
+                ang = math.atan2(dy, dx)
+                hw = max(6, min(18, op.line_width * 6 or 12))
+                tip = fitz.Point(p2.x - hw * 0.3 * math.cos(ang), p2.y - hw * 0.3 * math.sin(ang))
+                pA = fitz.Point(tip.x - hw * math.cos(ang - 0.4), tip.y - hw * math.sin(ang - 0.4))
+                pB = fitz.Point(tip.x - hw * math.cos(ang + 0.4), tip.y - hw * math.sin(ang + 0.4))
+                sh.draw_polyline([pA, tip, pB])
+                sh.finish(color=stroke, width=op.line_width, closePath=False); sh.commit()
+        elif op.type == "add_underline":
+            stroke = _hex_rgb(op.color)
+            r = fitz.Rect(op.x, op.y, op.x + op.width, op.y + op.height)
+            sh = page.new_shape()
+            sh.draw_line(fitz.Point(r.x0, r.y1), fitz.Point(r.x1, r.y1))
+            sh.finish(color=stroke, width=1.5, closePath=False); sh.commit()
+        elif op.type == "add_strikethrough":
+            stroke = _hex_rgb(op.color)
+            r = fitz.Rect(op.x, op.y, op.x + op.width, op.y + op.height)
+            mid = (r.y0 + r.y1) / 2
+            sh = page.new_shape()
+            sh.draw_line(fitz.Point(r.x0, mid), fitz.Point(r.x1, mid))
+            sh.finish(color=stroke, width=1.5, closePath=False); sh.commit()
+        elif op.type in ("add_weblink", "add_link"):
+            r = fitz.Rect(op.x, op.y, op.x + op.width, op.y + op.height)
+            page.insert_link({"kind": fitz.LINK_URI, "from": r, "uri": op.url or op.text or "https://"})
+        elif op.type == "add_articlebox":
+            r = fitz.Rect(op.x, op.y, op.x + op.width, op.y + op.height)
+            a = page.add_highlight_annot(r)
+            a.set_colors(stroke=_hex_rgb(op.color or "#3b82f6"))
+            a.set_opacity(0.15); a.update()
         elif op.type == "add_note":
             page.add_text_annot(fitz.Point(op.x, op.y), op.content or op.text)
         elif op.type == "add_image":
@@ -265,3 +333,74 @@ async def close_session(request: Request, body: CloseBody):
     _require_session(request, body.session_id)
     _sessions.pop(body.session_id, None)
     return {"closed": True}
+
+@router.post("/search")
+async def search_pdf(request: Request, body: SearchBody):
+    import fitz
+    sess = _require_session(request, body.session_id)
+    _touch(body.session_id)
+    query = body.query.strip()
+    if not query:
+        return {"total": 0, "matches": []}
+    doc = fitz.open(stream=sess["bytes"], filetype="pdf")
+    low_query = query.lower()
+    results = []
+    for i in range(doc.page_count):
+        if body.match_case:
+            rects = [r for r in doc[i].search_for(query)]
+        else:
+            # case-insensitive: match across word boxes so multi-word phrases
+            # with different casing still resolve to real rects.
+            words = doc[i].get_text("words")  # x0,y0,x1,y1,word,block,line,word_no
+            hay = " ".join(w[4] for w in words)
+            idx = hay.lower().find(low_query)
+            rects = []
+            while idx != -1 and len(rects) < 50:
+                start_word = hay[:idx].count(" ")  # word index of match start
+                end_word = hay[:idx + len(query)].count(" ")
+                if 0 <= start_word < len(words) and 0 <= end_word < len(words):
+                    a, b = words[start_word], words[end_word]
+                    rects.append(fitz.Rect(a[0], a[1], b[2], b[3]))
+                idx = hay.lower().find(low_query, idx + len(query))
+        if rects:
+            results.append({
+                "page": i,
+                "matches": [
+                    {"x": r.x0, "y": r.y0, "width": r.x1 - r.x0, "height": r.y1 - r.y0}
+                    for r in rects
+                ],
+            })
+    doc.close()
+    total = sum(len(m["matches"]) for m in results)
+    return {"total": total, "matches": results}
+
+@router.post("/ocr")
+async def ocr_pdf(request: Request, body: CloseBody):
+    """Run Tesseract OCR on every page and replace the session's PDF with an
+    OCR'd copy that has a searchable/editable text layer."""
+    import fitz
+    sess = _require_session(request, body.session_id)
+    _touch(body.session_id)
+    doc = fitz.open(stream=sess["bytes"], filetype="pdf")
+    out = fitz.open()
+    errs = 0
+    for page in doc:
+        try:
+            pix = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0), alpha=False)
+            ocr_bytes = pix.pdfocr_tobytes(language="eng")
+            sub = fitz.open("pdf", ocr_bytes)
+            out.insert_pdf(sub)
+            sub.close()
+        except Exception:
+            errs += 1
+            out.insert_pdf(doc, from_page=page.number, to_page=page.number)
+    doc.close()
+    buf = io.BytesIO()
+    out.save(buf, garbage=4, deflate=True)
+    ocr_page_count = out.page_count
+    out.close(); buf.seek(0)
+    content = buf.getvalue()
+    # replace session bytes so renders reflect the OCR'd copy
+    _sessions[body.session_id] = {"bytes": content, "ip": sess.get("ip"), "at": _now()}
+    return {"page_count": ocr_page_count, "ocr_errors": errs,
+            "title": "OCR'd PDF", "size_bytes": len(content)}
