@@ -28,6 +28,12 @@ const VALID_THEMES = [
   'minecraft','minecraft-light',
   'sonic','sonic-light',
   'pacman','pacman-light',
+  'ember-dark','ember-light',
+  'cobalt-dark','cobalt-light',
+  'slate-dark','slate-light',
+  'honey-dark','honey-light',
+  'violet-dark','violet-light',
+  'teal-dark','teal-light',
 ]
 
 const LIGHT_THEMES = [
@@ -39,6 +45,7 @@ const LIGHT_THEMES = [
   'lava-light','toxic-light',
   'ice',
   'brutalist','paper','neumorph','macos','pastel','win95',
+  'ember-light','cobalt-light','slate-light','honey-light','violet-light','teal-light',
 ]
 
 const THEME_PAIRS: Record<string,string> = {
@@ -67,6 +74,12 @@ const THEME_PAIRS: Record<string,string> = {
   'minecraft':'minecraft-light','minecraft-light':'minecraft',
   'sonic':'sonic-light',        'sonic-light':'sonic',
   'pacman':'pacman-light',      'pacman-light':'pacman',
+  'ember-dark':'ember-light',   'ember-light':'ember-dark',
+  'cobalt-dark':'cobalt-light', 'cobalt-light':'cobalt-dark',
+  'slate-dark':'slate-light',   'slate-light':'slate-dark',
+  'honey-dark':'honey-light',   'honey-light':'honey-dark',
+  'violet-dark':'violet-light', 'violet-light':'violet-dark',
+  'teal-dark':'teal-light',     'teal-light':'teal-dark',
 }
 
 function loadFontForTheme(themeId: string) {

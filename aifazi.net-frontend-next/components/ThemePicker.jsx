@@ -162,6 +162,43 @@ const THEMES = [
     bg: '#05030f', bg2: '#0a0718', bg3: '#100b24', primary: '#ffe000', secondary: '#00cfff',
     text: '#f4f0ff', muted: '#5a5078', border: 'rgba(255,224,0,0.3)',
   },
+  // ── EXPANSION PACK ─────────────────────────────────────────────────────────
+  {
+    id: 'ember-dark', name: 'Ember', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Burnt orange on charcoal',
+    bg: '#100605', bg2: '#1a0b07', bg3: '#241008', primary: '#ff5722', secondary: '#ff9800',
+    text: '#ffe8dd', muted: '#8a5a44', border: 'rgba(255,87,34,0.22)',
+  },
+  {
+    id: 'cobalt-dark', name: 'Cobalt', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Deep blue & electric cyan',
+    bg: '#050b1e', bg2: '#0a142f', bg3: '#101c40', primary: '#1e50ff', secondary: '#00c2ff',
+    text: '#d6e2ff', muted: '#4a5a8a', border: 'rgba(30,80,255,0.22)',
+  },
+  {
+    id: 'slate-dark', name: 'Slate', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Minimal monochrome',
+    bg: '#0b0e12', bg2: '#12161c', bg3: '#1a1f27', primary: '#94a3b8', secondary: '#cbd5e1',
+    text: '#e2e8f0', muted: '#64748b', border: 'rgba(148,163,184,0.18)',
+  },
+  {
+    id: 'honey-dark', name: 'Honey', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Warm honey gold',
+    bg: '#0d0a02', bg2: '#171205', bg3: '#211a08', primary: '#ffb300', secondary: '#ff8f00',
+    text: '#fff3c4', muted: '#8a7020', border: 'rgba(255,179,0,0.22)',
+  },
+  {
+    id: 'violet-dark', name: 'Violet', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Violet & periwinkle',
+    bg: '#0c0718', bg2: '#140c26', bg3: '#1c1238', primary: '#8b5cf6', secondary: '#c084fc',
+    text: '#ede3ff', muted: '#6a5a9a', border: 'rgba(139,92,246,0.22)',
+  },
+  {
+    id: 'teal-dark', name: 'Teal', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Teal & mint',
+    bg: '#031210', bg2: '#061c19', bg3: '#0a2823', primary: '#2dd4bf', secondary: '#5eead4',
+    text: '#d5fff8', muted: '#3d6f66', border: 'rgba(45,212,191,0.22)',
+  },
   // ── THEME PACKAGES ────────────────────────────────────────────────────────
   {
     id: 'pkg:holo-deck', name: 'Holo Deck', tag: 'STYLE', type: 'package', style: 'holo',
@@ -1035,6 +1072,9 @@ function getThemeFamily(id) {
     'macos-dark':'macos',        'neon-noir-light':'neon-noir',
     'pastel-dark':'pastel',      'win95-dark':'win95',
     'aurora-light':'aurora',
+    'ember-light':'ember-dark',  'cobalt-light':'cobalt-dark',
+    'slate-light':'slate-dark',  'honey-light':'honey-dark',
+    'violet-light':'violet-dark','teal-light':'teal-dark',
   }
   return map[id] || id
 }

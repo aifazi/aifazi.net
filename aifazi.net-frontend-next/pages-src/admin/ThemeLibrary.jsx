@@ -327,7 +327,110 @@ const THEME_DEFS = [
     bg: '#070d2b', bg2: '#0c1440', bg3: '#111a54', primary: '#1e6fd9', secondary: '#f5d200', orange: '#ff6b35', text: '#e8f0ff', muted: '#5a6a9a', border: 'rgba(30,111,217,0.3)' },
   { id: 'pacman',     name: 'Pac-Man',     tag: 'GAME',  type: 'design', desc: 'Arcade maze yellow & cyan on void black.',
     bg: '#05030f', bg2: '#0a0718', bg3: '#100b24', primary: '#ffe000', secondary: '#00cfff', orange: '#ff5c00', text: '#f4f0ff', muted: '#5a5078', border: 'rgba(255,224,0,0.3)' },
+  // -- Expansion pack — 6 new families (dark + light) --------------------------
+  { id: 'ember-dark',   name: 'Ember',      tag: 'DARK',  type: 'design', desc: 'Burnt orange on charcoal  hot and industrial.',
+    bg: '#100605', bg2: '#1a0b07', bg3: '#241008', primary: '#ff5722', secondary: '#ff9800', orange: '#ffb74d', text: '#ffe8dd', muted: '#8a5a44', border: 'rgba(255,87,34,0.22)' },
+  { id: 'ember-light',  name: 'Ember Light',tag: 'LIGHT', type: 'design', desc: 'Warm peach  the ember family light mode.',
+    bg: '#fbe9e0', bg2: '#f5d9cb', bg3: '#efc9b8', primary: '#d84315', secondary: '#ef6c00', orange: '#e65100', text: '#2b1208', muted: '#8a5a44', border: 'rgba(216,67,21,0.22)' },
+  { id: 'cobalt-dark',  name: 'Cobalt',     tag: 'DARK',  type: 'design', desc: 'Deep blue & electric cyan  precise and technical.',
+    bg: '#050b1e', bg2: '#0a142f', bg3: '#101c40', primary: '#1e50ff', secondary: '#00c2ff', orange: '#ffb300', text: '#d6e2ff', muted: '#4a5a8a', border: 'rgba(30,80,255,0.22)' },
+  { id: 'cobalt-light', name: 'Cobalt Light',tag: 'LIGHT',type: 'design', desc: 'Sky blue & cobalt  the cobalt family light mode.',
+    bg: '#e9efff', bg2: '#dde7ff', bg3: '#d0ddfc', primary: '#0037c9', secondary: '#0077b6', orange: '#d98a00', text: '#0a1030', muted: '#5a6a9a', border: 'rgba(0,55,201,0.2)' },
+  { id: 'slate-dark',   name: 'Slate',      tag: 'DARK',  type: 'design', desc: 'Minimal monochrome  quiet and professional.',
+    bg: '#0b0e12', bg2: '#12161c', bg3: '#1a1f27', primary: '#94a3b8', secondary: '#cbd5e1', orange: '#f59e0b', text: '#e2e8f0', muted: '#64748b', border: 'rgba(148,163,184,0.18)' },
+  { id: 'slate-light',  name: 'Slate Light',tag: 'LIGHT', type: 'design', desc: 'Light gray paper  the slate family light mode.',
+    bg: '#f1f5f9', bg2: '#e2e8f0', bg3: '#cbd5e1', primary: '#334155', secondary: '#0f172a', orange: '#b45309', text: '#0f172a', muted: '#64748b', border: 'rgba(51,65,85,0.18)' },
+  { id: 'honey-dark',   name: 'Honey',      tag: 'DARK',  type: 'design', desc: 'Warm gold & amber  sweet and glowing.',
+    bg: '#0d0a02', bg2: '#171205', bg3: '#211a08', primary: '#ffb300', secondary: '#ff8f00', orange: '#ffc107', text: '#fff3c4', muted: '#8a7020', border: 'rgba(255,179,0,0.22)' },
+  { id: 'honey-light',  name: 'Honey Light',tag: 'LIGHT', type: 'design', desc: 'Soft honey cream  the honey family light mode.',
+    bg: '#fdf6e3', bg2: '#f7ecce', bg3: '#f0e0b8', primary: '#c47f00', secondary: '#8f5f00', orange: '#d98200', text: '#221800', muted: '#7a6520', border: 'rgba(196,127,0,0.2)' },
+  { id: 'violet-dark',  name: 'Violet',     tag: 'DARK',  type: 'design', desc: 'Violet & periwinkle  dreamy and expressive.',
+    bg: '#0c0718', bg2: '#140c26', bg3: '#1c1238', primary: '#8b5cf6', secondary: '#c084fc', orange: '#f59e0b', text: '#ede3ff', muted: '#6a5a9a', border: 'rgba(139,92,246,0.22)' },
+  { id: 'violet-light', name: 'Violet Light',tag: 'LIGHT',type: 'design', desc: 'Lavender mist  the violet family light mode.',
+    bg: '#f1eaff', bg2: '#e6dafc', bg3: '#d9c8fb', primary: '#6d28d9', secondary: '#9333ea', orange: '#c27800', text: '#1b0f3d', muted: '#6a5a9a', border: 'rgba(109,40,217,0.18)' },
+  { id: 'teal-dark',    name: 'Teal',       tag: 'DARK',  type: 'design', desc: 'Teal & mint  calm and aquatic.',
+    bg: '#031210', bg2: '#061c19', bg3: '#0a2823', primary: '#2dd4bf', secondary: '#5eead4', orange: '#fb923c', text: '#d5fff8', muted: '#3d6f66', border: 'rgba(45,212,191,0.22)' },
+  { id: 'teal-light',   name: 'Teal Light', tag: 'LIGHT', type: 'design', desc: 'Fresh mint  the teal family light mode.',
+    bg: '#e6fffb', bg2: '#d3f6f0', bg3: '#c0ede5', primary: '#0f766e', secondary: '#115e59', orange: '#c2410c', text: '#0a2a26', muted: '#3d6f66', border: 'rgba(15,118,110,0.2)' },
 ]
+
+// Themes introduced in the latest expansion pack (flagged with a NEW badge).
+const NEW_THEME_IDS = new Set([
+  'ember-dark', 'ember-light', 'cobalt-dark', 'cobalt-light',
+  'slate-dark', 'slate-light', 'honey-dark', 'honey-light',
+  'violet-dark', 'violet-light', 'teal-dark', 'teal-light',
+])
+
+// ── Theme Style Library — built-in full-look templates ───────────────────────
+// Each template is a complete "style" you can load onto any theme: fonts, glow,
+// radius, border weight, background pattern/gradient and optional accent colors.
+// Applied through the same themeCustom machinery as presets.
+const STYLE_TEMPLATES = [
+  { id: 'tpl-neon-rush', name: 'Neon Rush', tag: 'NEON', desc: 'High-voltage neon: punchy greens, tight radius, subtle grid backdrop.',
+    swatch: ['#060a0f', '#00ff88', '#00d4ff'],
+    draft: { fontDisplay: 'Orbitron', fontMono: 'Share Tech Mono', fontCode: 'Share Tech Mono', glow: 0.85, radius: 6, borderWidth: 1, bgPattern: 'grid', colors: { green: '#00ff88', cyan: '#00d4ff', purple: '#8b5cf6' } } },
+  { id: 'tpl-glass-clean', name: 'Glass Clean', tag: 'MINIMAL', desc: 'Frosted, quiet surfaces — soft radius, no background texture.',
+    swatch: ['#04080f', '#00e5ff', '#7b61ff'],
+    draft: { fontDisplay: 'Outfit', fontMono: 'JetBrains Mono', fontCode: 'JetBrains Mono', glow: 0.35, radius: 18, borderWidth: 1, bgPattern: 'none' } },
+  { id: 'tpl-retro-arcade', name: 'Retro Arcade', tag: 'RETRO', desc: '80s synthwave — neon pink/cyan over a deep gradient dusk.',
+    swatch: ['#0d0618', '#ff2d8b', '#00f0ff'],
+    draft: { fontDisplay: 'Orbitron', fontMono: 'Space Mono', fontCode: 'Space Mono', glow: 1, radius: 4, borderWidth: 2, bgPattern: 'none', bgGradientFrom: '#12001f', bgGradientTo: '#1a0033', bgGradientAngle: 160, colors: { purple: '#ff2d8b', cyan: '#00f0ff' } } },
+  { id: 'tpl-brutal-edge', name: 'Brutal Edge', tag: 'BOLD', desc: 'Raw industrial — square corners, thick borders, zero glow.',
+    swatch: ['#f2f0ec', '#e8000d', '#000000'],
+    draft: { fontDisplay: 'Anton', fontMono: 'Space Mono', fontCode: 'Space Mono', glow: 0, radius: 0, borderWidth: 3, bgPattern: 'none' } },
+  { id: 'tpl-cinematic', name: 'Cinematic Noir', tag: 'DRAMA', desc: 'Moody dark film — orange and purple neon on near-black.',
+    swatch: ['#0a0a0e', '#ff6b35', '#cc44ff'],
+    draft: { fontDisplay: 'Bebas Neue', fontMono: 'JetBrains Mono', fontCode: 'JetBrains Mono', glow: 0.55, radius: 10, borderWidth: 1, bgPattern: 'none', colors: { orange: '#ff6b35', purple: '#cc44ff' } } },
+  { id: 'tpl-soft-pastel', name: 'Soft Pastel', tag: 'SOFT', desc: 'Airy and dreamy — light surfaces, generous rounding, gentle accents.',
+    swatch: ['#fdf4ff', '#c084fc', '#f9a8d4'],
+    draft: { fontDisplay: 'Quicksand', fontMono: 'DM Mono', fontCode: 'DM Mono', glow: 0.2, radius: 20, borderWidth: 1, bgPattern: 'none' } },
+  { id: 'tpl-eco-glow', name: 'Eco Glow', tag: 'ORGANIC', desc: 'Jungle greens with a dotted backdrop and medium glow.',
+    swatch: ['#020b04', '#4ade80', '#a3e635'],
+    draft: { fontDisplay: 'Poppins', fontMono: 'JetBrains Mono', fontCode: 'JetBrains Mono', glow: 0.6, radius: 14, borderWidth: 1, bgPattern: 'dots', colors: { green: '#4ade80', cyan: '#a3e635' } } },
+  { id: 'tpl-crt-terminal', name: 'CRT Terminal', tag: 'RETRO', desc: 'Phosphor green on black — matrix backdrop, near-square type.',
+    swatch: ['#0a0a0a', '#33ff33', '#ffcc00'],
+    draft: { fontDisplay: 'VT323', fontMono: 'VT323', fontCode: 'VT323', glow: 0.9, radius: 2, borderWidth: 1, bgPattern: 'matrix', colors: { green: '#33ff33', text: '#33ff33', muted: '#228822' } } },
+  { id: 'tpl-pixel-pop', name: 'Pixel Pop', tag: 'ARCADE', desc: 'Chunky arcade lettering, blocky corners and a grid floor.',
+    swatch: ['#0a0d1c', '#e52521', '#ffd700'],
+    draft: { fontDisplay: 'Press Start 2P', fontMono: 'VT323', fontCode: 'VT323', glow: 0.7, radius: 0, borderWidth: 2, bgPattern: 'grid' } },
+  { id: 'tpl-honey-glow', name: 'Honey Glow', tag: 'WARM', desc: 'Warm gold everywhere — display serif headings and amber accents.',
+    swatch: ['#0d0a02', '#ffb300', '#ff8f00'],
+    draft: { fontDisplay: 'Playfair Display', fontMono: 'JetBrains Mono', fontCode: 'JetBrains Mono', glow: 0.5, radius: 12, borderWidth: 1, bgPattern: 'none', colors: { green: '#ffb300', cyan: '#ff8f00', orange: '#ffc107' } } },
+  { id: 'tpl-gold-editorial', name: 'Gold Editorial', tag: 'EDITORIAL', desc: 'Ink on parchment — serif body, warm paper, no glow.',
+    swatch: ['#f5f0e8', '#c41a1a', '#1a3a6c'],
+    draft: { fontDisplay: 'Libre Baskerville', fontMono: 'Courier Prime', fontCode: 'Courier Prime', glow: 0, radius: 8, borderWidth: 1, bgPattern: 'none' } },
+  { id: 'tpl-ocean-deep', name: 'Ocean Deep', tag: 'CALM', desc: 'Electric blue and teal over a downward gradient — immersive and cool.',
+    swatch: ['#020d1a', '#3b82f6', '#06b6d4'],
+    draft: { fontDisplay: 'Raleway', fontMono: 'Fira Code', fontCode: 'Fira Code', glow: 0.7, radius: 10, borderWidth: 1, bgPattern: 'none', bgGradientFrom: '#020d1a', bgGradientTo: '#062b4a', bgGradientAngle: 150, colors: { green: '#3b82f6', cyan: '#06b6d4' } } },
+]
+
+// Merge a style template into a full customization draft (base keeps its theme
+// defaults for any keys the template does not touch).
+function applyTemplateToDraft(base, tpl) {
+  const d = tpl?.draft || {}
+  return {
+    ...base,
+    fontDisplay: d.fontDisplay || base.fontDisplay,
+    fontMono: d.fontMono || base.fontMono,
+    fontCode: d.fontCode || base.fontCode,
+    glow: typeof d.glow === 'number' ? d.glow : base.glow,
+    radius: typeof d.radius === 'number' ? d.radius : base.radius,
+    borderWidth: typeof d.borderWidth === 'number' ? d.borderWidth : base.borderWidth,
+    bgPattern: d.bgPattern || base.bgPattern,
+    bgGradientFrom: d.bgGradientFrom || base.bgGradientFrom,
+    bgGradientTo: d.bgGradientTo || base.bgGradientTo,
+    bgGradientAngle: typeof d.bgGradientAngle === 'number' ? d.bgGradientAngle : base.bgGradientAngle,
+    colors: { ...(base.colors || {}), ...(d.colors || {}) },
+  }
+}
+
+function makeId(prefix) {
+  return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+}
+
+function nowISO() {
+  return new Date().toISOString()
+}
 
 const ANIM_CATEGORIES = [
   { id: 'ALL',        label: 'All',           color: 'var(--green)' },
@@ -925,6 +1028,21 @@ function ThemeLibrary() {
   const dlg    = useDialog()
   const isMobile = useIsMobile()
 
+  // ── MORE THEMES + STYLE LIBRARY modals ─────────────────────────────────────
+  const [moreThemesOpen, setMoreThemesOpen] = useState(false)
+  const [moreTag, setMoreTag] = useState('ALL')
+  const [moreSearch, setMoreSearch] = useState('')
+  const [styleLibOpen, setStyleLibOpen] = useState(false)
+  const [styleQuery, setStyleQuery] = useState('')
+  const [styleApplyFor, setStyleApplyFor] = useState({})   // templateId -> chosen themeId
+
+  const styleLibTags = useMemo(() => ['ALL', ...Array.from(new Set(STYLE_TEMPLATES.map(t => t.tag)))], [])
+  const styleLibList = useMemo(() => {
+    const q = styleQuery.trim().toLowerCase()
+    const tag = styleLibTags.includes(moreTag) ? moreTag : 'ALL'
+    return STYLE_TEMPLATES.filter(t => (tag === 'ALL' || t.tag === tag) && (!q || t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)))
+  }, [styleQuery, moreTag, styleLibTags])
+
   // ── Framework state (menu / notify / dialog only) ────────────────────────
   const [fwDraft, setFwDraft] = useState(() => ({
     menuStyle:      siteConfig?.menuStyle      || DEFAULT_FRAMEWORK.menuStyle,
@@ -1272,11 +1390,32 @@ function ThemeLibrary() {
     if (refreshSiteConfig) await refreshSiteConfig()
   }
 
+  // Load a style template into the current customize draft (undoable).
+  const loadStyleIntoCust = (tpl) => {
+    applyDraft(applyTemplateToDraft(customDraft, tpl))
+    setStyleLibOpen(false)
+    setActiveTab('customize')
+    toast.success(`"${tpl.name}" loaded into ${THEME_DEFS.find(t => t.id === customTarget)?.name || customTarget} — press SAVE to persist`, { title: '🧪 Loaded' })
+  }
+
+  // Write a style template straight onto a chosen theme's themeCustom.
+  const applyStyleToTheme = async (tpl, themeId) => {
+    try {
+      const merged = applyTemplateToDraft(seedCustomDraft(themeId, siteConfig.themeCustom?.[themeId]), tpl)
+      const tc = { ...(siteConfig.themeCustom && typeof siteConfig.themeCustom === 'object' && !Array.isArray(siteConfig.themeCustom) ? siteConfig.themeCustom : {}) }
+      tc[themeId] = merged
+      await persistSettings({ themeCustom: tc })
+      toast.success(`"${tpl.name}" applied to ${THEME_DEFS.find(t => t.id === themeId)?.name || themeId}`, { title: '🎨 Template Applied' })
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Failed to apply template', { title: 'Error' })
+    }
+  }
+
   const savePreset = async () => {
     const name = presetName.trim()
     if (!name) { toast.error('Give the preset a name first', { title: 'Name Required' }); return }
     const list = [...themePresets]
-    list.push({ id: `p_${Date.now().toString(36)}`, name, originTheme: customTarget, createdAt: new Date().toISOString(), draft: JSON.parse(JSON.stringify(customDraft)) })
+    list.push({ id: makeId('p'), name, originTheme: customTarget, createdAt: nowISO(), draft: JSON.parse(JSON.stringify(customDraft)) })
     await persistSettings({ themePresets: list })
     setPresetModalOpen(false)
     setPresetName('')
@@ -1309,7 +1448,7 @@ function ThemeLibrary() {
       if (!draft || typeof draft !== 'object' || Array.isArray(draft)) throw new Error('bad shape')
       const name = parsed?.name || `${THEME_DEFS.find(t => t.id === customTarget)?.name} import`
       const list = [...themePresets]
-      list.push({ id: `p_${Date.now().toString(36)}`, name: String(name).slice(0, 60), originTheme: customTarget, createdAt: new Date().toISOString(), draft })
+      list.push({ id: makeId('p'), name: String(name).slice(0, 60), originTheme: customTarget, createdAt: nowISO(), draft })
       await persistSettings({ themePresets: list })
       setImportModalOpen(false)
       setImportText('')
@@ -1354,7 +1493,7 @@ function ThemeLibrary() {
     const draft = draftSource && typeof draftSource === 'object' ? JSON.parse(JSON.stringify(draftSource)) : {}
     const list = targets.filter(t => t.id !== targetEditingId)
     const rec = {
-      id: targetEditingId || `t_${Date.now().toString(36)}`,
+      id: targetEditingId || makeId('t'),
       name, themeId: targetForm.themeId, draft, audience: targetForm.audience,
       active: targetForm.active, start: targetForm.start || '', end: targetForm.end || '',
       createdAt: new Date().toISOString(),
@@ -2040,6 +2179,14 @@ function ThemeLibrary() {
               background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)',
               color: '#c084fc', cursor: 'pointer', borderRadius: 6, transition: 'all 0.15s', flexShrink: 0,
             }}>🎲 RANDOM</button>
+            <button onClick={() => setMoreThemesOpen(true)} title="Browse the full theme menu"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '8px 14px', background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.3)', color: '#22d3ee', cursor: 'pointer', borderRadius: 6, transition: 'all 0.15s', flexShrink: 0 }}>
+              🧩 MORE THEMES <span style={{ opacity: 0.6, marginLeft: 4 }}>({NEW_THEME_IDS.size} new)</span>
+            </button>
+            <button onClick={() => setStyleLibOpen(true)} title="Apply full style templates to any theme"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '8px 14px', background: 'rgba(255,45,139,0.08)', border: '1px solid rgba(255,45,139,0.3)', color: '#f472b6', cursor: 'pointer', borderRadius: 6, transition: 'all 0.15s', flexShrink: 0 }}>
+              🎨 STYLE LIBRARY
+            </button>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1, flexShrink: 0 }}>
               ⏎ navigate  <kbd style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '1px 5px', borderRadius: 3 }}>↵</kbd> apply
             </div>
@@ -2928,6 +3075,134 @@ function ThemeLibrary() {
         )
       })()}
 
+      {/* -- MORE THEMES — compact browse menu -------------------------------- */}
+      <Modal open={moreThemesOpen} onClose={() => setMoreThemesOpen(false)} title="🧩 MORE THEMES  browse the full theme menu" width={680}>
+        <div style={{ padding: 20 }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+            <input value={moreSearch} onChange={e => setMoreSearch(e.target.value)}
+              placeholder="🔍 Search themes…"
+              style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {['ALL', 'NEW', 'DARK', 'LIGHT', 'STYLE', 'GAME'].map(tag => {
+                const on = moreTag === tag
+                return (
+                  <button key={tag} onClick={() => setMoreTag(tag)}
+                    style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: on ? 'var(--green)' : 'transparent', color: on ? '#000' : 'var(--muted)', border: `1px solid ${on ? 'var(--green)' : 'var(--border)'}`, borderRadius: 6 }}>
+                    {tag}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10, maxHeight: 440, overflowY: 'auto', paddingRight: 4 }}>
+            {THEME_DEFS.filter(t => {
+              const q = moreSearch.trim().toLowerCase()
+              if (q && !`${t.name} ${t.id} ${t.desc} ${t.tag}`.toLowerCase().includes(q)) return false
+              if (moreTag === 'NEW') return NEW_THEME_IDS.has(t.id)
+              if (moreTag !== 'ALL' && t.tag !== moreTag) return false
+              return true
+            }).map(t => {
+              const isActive = theme === t.id
+              const isNew = NEW_THEME_IDS.has(t.id)
+              return (
+                <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 14px', background: 'var(--bg3)', border: `1px solid ${isActive ? t.primary + '66' : 'var(--border)'}`, borderRadius: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ display: 'flex', gap: 3 }}>
+                      {[t.bg, t.primary, t.secondary].map((c, i) => <span key={i} style={{ width: 12, height: 12, borderRadius: 3, background: c, border: '1px solid rgba(255,255,255,0.12)' }} />)}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)' }}>{t.name}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>{t.tag}</span>
+                    {isNew && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 50%, transparent)', borderRadius: 4, padding: '1px 5px' }}>NEW</span>}
+                    {isActive && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: t.primary }}>● ACTIVE</span>}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.5 }}>{t.desc}</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => applyTheme(t.id)} disabled={isActive}
+                      style={{ flex: 1, padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: isActive ? 'not-allowed' : 'pointer', background: isActive ? 'var(--bg3)' : 'var(--green)', color: isActive ? 'var(--muted)' : '#000', border: 'none', borderRadius: 6 }}>
+                      {isActive ? 'ACTIVE' : 'APPLY'}
+                    </button>
+                    <button onClick={() => { setMoreThemesOpen(false); setPreviewTheme(t.id) }}
+                      title="Preview in the header"
+                      style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, cursor: 'pointer', background: 'transparent', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 50%, transparent)', borderRadius: 6 }}>
+                      PREVIEW
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </Modal>
+
+      {/* -- THEME STYLE LIBRARY — built-in full-look templates ----------------- */}
+      <Modal open={styleLibOpen} onClose={() => setStyleLibOpen(false)} title="🎨 THEME STYLE LIBRARY  apply a full look to any theme" width={760}>
+        <div style={{ padding: 20 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 12, lineHeight: 1.6 }}>
+            Built-in style templates package <strong style={{ color: 'var(--text)' }}>fonts, glow, radius, border weight, background pattern/gradient</strong> and optional accent colors into one click.
+            <strong style={{ color: 'var(--green)' }}> LOAD INTO CUSTOMIZE</strong> edits the current theme&apos;s draft (live-previewed), or pick a theme and hit <strong style={{ color: 'var(--cyan)' }}>APPLY</strong> to write it straight onto that theme&apos;s customization.
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
+            <input value={styleQuery} onChange={e => setStyleQuery(e.target.value)}
+              placeholder="🔍 Search templates…"
+              style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {styleLibTags.map(tag => {
+                const on = moreTag === tag
+                return (
+                  <button key={tag} onClick={() => setMoreTag(tag)}
+                    style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: on ? 'var(--purple)' : 'transparent', color: on ? '#000' : 'var(--muted)', border: `1px solid ${on ? 'var(--purple)' : 'var(--border)'}`, borderRadius: 6 }}>
+                    {tag}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12, maxHeight: 460, overflowY: 'auto', paddingRight: 4 }}>
+            {styleLibList.map(tpl => {
+              const [cbg, c1, c2] = tpl.swatch
+              const pickTheme = styleApplyFor[tpl.id] || customTarget
+              const d = tpl.draft || {}
+              return (
+                <div key={tpl.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+                  {/* Mini style preview */}
+                  <div style={{ height: 66, borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: d.bgGradientFrom || d.bgGradientTo ? `linear-gradient(${d.bgGradientAngle || 150}deg, ${d.bgGradientFrom || cbg}, ${d.bgGradientTo || c1})` : cbg, padding: '10px 12px', overflow: 'hidden', position: 'relative' }}>
+                    <div style={{ fontFamily: d.fontDisplay || 'sans-serif', fontSize: 16, fontWeight: 700, color: c1, letterSpacing: 1 }}>Aa {tpl.name}</div>
+                    <div style={{ fontFamily: d.fontMono || 'monospace', fontSize: 8, color: c2, opacity: 0.9 }}>{'// style template preview'}</div>
+                    <div style={{ position: 'absolute', right: 10, bottom: 8, display: 'flex', gap: 3 }}>
+                      {[cbg, c1, c2].map((c, i) => <span key={i} style={{ width: 10, height: 10, borderRadius: 3, background: c, border: '1px solid rgba(255,255,255,0.15)' }} />)}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)' }}>{tpl.name}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>{tpl.tag}</span>
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', lineHeight: 1.5 }}>{tpl.desc}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <span>font {d.fontDisplay}</span><span>glow {Math.round((typeof d.glow === 'number' ? d.glow : 0.5) * 100)}%</span>
+                    <span>radius {typeof d.radius === 'number' ? d.radius : 10}px</span><span>bg {d.bgPattern || (d.bgGradientFrom ? 'gradient' : 'none')}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 2 }}>
+                    <button onClick={() => loadStyleIntoCust(tpl)}
+                      style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 6 }}>
+                      🧪 LOAD INTO CUSTOMIZE
+                    </button>
+                    <select value={pickTheme} onChange={e => setStyleApplyFor(s => ({ ...s, [tpl.id]: e.target.value }))}
+                      style={{ flex: 1, minWidth: 110, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', padding: '7px 8px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 9, outline: 'none', cursor: 'pointer' }}>
+                      {THEME_DEFS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    <button onClick={() => applyStyleToTheme(tpl, pickTheme)}
+                      style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 6 }}>
+                      APPLY ▶
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+            {styleLibList.length === 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--orange)' }}>No templates match &quot;{styleQuery}&quot;.</div>}
+          </div>
+        </div>
+      </Modal>
+
       {/* -- CUSTOMIZE TAB — per-theme fonts / colors / glow / CSS --------- */}
       {activeTab === 'customize' && (() => {
         const T = {
@@ -3122,6 +3397,36 @@ function ThemeLibrary() {
                   style={{ flex: 1, minWidth: 120, accentColor: 'var(--purple)', cursor: 'pointer' }} />
               </div>
               <div style={{ ...T.sub, marginTop: 10 }}>A gradient overrides the pattern. Both are layered over the theme&apos;s default background.</div>
+            </div>
+
+            {/* Presets */}
+            <div style={T.card}>
+              <div style={{ ...T.sec, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>BUILT-IN STYLE TEMPLATES  ({STYLE_TEMPLATES.length})</span>
+                <button onClick={() => setStyleLibOpen(true)}
+                  style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--purple) 14%, transparent)', color: 'var(--purple)', border: '1px solid color-mix(in srgb, var(--purple) 40%, transparent)', borderRadius: 6 }}>
+                  🎨 OPEN STYLE LIBRARY
+                </button>
+              </div>
+              <div style={{ ...T.sub, marginBottom: 12 }}>Curated full-look templates (fonts + glow + radius + borders + background). Tap one to load it into this theme&apos;s draft — then SAVE.</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 8 }}>
+                {STYLE_TEMPLATES.map(tpl => {
+                  const [cbg, c1, c2] = tpl.swatch
+                  return (
+                    <div key={tpl.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                      <span style={{ width: 26, height: 26, borderRadius: 6, background: `linear-gradient(150deg, ${cbg}, ${c1})`, border: '1px solid rgba(255,255,255,0.12)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: tpl.draft?.fontDisplay || 'sans-serif', fontSize: 11, fontWeight: 700, color: c2 }}>Aa</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>{tpl.draft?.fontDisplay} · glow {(typeof tpl.draft?.glow === 'number' ? tpl.draft.glow : 0.5) * 100}%</div>
+                      </div>
+                      <button onClick={() => applyDraft(applyTemplateToDraft(customDraft, tpl))}
+                        style={{ padding: '5px 10px', fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, cursor: 'pointer', background: 'transparent', color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 50%, transparent)', borderRadius: 6, flexShrink: 0 }}>
+                        LOAD
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Presets */}

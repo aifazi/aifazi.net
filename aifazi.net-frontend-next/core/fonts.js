@@ -63,6 +63,20 @@ const REGISTRY = {
   sonic:       'family=Bungee&family=Space+Mono:wght@400;700',
   pacman:      'family=Press+Start+2P&family=VT323',
 
+  // Expansion pack — 6 new families (dark + light share fonts)
+  'ember-dark':   'family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500;600',
+  'ember-light':  'family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500;600',
+  'cobalt-dark':  'family=Raleway:wght@300;400;600;700;800&family=Fira+Code:wght@300;400;500;600',
+  'cobalt-light': 'family=Raleway:wght@300;400;600;700;800&family=Fira+Code:wght@300;400;500;600',
+  'slate-dark':   'family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;500',
+  'slate-light':  'family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@300;400;500',
+  'honey-dark':   'family=Playfair+Display:wght@600;700;900&family=JetBrains+Mono:wght@400;500',
+  'honey-light':  'family=Playfair+Display:wght@600;700;900&family=JetBrains+Mono:wght@400;500',
+  'violet-dark':  'family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600',
+  'violet-light': 'family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600',
+  'teal-dark':    'family=Poppins:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400',
+  'teal-light':   'family=Poppins:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400',
+
   // ── Family variants (bridge to base) ──
   'terminal-light':    'family=VT323',
   'synthwave-light':   'family=Orbitron:wght@400;600;700;900',
