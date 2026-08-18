@@ -16,6 +16,7 @@ import { getUsername, getRole, getAuthToken } from '@/lib/api'
 import { getSiteSettings } from '@/lib/siteSettings'
 import { UserAvatar } from '@/lib/avatar'
 import { isFiveMHost, fivemRoute, useFiveMRoute, useFiveMLoginRoute } from '@/lib/fivemRoutes'
+import { STORE_URL, FIVEM_URL } from '@/lib/config'
 
 // ── Theme Toggle — animated pill slider ───────────────────────────────────────
 function ThemeToggle({ theme, onToggle }) {
@@ -364,8 +365,8 @@ export default function Navbar() {
     { type: 'hash',    hash: 'projects',        label: 'Projects'   },
     { type: 'route',   to: '/blog',             label: 'Blog'       },
     { type: 'route',   to: '/forum',            label: 'Forum'      },
-    { type: 'route',   to: 'https://store.aifazi.net', label: 'Store' },
-    { type: 'route',   to: 'https://fivem.aifazi.net', label: 'FiveM' },
+    { type: 'route',   to: STORE_URL,           label: 'Store' },
+    { type: 'route',   to: FIVEM_URL,           label: 'FiveM' },
     { type: 'route',   to: '/app',              label: 'App'        },
     { type: 'contact',                          label: 'Contact'    },
   ]

@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react'
 import api from '@/lib/api'
+import { SITE_URL } from '@/lib/config'
 
 /* ── design tokens ─────────────────────────────────────────────────────────── */
 const C = {
@@ -291,7 +292,7 @@ const [saveError, setSaveError] = useState('')
     .replace(/\{\{message_preview\}\}/g, 'Can you check this when you are online?')
     .replace(/\{\{chat_url\}\}/g, '#')
     .replace(/\{\{staff_name\}\}/g, 'Support Staff')
-    .replace(/\{\{frontend_url\}\}/g, 'https://aifazi.net')
+    .replace(/\{\{frontend_url\}\}/g, SITE_URL)
     .replace(/\{\{profile_url\}\}/g, '#')
     .replace(/\{\{discord_username\}\}/g, 'johndoe')
     .replace(/\{\{password\}\}/g, 'temporary-password')

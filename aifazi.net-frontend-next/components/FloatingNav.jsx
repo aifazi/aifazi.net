@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { Link, useLocation } from '@/lib/router-compat'
 import { useEdit } from '../context/EditContext'
+import { STORE_URL, FIVEM_URL } from '@/lib/config'
 // Lazy-load the ~113KB theme drawer — it only renders when opened.
 const ThemePicker = dynamic(() => import('./ThemePicker'), { ssr: false })
 import { canEdit } from '@/lib/api'
@@ -13,8 +14,8 @@ const NAV_ITEMS = [
   { icon: '✉', label: 'Contact',   desc: 'Get in touch',        href: '#contact',  color: '#00ff88' },
   { icon: '◉', label: 'Forum',     desc: 'Community',           href: '/forum',    isRoute: true, color: '#00d4ff' },
   { icon: '◇', label: 'Blog',      desc: 'Articles',            href: '/blog',     isRoute: true, color: '#00ff88' },
-  { icon: '👑', label: 'Store',    desc: 'VIP subscriptions',   href: 'https://store.aifazi.net', color: '#ffd700' },
-  { icon: '🎮', label: 'FiveM',    desc: 'Game server',         href: 'https://fivem.aifazi.net', color: '#00ff88' },
+  { icon: '👑', label: 'Store',    desc: 'VIP subscriptions',   href: STORE_URL, color: '#ffd700' },
+  { icon: '🎮', label: 'FiveM',    desc: 'Game server',         href: FIVEM_URL, color: '#00ff88' },
 ]
 
 function NavItem({ item, expanded, onHover, onLeave, delay }) {

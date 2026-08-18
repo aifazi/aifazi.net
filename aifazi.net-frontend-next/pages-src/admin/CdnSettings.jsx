@@ -4,6 +4,7 @@ import api, { refreshCdnConfig } from '@/lib/api'
 import { Select } from '../../core/ui.jsx'
 import { S, useIsMobile, PageHeader } from './shared'
 import { Icon } from './icons'
+import { CDN_URL } from '@/lib/config'
 
 // -- Masked secret field renderer ------------------------------------------
 const SecretField = ({ label, placeholder, help, value, onChange, T }) => {
@@ -475,7 +476,7 @@ function CdnSettings() {
             <div>
               <label style={T.label}>Custom CDN Domain</label>
               <input value={cfg.customDomain || ''} onChange={e => set('customDomain', e.target.value)}
-                placeholder="https://cdn.aifazi.net"
+                placeholder={CDN_URL}
                 style={{ ...T.inp, borderColor: cfg.customDomain ? 'var(--green)' : undefined }} />
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>
                 Include the scheme (https://). Leave blank to use the provider&apos;s default URL.

@@ -14,6 +14,7 @@ is re-validated and re-pinned too. Only http/https allowed; capped response;
 hard timeout.
 """
 import asyncio
+import os
 import re
 import time
 from html.parser import HTMLParser
@@ -121,7 +122,7 @@ async def _pinned_stream(client: httpx.AsyncClient, url: str, *, hostname: str, 
         netloc = f"{netloc}:{parsed.port}"
     pinned_url = parsed._replace(netloc=netloc).geturl()
     headers = {
-        "User-Agent": "Mozilla/5.0 (aifazi.net link previews; +https://aifazi.net) AppleWebKit/537.36",
+        "User-Agent": f"Mozilla/5.0 ({os.getenv('SITE_NAME', 'aifazi.net')} link previews; +{os.getenv('FRONTEND_URL', 'https://aifazi.net')}) AppleWebKit/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
         "Host": hostname,

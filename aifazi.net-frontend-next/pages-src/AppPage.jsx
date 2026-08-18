@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { Link } from '@/lib/router-compat'
 import { EditableText } from '../context/EditContext'
+import { API_URL } from '@/lib/config'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = 'var(--green)'
@@ -42,7 +43,7 @@ function DownloadCard({ release, loading, error }) {
       <div style={{ border: '1px solid var(--border)', borderRadius: 14, background: 'var(--bg2)', padding: '24px', textAlign: 'center' }}>
         <div style={{ fontSize: 26, marginBottom: 8 }}>📦</div>
         <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: O, marginBottom: 12 }}>COULD NOT FETCH LATEST VERSION</div>
-        <a href="https://api.aifazi.net/api/mobile/release/download"
+        <a href={`${API_URL}/api/mobile/release/download`}
           download="aifazi.apk"
           style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 2, padding: '14px 28px', color: G, border: `1px solid ${G}55`, textDecoration: 'none', background: `${G}0c`, display: 'inline-block' }}>
           DOWNLOAD APK DIRECTLY
@@ -91,7 +92,7 @@ function DownloadCard({ release, loading, error }) {
           NO RELEASE YET
         </div>
       ) : (
-        <a href={release?.apkUrl || 'https://api.aifazi.net/api/mobile/release/download'}
+        <a href={release?.apkUrl || `${API_URL}/api/mobile/release/download`}
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
             fontFamily: MONO, fontSize: 13, letterSpacing: 3, fontWeight: 700,

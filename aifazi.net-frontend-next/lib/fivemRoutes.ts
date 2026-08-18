@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { FIVEM_URL, hostOf } from './config'
 
-const FIVEM_HOSTNAME = 'fivem.aifazi.net'
+const FIVEM_HOSTNAME = hostOf(FIVEM_URL)
 
 export function isFiveMHost() {
   if (typeof window === 'undefined') return false

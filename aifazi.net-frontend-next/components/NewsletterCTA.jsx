@@ -1,5 +1,6 @@
 'use client'
 import { Card, NeonButton } from './community'
+import { DISCORD_URL } from '@/lib/config'
 
 export default function NewsletterCTA() {
   return (
@@ -11,7 +12,7 @@ export default function NewsletterCTA() {
         Get the latest networking guides, security deep-dives, and infrastructure walkthroughs delivered straight to your inbox.
       </p>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <NeonButton href="https://discord.aifazi.net" target="_blank" variant="primary" size="md">
+        <NeonButton href={DISCORD_URL} target="_blank" variant="primary" size="md">
           Join Discord
         </NeonButton>
         <NeonButton to="/contact" variant="ghost" size="md">

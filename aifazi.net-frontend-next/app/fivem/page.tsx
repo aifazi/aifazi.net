@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import api from '@/lib/api'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
 import { useForum } from '@/context/ForumContext'
+import { FIVEM_CONNECT } from '@/lib/config'
 
 const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)', P = 'var(--purple)'
 
@@ -24,7 +25,7 @@ function ServerIP({ ip }: { ip?: string }) {
     onMouseEnter={e => e.currentTarget.style.borderColor = C}
     onMouseLeave={e => e.currentTarget.style.borderColor = `${C}33`}>
       <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>CONNECT:</span>
-      <span style={{ fontSize: 14, color: C, fontWeight: 700, letterSpacing: 1 }}>{ip || 'play.aifazi.net'}</span>
+      <span style={{ fontSize: 14, color: C, fontWeight: 700, letterSpacing: 1 }}>{ip || FIVEM_CONNECT}</span>
       <span style={{ fontSize: 11, color: copied ? G : 'var(--muted)' }}>{copied ? '✓ COPIED' : '📋 COPY'}</span>
     </button>
   )

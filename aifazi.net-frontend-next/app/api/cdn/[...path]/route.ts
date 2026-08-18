@@ -16,6 +16,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { SITE_URL } from '@/lib/config'
 
 // ── Cloud name — read from env var only ──────────────────────────────────────
 function resolveCloudName(): string {
@@ -73,8 +74,8 @@ export async function GET(
       const v = up.headers.get(h)
       if (v) out.set(h, v)
     }
-    // M12 — restrict CORS to aifazi.net subdomains; never an open cross-origin proxy
-    out.set('Access-Control-Allow-Origin', 'https://aifazi.net')
+    // M12 — restrict CORS to the site origin (SITE_URL); never an open cross-origin proxy
+    out.set('Access-Control-Allow-Origin', SITE_URL)
     out.set('Vary', 'Origin')
     if (up.ok) {
       out.set(

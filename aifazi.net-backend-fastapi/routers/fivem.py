@@ -53,6 +53,7 @@ log = logging.getLogger("fivem")
 router = APIRouter()
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
+FRONTEND_HOST = FRONTEND_URL.replace("https://", "").replace("http://", "")
 
 # Hot-path throttle: the Lua heartbeat fires every ~30s and each stamping pass
 # runs up to 64 players x (1 fivem_whitelist UPDATE + 2 application_submissions
@@ -270,7 +271,7 @@ def _email_denied(name: str, char: str, note: str | None) -> tuple[str, str]:
       <div style="font-size:18px;font-weight:700;color:#ff4757">{_e(char)}</div>
     </div>
     {f'<div style="background:#161b22;border-left:3px solid #ff4757;padding:12px 16px;border-radius:4px;margin-bottom:24px"><div style="font-size:11px;color:#8b949e;margin-bottom:4px">REASON</div><div style="color:#e6edf3">{_e(note)}</div></div>' if note else '<div style="background:#161b22;border-left:3px solid #ff4757;padding:12px 16px;border-radius:4px;margin-bottom:24px"><div style="color:#e6edf3">No specific reason provided.</div></div>'}
-    <p style="color:#e6edf3;line-height:1.7">You are welcome to reapply after improving your character backstory. Visit <a href="https://aifazi.net/whitelist" style="color:#00D4FF">aifazi.net/whitelist</a> to submit a new application.</p>
+    <p style="color:#e6edf3;line-height:1.7">You are welcome to reapply after improving your character backstory. Visit <a href="{FRONTEND_URL}/whitelist" style="color:#00D4FF">{FRONTEND_HOST}/whitelist</a> to submit a new application.</p>
   </div>
   <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">
     AIFAZI RP Â· aifazi.net

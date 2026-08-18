@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import api from '@/lib/api'
 import { Link } from '@/lib/router-compat'
+import { STORE_URL, FIVEM_URL } from '@/lib/config'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = 'var(--green)'
@@ -309,8 +310,8 @@ export default function StatusPage({ initialData = null }) {
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: 22, marginTop: 30, flexWrap: 'wrap', fontFamily: MONO, fontSize: 10, letterSpacing: 1 }}>
               <Link to="/" style={{ color: C, textDecoration: 'none' }}>← BACK TO SITE</Link>
-              <Link to="https://store.aifazi.net" style={{ color: Y, textDecoration: 'none' }}>STORE</Link>
-              <Link to="https://fivem.aifazi.net" style={{ color: G, textDecoration: 'none' }}>FIVEM</Link>
+              <Link to={STORE_URL} style={{ color: Y, textDecoration: 'none' }}>STORE</Link>
+              <Link to={FIVEM_URL} style={{ color: G, textDecoration: 'none' }}>FIVEM</Link>
             </div>
           </div>
         )}

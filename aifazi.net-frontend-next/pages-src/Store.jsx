@@ -5,6 +5,7 @@ import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
 import { Card, NeonButton, Badge, EmptyState } from '../components/community'
+import { SITE_URL, STORE_URL, hostOf } from '@/lib/config'
 import StorePlanCard from './store/StorePlanCard'
 import StoreProductCard from './store/StoreProductCard'
 import CartDrawer from './store/CartDrawer'
@@ -51,7 +52,7 @@ export default function StorePage({ fivem = false }) {
   const [checkoutCartLoading, setCheckoutCartLoading] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
 
-  const storeHref = typeof window !== 'undefined' && window.location.hostname === 'store.aifazi.net' ? '/' : '/store'
+  const storeHref = typeof window !== 'undefined' && window.location.hostname === hostOf(STORE_URL) ? '/' : '/store'
   const loginHref = fivem ? `/login?next=${encodeURIComponent('/fivem/store')}` : `/login?next=${encodeURIComponent(storeHref)}`
   const dispatchCartUpdate = () => window.dispatchEvent(new CustomEvent('store-cart-updated'))
 
@@ -117,7 +118,7 @@ export default function StorePage({ fivem = false }) {
   const checkoutCart = async () => {
     if (!user) { window.location.href = loginHref; return }
     setError(''); setCheckoutCartLoading(true)
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://aifazi.net'
+    const origin = typeof window !== 'undefined' ? window.location.origin : SITE_URL
     try {
       const r = await api.post('/store/checkout/cart', {
         success_url: `${origin}/store/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -131,7 +132,7 @@ export default function StorePage({ fivem = false }) {
 
   const handleSubscribe = async (plan) => {
     setError(''); setCheckoutLoading(plan.slug)
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://aifazi.net'
+    const origin = typeof window !== 'undefined' ? window.location.origin : SITE_URL
     try {
       const r = await api.post('/store/checkout', {
         plan_slug: plan.slug,

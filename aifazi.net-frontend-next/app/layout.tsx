@@ -6,6 +6,7 @@ import { getSiteConfigServer } from '@/lib/siteSettingsServer'
 import { getContentBlocksServer } from '@/lib/contentServer'
 import { themeFontUrl } from '@/core/fonts'
 import { buildThemeCustomCss, resolveThemeCustom, themeCustomFontUrl } from '@/core/themeCustom'
+import { SITE_URL } from '@/lib/config'
 import './globals.css'
 
 // Light themes (mirrors LIGHT_THEMES in app/providers.tsx) — used to set
@@ -43,7 +44,7 @@ function buildFoucScript(config: Record<string, any>): string {
 export const metadata: Metadata = {
   title: { default: 'Tanvir | aifazi.net', template: '%s | aifazi.net' },
   description: 'Full-stack developer, community platform, blog and tools.',
-  metadataBase: new URL('https://aifazi.net'),
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     type: 'website',
     siteName: 'aifazi.net',

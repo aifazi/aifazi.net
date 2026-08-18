@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import api from '@/lib/api'
 import { Select } from '../core/ui.jsx'
+import { SITE_URL } from '@/lib/config'
 
 // ─── Shared proxy fetch (uses our own backend — reliable, no CORS issues) ─────
 async function fetchViaProxy(url) {
@@ -377,7 +378,7 @@ function BulkUrlChecker() {
         Enter up to 20 URLs, one per line. Uses a CORS proxy — if a URL fails, check it manually.
       </p>
       <textarea value={urls} onChange={e => setUrls(e.target.value)} rows={6}
-        placeholder={'https://aifazi.net\nhttps://aifazi.net/blog\nhttps://aifazi.net/forum'}
+        placeholder={`${SITE_URL}\n${SITE_URL}/blog\n${SITE_URL}/forum`}
         style={{ ...S.input, resize: 'vertical', marginBottom: 12 }} />
 
       {warning && (
@@ -447,7 +448,7 @@ function SitemapGenerator() {
   return (
     <div>
       <textarea value={urls} onChange={e => setUrls(e.target.value)} rows={6}
-        placeholder={'https://aifazi.net\nhttps://aifazi.net/blog\nhttps://aifazi.net/forum'}
+        placeholder={`${SITE_URL}\n${SITE_URL}/blog\n${SITE_URL}/forum`}
         style={{ ...S.input, resize: 'vertical', marginBottom: 12 }} />
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div>
@@ -633,7 +634,7 @@ function RobotsTxtGenerator() {
       </p>
       <div style={{ marginBottom: 14 }}>
         <div style={S.fieldLabel}>SITEMAP URL (optional)</div>
-        <input value={sitemapUrl} onChange={e => setSitemapUrl(e.target.value)} placeholder="https://aifazi.net/sitemap.xml" style={S.input} />
+        <input value={sitemapUrl} onChange={e => setSitemapUrl(e.target.value)} placeholder={`${SITE_URL}/sitemap.xml`} style={S.input} />
       </div>
       <div style={{ marginBottom: 16 }}>
         <div style={S.fieldLabel}>BLOCKED PATHS (one per line)</div>

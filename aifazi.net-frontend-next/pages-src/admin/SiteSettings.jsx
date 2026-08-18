@@ -6,6 +6,7 @@ import { Slider } from '../../core/ui.jsx'
 import { S, useIsMobile } from './shared'
 import { useTheme } from '@/app/providers'
 import { clearSiteSettingsCache, getSiteSettings } from '@/lib/siteSettings'
+import { SITE_URL } from '@/lib/config'
 
 // -- Header presets -------------------------------------------------------------
 const HEADER_PRESETS = [
@@ -547,7 +548,7 @@ function SiteSettings() {
           <div><label style={T.label}>TAGLINE</label><input value={cfg.tagline || ''} onChange={e => set('tagline', e.target.value)} placeholder="A short description" style={T.inp} /></div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div><label style={T.label}>SITE URL</label><input value={cfg.siteUrl || ''} onChange={e => set('siteUrl', e.target.value)} placeholder="https://aifazi.net" style={T.inp} /></div>
+          <div><label style={T.label}>SITE URL</label><input value={cfg.siteUrl || ''} onChange={e => set('siteUrl', e.target.value)} placeholder={SITE_URL} style={T.inp} /></div>
           <div><label style={T.label}>LOGO URL</label><input value={cfg.logo || ''} onChange={e => set('logo', e.target.value)} placeholder="https:///logo.png" style={T.inp} /></div>
         </div>
       </div>

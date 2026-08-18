@@ -1,6 +1,8 @@
 'use client'
 
-const FIVEM_HOSTNAME = 'fivem.aifazi.net'
+import { FIVEM_URL, hostOf } from './config'
+
+const FIVEM_HOSTNAME = hostOf(FIVEM_URL)
 
 export function handOffFiveMAuthCallback(provider: 'discord' | 'steam' | 'github', token: string | null, dest: string) {
   if (typeof window === 'undefined' || !token) return false

@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { SITE_URL, API_URL } from '@/lib/config'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.aifazi.net'
+const BACKEND_URL = API_URL
 
 async function verifyAdminSession(): Promise<{ valid: boolean; user?: any }> {
   const cookieStore = await cookies()
@@ -44,7 +45,7 @@ export default async function AdminPage({ params }: { params: Promise<{ slug?: s
   const { valid, user } = await verifyAdminSession()
 
   if (!valid) {
-    const loginUrl = new URL('/login', 'https://aifazi.net')
+    const loginUrl = new URL('/login', SITE_URL)
     loginUrl.searchParams.set('tab', 'signin')
     loginUrl.searchParams.set('next', '/admin')
     redirect(loginUrl.toString())

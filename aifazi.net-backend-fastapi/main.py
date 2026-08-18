@@ -66,6 +66,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net")
+CDN_URL = os.getenv("CDN_URL", "https://cdn.aifazi.net").rstrip("/")
 
 _CORS_ALLOW_HEADERS = "Authorization, Content-Type, X-Internal-Token, X-CSRF-Token, Accept, Origin, RSC, Next-Router-State-Tree, Next-Url, Next-Router-Prefetch, Next-Router-Segment-Prefetch"
 
@@ -272,6 +273,15 @@ _STATIC_ORIGINS = {
 }
 
 _DYNAMIC_PATTERNS: list[re.Pattern] = []
+
+# Subdomains of the configured frontend root (store/fivem/status/cdn/...) are
+# trusted on any deployment — not just aifazi.net — so a fresh clone on its own
+# domain gets working cross-subdomain CORS without editing code.
+_FRONTEND_ROOT = FRONTEND_URL.split("//", 1)[-1].split("/", 1)[0]
+if "." in _FRONTEND_ROOT and not _FRONTEND_ROOT.replace(".", "").isdigit() and not _FRONTEND_ROOT.startswith("localhost"):
+    _STATIC_ORIGINS.add(f"https://{_FRONTEND_ROOT}")
+    _STATIC_ORIGINS.add(f"https://www.{_FRONTEND_ROOT}")
+    _DYNAMIC_PATTERNS.append(re.compile(rf"^https://[a-z0-9\-]+\.{re.escape(_FRONTEND_ROOT)}$"))
 
 if not _IS_PRODUCTION:
     # Development only — allow Vercel/Railway preview deploys
@@ -522,8 +532,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             "default-src 'self'; "
             f"script-src 'self' 'unsafe-inline'{_script_extra}; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com https://cdn.aifazi.net; "
-            "font-src 'self' https://fonts.gstatic.com https://cdn.aifazi.net https://*.r2.dev; "
+            f"img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com {CDN_URL}; "
+            f"font-src 'self' https://fonts.gstatic.com {CDN_URL} https://*.r2.dev; "
             f"connect-src {_connect_src}; "
             "frame-src https://www.youtube.com https://player.vimeo.com; "
             "frame-ancestors 'none';"

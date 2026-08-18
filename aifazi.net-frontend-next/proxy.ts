@@ -12,12 +12,24 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { xchacha20poly1305 } from '@noble/ciphers/chacha'
+import {
+  SITE_URL, API_URL, CDN_URL, FIVEM_URL, STORE_URL, STATUS_URL,
+  hostOf, isPublicDomain, wildcardHttps, wildcardWss, httpsOf,
+} from './lib/config'
 
-const CDN_HOSTNAME        = 'cdn.aifazi.net'
-const FIVEM_HOSTNAME      = 'fivem.aifazi.net'
-const STORE_HOSTNAME      = 'store.aifazi.net'
-const STATUS_HOSTNAME     = 'status.aifazi.net'
-const ROOT_HOSTNAMES      = new Set(['aifazi.net', 'www.aifazi.net'])
+// Deployment hosts are driven by NEXT_PUBLIC_* env (see lib/config.ts). On a
+// single-domain deploy (STORE_URL/FIVEM_URL/CDN_URL === SITE_URL) the matching
+// subdomain branch is disabled so it never hijacks the main site.
+const SITE_HOST        = hostOf(SITE_URL) || 'aifazi.net'
+const CDN_HOSTNAME     = hostOf(CDN_URL)   || 'cdn.aifazi.net'
+const FIVEM_HOSTNAME   = hostOf(FIVEM_URL) || 'fivem.aifazi.net'
+const STORE_HOSTNAME   = hostOf(STORE_URL) || 'store.aifazi.net'
+const STATUS_HOSTNAME  = hostOf(STATUS_URL) || 'status.aifazi.net'
+const ROOT_HOSTNAMES   = new Set([SITE_HOST, `www.${SITE_HOST}`])
+const CDN_ENABLED      = CDN_HOSTNAME !== SITE_HOST && isPublicDomain(CDN_HOSTNAME)
+const FIVEM_ENABLED    = FIVEM_HOSTNAME !== SITE_HOST && isPublicDomain(FIVEM_HOSTNAME)
+const STORE_ENABLED    = STORE_HOSTNAME !== SITE_HOST && isPublicDomain(STORE_HOSTNAME)
+const STATUS_ENABLED   = STATUS_HOSTNAME !== SITE_HOST && isPublicDomain(STATUS_HOSTNAME)
 const FIVEM_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/forms', '/chat']
 const FIVEM_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml'])
 const STORE_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/login', '/profile', '/forms', '/blog', '/contact', '/privacy', '/tools']
@@ -289,14 +301,20 @@ function generateNonce(): string {
 
 function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === 'development'
+  // CSP hosts are driven by the deployment env (lib/config.ts) so a fresh clone
+  // on its own domain gets a matching policy instead of the aifazi.net hosts.
+  const siteWildHttps = wildcardHttps(SITE_HOST)
+  const siteWildWss = wildcardWss(SITE_HOST)
+  const apiHttps = httpsOf(hostOf(API_URL)) || API_URL
+  const cdnHttps = httpsOf(hostOf(CDN_URL)) || CDN_URL
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval' " : ''}https://cdn.lordicon.com https://cdnjs.cloudflare.com`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https://cdn.aifazi.net https://*.supabase.co https://res.cloudinary.com https://api.dicebear.com https://*.aifazi.net https://*.imgur.com https://i.imgur.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://*.unsplash.com https://*.googleusercontent.com https://*.githubusercontent.com",
-    `connect-src 'self' ${isDev ? 'http://localhost:8000 http://127.0.0.1:8000 ' : ''}https://api.aifazi.net https://*.aifazi.net wss://*.aifazi.net https://*.supabase.co wss://*.supabase.co https://cdn.aifazi.net https://*.ingest.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://ipwho.is https://ipapi.co https://ipwhois.app https://api64.ipify.org https://*.livekit.cloud wss://*.livekit.cloud`,
-    "media-src 'self' https://cdn.aifazi.net https://*.aifazi.net data: blob: https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://res.cloudinary.com",
+    `img-src 'self' data: blob: ${cdnHttps} https://*.supabase.co https://res.cloudinary.com https://api.dicebear.com ${siteWildHttps} https://*.imgur.com https://i.imgur.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://*.unsplash.com https://*.googleusercontent.com https://*.githubusercontent.com`,
+    `connect-src 'self' ${isDev ? 'http://localhost:8000 http://127.0.0.1:8000 ' : ''}${apiHttps} ${siteWildHttps} ${siteWildWss} https://*.supabase.co wss://*.supabase.co ${cdnHttps} https://*.ingest.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://ipwho.is https://ipapi.co https://ipwhois.app https://api64.ipify.org https://*.livekit.cloud wss://*.livekit.cloud`,
+    `media-src 'self' ${cdnHttps} ${siteWildHttps} data: blob: https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://res.cloudinary.com`,
     "frame-src 'self' https://www.youtube.com https://player.vimeo.com",
     "worker-src 'self' blob:",
     "object-src 'none'",
@@ -329,11 +347,19 @@ function withCsp(response: NextResponse, nonce: string): NextResponse {
 // Allow-Origin' header"). RSC sends non-simple headers (RSC: 1,
 // Next-Router-State-Tree, Next-Url, ...), so a preflight is fired and those
 // headers must also be allowed.
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Allow https://<site> and https://*.<site> only (driven by SITE_URL). The
+// optional subdomain MUST be dot-separated, so lookalikes like
+// `evil-aifazi.net` never match. On localhost the origin set is empty (null).
+const SITE_ORIGIN_RE = isPublicDomain(SITE_HOST)
+  ? new RegExp(`^https:\\/\\/([a-z0-9-]+\\.)?${escapeRegExp(SITE_HOST)}$`)
+  : null
+
 function withCors(response: NextResponse, origin: string): NextResponse {
-  // Allow https://aifazi.net and https://*.aifazi.net only. The optional
-  // subdomain MUST be dot-separated, so lookalikes like `evil-aifazi.net`
-  // never match.
-  const allow = origin && /^https:\/\/([a-z0-9-]+\.)?aifazi\.net$/.test(origin)
+  const allow = !!origin && !!SITE_ORIGIN_RE && SITE_ORIGIN_RE.test(origin)
   // A reflected (dynamic) Allow-Origin means the response varies by Origin —
   // signal it up front so shared caches never reuse a credentialed response
   // across subdomains, otherwise a only-aifazi.net response's ACAO could be
@@ -404,10 +430,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // ── 1. cdn.aifazi.net — true reverse proxy via /api/cdn ──────────────────
-  if (hostname === CDN_HOSTNAME) {
+  // ── 1. CDN subdomain — true reverse proxy via /api/cdn ─────────────────
+  if (CDN_ENABLED && hostname === CDN_HOSTNAME) {
     if (pathname === '/' || pathname === '') {
-      return NextResponse.redirect('https://aifazi.net', { status: 301 })
+      return NextResponse.redirect(SITE_URL, { status: 301 })
     }
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/api/cdn${pathname}`
@@ -415,8 +441,8 @@ export async function proxy(request: NextRequest) {
     return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce)
   }
 
-  // ── 2. Canonicalize FiveM URLs to fivem.aifazi.net ─────────────────────
-  if (ROOT_HOSTNAMES.has(hostname)) {
+  // ── 2. Canonicalize FiveM URLs to the fivem subdomain ───────────────────
+  if (FIVEM_ENABLED && ROOT_HOSTNAMES.has(hostname)) {
     if (pathname === '/whitelist') {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.hostname = FIVEM_HOSTNAME
@@ -431,8 +457,8 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // ── 3. fivem.aifazi.net → /fivem/* routes ──────────────────────────────
-  if (hostname === FIVEM_HOSTNAME) {
+  // ── 3. fivem subdomain → /fivem/* routes ───────────────────────────────
+  if (FIVEM_ENABLED && hostname === FIVEM_HOSTNAME) {
     const origin = request.headers.get('origin') || ''
     if (
       FIVEM_SHARED_PATHS.has(pathname) ||
@@ -464,8 +490,8 @@ export async function proxy(request: NextRequest) {
     return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
   }
 
-  // ── 4. Store — canonicalize root /store to store.aifazi.net ──────────────
-  if (ROOT_HOSTNAMES.has(hostname)) {
+  // ── 4. Store — canonicalize root /store to the store subdomain ───────────
+  if (STORE_ENABLED && ROOT_HOSTNAMES.has(hostname)) {
     if (pathname === '/store' || pathname.startsWith('/store/')) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.hostname = STORE_HOSTNAME
@@ -475,8 +501,8 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // ── 5. store.aifazi.net → /store/* routes ────────────────────────────────
-  if (hostname === STORE_HOSTNAME) {
+  // ── 5. store subdomain → /store/* routes ───────────────────────────────
+  if (STORE_ENABLED && hostname === STORE_HOSTNAME) {
     const origin = request.headers.get('origin') || ''
     if (
       STORE_SHARED_PATHS.has(pathname) ||
@@ -508,8 +534,8 @@ export async function proxy(request: NextRequest) {
     return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
   }
 
-  // ── 5b. status.aifazi.net → /status page (monitor) ──────────────────────
-  if (hostname === STATUS_HOSTNAME) {
+  // ── 5b. status subdomain → /status page (monitor) ─────────────────────
+  if (STATUS_ENABLED && hostname === STATUS_HOSTNAME) {
     const origin = request.headers.get('origin') || ''
     if (
       STATUS_SHARED_PATHS.has(pathname) ||

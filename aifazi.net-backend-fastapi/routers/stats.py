@@ -2,6 +2,7 @@
 Structured to match frontend DatabaseGUI shape.
 """
 import asyncio
+import os
 from datetime import datetime, timedelta, timezone
 from html import escape
 
@@ -14,6 +15,8 @@ from utils.email import render_template
 from utils.email_queue import queue_email
 
 router = APIRouter()
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 
 # H9 — fields that must NEVER be returned to the admin collection browser.
 # Even authenticated staff shouldn't see other users' bcrypt hashes (which they
@@ -365,7 +368,7 @@ async def user_send_reset(user_id: str, _: dict = Depends(require_staff)):
     if not user.data or not user.data[0].get("email"):
         raise HTTPException(status_code=404, detail="User email not found")
     row = user.data[0]
-    login_url = "https://aifazi.net/login"
+    login_url = f"{FRONTEND_URL}/login"
     subject, html = render_template("password_reset_admin", {
         "site_name": "aifazi.net",
         "username": row.get("username") or "there",

@@ -1,5 +1,6 @@
 'use client'
 import { Link } from '@/lib/router-compat'
+import { SITE_URL, DISCORD_URL } from '@/lib/config'
 
 const MUTED = 'var(--muted)', S = 'var(--green)'
 
@@ -25,9 +26,9 @@ const FOOTER_LINKS = [
   {
     title: 'Company',
     links: [
-      ['https://aifazi.net', 'Main Site', true],
-      ['https://aifazi.net/blog', 'Blog', true],
-      ['https://discord.aifazi.net', 'Discord', true],
+      [SITE_URL, 'Main Site', true],
+      [`${SITE_URL}/blog`, 'Blog', true],
+      [DISCORD_URL, 'Discord', true],
     ],
   },
 ]
@@ -111,10 +112,10 @@ export default function StoreFooter() {
             © {new Date().getFullYear()} AIFAZI. All rights reserved.
           </span>
           <div style={{ display: 'flex', gap: 16 }}>
-            <a href="https://aifazi.net/privacy" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: MUTED, textDecoration: 'none' }}
+            <a href={`${SITE_URL}/privacy`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: MUTED, textDecoration: 'none' }}
               onMouseEnter={e => e.currentTarget.style.color = S}
               onMouseLeave={e => e.currentTarget.style.color = MUTED}>Privacy</a>
-            <a href="https://aifazi.net/contact" target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: MUTED, textDecoration: 'none' }}
+            <a href={`${SITE_URL}/contact`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: MUTED, textDecoration: 'none' }}
               onMouseEnter={e => e.currentTarget.style.color = S}
               onMouseLeave={e => e.currentTarget.style.color = MUTED}>Contact</a>
           </div>

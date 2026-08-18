@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { Checkbox, Select } from '../../core/ui.jsx'
 import { S, useIsMobile, PageHeader } from './shared'
+import { SITE_URL } from '@/lib/config'
 
 function MailSettings() {
   const [cfg, setCfg]               = useState(null)
@@ -624,7 +625,7 @@ function MailSettings() {
               <div>
                 <label style={T.label}>Site URL</label>
                 <input value={cfg.siteUrl || ''} onChange={e => set('siteUrl', e.target.value)}
-                  placeholder="https://aifazi.net" style={T.inp} />
+                  placeholder={SITE_URL} style={T.inp} />
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Used to generate links in verification and reset emails</div>
               </div>
               <div>

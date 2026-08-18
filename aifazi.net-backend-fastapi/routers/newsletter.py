@@ -7,6 +7,7 @@ Frontend NewsletterPanel calls:
   POST   /newsletter/send            { subject, html, text }
 """
 import asyncio
+import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, EmailStr
@@ -17,6 +18,8 @@ from utils.email import render_template
 from utils.email_queue import queue_email_bulk
 
 router = APIRouter()
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 
 class SubBody(BaseModel):
     email: EmailStr
@@ -71,7 +74,7 @@ async def send_campaign(body: CampaignBody, _: dict = Depends(require_staff)):
             "site_name": "aifazi.net",
             "subject": body.subject,
             "body": body.html,
-            "unsubscribe_link": "https://aifazi.net/newsletter/unsubscribe",
+            "unsubscribe_link": f"{FRONTEND_URL}/newsletter/unsubscribe",
         })
         return subject or body.subject, html or body.html
     subject, html = await asyncio.to_thread(_render)
@@ -94,13 +97,13 @@ async def send_newsletter_for_post(post: dict):
     """Called by scheduler when a post is auto-published. Runs the whole fan-out
     off the event loop (template render + thousands of queue inserts)."""
     def _work():
-        post_url = f"https://aifazi.net/blog/{post['slug']}"
+        post_url = f"{FRONTEND_URL}/blog/{post['slug']}"
         subject, html = render_template("newsletter_post", {
             "site_name": "aifazi.net",
             "post_title": post["title"],
             "excerpt": post.get("excerpt", ""),
             "post_url": post_url,
-            "unsubscribe_link": "https://aifazi.net/newsletter/unsubscribe",
+            "unsubscribe_link": f"{FRONTEND_URL}/newsletter/unsubscribe",
         })
         fallback = f"<h2>{post['title']}</h2><p>{post.get('excerpt','')}</p><a href='{post_url}'>Read more</a>"
         _queue_to_active(

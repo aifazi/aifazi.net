@@ -90,6 +90,13 @@ Copy `.env.local.example` to `.env.local` and fill in every value.
 | Variable | Required | Description |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | Yes | Base URL of the FastAPI backend (e.g. `https://api.aifazi.net`) |
+| `NEXT_PUBLIC_SITE_URL` | No | Public site root. Default `https://aifazi.net`; override to run on your own domain. All hardcoded deployment domains route through `lib/config.ts` |
+| `NEXT_PUBLIC_CDN_URL` | No | CDN origin (`https://cdn.aifazi.net` default). On a single-domain deploy set it to your site URL |
+| `NEXT_PUBLIC_STORE_URL` | No | Store origin (`https://store.aifazi.net` default). Set to your site URL on a single-domain deploy to disable the store subdomain redirect |
+| `NEXT_PUBLIC_FIVEM_URL` | No | FiveM origin (`https://fivem.aifazi.net` default). Same single-domain rule |
+| `NEXT_PUBLIC_STATUS_URL` | No | Status-page origin (`https://status.aifazi.net` default) |
+| `NEXT_PUBLIC_DISCORD_URL` | No | Discord invite origin (`https://discord.aifazi.net` default) |
+| `NEXT_PUBLIC_FIVEM_CONNECT` | No | FiveM game-server connect address shown on the status page (default `play.aifazi.net`) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Your Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous (public) key |
 | `NEXT_PUBLIC_SENTRY_DSN` | No | Sentry DSN for error reporting |
