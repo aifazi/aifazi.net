@@ -316,7 +316,7 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/admin/backup",        10,  300),
     ("/upload/multiple",      3,   60),
     ("/pdf-editor/open",      5,   60),
-    ("/file-tools/",           5,   60),
+    ("/file-tools/",          120,  60),
     ("/seo-proxy",            10,   60),
     ("/helpdesk/tickets",     10,   60),
     ("/monitor/errors",       20,   60),

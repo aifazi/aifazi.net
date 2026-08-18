@@ -13,7 +13,7 @@ import zipfile
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
-from dependencies import require_staff
+from dependencies import get_current_user
 
 router = APIRouter()
 
@@ -49,7 +49,7 @@ async def _read(f: UploadFile) -> bytes:
 # ════════════════════════════════════════════════════════
 
 @router.post("/pdf/merge")
-async def merge_pdf(files: list[UploadFile] = File(...), _: dict = Depends(require_staff)):
+async def merge_pdf(files: list[UploadFile] = File(...), _: dict = Depends(get_current_user)):
     import fitz
     if len(files) < 2: raise HTTPException(400, "Need at least 2 PDFs")
     out = fitz.open()
@@ -59,7 +59,7 @@ async def merge_pdf(files: list[UploadFile] = File(...), _: dict = Depends(requi
     return _pdf_stream(out, "merged.pdf")
 
 @router.post("/pdf/split")
-async def split_pdf(file: UploadFile = File(...), pages: str = Form("1"), _: dict = Depends(require_staff)):
+async def split_pdf(file: UploadFile = File(...), pages: str = Form("1"), _: dict = Depends(get_current_user)):
     """pages: '1,3,5-7' — returns ZIP of individual PDFs"""
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
@@ -85,14 +85,14 @@ async def split_pdf(file: UploadFile = File(...), pages: str = Form("1"), _: dic
     return _zip_stream(zfiles, "split_pages.zip")
 
 @router.post("/pdf/compress")
-async def compress_pdf(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def compress_pdf(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     return _pdf_stream(doc, "compressed.pdf")
 
 @router.post("/pdf/rotate")
 async def rotate_pdf(file: UploadFile = File(...), angle: int = Form(90),
-                     pages: str = Form("all"), _: dict = Depends(require_staff)):
+                     pages: str = Form("all"), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     sel = range(doc.page_count) if pages.strip().lower() == 'all' else \
@@ -103,7 +103,7 @@ async def rotate_pdf(file: UploadFile = File(...), angle: int = Form(90),
     return _pdf_stream(doc, "rotated.pdf")
 
 @router.post("/pdf/remove-pages")
-async def remove_pages(file: UploadFile = File(...), pages: str = Form(...), _: dict = Depends(require_staff)):
+async def remove_pages(file: UploadFile = File(...), pages: str = Form(...), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     idxs = sorted(set(int(p)-1 for p in pages.split(',') if p.strip().isdigit()
@@ -114,7 +114,7 @@ async def remove_pages(file: UploadFile = File(...), pages: str = Form(...), _: 
 @router.post("/pdf/watermark")
 async def watermark_pdf(file: UploadFile = File(...), text: str = Form("CONFIDENTIAL"),
     opacity: float = Form(0.2), angle: int = Form(45), color: str = Form("#cc0000"),
-    font_size: int = Form(48), _: dict = Depends(require_staff)):
+    font_size: int = Form(48), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     h = color.lstrip('#').ljust(6, '0') if len(color.lstrip('#')) < 6 else color.lstrip('#')
@@ -138,7 +138,7 @@ async def watermark_pdf(file: UploadFile = File(...), text: str = Form("CONFIDEN
 @router.post("/pdf/page-numbers")
 async def page_numbers(file: UploadFile = File(...), position: str = Form("bottom-center"),
     start: int = Form(1), prefix: str = Form(""), font_size: int = Form(11),
-    color: str = Form("#000000"), _: dict = Depends(require_staff)):
+    color: str = Form("#000000"), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     h = color.lstrip('#').ljust(6, '0') if len(color.lstrip('#')) < 6 else color.lstrip('#')
@@ -158,7 +158,7 @@ async def page_numbers(file: UploadFile = File(...), position: str = Form("botto
     return _pdf_stream(doc, "numbered.pdf")
 
 @router.post("/pdf/images-to-pdf")
-async def images_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(require_staff)):
+async def images_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(get_current_user)):
     import fitz
     from PIL import Image as PILImage
     out = fitz.open()
@@ -174,7 +174,7 @@ async def images_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(r
 
 @router.post("/pdf/to-images")
 async def pdf_to_images(file: UploadFile = File(...), scale: float = Form(1.5),
-    fmt: str = Form("png"), _: dict = Depends(require_staff)):
+    fmt: str = Form("png"), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     scale = max(0.5, min(scale, 4.0)); fmt = fmt.lower()
@@ -193,7 +193,7 @@ async def pdf_to_images(file: UploadFile = File(...), scale: float = Form(1.5),
 
 @router.post("/pdf/protect")
 async def protect_pdf(file: UploadFile = File(...), password: str = Form(...),
-    owner_password: str = Form(""), _: dict = Depends(require_staff)):
+    owner_password: str = Form(""), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     perm = fitz.PDF_PERM_PRINT | fitz.PDF_PERM_COPY
@@ -206,7 +206,7 @@ async def protect_pdf(file: UploadFile = File(...), password: str = Form(...),
         headers={"Content-Disposition": 'attachment; filename="protected.pdf"'})
 
 @router.post("/pdf/unlock")
-async def unlock_pdf(file: UploadFile = File(...), password: str = Form(""), _: dict = Depends(require_staff)):
+async def unlock_pdf(file: UploadFile = File(...), password: str = Form(""), _: dict = Depends(get_current_user)):
     import fitz
     raw = await _read(file)
     doc = fitz.open(stream=raw, filetype="pdf")
@@ -216,7 +216,7 @@ async def unlock_pdf(file: UploadFile = File(...), password: str = Form(""), _: 
     return _pdf_stream(doc, "unlocked.pdf")
 
 @router.post("/pdf/organize")
-async def organize_pdf(file: UploadFile = File(...), order: str = Form(...), _: dict = Depends(require_staff)):
+async def organize_pdf(file: UploadFile = File(...), order: str = Form(...), _: dict = Depends(get_current_user)):
     """order: comma-separated 1-based page numbers e.g. '3,1,2'"""
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
@@ -230,7 +230,7 @@ async def organize_pdf(file: UploadFile = File(...), order: str = Form(...), _: 
 
 @router.post("/pdf/crop")
 async def crop_pdf(file: UploadFile = File(...),
-    top: float=Form(0), bottom: float=Form(0), left: float=Form(0), right: float=Form(0), _: dict = Depends(require_staff)):
+    top: float=Form(0), bottom: float=Form(0), left: float=Form(0), right: float=Form(0), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     for page in doc:
@@ -241,7 +241,7 @@ async def crop_pdf(file: UploadFile = File(...),
 @router.post("/pdf/edit-meta")
 async def edit_meta(file: UploadFile = File(...), title: str = Form(""),
     author: str = Form(""), subject: str = Form(""), keywords: str = Form(""),
-    creator: str = Form(""), _: dict = Depends(require_staff)):
+    creator: str = Form(""), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     doc.set_metadata({"title":title,"author":author,"subject":subject,
@@ -249,7 +249,7 @@ async def edit_meta(file: UploadFile = File(...), title: str = Form(""),
     return _pdf_stream(doc, "edited.pdf")
 
 @router.post("/pdf/info")
-async def pdf_info(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def pdf_info(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     info = {"page_count": doc.page_count, "metadata": doc.metadata or {},
@@ -259,7 +259,7 @@ async def pdf_info(file: UploadFile = File(...), _: dict = Depends(require_staff
     return info
 
 @router.post("/pdf/grayscale")
-async def grayscale_pdf(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def grayscale_pdf(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     out = fitz.open()
@@ -273,7 +273,7 @@ async def grayscale_pdf(file: UploadFile = File(...), _: dict = Depends(require_
 
 @router.post("/pdf/header-footer")
 async def header_footer(file: UploadFile = File(...), header: str = Form(""),
-    footer: str = Form(""), font_size: int = Form(10), _: dict = Depends(require_staff)):
+    footer: str = Form(""), font_size: int = Form(10), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     for i, page in enumerate(doc):
@@ -289,7 +289,7 @@ async def header_footer(file: UploadFile = File(...), header: str = Form(""),
     return _pdf_stream(doc, "header_footer.pdf")
 
 @router.post("/pdf/flatten")
-async def flatten_pdf(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def flatten_pdf(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     for page in doc:
@@ -305,7 +305,7 @@ async def sign_pdf(file: UploadFile = File(...), name: str = Form(""),
     sig_image: UploadFile | None = File(None),
     page: int = Form(0), x: float = Form(50), y: float = Form(700),
     width: float = Form(200), height: float = Form(60),
-    _: dict = Depends(require_staff)):
+    _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     if page >= doc.page_count: raise HTTPException(400, "Invalid page")
@@ -322,7 +322,7 @@ async def sign_pdf(file: UploadFile = File(...), name: str = Form(""),
     return _pdf_stream(doc, "signed.pdf")
 
 @router.post("/pdf/repair")
-async def repair_pdf(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def repair_pdf(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     try:
         doc = fitz.open(stream=await _read(file), filetype="pdf")
@@ -331,7 +331,7 @@ async def repair_pdf(file: UploadFile = File(...), _: dict = Depends(require_sta
     return _pdf_stream(doc, "repaired.pdf")
 
 @router.post("/pdf/to-word")
-async def pdf_to_word(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def pdf_to_word(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     text_blocks = []
@@ -353,7 +353,7 @@ async def pdf_to_word(file: UploadFile = File(...), _: dict = Depends(require_st
         return _bytes_stream(full_text.encode(), "text/plain", "extracted.txt")
 
 @router.post("/pdf/to-excel")
-async def pdf_to_excel(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def pdf_to_excel(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     all_rows = [["Page", "Text"]]
@@ -377,7 +377,7 @@ async def pdf_to_excel(file: UploadFile = File(...), _: dict = Depends(require_s
 # ════════════════════════════════════════════════════════
 
 @router.post("/pdf/to-jpg")
-async def pdf_to_jpg(file: UploadFile = File(...), scale: float = Form(1.5), _: dict = Depends(require_staff)):
+async def pdf_to_jpg(file: UploadFile = File(...), scale: float = Form(1.5), _: dict = Depends(get_current_user)):
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     scale = max(0.5, min(scale, 4.0))
@@ -387,7 +387,7 @@ async def pdf_to_jpg(file: UploadFile = File(...), scale: float = Form(1.5), _: 
     doc.close(); return _zip_stream(zfiles, "pages_jpg.zip")
 
 @router.post("/convert/word-to-pdf")
-async def word_to_pdf(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def word_to_pdf(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     raw = await _read(file)
     try:
@@ -397,7 +397,7 @@ async def word_to_pdf(file: UploadFile = File(...), _: dict = Depends(require_st
         raise HTTPException(500, "Word conversion failed — ensure file is valid DOCX")
 
 @router.post("/convert/excel-to-pdf")
-async def excel_to_pdf(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def excel_to_pdf(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     import openpyxl
     raw = await _read(file)
@@ -415,7 +415,7 @@ async def excel_to_pdf(file: UploadFile = File(...), _: dict = Depends(require_s
     return _pdf_stream(doc, "excel.pdf")
 
 @router.post("/convert/csv-to-pdf")
-async def csv_to_pdf(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def csv_to_pdf(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     raw = (await _read(file)).decode('utf-8', errors='replace')
     reader = csv.reader(io.StringIO(raw))
@@ -430,7 +430,7 @@ async def csv_to_pdf(file: UploadFile = File(...), _: dict = Depends(require_sta
     return _pdf_stream(doc, "csv_table.pdf")
 
 @router.post("/convert/jpg-to-pdf")
-async def jpg_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(require_staff)):
+async def jpg_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(get_current_user)):
     import fitz
     from PIL import Image as PILImage
     out = fitz.open()
@@ -443,7 +443,7 @@ async def jpg_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(requ
 
 @router.post("/convert/html-to-pdf")
 async def html_to_pdf(file: UploadFile | None = File(None),
-    html_content: str = Form(""), _: dict = Depends(require_staff)):
+    html_content: str = Form(""), _: dict = Depends(get_current_user)):
     import fitz
     raw = (await _read(file)).decode('utf-8','replace') if file else html_content
     if not raw.strip(): raise HTTPException(400, "No HTML content provided")
@@ -453,7 +453,7 @@ async def html_to_pdf(file: UploadFile | None = File(None),
 
 @router.post("/convert/text-to-pdf")
 async def text_to_pdf(file: UploadFile | None=File(None), text: str=Form(""),
-    font_size: int=Form(11), title: str=Form(""), _: dict = Depends(require_staff)):
+    font_size: int=Form(11), title: str=Form(""), _: dict = Depends(get_current_user)):
     import fitz
     raw = (await _read(file)).decode('utf-8','replace') if file else text
     if not raw.strip(): raise HTTPException(400, "No text provided")
@@ -472,7 +472,7 @@ async def text_to_pdf(file: UploadFile | None=File(None), text: str=Form(""),
 # ════════════════════════════════════════════════════════
 
 @router.post("/image/compress")
-async def compress_image(file: UploadFile = File(...), quality: int = Form(75), _: dict = Depends(require_staff)):
+async def compress_image(file: UploadFile = File(...), quality: int = Form(75), _: dict = Depends(get_current_user)):
     from PIL import Image as PILImage
     img = PILImage.open(io.BytesIO(await _read(file)))
     fmt = img.format or 'JPEG'; buf = io.BytesIO()
@@ -484,7 +484,7 @@ async def compress_image(file: UploadFile = File(...), quality: int = Form(75), 
 
 @router.post("/image/resize")
 async def resize_image(file: UploadFile = File(...),
-    width: int = Form(0), height: int = Form(0), keep_ratio: bool = Form(True), _: dict = Depends(require_staff)):
+    width: int = Form(0), height: int = Form(0), keep_ratio: bool = Form(True), _: dict = Depends(get_current_user)):
     from PIL import Image as PILImage
     img = PILImage.open(io.BytesIO(await _read(file)))
     ow, oh = img.size
@@ -500,7 +500,7 @@ async def resize_image(file: UploadFile = File(...),
     return _bytes_stream(buf.read(), f'image/{fmt.lower()}', f"resized.{ext}")
 
 @router.post("/image/convert")
-async def convert_image(file: UploadFile = File(...), to_format: str = Form("png"), _: dict = Depends(require_staff)):
+async def convert_image(file: UploadFile = File(...), to_format: str = Form("png"), _: dict = Depends(get_current_user)):
     from PIL import Image as PILImage
     img = PILImage.open(io.BytesIO(await _read(file)))
     fmt = to_format.upper().replace('JPG','JPEG')
@@ -510,7 +510,7 @@ async def convert_image(file: UploadFile = File(...), to_format: str = Form("png
     return _bytes_stream(buf.read(), mime, f"converted.{ext}")
 
 @router.post("/image/flip")
-async def flip_image(file: UploadFile = File(...), direction: str = Form("horizontal"), _: dict = Depends(require_staff)):
+async def flip_image(file: UploadFile = File(...), direction: str = Form("horizontal"), _: dict = Depends(get_current_user)):
     from PIL import Image as PILImage
     img = PILImage.open(io.BytesIO(await _read(file)))
     img = img.transpose(PILImage.FLIP_LEFT_RIGHT if direction=='horizontal' else PILImage.FLIP_TOP_BOTTOM)
@@ -519,7 +519,7 @@ async def flip_image(file: UploadFile = File(...), direction: str = Form("horizo
 
 @router.post("/image/watermark")
 async def watermark_image(file: UploadFile = File(...), text: str = Form("SAMPLE"),
-    opacity: int = Form(50), color: str = Form("#ffffff"), font_size: int = Form(40), _: dict = Depends(require_staff)):
+    opacity: int = Form(50), color: str = Form("#ffffff"), font_size: int = Form(40), _: dict = Depends(get_current_user)):
     from PIL import Image as PILImage
     from PIL import ImageDraw, ImageFont
     img = PILImage.open(io.BytesIO(await _read(file))).convert("RGBA")
@@ -539,7 +539,7 @@ async def watermark_image(file: UploadFile = File(...), text: str = Form("SAMPLE
     return _bytes_stream(buf.read(), "image/jpeg", "watermarked.jpg")
 
 @router.post("/image/ocr")
-async def image_ocr(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def image_ocr(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
 
     import fitz
     raw = await _read(file)
@@ -561,7 +561,7 @@ async def image_ocr(file: UploadFile = File(...), _: dict = Depends(require_staf
 # ════════════════════════════════════════════════════════
 
 @router.post("/doc/docx-to-text")
-async def docx_to_text(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def docx_to_text(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     raw = await _read(file)
     try:
         from docx import Document
@@ -575,7 +575,7 @@ async def docx_to_text(file: UploadFile = File(...), _: dict = Depends(require_s
         doc.close(); return {"text": text}
 
 @router.post("/doc/xlsx-to-csv")
-async def xlsx_to_csv(file: UploadFile = File(...), sheet: str = Form("0"), _: dict = Depends(require_staff)):
+async def xlsx_to_csv(file: UploadFile = File(...), sheet: str = Form("0"), _: dict = Depends(get_current_user)):
     import openpyxl
     wb = openpyxl.load_workbook(io.BytesIO(await _read(file)), data_only=True)
     ws = wb.worksheets[int(sheet)] if sheet.isdigit() else wb[sheet]
@@ -585,7 +585,7 @@ async def xlsx_to_csv(file: UploadFile = File(...), sheet: str = Form("0"), _: d
     return _bytes_stream(buf.getvalue().encode(), "text/csv", f"{ws.title}.csv")
 
 @router.post("/doc/csv-to-xlsx")
-async def csv_to_xlsx(file: UploadFile = File(...), _: dict = Depends(require_staff)):
+async def csv_to_xlsx(file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import openpyxl
     raw = (await _read(file)).decode('utf-8', errors='replace')
     wb = openpyxl.Workbook(); ws = wb.active; ws.title = "Sheet1"
@@ -600,7 +600,7 @@ async def csv_to_xlsx(file: UploadFile = File(...), _: dict = Depends(require_st
 # ════════════════════════════════════════════════════════
 
 @router.post("/text/stats")
-async def text_stats(file: UploadFile | None=File(None), text: str=Form(""), _: dict = Depends(require_staff)):
+async def text_stats(file: UploadFile | None=File(None), text: str=Form(""), _: dict = Depends(get_current_user)):
     raw = (await _read(file)).decode('utf-8','replace') if file else text
     words = raw.split(); sentences = re.split(r'[.!?]+', raw)
     freq: dict = {}
@@ -615,7 +615,7 @@ async def text_stats(file: UploadFile | None=File(None), text: str=Form(""), _: 
             "top_words": [{"word":w,"count":c} for w,c in top]}
 
 @router.post("/text/compare")
-async def compare_text(file1: UploadFile=File(...), file2: UploadFile=File(...), _: dict = Depends(require_staff)):
+async def compare_text(file1: UploadFile=File(...), file2: UploadFile=File(...), _: dict = Depends(get_current_user)):
     import difflib
     t1 = (await _read(file1)).decode('utf-8','replace').splitlines()
     t2 = (await _read(file2)).decode('utf-8','replace').splitlines()
@@ -628,14 +628,14 @@ async def compare_text(file1: UploadFile=File(...), file2: UploadFile=File(...),
             "removed": sum(1 for l in diff if l.startswith('-'))}
 
 @router.post("/text/base64-encode")
-async def base64_encode(file: UploadFile | None=File(None), text: str=Form(""), _: dict = Depends(require_staff)):
+async def base64_encode(file: UploadFile | None=File(None), text: str=Form(""), _: dict = Depends(get_current_user)):
     if file:
         raw = await _read(file)
         return {"encoded": base64.b64encode(raw).decode(), "original_size": len(raw)}
     return {"encoded": base64.b64encode(text.encode()).decode()}
 
 @router.post("/text/base64-decode")
-async def base64_decode(text: str=Form(...), _: dict = Depends(require_staff)):
+async def base64_decode(text: str=Form(...), _: dict = Depends(get_current_user)):
     try:
         dec = base64.b64decode(text.strip())
         try: return {"decoded": dec.decode('utf-8'), "type": "text"}
@@ -645,7 +645,7 @@ async def base64_decode(text: str=Form(...), _: dict = Depends(require_staff)):
 
 @router.post("/text/json-format")
 async def json_format(file: UploadFile | None=File(None), text: str=Form(""),
-    indent: int=Form(2), minify: bool=Form(False), _: dict = Depends(require_staff)):
+    indent: int=Form(2), minify: bool=Form(False), _: dict = Depends(get_current_user)):
     raw = (await _read(file)).decode('utf-8','replace') if file else text
     try:
         obj = json.loads(raw)
