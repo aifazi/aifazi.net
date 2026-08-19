@@ -30,6 +30,11 @@
   --font-display: 'Outfit', 'Inter', sans-serif;
   --font-code:    'JetBrains Mono', monospace;
 
+  /* Surfaces — admin CUSTOMIZE sliders (radius / border width) override these
+     via the injected theme-custom-css; defaults keep the baseline look. */
+  --radius:   12px;
+  --border-w: 1px;
+
   --nav-bg-scrolled: rgba(6,10,15,0.96);
   --nav-bg-top:      rgba(6,10,15,0.55);
   --grid-line: rgba(0,212,255,0.03);
@@ -4488,8 +4493,8 @@ img, video, svg { max-width: 100%; height: auto; }
 /* Card */
 .community-card {
   position: relative;
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  border: var(--border-w, 1px) solid var(--border);
+  border-radius: var(--radius, 12px);
   background:
     linear-gradient(180deg, rgba(255,255,255,0.025), transparent),
     color-mix(in srgb, var(--bg2) 86%, var(--bg) 14%);
@@ -4540,7 +4545,7 @@ img, video, svg { max-width: 100%; height: auto; }
   letter-spacing: 1.5px;
   text-transform: uppercase;
   text-decoration: none;
-  border: 1px solid transparent;
+  border: var(--border-w, 1px) solid transparent;
   cursor: pointer;
   font-weight: 700;
   transition: all 0.18s ease;
@@ -4584,9 +4589,9 @@ img, video, svg { max-width: 100%; height: auto; }
   border-color: rgba(255,71,87,0.35);
 }
 .neon-btn-danger:hover:not(:disabled) { background: rgba(255,71,87,0.08); }
-.neon-btn-sm { font-size: 9px; padding: 6px 12px; border-radius: 8px; letter-spacing: 1.5px; }
-.neon-btn-md { font-size: 10px; padding: 11px 22px; border-radius: 10px; }
-.neon-btn-lg { font-size: 11px; padding: 14px 30px; border-radius: 12px; letter-spacing: 2px; }
+.neon-btn-sm { font-size: 9px; padding: 6px 12px; border-radius: calc(var(--radius, 12px) - 2px); letter-spacing: 1.5px; }
+.neon-btn-md { font-size: 10px; padding: 11px 22px; border-radius: var(--radius, 12px); }
+.neon-btn-lg { font-size: 11px; padding: 14px 30px; border-radius: calc(var(--radius, 12px) + 2px); letter-spacing: 2px; }
 
 /* Badge */
 .community-badge {
@@ -4738,8 +4743,8 @@ img, video, svg { max-width: 100%; height: auto; }
 .community-empty {
   text-align: center;
   padding: 70px 24px;
-  border: 1px dashed var(--border);
-  border-radius: 14px;
+  border: var(--border-w, 1px) dashed var(--border);
+  border-radius: var(--radius, 12px);
   background: rgba(255,255,255,0.01);
 }
 .community-empty-icon { font-size: 44px; margin-bottom: 14px; opacity: 0.7; }
@@ -4768,8 +4773,8 @@ img, video, svg { max-width: 100%; height: auto; }
   align-items: center;
   gap: 16px;
   padding: 18px 22px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: var(--border-w, 1px) solid var(--border);
+  border-radius: var(--radius, 12px);
   background: var(--bg2);
   margin-bottom: 8px;
 }
@@ -4792,8 +4797,8 @@ img, video, svg { max-width: 100%; height: auto; }
   width: 100%;
   padding: 12px 38px 12px 38px;
   background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: var(--border-w, 1px) solid var(--border);
+  border-radius: var(--radius, 12px);
   color: var(--text);
   font-family: var(--font-display);
   font-size: 15px;

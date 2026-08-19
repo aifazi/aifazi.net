@@ -62,7 +62,7 @@ export function MenuPanel({ items = [], x, y, header, onClose, style = {}, menuS
       case 'arcade':   return { background: '#06060a', border: '3px solid var(--cyan)', borderRadius: 0, boxShadow: '4px 4px 0 var(--purple)', padding: '5px 4px' }
       case 'holo':     return { background: 'rgba(8,20,32,0.72)', border: '1px solid rgba(0,229,255,0.45)', borderRadius: 14, backdropFilter: 'blur(22px)', boxShadow: '0 0 30px rgba(0,229,255,0.18), inset 0 0 24px rgba(0,229,255,0.08), 0 16px 48px rgba(0,0,0,0.55)', padding: '6px 4px' }
       case 'matrix':   return { background: '#020604', border: '1px solid #22ff2244', borderRadius: 0, boxShadow: '0 0 24px rgba(0,255,0,0.1), inset 0 0 32px rgba(0,255,0,0.04)', padding: '4px', backgroundImage: 'repeating-linear-gradient(90deg, rgba(0,255,0,0.03) 0 1px, transparent 1px 3px)' }
-      default:         return { background: t.bg2, border: `1px solid ${t.border}`, borderRadius: 8, padding: '6px 4px', boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,255,136,0.06)', backdropFilter: 'blur(12px)' }
+      default:         return { background: t.bg2, border: `var(--border-w, 1px) solid ${t.border}`, borderRadius: 'var(--radius, 8px)', padding: '6px 4px', boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,255,136,0.06)', backdropFilter: 'blur(12px)' }
     }
   })()
 

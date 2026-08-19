@@ -6,20 +6,9 @@ import { getSiteConfigServer } from '@/lib/siteSettingsServer'
 import { getContentBlocksServer } from '@/lib/contentServer'
 import { themeFontUrl } from '@/core/fonts'
 import { buildThemeCustomCss, resolveThemeCustom, themeCustomFontUrl } from '@/core/themeCustom'
+import { LIGHT_THEMES as LIGHT_THEME_LIST } from '@/core/themeCatalog'
 import { SITE_URL } from '@/lib/config'
 import './globals.css'
-
-// Light themes (mirrors LIGHT_THEMES in app/providers.tsx) — used to set
-// data-theme-mode correctly before hydration.
-const LIGHT_THEME_LIST = [
-  'light', 'cyber-light',
-  'midnight-light', 'crimson-light', 'ocean-light', 'amber-light',
-  'rose-light', 'forest-light', 'glass-light', 'synthwave-light',
-  'terminal-light', 'neon-noir-light', 'aurora-light',
-  'brutalist', 'paper', 'neumorph', 'macos', 'pastel', 'win95',
-  'mario-light', 'minecraft-light', 'sonic-light', 'pacman-light',
-  'lava-light', 'toxic-light', 'ice',
-]
 
 /** Escape JSON so it can never break out of an inline <script> (`</script>`). */
 function escapeJsonForInline(value: unknown): string {

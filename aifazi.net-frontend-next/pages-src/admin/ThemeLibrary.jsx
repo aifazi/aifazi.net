@@ -3518,7 +3518,7 @@ function ThemeLibrary() {
               <div style={T.sec}>CUSTOM CSS  (the &quot;and more&quot; part)</div>
               <textarea value={customDraft.css || ''} onChange={e => setDraft({ css: e.target.value })}
                 spellCheck={false}
-                placeholder={`/* Drop any CSS rules here. Bare declarations are auto-scoped\nto [data-theme="${customTarget}"] — you can also write full rules. */\n\n/* e.g. */\n--radius: 16px;   /* (only works if the theme reads it) */\n.footer { opacity: 0.8; }`}
+                placeholder={`/* Drop any CSS rules here. Bare declarations are auto-scoped\nto [data-theme="${customTarget}"] — you can also write full rules. */\n\n/* e.g. */\n--radius: 16px;   /* corner radius of cards, inputs, buttons, toasts */\n.footer { opacity: 0.8; }`}
                 style={{ width: '100%', minHeight: 150, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', resize: 'vertical', lineHeight: 1.6 }} />
               <div style={{ ...T.sub, marginTop: 8 }}>Advanced: fully arbitrary CSS for this theme. Wrapped in <code style={{ color: 'var(--purple)', fontSize: 9 }}>{themeSelector(customTarget)}</code> when you paste bare declarations.</div>
             </div>

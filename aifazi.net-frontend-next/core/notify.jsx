@@ -171,13 +171,13 @@ function FloatToast({ toast, v, leaving, progress, dismiss }) {
     <div role="alert" style={{
       position: 'relative', minWidth: 280, maxWidth: 380, overflow: 'hidden',
       marginBottom: 8, cursor: 'default',
-      background: 'var(--bg2)', border: `1px solid ${v.border}`,
-      borderRadius: 8, padding: '16px',
+      background: 'var(--bg2)', border: `var(--border-w, 1px) solid ${v.border}`,
+      borderRadius: 'var(--radius, 8px)', padding: '16px',
       boxShadow: `0 0 24px ${v.glow.replace('0.3','0.08')}, 0 8px 32px rgba(0,0,0,0.5)`,
       animation: leaving ? 'ntfy-fadeOut .35s ease forwards' : 'ntfy-floatIn .4s cubic-bezier(.16,1,.3,1) both',
     }}>
       {/* top gradient bar */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, borderRadius:'8px 8px 0 0', background:`linear-gradient(90deg,${v.color},transparent)` }} />
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, borderRadius:'calc(var(--radius, 8px)) calc(var(--radius, 8px)) 0 0', background:`linear-gradient(90deg,${v.color},transparent)` }} />
       {/* header row */}
       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
         <div style={{
@@ -261,7 +261,7 @@ function MinimalToast({ toast, v, leaving, progress, dismiss }) {
     <div role="alert" onClick={dismiss} style={{
       position:'relative', minWidth:280, maxWidth:380, overflow:'hidden',
       marginBottom:8, cursor:'pointer',
-      background:'var(--bg2)', border:`1px solid ${v.border}`, borderRadius:8,
+      background:'var(--bg2)', border:`var(--border-w, 1px) solid ${v.border}`, borderRadius:'var(--radius, 8px)',
       padding:'13px 36px 13px 16px',
       boxShadow:'0 4px 20px rgba(0,0,0,0.3)',
       animation: leaving ? 'ntfy-fadeOut .3s ease forwards' : 'ntfy-floatIn .35s cubic-bezier(.16,1,.3,1) both',
@@ -286,7 +286,7 @@ function GlassToast({ toast, v, leaving, progress, dismiss }) {
       position:'relative', minWidth:280, maxWidth:380, overflow:'hidden',
       marginBottom:8, cursor:'pointer',
       background:'rgba(8,16,30,0.72)', backdropFilter:'blur(18px) saturate(1.3)',
-      border:`1px solid ${v.border}`, borderRadius:12,
+      border:`var(--border-w, 1px) solid ${v.border}`, borderRadius:'var(--radius, 12px)',
       padding:'14px 36px 14px 44px',
       boxShadow:`0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06), 0 0 24px ${v.glow.replace('0.3','0.1')}`,
       animation: leaving ? 'ntfy-fadeOut .3s ease forwards' : 'ntfy-floatIn .4s cubic-bezier(.16,1,.3,1) both',
