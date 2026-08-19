@@ -419,6 +419,273 @@ function FooterDarkCompact({ siteConfig, sectionLinks, platformLinks, socialLink
   )
 }
 
+function FooterCommand({ sectionLinks, platformLinks, socialLinks, hasAdminAccess, handleHashLink, year }) {
+  const P = { bg: '#070b12', text: '#dbeafe', accent: '#38bdf8', sub: '#a78bfa', muted: '#64748b', border: 'rgba(56,189,248,0.18)' }
+  const topBorder = '1px solid rgba(56,189,248,0.3)'
+  const link = { fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted, textDecoration: 'none', letterSpacing: 1, lineHeight: 2.4, transition: 'color 0.2s' }
+  const head  = { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: P.sub, marginBottom: 12, display: 'block' }
+  const services = [['API', P.accent], ['DB', '#00ff88'], ['CDN', '#f6821f'], ['MAIL', '#a78bfa']]
+  return (
+    <footer data-footer-style="command" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
+      <div style={{ padding: 'clamp(32px,5vw,56px) clamp(16px,5vw,60px) 40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#0b1220', border: '1px solid rgba(56,189,248,0.24)', borderRadius: 10, padding: '10px 14px', marginBottom: 36, maxWidth: 560 }}>
+          <span style={{ color: P.accent, fontFamily: 'var(--font-mono)', fontSize: 13 }}>⌘</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted }}>Search docs, jump to tools, contact...</span>
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+            {['CTRL', 'K'].map(k => (
+              <kbd key={k} style={{ background: '#0e1724', border: '1px solid rgba(56,189,248,0.22)', borderRadius: 4, padding: '2px 6px', fontFamily: 'var(--font-mono)', fontSize: 9, color: P.muted }}>{k}</kbd>
+            ))}
+          </span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 48 }}>
+          <div>
+            <span style={head}>SITEMAP</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' }}>
+              {[...sectionLinks, ...platformLinks.slice(0, 3)].map((l, i) => l.hash ? (
+                <a key={l.hash} href={`/#${l.hash}`} onClick={e => handleHashLink(e, l.hash)} style={{ ...link, display: 'block' }}>{l.label}</a>
+              ) : (
+                <Link key={l.to} to={l.to} style={{ ...link, display: 'block' }}>{l.label}</Link>
+              ))}
+            </div>
+            {hasAdminAccess && (
+              <Link to="/admin" style={{ ...link, color: P.accent, display: 'block' }}>⚡ Admin Dashboard</Link>
+            )}
+          </div>
+          <div>
+            <span style={head}>SERVICES</span>
+            {services.map(([label, c]) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: P.muted }}>{label}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: c, boxShadow: `0 0 6px ${c}` }} />
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: c, letterSpacing: 1 }}>UP</span>
+                </span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <span style={head}>CONNECT</span>
+            {socialLinks.map(({ href, icon, label }) => (
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer" style={{ ...link, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(56,189,248,0.18)', borderRadius: 6, color: P.accent }}>{icon}</span>
+                {label}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: '12px clamp(16px,5vw,60px)', borderTop: '1px solid rgba(56,189,248,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: P.muted, letterSpacing: 1 }}>© {year} <span style={{ color: P.accent }}>tanvir@aifazi.net</span> · All rights reserved</span>
+        <div style={{ display: 'flex', gap: 16 }}>
+          {['Privacy', 'Terms', 'Contact'].map(label => (
+            <Link key={label} to="/contact" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: P.muted, letterSpacing: 1, textDecoration: 'none' }}>{label}</Link>
+          ))}
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+function FooterDashboard({ sectionLinks, platformLinks, hasAdminAccess, handleHashLink, year }) {
+  const P = { bg: '#07111a', text: '#c8d8e8', accent: '#38bdf8', sub: '#00ff88', muted: '#6b8296', border: 'rgba(56,189,248,0.14)' }
+  const topBorder = '1px solid rgba(56,189,248,0.24)'
+  const link = { fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted, textDecoration: 'none', letterSpacing: 1, lineHeight: 2.4, transition: 'color 0.2s' }
+  const head  = { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: P.accent, marginBottom: 12, display: 'block' }
+  const metrics = [['API', '99.9%', '#38bdf8'], ['DATABASE', 'OK', '#00ff88'], ['SUPPORT', '24h', '#f6821f'], ['TOOLS', '12', '#a78bfa']]
+  return (
+    <footer data-footer-style="dashboard" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
+      <div style={{ padding: 'clamp(28px,4vw,44px) clamp(16px,5vw,60px) 36px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 36 }}>
+          {metrics.map(([label, value, c]) => (
+            <div key={label} style={{ background: '#0d1722', border: `1px solid ${c}33`, borderRadius: 8, padding: '12px 14px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: P.muted, marginBottom: 6 }}>{label}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: c, letterSpacing: 1 }}>{value}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr', gap: 48 }}>
+          <div>
+            <span style={head}>NAVIGATE</span>
+            {sectionLinks.map(({ label, hash }) => (
+              <a key={hash} href={`/#${hash}`} onClick={e => handleHashLink(e, hash)} style={{ ...link, display: 'block' }}>{label}</a>
+            ))}
+          </div>
+          <div>
+            <span style={head}>PLATFORM</span>
+            {platformLinks.slice(0, 6).map(({ label, to }) => (
+              <Link key={to} to={to} style={{ ...link, display: 'block' }}>{label}</Link>
+            ))}
+          </div>
+          <div>
+            <span style={head}>SYSTEM STATUS</span>
+            {[['API Server', true], ['Database', true], ['CDN / Media', true], ['Mail Service', true]].map(([label, ok]) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: P.muted }}>{label}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: ok ? P.sub : '#ff4757', letterSpacing: 1 }}>{ok ? 'UP' : 'DOWN'}</span>
+              </div>
+            ))}
+            {hasAdminAccess && <Link to="/admin" style={{ ...link, color: P.accent, display: 'block', marginTop: 8 }}>⚡ Dashboard</Link>}
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: '12px clamp(16px,5vw,60px)', borderTop: '1px solid rgba(56,189,248,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: P.muted, letterSpacing: 1 }}>UPTIME 99.99% · UAE / GMT+4</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: P.muted, letterSpacing: 1 }}>© {year} <span style={{ color: P.accent }}>tanvir@aifazi.net</span></span>
+      </div>
+    </footer>
+  )
+}
+
+function FooterPaper({ sectionLinks, platformLinks, handleHashLink, year }) {
+  const P = { bg: '#f4eadc', text: '#1f2937', accent: '#1f2937', sub: '#8b5e34', muted: '#6b5b4b', border: '#d8c7b3' }
+  const topBorder = '2px solid #1f2937'
+  const toc = [
+    ...sectionLinks.map((l, i) => ({ ...l, no: String(i + 1).padStart(2, '0') })),
+    ...platformLinks.slice(0, 4).map((l, i) => ({ label: l.label, to: l.to, no: String(sectionLinks.length + i + 1).padStart(2, '0') })),
+  ]
+  return (
+    <footer data-footer-style="paper" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
+      <div style={{ padding: 'clamp(36px,5vw,56px) clamp(16px,5vw,60px) 32px' }}>
+        <div style={{ fontFamily: 'Georgia, serif', fontSize: 34, fontWeight: 900, color: P.text, letterSpacing: -1, marginBottom: 4 }}>INDEX</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 4, color: P.sub, marginBottom: 24 }}>AIFAZI.NET — NETWORK ENGINEER · DEVELOPER</div>
+        <div style={{ height: 1, background: P.text, marginBottom: 24 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 48px', maxWidth: 620 }}>
+          {toc.map(item => item.hash ? (
+            <a key={item.hash} href={`/#${item.hash}`} onClick={e => handleHashLink(e, item.hash)}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: P.muted, textDecoration: 'none', letterSpacing: 1, lineHeight: 2.6, display: 'flex', gap: 12, transition: 'color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = P.accent}
+              onMouseLeave={e => e.currentTarget.style.color = P.muted}
+            ><span style={{ color: P.sub }}>{item.no}</span>{item.label}</a>
+          ) : (
+            <Link key={item.to} to={item.to}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: P.muted, textDecoration: 'none', letterSpacing: 1, lineHeight: 2.6, display: 'flex', gap: 12, transition: 'color 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = P.accent}
+              onMouseLeave={e => e.currentTarget.style.color = P.muted}
+            ><span style={{ color: P.sub }}>{item.no}</span>{item.label}</Link>
+          ))}
+        </div>
+      </div>
+      <div style={{ padding: '14px clamp(16px,5vw,60px)', borderTop: `1px solid ${P.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: P.muted, letterSpacing: 1 }}>© {year} aifazi.net · set in serif</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: P.sub, letterSpacing: 2 }}>UAE / GMT+4</span>
+      </div>
+    </footer>
+  )
+}
+
+function FooterBrutal({ sectionLinks, platformLinks, handleHashLink, year }) {
+  const P = { bg: '#f2f0ec', text: '#111111', accent: '#111111', sub: '#111111', muted: '#333333', border: '#111111' }
+  const topBorder = '6px solid #111111'
+  const blocks = [
+    { no: '01', label: 'NAVIGATE', items: sectionLinks.map(l => ({ label: l.label, href: `/#${l.hash}`, hash: l.hash })) },
+    { no: '02', label: 'PLATFORM', items: platformLinks.slice(0, 5).map(l => ({ label: l.label, href: l.to })) },
+    { no: '03', label: 'SYSTEM',   items: [['API', '/contact'], ['STATUS', '/contact'], ['ADMIN', '/admin']].map(([label, to]) => ({ label, href: to })) },
+  ]
+  return (
+    <footer data-footer-style="brutal" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
+      <div style={{ padding: 'clamp(36px,5vw,56px) clamp(16px,5vw,60px) 32px' }}>
+        <div style={{ fontFamily: 'monospace', fontSize: 'clamp(28px,5vw,44px)', fontWeight: 900, color: P.text, letterSpacing: 2, textTransform: 'uppercase', lineHeight: 1, marginBottom: 20 }}>TANVIR</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {blocks.map(b => (
+            <div key={b.no} style={{ border: `3px solid ${P.text}` }}>
+              <div style={{ background: P.text, color: P.bg, fontFamily: 'monospace', fontSize: 10, fontWeight: 700, letterSpacing: 3, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>{b.label}</span><span>{b.no}</span>
+              </div>
+              <div style={{ padding: '12px 14px' }}>
+                {b.items.map((item, i) => item.hash ? (
+                  <a key={i} href={item.href} onClick={e => handleHashLink(e, item.hash)}
+                    style={{ display: 'block', fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: P.text, textDecoration: 'none', letterSpacing: 1, lineHeight: 2.4, textTransform: 'uppercase', borderBottom: i < b.items.length - 1 ? '1px solid #111' : 'none' }}>{item.label}</a>
+                ) : (
+                  <Link key={i} to={item.href}
+                    style={{ display: 'block', fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: P.text, textDecoration: 'none', letterSpacing: 1, lineHeight: 2.4, textTransform: 'uppercase', borderBottom: i < b.items.length - 1 ? '1px solid #111' : 'none' }}>{item.label}</Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ padding: '14px clamp(16px,5vw,60px)', borderTop: `3px solid ${P.text}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+        <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: P.text, letterSpacing: 1 }}>© {year} TANVIR@AIFAZI.NET</span>
+        <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: P.text, letterSpacing: 1 }}>ALL RIGHTS RESERVED</span>
+      </div>
+    </footer>
+  )
+}
+
+function FooterDock({ sectionLinks, platformLinks, socialLinks, handleHashLink, year }) {
+  const P = { bg: '#061018', text: '#c8d8e8', accent: 'var(--cyan)', muted: '#6b8296', border: 'color-mix(in srgb, var(--cyan) 18%, transparent)' }
+  const topBorder = '1px solid color-mix(in srgb, var(--cyan) 26%, transparent)'
+  const dockItems = [
+    ...sectionLinks.slice(0, 4).map(l => ({ label: l.label, href: `/#${l.hash}`, hash: l.hash, icon: '▸' })),
+    ...platformLinks.slice(0, 3).map(l => ({ label: l.label, href: l.to, icon: '◦' })),
+    ...socialLinks.map(l => ({ label: l.label, href: l.href, icon: '◎', external: true })),
+  ]
+  return (
+    <footer data-footer-style="dock" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
+      <div style={{ padding: '28px clamp(16px,5vw,60px) 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: '#0b1118', border: '1px solid rgba(0,212,255,0.28)', borderRadius: 999, padding: '8px 14px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          {dockItems.map((item, i) => {
+            const dot = { width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,212,255,0.22)', color: i === 0 ? P.accent : P.muted, fontSize: 13, textDecoration: 'none', transition: 'all 0.2s' }
+            const onEnter = e => { e.currentTarget.style.color = P.accent; e.currentTarget.style.borderColor = 'var(--cyan)'; e.currentTarget.style.transform = 'translateY(-3px)' }
+            const onLeave = e => { e.currentTarget.style.color = i === 0 ? P.accent : P.muted; e.currentTarget.style.borderColor = 'rgba(0,212,255,0.22)'; e.currentTarget.style.transform = 'none' }
+            return item.hash ? (
+              <a key={i} href={item.href} onClick={e => handleHashLink(e, item.hash)} title={item.label} style={dot} onMouseEnter={onEnter} onMouseLeave={onLeave}>{item.icon}</a>
+            ) : item.external ? (
+              <a key={i} href={item.href} target="_blank" rel="noopener noreferrer" title={item.label} style={dot} onMouseEnter={onEnter} onMouseLeave={onLeave}>{item.icon}</a>
+            ) : (
+              <Link key={i} to={item.href} title={item.label} style={dot} onMouseEnter={onEnter} onMouseLeave={onLeave}>{item.icon}</Link>
+            )
+          })}
+        </div>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: P.muted, letterSpacing: 2 }}>© {year} tanvir@aifazi.net</span>
+      </div>
+    </footer>
+  )
+}
+
+function FooterTerminal({ sectionLinks, platformLinks, hasAdminAccess, year }) {
+  const P = { bg: '#050805', text: '#33ff33', accent: '#33ff33', sub: '#ffcc00', muted: '#228822', border: 'rgba(51,255,51,0.24)' }
+  const topBorder = '1px solid rgba(51,255,51,0.35)'
+  const lines = [
+    '[  OK  ] api.connected → 200',
+    '[  OK  ] db.connected  → mongodb://prod',
+    '[  RUN ] jobs.idle     → 0 scheduled',
+    '[  OK  ] cdn.edge      → 12 regions synced',
+    '[ INFO ] uptime        → 99.99%',
+  ]
+  const quickLinks = [...sectionLinks, ...platformLinks.slice(0, 3)]
+  return (
+    <footer data-footer-style="terminal" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
+      <div style={{ padding: 'clamp(28px,4vw,44px) clamp(16px,5vw,60px) 30px', fontFamily: 'monospace' }}>
+        <div style={{ fontSize: 10, color: P.muted, letterSpacing: 1, marginBottom: 14 }}>~$ tail -f /var/log/aifazi/footer.log</div>
+        {lines.map((l, i) => (
+          <div key={i} style={{ fontSize: 11, color: l.startsWith('[  OK  ]') ? P.accent : l.startsWith('[ RUN ]') ? P.sub : P.muted, lineHeight: 1.9 }}>{l}</div>
+        ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14 }}>
+          <span style={{ fontSize: 11, color: P.muted }}>~$</span>
+          <span style={{ fontSize: 11, color: P.accent }}>help —</span>
+          <span style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {quickLinks.map(l => l.hash ? (
+              <a key={l.hash} href={`/#${l.hash}`} style={{ fontSize: 10, color: P.muted, textDecoration: 'none', letterSpacing: 1 }}>{l.label.toLowerCase()}</a>
+            ) : (
+              <Link key={l.to} to={l.to} style={{ fontSize: 10, color: P.muted, textDecoration: 'none', letterSpacing: 1 }}>{l.label.toLowerCase()}</Link>
+            ))}
+          </span>
+          <span style={{ width: 7, height: 12, background: P.accent, animation: 'ftBlink 1s steps(2) infinite' }} />
+        </div>
+        {hasAdminAccess && (
+          <div style={{ fontSize: 10, color: P.sub, marginTop: 8 }}>admin — <Link to="/admin" style={{ color: P.sub }}>open dashboard</Link></div>
+        )}
+      </div>
+      <div style={{ padding: '10px clamp(16px,5vw,60px)', borderTop: '1px solid rgba(51,255,51,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+        <span style={{ fontFamily: 'monospace', fontSize: 9, color: P.muted, letterSpacing: 1 }}>[EOF] aifazi.net — © {year}</span>
+        <span style={{ fontFamily: 'monospace', fontSize: 9, color: P.sub, letterSpacing: 1 }}>UPTIME 99.99%</span>
+      </div>
+      <style>{`@keyframes ftBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
+    </footer>
+  )
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FiveM footer (shown on /fivem/* routes and fivem.aifazi.net) ──────────────
 // Shares the theme CSS vars, logo, and socials with the site chrome but
@@ -645,6 +912,12 @@ export default function Footer() {
   if (footerStyle === 'glass')        return <FooterGlass       {...sharedProps} />
   if (footerStyle === 'synthwave')    return <FooterSynthwave   {...sharedProps} />
   if (footerStyle === 'dark-compact') return <FooterDarkCompact {...sharedProps} />
+  if (footerStyle === 'command')      return <FooterCommand     {...sharedProps} />
+  if (footerStyle === 'dashboard')    return <FooterDashboard   {...sharedProps} />
+  if (footerStyle === 'paper')        return <FooterPaper       {...sharedProps} />
+  if (footerStyle === 'brutal')       return <FooterBrutal      {...sharedProps} />
+  if (footerStyle === 'dock')         return <FooterDock        {...sharedProps} />
+  if (footerStyle === 'terminal')     return <FooterTerminal    {...sharedProps} />
   // ── Fallthrough: cyber (original full layout) ───────────────────────────────
 
   // Derived styles per footerStyle — MUST be declared before monoLink/colHead

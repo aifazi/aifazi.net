@@ -22,6 +22,9 @@ const HEADER_PRESETS = [
   { id: 'brutal',    name: 'Brutal',    desc: 'Hard blocks, black rules, no blur' },
   { id: 'mobile-dock', name: 'Mobile Dock', desc: 'Centered brand with icon actions' },
   { id: 'studio',    name: 'Studio',    desc: 'Portfolio studio with split nav' },
+  { id: 'gradient',  name: 'Gradient',  desc: 'Animated gradient hairline + glass' },
+  { id: 'pill',      name: 'Pill',      desc: 'Floating rounded pill bar' },
+  { id: 'retro',     name: 'Retro',     desc: 'Pixel arcade cyan & magenta' },
 ]
 
 // -- Footer presets -------------------------------------------------------------
@@ -174,6 +177,42 @@ function HeaderPreviewSVG({ id }) {
         <line x1="60" y1="8" x2="60" y2="36" stroke="#ffffff22"/>
         {['Selected','Work','Journal'].map((l,i)=><text key={l} x={72+i*25} y="25" fontFamily="monospace" fontSize="4.8" fill={i===0?'#fff':'#777'}>{l}</text>)}
         <circle cx="148" cy="22" r="5" fill="none" stroke="#fff"/>
+      </svg>
+    ),
+    gradient: (
+      <svg viewBox="0 0 160 44" width="100%" height="100%">
+        <rect width="160" height="44" fill="#060a0f"/>
+        <defs><linearGradient id="hgr" x1="0" x2="1"><stop offset="0%" stopColor="#00ff88"/><stop offset="50%" stopColor="#00d4ff"/><stop offset="100%" stopColor="#7b61ff"/></linearGradient></defs>
+        <rect width="160" height="3" fill="url(#hgr)"/>
+        <polygon points="14,6 22,10 22,20 14,24 6,20 6,10" fill="none" stroke="#00ff88" strokeWidth="1.2" opacity="0.6"/>
+        <text x="28" y="14" fontFamily="monospace" fontSize="6" fill="#e8eaed" letterSpacing="2">TANVIR</text>
+        <text x="28" y="21" fontFamily="monospace" fontSize="4" fill="#00d4ff" opacity="0.75" letterSpacing="3">.DEV</text>
+        {['Home','Blog','Tools'].map((l,i)=><text key={l} x={64+i*26} y="26" fontFamily="monospace" fontSize="5" fill="#6b8296" letterSpacing="1">{l}</text>)}
+        <rect x="128" y="10" width="26" height="12" rx="1" fill="none" stroke="#00d4ff55" strokeWidth="1"/>
+        <text x="133" y="19" fontFamily="monospace" fontSize="5" fill="#00d4ff" letterSpacing="1">LOGIN</text>
+      </svg>
+    ),
+    pill: (
+      <svg viewBox="0 0 160 48" width="100%" height="100%">
+        <rect width="160" height="48" fill="#04080f"/>
+        <rect x="6" y="8" width="148" height="30" rx="15" fill="#0b1118" stroke="#00ff8844"/>
+        <text x="16" y="26" fontFamily="monospace" fontSize="6" fill="#e8eaed" letterSpacing="2">TANVIR</text>
+        {['Home','Blog','Tools'].map((l,i)=><text key={l} x={58+i*26} y="26" fontFamily="monospace" fontSize="5" fill="#6b8296" letterSpacing="1">{l}</text>)}
+        <circle cx="134" cy="23" r="7" fill="none" stroke="#00ff8866" strokeWidth="1.2"/>
+        <circle cx="146" cy="23" r="5" fill="#00ff88"/>
+      </svg>
+    ),
+    retro: (
+      <svg viewBox="0 0 160 44" width="100%" height="100%">
+        <rect width="160" height="44" fill="#0b0b13"/>
+        <rect width="160" height="3" fill="#ff2d8b"/>
+        <rect x="0" y="41" width="160" height="3" fill="#00e5ff"/>
+        <rect x="8" y="10" width="22" height="22" fill="#00e5ff"/>
+        <text x="12" y="25" fontFamily="monospace" fontSize="8" fill="#0b0b13" fontWeight="900">AF</text>
+        <text x="36" y="20" fontFamily="monospace" fontSize="7" fill="#00e5ff" fontWeight="bold" letterSpacing="2">AIFAZI</text>
+        <text x="36" y="28" fontFamily="monospace" fontSize="4" fill="#ff2d8b" letterSpacing="3">ARCADE</text>
+        {['home','blog','tools'].map((l,i)=><text key={l} x={82+i*24} y="26" fontFamily="monospace" fontSize="5" fill="#8b9bb8">{l}</text>)}
+        <rect x="138" y="13" width="16" height="16" fill="#ff2d8b"/>
       </svg>
     ),
   }

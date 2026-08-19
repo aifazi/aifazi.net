@@ -6882,3 +6882,39 @@ img, video, svg { max-width: 100%; height: auto; }
   outline-offset: 2px;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRESET CHROME OVERRIDE LAYER
+   Per-theme nav/footer personalities above rely on `!important`, which also
+   clobbers the inline styles that header/footer presets use. When the admin
+   picks a non-default preset, the preset's own palette (exposed as CSS custom
+   properties by Navbar/Footer) must win over the theme's forced chrome.
+   These rules sit last in the file and carry a higher specificity than the
+   per-theme blocks, so they always resolve in favour of the chosen preset.
+   The default "cyber" preset is intentionally excluded — it follows the
+   active theme's personality. ══════════════════════════════════════════════ */
+
+nav[data-header-style]:not([data-header-style="cyber"]) {
+  background: var(--hs-bg, var(--nav-bg-scrolled, var(--bg2))) !important;
+  border-bottom: var(--hs-border, 1px solid var(--border)) !important;
+  box-shadow: var(--hs-shadow, none) !important;
+}
+nav[data-header-style="glass"],
+nav[data-header-style="pill"] {
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+}
+nav[data-header-style]:not([data-header-style="cyber"])::before,
+nav[data-header-style]:not([data-header-style="cyber"])::after {
+  display: none !important;
+}
+
+footer[data-footer-style]:not([data-footer-style="cyber"]) {
+  background: var(--fs-bg, var(--bg2)) !important;
+  border-top: var(--fs-top, 1px solid var(--border)) !important;
+  box-shadow: var(--fs-shadow, none) !important;
+}
+footer[data-footer-style]:not([data-footer-style="cyber"])::before,
+footer[data-footer-style]:not([data-footer-style="cyber"])::after {
+  display: none !important;
+}
+

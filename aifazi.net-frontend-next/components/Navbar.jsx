@@ -258,6 +258,9 @@ export default function Navbar() {
     brutal:      { bg: '#f2f0ec',                accent: '#111111',      secondary: '#111111',      logoColor: '#111111',      linkColor: '#111111',     activeLinkColor: '#111111',      borderColor: '#111111', progressGrad: 'linear-gradient(to right, #111, #111)' },
     'mobile-dock': { bg: 'var(--bg2)',           accent: 'var(--cyan)',  secondary: 'var(--green)', logoColor: 'var(--text)',  linkColor: 'var(--muted)', activeLinkColor: 'var(--cyan)',  borderColor: 'var(--border)', progressGrad: 'linear-gradient(to right, var(--cyan), var(--green))' },
     studio:      { bg: '#090909',                accent: '#ffffff',      secondary: '#777777',      logoColor: '#ffffff',      linkColor: '#777777',     activeLinkColor: '#ffffff',      borderColor: 'rgba(255,255,255,0.16)', progressGrad: 'linear-gradient(to right, #fff, #777)' },
+    gradient:    { bg: 'var(--nav-bg-scrolled)', accent: 'var(--green)', secondary: 'var(--cyan)',  logoColor: 'var(--text)',  linkColor: 'var(--muted)', activeLinkColor: 'var(--green)', borderColor: 'var(--border)', progressGrad: 'linear-gradient(to right, var(--green), var(--cyan), #7b61ff)' },
+    pill:        { bg: 'color-mix(in srgb, var(--bg2) 88%, transparent)', accent: 'var(--green)', secondary: 'var(--cyan)', logoColor: 'var(--text)', linkColor: 'var(--muted)', activeLinkColor: 'var(--green)', borderColor: 'var(--border)', progressGrad: 'linear-gradient(to right, var(--green), var(--cyan))' },
+    retro:       { bg: '#0b0b13',                accent: '#00e5ff',      secondary: '#ff2d8b',      logoColor: '#00e5ff',      linkColor: '#8b9bb8',     activeLinkColor: '#00e5ff',      borderColor: '#00e5ff', progressGrad: 'linear-gradient(to right, #00e5ff, #ff2d8b)' },
   }
   const hs = HS[headerStyle] || HS.cyber
   const isAdminRoute = location.pathname.startsWith('/admin')
@@ -416,7 +419,7 @@ export default function Navbar() {
     const activeColor = hs.activeLinkColor
     const mutedColor  = hs.linkColor
     const baseStyle = mobile ? {
-      fontFamily: headerStyle === 'terminal' ? 'monospace' : 'var(--font-code)', fontSize: 13, letterSpacing: 2,
+      fontFamily: headerStyle === 'terminal' || headerStyle === 'retro' ? 'monospace' : 'var(--font-code)', fontSize: 13, letterSpacing: 2,
       textTransform: 'uppercase', padding: '16px 24px',
       color: active ? activeColor : mutedColor,
       textDecoration: 'none', display: 'block', width: '100%', textAlign: 'left',
@@ -424,7 +427,7 @@ export default function Navbar() {
       borderLeft: active ? `3px solid ${activeColor}` : '3px solid transparent',
       minHeight: 52, boxSizing: 'border-box',
     } : {
-      fontFamily: headerStyle === 'terminal' ? 'monospace' : 'var(--font-code)', fontSize: 11, letterSpacing: 3,
+      fontFamily: headerStyle === 'terminal' || headerStyle === 'retro' ? 'monospace' : 'var(--font-code)', fontSize: 11, letterSpacing: 3,
       textTransform: 'uppercase', color: active ? activeColor : mutedColor,
       textDecoration: 'none', transition: 'color 0.3s',
       position: 'relative', paddingBottom: 4,
@@ -460,18 +463,30 @@ export default function Navbar() {
     )
   }
 
+  const hsShadow = headerStyle === 'minimal'   ? '0 1px 0 var(--border)'
+    : headerStyle === 'magazine' ? '0 4px 24px rgba(0,0,0,0.06)'
+    : headerStyle === 'pill'     ? '0 0 0 1px var(--border), 0 10px 36px rgba(0,0,0,0.35)'
+    : headerStyle === 'glass'    ? '0 4px 32px rgba(0,0,0,0.25)'
+    : 'none'
+  const hsBorder = headerStyle === 'retro' ? `3px solid ${hs.borderColor}` : `1px solid ${hs.borderColor}`
+
   return (
     <>
-      <nav style={{
+      <nav
+        data-header-style={headerStyle}
+        style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         background: scrolled ? hs.bg : (headerStyle === 'minimal' || headerStyle === 'editorial' || headerStyle === 'terminal' ? hs.bg : 'var(--nav-bg-top)'),
-        backdropFilter: headerStyle === 'glass' ? 'blur(20px) saturate(1.4)' : 'blur(16px)',
+        backdropFilter: headerStyle === 'glass' || headerStyle === 'pill' ? 'blur(20px) saturate(1.4)' : 'blur(16px)',
         borderBottom: `1px solid ${hs.borderColor}`,
         transition: 'background 0.4s',
         ...(headerStyle === 'editorial' ? { borderTop: '3px solid var(--green)' } : {}),
         ...(headerStyle === 'neon-band' ? { borderTop: '2px solid var(--green)' } : {}),
         ...(headerStyle === 'terminal'  ? { fontFamily: 'monospace' } : {}),
+        ...(headerStyle === 'retro'     ? { fontFamily: 'monospace', borderTop: '3px solid #ff2d8b', borderBottom: '3px solid #00e5ff' } : {}),
         ...(headerStyle === 'minimal'   ? { boxShadow: '0 1px 0 var(--border)' } : {}),
+        ...(headerStyle === 'pill'      ? { top: 14, left: 14, right: 14, borderRadius: 999, borderBottom: '1px solid var(--border)', boxShadow: hsShadow } : {}),
+        ...(headerStyle !== 'cyber' ? { '--hs-bg': hs.bg, '--hs-border': hsBorder, '--hs-shadow': hsShadow } : {}),
       }}>
         {/* Scroll progress bar */}
         <div style={{
@@ -482,6 +497,15 @@ export default function Navbar() {
           transition: 'width 0.1s linear', zIndex: 101
         }} />
 
+        {/* Gradient hairline — animated top edge */}
+        {headerStyle === 'gradient' && (
+          <div aria-hidden style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 2, zIndex: 101, pointerEvents: 'none',
+            background: 'linear-gradient(90deg, var(--green), var(--cyan), #7b61ff, var(--green))',
+            backgroundSize: '200% 100%', animation: 'hsGradientShift 4s linear infinite',
+          }} />
+        )}
+
         <div className="nav-inner" style={{
           display: 'flex',
           alignItems: 'center',
@@ -489,7 +513,7 @@ export default function Navbar() {
           gap: isMobileNav ? 12 : 24,
           padding: isMobileNav
             ? '12px max(14px, env(safe-area-inset-right, 14px)) 12px max(14px, env(safe-area-inset-left, 14px))'
-            : '20px 60px',
+            : (headerStyle === 'pill' ? '12px 28px' : '20px 60px'),
           minWidth: 0,
           width: '100%',
           boxSizing: 'border-box',
@@ -546,8 +570,15 @@ export default function Navbar() {
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--muted)' }}>AIFAZI.NET</div>
               </div>
+            ) : headerStyle === 'retro' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 34, height: 34, background: '#00e5ff', color: '#0b0b13', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontWeight: 900, fontSize: 14, boxShadow: '3px 3px 0 #ff2d8b' }}>AF</div>
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, letterSpacing: 3, color: '#00e5ff', textShadow: '0 0 8px rgba(0,229,255,0.55)' }}>AIFAZI</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: 8, letterSpacing: 4, color: '#ff2d8b', marginTop: 3 }}>ARCADE</span>
+                </div>
+              </div>
             ) : (
-              // Default (cyber, glass): hexagon logo
               <>
                 <svg width="36" height="36" viewBox="0 0 36 36" fill="none" className="site-logo-mark"
                   xmlns="http://www.w3.org/2000/svg">
@@ -836,6 +867,7 @@ export default function Navbar() {
           }
           @keyframes toolsDropdown { from { opacity:0; transform:translateX(-50%) translateY(-6px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
           @keyframes mobileMenuIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+          @keyframes hsGradientShift { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
         `}</style>
       </nav>
 
