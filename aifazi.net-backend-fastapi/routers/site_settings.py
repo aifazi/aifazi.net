@@ -35,7 +35,10 @@ def _is_corrupted(settings: dict) -> bool:
 # Keys that must never leave the server. This endpoint is public, so any
 # smtpPassword / apiKey / token a staff member saves into settings would
 # otherwise be served to anonymous visitors. Match by name, case-insensitive.
-_SENSITIVE_KEY_RE = re.compile(r"(secret|password|token|api[_-]?key|preshared)", re.IGNORECASE)
+_SENSITIVE_KEY_RE = re.compile(
+    r"(secret|password|passwd|token|api[_-]?key|private[_-]?key|access[_-]?key|key[_-]?id|preshared|credential)",
+    re.IGNORECASE,
+)
 
 def _redact_sensitive(value):
     """Recursively blank values whose key looks sensitive (name or list item)."""

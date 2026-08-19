@@ -29,7 +29,7 @@ from fastapi import (
 )
 from fastapi.responses import RedirectResponse as _Redir
 from fastapi.security import HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from database import safe_search_term, supabase
 from dependencies import (
@@ -708,7 +708,7 @@ class FindUsernameBody(BaseModel):
 
 class ResetBody(BaseModel):
     token: str
-    password: str
+    password: str = Field(min_length=8)
 
 class ResendBody(BaseModel):
     email: str
@@ -2018,8 +2018,8 @@ async def forgot_password_alias(body: ForgotBody):
 @router.post("/reset-password/{token}")
 async def reset_password_alias(token: str, body: dict):
     password = body.get("password", "")
-    if not password:
-        raise HTTPException(400, "Password is required")
+    if not password or len(password) < 8:
+        raise HTTPException(400, "Password must be at least 8 characters")
     return await reset(ResetBody(token=token, password=password))
 
 @router.get("/verify-email")

@@ -150,12 +150,12 @@ jobs:
             echo "No deployment records to prune."
             exit 0
           fi
-          awk -F'\t' '{ print $2 "\t" $1 "\t" $3 }' /tmp/deps.tsv | sort > /tmp/envs.tsv
+          awk -F'\t' '{ print $2 "\t" $1 "\t" $3 }' /tmp/deps.tsv | sort -t $'\t' -k1,1 -k3,3r > /tmp/envs.tsv
           CURRENT_ENV=""
           while IFS=$'\t' read -r ENV ID CREATED; do
             if [ "$ENV" != "$CURRENT_ENV" ]; then
               CURRENT_ENV="$ENV"
-              # First row of each env is the newest (sorted, keeps first per env).
+              # First row of each env is the newest (sorted by created_at desc).
               echo "[$ENV] keeping $ID"
               continue
             fi

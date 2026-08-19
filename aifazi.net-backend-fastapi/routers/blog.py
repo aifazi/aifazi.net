@@ -6,13 +6,36 @@ FIX #6: Pagination count now respects published filter.
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
 from database import supabase
-from dependencies import get_current_user, require_staff
+from dependencies import bearer, decode_token, get_current_user, require_staff
 from utils.link_safety import schedule_scan
 
 router = APIRouter()
+
+
+def _optional_user(creds: HTTPAuthorizationCredentials | None = Depends(bearer)) -> dict | None:
+    if not creds:
+        return None
+    try:
+        payload = decode_token(creds.credentials)
+    except HTTPException:
+        return None
+    user_id = payload.get("id")
+    if user_id:
+        try:
+            row = supabase.table("users").select("id,username,email,role").eq("id", user_id).limit(1).execute()
+            if row.data:
+                payload.update(row.data[0])
+        except Exception:
+            pass
+    return payload
+
+
+def _is_staff(user: dict | None) -> bool:
+    return bool(user and (user.get("role") in ("admin", "moderator", "editor")))
 
 
 def _resolve_post_id(post_id_or_slug: str) -> str | None:
@@ -188,7 +211,11 @@ async def list_posts(
     tag: str | None = None,
     search: str | None = None,
     all: bool = False,
+    user: dict | None = Depends(_optional_user),
 ):
+    if all and not _is_staff(user):
+        raise HTTPException(403, "Only staff may list unpublished posts")
+
     q = supabase.table("posts").select(
         "id,title,slug,excerpt,cover_image,category,tags,published,views,created_at,author_name"
     )
@@ -218,11 +245,14 @@ async def list_posts(
 
 # ── Get post by slug ── AFTER specific routes ───────────────────────────────────
 @router.get("/{slug}")
-async def get_post(slug: str):
+async def get_post(slug: str, user: dict | None = Depends(_optional_user)):
     res = supabase.table("posts").select("*").eq("slug", slug).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Post not found")
-    return res.data[0]
+    post = res.data[0]
+    if not post.get("published") and not _is_staff(user):
+        raise HTTPException(404, "Post not found")
+    return post
 
 # ── Increment views ─────────────────────────────────────────────────────────────
 @router.post("/{slug}/view")

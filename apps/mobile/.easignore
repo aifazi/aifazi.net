@@ -1,0 +1,51 @@
+# .easignore overrides .gitignore for EAS Build/Update archive upload.
+# Keep the two files in sync; add anything that must never reach EAS servers.
+
+# local env files (never upload real values to EAS)
+.env*
+!.env.example
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+/build
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+metro.log
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# expo export check
+.export-check/
+
+# built apks
+*.apk

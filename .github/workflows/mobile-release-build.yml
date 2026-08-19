@@ -65,8 +65,10 @@ jobs:
           app.expo.version = v;
           app.expo.android = app.expo.android || {};
           app.expo.android.versionCode = maj * 1000000 + min * 1000 + pat;
+          app.expo.ios = app.expo.ios || {};
+          app.expo.ios.buildNumber = v;
           fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
-          console.log("version=" + v + " versionCode=" + app.expo.android.versionCode);
+          console.log("version=" + v + " versionCode=" + app.expo.android.versionCode + " ios.buildNumber=" + v);
           EOF
 
       - name: Check versionCode monotonicity
@@ -203,8 +205,10 @@ jobs:
           app.expo.version = v;
           app.expo.android = app.expo.android || {};
           app.expo.android.versionCode = maj * 1000000 + min * 1000 + pat;
+          app.expo.ios = app.expo.ios || {};
+          app.expo.ios.buildNumber = v;
           fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
-          console.log("version=" + v + " versionCode=" + app.expo.android.versionCode);
+          console.log("version=" + v + " versionCode=" + app.expo.android.versionCode + " ios.buildNumber=" + v);
           EOF
 
       - name: Generate Android project

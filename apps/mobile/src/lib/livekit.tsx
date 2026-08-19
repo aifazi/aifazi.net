@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Room, RoomEvent } from 'livekit-client'
+import { RNKeyProvider, RNE2EEManager } from '@livekit/react-native'
 import { registerGlobals, mediaDevices, streamUrl } from './lk-native'
 import { api } from './api'
 import { dmLiveKitTokenPath, roomLiveKitTokenPath, apiErrorMessage } from '@fazi/shared'
@@ -124,17 +125,27 @@ export function useLiveKitCall(roomId: string | null, opts?: LiveKitCallOptions)
           : roomLiveKitTokenPath((roomId as string) || '')
         const res = await api.get(tokenPath)
         const d = res.data
-        const room = new Room({ adaptiveStream: false, dynacast: false })
 
+        // Native E2EE (react-native): RNKeyProvider + RNE2EEManager must be
+        // wired into the Room via the `e2ee` option BEFORE connecting.
+        let e2eeManager: RNE2EEManager | null = null
         if (d.encryption_key) {
           try {
             const bytes = Uint8Array.from(atob(d.encryption_key), (c) => c.charCodeAt(0))
-            // E2EE is experimental in livekit-client — best-effort, non-fatal.
-            ;(room as any).setE2EEKey?.(bytes)
-          } catch {
+            const keyProvider = new RNKeyProvider({ sharedKey: true })
+            await keyProvider.setSharedKey(bytes)
+            e2eeManager = new RNE2EEManager(keyProvider, false)
+          } catch (e) {
             // ignore — E2EE optional on mobile
+            e2eeManager = null
           }
         }
+
+        const room = new Room({
+          adaptiveStream: false,
+          dynacast: false,
+          ...(e2eeManager ? { e2ee: { e2eeManager } } : {}),
+        })
 
         room.on(RoomEvent.ParticipantConnected, refresh)
         room.on(RoomEvent.ParticipantDisconnected, refresh)

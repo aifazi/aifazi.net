@@ -20,9 +20,11 @@
       "channel": "preview"
     },
     "production": {
+      "environment": "production",
       "channel": "production"
     },
     "production-apk": {
+      "environment": "production",
       "channel": "production",
       "android": {
         "buildType": "apk"

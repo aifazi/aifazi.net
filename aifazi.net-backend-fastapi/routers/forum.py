@@ -606,12 +606,16 @@ async def update_forum_user(user_id: str, body: dict, user: dict = Depends(requi
     # C2 — only admins may change roles, and no self-demotion/self-promotion.
     # Password resets are admin-only: a moderator resetting a member's password
     # silently lets them log in as that member (account takeover).
-    allowed_fields = {"username","email","bio","avatar","banned","banReason"}
+    # Same for email/username: a moderator rewriting a member's login identifiers
+    # could log in as them afterwards — admins only.
+    allowed_fields = {"bio","avatar","banned","banReason"}
     if my_role != "admin":
-        if "role" in body:
-            raise HTTPException(403, "Only admins can change roles")
+        if "role" in body or "username" in body or "email" in body or "newPassword" in body:
+            raise HTTPException(403, "Only admins can change login identifiers or roles")
         if user_id == _user_id(user):
             raise HTTPException(403, "You cannot modify your own account")
+    else:
+        allowed_fields |= {"username","email"}
     if "role" in body:
         if user_id == _user_id(user):
             raise HTTPException(403, "You cannot change your own role")

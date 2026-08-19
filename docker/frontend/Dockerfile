@@ -8,6 +8,7 @@ RUN addgroup -S app && adduser -S app -G app
 
 # Install deps first (cache layer — rebuild only when package.json changes)
 COPY aifazi.net-frontend-next/package.json aifazi.net-frontend-next/package-lock.json ./
+COPY packages/shared packages/shared
 RUN npm ci
 
 # Ensure the app user can write to /app, node_modules and .next.

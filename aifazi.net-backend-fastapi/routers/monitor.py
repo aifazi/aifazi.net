@@ -719,10 +719,12 @@ async def staff_checks(user: dict = Depends(require_staff), limit: int = 200):
 
 
 # ── Error capture (Sentry-like) ────────────────────────────────────────────────
-# Throttle alert emails per source so a flood of distinct signatures (e.g. a
-# scraper hitting the public /api/monitor/errors ingest) can't spam staff.
-_ALERT_COOLDOWN_SECONDS = 600   # at most one alert email per source / 10 min
-_last_error_alert: dict[str, float] = {}
+# Throttle alert emails globally so a flood of distinct signatures/sources (e.g.
+# a scraper hitting the public /api/monitor/errors ingest, which lets the client
+# set `source`) can't spam staff — each new signature still gets recorded, but
+# at most one alert email per window goes out.
+_ALERT_COOLDOWN_SECONDS = 600   # at most one alert email / 10 min
+_last_error_alert_ts: float = 0.0
 
 def _error_signature(error_type: str, message: str, endpoint: str) -> str:
     return f"{error_type or 'Unknown'}:{str(message)[:120]}:{endpoint or ''}"
@@ -760,11 +762,12 @@ async def _record_error(source: str, error_type: str, message: str, stack: str =
         }
         ins = supabase.table("error_logs").insert(row).execute()
         saved = ins.data[0] if ins.data else row
-        # Per-source email cooldown — still record the error, just don't email
-        # more often than once per window from the same source.
+        # Global email cooldown — still record every error, but never email
+        # more often than once per window regardless of source/signature.
+        global _last_error_alert_ts
         now_ts = time.monotonic()
-        if now_ts - _last_error_alert.get(source or "unknown", 0) >= _ALERT_COOLDOWN_SECONDS:
-            _last_error_alert[source or "unknown"] = now_ts
+        if now_ts - _last_error_alert_ts >= _ALERT_COOLDOWN_SECONDS:
+            _last_error_alert_ts = now_ts
             await _send_error_alert(saved)
         return {**saved, "is_new": True}
     except Exception as e:

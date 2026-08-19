@@ -164,6 +164,9 @@ def _get_room_or_404(room_id: str) -> dict:
 
 def _ensure_room_access(room_id: str, user: dict) -> dict:
     room = _get_room_or_404(room_id)
+    if user.get("banned"):
+        detail = "You are banned" if not user.get("ban_reason") else f"You are banned: {user['ban_reason']}"
+        raise HTTPException(403, detail)
     if not _role_allowed(room, user):
         raise HTTPException(403, "You do not have access to this channel")
     banned = (
@@ -957,6 +960,9 @@ async def list_members(_: dict = Depends(require_staff)):
 @router.get("/rooms/{room_id}/members")
 async def list_room_members(room_id: str, user: dict = Depends(get_current_user)):
     """List all members of a room with usernames (for user picker in admin actions)."""
+    role = (user.get("role") or "").lower()
+    if role not in ("admin", "moderator", "editor"):
+        _ensure_room_access(room_id, user)
     # Get member records for this room
     res = supabase.table("chat_members").select("username,role,joined_at").eq("room_id", room_id).execute()
     members = res.data or []

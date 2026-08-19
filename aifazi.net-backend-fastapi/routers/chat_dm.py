@@ -63,6 +63,12 @@ def _check_dm_throttle(user: dict) -> None:
         _dm_send_times[uname] = times
 
 
+def _ensure_not_banned(user: dict) -> None:
+    if user.get("banned"):
+        detail = "You are banned" if not user.get("ban_reason") else f"You are banned: {user['ban_reason']}"
+        raise HTTPException(403, detail)
+
+
 # ── Pair canonicalization + thread lookup ─────────────────────────────────────
 
 def _canonical(a: str, b: str) -> tuple[str, str]:
@@ -311,6 +317,7 @@ async def list_threads(user: dict = Depends(get_current_user)):
 @router.post("/dm/threads")
 async def start_thread(body: StartThreadBody, user: dict = Depends(get_current_user)):
     """Open an existing DM thread. Brand-new threads require an accepted request."""
+    _ensure_not_banned(user)
     my_name = (user.get("username") or "").strip()
     target_name = (body.username or "").strip()
     if not target_name:
@@ -448,6 +455,7 @@ async def dm_livekit_invite(thread_id: str, user: dict = Depends(get_current_use
 @router.post("/dm/requests")
 async def send_dm_request(body: StartThreadBody, user: dict = Depends(get_current_user)):
     """Ask to message a user. Blocked/self targets are rejected up front."""
+    _ensure_not_banned(user)
     my_name = (user.get("username") or "").strip()
     target_name = (body.username or "").strip()
     if not target_name:
@@ -621,6 +629,7 @@ async def get_dm_messages(
 
 @router.post("/dm/threads/{thread_id}/messages")
 async def send_dm_message(thread_id: str, body: DMMessageBody, user: dict = Depends(get_current_user)):
+    _ensure_not_banned(user)
     thread = _get_thread(thread_id, user)
     peer = _peer_of(thread, user)
     if _blocked_by(user["username"], peer) or _blocked_by(peer, user["username"]):

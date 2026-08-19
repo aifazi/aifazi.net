@@ -79,3 +79,18 @@ async def daily_cleanup():
         await run_cleanup()
     except Exception as e:
         logger.error(f"Daily cleanup error: {e}")
+
+
+# Stock reservation expiry: release holds past their TTL even when the Stripe
+# webhook is missed (abandoned checkout, webhook outage). The DB now carries an
+# expires_at + pg_cron sweep, but on hosts without pg_cron (e.g. Vercel) this
+# in-process job is the safety net. Runs every 5 minutes like the DB sweep.
+@scheduler.scheduled_job(IntervalTrigger(minutes=5))
+def expire_stock_reservations():
+    try:
+        from routers.store_ecommerce import _cleanup_pending_orders
+        if _loop and _loop.is_running():
+            fut = asyncio.run_coroutine_threadsafe(_cleanup_pending_orders(), _loop)
+            fut.add_done_callback(lambda f: f.result() or logger.info("Stock reservation expiry sweep complete"))
+    except Exception as e:
+        logger.error(f"Stock reservation expiry error: {e}")

@@ -1264,16 +1264,30 @@ _PENDING_ORDER_TTL_MINUTES = int(os.getenv("PENDING_ORDER_TTL_MINUTES", "30"))
 @router.post("/cron/cleanup-pending-orders")
 async def cron_cleanup_pending_orders(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     """Cron job to clean up stale pending orders and release stock reservations.
-    
-    Requires CRON_SECRET bearer token. Called by external scheduler (e.g., Vercel cron, GitHub Actions).
+
+    Requires CRON_SECRET bearer token. Called by external scheduler (e.g., Vercel cron, GitHub Actions)
+    and by the in-process APScheduler job (Railway).
     """
     if not os.getenv("CRON_SECRET"):
         raise HTTPException(503, "Cron not configured")
     if not creds or creds.credentials != os.getenv("CRON_SECRET"):
         raise HTTPException(401, "Invalid cron secret")
+    return await _cleanup_pending_orders()
 
+
+async def _cleanup_pending_orders() -> dict:
+    """Release stale stock holds. Shared by the authenticated endpoint and the
+    in-process scheduler so both deployments stay in sync."""
     ttl_cutoff = datetime.now(timezone.utc) - timedelta(minutes=_PENDING_ORDER_TTL_MINUTES)
     ttl_iso = ttl_cutoff.isoformat()
+
+    # DB-level sweep first: releases any 'reserved' hold past its expires_at
+    # and cancels its order. Works even if pg_cron is unavailable on the host.
+    expired = 0
+    try:
+        expired = int((supabase.rpc("release_expired_stock_reservations", {}).execute()).data or 0)
+    except Exception as exc:
+        log.warning("expired-stock sweep failed: %s", exc)
 
     # Find stale pending orders
     res = supabase.table("store_orders").select("id").eq("status", "pending").lt("created_at", ttl_iso).execute()
@@ -1287,4 +1301,4 @@ async def cron_cleanup_pending_orders(creds: HTTPAuthorizationCredentials | None
         cleaned += 1
         log.info("cleaned up stale pending order %s (created before %s)", order_id, ttl_iso)
 
-    return {"cleaned": cleaned, "ttl_minutes": _PENDING_ORDER_TTL_MINUTES, "cutoff": ttl_iso}
+    return {"cleaned": cleaned, "expired": expired, "ttl_minutes": _PENDING_ORDER_TTL_MINUTES, "cutoff": ttl_iso}

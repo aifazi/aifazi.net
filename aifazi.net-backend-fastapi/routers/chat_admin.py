@@ -212,6 +212,7 @@ async def admin_dm_threads(_: dict = Depends(require_staff)):
         t["b_avatar"] = b.get("avatar") or ""
         t["a_role"] = a.get("role") or ""
         t["b_role"] = b.get("role") or ""
+        t.pop("encryption_key", None)
     return threads
 
 

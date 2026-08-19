@@ -75,6 +75,17 @@ async def run_cleanup() -> dict:
     logger.info("cron_cleanup: mail dispatch summary %s", mail)
     record_job_heartbeat("cron-cleanup", "ok", f"mail={mail.get('sent', 0)}")
 
+    # Stock reservation expiry — release holds past their TTL so abandoned
+    # checkouts never permanently shrink sellable inventory. The DB also runs a
+    # pg_cron sweep every 5 minutes; this daily pass is the Vercel-side safety
+    # net (Hobby allows a single cron, so it piggybacks on this one).
+    try:
+        from routers.store_ecommerce import _cleanup_pending_orders
+        stock = await _cleanup_pending_orders()
+        logger.info("cron_cleanup: stock expiry %s", stock)
+    except Exception as e:
+        logger.warning("cron_cleanup: stock reservation expiry failed: %s", e)
+
     # Baseline uptime check — on Hobby the cron only runs daily; frequent checks
     # are driven by the public /api/monitor/ping endpoint (external uptime service).
     monitor_summary = None
