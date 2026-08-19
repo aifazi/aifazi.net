@@ -18,7 +18,29 @@
  * ╚══════════════════════════════════════════════════════════════╝
  */
 import { buildGoogleFontUrl, loadCustomFonts } from './fonts'
-import { THEME_FAMILY_SIBLINGS } from './themeCatalog'
+import { THEME_FAMILY_SIBLINGS, LIGHT_THEMES } from './themeCatalog'
+
+// Neutral / mode-specific color tokens. Each theme's built-in block already
+// defines the correct light and dark values, so a customization that is shared
+// across a family's light + dark variants must never override them — otherwise
+// toggling to light mode would inherit the dark background/text palette.
+const MODE_NEUTRAL_TOKENS = new Set(['bg', 'bg2', 'bg3', 'text', 'text2', 'muted', 'border'])
+
+// Returns a copy of a customization draft with the mode-neutral color tokens
+// removed (accent colors, fonts, glow, radius, borders and background CSS are
+// kept). Returns the original draft unchanged when nothing is stripped.
+export function stripModeNeutralColors(draft) {
+  if (!draft || typeof draft !== 'object') return draft
+  const colors = draft.colors && typeof draft.colors === 'object' && !Array.isArray(draft.colors)
+    ? { ...draft.colors }
+    : undefined
+  if (!colors) return draft
+  let changed = false
+  for (const k of MODE_NEUTRAL_TOKENS) {
+    if (k in colors) { delete colors[k]; changed = true }
+  }
+  return changed ? { ...draft, colors } : draft
+}
 
 // ── Customizable core tokens ──────────────────────────────────────────────────
 // key → maps to --<key> in globals.css. `def` is the dark-mode default used to
@@ -217,14 +239,26 @@ export function resolveThemeCustom(siteConfig, themeId, opts = {}) {
   if (match && match.draft && typeof match.draft === 'object') return match.draft
   const tc = siteConfig?.themeCustom
   const custom = tc && typeof tc === 'object' && !Array.isArray(tc) ? tc[themeId] : undefined
-  if (custom) return custom
+  if (custom) {
+    // Light variants always keep their built-in neutral palette (bg/text/border)
+    // so a mirrored or inherited dark-mode customization can never make light
+    // mode render dark. Accent colors, fonts, glow, radius etc. still apply.
+    if (THEME_FAMILY_SIBLINGS[themeId] && LIGHT_THEMES.includes(themeId)) {
+      return stripModeNeutralColors(custom)
+    }
+    return custom
+  }
   // A theme with no customization of its own inherits its family sibling's look
   // (e.g. customizing `pacman` also styles `pacman-light`) so light/dark mode
   // never silently drops the admin's applied settings.
   const sibling = THEME_FAMILY_SIBLINGS[themeId]
   if (sibling && tc && typeof tc === 'object' && !Array.isArray(tc)) {
     const sib = tc[sibling]
-    if (sib && typeof sib === 'object' && !Array.isArray(sib)) return sib
+    if (sib && typeof sib === 'object' && !Array.isArray(sib)) {
+      // Inherit the sibling's accents/fonts/radius but keep this variant's own
+      // light/dark neutral palette (so light mode never turns dark).
+      return stripModeNeutralColors(sib)
+    }
   }
   return undefined
 }

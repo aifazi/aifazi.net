@@ -20,7 +20,7 @@ import {
 } from '../../core/framework-styles.js'
 import {
   CUSTOM_COLOR_TOKENS, applyThemeCustom, themeSelector,
-  combineFontOptions, filterFontOptions,
+  combineFontOptions, filterFontOptions, stripModeNeutralColors,
 } from '@/core/themeCustom'
 import { THEME_FAMILY_SIBLINGS } from '@/core/themeCatalog'
 
@@ -1718,14 +1718,23 @@ function ThemeLibrary() {
       // Mirror the look to the theme's light/dark family sibling (only when the
       // sibling has no explicit customization of its own) so toggling modes
       // never drops the applied settings — e.g. Pac-Man dark + light stay in sync.
+      // The sibling copy skips the mode-neutral palette tokens (bg/text/border)
+      // so the light variant keeps its own light background.
       const sibling = THEME_FAMILY_SIBLINGS[customTarget]
-      if (sibling && tc[sibling] === undefined) tc[sibling] = customDraft
+      let mirrored = false
+      if (sibling && tc[sibling] === undefined) {
+        const sibDraft = stripModeNeutralColors(customDraft)
+        if (sibDraft && Object.keys(sibDraft).length > 0) {
+          tc[sibling] = sibDraft
+          mirrored = true
+        }
+      }
       await api.put('/admin/site-settings', { themeCustom: tc })
       clearSiteSettingsCache()
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { themeCustom: tc } }))
       if (refreshSiteConfig) await refreshSiteConfig()
       const name = THEME_DEFS.find(t => t.id === customTarget)?.name || customTarget
-      toast.success(sibling && tc[sibling] === customDraft
+      toast.success(mirrored
         ? `Custom look saved for ${name} (light & dark mode)`
         : `Custom look saved for ${name}`, { title: '✅ Theme Customized' })
     } catch {
@@ -1748,7 +1757,8 @@ function ThemeLibrary() {
       // Mirror the reset to the family sibling when it holds the same (mirrored)
       // look, so a reset truly clears the family instead of leaving a stale copy.
       const sibling = THEME_FAMILY_SIBLINGS[customTarget]
-      if (sibling && removed && tc[sibling] && JSON.stringify(tc[sibling]) === JSON.stringify(removed)) {
+      if (sibling && removed && tc[sibling] &&
+          JSON.stringify(tc[sibling]) === JSON.stringify(stripModeNeutralColors(removed))) {
         delete tc[sibling]
       }
       await api.put('/admin/site-settings', { themeCustom: tc })
