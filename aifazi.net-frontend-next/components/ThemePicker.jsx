@@ -1075,6 +1075,8 @@ function getThemeFamily(id) {
     'ember-light':'ember-dark',  'cobalt-light':'cobalt-dark',
     'slate-light':'slate-dark',  'honey-light':'honey-dark',
     'violet-light':'violet-dark','teal-light':'teal-dark',
+    'mario-light':'mario', 'minecraft-light':'minecraft',
+    'sonic-light':'sonic', 'pacman-light':'pacman',
   }
   return map[id] || id
 }

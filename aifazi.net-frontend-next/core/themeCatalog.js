@@ -91,3 +91,11 @@ export const THEME_PAIRS = {
   'sonic':'sonic-light',        'sonic-light':'sonic',
   'pacman':'pacman-light',      'pacman-light':'pacman',
 }
+
+// Light ↔ dark sibling within the SAME family — THEME_PAIRS without the special
+// standalone `light` ↔ `cyber-dark` pairing (so customizing `light` never leaks
+// into the flagship cyber theme). Used to mirror per-family customization
+// (fonts / colors / radius / borders) across a theme's light and dark variants.
+export const THEME_FAMILY_SIBLINGS = Object.fromEntries(
+  Object.entries(THEME_PAIRS).filter(([a, b]) => a !== 'light' && b !== 'light')
+)

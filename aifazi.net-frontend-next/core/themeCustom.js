@@ -18,6 +18,7 @@
  * ╚══════════════════════════════════════════════════════════════╝
  */
 import { buildGoogleFontUrl, loadCustomFonts } from './fonts'
+import { THEME_FAMILY_SIBLINGS } from './themeCatalog'
 
 // ── Customizable core tokens ──────────────────────────────────────────────────
 // key → maps to --<key> in globals.css. `def` is the dark-mode default used to
@@ -215,7 +216,17 @@ export function resolveThemeCustom(siteConfig, themeId, opts = {}) {
   })
   if (match && match.draft && typeof match.draft === 'object') return match.draft
   const tc = siteConfig?.themeCustom
-  return tc && typeof tc === 'object' && !Array.isArray(tc) ? tc[themeId] : undefined
+  const custom = tc && typeof tc === 'object' && !Array.isArray(tc) ? tc[themeId] : undefined
+  if (custom) return custom
+  // A theme with no customization of its own inherits its family sibling's look
+  // (e.g. customizing `pacman` also styles `pacman-light`) so light/dark mode
+  // never silently drops the admin's applied settings.
+  const sibling = THEME_FAMILY_SIBLINGS[themeId]
+  if (sibling && tc && typeof tc === 'object' && !Array.isArray(tc)) {
+    const sib = tc[sibling]
+    if (sib && typeof sib === 'object' && !Array.isArray(sib)) return sib
+  }
+  return undefined
 }
 
 // ── Client-side applier ───────────────────────────────────────────────────────

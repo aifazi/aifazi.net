@@ -22,6 +22,7 @@ import {
   CUSTOM_COLOR_TOKENS, applyThemeCustom, themeSelector,
   combineFontOptions, filterFontOptions,
 } from '@/core/themeCustom'
+import { THEME_FAMILY_SIBLINGS } from '@/core/themeCatalog'
 
 // ── Framework preview tokens ──────────────────────────────────────────────────
 const _G   = 'var(--green)', _CY = 'var(--cyan)'
@@ -1714,12 +1715,19 @@ function ThemeLibrary() {
           ? siteConfig.themeCustom : {}),
         [customTarget]: customDraft,
       }
+      // Mirror the look to the theme's light/dark family sibling (only when the
+      // sibling has no explicit customization of its own) so toggling modes
+      // never drops the applied settings — e.g. Pac-Man dark + light stay in sync.
+      const sibling = THEME_FAMILY_SIBLINGS[customTarget]
+      if (sibling && tc[sibling] === undefined) tc[sibling] = customDraft
       await api.put('/admin/site-settings', { themeCustom: tc })
       clearSiteSettingsCache()
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { themeCustom: tc } }))
       if (refreshSiteConfig) await refreshSiteConfig()
       const name = THEME_DEFS.find(t => t.id === customTarget)?.name || customTarget
-      toast.success(`Custom look saved for ${name}`, { title: '✅ Theme Customized' })
+      toast.success(sibling && tc[sibling] === customDraft
+        ? `Custom look saved for ${name} (light & dark mode)`
+        : `Custom look saved for ${name}`, { title: '✅ Theme Customized' })
     } catch {
       toast.error('Failed to save theme customization')
     } finally { setSavingCustom(false) }
@@ -1735,7 +1743,14 @@ function ThemeLibrary() {
     if (!ok) return
     try {
       const tc = { ...(siteConfig.themeCustom || {}) }
+      const removed = tc[customTarget]
       delete tc[customTarget]
+      // Mirror the reset to the family sibling when it holds the same (mirrored)
+      // look, so a reset truly clears the family instead of leaving a stale copy.
+      const sibling = THEME_FAMILY_SIBLINGS[customTarget]
+      if (sibling && removed && tc[sibling] && JSON.stringify(tc[sibling]) === JSON.stringify(removed)) {
+        delete tc[sibling]
+      }
       await api.put('/admin/site-settings', { themeCustom: tc })
       clearSiteSettingsCache()
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { themeCustom: tc } }))
