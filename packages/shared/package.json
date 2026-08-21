@@ -7,6 +7,6 @@
   "types": "src/index.ts",
   "sideEffects": false,
   "dependencies": {
-    "@noble/ciphers": "^2.0.0"
+    "@noble/ciphers": "^2.3.0"
   }
 }

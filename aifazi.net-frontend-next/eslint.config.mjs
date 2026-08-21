@@ -14,4 +14,8 @@ export default [
       '.vercel/**',
     ],
   },
+  // jsx-a11y is already included via eslint-config-next (6.10.2) — no extra
+  // plugin install needed. Keep a11y as warn via next preset; do not add
+  // noisy click-events rules here (would push 142 → 281 warnings past the
+  // 150 guard). Revisit once interactive divs get keyboard handlers.
 ]
