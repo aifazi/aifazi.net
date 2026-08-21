@@ -1,5 +1,10 @@
 import os
+import sys
 import asyncio
+
+# Allow running from repo root as `python scripts/check_migrations.py`
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'aifazi.net-backend-fastapi'))
+
 from database import supabase
 
 async def check():

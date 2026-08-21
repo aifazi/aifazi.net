@@ -9,3 +9,6 @@ dist
 .vercel
 standalone.log
 .env*
+.DS_Store
+*.apk
+Thumbs.db
