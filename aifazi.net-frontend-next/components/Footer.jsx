@@ -428,7 +428,7 @@ function FooterCommand({ sectionLinks, platformLinks, socialLinks, hasAdminAcces
   return (
     <footer data-footer-style="command" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
       <div style={{ padding: 'clamp(32px,5vw,56px) clamp(16px,5vw,60px) 40px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#0b1220', border: '1px solid rgba(56,189,248,0.24)', borderRadius: 10, padding: '10px 14px', marginBottom: 36, maxWidth: 560 }}>
+        <div role="button" tabIndex={0} onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true })) } }} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#0b1220', border: '1px solid rgba(56,189,248,0.24)', borderRadius: 10, padding: '10px 14px', marginBottom: 36, maxWidth: 560, cursor: 'pointer', transition: 'border-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(56,189,248,0.45)'} onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(56,189,248,0.24)'}>
           <span style={{ color: P.accent, fontFamily: 'var(--font-mono)', fontSize: 13 }}>⌘</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted }}>Search docs, jump to tools, contact...</span>
           <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>

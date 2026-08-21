@@ -125,18 +125,22 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
   if (!open) return (
     <button
       onClick={() => { setOpen(true); setQuery(''); setSelected(0) }}
-      title="Command Palette (Ctrl+K)"
+      title="Search — Ctrl+K / ⌘K"
+      aria-label="Open command palette"
       style={{
-        fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2,
-        padding: '5px 10px', background: 'var(--bg3)',
+        fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+        padding: '6px 12px', background: 'var(--bg3)',
         border: '1px solid var(--border)', color: 'var(--muted)',
-        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-        transition: 'all 0.2s',
+        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+        borderRadius: 6, transition: 'all 0.2s', minWidth: 0,
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--green) 30%, transparent)'; e.currentTarget.style.color = 'var(--green)' }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
     >
-      <span style={{ fontSize: 11 }}>⌘</span> K
+      <span style={{ fontSize: 12, opacity: 0.7 }}>⌕</span>
+      <span className="cmd-label" style={{ letterSpacing: 1 }}>Search</span>
+      <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--bg)', border: '1px solid var(--border)', fontSize: 8, letterSpacing: 1, lineHeight: 1.4 }}>⌘ K</span>
+      <style>{`@media(max-width:900px){.cmd-label{display:none}}`}</style>
     </button>
   )
 
