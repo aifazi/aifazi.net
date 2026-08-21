@@ -15,7 +15,7 @@
  * A Redis cache on the backend would only speed up the API itself; the frontend
  * fix for FOUC is embedding the config in the HTML, which this module enables.
  */
-const TTL_MS = 30_000
+const TTL_MS = 10_000
 const FETCH_TIMEOUT_MS = 4_000
 
 let _cache: { data: Record<string, any>; at: number } | null = null
@@ -43,7 +43,7 @@ export async function getSiteConfigServer(): Promise<Record<string, any>> {
     const res = await fetch(`${base}/api/admin/site-settings`, {
       headers: { Accept: 'application/json' },
       signal: controller.signal,
-      next: { revalidate: 30 },
+      next: { revalidate: 10 },
     })
     clearTimeout(timer)
     if (!res.ok) return _cache?.data ?? {}

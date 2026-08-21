@@ -123,8 +123,13 @@ const _cdnCfg: CdnProxyConfig = {
 /** Returns the CDN proxy config derived from environment variables. */
 export function getCdnConfig(): CdnProxyConfig { return _cdnCfg }
 
-/** No-op — config is derived from env vars, not fetched at runtime. */
-export function refreshCdnConfig(): void {}
+/** No-op — CDN proxy config is derived from env vars (NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME).
+ * DB-backed provider creds are used server-side for uploads; cdnUrl() rewriting
+ * will pick up a new cloud name only after redeploy. Dispatch an event so
+ * MediaLibrary can re-render if needed. */
+export function refreshCdnConfig(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cdn-config-updated'))
+}
 
 /**
  * cdnUrl — rewrites a Cloudinary URL to go through the built-in Next.js CDN proxy.

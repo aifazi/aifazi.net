@@ -19,6 +19,7 @@ export default function FiveMLiveWidget({ compact = false }) {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial load + polling is intentional
     load()
     timerRef.current = setInterval(load, 30000)
     return () => clearInterval(timerRef.current)

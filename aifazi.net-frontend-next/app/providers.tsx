@@ -116,6 +116,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     const t = params.get('theme')
     if (t && VALID_THEMES.includes(t)) {
       // Respect admin lock: preview still works but not persisted as user choice
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional URL-driven preview on mount
       setThemeState(t as string)
       themeUrlSynced.current = true
     }

@@ -60,9 +60,8 @@ function CdnSettings() {
     setSaving(true)
     try {
       await api.put('/admin/cdn', cfg)
-      refreshCdnConfig()  // ← invalidate CDN config cache so MediaLibrary &
-                          //   cdnUrl() across the whole app pick up new settings
-      flash('ok', '✅ CDN settings saved. New uploads will use the active provider immediately.')
+      refreshCdnConfig()
+      flash('ok', '✅ CDN settings saved. New uploads use the active provider immediately. Note: cdnUrl() rewriting uses NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and needs a redeploy to pick up a new cloud name.')
       setActivityLog(p => [{ time: new Date().toLocaleTimeString(), type: 'save', status: 'ok', msg: `Saved  provider: ${cfg.provider}` }, ...p.slice(0, 19)])
     } catch (e) {
       flash('err', e.response?.data?.error || 'Save failed.')

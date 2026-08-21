@@ -138,7 +138,10 @@ function FloatingToolbar({ position, onCommand, onClose }) {
   }
 
   const insertLink = () => {
-    if (linkUrl) { exec('createLink', linkUrl); setShowLinkInput(false); setLinkUrl('') }
+    const raw = (linkUrl || '').trim()
+    if (!raw) return
+    if (/^\s*(javascript|data|vbscript|file|blob):/i.test(raw)) return
+    exec('createLink', raw); setShowLinkInput(false); setLinkUrl('')
   }
 
   const isActive = (cmd) => {
@@ -1203,22 +1206,26 @@ export function EditProvider({ children, initialContent = {} }) {
   // "Done" in FloatingNav — now a no-op; the EditModeBar handles save/discard
   const requestFinish = useCallback(() => {}, [])
 
-  // Commit all pending changes to backend
+  // Commit all pending changes — allSettled so partial failures are surfaced
+  // and no keys are merged until all succeed (no split-brain).
   const commitSave = useCallback(async () => {
+    const entries = Object.entries(pendingChanges)
+    if (entries.length === 0) { setEditingEnabled(false); document.body.classList.remove('editing-mode'); return }
     setSaving(true)
     setSaveError(null)
     try {
-      const entries = Object.entries(pendingChanges)
-      await Promise.all(entries.map(([key, value]) =>
-        api.put(`/content/${key}`, { value })
-      ))
-      // Merge into committed content
+      const results = await Promise.allSettled(entries.map(([key, value]) => api.put(`/content/${key}`, { value })))
+      const failed = results.filter(r => r.status === 'rejected')
+      if (failed.length > 0) {
+        const msg = failed.length === entries.length ? 'Failed to save. Check your connection and try again.' : `${failed.length} of ${entries.length} keys failed to save — none were applied. Retry.`
+        throw new Error(msg)
+      }
       setContent(prev => ({ ...prev, ...pendingChanges }))
       setPendingChanges({})
       setEditingEnabled(false)
       document.body.classList.remove('editing-mode')
     } catch (err) {
-      setSaveError('Failed to save. Check your connection and try again.')
+      setSaveError(err?.message || 'Failed to save. Check your connection and try again.')
     } finally {
       setSaving(false)
     }
