@@ -50,6 +50,10 @@
   --text-wrap-heading: balance;
   --text-wrap-body: pretty;
 
+  /* Glass — single blur/saturate for navbar + glass footer */
+  --glass-blur: 20px;
+  --glass-saturate: 1.4;
+
   color-scheme: dark;
 }
 
@@ -6921,8 +6925,8 @@ nav[data-header-style]:not([data-header-style="cyber"]) {
 }
 nav[data-header-style="glass"],
 nav[data-header-style="pill"] {
-  backdrop-filter: blur(20px) saturate(1.4) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
 }
 nav[data-header-style]:not([data-header-style="cyber"])::before,
 nav[data-header-style]:not([data-header-style="cyber"])::after {

@@ -477,7 +477,7 @@ export default function Navbar() {
         style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         background: scrolled ? hs.bg : (headerStyle === 'minimal' || headerStyle === 'editorial' || headerStyle === 'terminal' ? hs.bg : 'var(--nav-bg-top)'),
-        backdropFilter: headerStyle === 'glass' || headerStyle === 'pill' ? 'blur(20px) saturate(1.4)' : 'blur(16px)',
+        backdropFilter: headerStyle === 'glass' || headerStyle === 'pill' ? 'blur(var(--glass-blur)) saturate(var(--glass-saturate))' : 'blur(16px)',
         borderBottom: `1px solid ${hs.borderColor}`,
         transition: 'background 0.4s',
         ...(headerStyle === 'editorial' ? { borderTop: '3px solid var(--green)' } : {}),

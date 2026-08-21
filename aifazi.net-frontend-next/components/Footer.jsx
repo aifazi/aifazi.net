@@ -239,7 +239,7 @@ function FooterMagazine({ siteConfig, sectionLinks, platformLinks, socialLinks, 
 
 function FooterGlass({ siteConfig, sectionLinks, platformLinks, socialLinks, hasAdminAccess, handleHashLink, year }) {
   return (
-    <footer style={{ borderTop: '1px solid var(--border)', position: 'relative', zIndex: 1, overflow: 'hidden', background: 'var(--bg)', backdropFilter: 'blur(20px)' }}>
+    <footer style={{ borderTop: '1px solid var(--border)', position: 'relative', zIndex: 1, overflow: 'hidden', background: 'var(--bg)', backdropFilter: 'blur(var(--glass-blur))' }}>
       <div aria-hidden style={{ position: 'absolute', top: -60, left: '20%', width: 400, height: 200, borderRadius: '50%', background: 'radial-gradient(circle,rgba(0,0,0,0) 0%,transparent 70%)', backgroundImage: 'radial-gradient(circle, var(--green) 0%, transparent 70%)', opacity: 0.05, pointerEvents: 'none' }} />
       <div style={{ position: 'relative', zIndex: 1, padding: '48px 60px 32px', display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 60 }}>
         <div>
