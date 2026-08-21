@@ -485,7 +485,7 @@ export default function Navbar() {
         ...(headerStyle === 'terminal'  ? { fontFamily: 'monospace' } : {}),
         ...(headerStyle === 'retro'     ? { fontFamily: 'monospace', borderTop: '3px solid #ff2d8b', borderBottom: '3px solid #00e5ff' } : {}),
         ...(headerStyle === 'minimal'   ? { boxShadow: '0 1px 0 var(--border)' } : {}),
-        ...(headerStyle === 'pill'      ? { top: 14, left: 14, right: 14, borderRadius: 999, borderBottom: '1px solid var(--border)', boxShadow: hsShadow } : {}),
+        ...(headerStyle === 'pill'      ? { top: 'max(14px, env(safe-area-inset-top, 14px))', left: 'max(14px, env(safe-area-inset-left, 14px))', right: 'max(14px, env(safe-area-inset-right, 14px))', borderRadius: 999, borderBottom: '1px solid var(--border)', boxShadow: hsShadow } : {}),
         ...(headerStyle !== 'cyber' ? { '--hs-bg': hs.bg, '--hs-border': hsBorder, '--hs-shadow': hsShadow } : {}),
       }}>
         {/* Scroll progress bar */}
@@ -788,7 +788,7 @@ export default function Navbar() {
           <div className="nav-mobile-backdrop" onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 110 }} />
         )}
         {menuOpen && isMobileNav && (
-          <div id="site-mobile-menu" className="nav-mobile-menu" style={{ background: 'var(--bg)', backgroundImage: 'linear-gradient(180deg, color-mix(in srgb, var(--bg2) 88%, var(--bg) 12%), var(--bg))', backdropFilter: 'none', WebkitBackdropFilter: 'none', borderTop: '1px solid var(--border)', borderBottom: '1px solid color-mix(in srgb, var(--cyan) 22%, transparent)', display: 'flex', flexDirection: 'column', maxHeight: 'calc(100dvh - 68px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', animation: 'mobileMenuIn 0.22s cubic-bezier(0.16,1,0.3,1)', paddingBottom: 'env(safe-area-inset-bottom, 8px)', position: 'fixed', top: 68, left: 0, right: 0, width: '100vw', zIndex: 120, boxShadow: '0 24px 90px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+          <div id="site-mobile-menu" className="nav-mobile-menu" style={{ background: 'var(--bg)', backgroundImage: 'linear-gradient(180deg, color-mix(in srgb, var(--bg2) 88%, var(--bg) 12%), var(--bg))', backdropFilter: 'none', WebkitBackdropFilter: 'none', borderTop: '1px solid var(--border)', borderBottom: '1px solid color-mix(in srgb, var(--cyan) 22%, transparent)', display: 'flex', flexDirection: 'column', maxHeight: headerStyle === 'pill' ? 'calc(100dvh - 72px - env(safe-area-inset-top, 0px))' : 'calc(100dvh - 68px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', animation: 'mobileMenuIn var(--motion-normal) var(--ease-spring)', paddingBottom: 'env(safe-area-inset-bottom, 8px)', position: 'fixed', top: headerStyle === 'pill' ? 'calc(68px + env(safe-area-inset-top, 0px))' : 68, left: 0, right: 0, width: '100vw', zIndex: 120, boxShadow: '0 24px 90px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
             {navLinks.map(link => renderLink(link, true))}
             {/* Tools section */}
             {!isFiveM && (
