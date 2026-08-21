@@ -210,8 +210,9 @@ export default function OrderTrackingPage() {
             </Card>
           )}
 
-          <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <div style={{ textAlign: 'center', marginTop: 8, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <NeonButton to="/store" variant="ghost">← Back to Store</NeonButton>
+            <Link to="/helpdesk" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--cyan)', textDecoration: 'none', padding: '10px 18px', border: '1px solid var(--border)', borderRadius: 8, display: 'inline-flex', alignItems: 'center' }}>Need help? → Help Desk</Link>
           </div>
         </div>
       </div>

@@ -1,17 +1,34 @@
 'use client'
 import { Link } from '@/lib/router-compat'
 import { Badge } from '../../components/community'
+import { useWishlist } from '@/lib/wishlist'
 
 const C = 'var(--cyan)'
 
 export default function StoreProductCard({ product, cartLoading, addToCart }) {
   const detailUrl = `/store/product/${product.slug || product.id}`
   const color = product.on_sale ? 'var(--red)' : C
+  const { has, toggle } = useWishlist()
+  const wished = has(product.id)
 
   return (
     <Link to={detailUrl} className="ec-product-card" style={{ textDecoration: 'none', color: 'inherit' }}>
       {/* Image */}
       <div className="ec-product-image">
+        <button
+          aria-label={wished ? 'Remove from wishlist' : 'Add to wishlist'}
+          aria-pressed={wished}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggle(product.id) }}
+          style={{
+            position: 'absolute', top: 8, right: 8, zIndex: 2,
+            width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: wished ? 'color-mix(in srgb, var(--red) 18%, var(--bg) 82%)' : 'color-mix(in srgb, var(--bg) 88%, transparent)',
+            border: `1px solid ${wished ? 'var(--red)' : 'var(--border)'}`, color: wished ? 'var(--red)' : 'var(--muted)',
+            cursor: 'pointer', transition: 'all 0.2s', backdropFilter: 'blur(6px)',
+          }}
+        >
+          {wished ? '♥' : '♡'}
+        </button>
         <div className="ec-product-badge">
           {product.on_sale && <Badge tone="red" glow>SALE</Badge>}
         </div>
