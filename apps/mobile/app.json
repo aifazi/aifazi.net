@@ -64,7 +64,6 @@
         "REQUEST_INSTALL_PACKAGES",
         "POST_NOTIFICATIONS"
       ],
-      "networkSecurityConfig": "@xml/network_security_config",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -145,7 +144,9 @@
       }
     },
     "owner": "aifazi",
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "updates": {
       "url": "https://u.expo.dev/4cd9069e-469a-410f-90d3-942f4901470c",
       "channel": "production",
