@@ -13,7 +13,8 @@ export default function FiveMStatus() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.get('/fivem/status/overview')
+    let timer: any
+    const load = () => api.get('/fivem/status/overview')
       .then(r => {
         const d = r.data || {}
         setStatus(d.status)
@@ -22,6 +23,9 @@ export default function FiveMStatus() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
+    load()
+    timer = setInterval(load, 30000)
+    return () => clearInterval(timer)
   }, [])
 
   const online = status?.status === 'online'
