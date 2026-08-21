@@ -24,7 +24,7 @@ import {
   midpointIndex, samePath, normalizeRow,
 } from './builder/layoutUtils'
 
-const genId = () => `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`
+const genId = () => { try { return `b_${crypto.randomUUID().slice(0, 8)}` } catch { return `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}` } }
 
 const iconBtn = {
   fontFamily: 'var(--font-mono)', fontSize: 12, background: 'transparent', border: 'none',
@@ -258,8 +258,31 @@ export default function PageBuilder() {
   const [insert, setInsert] = useState(null) // { path, index } insertion point during drag
   const [editingLoc, setEditingLoc] = useState(null) // { path, index } of the block being edited
   const [preview, setPreview] = useState(false)
+  const [revisions, setRevisions] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
 
   const layoutKey = `layout.${slug.trim()}`
+
+  const loadRevisions = async () => {
+    try {
+      const r = await api.get(`/content/${layoutKey}/revisions`)
+      setRevisions(Array.isArray(r.data) ? r.data : [])
+    } catch { setRevisions([]) }
+  }
+  const restoreRevision = async (rev) => {
+    const ok = await confirm({ title: 'Restore Revision', message: `Restore version from ${new Date(rev.created_at).toLocaleString()}? Current layout will be overwritten (saved as new revision).`, variant: 'warning', confirmLabel: 'RESTORE' })
+    if (!ok) return
+    try {
+      const r = await api.post(`/content/${layoutKey}/restore`, { revision_id: rev.id })
+      const restored = r.data?.value ?? r.data
+      const val = Array.isArray(restored) ? restored : []
+      setLayout(JSON.parse(JSON.stringify(val)))
+      setAll(prev => ({ ...prev, [layoutKey]: val }))
+      setDirty(false)
+      toast.success(`Restored ${layoutKey}`, { title: 'Restored' })
+      loadRevisions()
+    } catch { toast.error('Restore failed', { title: 'Error' }) }
+  }
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -300,6 +323,7 @@ export default function PageBuilder() {
       setDirty(false)
       setAll(prev => ({ ...prev, [layoutKey]: layout }))
       toast.success(`Saved /pages/${s}`, { title: 'Page Published' })
+      loadRevisions()
     } catch { toast.error('Save failed — check your permission', { title: 'Error' }) }
     finally { setSaving(false) }
   }
@@ -380,6 +404,7 @@ export default function PageBuilder() {
         title="Drag-and-drop page builder"
         subtitle="Pick pre-made blocks from the palette and drag them onto the page, reorder them, edit props, and publish. Row blocks let you place blocks side by side in 2–4 column grids. Pages render at /pages/<slug>."
         actions={<>
+          <button onClick={() => { setShowHistory(v => !v); if (!showHistory) loadRevisions() }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 10, padding: '8px 14px' }}>{showHistory ? '✕ HISTORY' : '◷ HISTORY'}</button>
           <button onClick={clearPage} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.35)', fontSize: 10, padding: '8px 14px' }}>CLEAR</button>
           <button onClick={save} disabled={!dirty || saving} style={{ ...S.btn('color-mix(in srgb, var(--green) 12%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 45%, transparent)', fontSize: 10, padding: '8px 14px' }}>{saving ? 'SAVING…' : (dirty ? '● PUBLISH' : 'PUBLISHED ✓')}</button>
         </>}
@@ -403,6 +428,23 @@ export default function PageBuilder() {
           </div>
         )}
       </div>
+
+      {showHistory && (
+        <div style={{ border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg2)', padding: 12, marginBottom: 14 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>REVISIONS — {layoutKey}</div>
+          {revisions.length === 0 ? (
+            <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>No revisions yet — save to create one.</div>
+          ) : revisions.map(rev => (
+            <div key={rev.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>{new Date(rev.created_at).toLocaleString()} — {rev.editor || 'unknown'}</div>
+                <div style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{Array.isArray(rev.value) ? `${rev.value.length} blocks` : typeof rev.value === 'object' ? 'snapshot' : ''}</div>
+              </div>
+              <button onClick={() => restoreRevision(rev)} style={{ ...S.btn('transparent', 'var(--orange)'), border: '1px solid rgba(255,107,53,0.35)', fontSize: 9, padding: '5px 10px', flexShrink: 0 }}>RESTORE</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: 14, alignItems: 'start' }}>
         {/* Palette */}
