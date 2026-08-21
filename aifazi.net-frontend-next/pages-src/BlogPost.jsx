@@ -835,7 +835,7 @@ export default function BlogPost({ initialPost }) {
       </div>
 
       <style>{`
-        .blog-hero-cover { width: 100%; height: clamp(220px, 38vh, 420px); overflow: hidden; position: relative; }
+        .blog-hero-cover { width: 100%; aspect-ratio: 16/9; height: clamp(220px, 38vh, 420px); max-height: 420px; overflow: hidden; position: relative; background: var(--bg3); }
         .blog-post-shell {
           width: min(1180px, calc(100vw - 32px));
           margin: 0 auto;
