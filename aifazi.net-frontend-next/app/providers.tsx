@@ -107,6 +107,32 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   const [authEpoch, setAuthEpoch] = useState(0)
 
   const [theme, setThemeState] = useState(initTheme)
+  const themeUrlSynced = useRef(false)
+
+  // Shareable theme URL — ?theme=xxx sets visitor preview; theme changes update the URL
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const t = params.get('theme')
+    if (t && VALID_THEMES.includes(t)) {
+      // Respect admin lock: preview still works but not persisted as user choice
+      setThemeState(t as string)
+      themeUrlSynced.current = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (themeUrlSynced.current) { themeUrlSynced.current = false; return }
+    try {
+      const url = new URL(window.location.href)
+      const cur = url.searchParams.get('theme')
+      if (cur !== theme) {
+        url.searchParams.set('theme', theme)
+        window.history.replaceState(null, '', url.toString())
+      }
+    } catch {}
+  }, [theme])
 
   const [userPackage, setUserPackageState] = useState<{ id: string; settings: Record<string, any> } | null>(() => {
     if (typeof window === 'undefined') return null
