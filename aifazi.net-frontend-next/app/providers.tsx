@@ -134,6 +134,14 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     } catch {}
   }, [theme])
 
+  // PWA: register /sw.js in production for offline cache (blog/forum reads)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (process.env.NODE_ENV !== 'production') return
+    if (!('serviceWorker' in navigator)) return
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  }, [])
+
   const [userPackage, setUserPackageState] = useState<{ id: string; settings: Record<string, any> } | null>(() => {
     if (typeof window === 'undefined') return null
     const pkg = getUserPackage()

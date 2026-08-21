@@ -8,9 +8,9 @@ import { isGsapAnimationValue, useGsapAnimation } from '@/lib/animate'
 
 const SANITIZE_CONFIG = {
   ALLOWED_TAGS: ['b','i','u','em','strong','a','p','br','ul','ol','li','h1','h2','h3','h4','h5','h6','span','div','img','blockquote','code','pre','sup','sub','table','tr','td','th','hr'],
-  ALLOWED_ATTR: ['href','src','alt','title','target','rel','class','style','colspan','rowspan'],
+  ALLOWED_ATTR: ['href','src','alt','title','target','rel','class','colspan','rowspan'],
   FORBID_TAGS: ['script','iframe','object','embed','form','input','textarea','select','button','style','link','meta','base'],
-  FORBID_ATTR: ['onerror','onload','onclick','onmouseover','onmouseout','onfocus','onblur','onsubmit','onchange'],
+  FORBID_ATTR: ['onerror','onload','onclick','onmouseover','onmouseout','onfocus','onblur','onsubmit','onchange','style'],
   ALLOW_DATA_ATTR: false,
 }
 

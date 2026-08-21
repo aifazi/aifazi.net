@@ -44,7 +44,10 @@ function escapeJsonForInline(value: unknown): string {
 export default async function AdminPage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { valid, user } = await verifyAdminSession()
 
-  if (!valid) {
+  const allowedRoles = ['admin', 'moderator', 'editor']
+  const isStaff = valid && user && allowedRoles.includes(user.role)
+
+  if (!isStaff) {
     const loginUrl = new URL('/login', SITE_URL)
     loginUrl.searchParams.set('tab', 'signin')
     loginUrl.searchParams.set('next', '/admin')

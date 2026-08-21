@@ -9,7 +9,7 @@ import { CDN_URL } from '@/lib/config'
 // -- Masked secret field renderer ------------------------------------------
 const SecretField = ({ label, placeholder, help, value, onChange, T }) => {
   const val = value || ''
-  const isMaskedVal = val && (val.includes('') || val.includes('...'))
+  const isMaskedVal = val && (val.includes('•') || val.includes('***') || val.includes('...'))
   return (
     <div>
       <label style={T.label}>{label} <span style={{ color: '#ff4757' }}>*</span></label>
