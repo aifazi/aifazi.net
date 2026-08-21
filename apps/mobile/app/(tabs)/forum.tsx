@@ -70,7 +70,7 @@ export default function ForumScreen() {
   const [threads, setThreads] = useState<Thread[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [cat, setCat] = useState<string>('')
-  const [sort, setSort] = useState<'new' | 'top'>('new')
+  const [sort, setSort] = useState<'hot' | 'new' | 'top' | 'old'>('hot')
   const [input, setInput] = useState('')
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
@@ -188,7 +188,7 @@ export default function ForumScreen() {
 
             <View style={{ marginBottom: SPACE.xl }}>
               <CategoryPills
-                items={[{ key: 'new', label: 'New' }, { key: 'top', label: 'Top' }]}
+                items={[{ key: 'hot', label: 'Hot' }, { key: 'new', label: 'New' }, { key: 'top', label: 'Top' }, { key: 'old', label: 'Old' }]}
                 active={sort}
                 onSelect={setSort}
               />
