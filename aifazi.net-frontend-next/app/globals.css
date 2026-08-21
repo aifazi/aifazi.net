@@ -39,6 +39,13 @@
   --nav-bg-top:      rgba(6,10,15,0.55);
   --grid-line: rgba(0,212,255,0.03);
 
+  /* Motion — single source for durations/easings; respects reduced-motion below */
+  --motion-fast:   150ms;
+  --motion-normal: 280ms;
+  --motion-slow:   480ms;
+  --ease-spring:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out:      cubic-bezier(0.25, 1, 0.5, 1);
+
   color-scheme: dark;
 }
 
@@ -304,6 +311,9 @@ img { max-width: 100%; }
   flex-shrink: 0;
 }
 
+/* ── Motion tokens consumed by inline styles via var() where possible ── */
+.skeleton-shimmer { animation-duration: var(--motion-slow); }
+
 /* ── Reduced-motion: kill all animations except essential ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -312,7 +322,10 @@ img { max-width: 100%; }
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .scanline { display: none; }
+  .scanline,
+  .theme-preview-anim { display: none !important; }
+  /* ThemePicker live previews are decorative — hide motion entirely */
+  [data-theme-preview] { animation: none !important; transition: none !important; }
 }
 @keyframes fadeLeft { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
 @keyframes fadeRight { from{opacity:0;transform:translateX(-40px)} to{opacity:1;transform:translateX(0)} }
