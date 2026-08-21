@@ -10,7 +10,7 @@ import bcrypt as _bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from database import supabase
+from database import safe_search_term, supabase
 from dependencies import get_current_user
 from utils.link_safety import schedule_scan
 
@@ -183,8 +183,10 @@ async def list_threads(
         q = q.eq("category_id", category_id)
         count_q = count_q.eq("category_id", category_id)
     if search:
-        q = q.ilike("title", f"%{search}%")
-        count_q = count_q.ilike("title", f"%{search}%")
+        _s = safe_search_term(search)
+        if _s:
+            q = q.ilike("title", f"%{_s}%")
+            count_q = count_q.ilike("title", f"%{_s}%")
     offset = (page - 1) * limit
 
     if sort == "top":

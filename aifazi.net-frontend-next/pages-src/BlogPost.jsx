@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from '@/lib/router-compat'
 import NextImage from 'next/image'
 import api, { mediaUrl } from '@/lib/api'
-import DOMPurify from 'dompurify'
+import DOMPurify from 'isomorphic-dompurify'
 import PageMeta from '../components/PageMeta'
 import { Slider } from '../core/ui.jsx'
 import { getSupabase } from '@/lib/supabase'
@@ -695,10 +695,14 @@ export default function BlogPost({ initialPost }) {
   )
 
   const tags = typeof post.tags === 'string' ? JSON.parse(post.tags) : (post.tags || [])
-  const sanitizedContent = DOMPurify.sanitize(post.content || '<p style="color:var(--muted)">No content yet.</p>', {
+  const _rawSanitized = DOMPurify.sanitize(post.content || '<p style="color:var(--muted)">No content yet.</p>', {
     ADD_TAGS: ['iframe'],
     ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'src', 'title'],
   })
+  // Only allow youtube/vimeo embeds — strip any other iframe src (e.g. https://evil.com, javascript:).
+  const sanitizedContent = _rawSanitized.replace(/<iframe[^>]*\ssrc=["']([^"']*)["'][^>]*>/gi, (m, src) =>
+    /^(https:\/\/(www\.youtube\.com|www\.youtube-nocookie\.com|player\.vimeo\.com)\/embed\/)/.test(src) ? m : ''
+  )
 
   return (
     <div className="page-container" style={{ position: 'relative', zIndex: 1 }}>

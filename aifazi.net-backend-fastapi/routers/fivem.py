@@ -18,7 +18,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 import txadmin_service as txa
-from database import supabase
+from database import safe_search_term, supabase
 from dependencies import get_current_user, require_admin, require_staff
 from utils.fivem_shared import active_priority as shared_active_priority
 from utils.fivem_shared import now as shared_now
@@ -939,7 +939,9 @@ async def search_whitelist(
         query = query.eq("status", status)
 
     if q and q.strip():
-        t = q.strip()
+        t = safe_search_term(q.strip())
+        if not t:
+            return {"applications": [], "total": 0, "query": q}
         # Try with email first; fall back without it if column missing
         try:
             res = query.or_(

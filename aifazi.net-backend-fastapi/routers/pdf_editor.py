@@ -21,9 +21,11 @@ import io
 import time
 import uuid
 
-from fastapi import APIRouter, File, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+
+from dependencies import get_current_user
 
 router = APIRouter()
 
@@ -245,7 +247,7 @@ def _page_is_huge(page) -> bool:
 
 
 @router.post("/open")
-async def open_pdf(request: Request, file: UploadFile = File(...)):
+async def open_pdf(request: Request, file: UploadFile = File(...), _: dict = Depends(get_current_user)):
     import fitz
     content = await file.read()
     if not content: raise HTTPException(400, "Empty file")
@@ -278,7 +280,7 @@ async def open_pdf(request: Request, file: UploadFile = File(...)):
             "size_bytes": len(content)}
 
 @router.get("/page/{session_id}/{page_num}")
-async def render_page(request: Request, session_id: str, page_num: int, scale: float = 1.5):
+async def render_page(request: Request, session_id: str, page_num: int, scale: float = 1.5, _: dict = Depends(get_current_user)):
     import fitz
     sess = _require_session(request, session_id)
     _touch(session_id)
@@ -301,11 +303,11 @@ async def render_page(request: Request, session_id: str, page_num: int, scale: f
                     headers={"Cache-Control": "no-store"})
 
 @router.get("/thumb/{session_id}/{page_num}")
-async def thumbnail(request: Request, session_id: str, page_num: int):
+async def thumbnail(request: Request, session_id: str, page_num: int, _: dict = Depends(get_current_user)):
     return await render_page(request, session_id, page_num, scale=0.28)
 
 @router.get("/info/{session_id}")
-async def get_info(request: Request, session_id: str):
+async def get_info(request: Request, session_id: str, _: dict = Depends(get_current_user)):
     import fitz
     sess = _require_session(request, session_id)
     _touch(session_id)
@@ -317,7 +319,7 @@ async def get_info(request: Request, session_id: str):
     return {"page_count": len(pages), "pages": pages, "metadata": meta}
 
 @router.post("/export")
-async def export_pdf(request: Request, body: ExportBody):
+async def export_pdf(request: Request, body: ExportBody, _: dict = Depends(get_current_user)):
     import fitz
     sess = _require_session(request, body.session_id)
     _touch(body.session_id)
@@ -329,13 +331,13 @@ async def export_pdf(request: Request, body: ExportBody):
         headers={"Content-Disposition": 'attachment; filename="edited.pdf"'})
 
 @router.post("/close")
-async def close_session(request: Request, body: CloseBody):
+async def close_session(request: Request, body: CloseBody, _: dict = Depends(get_current_user)):
     _require_session(request, body.session_id)
     _sessions.pop(body.session_id, None)
     return {"closed": True}
 
 @router.post("/search")
-async def search_pdf(request: Request, body: SearchBody):
+async def search_pdf(request: Request, body: SearchBody, _: dict = Depends(get_current_user)):
     import fitz
     sess = _require_session(request, body.session_id)
     _touch(body.session_id)
@@ -375,7 +377,7 @@ async def search_pdf(request: Request, body: SearchBody):
     return {"total": total, "matches": results}
 
 @router.post("/ocr")
-async def ocr_pdf(request: Request, body: CloseBody):
+async def ocr_pdf(request: Request, body: CloseBody, _: dict = Depends(get_current_user)):
     """Run Tesseract OCR on every page and replace the session's PDF with an
     OCR'd copy that has a searchable/editable text layer."""
     import fitz

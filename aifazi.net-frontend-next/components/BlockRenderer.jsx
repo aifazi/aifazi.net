@@ -4,7 +4,7 @@
 // images via EditableImage, lists via EditableList — so a builder-made page is
 // fully editable from the public site too (Ctrl/Cmd+E when signed in as admin).
 import { EditableText, EditableImage, EditableList, EditableLink } from '@/context/EditContext'
-import DOMPurify from 'dompurify'
+import DOMPurify from 'isomorphic-dompurify'
 import { BLOCKS } from '@/pages-src/admin/builder/blockLibrary'
 import { normalizeRow } from '@/pages-src/admin/builder/layoutUtils'
 
