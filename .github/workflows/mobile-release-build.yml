@@ -134,7 +134,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
 
@@ -143,6 +143,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: 'gradle'
 
       - name: Install dependencies
         working-directory: apps/mobile
@@ -214,6 +215,7 @@ jobs:
       - name: Generate Android project
         working-directory: apps/mobile
         run: |
+          rm -rf android
           npx expo prebuild --platform android --no-install
           echo "React Native architectures: $(grep '^reactNativeArchitectures=' android/gradle.properties)"
 
@@ -228,6 +230,7 @@ jobs:
             echo "Then: base64 -w0 release.keystore" >&2
             exit 1
           fi
+          trap 'shred -u app/release.keystore 2>/dev/null || rm -f app/release.keystore' EXIT
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/release.keystore
           if [ ! -s app/release.keystore ]; then
             echo "Decoded keystore is empty â€” check the ANDROID_KEYSTORE_BASE64 secret." >&2
