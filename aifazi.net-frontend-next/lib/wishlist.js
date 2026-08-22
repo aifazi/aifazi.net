@@ -1,12 +1,20 @@
 'use client'
 const KEY = 'aifazi_wishlist'
 
+let _cache = []
+let _cacheRaw = '[]'
 function read() {
-  if (typeof window === 'undefined') return []
-  try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch { return [] }
+  if (typeof window === 'undefined') return _cache
+  const raw = localStorage.getItem(KEY) || '[]'
+  if (raw === _cacheRaw) return _cache
+  _cacheRaw = raw
+  try { _cache = JSON.parse(raw) } catch { _cache = [] }
+  return _cache
 }
 function write(ids) {
-  localStorage.setItem(KEY, JSON.stringify(ids))
+  _cache = ids
+  _cacheRaw = JSON.stringify(ids)
+  localStorage.setItem(KEY, _cacheRaw)
   window.dispatchEvent(new CustomEvent('wishlist-change', { detail: ids }))
 }
 
@@ -21,7 +29,7 @@ export function toggleWishlist(id) {
 }
 export function clearWishlist() { write([]) }
 
-import { useState, useEffect, useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from 'react'
 function subscribe(cb) {
   window.addEventListener('wishlist-change', cb)
   window.addEventListener('storage', cb)
