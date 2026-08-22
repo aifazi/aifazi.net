@@ -21,8 +21,10 @@ export default function FiveMLiveWidget({ compact = false }) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial load + polling is intentional
     load()
-    timerRef.current = setInterval(load, 30000)
-    return () => clearInterval(timerRef.current)
+    const tick = () => { if (!document.hidden) load() }
+    timerRef.current = setInterval(tick, 30000)
+    document.addEventListener('visibilitychange', tick)
+    return () => { clearInterval(timerRef.current); document.removeEventListener('visibilitychange', tick) }
   }, [])
 
   const fivem = data?.status && typeof data.status === 'object' ? data.status : null

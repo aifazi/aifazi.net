@@ -1,5 +1,6 @@
 // Minimal offline cache — same-origin GET only, network-first for API
-const CACHE = 'aifazi-v1'
+// Bump version on deploy (or inject BUILD_ID) to invalidate stale chunks
+const CACHE = 'aifazi-v2'
 const OFFLINE_URLS = ['/', '/blog', '/forum']
 
 self.addEventListener('install', (e) => {

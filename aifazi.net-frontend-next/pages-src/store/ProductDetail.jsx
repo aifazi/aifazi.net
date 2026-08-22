@@ -98,12 +98,12 @@ export default function ProductDetail() {
 
       <div className="community-shell product-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 0.9fr)', gap: 'clamp(24px, 5vw, 56px)', alignItems: 'start' }}>
         {/* Image */}
-        <div>
+        <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg3)' }}>
           {product.image_url ? (
-            <img src={product.image_url} alt={product.name}
-              style={{ width: '100%', borderRadius: 14, border: '1px solid var(--border)', maxHeight: 440, objectFit: 'cover' }} />
+            // eslint-disable-next-line @next/next/no-img-element -- use NextImage for optimized LCP
+            <img src={product.image_url} alt={product.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <div style={{ width: '100%', height: 300, borderRadius: 14, border: '1px solid var(--border)', background: 'linear-gradient(160deg, var(--cyan)12, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80 }}>🛒</div>
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80, background: 'linear-gradient(160deg, var(--cyan)12, transparent)' }}>🛒</div>
           )}
         </div>
 
