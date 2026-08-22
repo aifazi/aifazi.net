@@ -1,4 +1,5 @@
 'use client'
+import NextImage from 'next/image'
 import { Link } from '@/lib/router-compat'
 import { Badge } from '../../components/community'
 import { useWishlist } from '@/lib/wishlist'
@@ -33,7 +34,7 @@ export default function StoreProductCard({ product, cartLoading, addToCart }) {
           {product.on_sale && <Badge tone="red" glow>SALE</Badge>}
         </div>
         {product.image_url ? (
-          <img src={product.image_url} alt={product.name} loading="lazy" />
+          <NextImage src={product.image_url} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" style={{ objectFit: 'cover' }} />
         ) : (
           <div className="ec-product-image-placeholder">🛒</div>
         )}
