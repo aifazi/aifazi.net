@@ -939,18 +939,8 @@ export default function Footer() {
   }
   const fs = FS[footerStyle] || FS.cyber
 
-  const monoLink = {
-    fontFamily: 'var(--font-mono)', fontSize: 11, color: fs.muted,
-    textDecoration: 'none', letterSpacing: 1, lineHeight: 2.3,
-    transition: 'color 0.2s', display: 'block',
-    background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left',
-  }
-
-  const colHead = {
-    fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3,
-    color: fs.sub, marginBottom: 14, paddingBottom: 8,
-    borderBottom: `1px solid ${fs.border}`, display: 'block',
-  }
+  const monoLink = { color: fs.muted }
+  const colHead = { color: fs.sub, borderBottom: `1px solid ${fs.border}` }
 
   return (
     <footer suppressHydrationWarning style={{ borderTop: fs.topBorder, background: fs.bg, position: 'relative', zIndex: 1, overflow: 'hidden' }}>
@@ -1048,7 +1038,7 @@ export default function Footer() {
 
         {/* COL 2 – Navigate ────────────────────────────────────────────── */}
         <div>
-          <span style={colHead}>NAVIGATE</span>
+          <span className="ft-colhead" style={colHead}>NAVIGATE</span>
           {sectionLinks.map(({ label, hash }) => (
             <a key={hash} href={`/#${hash}`} className="ft-link"
               style={{ ...monoLink, transition: 'color 0.2s, padding-left 0.2s' }}
@@ -1059,7 +1049,7 @@ export default function Footer() {
 
         {/* COL 3 – Platform ────────────────────────────────────────────── */}
         <div>
-          <span style={colHead}>PLATFORM</span>
+          <span className="ft-colhead" style={colHead}>PLATFORM</span>
           {platformLinks.map(({ label, to }) => (
             <Link key={to} to={to} className="ft-link"
               style={{ ...monoLink, transition: 'color 0.2s, padding-left 0.2s' }}
@@ -1068,7 +1058,7 @@ export default function Footer() {
           {hasAdminAccess && (
             <>
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                <span style={{ ...colHead, fontSize: 7, marginBottom: 8 }}>ADMIN ACCESS</span>
+                <span className="ft-colhead" style={{ ...colHead, fontSize: 7, marginBottom: 8 }}>ADMIN ACCESS</span>
                 {[
                   { label: '⚡ Dashboard', to: '/admin' },
                   { label: '📋 Audit Log', to: '/admin' },
@@ -1085,7 +1075,7 @@ export default function Footer() {
 
         {/* COL 4 – System status ───────────────────────────────────────── */}
         <div>
-          <span style={colHead}>SYSTEM</span>
+          <span className="ft-colhead" style={colHead}>SYSTEM</span>
           <SystemStatus />
         </div>
       </div>

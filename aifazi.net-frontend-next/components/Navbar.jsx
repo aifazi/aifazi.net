@@ -418,27 +418,21 @@ export default function Navbar() {
     const active = isActive(link)
     const activeColor = hs.activeLinkColor
     const mutedColor  = hs.linkColor
+    const mono = headerStyle === 'terminal' || headerStyle === 'retro'
+    const baseClass = mobile ? `nav-link--mobile${mono ? ' nav-link--mono' : ''}` : `nav-link${mono ? ' nav-link--mono' : ''}`
     const baseStyle = mobile ? {
-      fontFamily: headerStyle === 'terminal' || headerStyle === 'retro' ? 'monospace' : 'var(--font-code)', fontSize: 13, letterSpacing: 2,
-      textTransform: 'uppercase', padding: '16px 24px',
       color: active ? activeColor : mutedColor,
-      textDecoration: 'none', display: 'block', width: '100%', textAlign: 'left',
-      background: active ? `${activeColor}0a` : 'none', border: 'none', cursor: 'pointer',
+      background: active ? `${activeColor}0a` : 'none',
       borderLeft: active ? `3px solid ${activeColor}` : '3px solid transparent',
-      minHeight: 52, boxSizing: 'border-box',
     } : {
-      fontFamily: headerStyle === 'terminal' || headerStyle === 'retro' ? 'monospace' : 'var(--font-code)', fontSize: 11, letterSpacing: 3,
-      textTransform: 'uppercase', color: active ? activeColor : mutedColor,
-      textDecoration: 'none', transition: 'color 0.3s',
-      position: 'relative', paddingBottom: 4,
-      background: 'none', border: 'none', cursor: 'pointer',
+      color: active ? activeColor : mutedColor,
     }
 
     const hover = { enter: e => { if (!active) e.currentTarget.style.color = activeColor },
                     leave: e => { if (!active) e.currentTarget.style.color = mutedColor } }
 
     if (link.type === 'hash') return (
-      <a key={link.hash} href={`/#${link.hash}`} style={baseStyle}
+      <a key={link.hash} href={`/#${link.hash}`} className={baseClass} style={baseStyle}
         onClick={e => handleHashLink(e, link.hash)}
         onMouseEnter={hover.enter} onMouseLeave={hover.leave}
       >
@@ -447,7 +441,7 @@ export default function Navbar() {
     )
 
     if (link.type === 'contact') return (
-      <Link key="contact" to="/contact" state={{ from: location.pathname }} style={baseStyle}
+      <Link key="contact" to="/contact" state={{ from: location.pathname }} className={baseClass} style={baseStyle}
         onMouseEnter={hover.enter} onMouseLeave={hover.leave}
       >
         {link.label}{!mobile && active && <ActiveBar />}
@@ -455,7 +449,7 @@ export default function Navbar() {
     )
 
     return (
-      <Link key={link.to} to={link.to} style={baseStyle}
+      <Link key={link.to} to={link.to} className={baseClass} style={baseStyle}
         onMouseEnter={hover.enter} onMouseLeave={hover.leave}
       >
         {link.label}{!mobile && active && <ActiveBar />}

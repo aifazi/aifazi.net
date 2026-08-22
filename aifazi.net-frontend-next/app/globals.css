@@ -326,6 +326,32 @@ img { max-width: 100%; }
 h1, h2, h3, h4 { text-wrap: balance; }
 p, li, blockquote { text-wrap: pretty; }
 
+/* ── Deduped nav/footer link styles — replaces inline baseStyle objects ── */
+.nav-link {
+  font-family: var(--font-code); font-size: 11px; letter-spacing: 3px;
+  text-transform: uppercase; text-decoration: none; position: relative;
+  padding-bottom: 4px; background: none; border: none; cursor: pointer;
+  transition: color var(--motion-fast) var(--ease-out);
+}
+.nav-link--mobile {
+  font-family: var(--font-code); font-size: 13px; letter-spacing: 2px;
+  text-transform: uppercase; padding: 16px 24px; display: block; width: 100%;
+  text-align: left; background: none; border: none; cursor: pointer;
+  border-left: 3px solid transparent; min-height: 52px; box-sizing: border-box;
+  text-decoration: none;
+}
+.nav-link--mono { font-family: monospace; }
+.ft-link {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px;
+  line-height: 2.3; text-decoration: none; display: block;
+  background: none; border: none; cursor: pointer; padding: 0; text-align: left;
+  transition: color var(--motion-fast) var(--ease-out);
+}
+.ft-colhead {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 3px;
+  margin-bottom: 14px; padding-bottom: 8px; display: block;
+}
+
 /* ── Reduced-motion: kill all animations except essential ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
