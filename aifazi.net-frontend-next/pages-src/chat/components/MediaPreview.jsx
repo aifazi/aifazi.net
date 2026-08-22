@@ -88,6 +88,7 @@ function RichLinkCard({ url, right }) {
     <div style={{ maxWidth: 420, minWidth: 220, borderRadius: 10, overflow: 'hidden', border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.03)' }}>
       <a href={preview.url || url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
         {preview.image && (
+          // eslint-disable-next-line @next/next/no-img-element -- external preview image, not from CDN
           <img src={preview.image} alt="" loading="lazy"
             style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block', borderBottom: `1px solid ${T.border}` }}
             onError={e => { e.target.style.display = 'none' }} />
@@ -141,6 +142,7 @@ export function MediaPreviews({ text, onMediaClick, right }) {
         const clean = cleanUrl(url)
         if (isImageUrl(clean)) {
           return <div key={i} style={{ maxWidth: 420 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- user-provided chat image, external */ }
             <img src={clean} alt="" loading="lazy" style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, objectFit: 'cover', cursor: 'pointer', border: `1px solid ${T.border}` }}
               onError={e => { e.target.style.display = 'none' }} onClick={() => onMediaClick?.({ url: clean, type: 'image' })} />
           </div>
