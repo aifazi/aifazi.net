@@ -26,7 +26,7 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@babel/parser": "^7.29.8",
+    "@babel/parser": "^8.0.4",
     "@babel/plugin-syntax-jsx": "^7.28.6",
     "@types/node": "^20.14.2",
     "@types/react": "^19.2.18",
