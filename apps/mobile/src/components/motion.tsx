@@ -1,5 +1,5 @@
-import { ReactNode, useEffect, useRef } from 'react'
-import { Animated, Easing, useWindowDimensions, View, ViewStyle, StyleProp, DimensionValue } from 'react-native'
+import { ReactNode, useEffect, useRef, useState } from 'react'
+import { Animated, Easing, useWindowDimensions, View, ViewStyle, StyleProp, DimensionValue, AppState, AccessibilityInfo } from 'react-native'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
 
@@ -14,6 +14,18 @@ export function AmbientBackground() {
   const orb1 = useRef(new Animated.Value(0)).current
   const orb2 = useRef(new Animated.Value(0)).current
   const orb3 = useRef(new Animated.Value(0)).current
+  const [reduceMotion, setReduceMotion] = useState(false)
+  const [appActive, setAppActive] = useState(true)
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(v => v != null && setReduceMotion(v))
+    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', setReduceMotion)
+    return () => sub?.remove()
+  }, [])
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', s => setAppActive(s === 'active'))
+    return () => sub.remove()
+  }, [])
+  if (reduceMotion || !appActive) return null
 
   useEffect(() => {
     const d = Animated.loop(

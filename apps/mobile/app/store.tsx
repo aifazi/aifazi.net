@@ -12,6 +12,7 @@ import { Loader } from '@/src/components/Loader'
 import { Reveal, stagger } from '@/src/components/motion'
 import { Icon } from '@/src/components/icon'
 import { useWishlist } from '@/src/lib/wishlist'
+import { getCached, setCached } from '@/src/lib/cache'
 
 interface StoreCat {
   id: string
@@ -56,9 +57,15 @@ export default function StoreScreen() {
   const { has: hasWish, toggle: toggleWish } = useWishlist()
 
   const load = useCallback(() => {
+    const cacheKey = `store:${cat}`
+    getCached<Product[]>(cacheKey).then(cached => { if (cached && cached.length) { setProducts(cached); setLoading(false) } })
     api
       .get('/store/products', { params: cat ? { category: cat, limit: 50 } : { limit: 50 } })
-      .then((r) => setProducts((r.data ?? []) as Product[]))
+      .then((r) => {
+        const rows = (r.data ?? []) as Product[]
+        setProducts(rows)
+        if (rows.length) setCached(cacheKey, rows)
+      })
       .catch((e) => setErr(e?.response?.data?.detail || 'Could not load store'))
       .finally(() => { setLoading(false); setRefreshing(false) })
   }, [cat])
@@ -140,7 +147,11 @@ export default function StoreScreen() {
       ) : null}
 
       {loading ? (
-        <Loader />
+        <View style={{ gap: SPACE.lg }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View key={i} style={{ height: 84, borderRadius: 12, backgroundColor: c.bg2, opacity: 0.6 }} />
+          ))}
+        </View>
       ) : err ? (
         <Reveal dir="scale" delay={stagger(0)} duration={480}><Muted>{err}</Muted></Reveal>
       ) : (
