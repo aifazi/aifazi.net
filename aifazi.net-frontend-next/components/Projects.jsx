@@ -1,4 +1,5 @@
 'use client'
+import NextImage from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatableWrapper, EditableList, EditableText } from '../context/EditContext'
 import { useSplitTextReveal } from '../hooks/useSplitTextReveal'
@@ -66,7 +67,7 @@ function ProjectPreview({ project }) {
 
   if (shouldShowMedia) {
     return (
-      <div className="project-preview project-media-preview">
+      <div className="project-preview project-media-preview" style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden', background: 'var(--bg3)' }}>
         {isVideo ? (
           <video
             src={mediaUrl}
@@ -78,7 +79,7 @@ function ProjectPreview({ project }) {
             preload="metadata"
           />
         ) : (
-          <img src={mediaUrl} alt={project.previewAlt || project.title || 'Project preview'} loading="lazy" />
+          <NextImage src={mediaUrl} alt={project.previewAlt || project.title || 'Project preview'} fill sizes="(max-width: 768px) 100vw, 50vw" style={{ objectFit: 'cover' }} unoptimized />
         )}
       </div>
     )
