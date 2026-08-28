@@ -1,5 +1,6 @@
 import { ReactNode, useRef, useState } from 'react'
 import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, ScrollView, DimensionValue, ActivityIndicator, Animated } from 'react-native'
+import { BlurView } from 'expo-blur'
 import { useTheme } from '@/src/theme'
 import { withAlpha, contrastText } from '@/src/lib/color'
 import { webPillSnap } from '@/src/lib/carousel'
@@ -136,13 +137,14 @@ export function Card({
   const c = theme.colors
   const fw = framework.surface
   const icy = !theme.mono
+  const isGlass = theme.id.includes('glass') || theme.id.includes('macos')
   const scale = useRef(new Animated.Value(1)).current
   const pressIn = () => Animated.spring(scale, { toValue: 0.98, useNativeDriver: true, speed: 50, bounciness: 0 }).start()
   const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start()
   const shell = [
     styles.card,
     {
-      backgroundColor: withAlpha(c.bg2, theme.dark ? 0.9 : 0.97),
+      backgroundColor: withAlpha(c.bg2, isGlass ? 0.42 : theme.dark ? 0.9 : 0.97),
       borderColor: icy ? withAlpha(c.accent2, 0.18) : withAlpha(c.accent2, 0.4),
       borderWidth: fw.borderWidth,
       borderRadius: fw.radius,
@@ -151,6 +153,7 @@ export function Card({
       shadowRadius: fw.hardShadow ? 3 : 12,
       shadowOffset: { width: fw.hardShadow ? 4 : 0, height: fw.hardShadow ? 4 : 3 },
       elevation: fw.hardShadow ? 2 : 5,
+      overflow: isGlass ? 'hidden' as const : undefined,
     },
     style,
   ]
@@ -186,13 +189,28 @@ export function Card({
     </>
   )
   if (!onPress) {
+    if (isGlass) {
+      return (
+        <BlurView intensity={60} tint={theme.dark ? 'dark' : 'light'} style={shell}>
+          <View style={{ flex: 1 }}>{inner}</View>
+        </BlurView>
+      )
+    }
     return <View style={shell}>{inner}</View>
   }
   return (
     <Animated.View style={[{ transform: [{ scale }] }, style ? { alignSelf: 'stretch' } : null]}>
-      <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={0.9} style={shell}>
-        {inner}
-      </TouchableOpacity>
+      {isGlass ? (
+        <BlurView intensity={60} tint={theme.dark ? 'dark' : 'light'} style={shell}>
+          <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={0.9} style={{ flex: 1 }}>
+            {inner}
+          </TouchableOpacity>
+        </BlurView>
+      ) : (
+        <TouchableOpacity onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} activeOpacity={0.9} style={shell}>
+          {inner}
+        </TouchableOpacity>
+      )}
     </Animated.View>
   )
 }

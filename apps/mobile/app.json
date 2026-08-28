@@ -2,14 +2,14 @@
   "expo": {
     "name": "aifazi",
     "slug": "fazi",
-    "version": "1.0.36",
+    "version": "1.0.39",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "aifazi",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "net.aifazi.mobile",
-      "buildNumber": "1.0.36",
+      "buildNumber": "1.0.39",
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "aifazi uses the microphone for voice and video calls.",
@@ -65,14 +65,14 @@
         "POST_NOTIFICATIONS"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#060a0f",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false,
+      "predictiveBackGestureEnabled": true,
       "package": "net.aifazi.mobile",
-      "versionCode": 1000036
+      "versionCode": 1000039
     },
     "web": {
       "bundler": "metro",
@@ -86,7 +86,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#060a0f"
         }
       ],
       "expo-secure-store",

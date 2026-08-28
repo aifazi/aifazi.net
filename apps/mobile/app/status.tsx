@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
+import { Header } from '@/src/components/Header'
 import { StatusChip } from '@/src/screens/profile/helpers'
 import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
@@ -74,14 +75,7 @@ export default function StatusScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
-      <Reveal dir="up" duration={420}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.lg, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.lg, borderBottomWidth: 1, borderBottomColor: c.border }}>
-        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10}>
-          <Icon name="back" size={22} color={c.text} />
-        </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }}>Status</Text>
-      </View>
-      </Reveal>
+      <Header title="Status" />
 
       {loading ? (
         <View style={{ paddingTop: SPACE.colossal, alignItems: 'center' }}>

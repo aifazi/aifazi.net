@@ -11,6 +11,7 @@ import { useAuth } from '@/src/lib/auth'
 import { Icon } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
 import { Reveal, stagger } from '@/src/components/motion'
+import { getCached, setCached } from '@/src/lib/cache'
 
 interface ThreadAuthor {
   username: string
@@ -87,6 +88,10 @@ export default function ForumScreen() {
   }, [input])
 
   const load = useCallback((targetPage: number, append = false) => {
+    const cacheKey = `forum:${cat}:${sort}:${q}:${targetPage}`
+    if (targetPage === 1 && !append) {
+      getCached<Thread[]>(cacheKey).then(cached => { if (cached && cached.length) { setThreads(cached); setLoading(false) } })
+    }
     if (targetPage > 1) setLoadingMore(true)
     else if (!append) setLoading(true)
     api
@@ -106,6 +111,7 @@ export default function ForumScreen() {
         setPages(d.pages ?? 1)
         setPage(targetPage)
         setError('')
+        if (rows.length) setCached(cacheKey, rows)
       })
       .catch((e) => setError(e?.response?.data?.detail || 'Could not load forum'))
       .finally(() => { setLoading(false); setLoadingMore(false); setRefreshing(false) })
@@ -136,7 +142,11 @@ export default function ForumScreen() {
   if (loading) {
     return (
       <Screen>
-        <Loader />
+        <View style={{ gap: SPACE.lg, paddingTop: SPACE.xl }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View key={i} style={{ height: 84, borderRadius: 12, backgroundColor: c.bg2, opacity: 0.6 }} />
+          ))}
+        </View>
       </Screen>
     )
   }

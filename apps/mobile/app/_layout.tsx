@@ -11,7 +11,7 @@ import {
 } from 'expo-router'
 import * as Updates from 'expo-updates'
 import { StatusBar } from 'expo-status-bar'
-import { Animated, Easing, View } from 'react-native'
+import { Animated, AppState, Easing, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ThemeProvider, useTheme } from '@/src/theme'
 import { AuthProvider, useAuth } from '@/src/lib/auth'
@@ -174,8 +174,16 @@ function RootNav() {
       }
     }
     applyOtaUpdate()
+    let lastCheck = Date.now()
+    const subAppState = AppState.addEventListener('change', (s: any) => {
+      if (s === 'active' && Date.now() - lastCheck > 30 * 60 * 1000) {
+        lastCheck = Date.now()
+        applyOtaUpdate()
+      }
+    })
     return () => {
       active = false
+      subAppState.remove()
     }
   }, [])
 

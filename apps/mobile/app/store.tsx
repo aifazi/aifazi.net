@@ -12,6 +12,8 @@ import { Loader } from '@/src/components/Loader'
 import { Reveal, stagger } from '@/src/components/motion'
 import { Icon } from '@/src/components/icon'
 import { useWishlist } from '@/src/lib/wishlist'
+import { getCached, setCached } from '@/src/lib/cache'
+import { withAlpha } from '@/src/lib/color'
 
 interface StoreCat {
   id: string
@@ -53,12 +55,18 @@ export default function StoreScreen() {
   const [err, setErr] = useState('')
   const radius = frameworkStyles(theme).radius
   const pillRadius = frameworkStyles(theme).buttonRadius
-  const { has: hasWish, toggle: toggleWish } = useWishlist()
+  const { has: hasWish, toggle: toggleWish, count: wishCount } = useWishlist()
 
   const load = useCallback(() => {
+    const cacheKey = `store:${cat}`
+    getCached<Product[]>(cacheKey).then(cached => { if (cached && cached.length) { setProducts(cached); setLoading(false) } })
     api
       .get('/store/products', { params: cat ? { category: cat, limit: 50 } : { limit: 50 } })
-      .then((r) => setProducts((r.data ?? []) as Product[]))
+      .then((r) => {
+        const rows = (r.data ?? []) as Product[]
+        setProducts(rows)
+        if (rows.length) setCached(cacheKey, rows)
+      })
       .catch((e) => setErr(e?.response?.data?.detail || 'Could not load store'))
       .finally(() => { setLoading(false); setRefreshing(false) })
   }, [cat])
@@ -87,15 +95,25 @@ export default function StoreScreen() {
       <Reveal dir="up" duration={420}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Title tag="STORE">Store</Title>
-        <TouchableOpacity
-          onPress={() => router.push('/store-cart' as Href)}
-          style={{ marginBottom: SPACE.xl, paddingHorizontal: SPACE.xl, paddingVertical: SPACE.md, borderRadius: pillRadius, backgroundColor: c.bg2, borderWidth: 1, borderColor: c.border }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
-            <Icon name="store" size={18} color={c.text} />
-            <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>{cartCount > 0 ? `(${cartCount})` : ''}</Text>
-          </View>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: SPACE.md, marginBottom: SPACE.xl }}>
+          <TouchableOpacity
+            onPress={() => router.push('/store-cart' as Href)}
+            style={{ paddingHorizontal: SPACE.xl, paddingVertical: SPACE.md, borderRadius: pillRadius, backgroundColor: c.bg2, borderWidth: 1, borderColor: c.border }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+              <Icon name="store" size={18} color={c.text} />
+              <Text style={{ color: c.text, fontSize: FONT.body, fontWeight: '700' }}>{cartCount > 0 ? `(${cartCount})` : ''}</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/store' as Href)}
+            accessibilityLabel={`Wishlist ${wishCount} items`}
+            style={{ paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderRadius: pillRadius, backgroundColor: wishCount > 0 ? withAlpha(c.sale, 0.12) : c.bg2, borderWidth: 1, borderColor: wishCount > 0 ? c.sale : c.border, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+          >
+            <Text style={{ color: wishCount > 0 ? c.sale : c.muted, fontSize: 14 }}>{wishCount > 0 ? '♥' : '♡'}</Text>
+            {wishCount > 0 && <Text style={{ color: c.sale, fontSize: FONT.sm, fontWeight: '700' }}>{wishCount}</Text>}
+          </TouchableOpacity>
+        </View>
       </View>
       </Reveal>
       {cats.length > 0 ? (
@@ -140,7 +158,11 @@ export default function StoreScreen() {
       ) : null}
 
       {loading ? (
-        <Loader />
+        <View style={{ gap: SPACE.lg }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View key={i} style={{ height: 84, borderRadius: 12, backgroundColor: c.bg2, opacity: 0.6 }} />
+          ))}
+        </View>
       ) : err ? (
         <Reveal dir="scale" delay={stagger(0)} duration={480}><Muted>{err}</Muted></Reveal>
       ) : (

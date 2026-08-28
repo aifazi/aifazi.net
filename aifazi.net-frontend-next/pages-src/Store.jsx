@@ -45,8 +45,22 @@ export default function StorePage({ fivem = false }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [tab, setTab] = useState(() => searchParams?.get('tab') || 'home')
-  const [activeCategory, setActiveCategory] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [activeCategory, setActiveCategory] = useState(() => searchParams?.get('cat') || '')
+  const [searchQuery, setSearchQuery] = useState(() => searchParams?.get('q') || '')
+
+  // Keep ?cat=&q=&tab= shareable
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const needs = { tab, cat: activeCategory, q: searchQuery }
+    let changed = false
+    for (const [k, v] of Object.entries(needs)) {
+      const cur = params.get(k)
+      if (v) { if (cur !== v) { params.set(k, v); changed = true } }
+      else if (cur != null) { params.delete(k); changed = true }
+    }
+    // keep existing other params (e.g. ?theme=)
+    if (changed) window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`)
+  }, [tab, activeCategory, searchQuery])
   const [cart, setCart] = useState({ items: [], subtotal: 0, count: 0 })
   const [cartLoading, setCartLoading] = useState(false)
   const [checkoutCartLoading, setCheckoutCartLoading] = useState(false)
