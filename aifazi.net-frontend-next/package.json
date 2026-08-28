@@ -35,7 +35,7 @@
     "cssnano": "^9.0.1",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.3.1",
-    "typescript": "^5.4.5"
+    "typescript": "^7.0.2"
   },
   "overrides": {
     "html-encoding-sniffer": "4.0.0"
