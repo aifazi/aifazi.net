@@ -25,7 +25,6 @@ export function AmbientBackground() {
     const sub = AppState.addEventListener('change', s => setAppActive(s === 'active'))
     return () => sub.remove()
   }, [])
-  if (reduceMotion || !appActive) return null
 
   useEffect(() => {
     const d = Animated.loop(
@@ -55,6 +54,8 @@ export function AmbientBackground() {
     d.start(); s.start(); o1.start(); o2.start(); o3.start()
     return () => { d.stop(); s.stop(); o1.stop(); o2.stop(); o3.stop() }
   }, [drift, scan, orb1, orb2, orb3])
+
+  if (reduceMotion || !appActive) return null
 
   const gridLine = withAlpha(c.accent2, theme.dark ? 0.04 : 0.06)
   const cols = Math.ceil(width / CELL) + 2
