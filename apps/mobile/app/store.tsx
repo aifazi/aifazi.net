@@ -140,7 +140,11 @@ export default function StoreScreen() {
       ) : null}
 
       {loading ? (
-        <Loader />
+        <View style={{ gap: SPACE.lg }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View key={i} style={{ height: 84, borderRadius: 12, backgroundColor: c.bg2, opacity: 0.6 }} />
+          ))}
+        </View>
       ) : err ? (
         <Reveal dir="scale" delay={stagger(0)} duration={480}><Muted>{err}</Muted></Reveal>
       ) : (

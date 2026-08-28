@@ -174,8 +174,16 @@ function RootNav() {
       }
     }
     applyOtaUpdate()
+    let lastCheck = Date.now()
+    const subAppState = AppState.addEventListener('change', (s) => {
+      if (s === 'active' && Date.now() - lastCheck > 30 * 60 * 1000) {
+        lastCheck = Date.now()
+        applyOtaUpdate()
+      }
+    })
     return () => {
       active = false
+      subAppState.remove()
     }
   }, [])
 

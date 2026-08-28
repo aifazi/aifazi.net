@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router'
 import { ColorValue, TouchableOpacity, View, Animated, Easing } from 'react-native'
+import { BlurView } from 'expo-blur'
 import { useEffect, useRef } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/src/theme'
@@ -68,6 +69,7 @@ function TabNavigator() {
   const c = theme.colors
   const insets = useSafeAreaInsets()
   const radius = theme.radius || 18
+  const isGlass = theme.id.includes('glass') || theme.id.includes('macos')
 
   return (
     <Tabs
@@ -75,8 +77,9 @@ function TabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.muted,
+        tabBarBackground: isGlass ? () => <BlurView intensity={60} tint={theme.dark ? 'dark' : 'light'} style={{ flex: 1, borderRadius: theme.radius, overflow: 'hidden' }} /> : undefined,
         tabBarStyle: {
-          backgroundColor: theme.dark ? withAlpha(c.bg2, 0.92) : c.bg2,
+          backgroundColor: isGlass ? 'transparent' : theme.dark ? withAlpha(c.bg2, 0.92) : c.bg2,
           borderTopColor: withAlpha(c.accent2, 0.2),
           position: 'absolute',
           left: 12,
@@ -93,6 +96,7 @@ function TabNavigator() {
           shadowRadius: 18,
           shadowOffset: { width: 0, height: 8 },
           elevation: 14,
+          overflow: isGlass ? 'hidden' : undefined,
         },
         tabBarActiveBackgroundColor: 'transparent',
         tabBarItemStyle: { borderRadius: radius - 3, marginHorizontal: SPACE.xxs },

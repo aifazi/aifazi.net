@@ -136,7 +136,11 @@ export default function ForumScreen() {
   if (loading) {
     return (
       <Screen>
-        <Loader />
+        <View style={{ gap: SPACE.lg, paddingTop: SPACE.xl }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View key={i} style={{ height: 84, borderRadius: 12, backgroundColor: c.bg2, opacity: 0.6 }} />
+          ))}
+        </View>
       </Screen>
     )
   }
