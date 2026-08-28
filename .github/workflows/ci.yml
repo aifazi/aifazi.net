@@ -171,18 +171,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  dependency-review:
-    name: Dependency Review
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
-        with:
-          config-file: '.github/dependency-review-config.yml'
+  # dependency-review:
+  #   name: Dependency Review
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'pull_request'
+  #   permissions:
+  #     contents: read
+  #     pull-requests: write
+  #   steps:
+  #     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+  #     - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
+  #       with:
+  #         config-file: '.github/dependency-review-config.yml'
+  # Disabled: requires Dependency Graph enabled in repo settings (Settings > Security > Code security > Dependency graph)
 
   notify-failure:
     name: Notify on Failure

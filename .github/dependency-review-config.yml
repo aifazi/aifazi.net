@@ -18,15 +18,6 @@ allow-licenses:
   - Zlib
   - Python-2.0
 
-# Deny specific licenses
-deny-licenses:
-  - GPL-2.0
-  - GPL-3.0
-  - AGPL-3.0
-  - LGPL-2.0
-  - LGPL-2.1
-  - LGPL-3.0
-
 # Configuration for npm
 npm:
   # Ignore specific vulnerabilities (use sparingly, with justification)
