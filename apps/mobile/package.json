@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "eslint": "^9.0.0",
+    "eslint": "^10.9.1",
     "eslint-config-expo": "~9.0.0",
     "expo-dev-client": "~57.0.10",
     "metro-react-native-babel-transformer": "^0.77.0",
