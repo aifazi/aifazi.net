@@ -17,10 +17,22 @@ export default function ForumCategory() {
   const [total, setTotal]       = useState(0)
   const [pages, setPages]       = useState(1)
   const [page, setPage]         = useState(1)
-  const [sort, setSort]         = useState('new')
+  const [sort, setSort]         = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('sort')
+      if (p && ['hot','new','top','old'].includes(p)) return p
+    }
+    return 'new'
+  })
   const [search, setSearch]     = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [loading, setLoading]   = useState(true)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    params.set('sort', sort)
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`)
+  }, [sort])
 
   useEffect(() => {
     api.get('/forum/categories').then(r => {
@@ -165,9 +177,10 @@ export default function ForumCategory() {
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 22 }}>
               <SearchBox value={search} onChange={setSearch} placeholder="Search threads..." style={{ flex: 1, minWidth: 220 }} />
               <SortTabs options={[
-                { value: 'new', label: 'New' },
                 { value: 'hot', label: 'Hot' },
+                { value: 'new', label: 'New' },
                 { value: 'top', label: 'Top' },
+                { value: 'old', label: 'Old' },
               ]} value={sort} onChange={setSort} />
             </div>
 
