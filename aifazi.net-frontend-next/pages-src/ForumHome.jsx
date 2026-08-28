@@ -12,14 +12,26 @@ export default function ForumHome() {
   const { user } = useForum()
   const [cats, setCats]         = useState([])
   const [recent, setRecent]     = useState([])
-  const [sort, setSort]         = useState('hot')
+  const [sort, setSort]         = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('sort')
+      if (p && ['hot','new','top','old'].includes(p)) return p
+    }
+    return 'hot'
+  })
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(false)
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    params.set('sort', sort)
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`)
+  }, [sort])
+
+  useEffect(() => {
     Promise.all([
       api.get('/forum/categories'),
-      api.get('/forum/threads?limit=8&sort=hot')
+      api.get(`/forum/threads?limit=8&sort=${sort}`)
     ]).then(([c, t]) => {
       setCats(Array.isArray(c.data) ? c.data : [])
       const data = Array.isArray(t.data) ? t.data : (t.data?.threads || [])
@@ -202,6 +214,7 @@ export default function ForumHome() {
                   { value: 'hot', label: 'Hot' },
                   { value: 'new', label: 'New' },
                   { value: 'top', label: 'Top' },
+                  { value: 'old', label: 'Old' },
                 ]} value={sort} onChange={handleSort} />}
               />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
