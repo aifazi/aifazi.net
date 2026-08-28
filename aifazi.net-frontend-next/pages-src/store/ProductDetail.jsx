@@ -100,7 +100,7 @@ export default function ProductDetail() {
         {/* Image */}
         <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg3)' }}>
           {product.image_url ? (
-            <img src={product.image_url} alt={product.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={product.image_url} alt={product.name} loading="eager" fetchPriority="high" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80, background: 'linear-gradient(160deg, var(--cyan)12, transparent)' }}>🛒</div>
           )}
