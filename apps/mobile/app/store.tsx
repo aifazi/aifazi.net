@@ -11,6 +11,7 @@ import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
 import { Reveal, stagger } from '@/src/components/motion'
 import { Icon } from '@/src/components/icon'
+import { useWishlist } from '@/src/lib/wishlist'
 
 interface StoreCat {
   id: string
@@ -52,6 +53,7 @@ export default function StoreScreen() {
   const [err, setErr] = useState('')
   const radius = frameworkStyles(theme).radius
   const pillRadius = frameworkStyles(theme).buttonRadius
+  const { has: hasWish, toggle: toggleWish } = useWishlist()
 
   const load = useCallback(() => {
     api
@@ -170,6 +172,9 @@ export default function StoreScreen() {
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
                       <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700', flex: 1 }} numberOfLines={1}>{item.name}</Text>
+                      <TouchableOpacity onPress={() => toggleWish(item.id)} hitSlop={8} style={{ padding: 4 }}>
+                        <Text style={{ color: hasWish(item.id) ? c.sale : c.muted, fontSize: 16 }}>{hasWish(item.id) ? '♥' : '♡'}</Text>
+                      </TouchableOpacity>
                       {item.on_sale ? (
                         <Chip label="SALE" color={c.sale} dot={false} />
                       ) : null}
