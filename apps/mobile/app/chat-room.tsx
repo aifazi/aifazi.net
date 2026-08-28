@@ -331,7 +331,12 @@ export default function ChatRoomScreen() {
     }
   }
 
-  // Flush offline queue when back online
+  // Flush offline queue when back online + offline banner
+  const [online, setOnline] = useState(isOnline())
+  useEffect(() => {
+    const subNet = NetInfo.addEventListener(state => setOnline(!!state.isConnected))
+    return () => subNet()
+  }, [])
   useEffect(() => {
     const doFlush = async () => {
       if (!isOnline()) return
@@ -533,6 +538,11 @@ export default function ChatRoomScreen() {
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
+      {!online && (
+        <View style={{ backgroundColor: c.danger || '#ff4757', paddingVertical: 6, alignItems: 'center' }}>
+          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700', letterSpacing: 1 }}>Offline — messages queued</Text>
+        </View>
+      )}
       <View style={[styles.header, { borderBottomColor: c.border }]}>
         <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10} style={styles.backBtn}>
           <Icon name="back" size={22} color={c.text} />
