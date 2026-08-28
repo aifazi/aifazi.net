@@ -2,14 +2,14 @@
   "expo": {
     "name": "aifazi",
     "slug": "fazi",
-    "version": "1.0.35",
+    "version": "1.0.36",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "aifazi",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "net.aifazi.mobile",
-      "buildNumber": "1.0.35",
+      "buildNumber": "1.0.36",
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "aifazi uses the microphone for voice and video calls.",
@@ -72,7 +72,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "net.aifazi.mobile",
-      "versionCode": 1000035
+      "versionCode": 1000036
     },
     "web": {
       "bundler": "metro",
