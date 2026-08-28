@@ -16,7 +16,13 @@ export default function ForumCategory() {
   const [threads, setThreads]   = useState([])
   const [total, setTotal]       = useState(0)
   const [pages, setPages]       = useState(1)
-  const [page, setPage]         = useState(1)
+  const [page, setPage]         = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = parseInt(new URLSearchParams(window.location.search).get('page') || '1', 10)
+      return Number.isFinite(p) && p > 0 ? p : 1
+    }
+    return 1
+  })
   const [sort, setSort]         = useState(() => {
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search).get('sort')
@@ -33,6 +39,14 @@ export default function ForumCategory() {
     params.set('sort', sort)
     window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`)
   }, [sort])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (page !== 1) params.set('page', String(page))
+    else params.delete('page')
+    const qs = params.toString()
+    window.history.replaceState(null, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`)
+  }, [page])
 
   useEffect(() => {
     api.get('/forum/categories').then(r => {
