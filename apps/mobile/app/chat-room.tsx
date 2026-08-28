@@ -34,6 +34,8 @@ import { openInApp } from '@/src/lib/url'
 import { VoiceRecorder, VoiceNotePlay } from '@/src/components/VoiceNote'
 import { MediaViewer } from '@/src/components/MediaViewer'
 import { extractUrl, isImageUrl } from '@/src/lib/links'
+import { isOnline, enqueue, flushQueue } from '@/src/lib/offlineQueue'
+import NetInfo from '@react-native-community/netinfo'
 
 interface ChatMessage {
   id: string
@@ -311,6 +313,13 @@ export default function ChatRoomScreen() {
       const replyTo = replying
         ? { id: replying.id, sender: replying.sender, content: replying.content ?? '' }
         : undefined
+      if (!isOnline()) {
+        await enqueue({ room, content: payload, type: 'text', reply_to: replyTo })
+        setErr('Offline — message queued and will send when back online')
+        setText('')
+        setReplying(null)
+        return
+      }
       await api.post(`/chat/rooms/${room}/messages`, { content: payload, type: 'text', reply_to: replyTo })
       setText('')
       setReplying(null)
@@ -321,6 +330,22 @@ export default function ChatRoomScreen() {
       setSending(false)
     }
   }
+
+  // Flush offline queue when back online
+  useEffect(() => {
+    const doFlush = async () => {
+      if (!isOnline()) return
+      await flushQueue(async (item: any) => {
+        await api.post(`/chat/rooms/${item.room}/messages`, { content: item.content, type: item.type, reply_to: item.reply_to })
+      })
+      await load(true)
+    }
+    doFlush()
+    const sub = NetInfo.addEventListener(state => {
+      if (state.isConnected) doFlush()
+    })
+    return () => sub()
+  }, [room])
 
   const deleteMsg = async (id: string) => {
     try {
