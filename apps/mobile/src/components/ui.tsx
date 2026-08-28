@@ -137,7 +137,7 @@ export function Card({
   const c = theme.colors
   const fw = framework.surface
   const icy = !theme.mono
-  const isGlass = theme.id.includes('glass') || framework.id === 'glass'
+  const isGlass = theme.id.includes('glass') || theme.id.includes('macos')
   const scale = useRef(new Animated.Value(1)).current
   const pressIn = () => Animated.spring(scale, { toValue: 0.98, useNativeDriver: true, speed: 50, bounciness: 0 }).start()
   const pressOut = () => Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start()
