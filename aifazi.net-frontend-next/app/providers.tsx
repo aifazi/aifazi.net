@@ -109,6 +109,18 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   const [theme, setThemeState] = useState(initTheme)
   const themeUrlSynced = useRef(false)
 
+  function setCrossDomainCookie(name: string, value: string) {
+    if (typeof document === 'undefined') return
+    const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    const domain = isLocal ? '' : '; domain=.aifazi.net'
+    document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax${domain}`
+  }
+  function getCrossDomainCookie(name: string): string | null {
+    if (typeof document === 'undefined') return null
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'))
+    return m ? decodeURIComponent(m[1]) : null
+  }
+
   // Shareable theme URL — ?theme=xxx sets visitor preview; theme changes update the URL
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -219,8 +231,8 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
       else document.documentElement.setAttribute('data-theme', cachedConfig.globalTheme)
       loadFontForTheme(cachedConfig.globalTheme)
     } else {
-      const userExplicitlyChose = !!localStorage.getItem('site-theme-user-set')
-      const saved = localStorage.getItem('site-theme')
+      const userExplicitlyChose = !!localStorage.getItem('site-theme-user-set') || !!getCrossDomainCookie('site-theme-user-set')
+      const saved = localStorage.getItem('site-theme') || getCrossDomainCookie('site-theme')
       if (userExplicitlyChose && saved) {
         // Honour what the user deliberately picked
         if (saved === 'dark') setThemeState('cyber-dark')
@@ -252,9 +264,13 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     if (LIGHT_THEMES.includes(id)) localStorage.setItem('last-light-theme', id)
     else                           localStorage.setItem('last-dark-theme', id)
     localStorage.setItem('site-theme', id)
+    setCrossDomainCookie('site-theme', id)
     // Mark that the user has explicitly chosen a theme — prevents the global site
     // default from overriding their preference on next load / incognito sessions.
     localStorage.setItem('site-theme-user-set', '1')
+    setCrossDomainCookie('site-theme-user-set', '1')
+    if (LIGHT_THEMES.includes(id)) setCrossDomainCookie('last-light-theme', id)
+    else setCrossDomainCookie('last-dark-theme', id)
   }
 
   const toggleTheme = () => {
@@ -266,7 +282,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
       // last-used opposite-family theme instead of jumping to the cyber
       // defaults, so the toggle never resets their design to 'default'.
       const isLight = LIGHT_THEMES.includes(theme)
-      const last = localStorage.getItem(isLight ? 'last-dark-theme' : 'last-light-theme')
+      const last = localStorage.getItem(isLight ? 'last-dark-theme' : 'last-light-theme') || getCrossDomainCookie(isLight ? 'last-dark-theme' : 'last-light-theme')
       if (last && VALID_THEMES.includes(last) && LIGHT_THEMES.includes(last) !== isLight) {
         setTheme(last)
       } else {
