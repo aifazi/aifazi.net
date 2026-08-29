@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Room, RoomEvent } from 'livekit-client'
 import { RNKeyProvider, RNE2EEManager } from '@livekit/react-native'
-import { registerGlobals, mediaDevices, streamUrl } from './lk-native'
+import { mediaDevices, streamUrl } from './lk-native'
 import { api } from './api'
 import { dmLiveKitTokenPath, roomLiveKitTokenPath, apiErrorMessage } from '@fazi/shared'
-
-// Registers react-native-webrtc globals so livekit-client works on RN
-// (native); no-op on web. Safe to call once at module load (idempotent).
-registerGlobals()
 
 export interface LKInfo {
   room: string

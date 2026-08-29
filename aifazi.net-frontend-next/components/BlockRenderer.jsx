@@ -178,10 +178,12 @@ function BlockItem({ slug, item }) {
           )}
         />
       )
-    case 'html':
+    case 'html': {
+      const cfg = { FORBID_TAGS: ['style','script','iframe','form'], FORBID_ATTR: ['style','onerror','onload','onclick','onmouseover'] }
       return (
-        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.html ?? '') }} style={{ margin: '1rem 0' }} />
+        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.html ?? '', cfg) }} style={{ margin: '1rem 0' }} />
       )
+    }
     case 'row': {
       // Multi-column grid container. Each column is its own block list, so there
       // is no shared coordinate space for blocks to overlap in — CSS Grid places

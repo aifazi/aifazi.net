@@ -30,7 +30,7 @@ export function Header({
   const bg = transparent ? 'transparent' : isGlass ? withAlpha(c.bg2, 0.72) : c.bg2
 
   const content = (
-    <View style={[styles.row, { paddingTop: insets.top > 0 ? 8 : 12, borderBottomColor: withAlpha(c.border, 0.6) }]}>
+    <View style={[styles.row, { paddingTop: insets.top + 8, height: 56 + insets.top, borderBottomColor: withAlpha(c.border, 0.6) }]}>
       {showBack ? (
         <TouchableOpacity
           onPress={onBack || (() => router.back())}
