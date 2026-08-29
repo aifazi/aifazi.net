@@ -161,7 +161,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           const fontUrl = themeCustomFontUrl(tc, uploadedFonts)
           return (
             <>
-              {css ? <style id="theme-custom-css" dangerouslySetInnerHTML={{ __html: css }} /> : null}
+              {css ? <style nonce={nonce} id="theme-custom-css" dangerouslySetInnerHTML={{ __html: css }} /> : null}
               {fontUrl ? (
                 <>
                   <link rel="preload" as="style" href={fontUrl} />

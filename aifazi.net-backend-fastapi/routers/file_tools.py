@@ -119,7 +119,7 @@ async def watermark_pdf(file: UploadFile = File(...), text: str = Form("CONFIDEN
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     h = color.lstrip('#').ljust(6, '0') if len(color.lstrip('#')) < 6 else color.lstrip('#')
     try: rgb = (int(h[:2],16)/255, int(h[2:4],16)/255, int(h[4:6],16)/255)
-    except: rgb = (0.8, 0, 0)
+    except Exception: rgb = (0.8, 0, 0)
     for page in doc:
         r = page.rect; cx, cy = r.width/2, r.height/2
         mat = fitz.Matrix(1,0,0,1,0,0).prerotate(angle)
@@ -143,7 +143,7 @@ async def page_numbers(file: UploadFile = File(...), position: str = Form("botto
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     h = color.lstrip('#').ljust(6, '0') if len(color.lstrip('#')) < 6 else color.lstrip('#')
     try: rgb = (int(h[:2],16)/255, int(h[2:4],16)/255, int(h[4:6],16)/255)
-    except: rgb = (0,0,0)
+    except Exception: rgb = (0,0,0)
     for i, page in enumerate(doc):
         r = page.rect; n = i + start
         label = f"{prefix}{n}"
@@ -549,10 +549,10 @@ async def watermark_image(file: UploadFile = File(...), text: str = Form("SAMPLE
     h = color.lstrip('#').ljust(6,'0')
     alpha = max(0, min(int(opacity * 255), 255))
     try: rgb = (int(h[:2],16), int(h[2:4],16), int(h[4:6],16), alpha)
-    except: rgb = (255,255,255,alpha)
+    except Exception: rgb = (255,255,255,alpha)
     w, ht = img.size
     try: font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-    except: font = ImageFont.load_default()
+    except Exception: font = ImageFont.load_default()
     bbox = draw.textbbox((0,0), text, font=font)
     tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
     pad = 20
@@ -676,7 +676,7 @@ async def base64_decode(text: str=Form(...), _: dict = Depends(get_current_user)
     try:
         dec = base64.b64decode(text.strip())
         try: return {"decoded": dec.decode('utf-8'), "type": "text"}
-        except: return {"decoded": base64.b64encode(dec).decode(), "type": "binary", "size": len(dec)}
+        except Exception: return {"decoded": base64.b64encode(dec).decode(), "type": "binary", "size": len(dec)}
     except Exception as e:
         raise HTTPException(400, f"Invalid base64: {e}")
 
