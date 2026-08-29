@@ -219,10 +219,9 @@ jobs:
             echo "Then: base64 -w0 release.keystore" >&2
             exit 1
           fi
-          trap 'shred -u release.keystore 2>/dev/null || rm -f release.keystore' EXIT
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > release.keystore
-          if [ ! -s release.keystore ]; then
-            echo "Decoded keystore is empty â€” check the ANDROID_KEYSTORE_BASE64 secret." >&2
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/release.keystore
+          if [ ! -s app/release.keystore ]; then
+            echo "Decoded keystore is empty — check the ANDROID_KEYSTORE_BASE64 secret." >&2
             exit 1
           fi
 
@@ -238,6 +237,7 @@ jobs:
             -PMYAPP_UPLOAD_STORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD" \
             -PMYAPP_UPLOAD_KEY_ALIAS="$ANDROID_KEY_ALIAS" \
             -PMYAPP_UPLOAD_KEY_PASSWORD="$ANDROID_KEY_PASSWORD"
+          shred -u app/release.keystore 2>/dev/null || rm -f app/release.keystore
 
       - name: Copy APK to workspace
         working-directory: apps/mobile
