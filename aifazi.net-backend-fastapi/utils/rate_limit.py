@@ -97,7 +97,10 @@ def _get_redis():
     token = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 
     if not url or not token:
-        log.info("Upstash Redis not configured — using in-memory rate limiting (dev mode)")
+        if os.getenv("ENV", "production") == "production":
+            log.error("Upstash Redis not configured in production — rate limiting is in-memory only (not distributed). Set UPSTASH_REDIS_REST_URL/TOKEN to enable distributed limits.")
+        else:
+            log.info("Upstash Redis not configured — using in-memory rate limiting (dev mode)")
         _redis_available = False
         return None
 
