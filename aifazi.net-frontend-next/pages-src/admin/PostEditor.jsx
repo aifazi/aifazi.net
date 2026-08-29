@@ -514,13 +514,16 @@ function PostEditor({ post, onSave, onCancel }) {
     } else if (mediaTarget === 'video') {
       set('video_url', file.url || file.path)
     } else if (mediaTarget === 'content') {
-      const url = file.url || file.path
+      const rawUrl = file.url || file.path
+      const esc = (s) => String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      const url = esc(rawUrl)
+      const name = esc(file.original_name)
       const isDoc = !file.mimetype?.startsWith('image/') && !file.mimetype?.startsWith('video/')
       const tag = isDoc
-        ? `<p class="blog-media-doc"><a href="${url}" target="_blank" rel="noopener noreferrer">${file.original_name}</a></p>`
+        ? `<p class="blog-media-doc"><a href="${url}" target="_blank" rel="noopener noreferrer">${name}</a></p>`
         : file.mimetype?.startsWith('video/')
         ? `<video controls src="${url}" style="width:100%;margin:16px 0;"></video>`
-        : `<img src="${url}" alt="${file.original_name}" style="width:100%;margin:16px 0;" />`
+        : `<img src="${url}" alt="${name}" style="width:100%;margin:16px 0;" />`
       const editor = document.querySelector('[contenteditable]')
       if (editor) { editor.focus(); document.execCommand('insertHTML', false, tag) }
     }

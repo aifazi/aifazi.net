@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
-from database import supabase
+from database import safe_search_term, supabase
 from dependencies import bearer, decode_token, get_current_user, require_staff
 from utils.link_safety import schedule_scan
 
@@ -230,8 +230,9 @@ async def list_posts(
         count_q = count_q.eq("category", category)
 
     if search:
-        q = q.ilike("title", f"%{search}%")
-        count_q = count_q.ilike("title", f"%{search}%")
+        _s = f"%{safe_search_term(search)}%"
+        q = q.ilike("title", _s)
+        count_q = count_q.ilike("title", _s)
 
     offset = (page - 1) * limit
     res = q.order("created_at", desc=True).range(offset, offset + limit - 1).execute()

@@ -2349,7 +2349,7 @@ async def discord_whitelist_status(creds: HTTPAuthorizationCredentials | None = 
 async def lookup_user(username: str, _: dict = Depends(require_staff)):
     if not username or len(username.strip()) < 2:
         return {"found": False}
-    res = supabase.table("users").select("id,username,email,avatar,discord_id,discord_username,discord_avatar").ilike("username", f"%{username.strip()}%").limit(5).execute()
+    res = supabase.table("users").select("id,username,email,avatar,discord_id,discord_username,discord_avatar").ilike("username", f"%{safe_search_term(username.strip())}%").limit(5).execute()
     if not res.data:
         return {"found": False}
     users = res.data

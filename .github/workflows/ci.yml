@@ -62,7 +62,7 @@ jobs:
       - name: Build Next.js application
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: https://api-staging.aifazi.net
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://api.aifazi.net' }}
 
   backend-lint:
     name: Backend - Lint & Typecheck
@@ -117,7 +117,7 @@ jobs:
 
       - name: Run pip-audit (dependency vulnerability scan)
         continue-on-error: true
-        run: pip-audit -r requirements.txt --fail-on high
+        run: pip-audit
 
       - name: Run Bandit (static analysis)
         continue-on-error: true

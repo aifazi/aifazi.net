@@ -5,6 +5,26 @@ import { withAlpha } from '@/src/lib/color'
 
 const CELL = 58
 
+function Orb({ val, size, color, baseX, baseY, dx, dy }: {
+  val: Animated.Value; size: number; color: string; baseX: number; baseY: number; dx: number; dy: number
+}) {
+  const tx = val.interpolate({ inputRange: [0, 1], outputRange: [0, dx] })
+  const ty = val.interpolate({ inputRange: [0, 1], outputRange: [0, dy] })
+  const sc = val.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.08, 1] })
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: baseX, top: baseY, width: size, height: size, borderRadius: size / 2,
+        backgroundColor: withAlpha(color, 0.05),
+        transform: [{ translateX: tx }, { translateY: ty }, { scale: sc }],
+        shadowColor: color, shadowOpacity: 0.18, shadowRadius: size / 2, shadowOffset: { width: 0, height: 0 },
+      }}
+    />
+  )
+}
+
 export function AmbientBackground() {
   const { theme } = useTheme()
   const c = theme.colors
@@ -27,6 +47,7 @@ export function AmbientBackground() {
   }, [])
 
   useEffect(() => {
+    if (reduceMotion || !appActive) return
     const d = Animated.loop(
       Animated.timing(drift, { toValue: 1, duration: 22000, easing: Easing.linear, useNativeDriver: true }),
     )
@@ -53,7 +74,7 @@ export function AmbientBackground() {
     )
     d.start(); s.start(); o1.start(); o2.start(); o3.start()
     return () => { d.stop(); s.stop(); o1.stop(); o2.stop(); o3.stop() }
-  }, [drift, scan, orb1, orb2, orb3])
+  }, [drift, scan, orb1, orb2, orb3, reduceMotion, appActive])
 
   if (reduceMotion || !appActive) return null
 
@@ -63,26 +84,6 @@ export function AmbientBackground() {
   const driftX = drift.interpolate({ inputRange: [0, 1], outputRange: [0, -CELL] })
   const driftY = drift.interpolate({ inputRange: [0, 1], outputRange: [0, -CELL] })
   const scanY = scan.interpolate({ inputRange: [0, 1], outputRange: [-2, height] })
-
-  const Orb = ({ val, size, color, baseX, baseY, dx, dy }: {
-    val: Animated.Value; size: number; color: string; baseX: number; baseY: number; dx: number; dy: number
-  }) => {
-    const tx = val.interpolate({ inputRange: [0, 1], outputRange: [0, dx] })
-    const ty = val.interpolate({ inputRange: [0, 1], outputRange: [0, dy] })
-    const sc = val.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.08, 1] })
-    return (
-      <Animated.View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          left: baseX, top: baseY, width: size, height: size, borderRadius: size / 2,
-          backgroundColor: withAlpha(color, 0.05),
-          transform: [{ translateX: tx }, { translateY: ty }, { scale: sc }],
-          shadowColor: color, shadowOpacity: 0.18, shadowRadius: size / 2, shadowOffset: { width: 0, height: 0 },
-        }}
-      />
-    )
-  }
 
   return (
     <View pointerEvents="none" style={{ position: 'absolute', inset: 0, backgroundColor: c.bg, overflow: 'hidden' }}>
@@ -126,19 +127,19 @@ export function Reveal({
   const a = useRef(new Animated.Value(skip ? 1 : 0)).current
   useEffect(() => {
     if (skip) return
+    let anim: Animated.CompositeAnimation | null = null
     const t = setTimeout(() => {
-      Animated.timing(a, { toValue: 1, duration, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true }).start()
+      anim = Animated.timing(a, { toValue: 1, duration, easing: Easing.bezier(0.16, 1, 0.3, 1), useNativeDriver: true })
+      anim.start()
     }, delay)
-    // Guarantee visibility: if the animation is interrupted or the native
-    // driver silently fails (e.g. after an interrupted tab transition), force
-    // the node fully opaque so content never stays invisible behind the theme
-    // background — that presents as a blank "gray" screen.
     const failSafe = setTimeout(() => {
       a.setValue(1)
     }, delay + duration + 150)
     return () => {
       clearTimeout(t)
       clearTimeout(failSafe)
+      anim?.stop()
+      a.stopAnimation()
     }
   }, [a, delay, duration, skip])
 
@@ -170,6 +171,7 @@ export function GlowPulse({ children, color, style, active = true }: { children:
   const c = theme.colors
   const a = useRef(new Animated.Value(0)).current
   useEffect(() => {
+    if (!active) return
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(a, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
@@ -178,7 +180,7 @@ export function GlowPulse({ children, color, style, active = true }: { children:
     )
     loop.start()
     return () => loop.stop()
-  }, [a])
+  }, [a, active])
   const scale = a.interpolate({ inputRange: [0, 1], outputRange: [1, 1.05] })
   const tint = color ?? c.accent
   const opacity = a.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.6] })
