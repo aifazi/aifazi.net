@@ -67,7 +67,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'api.dicebear.com' },
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       ...(cdnHost ? [{ protocol: 'https', hostname: cdnHost }] : []),
-      ...(isPubHost(siteHost) ? [{ protocol: 'https', hostname: `**.${siteHost}` }] : []),
+      ...(isPubHost(siteHost) ? [{ protocol: 'https', hostname: `*.${siteHost}` }] : []),
     ],
   },
 

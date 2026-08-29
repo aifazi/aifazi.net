@@ -19,16 +19,15 @@ export class InstallBlockedError extends Error {
   }
 }
 
-/** True when Android's per-app "Install unknown apps" permission is granted. */
+/** True when Android's per-app "Install unknown apps" permission is granted.
+ * REQUEST_INSTALL_PACKAGES is a special app-op, not a runtime permission —
+ * PermissionsAndroid.check always returns false on 13+. We optimistically
+ * return true and let the installer intent throw InstallBlockedError if
+ * actually blocked, so the update isn't stuck on permissions screen.
+ */
 export async function canRequestPackageInstalls(): Promise<boolean> {
   if (Platform.OS !== 'android') return true
-  try {
-    // REQUEST_INSTALL_PACKAGES is a special "app op" (not a runtime
-    // permission), so it is not in RN's Permission union — cast is expected.
-    return await PermissionsAndroid.check('android.permission.REQUEST_INSTALL_PACKAGES' as never)
-  } catch {
-    return true
-  }
+  return true
 }
 
 const RELEASE_API =
@@ -165,13 +164,9 @@ export async function downloadAndInstall(
   expectedSize?: number,
   expectedSha256?: string,
 ): Promise<void> {
-  // Android 8+: refuse to even start the download when the per-app toggle is
-  // off, instead of wasting 150MB and then hitting the installer's block
-  // screen. The toggle silently resets on Android 13/14 after the app itself
-  // is updated, so trusting the user's previous "I enabled it" is not enough.
-  if (!(await canRequestPackageInstalls())) {
-    throw new InstallBlockedError()
-  }
+  // Pre-check removed — REQUEST_INSTALL_PACKAGES is not a runtime permission
+  // (see canRequestPackageInstalls). We download first and let the installer
+  // throw if the per-app toggle is off, then caller shows openInstallSettings().
 
   const dest = new File(Paths.cache, 'aifazi-update.apk')
   if (dest.exists) dest.delete()
@@ -232,11 +227,17 @@ export async function downloadAndInstall(
     throw new Error('Downloaded file is not a valid APK')
   }
 
-  await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
-    data: file.contentUri,
-    type: 'application/vnd.android.package-archive',
-    flags: 0x00000001 | 0x00000040, // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
-  })
+  try {
+    await IntentLauncher.startActivityAsync('android.intent.action.INSTALL_PACKAGE', {
+      data: file.contentUri,
+      type: 'application/vnd.android.package-archive',
+      flags: 0x00000001 | 0x00000040, // FLAG_GRANT_READ_URI_PERMISSION | FLAG_ACTIVITY_NEW_TASK
+    })
+  } catch (e: any) {
+    const msg = String(e?.message || e)
+    if (/blocked|unknown sources|not allowed|INSTALL/i.test(msg)) throw new InstallBlockedError()
+    throw e
+  }
 }
 
 /**

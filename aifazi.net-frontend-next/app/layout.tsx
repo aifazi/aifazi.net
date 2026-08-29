@@ -63,14 +63,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const isStoreDomain = headersList.get('x-store-domain') === 'true'
   const isFiveMDomain = headersList.get('x-fivem-domain') === 'true'
 
-  // Server-side global config (cached 30s) — injected into every page so
-  // visitors see the admin's settings on first paint, not the default theme.
-  const siteConfig = await getSiteConfigServer()
+  // Server-side global config + content blocks (cached 30s) — parallel fetch
+  // so TTFB isn't 4s+4s sequential when backend cold.
+  const [siteConfig, contentBlocks] = await Promise.all([getSiteConfigServer(), getContentBlocksServer()])
   const foucScript = buildFoucScript(siteConfig)
-
-  // Server-side content blocks (cached 30s) — injected so every EditableText on
-  // every page renders the admin's saved value on first paint (no default flash).
-  const contentBlocks = await getContentBlocksServer()
 
   // Apply the admin's global theme/styles directly on <html> at render time.
   // This guarantees no default-theme flash even before any JS runs (and is
