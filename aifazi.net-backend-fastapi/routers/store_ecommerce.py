@@ -691,6 +691,10 @@ def create_checkout(body: CheckoutBody, user: dict = Depends(get_current_user)):
 
     success_url = body.success_url or f"{FRONTEND_URL}/store/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url  = body.cancel_url  or f"{FRONTEND_URL}/store"
+    if body.success_url and not body.success_url.startswith(FRONTEND_URL):
+        raise HTTPException(400, "success_url must be on site domain")
+    if body.cancel_url and not body.cancel_url.startswith(FRONTEND_URL):
+        raise HTTPException(400, "cancel_url must be on site domain")
 
     try:
         session = st.checkout.Session.create(
