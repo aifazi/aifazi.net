@@ -23,7 +23,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from database import supabase
+from database import safe_search_term, supabase
 from dependencies import get_current_user, require_staff
 from utils.email import render_template
 from utils.email_queue import queue_email, queue_email_bulk
@@ -1060,8 +1060,9 @@ async def invite_user(room_id: str, body: InviteBody, user: dict = Depends(requi
 @router.get("/users/search")
 async def search_users(q: str = Query(..., min_length=1), _: dict = Depends(require_staff)):
     """Search registered users by username or email (for invitation / role assignment)."""
-    by_name = supabase.table("users").select("id,username,role,avatar,email").ilike("username", f"%{q}%").limit(20).execute()
-    by_email = supabase.table("users").select("id,username,role,avatar,email").ilike("email", f"%{q}%").limit(20).execute()
+    _q = f"%{safe_search_term(q)}%"
+    by_name = supabase.table("users").select("id,username,role,avatar,email").ilike("username", _q).limit(20).execute()
+    by_email = supabase.table("users").select("id,username,role,avatar,email").ilike("email", _q).limit(20).execute()
     seen = set()
     results = []
     for u in (by_email.data or []) + (by_name.data or []):

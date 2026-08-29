@@ -9,7 +9,7 @@ from html import escape
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from database import call_with_retry, supabase
+from database import call_with_retry, safe_search_term, supabase
 from dependencies import require_admin, require_staff
 from utils.email import render_template
 from utils.email_queue import queue_email
@@ -260,7 +260,7 @@ def _collection_browse_sync(coll: str, page: int, limit: int, search: str) -> di
         q = supabase.table(table).select("*", count="exact")
         if search:
             field = COLL_SEARCH_FIELD.get(coll, "id")
-            q = q.ilike(field, f"%{search}%")
+            q = q.ilike(field, f"%{safe_search_term(search)}%")
         q = q.order("created_at", desc=True).range(offset, offset + limit - 1)
         res = q.execute()
         total = res.count or 0

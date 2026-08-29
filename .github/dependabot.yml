@@ -93,6 +93,21 @@ updates:
           - "prometheus*"
           - "opentelemetry*"
 
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "aifazi"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
   # Mobile dependencies (npm via Expo)
   - package-ecosystem: "npm"
     directory: "apps/mobile"
