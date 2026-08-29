@@ -6,7 +6,7 @@ import { getSiteConfigServer } from '@/lib/siteSettingsServer'
 import { getContentBlocksServer } from '@/lib/contentServer'
 import { themeFontUrl } from '@/core/fonts'
 import { buildThemeCustomCss, resolveThemeCustom, themeCustomFontUrl } from '@/core/themeCustom'
-import { LIGHT_THEMES as LIGHT_THEME_LIST } from '@/core/themeCatalog'
+import { LIGHT_THEMES as LIGHT_THEME_LIST, VALID_THEMES } from '@/core/themeCatalog'
 import { SITE_URL } from '@/lib/config'
 import './globals.css'
 
@@ -20,14 +20,17 @@ function escapeJsonForInline(value: unknown): string {
 
 /**
  * FOUC-prevention script with the admin's global config baked in at render time.
- * Priority: locked global theme > user's explicit choice > global default >
- * device preference. Falls back to the localStorage cache only when no server
- * config was embedded (e.g. build-time render without a reachable backend).
+ * Priority: locked global theme > user's explicit choice (cookie cross-subdomain or
+ * localStorage) > global default > device preference. Falls back to the
+ * localStorage cache only when no server config was embedded (e.g. build-time
+ * render without a reachable backend). Reads cookies so store.aifazi.net /
+ * fivem.aifazi.net pick up the user's choice even though localStorage is
+ * origin-isolated per subdomain.
  */
 function buildFoucScript(config: Record<string, any>): string {
   const cfgJson = escapeJsonForInline(config)
   const lightsJson = escapeJsonForInline(LIGHT_THEME_LIST)
-  return `(function(){try{var cfg=${cfgJson};var LIGHTS=${lightsJson};var c=null;try{var _c=localStorage.getItem('site-config-cache');if(_c)c=JSON.parse(_c)}catch(e){}var conf=cfg||c;var u=!!localStorage.getItem('site-theme-user-set');var s=localStorage.getItem('site-theme');var t='cyber-dark';if(conf&&conf.lockTheme&&conf.globalTheme)t=conf.globalTheme;else if(u&&s)t=s;else if(conf&&conf.globalTheme)t=conf.globalTheme;else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:light)').matches)t='cyber-light';if(t!=='cyber-dark')document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-theme-mode',LIGHTS.indexOf(t)>=0?'light':'dark');var ba=(conf&&conf.bgAnimation)||'none';if(ba&&ba!=='none'&&ba!=='clean')document.documentElement.setAttribute('data-bg-animation',ba);var bg=(conf&&(conf.gridPattern||conf.backgroundPattern))||'grid';if(bg&&bg!=='none'&&bg!=='clean')document.documentElement.setAttribute('data-bg-grid',bg)}catch(e){}})();`
+  return `(function(){try{var cfg=${cfgJson};var LIGHTS=${lightsJson};var c=null;try{var _c=localStorage.getItem('site-config-cache');if(_c)c=JSON.parse(_c)}catch(e){}var conf=cfg||c;function gc(n){try{var m=document.cookie.match(new RegExp('(?:^|; )'+n.replace(/[.*+?^$\\{\\}()|[\\]\\\\]/g,'\\\\$&')+'=([^;]*)'));return m?decodeURIComponent(m[1]):null}catch(e){return null}}var u=!!localStorage.getItem('site-theme-user-set')||!!gc('site-theme-user-set');var s=localStorage.getItem('site-theme')||gc('site-theme');var t='cyber-dark';if(conf&&conf.lockTheme&&conf.globalTheme)t=conf.globalTheme;else if(u&&s)t=s;else if(conf&&conf.globalTheme)t=conf.globalTheme;else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:light)').matches)t='cyber-light';if(t!=='cyber-dark')document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');document.documentElement.setAttribute('data-theme-mode',LIGHTS.indexOf(t)>=0?'light':'dark');var ba=(conf&&conf.bgAnimation)||'none';if(ba&&ba!=='none'&&ba!=='clean')document.documentElement.setAttribute('data-bg-animation',ba);var bg=(conf&&(conf.gridPattern||conf.backgroundPattern))||'grid';if(bg&&bg!=='none'&&bg!=='clean')document.documentElement.setAttribute('data-bg-grid',bg)}catch(e){}})();`
 }
 
 export const metadata: Metadata = {
@@ -72,9 +75,27 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Apply the admin's global theme/styles directly on <html> at render time.
   // This guarantees no default-theme flash even before any JS runs (and is
   // independent of the CSP nonce behaviour for inline scripts).
-  const serverTheme =
+  // If the visitor has explicitly picked a theme (cookie .aifazi.net cross-subdomain),
+  // honour it server-side so store/fivem SSR with the user's choice on first paint,
+  // not the admin's global default. localStorage is origin-isolated per subdomain
+  // so only the cookie survives across aifazi.net → store.aifazi.net.
+  let serverTheme =
     (siteConfig.globalTheme && typeof siteConfig.globalTheme === 'string' && siteConfig.globalTheme) ||
     'cyber-dark'
+  try {
+    const cookieHeader = headersList.get('cookie') || ''
+    const getCookie = (name: string): string | null => {
+      const m = cookieHeader.match(new RegExp('(?:^|;\\s*)' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'))
+      return m ? decodeURIComponent(m[1]) : null
+    }
+    const locked = !!(siteConfig.lockTheme && siteConfig.globalTheme)
+    if (!locked) {
+      const userSet = !!getCookie('site-theme-user-set')
+      const saved = getCookie('site-theme')
+      if (userSet && saved && VALID_THEMES.includes(saved)) serverTheme = saved
+      else if (!userSet && siteConfig.globalTheme && VALID_THEMES.includes(siteConfig.globalTheme)) serverTheme = siteConfig.globalTheme
+    }
+  } catch {}
   const serverThemeMode = LIGHT_THEME_LIST.includes(serverTheme) ? 'light' : 'dark'
   const serverBgAnimation = siteConfig.bgAnimation || 'none'
   const serverBgGrid = siteConfig.gridPattern || siteConfig.backgroundPattern || 'grid'
