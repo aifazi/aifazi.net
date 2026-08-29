@@ -154,10 +154,11 @@ async def check_rate_limit(bucket: str, max_calls: int, window: int) -> bool:
             current_count = results[1]
             return current_count < max_calls
         except Exception as e:
-            log.warning("Redis rate limit check failed: %s — falling back to in-memory", e)
-            # Fall through to in-memory
+            log.warning("Redis rate limit check failed: %s — failing closed", e)
+            # If Redis is configured but fails, fail closed (deny request)
+            return False
 
-    # In-memory fallback
+    # In-memory fallback (dev mode only)
     _prune_local_store(now)
     ts = _rl_store_local.get(bucket, [])
     ts = [t for t in ts if now - t < window]
