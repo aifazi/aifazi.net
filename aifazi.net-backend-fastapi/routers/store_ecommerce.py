@@ -1306,3 +1306,56 @@ async def _cleanup_pending_orders() -> dict:
         log.info("cleaned up stale pending order %s (created before %s)", order_id, ttl_iso)
 
     return {"cleaned": cleaned, "expired": expired, "ttl_minutes": _PENDING_ORDER_TTL_MINUTES, "cutoff": ttl_iso}
+
+
+# ── Wishlist endpoints ──────────────────────────────────────────────
+class WishlistToggle(BaseModel):
+    product_id: str
+
+
+@router.get("/wishlist")
+async def get_wishlist(user: dict = Depends(get_current_user)):
+    """Get the current user's wishlist (product IDs)."""
+    uid = _user_id(user)
+    res = (supabase.table("store_wishlist")
+           .select("product_id")
+           .eq("user_id", uid)
+           .execute())
+    ids = [row["product_id"] for row in (res.data or [])]
+    return {"ids": ids}
+
+
+@router.post("/wishlist")
+async def add_to_wishlist(body: WishlistToggle, user: dict = Depends(get_current_user)):
+    """Add a product to the user's wishlist."""
+    uid = _user_id(user)
+    pid = body.product_id
+    # Verify product exists
+    prod = supabase.table("store_products").select("id").eq("id", pid).limit(1).execute()
+    if not prod.data:
+        raise HTTPException(404, "Product not found")
+    try:
+        supabase.table("store_wishlist").insert({"user_id": uid, "product_id": pid}).execute()
+    except Exception as e:
+        if "duplicate key" in str(e).lower():
+            raise HTTPException(409, "Already in wishlist")
+        raise HTTPException(500, "Failed to add to wishlist")
+    return {"added": True, "product_id": pid}
+
+
+@router.delete("/wishlist/{product_id}")
+async def remove_from_wishlist(product_id: str, user: dict = Depends(get_current_user)):
+    """Remove a product from the user's wishlist."""
+    uid = _user_id(user)
+    res = supabase.table("store_wishlist").delete().eq("user_id", uid).eq("product_id", product_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Not in wishlist")
+    return {"removed": True, "product_id": product_id}
+
+
+@router.delete("/wishlist")
+async def clear_wishlist(user: dict = Depends(get_current_user)):
+    """Clear the user's entire wishlist."""
+    uid = _user_id(user)
+    supabase.table("store_wishlist").delete().eq("user_id", uid).execute()
+    return {"cleared": True}
