@@ -18,6 +18,7 @@ from dependencies import get_current_user
 router = APIRouter()
 
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB hard cap
+MAX_RENDER_PX = 4096  # max rendered edge (px) — prevents pixel-bomb memory exhaustion
 
 # ── Helpers ───────────────────────────────────────────────────────
 def _pdf_stream(doc, name="output.pdf"):
@@ -181,7 +182,11 @@ async def pdf_to_images(file: UploadFile = File(...), dpi: float = Form(150),
     mime = "image/jpeg" if fmt == "jpg" else "image/png"
     zfiles = []
     for i in range(doc.page_count):
-        pix = doc[i].get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
+        page = doc[i]
+        base = max(page.rect.width, page.rect.height)
+        if base * scale > MAX_RENDER_PX:
+            scale = max(0.5, MAX_RENDER_PX / base)
+        pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale), alpha=False)
         data = pix.tobytes(fmt if fmt in ("png","jpg") else "png")
         zfiles.append((f"page_{i+1:03d}.{fmt}", data))
     doc.close()
@@ -401,9 +406,14 @@ async def pdf_to_jpg(file: UploadFile = File(...), dpi: float = Form(150), _: di
     import fitz
     doc = fitz.open(stream=await _read(file), filetype="pdf")
     scale = max(0.5, min(dpi / 72, 4.0))
-    zfiles = [(f"page_{i+1:03d}.jpg",
-               doc[i].get_pixmap(matrix=fitz.Matrix(scale,scale),alpha=False).tobytes("jpg"))
-              for i in range(doc.page_count)]
+    zfiles = []
+    for i in range(doc.page_count):
+        page = doc[i]
+        base = max(page.rect.width, page.rect.height)
+        if base * scale > MAX_RENDER_PX:
+            scale = max(0.5, MAX_RENDER_PX / base)
+        zfiles.append((f"page_{i+1:03d}.jpg",
+               page.get_pixmap(matrix=fitz.Matrix(scale,scale),alpha=False).tobytes("jpg")))
     doc.close(); return _zip_stream(zfiles, "pages_jpg.zip")
 
 @router.post("/convert/word-to-pdf")

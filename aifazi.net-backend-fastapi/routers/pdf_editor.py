@@ -29,6 +29,24 @@ from dependencies import get_current_user
 
 router = APIRouter()
 
+# Background task: periodic session eviction
+_EVICT_INTERVAL_S = 60  # run every minute
+
+async def _periodic_evict():
+    """Background task: periodically evict expired sessions and enforce per-user quotas."""
+    import asyncio
+    while True:
+        await asyncio.sleep(_EVICT_INTERVAL_S)
+        try:
+            _evict()
+        except Exception:
+            pass
+
+@router.on_event("startup")
+async def _startup():
+    import asyncio
+    asyncio.create_task(_periodic_evict())
+
 # ── In-memory session store ───────────────────────────────────────
 # Values are {"bytes": pdf_bytes, "ip": creator_ip, "at": last_used_ts, "user_id": ...}
 # so a leaked session_id can't be used cross-user. Sessions expire after
