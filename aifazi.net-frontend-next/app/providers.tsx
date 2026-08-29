@@ -122,11 +122,27 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   }
 
   // Shareable theme URL — ?theme=xxx sets visitor preview; theme changes update the URL
+  // Priority: if visitor has explicitly chosen a theme (cross-subdomain cookie),
+  // that saved choice wins over a stale ?theme=xxx left in a bookmark/history entry
+  // (e.g. store.aifazi.net/?theme=pacman when user now uses slate). Without this,
+  // aifazi.net -> store.aifazi.net would flash pacman then correct to slate.
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const t = params.get('theme')
     if (t && VALID_THEMES.includes(t)) {
+      const userSet = !!localStorage.getItem('site-theme-user-set') || !!getCrossDomainCookie('site-theme-user-set')
+      const saved = localStorage.getItem('site-theme') || getCrossDomainCookie('site-theme')
+      // If user has a saved choice and URL param differs, keep saved choice and fix URL
+      if (userSet && saved && saved !== t) {
+        themeUrlSynced.current = true
+        try {
+          const url = new URL(window.location.href)
+          url.searchParams.set('theme', saved)
+          window.history.replaceState(null, '', url.toString())
+        } catch {}
+        return
+      }
       // Respect admin lock: preview still works but not persisted as user choice
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional URL-driven preview on mount
       setThemeState(t as string)
@@ -318,21 +334,23 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   }
 
   useEffect(() => {
-    // The server/FOUC script already stamped data-theme correctly on <html>
-    // before React hydrated. Skip the first sync so we don't remove (or
-    // replace) the correct attribute before the init effect in the mount block
-    // above has had a chance to call setThemeState with the admin's global
-    // default. Subsequent theme changes (user picks a different theme) sync
-    // normally.
+    // The server/FOUC script stamped data-theme on <html> before React hydrated.
+    // On first sync, the mount init effect may have already changed `theme` from
+    // the server's global default to the user's cross-subdomain cookie choice
+    // (e.g. slate on store.aifazi.net). If we blindly skip the first sync the DOM
+    // stays stale (pacman flash until next theme change). Compare and fix.
     if (firstThemeSync.current) {
       firstThemeSync.current = false
-      return
+      const domTheme = document.documentElement.getAttribute('data-theme')
+      const expected = theme === 'cyber-dark' ? null : theme
+      if (domTheme === expected) return
     }
     if (theme === 'cyber-dark') document.documentElement.removeAttribute('data-theme')
     else document.documentElement.setAttribute('data-theme', theme)
     document.documentElement.setAttribute('data-theme-mode', LIGHT_THEMES.includes(theme) ? 'light' : 'dark')
     document.documentElement.style.colorScheme = LIGHT_THEMES.includes(theme) ? 'light' : 'dark'
     localStorage.setItem('site-theme', theme)
+    setCrossDomainCookie('site-theme', theme)
     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme, mode: LIGHT_THEMES.includes(theme) ? 'light' : 'dark' } }))
   }, [theme])
 
