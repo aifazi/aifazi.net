@@ -23,10 +23,10 @@ log = logging.getLogger("dependencies")
 SECRET = os.environ.get("PASETO_SECRET", "")
 if not SECRET:
     if os.getenv("ENV") == "production":
-        raise RuntimeError("PASETO_SECRET is required in production. Set it in Railway environment variables.")
+        raise RuntimeError("PASETO_SECRET is required in production. Set it in your deployment environment variables.")
     log.critical(
         "PASETO_SECRET is not set. All authenticated endpoints will return 503. "
-        "Set PASETO_SECRET in your Railway environment variables and redeploy."
+        "Set PASETO_SECRET in your environment variables and redeploy."
     )
 
 class CookieHTTPBearer(HTTPBearer):

@@ -616,31 +616,25 @@ On Vercel (serverless), the scheduler is disabled; scheduled publishing is handl
 
 ## Deployment
 
-### Railway (recommended)
+### Coolify (recommended)
 
-A production `Dockerfile` and `railway.json` are included for Railway. Because
-Railway runs a **persistent** process (no `VERCEL` env var set), the background
-APScheduler starts in `lifespan()` — so the 2-minute auto-publisher **and** the
-daily cleanup job run in-process (no Vercel cron needed).
-
-```bash
-# Deploy from the Railway dashboard: New Service → Deploy from repo → Railway.
-# The repo must include the backend (Dockerfile is at aifazi.net-backend-fastapi/).
-railway up
-```
-
-Add all environment variables in the Railway dashboard (the `.env.example` list).
-Do **not** set `VERCEL`. Runtime:
+A production `Dockerfile` is included for deployment via Coolify on a VPS.
+Because Coolify runs a **persistent** process (no `VERCEL` env var set), the
+background APScheduler starts in `lifespan()` — so the 2-minute auto-publisher
+**and** the daily cleanup job run in-process (no Vercel cron needed).
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+# In Coolify: New Application → Deploy from Git repo
+# Set the Dockerfile path: aifazi.net-backend-fastapi/Dockerfile
+# Set the build context to the repo root.
+# Add all environment variables in the Coolify dashboard (.env.example list).
+# Do NOT set VERCEL.
 ```
 
 Security headers (`X-Content-Type-Options`, `X-Frame-Options`,
 `Referrer-Policy`, `Strict-Transport-Security`, CSP) and the
 `X-Robots-Tag: noindex, nofollow` for the API host are emitted by the FastAPI
-middleware in `main.py`, so they apply on Railway too (they were previously only
-guaranteed by `vercel.json`).
+middleware in `main.py`, so they apply on Coolify too.
 
 ### Render
 

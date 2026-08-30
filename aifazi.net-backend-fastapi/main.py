@@ -19,7 +19,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 load_dotenv()
 
 if os.getenv("ENV") == "production" and not os.getenv("PASETO_SECRET"):
-    raise RuntimeError("PASETO_SECRET is required in production. Set it in Railway environment variables.")
+    raise RuntimeError("PASETO_SECRET is required in production. Set it in your deployment environment variables.")
 
 dsn = os.getenv("SENTRY_DSN", "")
 if dsn.startswith("https://"):
@@ -284,11 +284,10 @@ if "." in _FRONTEND_ROOT and not _FRONTEND_ROOT.replace(".", "").isdigit() and n
     _DYNAMIC_PATTERNS.append(re.compile(rf"^https://[a-z0-9\-]+\.{re.escape(_FRONTEND_ROOT)}$"))
 
 if not _IS_PRODUCTION:
-    # Development only — allow Vercel/Railway preview deploys
+    # Development only — allow Vercel preview deploys
     _DYNAMIC_PATTERNS = [
         re.compile(r"^https://[a-z0-9\-]+\.vercel\.app$"),
         re.compile(r"^https://[a-z0-9\-]+\.aifazi\.net$"),
-        re.compile(r"^https://[a-z0-9\-]+\.railway\.app$"),
     ]
 else:
     _DYNAMIC_PATTERNS = []
@@ -391,7 +390,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # ── 2. Rate limiting ───────────────────────────────────────────────────
         # Client IP must NOT come from user-supplied X-Forwarded-For /
-        # x-vercel-forwarded-for: on the Railway origin a client can set those
+        # x-vercel-forwarded-for: on a non-proxied origin a client can set those
         # itself and rotate IPs to bypass the limiter and ip_bans. Only
         # Cloudflare's CF-Connecting-IP (proved by CF-Ray) or the socket peer
         # is trusted — see utils/request_ip.py.

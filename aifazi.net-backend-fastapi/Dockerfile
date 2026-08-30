@@ -1,8 +1,8 @@
-# ── aifazi.net Backend Production Dockerfile (Railway) ─────────────────────────
+# ── aifazi.net Backend Production Dockerfile ───────────────────────────────────
 # Runs a persistent FastAPI/uvicorn process (NOT serverless).
 # Assumes the build context is the backend directory (aifazi.net-backend-fastapi).
-# The scheduler starts in lifespan because VERCEL env is unset on Railway.
-FROM python:3.14.7-slim
+# Deployed via Coolify on VPS. Scheduler starts in lifespan when VERCEL is unset.
+FROM python:3.12.9-slim
 
 WORKDIR /app
 
@@ -34,5 +34,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # No --reload in production. Uvicorn serves main:app; the lifespan() handler
 # starts the background scheduler when _IS_SERVERLESS is False.
-# Shell form so ${PORT} (Railway) expands at runtime; defaults to 8000.
+# Shell form so ${PORT} expands at runtime; defaults to 8000.
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
