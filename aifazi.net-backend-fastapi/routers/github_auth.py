@@ -365,11 +365,11 @@ async def github_callback(code: str = None, state: str = None, error: str = None
             }).eq("id", user["id"]).execute()
         except Exception:
             pass
-        safe_dest = _urlparse.quote(dest, safe="/")
         if _st.get("mobile"):
-            # App deep link — deliver the refresh token too (no cookie jar on the app).
+            # App deep link — deliver tokens via fragment (no cookie jar on the app).
+            safe_dest = _urlparse.quote(dest, safe="/")
             return RedirectResponse(f"{front}#token={token}&refresh={refresh}&dest={safe_dest}")
-        resp = RedirectResponse(f"{front}/auth/github-callback#token={token}&dest={safe_dest}")
+        resp = RedirectResponse(f"{front}/auth/github-callback#dest={_urlparse.quote(dest, safe='/')}")
         _set_auth_cookies(resp, token, refresh)
         return resp
     except Exception:

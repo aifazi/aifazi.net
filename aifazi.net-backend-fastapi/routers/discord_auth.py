@@ -29,7 +29,7 @@ from dependencies import CookieHTTPBearer
 from jwt_compat import JWTError, jwt
 from utils.email import render_template
 from utils.email_queue import queue_email
-from utils.oauth_state import _safe_relative_path, make_oauth_state, verify_oauth_state
+from utils.oauth_state import _safe_relative_path, make_oauth_state, verify_oauth_state_full
 
 router = APIRouter()
 
@@ -149,7 +149,9 @@ async def discord_callback(code: str = "", error: str = "", state: str = ""):
 
     # C2 — verify the signed OAuth state BEFORE trusting any dest. Fail closed.
     try:
-        dest = verify_oauth_state(state or "", "discord")
+        state_info = verify_oauth_state_full(state or "", "discord")
+        dest = state_info["dest"]
+        mobile = state_info.get("mobile", False)
     except ValueError:
         return RedirectResponse(f"{FRONTEND_URL}/whitelist?discord_error=state")
 
@@ -193,11 +195,15 @@ async def discord_callback(code: str = "", error: str = "", state: str = ""):
     # Issue JWT
     jwt_token = _make_player_token(db_user)
 
-    # dest already validated as a same-origin relative path by verify_oauth_state.
-    # URL-encode it once so frontend receives a single-encoded query value.
-    safe_dest = _urlparse.quote(dest, safe="/")
-    # Use hash fragment instead of query param — tokens don't appear in server logs or Referer headers
-    return RedirectResponse(f"{FRONTEND_URL}/auth/discord#token={jwt_token}&dest={safe_dest}")
+    # Mobile deep link — return token in fragment for app to capture
+    if mobile:
+        return RedirectResponse(f"aifazi://auth/discord?token={jwt_token}&dest={_urlparse.quote(dest, safe='/')}")
+
+    # Web — set HttpOnly cookie (primary) + keep hash for legacy clients; frontend
+    # prefers cookie via /auth/me and clears hash immediately. Token never in query.
+    resp = RedirectResponse(f"{FRONTEND_URL}/auth/discord#dest={_urlparse.quote(dest, safe='/')}")
+    resp.set_cookie(key="auth_token", value=jwt_token, httponly=True, secure=True, samesite="lax", max_age=JWT_EXPIRE*60, path="/")
+    return resp
 
 @router.get("/me")
 async def discord_me(player: dict = Depends(_get_player)):
