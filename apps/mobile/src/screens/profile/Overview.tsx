@@ -1,6 +1,6 @@
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native'
 import { FONT, SPACE } from '@/src/design'
-import { useRouter } from 'expo-router'
+import { useRouter, type Href } from 'expo-router'
 import { Card, Muted, Btn, MicroLabel, Chip } from '@/src/components/ui'
 import { Icon } from '@/src/components/icon'
 import { Avatar } from '@/src/components/Avatar'
@@ -118,6 +118,7 @@ export function OverviewTab({ goEdit }: { goEdit: () => void }) {
         </View>
 
         <View style={{ marginTop: SPACE.xxl, gap: SPACE.lg }}>
+          <Btn title="VPN" variant="ghost" onPress={() => router.push('/vpn' as Href)} />
           <Btn title="My chat" variant="ghost" onPress={() => router.push('/chat')} />
           <Btn title="Log out" variant="danger" onPress={logOut} />
         </View>
