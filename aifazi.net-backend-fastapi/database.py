@@ -116,3 +116,14 @@ def safe_search_term(term: str | None, max_len: int = 200) -> str:
     t = _PG_FILTER_GRAMMAR_CHARS.sub("", t)
     t = re.sub(r"\s+", " ", t).strip()
     return t[:max_len]
+
+
+def _escape_ilike(value: str) -> str:
+    """Escape SQL wildcards (%, _) for use in ilike exact-match patterns.
+
+    Unlike safe_search_term (which preserves wildcards for substring search),
+    this escapes them so ``ilike('username', _escape_ilike(user_input))`` does
+    a case-insensitive exact match without allowing ``%`` or ``_`` to act as
+    wildcards.
+    """
+    return (value or "").replace("%", "\\%").replace("_", "\\_")

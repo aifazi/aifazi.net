@@ -32,8 +32,8 @@ async def list_customers(search: str = "", limit: int = 100, _: dict = Depends(C
         "id,username,email,role,created_at,last_seen,profile_avatar,email_verified,banned")
     if search.strip():
         s = safe_search_term(search)
-    if s:
-        q = q.or_(f"username.ilike.%{s}%,email.ilike.%{s}%")
+        if s:
+            q = q.or_(f"username.ilike.%{s}%,email.ilike.%{s}%")
     rows = q.limit(min(max(limit, 1), 500)).execute().data or []
 
     # Order aggregates

@@ -31,11 +31,7 @@ _SECRET_FIELDS = frozenset({
 
 def _mask_secrets(settings: dict) -> dict:
     """Return a copy of settings with secret fields masked."""
-    out = dict(settings)
-    for k in out:
-        if k in _SECRET_FIELDS and out[k]:
-            out[k] = "••••••••"
-    return out
+    return {k: "••••••••" if k in _SECRET_FIELDS and v else v for k, v in settings.items()}
 
 
 @router.get("")

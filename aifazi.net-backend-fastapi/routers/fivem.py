@@ -2256,7 +2256,7 @@ async def list_player_records(
 ):
     query = supabase.table("player_records").select("*", count="exact")
     if q and q.strip():
-        t = q.strip()
+        t = safe_search_term(q.strip())
         query = query.or_(
             f"player_name.ilike.%{t}%,"
             f"license_key.ilike.%{t}%,"
