@@ -20,13 +20,27 @@ def _get_row():
     res = supabase.table("cdn_config").select("settings").eq("key", "global").execute()
     return res.data[0] if res.data else None
 
+_SECRET_FIELDS = frozenset({
+    "cloudinaryApiSecret", "cloudinaryApiKey",
+    "r2SecretAccessKey", "r2AccessKeyId",
+    "imagekitPrivateKey",
+    "b2AppKey", "b2KeyId",
+    "bunnyAccessKey",
+})
+
+
+def _mask_secrets(settings: dict) -> dict:
+    """Return a copy of settings with secret fields masked."""
+    return {k: "••••••••" if k in _SECRET_FIELDS and v else v for k, v in settings.items()}
+
+
 @router.get("")
 async def get(_: dict = Depends(require_staff)):
     row = _get_row()
     if row is None:
         supabase.table("cdn_config").insert({"key": "global", "settings": {}}).execute()
         return {}
-    return row.get("settings") or {}
+    return _mask_secrets(row.get("settings") or {})
 
 @router.put("")
 async def update(body: dict, _: dict = Depends(require_staff)):
