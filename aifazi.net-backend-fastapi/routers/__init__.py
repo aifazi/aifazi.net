@@ -61,5 +61,6 @@ from . import (
     store_terminal_admin,
     txadmin_webhook,
     upload,
+    vpn,
     webhooks,
 )

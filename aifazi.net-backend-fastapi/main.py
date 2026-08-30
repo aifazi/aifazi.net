@@ -600,6 +600,7 @@ from routers import (
     store_terminal_admin,
     txadmin_webhook,
     upload,
+    vpn,
     webhooks,
 )
 
@@ -663,6 +664,7 @@ app.include_router(github_auth.router,    prefix="/api/forum/auth/github")
 app.include_router(db_console.router,    prefix="/api/admin/db")
 app.include_router(mobile_release.router, prefix="/api/mobile")
 app.include_router(mobile_admin.router,   prefix="/api/admin/mobile")
+app.include_router(vpn.router,            prefix="/api/vpn")
 
 @app.get("/api/health")
 async def health():
