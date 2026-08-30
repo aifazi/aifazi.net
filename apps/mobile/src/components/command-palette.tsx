@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react'
 import { FONT, SPACE } from '@/src/design'
-import { Modal, View, Text, TextInput, TouchableOpacity, FlatList, Pressable, Animated, Easing } from 'react-native'
+import { Modal, View, Text, TextInput, TouchableOpacity, FlatList, Pressable, Animated, Easing, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { useTheme } from '@/src/theme'
@@ -8,12 +8,21 @@ import { withAlpha } from '@/src/lib/color'
 import { useReducedMotion } from '@/src/lib/motion'
 import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
+import { api } from '@/src/lib/api'
 
 interface Command {
   label: string
   hint: string
   icon: IconName
   href: Href
+}
+
+interface SearchResult {
+  id: string | number
+  title: string
+  type: 'post' | 'thread' | 'product'
+  url: string
+  meta?: string
 }
 
 const COMMANDS: Command[] = [
@@ -57,7 +66,29 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const inputRef = useRef<TextInput>(null)
 
   const doOpen = useCallback(() => { setOpen(true); setQuery('') }, [])
-  const doClose = useCallback(() => { setOpen(false); setQuery('') }, [])
+  const doClose = useCallback(() => { setOpen(false); setQuery(''); setResults([]) }, [])
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [searching, setSearching] = useState(false)
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    if (!query.trim() || query.length < 2) { setResults([]); return }
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const res = await api.get('/search', { params: { q: query.trim(), limit: 5 } })
+        const items: SearchResult[] = [
+          ...(res.data.posts || []).map((r: any) => ({ ...r, type: 'post' as const, meta: r.category })),
+          ...(res.data.threads || []).map((r: any) => ({ ...r, type: 'thread' as const, meta: r.author_name })),
+          ...(res.data.products || []).map((r: any) => ({ ...r, type: 'product' as const, meta: r.price ? `$${r.price}` : '' })),
+        ]
+        setResults(items)
+      } catch { setResults([]) }
+      finally { setSearching(false) }
+    }, 300)
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current) }
+  }, [query])
 
   useEffect(() => {
     if (!open) return
@@ -74,6 +105,15 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const filtered = query.trim()
     ? COMMANDS.filter((cmd) => `${cmd.label} ${cmd.hint}`.toLowerCase().includes(query.trim().toLowerCase()))
     : COMMANDS
+
+  interface PaletteItem { key: string; label: string; hint: string; icon: IconName; href: Href; section: string }
+  const searchItems: PaletteItem[] = results.map(r => ({
+    key: `search-${r.id}`, label: r.title, hint: r.meta || '',
+    icon: r.type === 'product' ? 'store' : r.type === 'post' ? 'blog' : 'forum',
+    href: r.url as Href, section: r.type === 'product' ? '🛒 Products' : r.type === 'post' ? '📝 Blog' : '💬 Forum',
+  }))
+  const commandItems: PaletteItem[] = filtered.map(c => ({ key: c.href as string, ...c, section: 'Navigate' }))
+  const allItems = [...searchItems, ...commandItems]
 
   return (
     <CommandPaletteContext.Provider value={{ open: doOpen, close: doClose }}>
@@ -117,9 +157,10 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                 </TouchableOpacity>
               </View>
 
+              {searching ? <ActivityIndicator size="small" color={c.accent} style={{ marginBottom: SPACE.md }} /> : null}
               <FlatList
-                data={filtered}
-                keyExtractor={(cmd) => cmd.href as string}
+                data={allItems}
+                keyExtractor={(item) => item.key}
                 keyboardShouldPersistTaps="handled"
                 renderItem={({ item }) => (
                   <TouchableOpacity
@@ -134,7 +175,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ color: c.text, fontSize: FONT.base, fontWeight: '700' }}>{item.label}</Text>
-                      <Text style={{ color: c.muted, fontSize: FONT.sm }}>{item.hint}</Text>
+                      <Text style={{ color: c.muted, fontSize: FONT.sm }}>{item.hint || item.section}</Text>
                     </View>
                     <Text style={{ color: c.muted, fontSize: FONT.sm }}>↵</Text>
                   </TouchableOpacity>

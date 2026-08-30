@@ -7,6 +7,8 @@ import { completeFromAuthRedirect, OAuthProvider, OAUTH_REDIRECT_BASE } from '@/
 import { useTheme } from '@/src/theme'
 
 const VALID_PROVIDERS: OAuthProvider[] = ['discord', 'github', 'steam']
+const ALLOWED_DEEP_LINK_HOSTS = ['aifazi.net', 'www.aifazi.net', 'api.aifazi.net']
+const ALLOWED_SCHEMES = ['aifazi://']
 
 /**
  * Android deep-link sink. On Android, expo-router can receive the `aifazi://`
@@ -50,6 +52,15 @@ export default function OAuthCallbackScreen() {
 
     const attempt = (raw: string | null | undefined) => {
       if (settled.current || !raw) return
+      // Validate deep link source: must be our scheme or our domain
+      try {
+        const parsed = new URL(raw)
+        const isOurScheme = ALLOWED_SCHEMES.some(s => raw.startsWith(s))
+        const isOurHost = ALLOWED_DEEP_LINK_HOSTS.includes(parsed.hostname)
+        if (!isOurScheme && !isOurHost) return
+      } catch {
+        return // malformed URL — ignore
+      }
       if (raw.startsWith(`${OAUTH_REDIRECT_BASE}/${prov}`)) {
         completeFromAuthRedirect(raw, prov)
       }
