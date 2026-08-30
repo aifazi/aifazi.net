@@ -1,72 +1,59 @@
-"""routers/notifications.py — Forum notifications"""
-import os
-
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials
+"""routers/notifications.py — In-app notifications API"""
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 
 from database import supabase
-from dependencies import CookieHTTPBearer
-from paseto_token import decode_token as _paseto_decode_token
+from dependencies import get_current_user
 
 router = APIRouter()
-bearer = CookieHTTPBearer(auto_error=False)
 
-def get_forum_user(creds: HTTPAuthorizationCredentials | None = Depends(bearer)) -> dict:
-    if not creds:
-        raise HTTPException(401, "Login required")
-    try:
-        payload = _paseto_decode_token(creds.credentials, purpose="auth")
-        if not payload:
-            raise HTTPException(401, "Invalid token")
-        return payload
-    except Exception:
-        raise HTTPException(401, "Invalid token")
+
+class MarkReadBody(BaseModel):
+    ids: list[str]
+
 
 @router.get("")
-async def get_notifications(user: dict = Depends(get_forum_user)):
-    user_id = user.get("id") or user.get("sub")
-    if not user_id:
-        return []  # Admin/staff tokens have no forum user id — return empty
-    res = supabase.table("notifications").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(50).execute()
-    return res.data or []
+async def list_notifications(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    unread_only: bool = Query(False),
+    user: dict = Depends(get_current_user),
+):
+    q = supabase.table("notifications").select("*", count="exact").eq("user_id", user["id"])
+    if unread_only:
+        q = q.eq("read", False)
+    res = q.order("created_at", desc=True).range((page - 1) * page_size, page * page_size - 1).execute()
+    return {"items": res.data or [], "total": res.count or 0, "page": page, "page_size": page_size}
+
 
 @router.get("/unread-count")
-async def unread_count(user: dict = Depends(get_forum_user)):
-    user_id = user.get("id") or user.get("sub")
-    if not user_id:
-        return {"count": 0}
-    try:
-        res = supabase.table("notifications").select("id").eq("user_id", user_id).eq("read", False).execute()
-        return {"count": len(res.data or [])}
-    except Exception:
-        return {"count": 0}
+async def unread_count(user: dict = Depends(get_current_user)):
+    res = supabase.table("notifications").select("id", count="exact").eq("user_id", user["id"]).eq("read", False).execute()
+    return {"count": res.count or 0}
 
-@router.patch("/{notif_id}/read")
-async def mark_read(notif_id: str, user: dict = Depends(get_forum_user)):
-    user_id = user.get("id") or user.get("sub")
-    if not user_id:
-        return {"message": "OK"}
-    supabase.table("notifications").update({"read": True}).eq("id", notif_id).eq("user_id", user_id).execute()
-    return {"message": "Marked read"}
 
-@router.post("/read-all")
-async def read_all(user: dict = Depends(get_forum_user)):
-    user_id = user.get("id") or user.get("sub")
-    if not user_id:
-        return {"message": "OK"}
-    supabase.table("notifications").update({"read": True}).eq("user_id", user_id).execute()
-    return {"message": "All read"}
+@router.post("/mark-read")
+async def mark_read(body: MarkReadBody, user: dict = Depends(get_current_user)):
+    if not body.ids:
+        return {"marked": 0}
+    supabase.table("notifications").update({"read": True}).in_("id", body.ids).eq("user_id", user["id"]).execute()
+    return {"marked": len(body.ids)}
+
+
+@router.post("/mark-all-read")
+async def mark_all_read(user: dict = Depends(get_current_user)):
+    supabase.table("notifications").update({"read": True}).eq("user_id", user["id"]).eq("read", False).execute()
+    return {"message": "All marked as read"}
+
 
 @router.delete("/{notif_id}")
-async def delete_notif(notif_id: str, user: dict = Depends(get_forum_user)):
-    user_id = user.get("id") or user.get("sub")
-    if not user_id:
-        return {"message": "OK"}
-    supabase.table("notifications").delete().eq("id", notif_id).eq("user_id", user_id).execute()
+async def delete_notif(notif_id: str, user: dict = Depends(get_current_user)):
+    supabase.table("notifications").delete().eq("id", notif_id).eq("user_id", user["id"]).execute()
     return {"message": "Deleted"}
 
-def create_notification(user_id: str, type: str, message: str, link: str = ""):
-    """Helper used by forum.py to create notifications."""
+
+def create_notification(user_id: str, notif_type: str, message: str, link: str = ""):
+    """Helper used by forum.py and other routers to create notifications."""
     supabase.table("notifications").insert({
-        "user_id": user_id, "type": type, "message": message, "link": link
+        "user_id": user_id, "type": notif_type, "message": message, "link": link
     }).execute()

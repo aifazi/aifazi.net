@@ -154,6 +154,7 @@ export default function ChatRoomScreen() {
   const [searching, setSearching] = useState(false)
   const listRef = useRef<FlatList<ChatMessage>>(null)
   const stick = useRef(true)
+  const [showScrollBtn, setShowScrollBtn] = useState(false)
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -660,7 +661,9 @@ export default function ChatRoomScreen() {
             }}
             onScroll={({ nativeEvent }) => {
               const { layoutMeasurement, contentOffset, contentSize } = nativeEvent
-              stick.current = contentSize.height - (contentOffset.y + layoutMeasurement.height) < 80
+              const atBottom = contentSize.height - (contentOffset.y + layoutMeasurement.height) < 80
+              stick.current = atBottom
+              setShowScrollBtn(!atBottom)
             }}
             scrollEventThrottle={100}
             ListHeaderComponent={
@@ -879,6 +882,14 @@ export default function ChatRoomScreen() {
             }}
           />
         )}
+        {showScrollBtn && messages.length > 0 ? (
+          <TouchableOpacity
+            onPress={() => { stick.current = true; setShowScrollBtn(false); listRef.current?.scrollToEnd({ animated: true }) }}
+            style={{ position: 'absolute', bottom: 90, alignSelf: 'center', backgroundColor: c.accent, borderRadius: 20, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, zIndex: 10 }}
+          >
+            <Text style={{ color: '#fff', fontSize: FONT.sm, fontWeight: '700' }}>↓ New messages</Text>
+          </TouchableOpacity>
+        ) : null}
       {reactTarget ? (
         <View style={[styles.reactBar, { borderTopColor: c.border, backgroundColor: c.bg2 }]}>
           <Text style={{ color: c.muted, fontSize: FONT.sm, marginRight: SPACE.sm }}>React to</Text>
