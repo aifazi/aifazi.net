@@ -6,11 +6,10 @@ FROM python:3.12.9-slim
 
 WORKDIR /app
 
-# System deps for PDF tools, Pillow, Tesseract OCR, WireGuard management.
+# System deps for PDF tools, Pillow, Tesseract OCR, etc.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libffi-dev libjpeg-dev zlib1g-dev \
     tesseract-ocr tesseract-ocr-eng \
-    wireguard-tools iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
