@@ -172,13 +172,10 @@ def _check_admin_password(submitted: str) -> bool:
     and set it as ADMIN_PASSWORD in your environment."""
     if not ADMIN_PASSWORD:
         return False
-    is_hashed = ADMIN_PASSWORD.startswith(("$2b$", "$2a$", "$2y$"))
-    if is_hashed:
-        return _verify(submitted, ADMIN_PASSWORD)
-    # Plaintext fallback — allowed only in non-production environments
-    if os.getenv("ENV") not in ("production",) and os.getenv("VERCEL_ENV") != "production":
-        return _hmac.compare_digest(submitted.encode(), ADMIN_PASSWORD.encode())
-    raise HTTPException(503, "Admin password must be a bcrypt hash in production")
+    if not ADMIN_PASSWORD.startswith(("$2b$", "$2a$", "$2y$")):
+        log.error("ADMIN_PASSWORD must be a bcrypt hash — refusing plaintext login")
+        raise HTTPException(503, "Admin password must be a bcrypt hash")
+    return _verify(submitted, ADMIN_PASSWORD)
 
 # ── Models ─────────────────────────────────────────────────────────────────────
 class LoginBody(BaseModel):

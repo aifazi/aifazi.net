@@ -415,8 +415,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # ── 2c. Shared (DB) rate limit for brute-force-sensitive paths ──────
         # Additional Supabase-backed check for sensitive paths as a second layer.
-        # Fail-open on DB error (if the DB is down the auth endpoints themselves
-        # are down, and login must never be a worse DoS than it already is).
+        # Fail-open on DB error — if the DB is down, auth endpoints are already
+        # broken and a 429 adds no security value over the primary rate limit.
         if any(path.endswith(s) for s in _RL_SENSITIVE_SUFFIXES) or any(path.startswith(s) for s in _RL_PREFIXES):
             try:
                 from database import supabase as _sb

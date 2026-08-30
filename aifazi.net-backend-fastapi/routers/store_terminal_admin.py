@@ -20,7 +20,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import random
+import secrets
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -44,7 +44,9 @@ def _now() -> str:
 
 
 def _number(prefix: str) -> str:
-    return f"{prefix}-{random.randint(100000, 999999)}"
+    """CSPRNG order number — 9 random digits (~30 bits) to prevent enumeration."""
+    n = secrets.randbelow(1_000_000_000)
+    return f"{prefix}-{n:09d}"
 
 
 # Lazily import stripe so cold starts that never touch payments don't pay for it.
