@@ -679,10 +679,10 @@ async def list_replies_admin(
         "id,content,created_at,edited,edited_at,author_id,thread_id"
     ).order("created_at", desc=True)
     if search:
-        q = q.ilike("content", f"%{search}%")
+        q = q.ilike("content", f"%{safe_search_term(search)}%")
     total_q = supabase.table("forum_replies").select("*", count="exact", head=True)
     if search:
-        total_q = total_q.ilike("content", f"%{search}%")
+        total_q = total_q.ilike("content", f"%{safe_search_term(search)}%")
     total_res = total_q.execute()
     total = total_res.count if hasattr(total_res, 'count') else 0
     res = q.range(offset, offset + limit - 1).execute()

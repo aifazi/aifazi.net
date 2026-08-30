@@ -5,7 +5,6 @@ inventory, orders, invoices, quotes, sales stats). Mounted at /api/store/admin.
 from __future__ import annotations
 
 import logging
-import random
 import secrets
 from datetime import datetime, timezone
 
@@ -35,7 +34,9 @@ def _now() -> str:
 
 
 def _number(prefix: str) -> str:
-    return f"{prefix}-{random.randint(100000, 999999)}"
+    """CSPRNG order number — 9 random digits (~30 bits) to prevent enumeration."""
+    n = secrets.randbelow(1_000_000_000)
+    return f"{prefix}-{n:09d}"
 
 
 def _product_payload(row: dict) -> dict:

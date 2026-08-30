@@ -5,6 +5,16 @@ import { useForum } from '../../context/ForumContext'
 import { Card, NeonButton, Badge, EmptyState } from '../../components/community'
 import { UserAvatar } from '@/lib/avatar'
 
+const TRUSTED_CHECKOUT_HOSTS = ['checkout.stripe.com', 'stripe.com', 'billing.stripe.com']
+function safeCheckoutRedirect(url) {
+  try {
+    const u = new URL(url)
+    if (TRUSTED_CHECKOUT_HOSTS.includes(u.hostname)) {
+      window.location.href = url
+    }
+  } catch {}
+}
+
 const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
 const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)', Y = 'var(--orange)'
 
@@ -38,7 +48,7 @@ export default function AccountDashboard({ loginHref }) {
   const handleManage = async () => {
     try {
       const r = await api.post('/store/portal')
-      if (r.data?.url) window.location.href = r.data.url
+      if (r.data?.url) safeCheckoutRedirect(r.data.url)
     } catch { setError('Could not open billing portal.') }
   }
 
