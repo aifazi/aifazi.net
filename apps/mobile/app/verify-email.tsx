@@ -3,7 +3,7 @@ import { View, Text, ActivityIndicator } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTheme } from '@/src/theme'
 import { FONT, SPACE } from '@/src/design'
-import api from '@/src/lib/api'
+import { api } from '@/src/lib/api'
 
 export default function VerifyEmailScreen() {
   const { theme } = useTheme()

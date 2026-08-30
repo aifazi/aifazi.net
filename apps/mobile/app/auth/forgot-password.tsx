@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router'
 import { useTheme } from '@/src/theme'
 import { FONT, SPACE } from '@/src/design'
 import { withAlpha } from '@/src/lib/color'
-import api from '@/src/lib/api'
+import { api } from '@/src/lib/api'
 
 export default function ForgotPasswordScreen() {
   const { theme } = useTheme()
@@ -53,7 +53,7 @@ export default function ForgotPasswordScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: SPACE.xl }}>
           <Text style={{ color: c.accent, fontSize: FONT.base }}>← Back</Text>
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: FONT.heading, fontWeight: '800', marginBottom: SPACE.xs }}>Forgot Password</Text>
+        <Text style={{ color: c.text, fontSize: FONT.title, fontWeight: '800', marginBottom: SPACE.xs }}>Forgot Password</Text>
         <Text style={{ color: c.muted, fontSize: FONT.base, marginBottom: SPACE.xl }}>Enter your email and we&apos;ll send you a reset link.</Text>
         {error ? <Text style={{ color: '#ff4444', fontSize: FONT.sm, marginBottom: SPACE.md }}>{error}</Text> : null}
         <TextInput

@@ -8,7 +8,7 @@ import { withAlpha } from '@/src/lib/color'
 import { useReducedMotion } from '@/src/lib/motion'
 import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
-import api from '@/src/lib/api'
+import { api } from '@/src/lib/api'
 
 interface Command {
   label: string
@@ -69,7 +69,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const doClose = useCallback(() => { setOpen(false); setQuery(''); setResults([]) }, [])
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
-  const searchTimer = useRef<ReturnType<typeof setTimeout>>()
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current)

@@ -298,6 +298,8 @@ export default function DMThreadScreen() {
   const [typing, setTyping] = useState<TypingActivity[]>([])
   const [previews, setPreviews] = useState<Record<string, LinkPreview>>({})
   const [viewer, setViewer] = useState<string | null>(null)
+  const [showSearch, setShowSearch] = useState(false)
+  const [searchText, setSearchText] = useState('')
   const listRef = useRef<FlatList<DMMessage>>(null)
   const stick = useRef(true)
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -668,6 +670,19 @@ export default function DMThreadScreen() {
         </TouchableOpacity>
       </View>
 
+      {showSearch ? (
+        <View style={{ paddingHorizontal: SPACE.xl, paddingVertical: SPACE.sm, backgroundColor: c.bg2, borderBottomWidth: 1, borderBottomColor: c.border }}>
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Search messages…"
+            placeholderTextColor={c.muted}
+            autoFocus
+            style={{ color: c.text, fontSize: FONT.base, paddingVertical: SPACE.sm }}
+          />
+        </View>
+      ) : null}
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -686,7 +701,7 @@ export default function DMThreadScreen() {
         ) : (
           <FlatList
             ref={listRef}
-            data={messages}
+            data={searchText.trim() ? messages.filter(m => (m.body || '').toLowerCase().includes(searchText.trim().toLowerCase())) : messages}
             keyExtractor={(m) => m.id}
             contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.giant }}
             onContentSizeChange={() => {
