@@ -17,4 +17,4 @@ async def search(q: str = Query(..., min_length=1)):
         t["type"] = "thread"; t["url"] = f"/forum/thread/{t['id']}"
     for pr in products:
         pr["type"] = "product"; pr["url"] = f"/store/{pr['slug']}"
-    return {"results": posts + threads + products, "query": q}
+    return {"posts": posts, "threads": threads, "products": products, "query": q}

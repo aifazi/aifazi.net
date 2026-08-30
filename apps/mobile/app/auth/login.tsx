@@ -97,6 +97,9 @@ export default function LoginScreen() {
             <View style={{ marginTop: SPACE.huge }}>
               <Field label="Username / Email" value={identifier} onChangeText={setIdentifier} placeholder="tanvir" autoCapitalize="none" />
               <Field label="Password" value={password} onChangeText={setPassword} secure placeholder="••••••••" autoCapitalize="none" />
+              <TouchableOpacity onPress={() => router.push('/auth/forgot-password')} style={{ alignSelf: 'flex-end', marginBottom: SPACE.lg }}>
+                <Text style={{ color: c.accent, fontSize: FONT.sm }}>Forgot password?</Text>
+              </TouchableOpacity>
               <Btn title={busy ? 'Signing in…' : 'Sign In'} onPress={submit} disabled={busy} />
             </View>
             </Reveal>

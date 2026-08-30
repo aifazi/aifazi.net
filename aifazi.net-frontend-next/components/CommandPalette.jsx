@@ -48,6 +48,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
         const results = [
           ...res.data.posts.map(r => ({ ...r, group: '🔍 Blog Posts' })),
           ...res.data.threads.map(r => ({ ...r, group: '🔍 Forum Threads' })),
+          ...(res.data.products || []).map(r => ({ ...r, group: '🛒 Store Products', type: 'product' })),
         ]
         setSearchResults(results)
       } catch { setSearchResults([]) }
@@ -65,7 +66,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
 
   // Group filtered results — merge search results when available
   const searchItems = searchResults.map(r => ({
-    id: `search-${r.id}`, label: r.title, icon: r.type === 'post' ? '📝' : '💬',
+    id: `search-${r.id}`, label: r.title, icon: r.type === 'post' ? '📝' : r.type === 'product' ? '🛒' : '💬',
     group: r.group, subtitle: r.meta,
     action: { type: 'route', to: r.url },
   }))

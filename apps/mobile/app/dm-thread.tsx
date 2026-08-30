@@ -660,6 +660,9 @@ export default function DMThreadScreen() {
         >
           <Icon name="phone" size={FONT.section} color={c.text} />
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => setShowSearch(s => !s)} hitSlop={10}>
+          <Icon name="search" size={FONT.section} color={showSearch ? c.accent : c.muted} />
+        </TouchableOpacity>
         <TouchableOpacity onPress={openMenu} hitSlop={10}>
           <Icon name="more" size={FONT.lead} color={c.muted} style={{ marginLeft: SPACE.md }} />
         </TouchableOpacity>
