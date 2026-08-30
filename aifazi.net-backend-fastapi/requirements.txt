@@ -26,4 +26,4 @@ reportlab==5.0.1
 stripe==15.4.0
 upstash-redis==1.8.0
 pyclamd==0.4.0
-pyroute2==0.8.0
+pyroute2==0.9.6
