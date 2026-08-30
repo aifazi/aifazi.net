@@ -37,6 +37,7 @@ const COMMANDS: Command[] = [
   { label: 'New Ticket', hint: 'Contact support', icon: 'ticket', href: '/helpdesk-new' as Href },
   { label: 'New Thread', hint: 'Start a forum thread', icon: 'edit', href: '/forum-new' },
   { label: 'Cart', hint: 'Review checkout', icon: 'cart', href: '/store-cart' },
+  { label: 'VPN', hint: 'WireGuard VPN management', icon: 'shield', href: '/vpn' as Href },
 ]
 
 interface CommandPaletteApi {

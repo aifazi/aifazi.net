@@ -207,6 +207,7 @@ function RootNav() {
         <Stack.Screen name="blog-post" options={{ headerShown: false }} />
         <Stack.Screen name="auth/login" options={{ headerShown: false }} />
         <Stack.Screen name="auth/register" options={{ headerShown: false }} />
+        <Stack.Screen name="vpn" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={theme.dark ? 'light' : 'dark'} />
       <ThemeTransitionOverlay />
