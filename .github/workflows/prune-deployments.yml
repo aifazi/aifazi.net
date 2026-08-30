@@ -1,8 +1,8 @@
 name: Prune Old Deployments (keep only current)
 
-# Runs after every push to main (which triggers Vercel + Railway auto-deploys)
+# Runs after every push to main (which triggers Vercel + Coolify auto-deploys)
 # and removes all old deployment builds so only the current one remains on
-# Vercel, Railway, and GitHub. Manual trigger also supported.
+# Vercel and GitHub. Manual trigger also supported.
 
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Give Vercel/Railway a moment to start creating their deployment
+          # Give Vercel/Coolify a moment to start creating their deployment
           # records before we compute what is "old". Deployments created after
           # this job started are always kept.
           sleep 45
@@ -46,17 +46,10 @@ jobs:
           fi
           TEAM_ID="team_nL9SXzDbhzUHFNR2xaPzWldV"
           # projectName|projectId
-          PROJECTS="aifazi-website-new|prj_KbPCKEO6LvFztKF6GEIn0y2x7cmx
-                    aifazi-backend|prj_Va1GHAH4Rhabm2MicoxuS62iSWY3"
+          PROJECTS="aifazi-website-new|prj_KbPCKEO6LvFztKF6GEIn0y2x7cmx"
 
           while IFS='|' read -r NAME PROJ; do
             [ -z "$NAME" ] && continue
-            # Newest PRODUCTION deployment by created time, regardless of state.
-            # Fail-closed: only prune when the newest production deployment is
-            # actually READY (serving). If the newest is still BUILDING/ERROR/
-            # QUEUED we abort — never delete the live deployment (or an in-flight
-            # build that the Vercel commit check may still reference) while a
-            # replacement is not yet live.
             NEWEST=$(curl -fsS \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
               "https://api.vercel.com/v6/deployments?projectId=${PROJ}&target=production&limit=100&teamId=${TEAM_ID}" \
@@ -66,9 +59,6 @@ jobs:
               continue
             fi
             echo "[$NAME] current production deployment: $NEWEST"
-            # Delete every PRODUCTION deployment except the newest READY one.
-            # Preview/staging deployments are a separate environment and are
-            # deliberately left untouched.
             CURSOR=""
             while :; do
               URL="https://api.vercel.com/v6/deployments?projectId=${PROJ}&limit=100&teamId=${TEAM_ID}"
@@ -89,53 +79,22 @@ jobs:
             done
           done <<< "$PROJECTS"
 
-      - name: Prune Railway deployments
+      - name: Deploy backend to Coolify
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
         run: |
           set -euo pipefail
-          if [ -z "$RAILWAY_TOKEN" ]; then
-            echo "::warning::RAILWAY_TOKEN secret not set — skipping Railway prune."
+          if [ -z "${COOLIFY_WEBHOOK:-}" ]; then
+            echo "::warning::COOLIFY_WEBHOOK secret not set — skipping Coolify deploy."
             exit 0
           fi
-          SERVICE_ID="da51fadf-76d5-4f4a-96af-90877d7aafdc"
-          # Current Railway GraphQL schema: Service.deployments was removed in
-          # favour of a top-level deployments(input: {serviceId}) connection.
-          # Newest-first order is guaranteed by the API for a single service.
-          QUERY='query { deployments(input: { serviceId: "'"$SERVICE_ID"'" }) { edges { node { id status } } } }'
-          PAYLOAD=$(jq -nc --arg q "$QUERY" '{query:$q}')
-          EDGES=$(curl -fsS \
-            -H "Authorization: Bearer $RAILWAY_TOKEN" \
-            -H "Content-Type: application/json" \
-            -H "User-Agent: railway-cli" \
-            -d "$PAYLOAD" \
-            https://backboard.railway.com/graphql/v2 \
-            | jq -c '.data.deployments.edges[]?.node')
-          # Newest SUCCESS deployment = the one serving traffic. Fail-closed: if
-          # there is no SUCCESS deployment yet (or the newest is still building),
-          # abort before deleting anything — never prune while a replacement may
-          # not be live, and never delete a build that could be rolled back to.
-          NEWEST=$(echo "$EDGES" | jq -sr '[.[] | select(.status == "SUCCESS")][0].id // empty')
-          if [ -z "$NEWEST" ]; then
-            echo "::warning::No SUCCESS Railway deployment found — skipping prune to protect the live deployment."
-            exit 0
+          echo "Triggering Coolify redeploy..."
+          STATUS=$(curl -fsS -o /dev/null -w "%{http_code}" -X POST "$COOLIFY_WEBHOOK")
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
+            echo "Coolify deploy triggered successfully (HTTP $STATUS)"
+          else
+            echo "::warning::Coolify webhook returned HTTP $STATUS"
           fi
-          echo "Current Railway deployment: $NEWEST"
-          echo "$EDGES" | jq -sr '.[] | select(.status == "SUCCESS" and .id != $newest) | .id' --arg newest "$NEWEST" | while read -r DEP; do
-            [ -z "$DEP" ] && continue
-            if [ "$DEP" != "$NEWEST" ]; then
-              MUT='mutation { deploymentRemove(id: "'"$DEP"'") { id } }'
-              MP=$(jq -nc --arg m "$MUT" '{query:$m}')
-              curl -fsS \
-                -H "Authorization: Bearer $RAILWAY_TOKEN" \
-                -H "Content-Type: application/json" \
-                -H "User-Agent: railway-cli" \
-                -d "$MP" \
-                https://backboard.railway.com/graphql/v2 >/dev/null || \
-                echo "::warning::Railway delete failed: $DEP"
-              echo "deleted $DEP"
-            fi
-          done
 
       - name: Prune GitHub deployment records
         env:
@@ -159,9 +118,6 @@ jobs:
               echo "[$ENV] keeping $ID"
               continue
             fi
-            # The GitHub API only allows deleting deployments whose latest
-            # status is "inactive". Other states (e.g. "success") make the
-            # DELETE fail with HTTP 422, which surfaces as noisy warnings.
             gh api -X POST "repos/${GITHUB_REPO}/deployments/${ID}/statuses" -f state=inactive >/dev/null || true
             gh api -X DELETE "repos/${GITHUB_REPO}/deployments/${ID}" >/dev/null || \
               echo "::warning::GitHub record delete failed: $ID"

@@ -118,7 +118,7 @@ if not COOKIE_DOMAIN:
 
 # Require explicit COOKIE_DOMAIN in production
 if os.getenv("ENV") == "production" and not os.getenv("COOKIE_DOMAIN"):
-    raise RuntimeError("COOKIE_DOMAIN is required in production. Set it in Railway environment variables (e.g., .aifazi.net).")
+    raise RuntimeError("COOKIE_DOMAIN is required in production. Set it in your deployment environment variables (e.g., .aifazi.net).")
 
 # OAuth state helper for C2 (login-CSRF / open-redirect).
 from utils.oauth_state import (
