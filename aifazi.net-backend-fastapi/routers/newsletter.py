@@ -3,11 +3,15 @@ Frontend NewsletterPanel calls:
   GET    /newsletter/subscribers     → list subscribers
   DELETE /newsletter/unsubscribe     { email }  → remove
   POST   /newsletter/subscribe       { email }
+  POST   /newsletter/confirm         { token }  → confirm subscription
   POST   /newsletter/unsubscribe     { email }  (legacy)
   POST   /newsletter/send            { subject, html, text }
 """
 import asyncio
+import hashlib
+import hmac
 import os
+import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, EmailStr
@@ -20,8 +24,19 @@ from utils.email_queue import queue_email_bulk
 router = APIRouter()
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
+_SUBSCRIBE_SECRET = os.getenv("NEWSLETTER_SECRET", os.getenv("HMAC_SECRET", "dev-newsletter-secret"))
+
+
+def _make_confirm_token(email: str) -> str:
+    """HMAC-signed token so only our server can generate valid confirm links."""
+    return hmac.new(_SUBSCRIBE_SECRET.encode(), email.lower().encode(), hashlib.sha256).hexdigest()
+
 
 class SubBody(BaseModel):
+    email: EmailStr
+
+class ConfirmBody(BaseModel):
+    token: str
     email: EmailStr
 
 class CampaignBody(BaseModel):
@@ -33,10 +48,34 @@ async def subscribe(body: SubBody):
     if existing.data:
         if existing.data[0]["status"] == "active":
             return {"message": "Already subscribed"}
-        supabase.table("newsletter_subs").update({"status": "active"}).eq("email", body.email).execute()
-        return {"message": "Resubscribed"}
-    supabase.table("newsletter_subs").insert({"email": body.email}).execute()
-    return {"message": "Subscribed"}
+        if existing.data[0]["status"] == "pending":
+            return {"message": "Confirmation email sent. Check your inbox."}
+        supabase.table("newsletter_subs").update({"status": "pending"}).eq("email", body.email).execute()
+    else:
+        supabase.table("newsletter_subs").insert({"email": body.email, "status": "pending"}).execute()
+
+    # Send double opt-in confirmation email
+    token = _make_confirm_token(body.email)
+    confirm_url = f"{FRONTEND_URL}/newsletter/confirm?token={token}&email={body.email}"
+    try:
+        subject, html = render_template("newsletter_confirm", {
+            "site_name": "aifazi.net",
+            "confirm_url": confirm_url,
+        })
+        from utils.email_queue import queue_email
+        queue_email(body.email, subject or "Confirm your subscription", html or f"<p>Click to confirm: <a href='{confirm_url}'>Confirm</a></p>", "newsletter_confirm")
+    except Exception:
+        pass  # Don't leak whether email sending failed
+    return {"message": "Confirmation email sent. Check your inbox."}
+
+
+@router.post("/confirm")
+async def confirm(body: ConfirmBody):
+    expected = _make_confirm_token(body.email)
+    if not hmac.compare_digest(body.token, expected):
+        raise HTTPException(400, "Invalid or expired confirmation token")
+    supabase.table("newsletter_subs").update({"status": "active"}).eq("email", body.email).execute()
+    return {"message": "Subscription confirmed"}
 
 @router.post("/unsubscribe")
 async def unsubscribe_post(body: SubBody):

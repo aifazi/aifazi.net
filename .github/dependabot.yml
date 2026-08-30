@@ -86,7 +86,6 @@ updates:
           - "bcrypt*"
           - "pyjwt*"
           - "paseto*"
-          - "cryptography*"
       monitoring:
         patterns:
           - "sentry*"
@@ -144,3 +143,49 @@ updates:
           - "tailwindcss*"
           - "lucide-react-native*"
           - "@gorhom/*"
+
+  # Docker images
+  - package-ecosystem: "docker"
+    directory: "docker/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "aifazi"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "aifazi.net-backend-fastapi"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "aifazi"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  # Shared packages
+  - package-ecosystem: "npm"
+    directory: "packages/shared"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "aifazi"
+    labels:
+      - "dependencies"
+      - "shared"
+    commit-message:
+      prefix: "chore(shared)"

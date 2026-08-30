@@ -29,6 +29,9 @@ ENV PORT=8000
 
 EXPOSE 8000
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/api/monitor/ping')"]
+
 # No --reload in production. Uvicorn serves main:app; the lifespan() handler
 # starts the background scheduler when _IS_SERVERLESS is False.
 # Shell form so ${PORT} (Railway) expands at runtime; defaults to 8000.

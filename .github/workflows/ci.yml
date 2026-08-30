@@ -90,7 +90,6 @@ jobs:
         run: ruff check .
 
       - name: Run MyPy (typecheck)
-        continue-on-error: true
         run: mypy routers/ --ignore-missing-imports
 
   backend-security:
@@ -116,11 +115,9 @@ jobs:
           pip install pip-audit bandit
 
       - name: Run pip-audit (dependency vulnerability scan)
-        continue-on-error: true
         run: pip-audit
 
       - name: Run Bandit (static analysis)
-        continue-on-error: true
         run: bandit -r routers/ -f json -o bandit-report.json --severity-level high
 
       - name: Upload Bandit report
@@ -171,19 +168,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # dependency-review:
-  #   name: Dependency Review
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'pull_request'
-  #   permissions:
-  #     contents: read
-  #     pull-requests: write
-  #   steps:
-  #     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-  #     - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
-  #       with:
-  #         config-file: '.github/dependency-review-config.yml'
-  # Disabled: requires Dependency Graph enabled in repo settings (Settings > Security > Code security > Dependency graph)
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
 
   notify-failure:
     name: Notify on Failure
