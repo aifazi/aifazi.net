@@ -36,9 +36,22 @@ router = APIRouter()
 def _strip_html_tags(text: str) -> str:
     """Server-side defense-in-depth: strip HTML tags from chat content.
     The frontend renders Markdown, not raw HTML — this prevents stored XSS
-    if the frontend sanitization is ever bypassed."""
-    import re
-    return re.sub(r'<[^>]+>', '', text)
+    if the frontend sanitization is ever bypassed.
+    Uses html.parser instead of regex to avoid ReDoS on adversarial input."""
+    from html.parser import HTMLParser
+
+    class _TagStripper(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self._parts: list[str] = []
+        def handle_data(self, data):
+            self._parts.append(data)
+        def get_text(self):
+            return ''.join(self._parts)
+
+    s = _TagStripper()
+    s.feed(text)
+    return s.get_text()
 
 # ── In-memory chat history cache ────────────────────────────────────────────
 # Caches the "latest N messages in a room" fetch (the hot path) for a short TTL
