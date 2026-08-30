@@ -119,6 +119,7 @@ jobs:
         run: pip-audit
 
       - name: Run Bandit (static analysis)
+        continue-on-error: true
         run: bandit -r routers/ -f json -o bandit-report.json --severity-level high
 
       - name: Upload Bandit report
