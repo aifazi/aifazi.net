@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from database import safe_search_term, supabase
+from database import safe_search_term, _escape_ilike, supabase
 from dependencies import get_current_user
 from routers.chat import _EMOJI_RE
 from routers.chat_livekit import (
@@ -80,7 +80,7 @@ def _get_user(username: str) -> dict:
     res = (
         supabase.table("users")
         .select("id,username,avatar,role")
-        .ilike("username", (username or "").strip())
+        .ilike("username", _escape_ilike((username or "").strip()))
         .limit(1)
         .execute()
     )

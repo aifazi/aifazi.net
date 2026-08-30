@@ -31,7 +31,7 @@ from fastapi.responses import RedirectResponse as _Redir
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
 
-from database import safe_search_term, supabase
+from database import safe_search_term, _escape_ilike, supabase
 from dependencies import (
     CookieHTTPBearer,
     get_current_user,
@@ -400,16 +400,16 @@ def _email_owner(email: str, *, exclude_forum_user_id: str | None = None, exclud
     if not email:
         return None
     needle = email.lower()
-    users = supabase.table("users").select("id,email,username").ilike("email", email).limit(10).execute()
+    users = supabase.table("users").select("id,email,username").ilike("email", _escape_ilike(email)).limit(10).execute()
     for row in users.data or []:
         if (row.get("email") or "").lower() == needle and str(row.get("id")) != str(exclude_forum_user_id or ""):
             return {"source": "forum", **row}
-    staff = supabase.table("users").select("id,email,username").ilike("email", email).limit(10).execute()
+    staff = supabase.table("users").select("id,email,username").ilike("email", _escape_ilike(email)).limit(10).execute()
     for row in staff.data or []:
         if (row.get("email") or "").lower() == needle and str(row.get("id")) != str(exclude_staff_id or ""):
             return {"source": "staff", **row}
     admin_name = os.getenv("ADMIN_USERNAME", "admin")
-    admins = supabase.table("admin_2fa").select("id,username,email").ilike("email", email).limit(10).execute()
+    admins = supabase.table("admin_2fa").select("id,username,email").ilike("email", _escape_ilike(email)).limit(10).execute()
     for row in admins.data or []:
         if (row.get("email") or "").lower() == needle and not (exclude_admin and row.get("username") == admin_name):
             return {"source": "admin", **row}
@@ -526,12 +526,12 @@ def _find_user_by_ci(field: str, value: str, select: str = "*"):
     value = (value or "").strip()
     if not value:
         return None
-    res = supabase.table("users").select(select).ilike(field, value).limit(5).execute()
+    res = supabase.table("users").select(select).ilike(field, _escape_ilike(value)).limit(5).execute()
     needle = value.lower()
     return next((row for row in (res.data or []) if str(row.get(field, "")).lower() == needle), None)
 
 def _username_owner(username: str, exclude_id: str | None = None) -> dict | None:
-    res = supabase.table("users").select("id,username").ilike("username", username).limit(10).execute()
+    res = supabase.table("users").select("id,username").ilike("username", _escape_ilike(username)).limit(10).execute()
     for row in res.data or []:
         if (row.get("username") or "").lower() == username.lower() and str(row.get("id")) != str(exclude_id or ""):
             return row
@@ -1607,7 +1607,7 @@ async def verify_status(email: str):
     """Return whether the account for this email has been verified yet.
     The /login VerifyWaiting screen polls this every 3s after registration and
     auto-advances once the user clicks the email link."""
-    res = supabase.table("users").select("email_verified").ilike("email", email.strip()).limit(1).execute()
+    res = supabase.table("users").select("email_verified").ilike("email", _escape_ilike(email.strip())).limit(1).execute()
     verified = bool(res.data and res.data[0].get("email_verified"))
     return {"verified": verified}
 

@@ -21,6 +21,16 @@ from dependencies import require_staff
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+_EMAIL_SECRET_FIELDS = frozenset({
+    "brevoApiKey", "resendApiKey",
+    "incomingPassword", "smtpPassword",
+})
+
+
+def _mask_secrets(settings: dict) -> dict:
+    """Return a copy of settings with secret fields masked."""
+    return {k: "••••••••" if k in _EMAIL_SECRET_FIELDS and v else v for k, v in settings.items()}
+
 _EMAIL_CONFIG_MIGRATION_SQL = """
 CREATE TABLE IF NOT EXISTS email_config (
     key         TEXT PRIMARY KEY,
@@ -71,7 +81,7 @@ async def get(_: dict = Depends(require_staff)):
     if row is None:
         supabase.table("email_config").insert({"key": "global", "settings": {}}).execute()
         return {}
-    return row.get("settings") or {}
+    return _mask_secrets(row.get("settings") or {})
 
 @router.put("")
 async def update(body: dict, _: dict = Depends(require_staff)):
