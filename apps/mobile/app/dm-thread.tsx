@@ -701,7 +701,7 @@ export default function DMThreadScreen() {
         ) : (
           <FlatList
             ref={listRef}
-            data={searchText.trim() ? messages.filter(m => (m.body || '').toLowerCase().includes(searchText.trim().toLowerCase())) : messages}
+            data={searchText.trim() ? messages.filter(m => (m.content || '').toLowerCase().includes(searchText.trim().toLowerCase())) : messages}
             keyExtractor={(m) => m.id}
             contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.giant }}
             onContentSizeChange={() => {
