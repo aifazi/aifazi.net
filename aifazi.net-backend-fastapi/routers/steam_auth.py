@@ -407,26 +407,25 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     safe_dest = _urlparse.quote(dest, safe="/")
     # For brand-new Steam accounts, send to profile edit tab so they can set email
     new_flag = "&new_account=1" if is_new_account else ""
-    # Use hash fragment instead of query param — tokens don't appear in server logs or Referer headers
-    # H4 — also set HttpOnly auth cookies so the session survives without
-    # localStorage; the fragment token stays as a legacy fallback.
-    try:
-        from routers.auth import _set_auth_cookies, make_refresh_token
-        refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
+# Set HttpOnly auth cookies (primary) + keep hash for legacy mobile deep links.
+        # Access token never in query param. Token never in URL for web clients.
         try:
-            supabase.table("users").update({
-                "refresh_token": refresh, "refresh_rotated_at": now, "last_seen": now,
-            }).eq("id", user["id"]).execute()
+            from routers.auth import _set_auth_cookies, make_refresh_token
+            refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
+            try:
+                supabase.table("users").update({
+                    "refresh_token": refresh, "refresh_rotated_at": now, "last_seen": now,
+                }).eq("id", user["id"]).execute()
+            except Exception:
+                pass
+            if _st.get("mobile"):
+                # App deep link — deliver tokens via fragment (no cookie jar on the app).
+                return RedirectResponse(f"{front}#token={token}&refresh={refresh}&dest={safe_dest}{new_flag}")
+            resp = RedirectResponse(f"{front}/auth/steam-callback#dest={_urlparse.quote(dest, safe='/')}")
+            _set_auth_cookies(resp, token, refresh)
+            return resp
         except Exception:
-            pass
-        resp = RedirectResponse(f"{front}/auth/steam-callback#token={token}&dest={safe_dest}{new_flag}")
-        if _st.get("mobile"):
-            # App deep link — deliver the refresh token too (no cookie jar on the app).
-            return RedirectResponse(f"{front}#token={token}&refresh={refresh}&dest={safe_dest}{new_flag}")
-        _set_auth_cookies(resp, token, refresh)
-        return resp
-    except Exception:
-        return RedirectResponse(f"{front}/auth/steam-callback#token={token}&dest={safe_dest}{new_flag}")
+            return RedirectResponse(f"{front}/auth/steam-callback#dest={_urlparse.quote(dest, safe='/')}")
 
 
 @router.delete("/disconnect")
