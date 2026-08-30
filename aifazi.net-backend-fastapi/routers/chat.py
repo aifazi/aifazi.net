@@ -32,6 +32,27 @@ from routers.push import _send_push_sync
 
 router = APIRouter()
 
+
+def _strip_html_tags(text: str) -> str:
+    """Server-side defense-in-depth: strip HTML tags from chat content.
+    The frontend renders Markdown, not raw HTML — this prevents stored XSS
+    if the frontend sanitization is ever bypassed.
+    Uses html.parser instead of regex to avoid ReDoS on adversarial input."""
+    from html.parser import HTMLParser
+
+    class _TagStripper(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self._parts: list[str] = []
+        def handle_data(self, data):
+            self._parts.append(data)
+        def get_text(self):
+            return ''.join(self._parts)
+
+    s = _TagStripper()
+    s.feed(text)
+    return s.get_text()
+
 # ── In-memory chat history cache ────────────────────────────────────────────
 # Caches the "latest N messages in a room" fetch (the hot path) for a short TTL
 # so repeat history loads don't hammer Postgres. Single-process only — when the
@@ -794,7 +815,7 @@ async def send_message(
             supabase.table("chat_mutes").delete().eq("id", mute[0]["id"]).execute()
         else:
             raise HTTPException(403, "You are muted in this channel")
-    content = body.content.strip()
+    content = _strip_html_tags(body.content.strip())
     if not content:
         raise HTTPException(400, "Message cannot be empty")
     if len(content) > 4000:
@@ -836,7 +857,7 @@ async def edit_message(
     body: EditBody,
     user: dict = Depends(get_current_user),
 ):
-    content = body.content.strip()
+    content = _strip_html_tags(body.content.strip())
     if not content or len(content) > 4000:
         raise HTTPException(400, "Invalid content")
 

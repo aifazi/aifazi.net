@@ -330,6 +330,7 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/seo-proxy",            10,   60),
     ("/helpdesk/tickets",     10,   60),
     ("/monitor/errors",       20,   60),
+    ("/monitor/ping",         10,   60),
     ("/store/track/",         10,   60),
 ]
 _RL_DEFAULT = (100, 60)   # 100 requests / 60 s general
@@ -427,7 +428,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 }).execute()
                 allowed = bool(res.data)
             except Exception:
-                allowed = True
+                allowed = False  # fail-closed: DB down → block sensitive paths
             if not allowed:
                 return JSONResponse(
                     status_code=429,
