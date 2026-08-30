@@ -2,7 +2,7 @@
 # Runs a persistent FastAPI/uvicorn process (NOT serverless).
 # Assumes the build context is the backend directory (aifazi.net-backend-fastapi).
 # The scheduler starts in lifespan because VERCEL env is unset on Railway.
-FROM python:3.12.9-slim
+FROM python:3.14.7-slim
 
 WORKDIR /app
 
