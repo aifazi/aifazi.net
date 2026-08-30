@@ -10,6 +10,16 @@ import { useNow } from '../hooks/useNow'
 import FiveMStatus from '@/components/FiveMStatus'
 import { getSupabase } from '@/lib/supabase'
 
+const TRUSTED_OAUTH_HOSTS = ['steamcommunity.com', 'steamlogin.com', 'discord.com', 'discordapp.com']
+function safeOAuthRedirect(url) {
+  try {
+    const u = new URL(url)
+    if (TRUSTED_OAUTH_HOSTS.some(h => u.hostname === h || u.hostname.endsWith('.' + h))) {
+      window.location.href = url
+    }
+  } catch {}
+}
+
 /* ─── Design tokens ──────────────────────────────────────────────────────── */
 const M = { fontFamily: 'var(--font-mono)' }
 const D = { fontFamily: 'var(--font-display)' }
@@ -1378,7 +1388,7 @@ function FiveMTab({ user }) {
     setActionStatus(null)
     try {
       const r = await api.get(`${oauthApiBase('steam')}/connect-url?dest=${encodeURIComponent('/profile?tab=fivem')}`)
-      window.location.href = r.data.url
+      safeOAuthRedirect(r.data.url)
     } catch (err) {
       setActionStatus({ type: 'error', msg: err?.response?.data?.detail || 'Could not start Steam connect.' })
       setActionLoading('')
@@ -1391,7 +1401,7 @@ function FiveMTab({ user }) {
     setActionStatus(null)
     try {
       const r = await api.get(`${oauthApiBase('discord')}/connect-url?dest=${encodeURIComponent('/profile?tab=fivem')}`)
-      window.location.href = r.data.url
+      safeOAuthRedirect(r.data.url)
     } catch (err) {
       setActionStatus({ type: 'error', msg: err?.response?.data?.detail || 'Could not start Discord connect.' })
       setActionLoading('')

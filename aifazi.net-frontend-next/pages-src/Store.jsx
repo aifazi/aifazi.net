@@ -13,6 +13,16 @@ import StoreFAQ from './store/StoreFAQ'
 import AccountDashboard from './store/AccountDashboard'
 import DeliveryAgentPortal from './store/DeliveryAgentPortal'
 
+const TRUSTED_CHECKOUT_HOSTS = ['checkout.stripe.com', 'stripe.com']
+function safeCheckoutRedirect(url) {
+  try {
+    const u = new URL(url)
+    if (TRUSTED_CHECKOUT_HOSTS.includes(u.hostname)) {
+      window.location.href = url
+    }
+  } catch {}
+}
+
 const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)', Y = 'var(--orange)'
 const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
 
@@ -138,7 +148,7 @@ export default function StorePage({ fivem = false }) {
         success_url: `${origin}/store/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/store`,
       })
-      if (r.data?.url) window.location.href = r.data.url
+      if (r.data?.url) safeCheckoutRedirect(r.data.url)
       else setError('Checkout could not be started.')
     } catch (err) { setError(err?.response?.data?.detail || 'Checkout failed.') }
     finally { setCheckoutCartLoading(false) }
@@ -153,7 +163,7 @@ export default function StorePage({ fivem = false }) {
         success_url: `${origin}/store/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/store`,
       })
-      if (r.data?.url) window.location.href = r.data.url
+      if (r.data?.url) safeCheckoutRedirect(r.data.url)
     } catch (err) { setError(err?.response?.data?.detail || 'Checkout failed.') }
     finally { setCheckoutLoading('') }
   }
