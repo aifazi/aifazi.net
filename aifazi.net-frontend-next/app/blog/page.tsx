@@ -25,10 +25,14 @@ async function getPosts() {
   const base = backendBaseUrl()
   if (!base) return []
   try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 25000)
     const res = await fetch(`${base}/api/blog?limit=12`, {
       headers: { Accept: 'application/json' },
       next: { revalidate: 300 },
+      signal: controller.signal,
     })
+    clearTimeout(timeout)
     if (!res.ok) return []
     const data = await res.json()
     return Array.isArray(data.posts) ? data.posts : []
