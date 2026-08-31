@@ -21,7 +21,7 @@ qrcode==7.4.2
 PyMuPDF==1.28.2
 PyJWT==2.13.0
 openpyxl==3.1.5
-python-docx==1.1.2
+python-docx==1.2.0
 reportlab==5.0.1
 stripe==15.6.0
 upstash-redis==1.8.0
