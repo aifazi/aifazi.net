@@ -507,7 +507,9 @@ async def get_public_ip(user: dict = Depends(get_current_user)):
     import urllib.request
     import json
     try:
-        resp = urllib.request.urlopen("https://api.ipify.org?format=json", timeout=5)
+        resp = await asyncio.to_thread(
+            urllib.request.urlopen, "https://api.ipify.org?format=json", timeout=5
+        )
         data = json.loads(resp.read())
         return {"ip": data.get("ip", WG_ENDPOINT)}
     except Exception:
