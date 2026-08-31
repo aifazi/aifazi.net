@@ -7,17 +7,22 @@ FROM python:3.12.9-slim
 
 WORKDIR /app
 
-# System deps: PDF tools, Pillow, Tesseract OCR, WireGuard, iptables for VPN NAT.
+# System deps: PDF tools, Pillow, Tesseract OCR.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential libffi-dev libjpeg-dev zlib1g-dev \
     tesseract-ocr tesseract-ocr-eng \
-    wireguard-tools iptables iproute2 gosu \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt \
     && apt-get purge -y build-essential libffi-dev libjpeg-dev zlib1g-dev \
-    && apt-get autoremove -y
+    && apt-get autoremove -y \
+    && apt-get clean
+
+# WireGuard and networking tools (installed AFTER purge to avoid removal)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wireguard-tools iptables iproute2 gosu \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy application source into the image (no bind mount in production)
 COPY . .
