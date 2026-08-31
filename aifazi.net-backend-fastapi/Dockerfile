@@ -2,7 +2,7 @@
 # Runs a persistent FastAPI/uvicorn process (NOT serverless).
 # Assumes the build context is the backend directory (aifazi.net-backend-fastapi).
 # Deployed via Coolify on VPS. Scheduler starts in lifespan when VERCEL is unset.
-FROM python:3.12.9-slim
+FROM python:3.14.7-slim
 
 WORKDIR /app
 
