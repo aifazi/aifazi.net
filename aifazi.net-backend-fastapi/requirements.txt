@@ -23,7 +23,7 @@ PyJWT==2.13.0
 openpyxl==3.1.5
 python-docx==1.1.2
 reportlab==5.0.1
-stripe==15.4.0
+stripe==15.6.0
 upstash-redis==1.8.0
 pyclamd==0.4.0
 pyroute2==0.9.6
