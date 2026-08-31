@@ -390,3 +390,127 @@ async def get_stats(user: dict = Depends(get_current_user)):
         })
 
     return {"peers": result, "total_rx": total_rx, "total_tx": total_tx}
+
+
+# ---------------------------------------------------------------------------
+# Session tracking
+# ---------------------------------------------------------------------------
+
+class SessionCreate(BaseModel):
+    peer_id: str
+    client_public_ip: str = ""
+
+
+class SessionResponse(BaseModel):
+    id: str
+    peer_id: str
+    device_name: str
+    connected_at: str
+    disconnected_at: str | None = None
+    client_public_ip: str
+    bytes_rx: int = 0
+    bytes_tx: int = 0
+
+
+@router.post("/sessions")
+async def start_session(body: SessionCreate, user: dict = Depends(get_current_user)):
+    """Log a new VPN connection session."""
+    user_id = _get_user_id(user)
+    peer = _get_peer_by_id(body.peer_id, user_id)
+    if not peer:
+        raise HTTPException(404, "Peer not found")
+
+    session_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    supabase.table("vpn_sessions").insert({
+        "id": session_id,
+        "peer_id": body.peer_id,
+        "user_id": user_id,
+        "connected_at": now,
+        "client_public_ip": body.client_public_ip or "",
+    }).execute()
+
+    # Update peer's last_connected_at
+    supabase.table("vpn_peers").update({
+        "last_connected_at": now,
+    }).eq("id", body.peer_id).execute()
+
+    return {"id": session_id, "connected_at": now}
+
+
+@router.post("/sessions/{session_id}/end")
+async def end_session(session_id: str, user: dict = Depends(get_current_user)):
+    """Log the end of a VPN session with final byte counts."""
+    user_id = _get_user_id(user)
+
+    res = (
+        supabase.table("vpn_sessions")
+        .select("*")
+        .eq("id", session_id)
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    data = res.data or []
+    if not data:
+        raise HTTPException(404, "Session not found")
+
+    session = data[0]
+    peer = _get_peer_by_id(session["peer_id"], user_id)
+    wg_stats = await parse_peer_stats()
+    stats = wg_stats.get(peer["public_key"], {}) if peer else {}
+
+    now = datetime.now(timezone.utc).isoformat()
+    supabase.table("vpn_sessions").update({
+        "disconnected_at": now,
+        "bytes_rx": stats.get("transfer_rx", 0),
+        "bytes_tx": stats.get("transfer_tx", 0),
+    }).eq("id", session_id).execute()
+
+    return {"id": session_id, "disconnected_at": now}
+
+
+@router.get("/sessions")
+async def list_sessions(
+    limit: int = 20,
+    offset: int = 0,
+    user: dict = Depends(get_current_user),
+):
+    """Get connection history for the authenticated user."""
+    user_id = _get_user_id(user)
+    res = (
+        supabase.table("vpn_sessions")
+        .select("*, vpn_peers(device_name)")
+        .eq("user_id", user_id)
+        .order("connected_at", desc=True)
+        .range(offset, offset + limit - 1)
+        .execute()
+    )
+    sessions = []
+    for s in (res.data or []):
+        sessions.append({
+            "id": s["id"],
+            "peer_id": s["peer_id"],
+            "device_name": s.get("vpn_peers", {}).get("device_name", "Unknown"),
+            "connected_at": s.get("connected_at", ""),
+            "disconnected_at": s.get("disconnected_at"),
+            "client_public_ip": s.get("client_public_ip", ""),
+            "bytes_rx": s.get("bytes_rx", 0),
+            "bytes_tx": s.get("bytes_tx", 0),
+        })
+    return {"sessions": sessions}
+
+
+@router.get("/public-ip")
+async def get_public_ip(user: dict = Depends(get_current_user)):
+    """Return the VPS public IP — what clients see when connected to the VPN."""
+    import urllib.request
+    import json
+    try:
+        resp = await asyncio.to_thread(
+            urllib.request.urlopen, "https://api.ipify.org?format=json", timeout=5
+        )
+        data = json.loads(resp.read())
+        return {"ip": data.get("ip", WG_ENDPOINT)}
+    except Exception:
+        return {"ip": WG_ENDPOINT}

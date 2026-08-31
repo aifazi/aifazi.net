@@ -23,10 +23,14 @@ async function fetchStatusServer(): Promise<Record<string, any> | null> {
   const base = backendBaseUrl()
   if (!base) return null
   try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 25000)
     const res = await fetch(`${base}/api/monitor/status`, {
       headers: { Accept: 'application/json' },
       next: { revalidate: 30 },
+      signal: controller.signal,
     })
+    clearTimeout(timeout)
     if (!res.ok) return null
     const data = await res.json()
     if (!data || typeof data !== 'object') return null

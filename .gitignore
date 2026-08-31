@@ -51,6 +51,9 @@ node_modules/.cache/
 # Agent session notes
 .claude/
 
+# OpenCode config (contains API keys)
+opencode.json
+
 # Dev scripts and test files
 *dump*.sh
 *dump*.sql
