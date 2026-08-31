@@ -46,8 +46,8 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
   - [Cron](#cron)
 - [Background Scheduler](#background-scheduler)
 - [Deployment](#deployment)
-  - [Railway (recommended)](#railway-recommended)
-  - [Render](#render-recommended)
+  - [Coolify (recommended)](#coolify-recommended)
+  - [Render](#render)
   - [Vercel (serverless)](#vercel-serverless)
 - [Dependencies](#dependencies)
 
@@ -79,9 +79,8 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
 ├── database.py             # Supabase client (service role)
 ├── dependencies.py         # JWT auth helpers / FastAPI dependencies
 ├── requirements.txt
-├── Dockerfile               # Production image (Railway)
-├── railway.json             # Railway deployment config
-├── render.yaml              # Render deployment config
+├── Dockerfile               # Production image (Coolify/VPS)
+── render.yaml              # Render deployment config
 ├── vercel.json              # Vercel serverless config
 ├── .env.example
 │
@@ -635,19 +634,6 @@ Security headers (`X-Content-Type-Options`, `X-Frame-Options`,
 `Referrer-Policy`, `Strict-Transport-Security`, CSP) and the
 `X-Robots-Tag: noindex, nofollow` for the API host are emitted by the FastAPI
 middleware in `main.py`, so they apply on Coolify too.
-
-### Render
-
-A `render.yaml` is included. Create a new Render service from the repository and add all required environment variables in the Render dashboard (marked `sync: false`).
-
-```bash
-# Manual deploy trigger (if not using auto-deploy)
-# Just push to your main branch — Render picks it up automatically.
-```
-
-The service uses the Docker runtime. Health check: `GET /api/health`.
-
-Upgrade the plan from `starter` to `standard` for always-on availability and reliable WebSocket/streaming support.
 
 ### Vercel (serverless)
 
