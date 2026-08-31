@@ -1,6 +1,6 @@
 # Generated from requirements.txt — pin with `pip-compile` or `pip freeze > requirements.lock`
 # for reproducible builds. Keep httpx/PyMuPDF pinned for security (see audit).
-httpx==0.27.2
+httpx==0.28.1
 fastapi==0.141.1
 uvicorn[standard]==0.52.4
 supabase==2.9.1
