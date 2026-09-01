@@ -1,0 +1,43 @@
+# ── aifazi.net Backend — Root Dockerfile for Coolify ─────────────────────────
+# This Dockerfile is at the repo root. It copies the backend directory and
+# builds from there, so all relative paths in the backend Dockerfile work.
+FROM python:3.12.9-slim
+
+WORKDIR /build
+COPY aifazi.net-backend-fastapi/ ./
+
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libffi-dev libjpeg-dev zlib1g-dev \
+    tesseract-ocr tesseract-ocr-eng \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY aifazi.net-backend-fastapi/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y build-essential libffi-dev libjpeg-dev zlib1g-dev \
+    && apt-get autoremove -y \
+    && apt-get clean
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wireguard-tools iptables iproute2 gosu \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY aifazi.net-backend-fastapi/ .
+
+COPY aifazi.net-backend-fastapi/scripts/init-wireguard.sh /usr/local/bin/init-wireguard.sh
+RUN chmod +x /usr/local/bin/init-wireguard.sh && mkdir -p /data/wireguard
+
+RUN addgroup --system app && adduser --system --group app \
+    && mkdir -p /app && chown -R app:app /app \
+    && chown -R app:app /data/wireguard
+
+ENV PORT=8000
+
+EXPOSE 8000 51820/udp
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/api/monitor/ping')"]
+
+COPY aifazi.net-backend-fastapi/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
