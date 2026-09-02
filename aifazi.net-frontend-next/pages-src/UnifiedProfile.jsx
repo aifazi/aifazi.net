@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useForum } from '../context/ForumContext'
 import ForumProfile from './ForumProfile'
 import TrackOrderWidget from '../components/TrackOrderWidget'
@@ -17,18 +17,19 @@ function VpnSection({ user }) {
   const [config, setConfig] = useState('')
   const [copied, setCopied] = useState(false)
 
-  const loadPeers = useCallback(async () => {
-    try {
-      const res = await api.get('/vpn/peers')
-      setPeers(res.data.peers || [])
-    } catch (err) {
-      console.error('Failed to load VPN peers:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const fetchPeers = async () => {
+    const res = await api.get('/vpn/peers')
+    return res.data.peers || []
+  }
 
-  useEffect(() => { if (user) loadPeers() }, [user, loadPeers])
+  useEffect(() => {
+    if (!user) return
+    let cancel = false
+    fetchPeers().then((data) => {
+      if (!cancel) { setPeers(data); setLoading(false) }
+    }).catch(() => { if (!cancel) setLoading(false) })
+    return () => { cancel = true }
+  }, [user])
 
   const handleCreate = async () => {
     if (creating || peers.length >= 5) return
@@ -36,7 +37,7 @@ function VpnSection({ user }) {
     setCreating(true)
     try {
       const res = await api.post('/vpn/peers', { device_name: name, device_os: 'linux' })
-      await loadPeers()
+      await fetchPeers().then(setPeers)
       setSelectedPeer(res.data)
     } catch (err) {
       alert(err?.response?.data?.detail || 'Failed to create device')
@@ -86,7 +87,7 @@ function VpnSection({ user }) {
     try {
       await api.delete(`/vpn/peers/${peer.id}`)
       setSelectedPeer(null)
-      loadPeers()
+      fetchPeers().then(setPeers)
     } catch (err) {
       alert(err?.response?.data?.detail || 'Failed to delete device')
     }
