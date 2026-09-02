@@ -129,9 +129,12 @@ def _call_wg_api(endpoint: str, method: str = "GET", data: dict | None = None) -
 async def is_interface_up() -> bool:
     """Check if the WireGuard interface exists and is up."""
     try:
+        log.info("Checking WireGuard status via API at %s", WG_API_URL)
         result = await asyncio.to_thread(_call_wg_api, "/status")
+        log.info("WireGuard API response: %s", result)
         return result.get("running", False)
-    except Exception:
+    except Exception as e:
+        log.error("Failed to check WireGuard status: %s", e)
         return False
 
 
