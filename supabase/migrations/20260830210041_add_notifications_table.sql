@@ -15,8 +15,14 @@ create index if not exists notifications_user_idx on public.notifications (user_
 -- RLS: users see only their own notifications
 alter table public.notifications enable row level security;
 
-create policy "Users see own notifications" on public.notifications
-  for select using (auth.uid() = user_id);
+DO $$ BEGIN
+  create policy "Users see own notifications" on public.notifications
+    for select using (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-create policy "Service role manages notifications" on public.notifications
-  for all using (true) with check (true);
+DO $$ BEGIN
+  create policy "Service role manages notifications" on public.notifications
+    for all using (true) with check (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

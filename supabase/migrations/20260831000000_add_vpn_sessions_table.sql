@@ -10,10 +10,7 @@ create table if not exists public.vpn_sessions (
   client_public_ip inet,
   client_public_ip_country text,
   bytes_rx bigint default 0,
-  bytes_tx bigint default 0,
-  duration_seconds integer generated always as (
-    extract(epoch from (coalesce(disconnected_at, now()) - connected_at))::integer
-  ) stored
+  bytes_tx bigint default 0
 );
 
 create index if not exists idx_vpn_sessions_peer_id on public.vpn_sessions(peer_id);
@@ -23,17 +20,26 @@ create index if not exists idx_vpn_sessions_connected_at on public.vpn_sessions(
 -- RLS: users can only see their own sessions
 alter table public.vpn_sessions enable row level security;
 
-create policy "VPN sessions: users can view own sessions"
-  on public.vpn_sessions for select
-  using (auth.uid() = user_id);
+DO $$ BEGIN
+  create policy "VPN sessions: users can view own sessions"
+    on public.vpn_sessions for select
+    using (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-create policy "VPN sessions: users can insert own sessions"
-  on public.vpn_sessions for insert
-  with check (auth.uid() = user_id);
+DO $$ BEGIN
+  create policy "VPN sessions: users can insert own sessions"
+    on public.vpn_sessions for insert
+    with check (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-create policy "VPN sessions: users can update own sessions"
-  on public.vpn_sessions for update
-  using (auth.uid() = user_id);
+DO $$ BEGIN
+  create policy "VPN sessions: users can update own sessions"
+    on public.vpn_sessions for update
+    using (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Add last_connected_at to vpn_peers for quick status display
 alter table public.vpn_peers

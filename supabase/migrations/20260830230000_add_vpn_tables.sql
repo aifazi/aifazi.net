@@ -38,25 +38,40 @@ create index if not exists idx_vpn_peers_status on public.vpn_peers(status);
 -- RLS: users can only see/modify their own peers
 alter table public.vpn_peers enable row level security;
 
-create policy "VPN peers: users can view own peers"
-  on public.vpn_peers for select
-  using (auth.uid() = user_id);
+DO $$ BEGIN
+  create policy "VPN peers: users can view own peers"
+    on public.vpn_peers for select
+    using (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-create policy "VPN peers: users can insert own peers"
-  on public.vpn_peers for insert
-  with check (auth.uid() = user_id);
+DO $$ BEGIN
+  create policy "VPN peers: users can insert own peers"
+    on public.vpn_peers for insert
+    with check (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-create policy "VPN peers: users can update own peers"
-  on public.vpn_peers for update
-  using (auth.uid() = user_id);
+DO $$ BEGIN
+  create policy "VPN peers: users can update own peers"
+    on public.vpn_peers for update
+    using (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-create policy "VPN peers: users can delete own peers"
-  on public.vpn_peers for delete
-  using (auth.uid() = user_id);
+DO $$ BEGIN
+  create policy "VPN peers: users can delete own peers"
+    on public.vpn_peers for delete
+    using (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Server config: admin-only read
 alter table public.vpn_server enable row level security;
 
-create policy "VPN server: authenticated read"
-  on public.vpn_server for select
-  using (auth.role() = 'authenticated');
+DO $$ BEGIN
+  create policy "VPN server: authenticated read"
+    on public.vpn_server for select
+    using (auth.role() = 'authenticated');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;

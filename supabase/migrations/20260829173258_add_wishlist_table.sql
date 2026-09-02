@@ -13,13 +13,13 @@ create index if not exists store_wishlist_product_idx on public.store_wishlist (
 -- RLS: users can only see/modify their own wishlist
 alter table public.store_wishlist enable row level security;
 
-create policy \"Users can view own wishlist\" on public.store_wishlist
+create policy "Users can view own wishlist" on public.store_wishlist
   for select using (auth.uid() = user_id);
 
-create policy \"Users can add to own wishlist\" on public.store_wishlist
+create policy "Users can add to own wishlist" on public.store_wishlist
   for insert with check (auth.uid() = user_id);
 
-create policy \"Users can remove from own wishlist\" on public.store_wishlist
+create policy "Users can remove from own wishlist" on public.store_wishlist
   for delete using (auth.uid() = user_id);
 
 -- Grant permissions

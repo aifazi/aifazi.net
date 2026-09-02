@@ -177,8 +177,8 @@ async def add_peer(
 async def remove_peer(public_key: str, peer_ip: str | None = None) -> None:
     """Remove a peer from the WireGuard interface."""
     try:
-        data = {"public_key": public_key, "remove": True}
-        result = await asyncio.to_thread(_call_wg_api, "/peers", "POST", data)
+        data = {"public_key": public_key}
+        result = await asyncio.to_thread(_call_wg_api, "/remove-peer", "POST", data)
         if result.get("success"):
             log.info("WireGuard peer removed: %s", public_key[:12] + "...")
     except Exception as e:
