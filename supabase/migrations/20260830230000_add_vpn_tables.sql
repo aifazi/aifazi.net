@@ -14,7 +14,7 @@ create table if not exists public.vpn_server (
 
 create table if not exists public.vpn_peers (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade not null,
+  user_id uuid not null,
   public_key text not null unique,
   private_key text not null,
   preshared_key text,
