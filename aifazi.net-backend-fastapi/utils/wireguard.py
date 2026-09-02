@@ -1,17 +1,18 @@
 """
-utils/wireguard.py — WireGuard server management via pyroute2
+utils/wireguard.py — WireGuard server management via host API
 
-Uses pyroute2's generic netlink interface to communicate directly with the
-WireGuard kernel module. No `wg` binary or `wireguard-tools` package needed.
-Only requires NET_ADMIN capability on the container.
+Calls the WireGuard Management API running on the host (port 51821)
+to manage WireGuard peers. The backend container cannot access the host's
+WireGuard interface directly, so we use this HTTP API instead.
 """
 import asyncio
 import base64
 import ipaddress
+import json
 import logging
 import os
-import struct
-import threading
+import urllib.request
+import urllib.error
 from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
@@ -27,8 +28,8 @@ WG_PORT = int(os.getenv("WG_PORT", "51820"))
 WG_DNS = os.getenv("WG_DNS", "1.1.1.1,1.0.0.1")
 WG_MTU = int(os.getenv("WG_MTU", "1420"))
 
-# Lock for thread-safe pyroute2 operations (it's not async-native)
-_wg_lock = threading.Lock()
+# Host WireGuard Management API
+WG_API_URL = os.getenv("WG_API_URL", "http://host.docker.internal:51821")
 
 
 def _clamped_private_key() -> bytes:
@@ -101,103 +102,50 @@ def _allocatable_ips(subnet: str, server_ip: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# WireGuard management via pyroute2 (netlink to kernel module)
+# WireGuard management via host API
 # ---------------------------------------------------------------------------
 
-def _get_wg():
-    """Get a WireGuard netlink socket."""
-    from pyroute2 import WireGuard
-    return WireGuard()
-
-
-def _get_ipr():
-    """Get an IPRoute socket for routing operations."""
-    from pyroute2 import IPRoute
-    return IPRoute()
-
-
-def _wg_set_peer_sync(
-    public_key: str,
-    allowed_ips: str,
-    preshared_key: str | None = None,
-) -> None:
-    """Add a peer to the WireGuard interface (synchronous, runs in thread)."""
-    with _wg_lock:
-        wg = _get_wg()
-        try:
-            peer_attrs = {
-                "public_key": base64.b64decode(public_key),
-                "allowed_ips": [
-                    {"family": 2, "cidr": int(cidr)}
-                    for cidr in allowed_ips.split(",")
-                    for _, cidr in [cidr.strip().split("/")]
-                ],
-            }
-            if preshared_key:
-                peer_attrs["preshared_key"] = base64.b64decode(preshared_key)
-
-            wg.set_device(WG_INTERFACE, peer=peer_attrs)
-            log.info("WireGuard peer added: %s", public_key[:12] + "...")
-        finally:
-            wg.close()
-
-
-def _wg_remove_peer_sync(public_key: str) -> None:
-    """Remove a peer from the WireGuard interface (synchronous)."""
-    with _wg_lock:
-        wg = _get_wg()
-        try:
-            # Remove peer by setting it with zero allowed IPs (remove action)
-            wg.set_device(
-                WG_INTERFACE,
-                peer={"public_key": base64.b64decode(public_key), "remove": True},
+def _call_wg_api(endpoint: str, method: str = "GET", data: dict | None = None) -> dict:
+    """Call the WireGuard Management API on the host."""
+    url = f"{WG_API_URL}{endpoint}"
+    try:
+        if method == "GET":
+            req = urllib.request.Request(url)
+        else:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(data).encode() if data else None,
+                headers={"Content-Type": "application/json"},
+                method=method,
             )
-            log.info("WireGuard peer removed: %s", public_key[:12] + "...")
-        finally:
-            wg.close()
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode())
+    except Exception as e:
+        log.error("WireGuard API call failed: %s", e)
+        raise
 
 
-def _wg_get_device_sync() -> dict:
-    """Get WireGuard device info (synchronous)."""
-    with _wg_lock:
-        wg = _get_wg()
-        try:
-            devices = wg.get_device(WG_INTERFACE)
-            return devices[0] if devices else {}
-        finally:
-            wg.close()
+async def is_interface_up() -> bool:
+    """Check if the WireGuard interface exists and is up."""
+    try:
+        result = await asyncio.to_thread(_call_wg_api, "/status")
+        return result.get("running", False)
+    except Exception:
+        return False
 
 
-def _ip_route_add_sync(dest: str, dev: str) -> None:
-    """Add an IP route (synchronous)."""
-    with _wg_lock:
-        ipr = _get_ipr()
-        try:
-            ipr.route(
-                "add",
-                dst=dest,
-                oif=ipr.link_lookup(ifname=dev)[0],
-            )
-        except Exception:
-            pass  # Route may already exist
-        finally:
-            ipr.close()
-
-
-def _ip_route_del_sync(dest: str, dev: str) -> None:
-    """Delete an IP route (synchronous)."""
-    with _wg_lock:
-        ipr = _get_ipr()
-        try:
-            ipr.route(
-                "del",
-                dst=dest,
-                oif=ipr.link_lookup(ifname=dev)[0],
-            )
-        except Exception:
-            pass  # Route may not exist
-        finally:
-            ipr.close()
+async def get_server_public_key() -> str | None:
+    """Get the server's public key from WireGuard."""
+    try:
+        result = await asyncio.to_thread(_call_wg_api, "/status")
+        if result.get("running"):
+            # Parse public key from output
+            for line in result.get("output", "").split("\n"):
+                if "public key:" in line:
+                    return line.split("public key:")[1].strip()
+        return None
+    except Exception:
+        return None
 
 
 async def add_peer(
@@ -205,93 +153,69 @@ async def add_peer(
     allowed_ips: str,
     preshared_key: str | None = None,
 ) -> str:
-    """Add a peer to the running WireGuard interface (live, no restart)."""
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(
-        None, _wg_set_peer_sync, public_key, allowed_ips, preshared_key
-    )
-    # Add route for the peer IP
-    ip = allowed_ips.split("/")[0]
+    """Add a peer to the WireGuard interface."""
     try:
-        await loop.run_in_executor(None, _ip_route_add_sync, f"{ip}/32", WG_INTERFACE)
-    except Exception:
-        pass
-    return ""
+        data = {
+            "public_key": public_key,
+            "allowed_ips": allowed_ips,
+        }
+        if preshared_key:
+            data["preshared_key"] = preshared_key
+        result = await asyncio.to_thread(_call_wg_api, "/peers", "POST", data)
+        if result.get("success"):
+            log.info("WireGuard peer added: %s", public_key[:12] + "...")
+        return ""
+    except Exception as e:
+        log.error("Failed to add peer: %s", e)
+        raise
 
 
 async def remove_peer(public_key: str, peer_ip: str | None = None) -> None:
-    """Remove a peer from the running WireGuard interface."""
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _wg_remove_peer_sync, public_key)
-    if peer_ip:
-        try:
-            await loop.run_in_executor(
-                None, _ip_route_del_sync, f"{peer_ip}/32", WG_INTERFACE
-            )
-        except Exception:
-            pass
+    """Remove a peer from the WireGuard interface."""
+    try:
+        data = {"public_key": public_key, "remove": True}
+        result = await asyncio.to_thread(_call_wg_api, "/peers", "POST", data)
+        if result.get("success"):
+            log.info("WireGuard peer removed: %s", public_key[:12] + "...")
+    except Exception as e:
+        log.error("Failed to remove peer: %s", e)
+        raise
 
 
 async def get_peers_dump() -> str:
-    """Return peer data from the WireGuard interface via pyroute2."""
-    loop = asyncio.get_event_loop()
-    device = await loop.run_in_executor(None, _wg_get_device_sync)
-    if not device:
+    """Get peer data from the WireGuard interface."""
+    try:
+        result = await asyncio.to_thread(_call_wg_api, "/status")
+        return result.get("output", "")
+    except Exception:
         return ""
-    # Format similar to `wg show dump` for compatibility
-    peers = device.get("peers", [])
-    lines = [f"{WG_INTERFACE}\t{device.get('public_key', '')}\t{device.get('listen_port', 0)}"]
-    for p in peers:
-        lines.append(
-            f"{WG_INTERFACE}\t\t{p.get('public_key', '')}\t"
-            f"{p.get('persistent_keepalive', 0)}\t"
-            f"{p.get('endpoint', {}).get('address', '')}\t"
-            f"{p.get('transfer_rx', 0)}\t{p.get('transfer_tx', 0)}\t"
-            f"{p.get('last_handshake', 0)}\t"
-        )
-    return "\n".join(lines)
-
-
-async def get_server_public_key() -> str | None:
-    """Read the server's public key from the WireGuard interface."""
-    loop = asyncio.get_event_loop()
-    device = await loop.run_in_executor(None, _wg_get_device_sync)
-    if not device:
-        return None
-    pk = device.get("public_key")
-    if pk and isinstance(pk, bytes):
-        return base64.b64encode(pk).decode()
-    return pk
 
 
 async def parse_peer_stats() -> dict[str, dict]:
-    """Get per-peer stats from the WireGuard interface via pyroute2."""
-    loop = asyncio.get_event_loop()
-    device = await loop.run_in_executor(None, _wg_get_device_sync)
+    """Get per-peer stats from the WireGuard interface."""
     stats: dict[str, dict] = {}
-    if not device:
-        return stats
-    for p in device.get("peers", []):
-        pk = p.get("public_key")
-        if pk and isinstance(pk, bytes):
-            pk = base64.b64encode(pk).decode()
-        if pk:
-            stats[pk] = {
-                "transfer_rx": p.get("transfer_rx", 0),
-                "transfer_tx": p.get("transfer_tx", 0),
-                "latest_handshake": p.get("last_handshake", 0),
-            }
-    return stats
-
-
-async def is_interface_up() -> bool:
-    """Check if the WireGuard interface exists and is up."""
     try:
-        loop = asyncio.get_event_loop()
-        device = await loop.run_in_executor(None, _wg_get_device_sync)
-        return bool(device)
+        output = await get_peers_dump()
+        # Parse wg show output
+        current_peer = None
+        for line in output.split("\n"):
+            if line.startswith("peer:"):
+                current_peer = line.split("peer:")[1].strip()
+                stats[current_peer] = {}
+            elif current_peer and "transfer:" in line:
+                parts = line.split("transfer:")
+                if len(parts) > 1:
+                    rx_tx = parts[1].strip().split(",")
+                    if len(rx_tx) == 2:
+                        stats[current_peer]["transfer_rx"] = int(rx_tx[0].strip().split()[0])
+                        stats[current_peer]["transfer_tx"] = int(rx_tx[1].strip().split()[0])
+            elif current_peer and "latest handshake:" in line:
+                parts = line.split("latest handshake:")
+                if len(parts) > 1:
+                    stats[current_peer]["latest_handshake"] = parts[1].strip()
     except Exception:
-        return False
+        pass
+    return stats
 
 
 def find_free_ip(used_ips: set[str], subnet: str = WG_SUBNET, server_ip: str = WG_SERVER_IP) -> str:
