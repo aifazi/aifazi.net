@@ -215,6 +215,11 @@ _OPEN_EXACT: set[str] = {
     "/api/store/stripe/webhook",
     "/api/fivem/store/subscriptions/pending-sync",
     "/api/fivem/store/subscriptions/mark-synced",
+    # VPN endpoints — mobile app calls these directly; JWT auth handles access control
+    "/api/vpn/status",
+    "/api/vpn/peers",
+    "/api/vpn/sessions",
+    "/api/vpn/public-ip",
 }
 # GET requests on these prefixes are open (public read)
 _OPEN_GET_PREFIXES: tuple[str, ...] = (
