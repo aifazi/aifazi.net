@@ -25,6 +25,7 @@ import { TrafficChart } from '@/src/components/vpn/TrafficChart'
 import { DeviceCard } from '@/src/components/vpn/DeviceCard'
 import { ServerInfoCard } from '@/src/components/vpn/ServerInfoCard'
 import { SessionHistory } from '@/src/components/vpn/SessionHistory'
+import { PeerConfigModal } from '@/src/components/vpn/PeerConfigModal'
 import {
   getVpnStatus,
   listPeers,
@@ -59,6 +60,10 @@ export default function VpnScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [configPeerId, setConfigPeerId] = useState<string | null>(null)
+  const [configPeerName, setConfigPeerName] = useState('')
+  const [configPeerIp, setConfigPeerIp] = useState('')
+  const [configModalVisible, setConfigModalVisible] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -128,25 +133,24 @@ export default function VpnScreen() {
       `Create a new VPN peer for "${name}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Create',
-          onPress: async () => {
-            try {
-              setCreating(true)
-              const result = await createPeer(name, os)
-              Alert.alert(
-                'Device Created',
-                `IP: ${result.allocated_ip}\n\nScan the QR code in the WireGuard app to connect.`,
-                [{ text: 'OK' }],
-              )
-              loadData()
-            } catch (err: any) {
-              Alert.alert('Error', err?.response?.data?.detail ?? 'Failed to create device')
-            } finally {
-              setCreating(false)
-            }
+          {
+            text: 'Create',
+            onPress: async () => {
+              try {
+                setCreating(true)
+                const result = await createPeer(name, os)
+                loadData()
+                setConfigPeerId(result.id)
+                setConfigPeerName(result.device_name)
+                setConfigPeerIp(result.allocated_ip)
+                setConfigModalVisible(true)
+              } catch (err: any) {
+                Alert.alert('Error', err?.response?.data?.detail ?? 'Failed to create device')
+              } finally {
+                setCreating(false)
+              }
+            },
           },
-        },
       ],
     )
   }, [user, loadData])
@@ -263,6 +267,12 @@ export default function VpnScreen() {
               <DeviceCard
                 key={peer.id}
                 peer={peer}
+                onPress={() => {
+                  setConfigPeerId(peer.id)
+                  setConfigPeerName(peer.device_name)
+                  setConfigPeerIp(peer.allocated_ip)
+                  setConfigModalVisible(true)
+                }}
                 onLongPress={() => handleDeletePeer(peer)}
               />
             ))}
@@ -315,6 +325,23 @@ export default function VpnScreen() {
           ))}
         </View>
       </ScrollView>
+
+      <PeerConfigModal
+        visible={configModalVisible}
+        peerId={configPeerId}
+        peerName={configPeerName}
+        peerIp={configPeerIp}
+        onClose={() => {
+          setConfigModalVisible(false)
+          setConfigPeerId(null)
+        }}
+        onDelete={() => {
+          if (configPeerId) {
+            const peer = peers.find((p) => p.id === configPeerId)
+            if (peer) handleDeletePeer(peer)
+          }
+        }}
+      />
     </Screen>
   )
 }

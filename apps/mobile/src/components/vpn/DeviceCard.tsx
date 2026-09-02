@@ -78,6 +78,7 @@ export function DeviceCard({ peer, onPress, onLongPress }: Props) {
       <View style={{ alignItems: 'flex-end' }}>
         <Text style={{ color: '#00ff88', fontSize: 11, fontWeight: '500' }}>↓ {formatBytes(peer.transfer_rx)}</Text>
         <Text style={{ color: '#a855f7', fontSize: 11, fontWeight: '500' }}>↑ {formatBytes(peer.transfer_tx)}</Text>
+        <Text style={{ color: c.text2, fontSize: 10, marginTop: 4 }}>QR →</Text>
       </View>
     </TouchableOpacity>
   )
