@@ -29,7 +29,8 @@ WG_DNS = os.getenv("WG_DNS", "1.1.1.1,1.0.0.1")
 WG_MTU = int(os.getenv("WG_MTU", "1420"))
 
 # Host WireGuard Management API
-WG_API_URL = os.getenv("WG_API_URL", "http://host.docker.internal:51821")
+# The container reaches the host via the Docker gateway (usually 10.0.1.1)
+WG_API_URL = os.getenv("WG_API_URL", "http://10.0.1.1:51821")
 
 
 def _clamped_private_key() -> bytes:
