@@ -45,7 +45,7 @@ def _clamped_private_key() -> bytes:
 def generate_keypair() -> tuple[str, str]:
     """Generate a WireGuard private/public key pair (base64-encoded)."""
     raw_priv = _clamped_private_key()
-    priv_key = X25519PrivateKey._from_private_bytes(raw_priv)
+    priv_key = X25519PrivateKey.from_private_bytes(raw_priv)
     pub_key = priv_key.public_key()
 
     priv_b64 = base64.b64encode(raw_priv).decode()
