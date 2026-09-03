@@ -139,12 +139,12 @@ async def is_interface_up() -> bool:
 
 
 async def get_server_public_key() -> str | None:
-    """Get the server's public key from WireGuard."""
+    """Get the server's public key from WireGuard host API."""
     try:
         result = await asyncio.to_thread(_call_wg_api, "/status")
         if result.get("running"):
-            # Parse public key from output
-            for line in result.get("output", "").split("\n"):
+            output = result.get("output", "")
+            for line in output.split("\n"):
                 if "public key:" in line:
                     return line.split("public key:")[1].strip()
         return None
@@ -187,7 +187,7 @@ async def remove_peer(public_key: str, peer_ip: str | None = None) -> None:
 
 
 async def get_peers_dump() -> str:
-    """Get peer data from the WireGuard interface."""
+    """Get peer data from the WireGuard host API."""
     try:
         result = await asyncio.to_thread(_call_wg_api, "/status")
         return result.get("output", "")
@@ -196,13 +196,13 @@ async def get_peers_dump() -> str:
 
 
 async def parse_peer_stats() -> dict[str, dict]:
-    """Get per-peer stats from the WireGuard interface."""
+    """Get per-peer stats from the WireGuard host API (parses wg show output)."""
     stats: dict[str, dict] = {}
     try:
         output = await get_peers_dump()
-        # Parse wg show output
         current_peer = None
         for line in output.split("\n"):
+            line = line.strip()
             if line.startswith("peer:"):
                 current_peer = line.split("peer:")[1].strip()
                 stats[current_peer] = {}
@@ -210,15 +210,26 @@ async def parse_peer_stats() -> dict[str, dict]:
                 parts = line.split("transfer:")
                 if len(parts) > 1:
                     rx_tx = parts[1].strip().split(",")
-                    if len(rx_tx) == 2:
-                        stats[current_peer]["transfer_rx"] = int(rx_tx[0].strip().split()[0])
-                        stats[current_peer]["transfer_tx"] = int(rx_tx[1].strip().split()[0])
+                    if len(rx_tx) >= 2:
+                        try:
+                            stats[current_peer]["transfer_rx"] = int(rx_tx[0].strip().split()[0])
+                            stats[current_peer]["transfer_tx"] = int(rx_tx[1].strip().split()[0])
+                        except (ValueError, IndexError):
+                            pass
             elif current_peer and "latest handshake:" in line:
                 parts = line.split("latest handshake:")
                 if len(parts) > 1:
                     stats[current_peer]["latest_handshake"] = parts[1].strip()
-    except Exception:
-        pass
+            elif current_peer and "endpoint:" in line:
+                parts = line.split("endpoint:")
+                if len(parts) > 1:
+                    stats[current_peer]["endpoint"] = parts[1].strip()
+            elif current_peer and "allowed ips:" in line:
+                parts = line.split("allowed ips:")
+                if len(parts) > 1:
+                    stats[current_peer]["allowed_ips"] = parts[1].strip()
+    except Exception as e:
+        log.error("Failed to parse peer stats: %s", e)
     return stats
 
 
