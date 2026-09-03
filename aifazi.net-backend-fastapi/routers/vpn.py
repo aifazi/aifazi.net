@@ -451,7 +451,7 @@ async def admin_list_all_sessions(_: dict = Depends(require_staff)):
             "user_id": peer.get("user_id", ""),
             "client_public_ip": s.get("client_public_ip", ""),
             "connected_at": s.get("connected_at", ""),
-            "ended_at": s.get("ended_at"),
+            "disconnected_at": s.get("disconnected_at"),
         })
     return {"sessions": result}
 
