@@ -60,7 +60,29 @@ function VpnPanelInner() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const [peersRes, statusRes, sessionsRes] = await Promise.allSettled([
+          api.get('/vpn/admin/all-peers'),
+          api.get('/vpn/status'),
+          api.get('/vpn/admin/sessions'),
+        ])
+        if (!cancelled) {
+          if (peersRes.status === 'fulfilled') setPeers(peersRes.value.data?.peers || [])
+          if (statusRes.status === 'fulfilled') setServerStatus(statusRes.value.data)
+          if (sessionsRes.status === 'fulfilled') setSessions(sessionsRes.value.data?.sessions || [])
+        }
+      } catch (err) {
+        console.error('VPN load error:', err)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [])
   usePausableInterval(load, 30000)
 
   const handleDeletePeer = useCallback(async (peer) => {
