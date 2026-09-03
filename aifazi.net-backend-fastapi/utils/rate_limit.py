@@ -62,7 +62,7 @@ def _2fa_record_fail_redis(username: str) -> None:
             pipe = redis.pipeline()
             pipe.incr(key)
             pipe.expire(key, _2FA_LOCKOUT_WINDOW_S)
-            pipe.exec()
+            pipe.execute()
             return
         except Exception as e:
             log.warning("Redis 2FA record fail failed: %s — falling back to in-memory", e)
@@ -88,26 +88,45 @@ def _2fa_clear_fails_redis(username: str) -> None:
 
 
 def _get_redis():
-    """Lazy-initialize Upstash Redis client."""
+    """Lazy-initialize Redis client (standard redis-py or Upstash fallback)."""
     global _redis_client, _redis_available
     if _redis_client is not None:
         return _redis_client
 
+    # Try standard Redis first (REDIS_URL)
+    redis_url = os.getenv("REDIS_URL")
+    if redis_url:
+        try:
+            import redis.asyncio as aioredis
+            _redis_client = aioredis.from_url(redis_url, decode_responses=True)
+            import asyncio
+            try:
+                asyncio.get_event_loop().run_until_complete(_redis_client.ping())
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                loop.run_until_complete(_redis_client.ping())
+                loop.close()
+            _redis_available = True
+            log.info("Redis connected successfully (url=%s)", redis_url.split("@")[-1] if "@" in redis_url else redis_url)
+            return _redis_client
+        except Exception as e:
+            log.warning("Failed to connect to Redis: %s", e)
+
+    # Fallback to Upstash Redis
     url = os.getenv("UPSTASH_REDIS_REST_URL")
     token = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 
     if not url or not token:
         if os.getenv("ENV", "production") == "production":
-            log.error("Upstash Redis not configured in production — rate limiting is in-memory only (not distributed). Set UPSTASH_REDIS_REST_URL/TOKEN to enable distributed limits.")
+            log.error("Redis not configured — rate limiting is in-memory only (not distributed). Set REDIS_URL or UPSTASH_REDIS_REST_URL/TOKEN.")
         else:
-            log.info("Upstash Redis not configured — using in-memory rate limiting (dev mode)")
+            log.info("Redis not configured — using in-memory rate limiting (dev mode)")
         _redis_available = False
         return None
 
     try:
         from upstash_redis import Redis
         _redis_client = Redis(url=url, token=token)
-        # Test connection
         _redis_client.ping()
         _redis_available = True
         log.info("Upstash Redis connected successfully")
@@ -143,13 +162,12 @@ async def check_rate_limit(bucket: str, max_calls: int, window: int) -> bool:
     if redis and _redis_available:
         try:
             key = f"rl:{bucket}"
-            # Use pipeline for atomicity
             pipe = redis.pipeline()
             pipe.zremrangebyscore(key, 0, window_start)
             pipe.zcard(key)
             pipe.zadd(key, {str(now): now})
             pipe.expire(key, window + 1)
-            results = pipe.exec()
+            results = pipe.execute()
 
             current_count = results[1]
             return current_count < max_calls

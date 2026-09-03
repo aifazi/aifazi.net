@@ -267,10 +267,11 @@ async def get_peer(
     )
 
     if format == "conf":
+        safe_name = peer["device_name"].encode("ascii", "ignore").decode().strip()
         return Response(
             content=config,
             media_type="text/plain",
-            headers={"Content-Disposition": f'attachment; filename="{peer["device_name"]}.conf"'},
+            headers={"Content-Disposition": f'attachment; filename="{safe_name}.conf"'},
         )
 
     if format == "qr":
