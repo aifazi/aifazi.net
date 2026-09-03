@@ -71,7 +71,16 @@ def generate_client_config(
     dns: str | None = None,
     mtu: int | None = None,
 ) -> str:
-    """Build a wg-quick config string for a client."""
+    """Build a wg-quick config string for a client.
+
+    All key material is stripped: a stray leading/trailing space (e.g. from a
+    hand-edited vpn_server row) produces a config that strict parsers
+    (Windows) reject on import while lenient ones (Android) accept it.
+    """
+    client_private_key = (client_private_key or "").strip()
+    server_public_key = (server_public_key or "").strip()
+    preshared_key = (preshared_key or "").strip() if preshared_key else None
+    client_address = (client_address or "").strip()
     ep = endpoint or f"{WG_ENDPOINT}:{WG_PORT}"
     dns_val = dns or WG_DNS
     mtu_val = mtu or WG_MTU

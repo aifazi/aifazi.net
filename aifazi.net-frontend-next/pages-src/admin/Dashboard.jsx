@@ -2,12 +2,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useNavigate } from '@/lib/router-compat'
-import api, { isAdmin as checkIsAdmin, getRole, getUsername, hasPermission, getStoredPermissions, setEffectiveAccess, getAuthToken } from '@/lib/api'
+import api, { getRole, getUsername, setEffectiveAccess, getAuthToken } from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { Checkbox, Select } from '../../core/ui.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader, PanelErrorBoundary, SkeletonGrid } from './shared'
+import { canViewKey, canView as canViewAny, resolveNavKey, firstPermittedKey } from './access'
 import { Modal, EmptyState, Pagination } from './ui'
 import AdminHeader from './AdminHeader'
 import Sidebar from './Sidebar'
@@ -36,6 +37,7 @@ const MonitoringPanel = dynamic(() => import('./MonitoringPanel').then(m => m.de
 const VpnPanel = dynamic(() => import('./VpnPanel').then(m => m.default || m), { ssr: false })
 const ChatPanel = dynamic(() => import('./ChatPanel').then(m => m.default || m), { ssr: false })
 
+const STAT_CARD_VIEWS = { content: 'content', activity: 'db', communications: 'communications', staff: 'staff' }
 function StatsGrid({ dashStats, isMobile, setView }) {
   const ref = useStaggerIn('.stat-card', { stagger: 80, distance: 16, duration: 480 })
   const cards = [
@@ -43,7 +45,7 @@ function StatsGrid({ dashStats, isMobile, setView }) {
     { label: 'TOTAL VIEWS', value: dashStats.totalViews.toLocaleString(), navKey: 'activity', color: 'var(--green)', sub: 'all time', action: () => setView('db') },
     { label: 'MESSAGES',    value: dashStats.contacts, navKey: 'communications', color: '#ff6b35', sub: 'in inbox', action: () => setView('communications') },
     { label: 'STAFF',       value: dashStats.staff,    navKey: 'staff', color: '#ffd700', sub: 'members',  action: () => setView('staff') },
-  ]
+  ].filter((card) => canViewKey(STAT_CARD_VIEWS[card.navKey] || card.navKey))
       return (
     <div ref={ref} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
       {cards.map(card => (
@@ -75,31 +77,17 @@ const PERMISSION_MODULES = [
   ['support.helpdesk','Help desk'], ['store','Store'],
   ['store.analytics','Store analytics'], ['store.customers','Store customers (CRM)'], ['store.payments','Store payments'], ['store.products','Store catalog & stock'], ['store.coupons','Store coupons'], ['store.deals','Store flash deals'], ['store.reviews','Store reviews'], ['store.orders','Store orders'], ['store.inventory','Store inventory'], ['store.delivery','Store delivery'], ['store.settings','Store settings'],
   ['fivem.status','FiveM status'], ['fivem.whitelist','FiveM whitelist'], ['fivem.forms','FiveM forms'], ['fivem.approval_log','FiveM approval log'], ['fivem.bans','FiveM bans'],
-  ['changelog','Changelog'],
+  ['system.vpn','VPN'], ['changelog','Changelog'],
 ]
 const PERMISSION_ACTIONS = ['view','create','edit','delete','approve','sync','manage']
 const PRESET_PERMISSIONS = {
-  moderator: { home:['view'], 'community.forum':['view','edit','delete','manage'], 'community.chat':['view','edit','delete','manage'], 'support.helpdesk':['view','edit'], 'store':['view','edit','manage'], 'fivem.status':['view'], 'fivem.whitelist':['view','approve','sync'], 'fivem.forms':['view','approve'], 'fivem.approval_log':['view'], 'fivem.bans':['view','create','edit'], changelog:['view'] },
+  moderator: { home:['view'], 'community.forum':['view','edit','delete','manage'], 'community.chat':['view','edit','delete','manage'], 'support.helpdesk':['view','edit'], 'store':['view','edit','manage'], 'fivem.status':['view'], 'fivem.whitelist':['view','approve','sync'], 'fivem.forms':['view','approve'], 'fivem.approval_log':['view'], 'fivem.bans':['view','create','edit'], 'system.monitor':['view'], 'system.vpn':['view'], changelog:['view'] },
   editor: { home:['view'], 'content.posts':['view','create','edit','delete'], 'content.editor':['view','create','edit'], 'content.media':['view','create','edit','delete'], 'content.pages':['view','edit'], 'content.themes':['view','edit'], changelog:['view'] },
   chat: { 'community.chat':['view','create','edit'] },
   fivem: { home:['view'], 'fivem.status':['view'], 'fivem.whitelist':['view','approve','sync'], 'fivem.forms':['view','create','edit','approve'], 'fivem.approval_log':['view'], 'fivem.bans':['view','create','edit','delete'] },
 }
-const NAV_PERMISSION = {
-  home:'home', posts:'content.posts', editor:'content.editor', media:'content.media', pages:'content.pages', themes:'content.themes',
-  'content-blocks':'content.pages',
-  'page-builder':'content.pages',
-  content:['content.posts', 'content.editor', 'community.forum'], communications:['community.contacts', 'community.newsletter'],
-  contacts:'community.contacts', staff:'community.staff', forum:'community.forum', chat:'community.chat', newsletter:'community.newsletter',
-  'chat-admin':'community.chat',
-  db:'system.db', delivery:['system.mail', 'system.cdn'], mail:'system.mail', cdn:'system.cdn',
-  helpdesk:'support.helpdesk', store:'store', fivem:'fivem.status', changelog:'changelog',
-  monitoring:'system.monitor',
-  stats:'system.db', audit:'system.audit', backup:'system.backup',
-}
 function canViewNavItem(item) {
-  if (checkIsAdmin()) return true
-  const modules = NAV_PERMISSION[item.key] || item.key
-  return (Array.isArray(modules) ? modules : [modules]).some(module => hasPermission(module, 'view'))
+  return canViewKey(item.key)
 }
 function permissionForRole(role) { return JSON.parse(JSON.stringify(PRESET_PERMISSIONS[role] || PRESET_PERMISSIONS.editor)) }
 function PermissionEditor({ value = {}, onChange }) {
@@ -142,8 +130,6 @@ function Dashboard({ onLogout }) {
   const isMobile = useIsMobile()
   const role = getRole()
   const username = getUsername()
-  const storedPerms = getStoredPermissions()
-  const adminUser = checkIsAdmin() || ['moderator','editor','chat'].includes(role || '') || Object.keys(storedPerms || {}).length > 0
 
   const [view, setView] = useState('home')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -220,30 +206,6 @@ function Dashboard({ onLogout }) {
     run()
   }, [])
   usePausableInterval(checkExpiry, 30000)
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = e => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === '?') { e.preventDefault(); setShowShortcuts(o => !o); return }
-      if (e.key === 'Escape') { setShowShortcuts(false); return }
-      if (e.metaKey || e.ctrlKey) return
-      if (e.key === 'h') setView('home')
-      if (e.key === 'p') setView('content')
-      if (e.key === 'n') { setEditingPost(null); setView('editor') }
-      if (e.key === 'm') setView('media')
-      if (e.key === 'c') setView('communications')
-      if (e.key === 's') setView('store')
-      if (e.key === 'f') setView('fivem')
-      if (e.key === 'd') setView('db')
-      if (e.key === 'g') setView('settings')
-      if (e.key === 'a') setView('audit')
-      if (e.key === 'x') setView('helpdesk')
-      if (e.key === 'b') setView('backup')
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [])
 
   const fetchDashStats = async () => {
     try {
@@ -475,6 +437,53 @@ function Dashboard({ onLogout }) {
     { key: 'vpn',          label: 'VPN',           group: 'SYSTEM',     icon: '🔒',   badge: null },
   ]
 
+  // ── Role-based section access ──────────────────────────────────────────
+  // Every navigation target (sidebar, search, quick actions, deep view state)
+  // funnels through canView/goView. Unknown views fail closed (admin-only).
+  function canView(v) { return canViewAny(v, navItems) }
+  function goView(v) {
+    if (canView(v)) {
+      if (v === 'editor') setEditingPost(null)
+      setView(v)
+    } else {
+      toast({ title: 'No access to this section', type: 'error' })
+    }
+  }
+  // Fail closed: if the current view is not permitted (e.g. permissions
+  // changed, or a stale view survived login), land on the first permitted
+  // section instead of rendering an empty dashboard. This is the documented
+  // render-time state adjustment: it runs once (the redirected view is
+  // permitted, so it never loops) and keeps every render consistent.
+  if (!canView(view)) {
+    const first = firstPermittedKey(navItems)
+    if (first && first !== view) setView(first)
+  }
+
+  // Keyboard shortcuts (kept after goView so the guarded navigator is in scope)
+  useEffect(() => {
+    const handler = e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === '?') { e.preventDefault(); setShowShortcuts(o => !o); return }
+      if (e.key === 'Escape') { setShowShortcuts(false); return }
+      if (e.metaKey || e.ctrlKey) return
+      if (e.key === 'h') goView('home')
+      if (e.key === 'p') goView('content')
+      if (e.key === 'n') goView('editor')
+      if (e.key === 'm') goView('media')
+      if (e.key === 'c') goView('communications')
+      if (e.key === 's') goView('store')
+      if (e.key === 'f') goView('fivem')
+      if (e.key === 'd') goView('db')
+      if (e.key === 'g') goView('settings')
+      if (e.key === 'a') goView('audit')
+      if (e.key === 'x') goView('helpdesk')
+      if (e.key === 'b') goView('backup')
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const ROLE_COLORS = {
     admin:     { bg: 'color-mix(in srgb, var(--green) 10%, transparent)',  border: 'color-mix(in srgb, var(--green) 40%, transparent)',  color: 'var(--green)' },
     moderator: { bg: 'color-mix(in srgb, var(--cyan) 10%, transparent)',  border: 'color-mix(in srgb, var(--cyan) 40%, transparent)',  color: 'var(--cyan)'  },
@@ -489,7 +498,7 @@ function Dashboard({ onLogout }) {
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', zIndex: 10 }}>
       {/*  Global Admin Header (desktop)  */}
       {!isMobile && (
-        <AdminHeader view={view} setView={v => { setView(v); if (v === 'editor') setEditingPost(null) }}
+        <AdminHeader view={view} setView={goView}
           onLogout={onLogout} sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
       )}
       {/* Mobile top bar */}
@@ -531,7 +540,7 @@ function Dashboard({ onLogout }) {
         {/* Sidebar — always visible on desktop, drawer on mobile */}
         <Sidebar
           view={view}
-          setView={v => { setView(v); if (v === 'editor') setEditingPost(null) }}
+          setView={goView}
           navItems={navItems.filter(canViewNavItem)}
           username={username}
           role={role}
@@ -566,7 +575,7 @@ function Dashboard({ onLogout }) {
           )}
 
           {/* HOME DASHBOARD */}
-          {view === 'home' && (
+          {view === 'home' && canView(view) && (
             <div>
               <PageHeader
                 eyebrow="OVERVIEW"
@@ -574,7 +583,9 @@ function Dashboard({ onLogout }) {
                 subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 actions={<>
                   <button onClick={fetchDashStats} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> REFRESH</button>
-                  <button onClick={() => setView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer', borderRadius: 6 }}> DB MONITOR</button>
+                  {canView('db') && (
+                  <button onClick={() => goView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer', borderRadius: 6 }}> DB MONITOR</button>
+                  )}
                   <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> ⌨</button>
                 </>}
               />
@@ -583,7 +594,7 @@ function Dashboard({ onLogout }) {
                 <SkeletonGrid cols={isMobile ? 2 : 4} />
               ) : (
                 <>
-                  <StatsGrid dashStats={dashStats} isMobile={isMobile} setView={setView} />
+                  <StatsGrid dashStats={dashStats} isMobile={isMobile} setView={goView} />
 
                   {/* Post breakdown bar */}
                   <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '16px 20px', marginBottom: 20, borderRadius: 14 }}>
@@ -613,13 +624,13 @@ function Dashboard({ onLogout }) {
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>QUICK ACTIONS</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                         {[
-                          { label: '[+] New Post', action: () => { setEditingPost(null); setView('editor') }, color: 'var(--green)' },
-                          { label: '[M] Media', action: () => setView('media'), color: 'var(--cyan)' },
-                { label: 'Add Staff', action: () => { setView('staff'); setShowNewStaff(true) }, color: '#ffd700' },
-                { label: 'DB Monitor', action: () => setView('db'), color: '#a78bfa' },
-                { label: 'Mail & CDN', action: () => setView('delivery'), color: '#ff6b35' },
-                { label: 'CDN', action: () => setView('cdn'), color: '#00d4ff' },
-                        ].map(btn => (
+                          { label: '[+] New Post', view: 'editor', action: () => goView('editor'), color: 'var(--green)' },
+                          { label: '[M] Media', view: 'media', action: () => goView('media'), color: 'var(--cyan)' },
+                { label: 'Add Staff', view: 'staff', action: () => { if (canView('staff')) { setView('staff'); setShowNewStaff(true) } else goView('staff') }, color: '#ffd700' },
+                { label: 'DB Monitor', view: 'db', action: () => goView('db'), color: '#a78bfa' },
+                { label: 'Mail & CDN', view: 'delivery', action: () => goView('delivery'), color: '#ff6b35' },
+                { label: 'CDN', view: 'cdn', action: () => goView('cdn'), color: '#00d4ff' },
+                        ].filter((btn) => canView(btn.view)).map(btn => (
                           <button key={btn.label} onClick={btn.action} className="admin-quick-action" style={{
                             fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
                             padding: '10px 12px', background: 'var(--bg3)',
@@ -701,7 +712,7 @@ function Dashboard({ onLogout }) {
               )}
             </div>
           )}
-          {(view === 'content' || view === 'posts') && (
+          {(view === 'content' || view === 'posts') && canView(view) && (
             <div>
               <PageHeader
                 eyebrow="CONTENT"
@@ -812,7 +823,7 @@ function Dashboard({ onLogout }) {
                       <button onClick={() => togglePublish(post)} style={{ ...S.btn('var(--bg3)', 'var(--cyan)'), fontSize: 9, padding: '6px 10px', border: '1px solid var(--border)', flex: isMobile ? 1 : 'unset' }}>
                         {post.published ? 'UNPUBLISH' : 'PUBLISH'}
                       </button>
-                      <button onClick={() => { setEditingPost(post); setView('editor') }} style={{ ...S.btn('var(--bg3)', 'var(--text)'), fontSize: 9, padding: '6px 10px', border: '1px solid var(--border)', flex: isMobile ? 1 : 'unset' }}>EDIT</button>
+                      <button onClick={() => { setEditingPost(post); goView('editor') }} style={{ ...S.btn('var(--bg3)', 'var(--text)'), fontSize: 9, padding: '6px 10px', border: '1px solid var(--border)', flex: isMobile ? 1 : 'unset' }}>EDIT</button>
                       <button onClick={() => handleDeletePost(post.id)} style={{ ...S.btn('transparent', 'var(--red)'), fontSize: 9, padding: '6px 10px', border: '1px solid rgba(255,71,87,0.3)', flex: isMobile ? 1 : 'unset' }}>DEL</button>
                     </div>
                   </div>
@@ -821,21 +832,21 @@ function Dashboard({ onLogout }) {
           )}
 
           {/* POST EDITOR */}
-          {view === 'editor' && <PostEditor post={editingPost} onSave={handleSavePost} onCancel={() => setView('content')} />}
+          {view === 'editor' && canView(view) && <PostEditor post={editingPost} onSave={handleSavePost} onCancel={() => setView('content')} />}
 
           {/* MEDIA */}
-          {view === 'media' && (
+          {view === 'media' && canView(view) && (
             <div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 22 : 28, fontWeight: 700, marginBottom: 24 }}>Media Library</h2>
               <MediaLibrary onSelect={null} inline />
             </div>
           )}
-          {view === 'pages' && adminUser && <PanelErrorBoundary label="Pages"><PageContentPanel /></PanelErrorBoundary>}
-          {view === 'content-blocks' && adminUser && <PanelErrorBoundary label="Content Blocks"><ContentManager /></PanelErrorBoundary>}
-          {view === 'page-builder' && adminUser && <PanelErrorBoundary label="Page Builder"><PageBuilder /></PanelErrorBoundary>}
+          {view === 'pages' && canView(view) && <PanelErrorBoundary label="Pages"><PageContentPanel /></PanelErrorBoundary>}
+          {view === 'content-blocks' && canView(view) && <PanelErrorBoundary label="Content Blocks"><ContentManager /></PanelErrorBoundary>}
+          {view === 'page-builder' && canView(view) && <PanelErrorBoundary label="Page Builder"><PageBuilder /></PanelErrorBoundary>}
 
           {/* CONTACTS */}
-          {(view === 'communications' || view === 'contacts') && (
+          {(view === 'communications' || view === 'contacts') && canView(view) && (
             <div>
               <PageHeader
                 eyebrow="COMMUNITY"
@@ -1016,7 +1027,7 @@ function Dashboard({ onLogout }) {
           )}
 
           {/* STAFF */}
-          {view === 'staff' && adminUser && (
+          {view === 'staff' && canView(view) && (
             <div>
               <PageHeader
                 eyebrow="COMMUNITY"
@@ -1141,37 +1152,37 @@ function Dashboard({ onLogout }) {
           )}
 
           {/* MAIL */}
-          {(view === 'delivery' || view === 'mail' || view === 'cdn') && adminUser && (
+          {(view === 'delivery' || view === 'mail' || view === 'cdn') && canView(view) && (
             <PanelErrorBoundary label="Mail & CDN">
               <Mail initialTab={view === 'cdn' ? 'cdn' : 'queue'} />
             </PanelErrorBoundary>
           )}
 
           {/* CHAT MANAGEMENT */}
-          {view === 'chat-admin' && adminUser && (
+          {view === 'chat-admin' && canView(view) && (
             <PanelErrorBoundary label="Chat Management">
               <ChatPanel />
             </PanelErrorBoundary>
           )}
 
           {/* NEWSLETTER SUBSCRIBERS */}
-          {view === 'newsletter' && adminUser && <PanelErrorBoundary label="Newsletter"><NewsletterPanel /></PanelErrorBoundary>}
+          {view === 'newsletter' && canView(view) && <PanelErrorBoundary label="Newsletter"><NewsletterPanel /></PanelErrorBoundary>}
 
           {/* SITE SETTINGS */}
           {/* THEMES / ANNOUNCEMENTS / SETTINGS */}
-          {(view === 'themes' || view === 'theme' || view === 'framework' || view === 'announcements' || view === 'settings' || view === 'siteSettings') && (
+          {(view === 'themes' || view === 'theme' || view === 'framework' || view === 'announcements' || view === 'settings' || view === 'siteSettings') && canView(view) && (
             <PanelErrorBoundary label="Theme Library">
               <ThemeHub initialTab={view === 'announcements' ? 'announcements' : view === 'settings' || view === 'siteSettings' ? 'settings' : 'themes'} />
             </PanelErrorBoundary>
           )}
-          {view === 'stats' && adminUser && <PanelErrorBoundary label="Statistics"><StatsPanel /></PanelErrorBoundary>}
+          {view === 'stats' && canView(view) && <PanelErrorBoundary label="Statistics"><StatsPanel /></PanelErrorBoundary>}
 
-          {view === 'helpdesk' && adminUser && <PanelErrorBoundary label="Help Desk"><HelpDeskPanel /></PanelErrorBoundary>}
-          {view === 'store' && adminUser && <PanelErrorBoundary label="Store"><StoreCenter /></PanelErrorBoundary>}
-          {view === 'changelog' && <PanelErrorBoundary label="Changelog"><Changelog /></PanelErrorBoundary>}
-          {view === 'monitoring' && adminUser && <PanelErrorBoundary label="Monitoring"><MonitoringPanel /></PanelErrorBoundary>}
-          {view === 'vpn' && adminUser && <PanelErrorBoundary label="VPN"><VpnPanel /></PanelErrorBoundary>}
-          {view === 'fivem' && adminUser && (
+          {view === 'helpdesk' && canView(view) && <PanelErrorBoundary label="Help Desk"><HelpDeskPanel /></PanelErrorBoundary>}
+          {view === 'store' && canView(view) && <PanelErrorBoundary label="Store"><StoreCenter /></PanelErrorBoundary>}
+          {view === 'changelog' && canView(view) && <PanelErrorBoundary label="Changelog"><Changelog /></PanelErrorBoundary>}
+          {view === 'monitoring' && canView(view) && <PanelErrorBoundary label="Monitoring"><MonitoringPanel /></PanelErrorBoundary>}
+          {view === 'vpn' && canView(view) && <PanelErrorBoundary label="VPN"><VpnPanel /></PanelErrorBoundary>}
+          {view === 'fivem' && canView(view) && (
             <PanelErrorBoundary label="FiveM Server">
               <FiveMPanel defaultSection="status" />
             </PanelErrorBoundary>
@@ -1181,15 +1192,15 @@ function Dashboard({ onLogout }) {
         </main>
 
         {/* Full-screen panels */}
-        {(view === 'db' || view === 'audit' || view === 'backup') && adminUser && (
+        {(view === 'db' || view === 'audit' || view === 'backup') && canView(view) && (
         <DBMonitor initialTab={view === 'backup' ? 'backup' : view === 'audit' ? 'audit' : 'overview'} />
       )}
-        {view === 'forum' && (
+        {view === 'forum' && canView(view) && (
           <div style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
             <ForumAdmin embedded />
           </div>
         )}
-        {view === 'chat' && (
+        {view === 'chat' && canView(view) && (
           <div style={{ flex: 1, minWidth: 0, display: 'flex', minHeight: 0, overflow: 'hidden', alignItems: 'stretch', height: '100%' }}>
             <PanelErrorBoundary label="Chat">
               <AdminChat embedded />

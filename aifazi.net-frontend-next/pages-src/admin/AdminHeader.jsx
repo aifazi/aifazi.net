@@ -5,6 +5,7 @@ import api from '@/lib/api'
 import { getUsername, getRole } from '@/lib/api'
 import { getSupabase } from '@/lib/supabase'
 import { Icon, NAV_ICONS } from './icons'
+import { canViewKey } from './access'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -111,9 +112,10 @@ function SearchModal({ onClose, setView }) {
     setCursor(0)
   }
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50) }, [])
+  const permittedNav = SEARCH_NAV.filter((n) => canViewKey(n.key))
   const results = q
-    ? SEARCH_NAV.filter(n => n.label.toLowerCase().includes(q.toLowerCase()) || n.group.toLowerCase().includes(q.toLowerCase()))
-    : SEARCH_NAV
+    ? permittedNav.filter(n => n.label.toLowerCase().includes(q.toLowerCase()) || n.group.toLowerCase().includes(q.toLowerCase()))
+    : permittedNav
   const handleKey = e => {
     if (e.key === 'ArrowDown') { e.preventDefault(); setCursor(c => Math.min(c + 1, results.length - 1)) }
     if (e.key === 'ArrowUp')   { e.preventDefault(); setCursor(c => Math.max(c - 1, 0)) }

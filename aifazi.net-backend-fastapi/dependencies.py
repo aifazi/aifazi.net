@@ -191,6 +191,7 @@ def _request_permission(path: str, method: str) -> tuple[str, str] | None:
         ("/site-settings", "system.settings"),
         ("/mobile", "system.settings"),
         ("/monitor", "system.monitor"),
+        ("/vpn", "system.vpn"),
         ("/store/admin", "store"),
         ("/store", "store"),
         ("/helpdesk", "support.helpdesk"),

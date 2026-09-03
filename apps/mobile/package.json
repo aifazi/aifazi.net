@@ -42,6 +42,7 @@
     "react-native": "0.86.2",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.27.0",
+    "react-native-ssl-pinning": "^1.6.0",
     "react-native-svg": "15.15.4",
     "react-native-web": "~0.21.0"
   },
@@ -53,7 +54,8 @@
     "expo-dev-client": "~57.0.10",
     "metro-react-native-babel-transformer": "^0.77.0",
     "terser-webpack-plugin": "^5.6.1",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.0"
   },
   "scripts": {
     "start": "expo start",
@@ -62,7 +64,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run"
   },
   "private": true
 }

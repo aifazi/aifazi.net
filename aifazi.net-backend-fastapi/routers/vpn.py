@@ -115,6 +115,21 @@ def _get_server_config() -> dict:
     return data[0] if data else {}
 
 
+async def _require_server_pub() -> str:
+    """Return the stripped server public key, or fail loudly.
+
+    A malformed key (e.g. with stray whitespace from a hand-edited DB row)
+    must 503 here — never flow into a client config that strict parsers
+    reject on import. WireGuard Curve25519 keys are always 44 base64 chars.
+    """
+    server = _get_server_config()
+    pub = (server.get("public_key") or await get_server_public_key() or "").strip()
+    if len(pub) != 44:
+        log.error("WireGuard server public key missing or malformed in DB")
+        raise HTTPException(503, "WireGuard server public key not available")
+    return pub
+
+
 _HANDSHAKE_UNIT_SECONDS = {
     "second": 1, "seconds": 1,
     "minute": 60, "minutes": 60,
@@ -274,10 +289,7 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
         raise HTTPException(503, "WireGuard server is not running")
 
     # Get or create server config
-    server = _get_server_config()
-    server_pub = server.get("public_key") or await get_server_public_key()
-    if not server_pub:
-        raise HTTPException(503, "WireGuard server public key not available")
+    server_pub = await _require_server_pub()
 
     # Generate keys
     client_priv, client_pub = generate_keypair()
@@ -361,8 +373,7 @@ async def get_peer(
     if not peer:
         raise HTTPException(404, "Peer not found")
 
-    server = _get_server_config()
-    server_pub = server.get("public_key") or await get_server_public_key()
+    server_pub = await _require_server_pub()
 
     config = generate_client_config(
         client_private_key=peer["private_key"],
@@ -427,8 +438,7 @@ async def rotate_keys(peer_id: str, user: dict = Depends(get_current_user)):
     if not peer:
         raise HTTPException(404, "Peer not found")
 
-    server = _get_server_config()
-    server_pub = server.get("public_key") or await get_server_public_key()
+    server_pub = await _require_server_pub()
 
     # Remove old peer from WireGuard
     await remove_peer(peer["public_key"], peer["allocated_ip"])
