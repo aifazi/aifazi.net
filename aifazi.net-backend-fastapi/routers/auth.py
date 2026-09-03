@@ -657,17 +657,17 @@ def _send_new_device_alert(username: str, email: str, ip: str, ua: str) -> None:
 </div>"""
     try:
         import asyncio as _asio
-        _asio.get_event_loop().create_task(
-            queue_email(email, "New sign-in to your aifazi.net account", body, f"New sign-in: @{username}", "security_alert")
-        )
-    except Exception:
         try:
-            import asyncio as _asio
-            _asio.get_event_loop().run_until_complete(
-                queue_email(email, "New sign-in to your aifazi.net account", body, f"New sign-in: @{username}", "security_alert")
-            )
-        except Exception:
-            pass
+            _loop = _asio.get_running_loop()
+        except RuntimeError:
+            _loop = None
+        _coro = queue_email(email, "New sign-in to your aifazi.net account", body, f"New sign-in: @{username}", "security_alert")
+        if _loop is not None:
+            _loop.create_task(_coro)
+        else:
+            _asio.run(_coro)
+    except Exception:
+        pass
 
 def _make_discord_link_token(user_id: str) -> str:
     exp = datetime.now(timezone.utc) + timedelta(minutes=10)
@@ -1446,13 +1446,9 @@ async def tfa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get_c
 # 5 failed codes inside the window locks this account's 2FA for the rest of
 # the window (15 minutes). A successful verify clears the counter.
 from utils.rate_limit import (
-    _2fa_clear_fails_redis as _2fa_clear_fails,
-)
-from utils.rate_limit import (
-    _2fa_locked_redis as _2fa_locked,
-)
-from utils.rate_limit import (
-    _2fa_record_fail_redis as _2fa_record_fail,
+    clear_2fa_failures as _2fa_clear_fails,
+    is_2fa_locked as _2fa_locked,
+    record_2fa_failure as _2fa_record_fail,
 )
 
 
@@ -1470,14 +1466,14 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
     role     = payload.get("role")
     user_id  = payload.get("id")
     ip = request.client.host if request.client else ""
-    if _2fa_locked(username):
+    if await _2fa_locked(username):
         raise HTTPException(429, "Too many failed 2FA attempts. Try again later.")
     if role == "admin":
         row = _get_admin_2fa()
         if not row or not row.get("totp_secret"):
             raise HTTPException(500, "2FA not configured on server")
         if not _verify_2fa_entry("admin", "", row["totp_secret"], body.code):
-            _2fa_record_fail(username)
+            await _2fa_record_fail(username)
             _audit(username, "2fa_failed", ip=ip)
             raise HTTPException(400, "Invalid code")
         token   = make_token({"username": username, "role": role})
@@ -1503,7 +1499,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
                 }).eq("id", forum_id).execute()
             except Exception:
                 pass
-        _2fa_clear_fails(username)
+        await _2fa_clear_fails(username)
         _audit(username, "admin_login_2fa", target="admin_panel", ip=ip)
         if forum_id and _upsert_forum_session(forum_id, username, ip, request.headers.get("user-agent", "")):
             _send_new_device_alert(username, (row or {}).get("email") or f"{ADMIN_USERNAME}@aifazi.net", ip, request.headers.get("user-agent", ""))
@@ -1515,7 +1511,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
             raise HTTPException(404, "User not found")
         s = res.data[0]
         if not _verify_2fa_entry("user", user_id, s["totp_secret"], body.code):
-            _2fa_record_fail(username)
+            await _2fa_record_fail(username)
             _audit(username, "2fa_failed", ip=ip)
             raise HTTPException(400, "Invalid code")
         token   = make_token({"username": s["username"], "role": s["role"], "id": s["id"]})
@@ -1523,7 +1519,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
         supabase.table("users").update({
             "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
         }).eq("id", s["id"]).execute()
-        _2fa_clear_fails(username)
+        await _2fa_clear_fails(username)
         _audit(username, "staff_login_2fa", target="admin_panel", ip=ip)
         if _upsert_forum_session(s["id"], s["username"], ip, request.headers.get("user-agent", "")):
             _send_new_device_alert(s["username"], s.get("email") or "", ip, request.headers.get("user-agent", ""))
@@ -1911,13 +1907,9 @@ async def change_password(body: ChangePasswordBody, creds: HTTPAuthorizationCred
     access = resolve_staff_access(payload)
     user_id = payload.get("id")
     if access and access.get("role") == "admin" and not user_id:
-        admin_pw = os.getenv("ADMIN_PASSWORD", "")
-        ok = False
-        if admin_pw.startswith(("$2b$", "$2a$", "$2y$")):
-            ok = _verify(body.current_password or "", admin_pw)
-        else:
-            ok = _hmac.compare_digest((body.current_password or "").encode(), admin_pw.encode())
-        if not ok:
+        # Fail closed exactly like login(): ADMIN_PASSWORD must be a bcrypt
+        # hash — a plaintext env value can never verify successfully.
+        if not _check_admin_password(body.current_password or ""):
             raise HTTPException(400, "Current password incorrect")
         _row = _get_admin_2fa()
         if _row and _row.get("enabled") and _row.get("totp_secret"):

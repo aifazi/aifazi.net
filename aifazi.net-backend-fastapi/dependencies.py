@@ -50,8 +50,24 @@ class CookieHTTPBearer(HTTPBearer):
 
 bearer = CookieHTTPBearer(auto_error=False)
 
-_user_cache = {}
+_user_cache: dict = {}
 _USER_CACHE_TTL = 60
+# Bound the cache: entries are small but user ids are unbounded (one per
+# account that ever authenticates), so evict oldest-first past this cap.
+_USER_CACHE_MAX_ENTRIES = 2000
+
+
+def _user_cache_set(user_id: str, now: float, enrichment: dict) -> None:
+    """Insert into the user cache, evicting oldest entries past the cap."""
+    if user_id in _user_cache:
+        _user_cache[user_id] = (now, enrichment)
+        return
+    while len(_user_cache) >= _USER_CACHE_MAX_ENTRIES:
+        try:
+            _user_cache.pop(next(iter(_user_cache)))
+        except StopIteration:
+            break
+    _user_cache[user_id] = (now, enrichment)
 
 def _enrich_user(payload: dict) -> dict:
     user_id = payload.get("id") or payload.get("sub")
@@ -89,7 +105,7 @@ def _enrich_user(payload: dict) -> dict:
     except Exception:
         pass
     if enrichment:
-        _user_cache[user_id] = (now, enrichment)
+        _user_cache_set(user_id, now, enrichment)
         payload.update(enrichment)
     return payload
 

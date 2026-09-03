@@ -115,6 +115,91 @@ def _get_server_config() -> dict:
     return data[0] if data else {}
 
 
+_HANDSHAKE_UNIT_SECONDS = {
+    "second": 1, "seconds": 1,
+    "minute": 60, "minutes": 60,
+    "hour": 3600, "hours": 3600,
+    "day": 86400, "days": 86400,
+    "week": 604800, "weeks": 604800,
+}
+
+# A peer counts as connected if its last handshake is fresher than this.
+CONNECTED_HANDSHAKE_MAX_AGE_S = 180
+
+
+def _handshake_age_seconds(hs: str | None) -> float | None:
+    """Parse `wg show` handshake strings like "38 minutes, 8 seconds ago".
+
+    Returns the age in seconds, or None for "(none)"/empty/unparseable.
+    """
+    if not hs:
+        return None
+    s = hs.strip().lower()
+    if s in ("(none)", "none", "never"):
+        return None
+    import re
+    total = 0.0
+    found = False
+    for amount, unit in re.findall(r"(\d+(?:\.\d+)?)\s*([a-z]+)", s):
+        mult = _HANDSHAKE_UNIT_SECONDS.get(unit)
+        if mult is None:
+            continue
+        total += float(amount) * mult
+        found = True
+    return total if found else None
+
+
+def _is_connected(hs: str | None) -> bool:
+    age = _handshake_age_seconds(hs)
+    return age is not None and age < CONNECTED_HANDSHAKE_MAX_AGE_S
+
+
+def _sync_sessions_from_handshakes(peers: list[dict]) -> None:
+    """Best-effort session tracking driven by live handshake state.
+
+    The WireGuard app connects externally, so the backend never sees an
+    explicit "connect" event. When a peer's handshake is fresh and it has no
+    open session row, open one; when the handshake goes stale, close any open
+    session with the latest counters. Failures must never break the caller.
+    Each item in `peers` needs: id, user_id, transfer_rx, transfer_tx,
+    latest_handshake, endpoint.
+    """
+    try:
+        open_res = (
+            supabase.table("vpn_sessions")
+            .select("id,peer_id")
+            .is_("disconnected_at", "null")
+            .execute()
+        )
+        open_by_peer = {r["peer_id"]: r["id"] for r in (open_res.data or [])}
+    except Exception as e:
+        log.warning("session sync: failed to list open sessions: %s", e)
+        return
+    now = datetime.now(timezone.utc).isoformat()
+    for p in peers:
+        try:
+            peer_id = p["id"]
+            connected = _is_connected(p.get("latest_handshake"))
+            open_id = open_by_peer.get(peer_id)
+            if connected and not open_id:
+                endpoint = (p.get("endpoint") or "").split(":")[0]
+                supabase.table("vpn_sessions").insert({
+                    "id": str(uuid.uuid4()),
+                    "peer_id": peer_id,
+                    "user_id": p.get("user_id", ""),
+                    "connected_at": now,
+                    "client_public_ip": endpoint,
+                }).execute()
+            elif not connected and open_id:
+                supabase.table("vpn_sessions").update({
+                    "disconnected_at": now,
+                    "bytes_rx": p.get("transfer_rx", 0),
+                    "bytes_tx": p.get("transfer_tx", 0),
+                }).eq("id", open_id).execute()
+        except Exception as e:
+            log.warning("session sync: peer %s failed: %s", p.get("id"), e)
+
+
 def _generate_qr_base64(config_text: str) -> str:
     """Generate QR code as base64-encoded PNG."""
     try:
@@ -159,7 +244,7 @@ async def list_peers(user: dict = Depends(get_current_user)):
     for p in peers:
         stats = wg_stats.get(p["public_key"], {})
         hs_str = stats.get("latest_handshake", "")
-        connected = hs_str not in ("", "(none)", "None")
+        connected = _is_connected(hs_str)
         result.append({
             "id": p["id"],
             "device_name": p["device_name"],
@@ -198,32 +283,51 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
     client_priv, client_pub = generate_keypair()
     psk = generate_preshared_key()
 
-    # Allocate IP
-    used_ips = _get_all_allocated_ips()
-    allocated_ip = find_free_ip(used_ips)
-
-    # Add peer to WireGuard (live)
-    await add_peer(
-        public_key=client_pub,
-        allowed_ips=f"{allocated_ip}/32",
-        preshared_key=psk,
-    )
-
-    # Store in database
+    # Allocate IP + insert with retries: two concurrent creates could read the
+    # same free IP, so a unique-violation on allocated_ip re-reads and retries
+    # instead of failing or double-allocating.
     peer_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
-    supabase.table("vpn_peers").insert({
-        "id": peer_id,
-        "user_id": user_id,
-        "public_key": client_pub,
-        "private_key": client_priv,  # encrypted at rest via Supabase column encryption
-        "preshared_key": psk,
-        "allocated_ip": allocated_ip,
-        "device_name": body.device_name,
-        "device_os": body.device_os,
-        "status": "active",
-        "created_at": now,
-    }).execute()
+    allocated_ip = ""
+    for attempt in range(3):
+        used_ips = _get_all_allocated_ips()
+        allocated_ip = find_free_ip(used_ips)
+        try:
+            supabase.table("vpn_peers").insert({
+                "id": peer_id,
+                "user_id": user_id,
+                "public_key": client_pub,
+                "private_key": client_priv,  # encrypted at rest via Supabase column encryption
+                "preshared_key": psk,
+                "allocated_ip": allocated_ip,
+                "device_name": body.device_name,
+                "device_os": body.device_os,
+                "status": "active",
+                "created_at": now,
+            }).execute()
+            break
+        except Exception as e:
+            msg = str(e).lower()
+            if ("unique" in msg or "duplicate" in msg or "23505" in msg) and attempt < 2:
+                log.warning("create_peer: IP %s raced, retrying (%d/3)", allocated_ip, attempt + 1)
+                continue
+            raise
+
+    # Add peer to WireGuard (live). On failure, roll back the DB row so a
+    # device that can never connect doesn't linger in the peer list.
+    try:
+        await add_peer(
+            public_key=client_pub,
+            allowed_ips=f"{allocated_ip}/32",
+            preshared_key=psk,
+        )
+    except Exception as e:
+        log.error("create_peer: WireGuard add failed, rolling back %s: %s", peer_id, e)
+        try:
+            supabase.table("vpn_peers").delete().eq("id", peer_id).execute()
+        except Exception:
+            pass
+        raise HTTPException(503, "WireGuard server is not reachable")
 
     # Generate client config
     config = generate_client_config(
@@ -381,7 +485,7 @@ async def get_stats(user: dict = Depends(get_current_user)):
         total_rx += rx
         total_tx += tx
         hs_str = stats.get("latest_handshake", "")
-        connected = hs_str not in ("", "(none)", "None")
+        connected = _is_connected(hs_str)
         result.append({
             "id": p["id"],
             "device_name": p["device_name"],
@@ -412,7 +516,7 @@ async def admin_list_all_peers(_: dict = Depends(require_staff)):
         rx = stats.get("transfer_rx", 0)
         tx = stats.get("transfer_tx", 0)
         hs_str = stats.get("latest_handshake", "")
-        connected = hs_str not in ("", "(none)", "None")
+        connected = _is_connected(hs_str)
         result.append({
             "id": p["id"],
             "user_id": p.get("user_id", ""),
@@ -426,9 +530,46 @@ async def admin_list_all_peers(_: dict = Depends(require_staff)):
             "transfer_tx": tx,
             "connected": connected,
             "latest_handshake": hs_str,
+            "endpoint": stats.get("endpoint", ""),
         })
 
+    # Best-effort: derive session rows from live handshake state so the
+    # Sessions tab reflects real connect/disconnect activity.
+    _sync_sessions_from_handshakes(result)
+
     return {"peers": result, "total": len(result)}
+
+
+@router.delete("/admin/peers/{peer_id}")
+async def admin_delete_peer(peer_id: str, _: dict = Depends(require_staff)):
+    """Delete any VPN peer (staff only). The user-scoped DELETE endpoint
+    only removes the caller's own peers, so the admin panel needs this."""
+    res = (
+        supabase.table("vpn_peers")
+        .select("*")
+        .eq("id", peer_id)
+        .limit(1)
+        .execute()
+    )
+    data = res.data or []
+    if not data:
+        raise HTTPException(404, "Peer not found")
+    peer = data[0]
+
+    # Remove from WireGuard (best-effort: keep DB consistent even if WG fails)
+    try:
+        await remove_peer(peer["public_key"], peer["allocated_ip"])
+    except Exception as e:
+        log.warning("admin delete: WireGuard removal failed for %s: %s", peer_id, e)
+
+    # Close any open sessions, then delete the peer
+    now = datetime.now(timezone.utc).isoformat()
+    supabase.table("vpn_sessions").update({
+        "disconnected_at": now,
+    }).eq("peer_id", peer_id).is_("disconnected_at", "null").execute()
+    supabase.table("vpn_peers").delete().eq("id", peer_id).execute()
+
+    return {"message": "Peer deleted", "id": peer_id}
 
 
 @router.get("/admin/sessions")

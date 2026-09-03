@@ -207,7 +207,28 @@ function RootNav() {
         <Stack.Screen name="blog-post" options={{ headerShown: false }} />
         <Stack.Screen name="auth/login" options={{ headerShown: false }} />
         <Stack.Screen name="auth/register" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/forgot-password" options={{ headerShown: false }} />
+        <Stack.Screen name="oauth/callback/[provider]" options={{ headerShown: false }} />
         <Stack.Screen name="vpn" options={{ headerShown: false }} />
+        <Stack.Screen name="verify-email" options={{ headerShown: false }} />
+        <Stack.Screen name="status" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
+        <Stack.Screen name="dm-thread" options={{ headerShown: false }} />
+        <Stack.Screen name="dm-requests" options={{ headerShown: false }} />
+        <Stack.Screen name="dm-new" options={{ headerShown: false }} />
+        <Stack.Screen name="channel-manage" options={{ headerShown: false }} />
+        <Stack.Screen name="channel-edit" options={{ headerShown: false }} />
+        <Stack.Screen name="chat-admin" options={{ headerShown: false }} />
+        <Stack.Screen name="chat-admin-recent" options={{ headerShown: false }} />
+        <Stack.Screen name="chat-admin-members" options={{ headerShown: false }} />
+        <Stack.Screen name="chat-admin-mutes" options={{ headerShown: false }} />
+        <Stack.Screen name="chat-admin-bans" options={{ headerShown: false }} />
+        <Stack.Screen name="chat-admin-dm" options={{ headerShown: false }} />
+        <Stack.Screen name="forum-new" options={{ headerShown: false }} />
+        <Stack.Screen name="helpdesk-new" options={{ headerShown: false }} />
+        <Stack.Screen name="helpdesk-detail" options={{ headerShown: false }} />
+        <Stack.Screen name="store-cart" options={{ headerShown: false }} />
+        <Stack.Screen name="store-success" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={theme.dark ? 'light' : 'dark'} />
       <ThemeTransitionOverlay />
