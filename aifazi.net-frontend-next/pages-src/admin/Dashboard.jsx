@@ -33,6 +33,7 @@ const Changelog = dynamic(() => import('./Changelog').then(m => m.default || m),
 const FiveMPanel = dynamic(() => import('./FiveMPanel').then(m => m.default || m), { ssr: false })
 const StoreCenter = dynamic(() => import('./storeModules/StoreCenter').then(m => m.default || m), { ssr: false })
 const MonitoringPanel = dynamic(() => import('./MonitoringPanel').then(m => m.default || m), { ssr: false })
+const VpnPanel = dynamic(() => import('./VpnPanel').then(m => m.default || m), { ssr: false })
 const ChatPanel = dynamic(() => import('./ChatPanel').then(m => m.default || m), { ssr: false })
 
 function StatsGrid({ dashStats, isMobile, setView }) {
@@ -471,6 +472,7 @@ function Dashboard({ onLogout }) {
     { key: 'fivem',        label: 'FiveM Server',  group: 'FIVEM',      icon: '🎮', badge: null },
     { key: 'changelog',    label: 'Changelog',     group: 'MANAGE',     icon: '📋',   badge: 'NEW' },
     { key: 'monitoring',   label: 'Monitoring',    group: 'SYSTEM',     icon: '📡',   badge: null },
+    { key: 'vpn',          label: 'VPN',           group: 'SYSTEM',     icon: '🔒',   badge: null },
   ]
 
   const ROLE_COLORS = {
@@ -1168,6 +1170,7 @@ function Dashboard({ onLogout }) {
           {view === 'store' && adminUser && <PanelErrorBoundary label="Store"><StoreCenter /></PanelErrorBoundary>}
           {view === 'changelog' && <PanelErrorBoundary label="Changelog"><Changelog /></PanelErrorBoundary>}
           {view === 'monitoring' && adminUser && <PanelErrorBoundary label="Monitoring"><MonitoringPanel /></PanelErrorBoundary>}
+          {view === 'vpn' && adminUser && <PanelErrorBoundary label="VPN"><VpnPanel /></PanelErrorBoundary>}
           {view === 'fivem' && adminUser && (
             <PanelErrorBoundary label="FiveM Server">
               <FiveMPanel defaultSection="status" />
