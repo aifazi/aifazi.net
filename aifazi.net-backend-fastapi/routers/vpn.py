@@ -4,6 +4,7 @@ routers/vpn.py — WireGuard VPN peer management API
 Provides endpoints to list, create, delete, and rotate WireGuard peers.
 All endpoints require authentication. Peers are managed live via `wg set`.
 """
+import asyncio
 import base64
 import io
 import logging
@@ -157,8 +158,8 @@ async def list_peers(user: dict = Depends(get_current_user)):
     result = []
     for p in peers:
         stats = wg_stats.get(p["public_key"], {})
-        hs = stats.get("latest_handshake", 0)
-        connected = (datetime.now(timezone.utc).timestamp() - hs) < 180 if hs else False
+        hs_str = stats.get("latest_handshake", "")
+        connected = hs_str not in ("", "(none)", "None")
         result.append({
             "id": p["id"],
             "device_name": p["device_name"],
@@ -379,8 +380,8 @@ async def get_stats(user: dict = Depends(get_current_user)):
         tx = stats.get("transfer_tx", 0)
         total_rx += rx
         total_tx += tx
-        hs = stats.get("latest_handshake", 0)
-        connected = (datetime.now(timezone.utc).timestamp() - hs) < 180 if hs else False
+        hs_str = stats.get("latest_handshake", "")
+        connected = hs_str not in ("", "(none)", "None")
         result.append({
             "id": p["id"],
             "device_name": p["device_name"],
@@ -410,8 +411,8 @@ async def admin_list_all_peers(_: dict = Depends(require_staff)):
         stats = wg_stats.get(p.get("public_key", ""), {})
         rx = stats.get("transfer_rx", 0)
         tx = stats.get("transfer_tx", 0)
-        hs = stats.get("latest_handshake", 0)
-        connected = (datetime.now(timezone.utc).timestamp() - hs) < 180 if hs else False
+        hs_str = stats.get("latest_handshake", "")
+        connected = hs_str not in ("", "(none)", "None")
         result.append({
             "id": p["id"],
             "user_id": p.get("user_id", ""),
@@ -424,7 +425,7 @@ async def admin_list_all_peers(_: dict = Depends(require_staff)):
             "transfer_rx": rx,
             "transfer_tx": tx,
             "connected": connected,
-            "latest_handshake": hs,
+            "latest_handshake": hs_str,
         })
 
     return {"peers": result, "total": len(result)}
