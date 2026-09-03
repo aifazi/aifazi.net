@@ -49,16 +49,25 @@
 - [ ] **Native in-app tunnel** (mobile): needs `npx expo prebuild` +
       native WireGuard module + EAS build. Management (CRUD/QR/stats)
       works today; the tunnel itself lives in the external WireGuard app.
-- [ ] **Certificate pinning** (#11, prep done): `react-native-ssl-pinning`
-      installed, `src/lib/sslPinning.ts` ready with live SPKI pins for
-      `api.aifazi.net` + Expo-Go-safe fallback. Activation:
-      `npx expo prebuild` → EAS production build → store release.
-      Rotation runbook is in the module header (backup pins mandatory).
+- [ ] **Certificate pinning** (#11): live SPKI pins for `api.aifazi.net`
+      extracted 2026-09-03 and kept here (leaf + chain backups):
+      `sha256/boAH2RgUdVzrKMPj3pKVN2W+3GN872/6f3ea0BgajaY=`,
+      `sha256/LoMHBotttiDko50Gi13uXW71eIy7LAttI+rYT8wXF4w=`,
+      `sha256/fk6IOKit1ild5647BH06ujSIq5XbCgqlbYl6ANhhi88=`,
+      `sha256/C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=`.
+      Do NOT use `react-native-ssl-pinning@1.6.0` — tried 2026-09-03,
+      removed same day: its 2018-era `android/build.gradle` calls
+      `jcenter()` (removed in Gradle 9) and breaks the release build.
+      Activation needs a maintained approach (`expo prebuild` + either
+      Android Network Security Config via config plugin, or a current
+      pinning library) + EAS production build + store release.
+      Rotation rule: always ship new pins alongside old ones, wait for
+      >80% adoption, then switch the server cert.
 
 ## 3. Testing (#28 — framework done, expand coverage)
 
-- [x] Vitest (`apps/mobile`: `npm test`, 8 tests) — `vpn.ts` pure
-      functions + `sslPinning` pins/fallback.
+- [x] Vitest (`apps/mobile`: `npm test`, 4 tests) — `vpn.ts` pure
+      functions (formatBytes/formatDuration/detectDeviceOs).
 - [x] Playwright (`aifazi.net-frontend-next`: `npm run test:e2e`) —
       homepage + `/api/health` smoke (caught the real outage).
 - [ ] Grow mobile coverage: API client interceptors, auth refresh flow,
