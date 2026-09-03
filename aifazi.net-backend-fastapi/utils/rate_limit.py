@@ -106,15 +106,9 @@ def _get_redis():
     redis_url = os.getenv("REDIS_URL")
     if redis_url:
         try:
-            import redis.asyncio as aioredis
-            _redis_client = aioredis.from_url(redis_url, decode_responses=True)
-            import asyncio
-            try:
-                asyncio.get_event_loop().run_until_complete(_redis_client.ping())
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                loop.run_until_complete(_redis_client.ping())
-                loop.close()
+            import redis
+            _redis_client = redis.from_url(redis_url, decode_responses=True)
+            _redis_client.ping()
             _redis_available = True
             log.info("Redis connected successfully (url=%s)", redis_url.split("@")[-1] if "@" in redis_url else redis_url)
             return _redis_client
@@ -290,11 +284,16 @@ async def start_ip_bans_listener():
     if not redis or not _redis_available:
         return
 
-    pubsub = redis.pubsub()
-    await pubsub.subscribe("ip_bans_invalidate")
-    log.info("Started IP bans invalidation listener")
+    import asyncio
+    loop = asyncio.get_event_loop()
 
-    async for message in pubsub.listen():
-        if message["type"] == "message":
-            invalidate_ip_bans_cache()
-            log.info("Received IP bans invalidation from peer")
+    def _listen():
+        pubsub = redis.pubsub()
+        pubsub.subscribe("ip_bans_invalidate")
+        log.info("Started IP bans invalidation listener")
+        for message in pubsub.listen():
+            if message["type"] == "message":
+                invalidate_ip_bans_cache()
+                log.info("Received IP bans invalidation from peer")
+
+    await loop.run_in_executor(None, _listen)
