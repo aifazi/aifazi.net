@@ -2,12 +2,14 @@
   "name": "aifazi-net-frontend-next",
   "version": "2.0.0",
   "private": true,
+  "engines": { "node": "22.x" },
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint . --max-warnings=150",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@fazi/shared": "file:../packages/shared",
@@ -28,6 +30,7 @@
   "devDependencies": {
     "@babel/parser": "^7.29.8",
     "@babel/plugin-syntax-jsx": "^7.28.6",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
