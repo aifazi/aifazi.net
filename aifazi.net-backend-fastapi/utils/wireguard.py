@@ -195,6 +195,32 @@ async def get_peers_dump() -> str:
         return ""
 
 
+_BYTE_UNITS = {
+    "b": 1,
+    "kib": 1024, "kb": 1000,
+    "mib": 1024 ** 2, "mb": 1000 ** 2,
+    "gib": 1024 ** 3, "gb": 1000 ** 3,
+    "tib": 1024 ** 4, "tb": 1000 ** 4,
+}
+
+
+def parse_byte_count(text: str) -> int:
+    """Parse `wg show` transfer amounts like "1.56 MiB" or "924 B" into bytes.
+
+    Plain `wg show` prints human-readable values (not raw byte counts), so a
+    naive int() parse fails and silently drops all traffic counters.
+    """
+    parts = (text or "").strip().split()
+    if not parts:
+        raise ValueError("empty byte count")
+    try:
+        number = float(parts[0].replace(",", ""))
+    except ValueError:
+        raise ValueError(f"not a byte count: {text!r}")
+    unit = parts[1].lower() if len(parts) > 1 else "b"
+    return int(number * _BYTE_UNITS.get(unit, 1))
+
+
 async def parse_peer_stats() -> dict[str, dict]:
     """Get per-peer stats from the WireGuard host API (parses wg show output)."""
     stats: dict[str, dict] = {}
@@ -212,8 +238,8 @@ async def parse_peer_stats() -> dict[str, dict]:
                     rx_tx = parts[1].strip().split(",")
                     if len(rx_tx) >= 2:
                         try:
-                            stats[current_peer]["transfer_rx"] = int(rx_tx[0].strip().split()[0])
-                            stats[current_peer]["transfer_tx"] = int(rx_tx[1].strip().split()[0])
+                            stats[current_peer]["transfer_rx"] = parse_byte_count(rx_tx[0])
+                            stats[current_peer]["transfer_tx"] = parse_byte_count(rx_tx[1])
                         except (ValueError, IndexError):
                             pass
             elif current_peer and "latest handshake:" in line:

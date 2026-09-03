@@ -4,6 +4,7 @@
  * Manages VPN peers through the backend API. Handles device creation,
  * QR code generation, key rotation, session tracking, and connection status.
  */
+import { Platform } from 'react-native'
 import { api } from './api'
 
 export interface VpnPeer {
@@ -99,10 +100,15 @@ export async function getPeer(
   })
   if (format === 'conf') return res.data
   const blob = res.data as Blob
-  return new Promise<string>((resolve) => {
+  return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Failed to read QR code image'))
     reader.onloadend = () => resolve(reader.result as string)
-    reader.readAsDataURL(blob)
+    try {
+      reader.readAsDataURL(blob)
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error('Failed to read QR code image'))
+    }
   })
 }
 
@@ -172,7 +178,6 @@ export function formatDuration(seconds: number): string {
 }
 
 export function detectDeviceOs(): string {
-  const { Platform } = require('react-native')
   switch (Platform.OS) {
     case 'ios':
       return 'ios'

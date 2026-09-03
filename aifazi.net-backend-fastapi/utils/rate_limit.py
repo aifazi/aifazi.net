@@ -3,7 +3,12 @@ utils/rate_limit.py — Distributed rate limiting using Upstash Redis.
 
 Provides sliding-window rate limiting that works across multiple serverless instances.
 Falls back to in-memory if Redis is not configured (for local dev).
+
+NOTE on sync vs async: the Redis clients used here (redis-py, upstash-redis)
+are blocking. Every call site on an async path offloads the blocking section
+to a worker thread via asyncio.to_thread so the event loop is never stalled.
 """
+import asyncio
 import logging
 import os
 import time
@@ -84,9 +89,24 @@ def _2fa_clear_fails_redis(username: str) -> None:
             redis.delete(key)
         except Exception as e:
             log.warning("Redis 2FA clear fails failed: %s", e)
-    
+
     # Also clear in-memory
     _2fa_failures_local.pop(username, None)
+
+
+async def is_2fa_locked(username: str) -> bool:
+    """Async 2FA lockout check — offloads blocking Redis I/O off the loop."""
+    return await asyncio.to_thread(_2fa_locked_redis, username)
+
+
+async def record_2fa_failure(username: str) -> None:
+    """Async 2FA failure recorder — offloads blocking Redis I/O off the loop."""
+    await asyncio.to_thread(_2fa_record_fail_redis, username)
+
+
+async def clear_2fa_failures(username: str) -> None:
+    """Async 2FA failure clearer — offloads blocking Redis I/O off the loop."""
+    await asyncio.to_thread(_2fa_clear_fails_redis, username)
 
 
 def _get_redis():
@@ -146,6 +166,32 @@ def is_redis_available() -> bool:
     return _get_redis() is not None
 
 
+def _redis_check_rate_limit(bucket: str, max_calls: int, window: int, now: float) -> bool | None:
+    """Blocking Redis sliding-window check (runs in a worker thread).
+
+    Returns None when Redis is not configured (caller falls back to
+    in-memory), False when Redis fails (fail closed) or the limit is hit.
+    """
+    redis = _get_redis()
+    if not (redis and _redis_available):
+        return None
+    try:
+        key = f"rl:{bucket}"
+        pipe = redis.pipeline()
+        pipe.zremrangebyscore(key, 0, now - window)
+        pipe.zcard(key)
+        pipe.zadd(key, {str(now): now})
+        pipe.expire(key, window + 1)
+        results = pipe.execute()
+
+        current_count = results[1]
+        return current_count < max_calls
+    except Exception as e:
+        log.warning("Redis rate limit check failed: %s — failing closed", e)
+        # If Redis is configured but fails, fail closed (deny request)
+        return False
+
+
 async def check_rate_limit(bucket: str, max_calls: int, window: int) -> bool:
     """
     Check and increment rate limit for a bucket using sliding window.
@@ -158,26 +204,10 @@ async def check_rate_limit(bucket: str, max_calls: int, window: int) -> bool:
     Returns:
         True if request is allowed, False if rate limited
     """
-    redis = _get_redis()
     now = time.time()
-    window_start = now - window
-
-    if redis and _redis_available:
-        try:
-            key = f"rl:{bucket}"
-            pipe = redis.pipeline()
-            pipe.zremrangebyscore(key, 0, window_start)
-            pipe.zcard(key)
-            pipe.zadd(key, {str(now): now})
-            pipe.expire(key, window + 1)
-            results = pipe.execute()
-
-            current_count = results[1]
-            return current_count < max_calls
-        except Exception as e:
-            log.warning("Redis rate limit check failed: %s — failing closed", e)
-            # If Redis is configured but fails, fail closed (deny request)
-            return False
+    verdict = await asyncio.to_thread(_redis_check_rate_limit, bucket, max_calls, window, now)
+    if verdict is not None:
+        return verdict
 
     # In-memory fallback (dev mode only)
     _prune_local_store(now)
@@ -284,8 +314,7 @@ async def start_ip_bans_listener():
     if not redis or not _redis_available:
         return
 
-    import asyncio
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     def _listen():
         pubsub = redis.pubsub()

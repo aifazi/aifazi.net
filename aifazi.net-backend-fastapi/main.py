@@ -108,14 +108,11 @@ def _verify_internal_token(submitted: str, method: str, path: str) -> bool:
     """Verify a per-request HMAC token from the Next.js middleware.
 
     Returns True only if the token is structurally valid, fresh, and its HMAC
-    matches the current method+path. Falls back to legacy exact-secret matches
-    (pre-H1 middleware that sent the raw secret) so a rolling deploy stays safe.
+    matches the current method+path. The raw secret is NEVER accepted as a
+    token: it would turn every captured header into a permanent credential.
     """
     if not submitted:
         return False
-    # Legacy: raw secret sent verbatim by pre-H1 middleware.
-    if hmac.compare_digest(submitted, INTERNAL_API_SECRET):
-        return True
     if "." not in submitted:
         return False
     ts_b64, sig_b64 = submitted.rsplit(".", 1)
@@ -535,7 +532,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         ]))
         csp = (
             "default-src 'self'; "
-            f"script-src 'self' 'unsafe-inline'{_script_extra}; "
+            f"script-src 'self'{_script_extra}; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             f"img-src 'self' data: https://res.cloudinary.com https://*.cloudinary.com {CDN_URL}; "
             f"font-src 'self' https://fonts.gstatic.com {CDN_URL} https://*.r2.dev; "

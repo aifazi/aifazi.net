@@ -76,9 +76,45 @@ def _normalize(doc):
 
 # ── Collection CRUD ───────────────────────────────────────────────────────────
 
+# Bounds for the generic PATCH body. The payload shape is per-collection
+# (arbitrary columns), so a fixed Pydantic model can't describe it — but an
+# unbounded raw dict must never flow straight into Supabase: cap field count,
+# key length, and serialized value size to block oversized-document DoS.
+_PATCH_MAX_FIELDS = 100
+_PATCH_MAX_KEY_LEN = 128
+_PATCH_MAX_VALUE_BYTES = 65536
+_PATCH_MAX_TOTAL_BYTES = 262144
+
+
+def _validate_patch_body(body) -> dict:
+    import json as _json
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Patch body must be a JSON object")
+    if len(body) > _PATCH_MAX_FIELDS:
+        raise HTTPException(status_code=400, detail=f"Too many fields (max {_PATCH_MAX_FIELDS})")
+    total = 0
+    for k, v in body.items():
+        if not isinstance(k, str) or not k or len(k) > _PATCH_MAX_KEY_LEN:
+            raise HTTPException(status_code=400, detail="Invalid field name")
+        try:
+            size = len(_json.dumps(v, default=str).encode())
+        except Exception:
+            raise HTTPException(status_code=400, detail=f"Field is not JSON-serializable: {k[:64]}")
+        if size > _PATCH_MAX_VALUE_BYTES:
+            raise HTTPException(status_code=400, detail=f"Field too large: {k[:64]}")
+        total += size
+        if total > _PATCH_MAX_TOTAL_BYTES:
+            raise HTTPException(status_code=400, detail="Patch body too large")
+    return body
+
+
 @router.patch("/collection/{coll}/{doc_id}")
 async def collection_update(coll: str, doc_id: str, request: Request, _: dict = Depends(require_staff)):
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    body = _validate_patch_body(body)
     table = COLL_TABLE.get(coll)
     if not table:
         raise HTTPException(status_code=400, detail=f"Unknown collection: {coll}")

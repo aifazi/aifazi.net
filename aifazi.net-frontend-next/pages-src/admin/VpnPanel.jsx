@@ -94,7 +94,7 @@ function VpnPanelInner() {
     })
     if (!ok) return
     try {
-      await api.delete(`/vpn/peers/${peer.id}`)
+      await api.delete(`/vpn/admin/peers/${peer.id}`)
       toast({ title: 'Peer deleted', type: 'success' })
       load()
     } catch (err) {
@@ -233,7 +233,7 @@ function VpnPanelInner() {
                       <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                         ↓ {formatBytes(p.transfer_rx)} / ↑ {formatBytes(p.transfer_tx)}
                       </td>
-                      <td style={tdStyle}>{formatTimeAgo(p.latest_handshake ? new Date(p.latest_handshake * 1000).toISOString() : p.created_at)}</td>
+                      <td style={tdStyle}>{/^\d+(\.\d+)?$/.test(String(p.latest_handshake ?? '')) ? formatTimeAgo(new Date(Number(p.latest_handshake) * 1000).toISOString()) : (p.latest_handshake && p.latest_handshake !== '(none)' ? `${p.latest_handshake}` : formatTimeAgo(p.created_at))}</td>
                       <td style={tdStyle}>
                         <button onClick={(e) => { e.stopPropagation(); handleDeletePeer(p) }}
                           style={{ ...S.btn('var(--red)', '#fff'), padding: '4px 10px', fontSize: 11 }}>
@@ -275,7 +275,7 @@ function VpnPanelInner() {
                       </td>
                       <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)' }}>{s.client_public_ip || '—'}</td>
                       <td style={tdStyle}>{formatTimeAgo(s.connected_at)}</td>
-                      <td style={tdStyle}>{s.ended_at ? formatTimeAgo(s.ended_at) : <Badge color="green">Active</Badge>}</td>
+                      <td style={tdStyle}>{s.disconnected_at ? formatTimeAgo(s.disconnected_at) : <Badge color="green">Active</Badge>}</td>
                       <td style={tdStyle}>
                         <button onClick={() => handleDeleteSession(s)}
                           style={{ ...S.btn('var(--red)', '#fff'), padding: '4px 10px', fontSize: 11 }}>
