@@ -15,7 +15,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from database import supabase
-from dependencies import get_current_user
+from dependencies import get_current_user, require_staff
 from utils.wireguard import (
     WG_DNS,
     WG_ENDPOINT,
@@ -391,6 +391,69 @@ async def get_stats(user: dict = Depends(get_current_user)):
         })
 
     return {"peers": result, "total_rx": total_rx, "total_tx": total_tx}
+
+
+# ---------------------------------------------------------------------------
+# Admin endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/all-peers")
+async def admin_list_all_peers(_: dict = Depends(require_staff)):
+    """List all VPN peers across all users (admin/staff only)."""
+    res = supabase.table("vpn_peers").select("*").order("created_at", desc=True).execute()
+    peers = res.data or []
+
+    # Enrich with live WireGuard stats
+    wg_stats = await parse_peer_stats()
+    result = []
+    for p in peers:
+        stats = wg_stats.get(p.get("public_key", ""), {})
+        rx = stats.get("transfer_rx", 0)
+        tx = stats.get("transfer_tx", 0)
+        hs = stats.get("latest_handshake", 0)
+        connected = (datetime.now(timezone.utc).timestamp() - hs) < 180 if hs else False
+        result.append({
+            "id": p["id"],
+            "user_id": p.get("user_id", ""),
+            "device_name": p.get("device_name", ""),
+            "device_os": p.get("device_os", ""),
+            "allocated_ip": p.get("allocated_ip", ""),
+            "public_key": p.get("public_key", ""),
+            "status": p.get("status", "active"),
+            "created_at": p.get("created_at", ""),
+            "transfer_rx": rx,
+            "transfer_tx": tx,
+            "connected": connected,
+            "latest_handshake": hs,
+        })
+
+    return {"peers": result, "total": len(result)}
+
+
+@router.get("/admin/sessions")
+async def admin_list_all_sessions(_: dict = Depends(require_staff)):
+    """List all VPN sessions across all users (admin/staff only)."""
+    res = (
+        supabase.table("vpn_sessions")
+        .select("*, vpn_peers(device_name, user_id)")
+        .order("connected_at", desc=True)
+        .limit(200)
+        .execute()
+    )
+    sessions = res.data or []
+    result = []
+    for s in sessions:
+        peer = s.get("vpn_peers") or {}
+        result.append({
+            "id": s.get("id", ""),
+            "peer_id": s.get("peer_id", ""),
+            "device_name": peer.get("device_name", ""),
+            "user_id": peer.get("user_id", ""),
+            "client_public_ip": s.get("client_public_ip", ""),
+            "connected_at": s.get("connected_at", ""),
+            "ended_at": s.get("ended_at"),
+        })
+    return {"sessions": result}
 
 
 # ---------------------------------------------------------------------------
