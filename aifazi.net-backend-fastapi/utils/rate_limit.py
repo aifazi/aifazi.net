@@ -27,6 +27,8 @@ _2fa_failures_local: dict[str, list[float]] = {}
 # Redis client (lazy initialization)
 _redis_client = None
 _redis_available = False
+_redis_last_attempt = 0.0
+_redis_retry_cooldown = 120.0
 
 
 def _2fa_redis_key(username: str) -> str:
@@ -89,9 +91,16 @@ def _2fa_clear_fails_redis(username: str) -> None:
 
 def _get_redis():
     """Lazy-initialize Redis client (standard redis-py or Upstash fallback)."""
-    global _redis_client, _redis_available
+    global _redis_client, _redis_available, _redis_last_attempt
     if _redis_client is not None:
         return _redis_client
+
+    # Don't retry too often after failure
+    now = time.time()
+    if _redis_last_attempt and (now - _redis_last_attempt) < _redis_retry_cooldown:
+        return None
+
+    _redis_last_attempt = now
 
     # Try standard Redis first (REDIS_URL)
     redis_url = os.getenv("REDIS_URL")
