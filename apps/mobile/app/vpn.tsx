@@ -56,7 +56,7 @@ export default function VpnScreen() {
   const [publicIp, setPublicIp] = useState<string>('')
   const [totalRx, setTotalRx] = useState(0)
   const [totalTx, setTotalTx] = useState(0)
-  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected')
+  const [connectionState] = useState<ConnectionState>('disconnected')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -77,8 +77,6 @@ export default function VpnScreen() {
       if (statusRes.status === 'fulfilled') setStatus(statusRes.value)
       if (peersRes.status === 'fulfilled') {
         setPeers(peersRes.value)
-        const anyConnected = peersRes.value.some((p) => p.connected)
-        setConnectionState(anyConnected ? 'connected' : 'disconnected')
       }
       if (statsRes.status === 'fulfilled') {
         setTotalRx(statsRes.value.total_rx)
@@ -102,28 +100,19 @@ export default function VpnScreen() {
   }, [loadData])
 
   const handleToggleConnection = useCallback(() => {
-    if (connectionState === 'connected') {
-      Alert.alert(
-        'Disconnect VPN',
-        'This will disconnect all devices from the VPN tunnel.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Disconnect',
-            style: 'destructive',
-            onPress: () => setConnectionState('disconnected'),
-          },
-        ],
-      )
-    } else if (connectionState === 'disconnected') {
-      if (peers.length === 0) {
-        Alert.alert('No Devices', 'Add a VPN device first to connect.')
-        return
-      }
-      setConnectionState('connecting')
-      setTimeout(() => setConnectionState('connected'), 2000)
+    if (peers.length === 0) {
+      Alert.alert('No Devices', 'Add a VPN device first, then scan the QR code in the WireGuard app to connect.')
+      return
     }
-  }, [connectionState, peers.length])
+    Alert.alert(
+      'Connect via WireGuard',
+      'Open the WireGuard app on your device and toggle the VPN connection there. This app manages your VPN devices — the actual tunnel is controlled by the WireGuard app.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'OK' },
+      ],
+    )
+  }, [peers.length])
 
   const handleAddDevice = useCallback(async () => {
     const os = detectDeviceOs()

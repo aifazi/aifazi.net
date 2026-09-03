@@ -56,7 +56,7 @@ export function ConnectionRing({ state, onPress, location }: Props) {
     <View style={{ alignItems: 'center', paddingVertical: 32 }}>
       {/* Status text */}
       <Text style={{ color: state === 'connected' ? '#00ff88' : state === 'connecting' ? '#a855f7' : c.text2, fontSize: 14, fontWeight: '600', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2 }}>
-        {state === 'connected' ? 'Protected' : state === 'connecting' ? 'Connecting...' : 'Not Connected'}
+        {state === 'connected' ? 'Protected' : state === 'connecting' ? 'Connecting...' : 'Tap for Instructions'}
       </Text>
 
       {/* Glow layer */}
