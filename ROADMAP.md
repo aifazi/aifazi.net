@@ -232,9 +232,17 @@ Proposed design (to refine before build):
 - [x] Mobile: pinning lib removed (broke Gradle); VPN config preview
       redacts keys, Share gated behind warning confirm, secrets cleared
       on modal close.
-- [x] CI: mypy + Bandit now blocking (were `continue-on-error`);
-      `Frontend - Build` added as 6th required check; prune keeps 3
-      newest deployments; `create-pull-request` pinned to SHA.
+- [x] CI: `Frontend - Build` added as 6th required check; prune keeps
+      3 newest deployments; `create-pull-request` pinned to SHA.
+- [ ] CI debt (mypy + Bandit still `continue-on-error`): ~40 pre-existing
+      mypy errors (ssrf, jwt_compat, txadmin_service, seo_proxy,
+      file_tools, pdf_editor, store_delivery, backup, audit, newsletter
+      incl. a real un-awaited coroutine at `newsletter.py:66`, monitor,
+      fivem, mail_queue, vpn `_get_user_id`) + unresolved Bandit HIGHs
+      (report only exists as a CI artifact). Fix file-by-file with a
+      local interpreter, then drop the flags. Making them blocking now
+      would freeze `main` on pre-existing debt — verified none of the
+      errors are from this batch's code.
 - [x] Repo: `.gitignore` covers keys/certs/signing artifacts + example
       re-allow ordering fixed; RLS lockdown migration written
       (`20260904000000_lockdown_chat_write_rls.sql`).
