@@ -1,8 +1,8 @@
-name: Prune Old Deployments (keep only current)
+name: Prune Old Deployments (keep newest 3)
 
 # Runs after every push to main (which triggers Vercel + Coolify auto-deploys)
-# and removes all old deployment builds so only the current one remains on
-# Vercel and GitHub. Manual trigger also supported.
+# and removes old deployment builds, keeping the 3 newest READY production
+# deployments as an instant-rollback buffer. Manual trigger also supported.
 
 on:
   push:
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   prune:
-    name: Keep only current deployment
+    name: Keep newest 3 deployments
     runs-on: ubuntu-latest
     permissions:
       deployments: write
@@ -50,22 +50,23 @@ jobs:
 
           while IFS='|' read -r NAME PROJ; do
             [ -z "$NAME" ] && continue
-            NEWEST=$(curl -fsS \
+            KEEP_UIDS=$(curl -fsS \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
               "https://api.vercel.com/v6/deployments?projectId=${PROJ}&target=production&limit=100&teamId=${TEAM_ID}" \
-              | jq -r '[.deployments[]? | select(.target == "production")] | sort_by(.created) | reverse | .[0] | select(.state == "READY") | .uid // empty' 2>/dev/null || true)
-            if [ -z "$NEWEST" ]; then
-              echo "::warning::[$NAME] newest production deployment is not READY yet — skipping prune to protect the live deployment and in-flight build."
+              | jq -r '[.deployments[]? | select(.target == "production" and .state == "READY")] | sort_by(.created) | reverse | .[0:3] | .[].uid' 2>/dev/null || true)
+            if [ -z "$KEEP_UIDS" ]; then
+              echo "::warning::[$NAME] no READY production deployment yet — skipping prune to protect the live deployment and in-flight build."
               continue
             fi
-            echo "[$NAME] current production deployment: $NEWEST"
+            echo "[$NAME] keeping production deployments: $(echo $KEEP_UIDS | tr '\n' ' ')"
+            KEEP_JSON=$(printf '%s\n' $KEEP_UIDS | jq -R . | jq -s .)
             CURSOR=""
             while :; do
               URL="https://api.vercel.com/v6/deployments?projectId=${PROJ}&limit=100&teamId=${TEAM_ID}"
               [ -n "$CURSOR" ] && URL="${URL}&until=${CURSOR}"
               RESP=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "$URL")
               COUNT=$(echo "$RESP" | jq '[.deployments[]?.uid] | length' 2>/dev/null || echo 0)
-              IDS=$(echo "$RESP" | jq -r '[.deployments[]? | select(.target == "production" and .uid != $newest) | .uid] | .[]' --arg newest "$NEWEST" 2>/dev/null || true)
+              IDS=$(echo "$RESP" | jq -r --argjson keep "$KEEP_JSON" '[.deployments[]? | select(.target == "production" and ((.uid as $u | $keep | index($u)) | not)) | .uid] | .[]' 2>/dev/null || true)
               [ "${COUNT:-0}" -eq 0 ] && break
               for ID in $IDS; do
                 curl -fsS -X DELETE \
@@ -102,7 +103,8 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          # Keep only the newest deployment record per environment; delete the rest.
+          # Keep the 3 newest deployment records per environment (rollback
+          # buffer); delete the rest.
           gh api "repos/${GITHUB_REPO}/deployments" --paginate \
             -q '.[] | [.id,.environment,.created_at] | @tsv' > /tmp/deps.tsv
           if [ ! -s /tmp/deps.tsv ]; then
@@ -111,10 +113,17 @@ jobs:
           fi
           awk -F'\t' '{ print $2 "\t" $1 "\t" $3 }' /tmp/deps.tsv | sort -t $'\t' -k1,1 -k3,3r > /tmp/envs.tsv
           CURRENT_ENV=""
+          KEPT=0
           while IFS=$'\t' read -r ENV ID CREATED; do
             if [ "$ENV" != "$CURRENT_ENV" ]; then
               CURRENT_ENV="$ENV"
-              # First row of each env is the newest (sorted by created_at desc).
+              KEPT=1
+              # First rows of each env are the newest (sorted by created_at desc).
+              echo "[$ENV] keeping $ID"
+              continue
+            fi
+            KEPT=$((KEPT + 1))
+            if [ "$KEPT" -le 3 ]; then
               echo "[$ENV] keeping $ID"
               continue
             fi

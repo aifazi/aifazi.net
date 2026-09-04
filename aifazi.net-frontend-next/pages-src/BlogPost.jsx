@@ -700,9 +700,12 @@ export default function BlogPost({ initialPost }) {
     ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'src', 'title'],
   })
   // Only allow youtube/vimeo embeds — strip any other iframe src (e.g. https://evil.com, javascript:).
-  const sanitizedContent = _rawSanitized.replace(/<iframe[^>]*\ssrc=["']([^"']*)["'][^>]*>/gi, (m, src) =>
-    /^(https:\/\/(www\.youtube\.com|www\.youtube-nocookie\.com|player\.vimeo\.com)\/embed\/)/.test(src) ? m : ''
-  )
+  // The src match is quote-tolerant: unquoted and missing src are treated as untrusted (removed).
+  const sanitizedContent = _rawSanitized.replace(/<iframe\b[^>]*>/gi, (m) => {
+    const srcMatch = m.match(/\ssrc\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/i)
+    const src = (srcMatch?.[1] || '').replace(/^["']|["']$/g, '')
+    return /^(https:\/\/(www\.youtube\.com|www\.youtube-nocookie\.com|player\.vimeo\.com)\/embed\/)/.test(src) ? m : ''
+  })
 
   return (
     <div className="page-container" style={{ position: 'relative', zIndex: 1 }}>

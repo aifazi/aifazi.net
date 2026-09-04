@@ -14,7 +14,7 @@ import {
 } from 'react-native'
 import { useTheme } from '@/src/theme'
 import { useOverlay } from '@/src/components/overlay'
-import { getPeer, type CreatePeerResult } from '@/src/lib/vpn'
+import { getPeer } from '@/src/lib/vpn'
 
 interface Props {
   visible: boolean
@@ -68,8 +68,33 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
     }
   }
 
+  // Secrets must never sit readable on screen: the preview redacts key
+  // material (the QR still encodes the full config for scanning).
+  const redactedConfig = config.replace(
+    /^(PrivateKey|PresharedKey)\s*=\s*.+$/gim,
+    '$1 = •••••••• (hidden)',
+  )
+
+  const clearSecrets = () => {
+    setConfig('')
+    setQrUri('')
+  }
+
+  const handleClose = () => {
+    clearSecrets()
+    onClose()
+  }
+
   const handleShareConfig = async () => {
     if (!config) return
+    const ok = await overlay.confirm({
+      title: 'Share VPN config?',
+      message:
+        'This file contains this device\u2019s secret WireGuard keys. ' +
+        'Anyone with it can use your VPN. Send it only to your own device.',
+      confirmText: 'Share',
+    })
+    if (!ok) return
     await Share.share({
       message: config,
       title: `${peerName}.conf`,
@@ -82,7 +107,7 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
       transparent
       animationType="slide"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
         <View
@@ -114,7 +139,7 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
                 {peerIp}
               </Text>
             </View>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
+            <TouchableOpacity onPress={handleClose} hitSlop={12}>
               <Text style={{ color: c.text2, fontSize: 20, fontWeight: '600' }}>×</Text>
             </TouchableOpacity>
           </View>
@@ -182,7 +207,7 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
                       }}
                       numberOfLines={6}
                     >
-                      {config}
+                      {redactedConfig}
                     </Text>
                   </View>
                 ) : null}
@@ -230,7 +255,7 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
                   {onDelete && (
                     <TouchableOpacity
                       onPress={() => {
-                        onClose()
+                        handleClose()
                         onDelete()
                       }}
                       style={{

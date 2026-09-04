@@ -989,12 +989,20 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
 async def logout(request: Request, response: Response):
     auth_header = request.headers.get("authorization", "")
     token_str = auth_header.replace("Bearer ", "", 1) if auth_header.startswith("Bearer ") else ""
+    if not token_str:
+        # Cookie-authenticated sessions (the norm) send no Authorization
+        # header — resolve the user from the HttpOnly auth cookie instead,
+        # so logout actually revokes the server-side session.
+        token_str = request.cookies.get("auth_token") or ""
     try:
         user = _paseto_decode_token(token_str, purpose="auth") if token_str else {}
     except Exception:
         user = {}
     if user.get("id"):
-        supabase.table("users").update({"refresh_token": None}).eq("id", user["id"]).execute()
+        supabase.table("users").update({
+            "refresh_token": None,
+            "previous_refresh_token": None,
+        }).eq("id", user["id"]).execute()
     # M8 — the Set-Cookie used domain=COOKIE_DOMAIN (.aifazi.net); deletion MUST
     # match it, otherwise the browser treats the delete as a host-only cookie and
     # the domain-scoped auth_token/admin_session/refresh_token survive logout.
