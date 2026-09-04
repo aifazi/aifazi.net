@@ -28,13 +28,25 @@ MAIL_WEBHOOK_SECRET = os.getenv("MAIL_WEBHOOK_SECRET", "")
 if not MAIL_WEBHOOK_SECRET:
     logger.warning(
         "MAIL_WEBHOOK_SECRET is not set; /webhook/inbound will reject all delivery events. "
-        "Configure it in Brevo/Resend webhook settings to enable inbound tracking."
+        "Configure it in Brevo webhook settings to enable inbound tracking. "
+        "(Resend uses its own Svix-signed /webhook/resend + RESEND_WEBHOOK_SECRET.)"
     )
 
 # Phase 1 — Vercel cron uses Authorization: Bearer <CRON_SECRET> to poll
 # /process-pending. Reuse the same secret already configured for /api/cron/cleanup
 # so we don't need a new env var.
 CRON_SECRET = os.getenv("CRON_SECRET", "")
+
+# Resend webhook signing secret (`whsec_...`, shown ONCE in the Resend dashboard
+# when the webhook is created). Resend signs with Svix (`svix-id`,
+# `svix-timestamp`, `svix-signature` headers) — NOT with X-Webhook-Key, so the
+# generic /webhook/inbound endpoint cannot serve Resend; use /webhook/resend.
+RESEND_WEBHOOK_SECRET = os.getenv("RESEND_WEBHOOK_SECRET", "")
+if not RESEND_WEBHOOK_SECRET:
+    logger.warning(
+        "RESEND_WEBHOOK_SECRET is not set; /webhook/resend will reject all delivery events. "
+        "Copy it from Resend dashboard → Webhooks → Add webhook (save it, it shows only once)."
+    )
 
 
 def _cron_or_staff_auth(request: Request) -> dict:
@@ -338,6 +350,101 @@ async def delivery_webhook(request: Request):
         updates["sent_at"] = datetime.now(timezone.utc).isoformat()
 
     supabase.table("mail_queue").update(updates).eq("provider_msg_id", body.msg_id).execute()
+    return {"ok": True}
+
+
+# ── POST /webhook/resend — Resend (Svix-signed) delivery events ──────
+
+# Resend event types we track. `email.sent` is intentionally absent: the row
+# is already `pending/sent` from dispatch; `email.delivery_delayed` carries
+# no final state, so both are acknowledged-but-ignored (same as unknown).
+RESEND_EVENT_MAP = {
+    "email.delivered":  "delivered",
+    "email.bounced":    "failed",
+    "email.complained": "failed",
+    "email.opened":     "delivered",
+    "email.clicked":    "delivered",
+}
+
+_SVIX_TOLERANCE_S = 300
+
+
+def _verify_svix(raw: bytes, msg_id: str, timestamp: str, signature_header: str) -> bool:
+    """Verify a Svix signature (`v1,<base64>`, possibly space-separated list).
+
+    Signed content is `{msg_id}.{timestamp}.{raw_body}` HMAC-SHA256'd with the
+    base64-decoded webhook secret (dashboard shows it as `whsec_<base64>`).
+    Returns False on any problem (missing secret, bad timestamp, no match).
+    """
+    if not RESEND_WEBHOOK_SECRET or not msg_id or not timestamp or not signature_header:
+        return False
+    try:
+        ts = int(timestamp)
+    except (TypeError, ValueError):
+        return False
+    import time
+    if abs(time.time() - ts) > _SVIX_TOLERANCE_S:
+        return False
+    secret_b64 = RESEND_WEBHOOK_SECRET.removeprefix("whsec_")
+    try:
+        import base64
+        key = base64.b64decode(secret_b64)
+    except Exception:
+        return False
+    signed = f"{msg_id}.{timestamp}.".encode() + raw
+    expected = base64.b64encode(hmac.new(key, signed, hashlib.sha256).digest()).decode()
+    for entry in signature_header.split():
+        scheme, _, sig = entry.partition(",")
+        if scheme.strip() == "v1" and sig and hmac.compare_digest(sig.strip(), expected):
+            return True
+    return False
+
+
+@router.post("/webhook/resend")
+async def resend_webhook(request: Request):
+    """Receives Resend delivery webhooks (Svix-signed).
+
+    Configure in Resend dashboard → Webhooks → Add webhook:
+      Endpoint URL: https://api.aifazi.net/api/admin/mail/queue/webhook/resend
+      Events: email.delivered, email.bounced, email.complained,
+              email.opened, email.clicked
+    Save the shown `whsec_...` secret as backend env `RESEND_WEBHOOK_SECRET`.
+    """
+    if not RESEND_WEBHOOK_SECRET:
+        raise HTTPException(403, "Resend delivery webhook is not configured.")
+
+    raw = await request.body()
+    if not _verify_svix(
+        raw,
+        request.headers.get("svix-id", ""),
+        request.headers.get("svix-timestamp", ""),
+        request.headers.get("svix-signature", ""),
+    ):
+        raise HTTPException(403, "Invalid or missing webhook signature.")
+
+    try:
+        import json
+        payload = json.loads(raw.decode("utf-8"))
+    except Exception as exc:
+        raise HTTPException(400, f"Invalid webhook body: {exc}")
+
+    event_type = payload.get("type", "")
+    mapped = RESEND_EVENT_MAP.get(event_type)
+    if not mapped:
+        return {"ok": False, "reason": "unknown_event"}
+
+    data = payload.get("data") or {}
+    msg_id = data.get("email_id", "")
+    to = data.get("to", "")
+    recipient = to[0] if isinstance(to, list) and to else (to if isinstance(to, str) else "")
+    if not msg_id:
+        raise HTTPException(400, "Invalid webhook body: missing data.email_id")
+
+    updates = {"status": mapped}
+    ts = data.get("created_at") or payload.get("created_at")
+    updates["sent_at"] = ts if ts else datetime.now(timezone.utc).isoformat()
+    updates["tracking_data"] = {"recipient": recipient, "resend_type": event_type}
+    supabase.table("mail_queue").update(updates).eq("provider_msg_id", msg_id).execute()
     return {"ok": True}
 
 
