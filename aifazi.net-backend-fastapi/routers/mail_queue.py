@@ -385,7 +385,7 @@ def _verify_svix(raw: bytes, msg_id: str, timestamp: str, signature_header: str)
     import time
     if abs(time.time() - ts) > _SVIX_TOLERANCE_S:
         return False
-    secret_b64 = RESEND_WEBHOOK_SECRET[6:] if RESEND_WEBHOOK_SECRET.startswith("whsec_") else RESEND_WEBHOOK_SECRET
+    secret_b64 = RESEND_WEBHOOK_SECRET.removeprefix("whsec_")
     try:
         import base64
         key = base64.b64decode(secret_b64)
