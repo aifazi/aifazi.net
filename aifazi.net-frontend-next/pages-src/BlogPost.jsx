@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from '@/lib/router-compat'
 import NextImage from 'next/image'
 import api, { mediaUrl } from '@/lib/api'
-import DOMPurify from 'isomorphic-dompurify'
+import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import PageMeta from '../components/PageMeta'
 import { Slider } from '../core/ui.jsx'
 import { getSupabase } from '@/lib/supabase'
@@ -695,7 +695,7 @@ export default function BlogPost({ initialPost }) {
   )
 
   const tags = typeof post.tags === 'string' ? JSON.parse(post.tags) : (post.tags || [])
-  const _rawSanitized = DOMPurify.sanitize(post.content || '<p style="color:var(--muted)">No content yet.</p>', {
+  const _rawSanitized = sanitizeHtml(post.content || '<p style="color:var(--muted)">No content yet.</p>', {
     ADD_TAGS: ['iframe'],
     ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'src', 'title'],
   })

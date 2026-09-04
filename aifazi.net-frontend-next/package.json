@@ -2,7 +2,9 @@
   "name": "aifazi-net-frontend-next",
   "version": "2.0.0",
   "private": true,
-  "engines": { "node": "22.x" },
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
@@ -18,9 +20,9 @@
     "@sentry/nextjs": "^10.71.0",
     "@supabase/supabase-js": "^2.43.4",
     "axios": "^1.20.0",
+    "dompurify": "^3.4.13",
     "gsap": "^3.15.0",
     "html5-qrcode": "^2.3.8",
-    "isomorphic-dompurify": "3.23.0",
     "livekit-client": "^2.5.10",
     "next": "^16.3.3",
     "postcss": "^8.5.10",

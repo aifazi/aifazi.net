@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import api, { canEdit as checkCanEdit, getRole, hasPermission } from '@/lib/api'
 import { IconPickerModal, IconDisplay } from '../components/IconPicker'
 import AnimationPicker from '../components/AnimationPicker'
-import DOMPurify from 'isomorphic-dompurify'
+import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import { isGsapAnimationValue, useGsapAnimation } from '@/lib/animate'
 
 const SANITIZE_CONFIG = {
@@ -349,7 +349,7 @@ export function EditableText({ contentKey, defaultValue, as: Tag = 'span', style
       ? JSON.stringify(value)
       : value
     const hasHtml = /<[a-z][\s\S]*>/i.test(safeValue)
-    if (hasHtml) return <Tag style={style} className={className} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(safeValue, {
+    if (hasHtml) return <Tag style={style} className={className} dangerouslySetInnerHTML={{ __html: sanitizeHtml(safeValue, {
       ALLOWED_TAGS: ['b','i','u','em','strong','a','p','br','ul','ol','li','h1','h2','h3','h4','h5','h6','span','div','img','blockquote','code','pre','sup','sub','table','tr','td','th','hr'],
       ALLOWED_ATTR: ['href','src','alt','title','target','rel','class','style','colspan','rowspan'],
       FORBID_TAGS: ['script','iframe','object','embed','form','input','textarea','select','button','style','link','meta','base'],
@@ -391,7 +391,7 @@ export function EditableText({ contentKey, defaultValue, as: Tag = 'span', style
           : typeof value !== 'string'
           ? JSON.stringify(value)
           : value
-        editRef.current.innerHTML = DOMPurify.sanitize(safeValue, SANITIZE_CONFIG)
+        editRef.current.innerHTML = sanitizeHtml(safeValue, SANITIZE_CONFIG)
         editRef.current.focus()
       }
     }, 0)
@@ -424,7 +424,7 @@ export function EditableText({ contentKey, defaultValue, as: Tag = 'span', style
         onMouseLeave={e => e.currentTarget.style.outlineColor = 'transparent'}
       >
         {hasHtml
-          ? <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(value, SANITIZE_CONFIG) }} />
+          ? <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(value, SANITIZE_CONFIG) }} />
           : value
         }
         <span style={{

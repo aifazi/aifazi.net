@@ -96,9 +96,16 @@
       production → Runtime + Function logs for `GET /`.
 - [ ] Verify post-deploy: `curl https://aifazi.net/` → 200 (anonymous),
       Playwright smoke green, backend monitor flips Website to up.
-- [ ] Correction: `isomorphic-dompurify` is NOT unused — imported by
-      `pages-src/BlogPost.jsx:6` and `pages-src/admin/MailQueue.jsx:3`.
-      Do not remove without replacing sanitization in those two files.
+- [x] **Root-caused for real (2026-09-04)**: `context/EditContext.jsx`
+      (a provider wrapping every page) imported `isomorphic-dompurify`,
+      whose server path loads `jsdom → whatwg-url@17 → @exodus/bytes`
+      (ESM-only) → `ERR_REQUIRE_ESM` on Vercel's function runtime, even on
+      Node 22.x. Fix (#159): new `lib/sanitizeHtml.ts` (real DOMPurify on
+      client, no-op regex fallback on server) in the 4 call sites
+      (`EditContext`, `BlockRenderer`, `BlogPost`, `MailQueue`);
+      `isomorphic-dompurify` uninstalled (`npm ls jsdom` empty,
+      `whatwg-url@17` gone). Verified: local standalone SSR serves `/`,
+      `/blog`, `/login` → 200 with zero `__next_error__`.
 
 ## 2. VPN — remaining work
 
