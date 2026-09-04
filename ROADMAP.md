@@ -39,12 +39,16 @@
 
 ## 0b. Security & infra hardening (2026-09-04 audit — all applied)
 
-- [x] **Close public `:8000`/`:8080`**: `DOCKER-USER` DROP rules persisted
-      via `iptables-persistent`. Direct `http://75.119.131.157:8000` now
-      times out; dashboard still served via `https://vps.aifazi.net:443`
-      (Traefik path untouched); SSH-tunnel access unaffected (localhost
-      never traverses `FORWARD`). `6001/6002` (coolify-realtime) left open
-      — close later only after confirming live-logs/terminal still work.
+- [x] **Close public `:8000`/`:8080`**: direct `http://75.119.131.157:8000`
+      times out; dashboard still served via `https://vps.aifazi.net:443`;
+      SSH-tunnel access unaffected. Lesson learned 2026-09-04: a plain
+      `DOCKER-USER --dport 8080 DROP` also matches DNAT-rewritten traffic
+      (host `:8000` → coolify `:8080`) and broke coolify-sentinel pushes
+      ("out of sync"). Correct form (persisted via `iptables-persistent`,
+      v4+v6): `DOCKER-USER -i eth0 --dports 8000,8080 DROP` — matches only
+      externally-arriving packets (post-DNAT ports), never bridge/localhost
+      traffic. `6001/6002` (coolify-realtime) left open — close later only
+      after confirming live-logs/terminal still work.
 - [x] **fail2ban** installed + enabled with `sshd` jail.
 - [x] **Docs corrected**: root `README.md` + `SECURITY.md` said Railway →
       now Coolify; backend README Vercel section marked retired.
