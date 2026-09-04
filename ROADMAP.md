@@ -177,6 +177,20 @@ Proposed design (to refine before build):
       to the registry as proof, no visual change.
 - [ ] Document `docs/widgets.md` with a minimal example widget.
 
+## 6b. PDF suite — BentoPDF declined (2026-09-04, licensing)
+
+- [x] Evaluated `ghcr.io/alam00000/bentopdf` for `/tools/files`: client-side
+      only (no API), own UI, **AGPL-3.0**. Decision: no copyleft surface —
+      embed PR #168 closed unmerged, Coolify `bento-pdf-*` service record
+      + container removed. Our File Tools stay 100% clean-room
+      (pdf-lib/pdf.js client-side + PyMuPDF backend).
+- [ ] Legal-safe paths forward (pick one): (a) buy the $79 lifetime
+      Commercial License, then embed/self-host freely incl. rebranding;
+      (b) build native tools incrementally (merge/split/compress first)
+      with pdf-lib + existing backend — full design match, zero license
+      surface. Do NOT re-introduce AGPL PDF code (jsdom-adjacent WASM,
+      cpdf, Ghostscript bundles) without the commercial license.
+
 ## 6. Small items
 
 - [ ] #14 leftover: RoamingRobot animation speed tied to live visitor
