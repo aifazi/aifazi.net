@@ -34,21 +34,24 @@ jobs:
       - name: Enable auto-merge on green owner PRs
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
+          # NOTE: no checkout step here — every gh call pins -R so it works
+          # without a git repo (workflow_run jobs have no workspace).
           set -euo pipefail
           SHA="${{ github.event.workflow_run.head_sha }}"
-          OWNER="$(gh repo view "${{ github.repository }}" --json owner --jq .owner.login)"
+          OWNER="$(gh repo view "$REPO" --json owner --jq .owner.login)"
           echo "CI green for $SHA (owner: $OWNER)"
-          PRS="$(gh pr list --search "$SHA" --state open --json number --jq '.[].number')"
+          PRS="$(gh pr list -R "$REPO" --search "$SHA" --state open --json number --jq '.[].number')"
           if [ -z "$PRS" ]; then
             echo "No open PRs for this commit — nothing to do."
             exit 0
           fi
           for PR in $PRS; do
-            AUTHOR="$(gh pr view "$PR" --json author --jq .author.login)"
+            AUTHOR="$(gh pr view "$PR" -R "$REPO" --json author --jq .author.login)"
             if [ "$AUTHOR" = "$OWNER" ]; then
               echo "Enabling auto-merge on #$PR (author is owner)."
-              gh pr merge "$PR" --auto --merge || echo "Auto-merge not available for #$PR (is it enabled in repo settings?)"
+              gh pr merge "$PR" -R "$REPO" --auto --merge || echo "Auto-merge not available for #$PR (is it enabled in repo settings?)"
             else
               echo "Skipping #$PR (author '$AUTHOR' is not the owner)."
             fi
