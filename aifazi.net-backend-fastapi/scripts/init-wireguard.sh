@@ -11,8 +11,12 @@ WG_PORT="${WG_PORT:-51820}"
 
 echo "[wireguard] Probing host WireGuard API at ${WG_API_URL}..."
 
-# Try the host management API
-if API_RESPONSE=$(curl -sf --connect-timeout 3 "${WG_API_URL}/status" 2>/dev/null); then
+# Try the host management API (token required since the 2026-09-04 lockdown)
+AUTH_ARGS=()
+if [ -n "${WG_API_TOKEN:-}" ]; then
+    AUTH_ARGS=(-H "X-WG-Token: ${WG_API_TOKEN}")
+fi
+if API_RESPONSE=$(curl -sf --connect-timeout 3 "${AUTH_ARGS[@]}" "${WG_API_URL}/status" 2>/dev/null); then
     echo "[wireguard] Host WireGuard API is reachable."
     echo "$API_RESPONSE" | python3 -c "
 import sys, json
