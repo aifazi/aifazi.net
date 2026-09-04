@@ -196,6 +196,8 @@ _OPEN_EXACT: set[str] = {
     # C6: mail delivery webhook (Brevo/Resend) — self-auth via MAIL_WEBHOOK_SECRET HMAC.
     # Without this entry, providers can't reach the endpoint past the X-Internal-Token gate.
     "/api/admin/mail/queue/webhook/inbound",
+    # Resend Svix webhook — self-auth via RESEND_WEBHOOK_SECRET (svix-signature).
+    "/api/admin/mail/queue/webhook/resend",
     # Phase 2: mail queue drain — the Hobby-tier daily /api/cron/cleanup tick
     # now calls dispatch_pending() itself (see cron.py). This endpoint remains
     # available for manual admin drains. Auth is dual (CRON_SECRET bearer OR
