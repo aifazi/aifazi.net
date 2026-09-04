@@ -4,7 +4,7 @@
 // images via EditableImage, lists via EditableList — so a builder-made page is
 // fully editable from the public site too (Ctrl/Cmd+E when signed in as admin).
 import { EditableText, EditableImage, EditableList, EditableLink } from '@/context/EditContext'
-import DOMPurify from 'isomorphic-dompurify'
+import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import { BLOCKS } from '@/pages-src/admin/builder/blockLibrary'
 import { normalizeRow } from '@/pages-src/admin/builder/layoutUtils'
 
@@ -181,7 +181,7 @@ function BlockItem({ slug, item }) {
     case 'html': {
       const cfg = { FORBID_TAGS: ['style','script','iframe','form'], FORBID_ATTR: ['style','onerror','onload','onclick','onmouseover'] }
       return (
-        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.html ?? '', cfg) }} style={{ margin: '1rem 0' }} />
+        <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.html ?? '', cfg) }} style={{ margin: '1rem 0' }} />
       )
     }
     case 'row': {

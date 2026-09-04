@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import DOMPurify from 'isomorphic-dompurify'
+import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import api from '@/lib/api'
 import { Checkbox } from '../../core/ui.jsx'
 import { useDialog } from '../../components/Dialog'
@@ -14,7 +14,7 @@ import { Btn as KitBtn, Badge as KitBadge } from './ui'
 // own data — when the admin Mail Queue renders entry.html, that script executes
 // in the admin context and can exfiltrate tokens / cookies via fetch('/admin/...').
 const SAFE_HTML = { ALLOWED_TAGS: ['a','b','i','em','strong','p','br','div','span','h1','h2','h3','h4','h5','h6','ul','ol','li','table','tr','td','th','thead','tbody','img','hr','blockquote'], ALLOWED_ATTR: ['href','src','alt','title','target','rel','colspan','rowspan','color'], ALLOW_DATA_ATTR: false, FORBID_TAGS: ['style','script'], FORBID_ATTR: ['style','onerror','onload'] }
-const _sanitize = (html) => html ? DOMPurify.sanitize(html, SAFE_HTML) : html
+const _sanitize = (html) => html ? sanitizeHtml(html, SAFE_HTML) : html
 
 const C = {
   bg:'var(--bg)', bg2:'var(--bg2)', bg3:'var(--bg3)',

@@ -47,7 +47,7 @@ This repository is the **entire frontend** of aifazi.net. Key features:
 | [Sentry](https://sentry.io) | Error monitoring |
 | [Cloudinary](https://cloudinary.com) | Media storage, proxied through `cdn.aifazi.net` |
 | [Vercel](https://vercel.com) | Hosting & deployment |
-| [isomorphic-dompurify](https://github.com/kkomelin/isomorphic-dompurify) | HTML sanitisation for user-generated content |
+| [dompurify](https://github.com/cure53/DOMPurify) | HTML sanitisation for user-generated content (via `lib/sanitizeHtml.ts`; `isomorphic-dompurify` removed 2026-09-04 — its `jsdom` server path caused `ERR_REQUIRE_ESM` 500s) |
 
 ---
 
