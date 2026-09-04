@@ -94,8 +94,15 @@
       persists), (2) production deployment stale/pinned (auto-deploy not
       picking up `main`). Check in dashboard: Deployments → latest
       production → Runtime + Function logs for `GET /`.
-- [ ] Verify post-deploy: `curl https://aifazi.net/` → 200 (anonymous),
-      Playwright smoke green, backend monitor flips Website to up.
+- [x] Verify post-deploy: `curl https://aifazi.net/` → 200 (anonymous),
+      `/blog` `/login` `/status` 200, Vercel function logs error-free —
+      outage closed 2026-09-04 ~13:00 UTC. (Correction to the local-repro
+      note above: the bug WAS in the code — `EditContext`'s
+      `isomorphic-dompurify` import — it just doesn't throw on Node 24
+      local, only on Vercel's function runtime. The Node dashboard setting
+      was already `22.x`; the runtime wasn't the cause.)
+- [ ] Playwright smoke green + backend monitor flips Website to up
+      (confirm on next monitor cycle).
 - [x] **Root-caused for real (2026-09-04)**: `context/EditContext.jsx`
       (a provider wrapping every page) imported `isomorphic-dompurify`,
       whose server path loads `jsdom → whatwg-url@17 → @exodus/bytes`
