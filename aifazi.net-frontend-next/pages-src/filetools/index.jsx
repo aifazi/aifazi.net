@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { S } from './shared.jsx'
 import PDFEditor from './PDFEditor.jsx'
+import BentoSuiteB from './BentoSuite.jsx'
 import {
   MergePDFB, SplitPDFB, CompressPDFB, RotatePDFB, RemovePagesPDFB,
   WatermarkPDFB, PageNumbersPDFB, ImagesToPDFB, PDFToImagesB,
@@ -17,6 +18,7 @@ import {
 const TOOLS = [
   // ── PDF Editor ──
   { id:'pdf-editor',     cat:'pdf',     icon:'✏️', name:'PDF Editor',         desc:'Full Foxit-like editor: draw, annotate, add text, export',  color:'#ff6b35', component: PDFEditor,      badge:'NEW', fullBleed: true },
+  { id:'pdf-suite',      cat:'pdf',     icon:'🧰', name:'PDF Suite',          desc:'100+ pro tools: merge, split, compress, convert, secure — in-browser', color:'#00d4ff', component: BentoSuiteB, badge:'SUITE', fullBleed: true },
   // ── PDF ──
   { id:'merge-pdf',      cat:'pdf',     icon:'🔗', name:'Merge PDF',          desc:'Combine multiple PDFs into one',                            color:'#ff6b35', component: MergePDFB },
   { id:'split-pdf',      cat:'pdf',     icon:'✂️', name:'Split PDF',          desc:'Extract specific pages from PDF',                           color:'#ff6b35', component: SplitPDFB },

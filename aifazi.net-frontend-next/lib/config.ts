@@ -23,6 +23,10 @@ export const API_URL = clean(process.env.NEXT_PUBLIC_API_URL) || 'https://api.ai
 /** CDN origin served by the built-in /cdn proxy (no trailing slash). */
 export const CDN_URL = clean(process.env.NEXT_PUBLIC_CDN_URL) || 'https://cdn.aifazi.net'
 
+/** Self-hosted BentoPDF suite origin (no trailing slash). Embedded in
+ *  File Tools via iframe; allow-listed in CSP frame-src (see proxy.ts). */
+export const PDF_URL = clean(process.env.NEXT_PUBLIC_PDF_URL) || 'https://pdf.aifazi.net'
+
 /** Subdomain origins — default to the production subdomains; on a single-domain
  *  deploy set each one to your own site root (e.g. SITE_URL) and the middleware
  *  subdomain routing simply disables itself. */
