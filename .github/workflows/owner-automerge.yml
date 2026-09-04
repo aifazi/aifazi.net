@@ -1,0 +1,55 @@
+name: Owner automerge
+
+# Automatically merges pull requests authored by the repository owner once
+# every required check is green.
+#
+# How it works:
+# - Runs when the CI workflow finishes with success.
+# - Finds open PRs pointing at the built commit SHA.
+# - If (and only if) the PR author is the repository owner, it enables
+#   GitHub auto-merge (`--auto --merge`). GitHub itself then waits for ALL
+#   branch-protection checks before merging — nothing is force-merged.
+# - PRs from anyone else (contributors, dependabot) are left alone.
+#
+# One-time repo setup required (owner):
+#   Settings → General → Pull Requests → tick "Allow auto-merge".
+# Without that checkbox, `gh pr merge --auto` fails and this workflow
+# becomes a no-op (it will log the failure, nothing merges).
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  automerge:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Enable auto-merge on green owner PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          OWNER="$(gh repo view "${{ github.repository }}" --json owner --jq .owner.login)"
+          echo "CI green for $SHA (owner: $OWNER)"
+          PRS="$(gh pr list --search "$SHA" --state open --json number --jq '.[].number')"
+          if [ -z "$PRS" ]; then
+            echo "No open PRs for this commit — nothing to do."
+            exit 0
+          fi
+          for PR in $PRS; do
+            AUTHOR="$(gh pr view "$PR" --json author --jq .author.login)"
+            if [ "$AUTHOR" = "$OWNER" ]; then
+              echo "Enabling auto-merge on #$PR (author is owner)."
+              gh pr merge "$PR" --auto --merge || echo "Auto-merge not available for #$PR (is it enabled in repo settings?)"
+            else
+              echo "Skipping #$PR (author '$AUTHOR' is not the owner)."
+            fi
+          done
