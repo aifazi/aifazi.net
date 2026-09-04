@@ -280,3 +280,10 @@ Proposed design (to refine before build):
   Security Scan, Secret Scan, Frontend - Build); always ship via PR.
   Owner PRs auto-merge on green CI (`owner-automerge.yml`; needs the
   "Allow auto-merge" repo setting ticked).
+- **Automerge cascade gap (found 2026-09-04)**: merges performed by
+  `owner-automerge` run as `GITHUB_TOKEN`, whose pushes do NOT fire
+  push-triggered workflows — mobile auto-release and prune-deployments
+  silently skip those merges (caught when v1.0.57 had to be dispatched
+  by hand). Fix options: manual `gh workflow run mobile-auto-release`
+  after such merges (works), or give automerge a PAT so downstream
+  workflows fire, or add a scheduled sweep.
