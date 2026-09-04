@@ -592,13 +592,13 @@ Audit tables are also auto-migrated on every application startup.
 
 **Prefix:** `/api/cron` (also mounted at `/`)
 
-These endpoints are called by the Vercel cron scheduler or an external cron job. They require a `Authorization: Bearer <CRON_SECRET>` header.
+These endpoints are called by an external cron job (Coolify runs them in-process
+via APScheduler; the old Vercel cron schedule was daily at 03:00 UTC). They
+require a `Authorization: Bearer <CRON_SECRET>` header.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | `POST` | `/api/cron/cleanup` | Cron secret | Clean up expired sessions, old notifications, etc. |
-
-Vercel schedule: daily at 03:00 UTC (`0 3 * * *`).
 
 ---
 
@@ -635,20 +635,12 @@ Security headers (`X-Content-Type-Options`, `X-Frame-Options`,
 `X-Robots-Tag: noindex, nofollow` for the API host are emitted by the FastAPI
 middleware in `main.py`, so they apply on Coolify too.
 
-### Vercel (serverless)
+### Vercel (retired)
 
-A `vercel.json` is included. The entry point is `api/index.py`.
-
-```bash
-vercel --prod
-```
-
-Set all environment variables in the Vercel dashboard or via `vercel env add`. The scheduler is automatically disabled in serverless mode (`VERCEL` env var is set by the platform).
-
-**Limitations on Vercel:**
-- Max Lambda size: 50 MB (set in `vercel.json`)
-- No persistent background scheduler; use the built-in Vercel Cron instead
-- Cold starts may add latency
+The Vercel serverless deployment (`vercel.json` + `api/index.py`) was removed
+on 2026-09-04 — the backend runs on Coolify (persistent process) only. If a
+stale Vercel backend project still exists in the dashboard, delete it so its
+daily cron (`/api/cron/cleanup`) stops firing against production.
 
 ---
 
