@@ -1,8 +1,10 @@
 # aifazi.net — Roadmap & TODO
 
-> Living plan. Status as of 2026-09-04 (infra audit). Checked items ship via
-> PR to `main` (CI required) → Vercel (frontend, auto) + Coolify (backend,
-> manual deploy) + EAS auto-release (mobile, on `apps/mobile/**` changes).
+> Living plan. Status as of 2026-09-04 (infra audit + outage closed).
+> Checked items ship via PR to `main` (CI required, owner PRs auto-merge
+> on green via `owner-automerge.yml`) → Vercel (frontend, auto) + Coolify
+> (backend, manual deploy) + EAS auto-release (mobile, on
+> `apps/mobile/**` changes).
 
 ## 0. Operations backlog (dashboard/SSH — no code deploy needed)
 
@@ -18,20 +20,22 @@
       `https://api.aifazi.net/api/admin/mail/queue/webhook/inbound`
       with `X-Webhook-Key: <secret>`. Until set, `/webhook/inbound`
       rejects all delivery events (backend logs a warning at startup).
-- [ ] **Vercel: confirm Node 22 runtime** — project Settings → General →
-      Node.js Version → `22.x` (belt-and-suspenders next to the
-      `engines` pin shipped in `aifazi-net-frontend-next/package.json`).
+- [x] **Vercel: confirm Node 22 runtime** — confirmed 2026-09-04 via
+      dashboard screenshot (`22.x`). (Did not fix the 500 by itself —
+      the cause was the `isomorphic-dompurify` import, §1.)
 - [ ] **Vercel: delete the stale backend project** (if it still exists).
       `aifazi.net-backend-fastapi/vercel.json` + `api/index.py` were removed
       from the repo 2026-09-04; the backend runs on Coolify only. Deleting
       the dashboard project stops its daily `/api/cron/cleanup` from firing
       against production a second time.
-- [ ] **Vercel: pull Function logs for `GET /`** from the latest production
-      deployment — needed to root-cause §1 (actual exception + stack).
-- [ ] **Coolify: deploy managed Redis** (+ New → Database → Redis → Deploy),
-      then update backend `REDIS_URL` to the Coolify hostname, redeploy,
-      and remove the manual `redis-aifazi` container. Backend already
-      speaks standard `redis-py` (`REDIS_URL`) with Upstash fallback.
+- [x] **Vercel: pull Function logs for `GET /`** — pulled 2026-09-04 via
+      `vercel logs`: exact `ERR_REQUIRE_ESM` stack (`whatwg-url` ←
+      `@exodus/bytes`), same digest `3292404401` on every SSR route.
+- [x] **Coolify: deploy managed Redis** — deployed 2026-09-04 (plain Redis
+      card, container `i89plmiumzdljg0artlvabos`, healthy, `coolify`
+      network). Backend `REDIS_URL` repointed (env ID 319), redeployed,
+      `is_redis_available() == True`, manual `redis-aifazi` + volume
+      removed.
 
 ## 0b. Security & infra hardening (2026-09-04 audit — all applied)
 
@@ -77,23 +81,15 @@
       requires ESM `@exodus/bytes`; Vercel fleet mixes Node 20.x minors,
       some without `require(esm)` support → same page randomly 200/500.
 - [x] Fix shipped: `"engines": { "node": "22.x" }` (frontend `package.json`).
-- [ ] **STILL OPEN (2026-09-04 audit): `GET /`, `/blog`, `/login`,
-      `/status` all return 500 deterministically (3/3), serving the
-      `__next_error__` global-error page; only the 404 route works. So this
-      is a layout-level render throw, NOT the old flaky fleet issue.
-      Ruled out: `siteSettingsServer`/`contentServer` (fail-safe `{}`),
-      `SITE_URL` (has fallback), providers (window-guarded), middleware
-      (heavily try/caught; `/api/health` → 200 through it). Shipped
-      hardening: layout theme-CSS blocks wrapped in try/catch (#157) so
-      theme builders can never 500 the page.
-      Decisive local repro (2026-09-04): `npm run build` clean +
-      `node .next/standalone/server.js` serves `/`, `/blog`, `/login` →
-      all 200, zero `__next_error__`, on the exact production commit.
-      The code is innocent — the 500 is Vercel-environmental. Prime
-      suspects: (1) project still on Node 20 runtime (original ESM bug
-      persists), (2) production deployment stale/pinned (auto-deploy not
-      picking up `main`). Check in dashboard: Deployments → latest
-      production → Runtime + Function logs for `GET /`.
+- [x] **500 root-cause chain (2026-09-04 audit, now closed)**:
+      `GET /`, `/blog`, `/login`, `/status` 500'd deterministically with
+      the `__next_error__` page (layout-level throw, not the old flaky
+      fleet issue). Ruled out: failsafe server fetches, `SITE_URL`,
+      providers, middleware. Local standalone SSR rendered 200 (Node 24
+      masks the bug via `require(esm)`). Vercel function logs gave the
+      exact stack → `EditContext`'s `isomorphic-dompurify` import (see
+      root-cause item below). Shipped hardening along the way: layout
+      theme-CSS try/catch (#157).
 - [x] Verify post-deploy: `curl https://aifazi.net/` → 200 (anonymous),
       `/blog` `/login` `/status` 200, Vercel function logs error-free —
       outage closed 2026-09-04 ~13:00 UTC. (Correction to the local-repro
@@ -101,8 +97,9 @@
       `isomorphic-dompurify` import — it just doesn't throw on Node 24
       local, only on Vercel's function runtime. The Node dashboard setting
       was already `22.x`; the runtime wasn't the cause.)
-- [ ] Playwright smoke green + backend monitor flips Website to up
-      (confirm on next monitor cycle).
+- [ ] Playwright smoke green + backend monitor flips Website to up.
+      Homepage hand-verified 200 on 2026-09-04; run `npm run test:e2e`
+      and confirm the monitor cycle.
 - [x] **Root-caused for real (2026-09-04)**: `context/EditContext.jsx`
       (a provider wrapping every page) imported `isomorphic-dompurify`,
       whose server path loads `jsdom → whatwg-url@17 → @exodus/bytes`
@@ -126,8 +123,9 @@
 - [x] Traffic counters, age-based presence, auto session tracking,
       staff delete endpoint, IP-race retry, config whitespace strip +
       `system.vpn` module + staff rule.
-- [ ] Deploy the whitespace-strip fix (in tree, ships with next backend
-      deploy) so Windows imports work without hand-editing the `.conf`.
+- [x] Deploy the whitespace-strip fix — verified live 2026-09-04
+      (deployed `wireguard.py` contains the strip logic; ships since the
+      post-#157 backend deploys).
 - [ ] Users: one peer per device (never reuse a peer on two devices);
       log in as `admin@aifazi.net` to manage the existing peers.
 - [ ] **Native in-app tunnel** (mobile): needs `npx expo prebuild` +
@@ -198,3 +196,5 @@ Proposed design (to refine before build):
   `mobile-auto-release.yml` bumps tag + GitHub release →
   `mobile-release-build.yml` EAS APK+AAB → in-app updater offers it.
 - Branch protection: 5 required checks on `main`; always ship via PR.
+  Owner PRs auto-merge on green CI (`owner-automerge.yml`; needs the
+  "Allow auto-merge" repo setting ticked).
