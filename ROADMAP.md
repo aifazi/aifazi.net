@@ -1,18 +1,17 @@
 # aifazi.net — Roadmap & TODO
 
-> Living plan. Status as of 2026-09-03. Checked items ship via PR to `main`
-> (CI required) → Vercel (frontend, auto) + Coolify (backend, manual deploy)
-> + EAS auto-release (mobile, on `apps/mobile/**` changes).
+> Living plan. Status as of 2026-09-04 (infra audit). Checked items ship via
+> PR to `main` (CI required) → Vercel (frontend, auto) + Coolify (backend,
+> manual deploy) + EAS auto-release (mobile, on `apps/mobile/**` changes).
 
 ## 0. Operations backlog (dashboard/SSH — no code deploy needed)
 
-- [ ] **Coolify: enable backend health check** — project → production →
-      application `aifazi.net:main-*` → Configuration → enable (already
-      configured: `GET /api/health:8000`, interval 5s). Gives auto-restart
-      on failed health.
-- [ ] **Coolify: delete dead `wireguard-easy` service** (`exited`, no
-      container on host). Live VPN runs natively on the host
-      (`wg-api.service`, `wg0`) — deleting the record is zero-risk.
+- [x] **Coolify: enable backend health check** — enabled 2026-09-04
+      (`GET localhost:8000/api/health`, 5s/5s/10 retries). Gives
+      auto-restart on failed health.
+- [x] **Coolify: delete dead `wireguard-easy` service** — soft-deleted
+      2026-09-04 (row + env vars removed, only `supabase-*` remains).
+      Live VPN runs natively on the host (`wg-api.service`, `wg0`).
 - [ ] **Coolify: set `MAIL_WEBHOOK_SECRET`** (runtime env, then redeploy).
       Value generated 2026-09-03 (kept out of git — ask Tanvir):
       64-hex string. Then configure Brevo/Resend inbound webhook:
@@ -22,23 +21,94 @@
 - [ ] **Vercel: confirm Node 22 runtime** — project Settings → General →
       Node.js Version → `22.x` (belt-and-suspenders next to the
       `engines` pin shipped in `aifazi-net-frontend-next/package.json`).
+- [ ] **Vercel: delete the stale backend project** (if it still exists).
+      `aifazi.net-backend-fastapi/vercel.json` + `api/index.py` were removed
+      from the repo 2026-09-04; the backend runs on Coolify only. Deleting
+      the dashboard project stops its daily `/api/cron/cleanup` from firing
+      against production a second time.
+- [ ] **Vercel: pull Function logs for `GET /`** from the latest production
+      deployment — needed to root-cause §1 (actual exception + stack).
+- [ ] **Coolify: deploy managed Redis** (+ New → Database → Redis → Deploy),
+      then update backend `REDIS_URL` to the Coolify hostname, redeploy,
+      and remove the manual `redis-aifazi` container. Backend already
+      speaks standard `redis-py` (`REDIS_URL`) with Upstash fallback.
+
+## 0b. Security & infra hardening (2026-09-04 audit — all applied)
+
+- [x] **Close public `:8000`/`:8080`**: `DOCKER-USER` DROP rules persisted
+      via `iptables-persistent`. Direct `http://75.119.131.157:8000` now
+      times out; dashboard still served via `https://vps.aifazi.net:443`
+      (Traefik path untouched); SSH-tunnel access unaffected (localhost
+      never traverses `FORWARD`). `6001/6002` (coolify-realtime) left open
+      — close later only after confirming live-logs/terminal still work.
+- [x] **fail2ban** installed + enabled with `sshd` jail.
+- [x] **Docs corrected**: root `README.md` + `SECURITY.md` said Railway →
+      now Coolify; backend README Vercel section marked retired.
+- [ ] Later: UFW allow-list the dashboard/SSH to your static IP if you
+      have one; rotate the Coolify `APP_KEY`-adjacent secrets yearly;
+      re-check `iptables -L DOCKER-USER` after any Docker/Coolify upgrade
+      (rules persist via `iptables-persistent`, but verify).
+- [ ] **Firewall follow-up (2026-09-04 incident)**: installing
+      `iptables-persistent` auto-REMOVED the `ufw` package; the old UFW
+      user rules vanished leaving `INPUT ACCEPT`. Mitigated with raw
+      iptables (`:51821` scoped to loopback + Docker subnets, rest DROPPED
+      for that port; `:8000`/`:8080` DROPPED in `DOCKER-USER`) + saved via
+      `netfilter-persistent`. Remaining gap: no default-deny baseline for
+      other ports — consider a full `iptables` default-deny policy
+      (22/80/443/51820-udp ALLOW) or reinstall `ufw` (note: it conflicts
+      with `iptables-persistent`; pick one manager, not both).
+- [ ] **Build-stall watch**: two Coolify deploys wedged at `0/0` build steps
+      with an idle buildx client (jobs showed `in_progress` for 30+ min;
+      one build client vanished entirely). Resolved by cancelling the stuck
+      queue entries; the retry then built + deployed cleanly (image
+      `624c64e`, container healthy). If it recurs: restart the
+      `buildx_buildkit_coolify-railpack0` builder before retrying.
+- [ ] **Secret hygiene**: Coolify passes all env vars as `docker build`
+      `--build-arg`s, so `GITHUB_TOKEN`, `ADMIN_PASSWORD` (bcrypt hash),
+      and other secrets are visible in `docker buildx history inspect`
+      output + host process list. Root-only exposure on a single-admin
+      VPS — accepted risk, but rotate `GITHUB_TOKEN` if the VPS is ever
+      shared, and prefer Coolify file-mount secrets for the most sensitive
+      values long-term.
 
 ## 1. Production outage follow-up (anon 500s since 2026-08-31)
 
-- [x] Root-caused: `ERR_REQUIRE_ESM` — CJS `whatwg-url@17` requires ESM
-      `@exodus/bytes`; Vercel fleet mixes Node 20.x minors, some without
-      `require(esm)` support → same page randomly 200/500 per instance.
-- [x] Fix: `"engines": { "node": "22.x" }` (frontend `package.json`).
+- [x] Root-caused (first wave): `ERR_REQUIRE_ESM` — CJS `whatwg-url@17`
+      requires ESM `@exodus/bytes`; Vercel fleet mixes Node 20.x minors,
+      some without `require(esm)` support → same page randomly 200/500.
+- [x] Fix shipped: `"engines": { "node": "22.x" }` (frontend `package.json`).
+- [ ] **STILL OPEN (2026-09-04 audit): `GET /`, `/blog`, `/login`,
+      `/status` all return 500 deterministically (3/3), serving the
+      `__next_error__` global-error page; only the 404 route works. So this
+      is a layout-level render throw, NOT the old flaky fleet issue.
+      Ruled out: `siteSettingsServer`/`contentServer` (fail-safe `{}`),
+      `SITE_URL` (has fallback), providers (window-guarded), middleware
+      (heavily try/caught; `/api/health` → 200 through it). Shipped
+      hardening: layout theme-CSS blocks wrapped in try/catch (#157) so
+      theme builders can never 500 the page.
+      Decisive local repro (2026-09-04): `npm run build` clean +
+      `node .next/standalone/server.js` serves `/`, `/blog`, `/login` →
+      all 200, zero `__next_error__`, on the exact production commit.
+      The code is innocent — the 500 is Vercel-environmental. Prime
+      suspects: (1) project still on Node 20 runtime (original ESM bug
+      persists), (2) production deployment stale/pinned (auto-deploy not
+      picking up `main`). Check in dashboard: Deployments → latest
+      production → Runtime + Function logs for `GET /`.
 - [ ] Verify post-deploy: `curl https://aifazi.net/` → 200 (anonymous),
       Playwright smoke green, backend monitor flips Website to up.
-- [ ] Follow-up hygiene (separate change): remove dead
-      `isomorphic-dompurify` dep (used by zero first-party files; it drags
-      in the `jsdom → whatwg-url@17` chain). Do NOT do this as an outage
-      fix — the Node pin is the risk-free one.
+- [ ] Correction: `isomorphic-dompurify` is NOT unused — imported by
+      `pages-src/BlogPost.jsx:6` and `pages-src/admin/MailQueue.jsx:3`.
+      Do not remove without replacing sanitization in those two files.
 
 ## 2. VPN — remaining work
 
 - [x] Backend healthy on Coolify (host WireGuard via management API).
+- [x] **wg-api lockdown (2026-09-04 audit fix)**: shared-secret `X-WG-Token`
+      auth on all endpoints (#157 client: `utils/wireguard.py`,
+      `scripts/init-wireguard.sh`; secret in Coolify `WG_API_TOKEN` env +
+      host `/etc/wireguard/wg-api-token`, mode 600), request logging
+      re-enabled, UFW `51821/tcp` scoped to `10.0.0.0/8` + `172.16.0.0/12`
+      (Docker networks only — internet dropped).
 - [x] Traffic counters, age-based presence, auto session tracking,
       staff delete endpoint, IP-race retry, config whitespace strip +
       `system.vpn` module + staff rule.

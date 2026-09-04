@@ -19,7 +19,7 @@ We aim to acknowledge within 48h and ship a fix within 7 days. We use coordinate
 ## What is Sensitive
 
 - `aifazi.net-frontend-next/.env.local`, `aifazi.net-backend-fastapi/.env`, `apps/mobile/.env.local` — **never committed** (see `.gitignore:2` `.env` / `.env.*`). Only `.env.example` with `CHANGE_ME` / `YOURPROJECT` placeholders is tracked.
-- Production secrets live in **Vercel Environment Variables** (frontend), **Railway Environment Variables** (backend), and **EAS Secrets** (mobile). They are read via `process.env` / `os.environ` (`proxy.ts:39`, `dependencies.py:25`). No `SUPABASE_SERVICE_ROLE_KEY`, `PASETO_SECRET`, `INTERNAL_API_SECRET`, `STRIPE_SECRET_KEY`, `GITHUB_TOKEN`, or `CLOUDINARY` secrets are hardcoded; `git ls-files` shows only `*.example` files.
+- Production secrets live in **Vercel Environment Variables** (frontend), **Coolify Environment Variables** (backend, AES-encrypted in its DB), and **EAS Secrets** (mobile). They are read via `process.env` / `os.environ` (`proxy.ts:39`, `dependencies.py:25`). No `SUPABASE_SERVICE_ROLE_KEY`, `PASETO_SECRET`, `INTERNAL_API_SECRET`, `STRIPE_SECRET_KEY`, `GITHUB_TOKEN`, or `CLOUDINARY` secrets are hardcoded; `git ls-files` shows only `*.example` files.
 - One stale bcrypt hash was committed at `680fc2b:.env.example:12` (`$2b$12$REMOVED...`) and scrubbed in `225c733` → `CHANGE_ME`. Railway prod uses a different live hash. If you fork, rotate `ADMIN_PASSWORD` via `aifazi.net-backend-fastapi/reset_password.py`.
 
 ## Hardening for Public Source
