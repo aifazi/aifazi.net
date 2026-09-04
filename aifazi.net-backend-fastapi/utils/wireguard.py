@@ -31,6 +31,10 @@ WG_MTU = int(os.getenv("WG_MTU", "1420"))
 # Host WireGuard Management API
 # The container reaches the host via the Docker gateway (usually 10.0.1.1)
 WG_API_URL = os.getenv("WG_API_URL", "http://10.0.1.1:51821")
+# Shared secret for the host management API (X-WG-Token header).
+# The host rejects unauthenticated requests; without this, VPN peer
+# management returns 403. Kept out of git — set via Coolify env vars.
+WG_API_TOKEN = os.getenv("WG_API_TOKEN", "")
 
 
 def _clamped_private_key() -> bytes:
@@ -118,14 +122,17 @@ def _allocatable_ips(subnet: str, server_ip: str) -> list[str]:
 def _call_wg_api(endpoint: str, method: str = "GET", data: dict | None = None) -> dict:
     """Call the WireGuard Management API on the host."""
     url = f"{WG_API_URL}{endpoint}"
+    headers = {"Content-Type": "application/json"}
+    if WG_API_TOKEN:
+        headers["X-WG-Token"] = WG_API_TOKEN
     try:
         if method == "GET":
-            req = urllib.request.Request(url)
+            req = urllib.request.Request(url, headers=headers)
         else:
             req = urllib.request.Request(
                 url,
                 data=json.dumps(data).encode() if data else None,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
                 method=method,
             )
         with urllib.request.urlopen(req, timeout=10) as resp:
