@@ -140,7 +140,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             themeFontUrl() returns '' for system-font themes, so nothing extra
             is loaded for cyber-dark / win95 / etc. */}
         {(() => {
-          const url = themeFontUrl(serverTheme)
+          let url = ''
+          try {
+            url = themeFontUrl(serverTheme)
+          } catch { /* fail-safe: skip theme font rather than 500 */ }
           return url ? (
             <>
               <link rel="preload" as="style" href={url} />
@@ -155,10 +158,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           // Targeted rollout: resolve the customization that should apply for
           // this server theme. Server doesn't know the session, so logged-in
           // targets resolve on the client (providers) after hydration.
-          const tc = resolveThemeCustom(siteConfig, serverTheme, { loggedIn: false })
-          const uploadedFonts = Array.isArray(siteConfig.uploadedFonts) ? siteConfig.uploadedFonts : []
-          const css = buildThemeCustomCss(serverTheme, tc, uploadedFonts)
-          const fontUrl = themeCustomFontUrl(tc, uploadedFonts)
+          // Fail-safe: theme CSS must never 500 the whole page — on any
+          // error fall back to no custom CSS (client providers re-apply).
+          let tc = null
+          let uploadedFonts: any[] = []
+          let css = ''
+          let fontUrl = ''
+          try {
+            tc = resolveThemeCustom(siteConfig, serverTheme, { loggedIn: false })
+            uploadedFonts = Array.isArray(siteConfig.uploadedFonts) ? siteConfig.uploadedFonts : []
+            css = buildThemeCustomCss(serverTheme, tc, uploadedFonts)
+            fontUrl = themeCustomFontUrl(tc, uploadedFonts)
+          } catch { /* fall through with empty custom CSS */ }
           return (
             <>
               {css ? <style nonce={nonce} id="theme-custom-css" dangerouslySetInnerHTML={{ __html: css }} /> : null}
