@@ -48,6 +48,28 @@
       have one; rotate the Coolify `APP_KEY`-adjacent secrets yearly;
       re-check `iptables -L DOCKER-USER` after any Docker/Coolify upgrade
       (rules persist via `iptables-persistent`, but verify).
+- [ ] **Firewall follow-up (2026-09-04 incident)**: installing
+      `iptables-persistent` auto-REMOVED the `ufw` package; the old UFW
+      user rules vanished leaving `INPUT ACCEPT`. Mitigated with raw
+      iptables (`:51821` scoped to loopback + Docker subnets, rest DROPPED
+      for that port; `:8000`/`:8080` DROPPED in `DOCKER-USER`) + saved via
+      `netfilter-persistent`. Remaining gap: no default-deny baseline for
+      other ports — consider a full `iptables` default-deny policy
+      (22/80/443/51820-udp ALLOW) or reinstall `ufw` (note: it conflicts
+      with `iptables-persistent`; pick one manager, not both).
+- [ ] **Build-stall watch**: two Coolify deploys wedged at `0/0` build steps
+      with an idle buildx client (jobs showed `in_progress` for 30+ min;
+      one build client vanished entirely). Resolved by cancelling the stuck
+      queue entries; the retry then built + deployed cleanly (image
+      `624c64e`, container healthy). If it recurs: restart the
+      `buildx_buildkit_coolify-railpack0` builder before retrying.
+- [ ] **Secret hygiene**: Coolify passes all env vars as `docker build`
+      `--build-arg`s, so `GITHUB_TOKEN`, `ADMIN_PASSWORD` (bcrypt hash),
+      and other secrets are visible in `docker buildx history inspect`
+      output + host process list. Root-only exposure on a single-admin
+      VPS — accepted risk, but rotate `GITHUB_TOKEN` if the VPS is ever
+      shared, and prefer Coolify file-mount secrets for the most sensitive
+      values long-term.
 
 ## 1. Production outage follow-up (anon 500s since 2026-08-31)
 
@@ -64,6 +86,14 @@
       (heavily try/caught; `/api/health` → 200 through it). Shipped
       hardening: layout theme-CSS blocks wrapped in try/catch (#157) so
       theme builders can never 500 the page.
+      Decisive local repro (2026-09-04): `npm run build` clean +
+      `node .next/standalone/server.js` serves `/`, `/blog`, `/login` →
+      all 200, zero `__next_error__`, on the exact production commit.
+      The code is innocent — the 500 is Vercel-environmental. Prime
+      suspects: (1) project still on Node 20 runtime (original ESM bug
+      persists), (2) production deployment stale/pinned (auto-deploy not
+      picking up `main`). Check in dashboard: Deployments → latest
+      production → Runtime + Function logs for `GET /`.
 - [ ] Verify post-deploy: `curl https://aifazi.net/` → 200 (anonymous),
       Playwright smoke green, backend monitor flips Website to up.
 - [ ] Correction: `isomorphic-dompurify` is NOT unused — imported by
