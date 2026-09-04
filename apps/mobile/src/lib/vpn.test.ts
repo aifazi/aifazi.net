@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
+import { detectDeviceOs, formatBytes, formatDuration } from './vpn'
 
-// react-native is not loadable in node — mock the pieces vpn.ts needs.
+// react-native is not loadable in node — mock the pieces vpn.ts needs
+// (vi.mock calls are hoisted above imports by vitest, so this still mocks).
 vi.mock('react-native', () => ({
   Platform: { OS: 'android' },
 }))
@@ -9,8 +11,6 @@ vi.mock('react-native', () => ({
 vi.mock('./api', () => ({
   api: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
 }))
-
-import { detectDeviceOs, formatBytes, formatDuration } from './vpn'
 
 describe('formatBytes', () => {
   it('formats zero and byte values', () => {

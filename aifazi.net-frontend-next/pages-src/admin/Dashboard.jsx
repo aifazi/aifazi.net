@@ -282,11 +282,14 @@ function Dashboard({ onLogout }) {
   }
 
   useEffect(() => {
+    // Don't pre-fetch admin endpoints for sections the user may not open —
+    // the backend would 403 anyway, and the data would sit in state unused.
+    // (canViewKey is import-hoisted, so no declaration-order issue here.)
     const run = async () => {
-      if (view === 'home') await fetchDashStats()
-      if (view === 'content' || view === 'posts') await fetchPosts()
-      if (view === 'communications' || view === 'contacts') await fetchContacts()
-      if (view === 'staff') await fetchStaff()
+      if (view === 'home' && canViewKey('home')) await fetchDashStats()
+      if ((view === 'content' || view === 'posts') && canViewKey('content')) await fetchPosts()
+      if ((view === 'communications' || view === 'contacts') && canViewKey('communications')) await fetchContacts()
+      if (view === 'staff' && canViewKey('staff')) await fetchStaff()
     }
     run()
   }, [view])

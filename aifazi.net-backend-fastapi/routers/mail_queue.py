@@ -49,7 +49,7 @@ if not RESEND_WEBHOOK_SECRET:
     )
 
 
-def _cron_or_staff_auth(request: Request) -> dict:
+async def _cron_or_staff_auth(request: Request) -> dict:
     """Dual auth for /process-pending. Accepts EITHER:
       • `Authorization: Bearer <CRON_SECRET>`  (Vercel cron)
       • a valid staff JWT                        (manual admin trigger from the UI)
@@ -70,7 +70,7 @@ def _cron_or_staff_auth(request: Request) -> dict:
     from dependencies import get_current_user
     from permissions import resolve_staff_access
     bearer_dep = HTTPBearer(auto_error=False)
-    creds = bearer_dep(request)
+    creds = await bearer_dep(request)
     if creds is None or not creds.credentials:
         raise HTTPException(401, "Unauthorized (requires CRON_SECRET bearer or staff JWT)")
     user = get_current_user(creds=creds)
@@ -418,6 +418,20 @@ async def delivery_webhook(request: Request):
     if not (key_ok or sig_ok):
         raise HTTPException(403, "Invalid or missing webhook signature.")
 
+    # Replay resistance: when the caller stamps the request, enforce
+    # freshness (±300s, mirrors the Svix route). Header is optional so
+    # providers that don't send one keep working (see terminal-state
+    # guard below for the replay backstop).
+    ts_header = request.headers.get("X-Webhook-Timestamp", "").strip()
+    if ts_header:
+        try:
+            ts = int(ts_header)
+        except ValueError:
+            raise HTTPException(400, "Invalid X-Webhook-Timestamp.")
+        import time as _time
+        if abs(_time.time() - ts) > 300:
+            raise HTTPException(403, "Stale webhook event.")
+
     # Signature checked — parse the body now.
     try:
         import json
@@ -443,6 +457,14 @@ async def delivery_webhook(request: Request):
         updates["tracking_data"] = body.details
     if mapped == "delivered" and not body.timestamp:
         updates["sent_at"] = datetime.now(timezone.utc).isoformat()
+
+    # Terminal states stick: once delivered/failed, later duplicates or
+    # captured replays for the same provider message are no-ops instead of
+    # status flips.
+    existing = supabase.table("mail_queue").select("status").eq("provider_msg_id", body.msg_id).limit(1).execute()
+    current = (existing.data or [{}])[0].get("status")
+    if current in ("delivered", "failed"):
+        return {"ok": True, "deduped": True}
 
     supabase.table("mail_queue").update(updates).eq("provider_msg_id", body.msg_id).execute()
     return {"ok": True}

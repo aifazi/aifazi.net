@@ -25,6 +25,8 @@ from utils.wireguard import (
     WG_SERVER_IP,
     WG_SUBNET,
     add_peer,
+    decrypt_peer_secret,
+    encrypt_peer_secret,
     find_free_ip,
     generate_client_config,
     generate_keypair,
@@ -295,6 +297,15 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
     client_priv, client_pub = generate_keypair()
     psk = generate_preshared_key()
 
+    # Encrypt client secrets before storage — a DB row read must never
+    # yield a usable tunnel identity on its own. Fail closed when the
+    # encryption secret is unavailable.
+    try:
+        stored_priv = encrypt_peer_secret(client_priv)
+        stored_psk = encrypt_peer_secret(psk)
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
+
     # Allocate IP + insert with retries: two concurrent creates could read the
     # same free IP, so a unique-violation on allocated_ip re-reads and retries
     # instead of failing or double-allocating.
@@ -309,8 +320,8 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
                 "id": peer_id,
                 "user_id": user_id,
                 "public_key": client_pub,
-                "private_key": client_priv,  # encrypted at rest via Supabase column encryption
-                "preshared_key": psk,
+                "private_key": stored_priv,  # Fernet enc1: (see utils/wireguard)
+                "preshared_key": stored_psk,
                 "allocated_ip": allocated_ip,
                 "device_name": body.device_name,
                 "device_os": body.device_os,
@@ -375,11 +386,30 @@ async def get_peer(
 
     server_pub = await _require_server_pub()
 
+    try:
+        client_priv = decrypt_peer_secret(peer["private_key"])
+        peer_psk = decrypt_peer_secret(peer.get("preshared_key"))
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
+
+    # Lazy migration: rows created before at-rest encryption carry plaintext.
+    # Upgrade them to enc1: on first successful read (best-effort).
+    try:
+        updates = {}
+        if peer.get("private_key") and not str(peer["private_key"]).startswith("enc1:"):
+            updates["private_key"] = encrypt_peer_secret(client_priv)
+        if peer.get("preshared_key") and not str(peer.get("preshared_key")).startswith("enc1:"):
+            updates["preshared_key"] = encrypt_peer_secret(peer_psk)
+        if updates:
+            supabase.table("vpn_peers").update(updates).eq("id", peer_id).execute()
+    except Exception as e:
+        log.warning("get_peer: at-rest upgrade failed for %s: %s", peer_id, e)
+
     config = generate_client_config(
-        client_private_key=peer["private_key"],
+        client_private_key=client_priv,
         client_address=peer["allocated_ip"],
         server_public_key=server_pub,
-        preshared_key=peer.get("preshared_key"),
+        preshared_key=peer_psk,
     )
 
     if format == "conf":
@@ -446,6 +476,11 @@ async def rotate_keys(peer_id: str, user: dict = Depends(get_current_user)):
     # Generate new keys
     new_priv, new_pub = generate_keypair()
     new_psk = generate_preshared_key()
+    try:
+        stored_priv = encrypt_peer_secret(new_priv)
+        stored_psk = encrypt_peer_secret(new_psk)
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
 
     # Add new peer to WireGuard (same IP)
     await add_peer(
@@ -454,11 +489,11 @@ async def rotate_keys(peer_id: str, user: dict = Depends(get_current_user)):
         preshared_key=new_psk,
     )
 
-    # Update database
+    # Update database (rotating also upgrades legacy plaintext rows to enc1:)
     supabase.table("vpn_peers").update({
-        "private_key": new_priv,
+        "private_key": stored_priv,
         "public_key": new_pub,
-        "preshared_key": new_psk,
+        "preshared_key": stored_psk,
     }).eq("id", peer_id).execute()
 
     # Generate new config
@@ -513,8 +548,13 @@ async def get_stats(user: dict = Depends(get_current_user)):
 # ---------------------------------------------------------------------------
 
 @router.get("/admin/all-peers")
-async def admin_list_all_peers(_: dict = Depends(require_staff)):
-    """List all VPN peers across all users (admin/staff only)."""
+async def admin_list_all_peers(user: dict = Depends(require_staff)):
+    """List all VPN peers across all users (admin/staff only).
+
+    Non-admin staff get operational fields only — user_ids and live
+    endpoint IPs are admin-only (cross-user PII).
+    """
+    is_admin = user.get("role") == "admin"
     res = supabase.table("vpn_peers").select("*").order("created_at", desc=True).execute()
     peers = res.data or []
 
@@ -544,8 +584,14 @@ async def admin_list_all_peers(_: dict = Depends(require_staff)):
         })
 
     # Best-effort: derive session rows from live handshake state so the
-    # Sessions tab reflects real connect/disconnect activity.
+    # Sessions tab reflects real connect/disconnect activity. Runs on the
+    # full rows (needs real user_ids) BEFORE display redaction below.
     _sync_sessions_from_handshakes(result)
+
+    if not is_admin:
+        for p in result:
+            p["user_id"] = ""
+            p["endpoint"] = ""
 
     return {"peers": result, "total": len(result)}
 
@@ -583,8 +629,12 @@ async def admin_delete_peer(peer_id: str, _: dict = Depends(require_staff)):
 
 
 @router.get("/admin/sessions")
-async def admin_list_all_sessions(_: dict = Depends(require_staff)):
-    """List all VPN sessions across all users (admin/staff only)."""
+async def admin_list_all_sessions(user: dict = Depends(require_staff)):
+    """List all VPN sessions across all users (admin/staff only).
+
+    Non-admin staff don't get user_ids or client IPs (cross-user PII).
+    """
+    is_admin = user.get("role") == "admin"
     res = (
         supabase.table("vpn_sessions")
         .select("*, vpn_peers(device_name, user_id)")
@@ -600,8 +650,8 @@ async def admin_list_all_sessions(_: dict = Depends(require_staff)):
             "id": s.get("id", ""),
             "peer_id": s.get("peer_id", ""),
             "device_name": peer.get("device_name", ""),
-            "user_id": peer.get("user_id", ""),
-            "client_public_ip": s.get("client_public_ip", ""),
+            "user_id": peer.get("user_id", "") if is_admin else "",
+            "client_public_ip": s.get("client_public_ip", "") if is_admin else "",
             "connected_at": s.get("connected_at", ""),
             "disconnected_at": s.get("disconnected_at"),
         })

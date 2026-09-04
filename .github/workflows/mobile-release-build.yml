@@ -100,7 +100,9 @@ jobs:
           echo "versionCode $new is monotonic (last released: ${prev:-none})"
 
       - name: Create PR for version bump
-        uses: peter-evans/create-pull-request@v7
+        # Pinned to v7 SHA (supply-chain): verify via
+        # gh api repos/peter-evans/create-pull-request/commits/v7 --jq .sha
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676
         with:
           commit-message: "chore(mobile): bump app version to ${{ steps.tag.outputs.tag }} [skip ci]"
           branch: chore/mobile-version-${{ steps.tag.outputs.tag }}

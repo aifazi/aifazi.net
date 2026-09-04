@@ -35,6 +35,11 @@ WG_API_URL = os.getenv("WG_API_URL", "http://10.0.1.1:51821")
 # The host rejects unauthenticated requests; without this, VPN peer
 # management returns 403. Kept out of git — set via Coolify env vars.
 WG_API_TOKEN = os.getenv("WG_API_TOKEN", "")
+if not WG_API_TOKEN and os.getenv("ENV", "production") == "production":
+    log.error(
+        "WG_API_TOKEN is not set — host WireGuard API calls go out "
+        "unauthenticated over plaintext HTTP. Set it in Coolify env vars."
+    )
 
 
 def _clamped_private_key() -> bytes:
@@ -64,6 +69,55 @@ def generate_keypair() -> tuple[str, str]:
 def generate_preshared_key() -> str:
     """Generate a 32-byte preshared key (base64-encoded)."""
     return base64.b64encode(os.urandom(32)).decode()
+
+
+# ---------------------------------------------------------------------------
+# At-rest encryption for client key material (private_key, preshared_key).
+# A Supabase row read must never yield a usable tunnel identity on its own.
+# Fernet (AES-128-CBC + HMAC) with a key derived from PASETO_SECRET, which
+# the backend already requires in production. Stored format "enc1:<token>";
+# legacy plaintext rows (no prefix) still decrypt as-is so existing peers
+# keep working and are re-encrypted on next rotation.
+# ---------------------------------------------------------------------------
+
+_ENC_PREFIX = "enc1:"
+_ENC_SALT = b"vpn-at-rest-v1"
+
+
+def _at_rest_fernet():
+    """Build the Fernet instance, or None when no secret is configured.
+
+    No secret only happens in dev (production refuses to start without
+    PASETO_SECRET) — callers must fail closed, never store plaintext
+    silently in production.
+    """
+    secret = os.getenv("PASETO_SECRET", "")
+    if not secret:
+        return None
+    import hashlib
+    from cryptography.fernet import Fernet
+    raw = hashlib.pbkdf2_hmac("sha256", secret.encode(), _ENC_SALT, 100000, 32)
+    return Fernet(base64.urlsafe_b64encode(raw))
+
+
+def encrypt_peer_secret(plaintext: str) -> str:
+    """Encrypt a client secret for DB storage. Raises if unconfigured."""
+    f = _at_rest_fernet()
+    if f is None:
+        raise RuntimeError("PASETO_SECRET is not set — refusing to store VPN secrets")
+    return _ENC_PREFIX + f.encrypt((plaintext or "").encode()).decode()
+
+
+def decrypt_peer_secret(stored: str | None) -> str:
+    """Decrypt a stored client secret (legacy plaintext passes through)."""
+    if not stored:
+        return ""
+    if not stored.startswith(_ENC_PREFIX):
+        return stored
+    f = _at_rest_fernet()
+    if f is None:
+        raise RuntimeError("PASETO_SECRET is not set — cannot decrypt VPN secrets")
+    return f.decrypt(stored[len(_ENC_PREFIX):].encode()).decode()
 
 
 def generate_client_config(

@@ -90,6 +90,11 @@ jobs:
         run: ruff check .
 
       - name: Run MyPy (typecheck)
+        # TODO(mypy-debt): ~40 pre-existing errors (ssrf, jwt_compat,
+        # txadmin_service, seo_proxy, file_tools, pdf_editor,
+        # store_delivery, backup, audit, newsletter, monitor, fivem,
+        # mail_queue, vpn _get_user_id) — see run 33925502736. Fix them,
+        # then drop continue-on-error to make this truly blocking.
         continue-on-error: true
         run: mypy routers/ --ignore-missing-imports
 
@@ -119,6 +124,9 @@ jobs:
         run: pip-audit
 
       - name: Run Bandit (static analysis)
+        # TODO(bandit-debt): HIGH findings pre-date this change; triage the
+        # bandit-report.json artifact, fix or scope-exclude, then drop
+        # continue-on-error to make this truly blocking.
         continue-on-error: true
         run: bandit -r routers/ -f json -o bandit-report.json --severity-level high
 

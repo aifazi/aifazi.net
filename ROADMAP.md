@@ -131,16 +131,25 @@
 - [ ] **Native in-app tunnel** (mobile): needs `npx expo prebuild` +
       native WireGuard module + EAS build. Management (CRUD/QR/stats)
       works today; the tunnel itself lives in the external WireGuard app.
-- [ ] **Certificate pinning** (#11, prep done): `react-native-ssl-pinning`
-      installed, `src/lib/sslPinning.ts` ready with live SPKI pins for
-      `api.aifazi.net` + Expo-Go-safe fallback. Activation:
-      `npx expo prebuild` → EAS production build → store release.
-      Rotation runbook is in the module header (backup pins mandatory).
+- [ ] **Certificate pinning** (#11): live SPKI pins for `api.aifazi.net`
+      extracted 2026-09-04 and kept here (leaf + chain backups):
+      `sha256/boAH2RgUdVzrKMPj3pKVN2W+3GN872/6f3ea0BgajaY=`,
+      `sha256/LoMHBotttiDko50Gi13uXW71eIy7LAttI+rYT8wXF4w=`,
+      `sha256/fk6IOKit1ild5647BH06ujSIq5XbCgqlbYl6ANhhi88=`,
+      `sha256/C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=`.
+      Do NOT use `react-native-ssl-pinning@1.6.0` — tried 2026-09-03,
+      removed same day: its 2018-era `android/build.gradle` calls
+      `jcenter()` (removed in Gradle 9) and breaks the release build.
+      Activation needs a maintained approach (`expo prebuild` + either
+      Android Network Security Config via config plugin, or a current
+      pinning library) + EAS production build + store release.
+      Rotation rule: always ship new pins alongside old ones, wait for
+      >80% adoption, then switch the server cert.
 
 ## 3. Testing (#28 — framework done, expand coverage)
 
-- [x] Vitest (`apps/mobile`: `npm test`, 8 tests) — `vpn.ts` pure
-      functions + `sslPinning` pins/fallback.
+- [x] Vitest (`apps/mobile`: `npm test`, 4 tests) — `vpn.ts` pure
+      functions (formatBytes/formatDuration/detectDeviceOs).
 - [x] Playwright (`aifazi.net-frontend-next`: `npm run test:e2e`) —
       homepage + `/api/health` smoke (caught the real outage).
 - [ ] Grow mobile coverage: API client interceptors, auth refresh flow,
@@ -200,6 +209,63 @@ Proposed design (to refine before build):
       with `pages-src/admin/access.js` → `.ts` + `lib/api.ts` strict
       types when touching those areas; no big-bang rewrite.
 
+## 8. Security audit follow-ups (2026-09-04 full audit — code shipped, ops pending)
+
+- [x] Backend: staff-JWT path of mail `process-pending` auth fixed
+      (missing `await` → 500); generic `/webhook/inbound` gets timestamp
+      freshness + terminal-state-sticks replay guard.
+- [x] Backend: cookie-session logout now revokes server refresh token
+      (+ previous); `require_staff` rule gaps closed (`/actions/search`,
+      `/fivem/players`, `/fivem/txadmin`, `/fivem/sync`, `/portfolio`,
+      `/auth/lookup`); moderator VPN PII redacted (user_id/endpoint IPs
+      admin-only); `WG_API_TOKEN` missing → loud startup error.
+- [x] Backend: VPN client secrets encrypted at rest (Fernet `enc1:`,
+      key from `PASETO_SECRET`); legacy plaintext rows auto-upgrade on
+      next read/rotation.
+- [x] Frontend: SSR sanitizer hardened (quote/slash-tolerant stripping,
+      forbidden elements, fail-closed `catch`); BlogPost iframe filter
+      quote-tolerant; theme-CSS builder strips breakout vectors;
+      X-Forwarded-For no longer forwarded; `chat` role admitted to admin
+      shell (lands on Live Chat); logout revokes before notifying;
+      403s clear stale staff claims; dashboard fetches gated per-section;
+      HSTS added for non-Vercel runtimes.
+- [x] Mobile: pinning lib removed (broke Gradle); VPN config preview
+      redacts keys, Share gated behind warning confirm, secrets cleared
+      on modal close.
+- [x] CI: `Frontend - Build` added as 6th required check; prune keeps
+      3 newest deployments; `create-pull-request` pinned to SHA.
+- [ ] CI debt (mypy + Bandit still `continue-on-error`): ~40 pre-existing
+      mypy errors (ssrf, jwt_compat, txadmin_service, seo_proxy,
+      file_tools, pdf_editor, store_delivery, backup, audit, newsletter
+      incl. a real un-awaited coroutine at `newsletter.py:66`, monitor,
+      fivem, mail_queue, vpn `_get_user_id`) + unresolved Bandit HIGHs
+      (report only exists as a CI artifact). Fix file-by-file with a
+      local interpreter, then drop the flags. Making them blocking now
+      would freeze `main` on pre-existing debt — verified none of the
+      errors are from this batch's code.
+- [x] Repo: `.gitignore` covers keys/certs/signing artifacts + example
+      re-allow ordering fixed; RLS lockdown migration written
+      (`20260904000000_lockdown_chat_write_rls.sql`).
+- [ ] **OPS — apply the RLS migration**: files don't self-apply (no CLI
+      config). Run `20260904000000_lockdown_chat_write_rls.sql` in the
+      Supabase SQL editor (drops authenticated chat WRITES, keeps reads;
+      verified no client writes via REST — writes go through the API).
+- [ ] **OPS — nightly DB backups**: `scripts/backup-db.sh` added (VPS
+      cron + `BACKUP_PASSPHRASE` from root-only file, 7-day rotation,
+      verify step). Install: copy script to VPS, set passphrase, add
+      root crontab `0 3 * * *`, confirm first dump + test restore.
+- [ ] **Mobile hardening leftovers**: biometric app-lock before VPN
+      secrets (expo-local-authentication already installed); SecureStore
+      `requireAuthentication`/`keychainAccessible` review; verify
+      `secure_store_backup_rules` excludes tokens at next prebuild;
+      push deep-link targets already server-authorized (verified).
+- [ ] **Decisions for Tanvir**: (a) purge unreachable bcrypt object via
+      history rewrite, or accept (unreachable, scrubbed at HEAD);
+      (b) require 1 reviewer on `main` (slows owner flow, adds eyeballs);
+      (c) Vercel preview protection (dashboard setting);
+      (d) ClamAV scan default stays OFF (turning ON 503s uploads without
+      a daemon — needs daemon deploy first).
+
 ## 7. Release process (reference)
 
 - Frontend → push `main` → Vercel production auto-deploy. Verify:
@@ -209,6 +275,8 @@ Proposed design (to refine before build):
 - Mobile → push `main` touching `apps/mobile/**` →
   `mobile-auto-release.yml` bumps tag + GitHub release →
   `mobile-release-build.yml` EAS APK+AAB → in-app updater offers it.
-- Branch protection: 5 required checks on `main`; always ship via PR.
+- Branch protection: 6 required checks on `main` (Frontend Lint &
+  Typecheck, Backend Lint & Typecheck, Mobile Lint & Typecheck, Backend
+  Security Scan, Secret Scan, Frontend - Build); always ship via PR.
   Owner PRs auto-merge on green CI (`owner-automerge.yml`; needs the
   "Allow auto-merge" repo setting ticked).
