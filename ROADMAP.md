@@ -144,8 +144,9 @@
       interface + peer mix check, idleness is UP not DOWN so 4am doesn't
       page); `GET /vpn/admin/activity?days=` per-day sessions/bytes;
       VpnPanel Monitor tab (alerts, server/uptime cards, 7-day chart,
-      live peer freshness). Auto-enabled for fresh installs; existing
-      installs add `vpn` to monitor `enabled_services`.
+      live peer freshness). Enabled in prod `enabled_services`
+      2026-09-05; first check runs at the next monitor cycle (or Admin
+      → Monitoring → run now).
 - [ ] **Native in-app tunnel** (mobile): needs `npx expo prebuild` +
       native WireGuard module + EAS build. Management (CRUD/QR/stats)
       works today; the tunnel itself lives in the external WireGuard app.
