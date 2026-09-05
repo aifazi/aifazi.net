@@ -38,6 +38,8 @@ function VpnPanelInner() {
   const [peers, setPeers] = useState([])
   const [sessions, setSessions] = useState([])
   const [serverStatus, setServerStatus] = useState(null)
+  const [activity, setActivity] = useState([])
+  const [monitorSvc, setMonitorSvc] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('peers')
   const [search, setSearch] = useState('')
@@ -45,14 +47,21 @@ function VpnPanelInner() {
 
   const load = useCallback(async () => {
     try {
-      const [peersRes, statusRes, sessionsRes] = await Promise.allSettled([
+      const [peersRes, statusRes, sessionsRes, activityRes, monitorRes] = await Promise.allSettled([
         api.get('/vpn/admin/all-peers'),
         api.get('/vpn/status'),
         api.get('/vpn/admin/sessions'),
+        api.get('/vpn/admin/activity?days=7'),
+        api.get('/monitor/status'),
       ])
       if (peersRes.status === 'fulfilled') setPeers(peersRes.value.data?.peers || [])
       if (statusRes.status === 'fulfilled') setServerStatus(statusRes.value.data)
       if (sessionsRes.status === 'fulfilled') setSessions(sessionsRes.value.data?.sessions || [])
+      if (activityRes.status === 'fulfilled') setActivity(activityRes.value.data?.days || [])
+      if (monitorRes.status === 'fulfilled') {
+        const svcs = monitorRes.value.data?.services || []
+        setMonitorSvc(svcs.find(s => s.name === 'vpn') || null)
+      }
     } catch (err) {
       console.error('VPN load error:', err)
     } finally {
@@ -64,15 +73,22 @@ function VpnPanelInner() {
     let cancelled = false
     const run = async () => {
       try {
-        const [peersRes, statusRes, sessionsRes] = await Promise.allSettled([
+        const [peersRes, statusRes, sessionsRes, activityRes, monitorRes] = await Promise.allSettled([
           api.get('/vpn/admin/all-peers'),
           api.get('/vpn/status'),
           api.get('/vpn/admin/sessions'),
+          api.get('/vpn/admin/activity?days=7'),
+          api.get('/monitor/status'),
         ])
         if (!cancelled) {
           if (peersRes.status === 'fulfilled') setPeers(peersRes.value.data?.peers || [])
           if (statusRes.status === 'fulfilled') setServerStatus(statusRes.value.data)
           if (sessionsRes.status === 'fulfilled') setSessions(sessionsRes.value.data?.sessions || [])
+          if (activityRes.status === 'fulfilled') setActivity(activityRes.value.data?.days || [])
+          if (monitorRes.status === 'fulfilled') {
+            const svcs = monitorRes.value.data?.services || []
+            setMonitorSvc(svcs.find(s => s.name === 'vpn') || null)
+          }
         }
       } catch (err) {
         console.error('VPN load error:', err)
@@ -95,10 +111,10 @@ function VpnPanelInner() {
     if (!ok) return
     try {
       await api.delete(`/vpn/admin/peers/${peer.id}`)
-      toast({ title: 'Peer deleted', type: 'success' })
+      toast.success('Peer deleted')
       load()
     } catch (err) {
-      toast({ title: 'Failed to delete peer', type: 'error' })
+      toast.error('Failed to delete peer')
     }
   }, [confirm, toast, load])
 
@@ -112,10 +128,10 @@ function VpnPanelInner() {
     if (!ok) return
     try {
       await api.delete(`/vpn/sessions/${session.id}`)
-      toast({ title: 'Session deleted', type: 'success' })
+      toast.success('Session deleted')
       load()
     } catch (err) {
-      toast({ title: 'Failed to delete session', type: 'error' })
+      toast.error('Failed to delete session')
     }
   }, [confirm, toast, load])
 
@@ -175,6 +191,7 @@ function VpnPanelInner() {
         {[
           { key: 'peers', label: `Peers (${totalPeers})` },
           { key: 'sessions', label: `Sessions (${sessions.length})` },
+          { key: 'monitor', label: 'Monitor' },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ padding: '8px 16px', background: 'none', border: 'none', cursor: 'pointer',
@@ -286,6 +303,97 @@ function VpnPanelInner() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Monitor tab */}
+      {tab === 'monitor' && (
+        <div>
+          {/* Alerts */}
+          {!serverStatus?.server_running && (
+            <div style={{ background: 'rgba(255,71,87,0.08)', border: '1px solid var(--red)',
+              borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: 'var(--red)' }}>
+              ⚠️ WireGuard server is offline — no tunnels can connect. Check the host WireGuard service.
+            </div>
+          )}
+          {serverStatus?.server_running && totalPeers > 0 && connectedPeers === 0 && (
+            <div style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.35)',
+              borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#ffd700' }}>
+              No peers currently connected — devices are configured but idle (or unreachable).
+            </div>
+          )}
+          {monitorSvc && monitorSvc.status !== 'up' && (
+            <div style={{ background: 'rgba(255,71,87,0.08)', border: '1px solid var(--red)',
+              borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: 'var(--red)' }}>
+              Uptime monitor reports VPN {monitorSvc.status}: {monitorSvc.detail || 'check the monitor tab'}
+            </div>
+          )}
+
+          {/* Server + monitor cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+            <StatCard label="Server" value={serverStatus?.server_running ? 'Online' : 'Offline'}
+              color={serverStatus?.server_running ? 'var(--green)' : 'var(--red)'} />
+            <StatCard label="Uptime Monitor" value={monitorSvc ? `${monitorSvc.status}${monitorSvc.uptime_24h != null ? ` · ${monitorSvc.uptime_24h}%/24h` : ''}` : '—'}
+              color={monitorSvc?.status === 'up' ? 'var(--green)' : 'var(--muted)'} />
+            <StatCard label="Monitor Detail" value={monitorSvc?.detail || serverStatus?.endpoint || '—'} color="var(--cyan)" />
+          </div>
+
+          {/* 7-day activity */}
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, letterSpacing: 0.8,
+            textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
+            Sessions per day (7d)
+          </div>
+          {activity.length === 0 ? (
+            <EmptyState icon="📊" title="No activity yet" hint="Session history will chart here once peers connect" />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 140, marginBottom: 8 }}>
+              {activity.map(d => {
+                const max = Math.max(...activity.map(x => x.sessions), 1)
+                const h = Math.max(6, Math.round((d.sessions / max) * 120))
+                return (
+                  <div key={d.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div style={{ color: 'var(--text)', fontSize: 11, fontWeight: 600 }}>{d.sessions}</div>
+                    <div title={`${d.date}: ${d.sessions} sessions, ↓ ${formatBytes(d.rx)} / ↑ ${formatBytes(d.tx)}`}
+                      style={{ width: '100%', height: h, borderRadius: '6px 6px 2px 2px',
+                        background: 'linear-gradient(180deg, var(--green), var(--cyan))', opacity: 0.85 }} />
+                    <div style={{ color: 'var(--muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
+                      {String(d.date).slice(5)}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Live peer freshness */}
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, letterSpacing: 0.8,
+            textTransform: 'uppercase', color: 'var(--muted)', margin: '20px 0 12px' }}>
+            Peer freshness (live)
+          </div>
+          {peers.length === 0 ? (
+            <EmptyState icon="🔒" title="No peers" hint="Add a device to start monitoring" />
+          ) : (
+            <div style={{ display: 'grid', gap: 8 }}>
+              {peers.map(p => (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12,
+                  background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px' }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 5, flexShrink: 0,
+                    background: p.connected ? 'var(--green)' : 'var(--muted)',
+                    boxShadow: p.connected ? '0 0 8px var(--green)' : 'none' }} />
+                  <span style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, flex: 1 }}>
+                    {p.device_name}
+                    <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {p.allocated_ip}</span>
+                  </span>
+                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>
+                    {p.connected ? 'handshake live' : (p.latest_handshake && p.latest_handshake !== '(none)' ? `last: ${p.latest_handshake}` : 'never connected')}
+                  </span>
+                  <span style={{ color: 'var(--text2)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+                    ↓ {formatBytes(p.transfer_rx)} ↑ {formatBytes(p.transfer_tx)}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </div>
