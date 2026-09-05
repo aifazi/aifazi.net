@@ -140,6 +140,12 @@
       post-#157 backend deploys).
 - [ ] Users: one peer per device (never reuse a peer on two devices);
       log in as `admin@aifazi.net` to manage the existing peers.
+- [x] **VPN monitor**: `vpn` service in the uptime monitor (host API +
+      interface + peer mix check, idleness is UP not DOWN so 4am doesn't
+      page); `GET /vpn/admin/activity?days=` per-day sessions/bytes;
+      VpnPanel Monitor tab (alerts, server/uptime cards, 7-day chart,
+      live peer freshness). Auto-enabled for fresh installs; existing
+      installs add `vpn` to monitor `enabled_services`.
 - [ ] **Native in-app tunnel** (mobile): needs `npx expo prebuild` +
       native WireGuard module + EAS build. Management (CRUD/QR/stats)
       works today; the tunnel itself lives in the external WireGuard app.

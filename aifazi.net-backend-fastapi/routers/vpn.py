@@ -9,7 +9,7 @@ import base64
 import io
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
@@ -684,6 +684,36 @@ async def admin_delete_peer(peer_id: str, _: dict = Depends(require_staff)):
     supabase.table("vpn_peers").delete().eq("id", peer_id).execute()
 
     return {"message": "Peer deleted", "id": peer_id}
+
+
+@router.get("/admin/activity")
+async def admin_activity(days: int = 7, _: dict = Depends(require_staff)):
+    """Per-day VPN activity for the Monitor tab: sessions + bytes.
+
+    `days` clamped to 1..30. Bytes come from closed sessions (open ones
+    report 0 until they close); session counts are exact regardless.
+    """
+    days = max(1, min(days, 30))
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    res = (
+        supabase.table("vpn_sessions")
+        .select("connected_at,bytes_rx,bytes_tx")
+        .gte("connected_at", cutoff)
+        .order("connected_at")
+        .limit(5000)
+        .execute()
+    )
+    buckets: dict[str, dict] = {}
+    for s in (res.data or []):
+        day = str(s.get("connected_at", ""))[:10] or "unknown"
+        b = buckets.setdefault(day, {"date": day, "sessions": 0, "rx": 0, "tx": 0})
+        b["sessions"] += 1
+        try:
+            b["rx"] += int(s.get("bytes_rx") or 0)
+            b["tx"] += int(s.get("bytes_tx") or 0)
+        except (TypeError, ValueError):
+            pass
+    return {"days": sorted(buckets.values(), key=lambda b: b["date"])}
 
 
 @router.get("/admin/sessions")
