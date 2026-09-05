@@ -14,12 +14,17 @@
 - [x] **Coolify: delete dead `wireguard-easy` service** — soft-deleted
       2026-09-04 (row + env vars removed, only `supabase-*` remains).
       Live VPN runs natively on the host (`wg-api.service`, `wg0`).
-- [ ] **Coolify: set `MAIL_WEBHOOK_SECRET`** (runtime env, then redeploy).
-      Value generated 2026-09-03 (kept out of git — ask Tanvir):
-      64-hex string. Then configure Brevo/Resend inbound webhook:
-      `https://api.aifazi.net/api/admin/mail/queue/webhook/inbound`
-      with `X-Webhook-Key: <secret>`. Until set, `/webhook/inbound`
-      rejects all delivery events (backend logs a warning at startup).
+- [x] **Mail provider moved to Resend (decision 2026-09-05, Brevo out)**.
+      Domain verified in Resend by Tanvir. Remaining user steps:
+      (a) Resend dashboard → Webhooks → Add endpoint
+      `https://api.aifazi.net/api/admin/mail/queue/webhook/resend`,
+      subscribe `email.delivered`, `email.bounced`, `email.complained`,
+      `email.opened`, `email.clicked`; (b) confirm the shown `whsec_…`
+      secret matches Coolify `RESEND_WEBHOOK_SECRET` (already set — if
+      the webhook is new, update the env + redeploy); (c) Admin →
+      Mail → Resend tab → paste API key + from-address on the verified
+      domain → Save → Test. The generic Brevo `/webhook/inbound` path
+      stays dormant (no `MAIL_WEBHOOK_SECRET` needed anymore).
 - [x] **Vercel: confirm Node 22 runtime** — confirmed 2026-09-04 via
       dashboard screenshot (`22.x`). (Did not fix the 500 by itself —
       the cause was the `isomorphic-dompurify` import, §1.)
