@@ -81,6 +81,29 @@ async def daily_cleanup():
         logger.error(f"Daily cleanup error: {e}")
 
 
+# VPN maintenance: session open/close from handshake state, monthly quota
+# accounting (warn/suspend/restore), guest expiry, suspended enforcement,
+# and connect/offline alert mails. Hourly — the admin-panel poll only runs
+# the tick while someone watches, so expiry/quotas need this backstop.
+# Lazy import (like daily_cleanup) keeps startup import graphs acyclic.
+@scheduler.scheduled_job(IntervalTrigger(hours=1))
+async def vpn_maintenance():
+    try:
+        from routers.vpn import vpn_maintenance_tick
+        summary = await vpn_maintenance_tick()
+        if summary.get("events"):
+            logger.info(f"VPN maintenance: {summary}")
+    except Exception as e:
+        logger.error(f"VPN maintenance error: {e}")
+
+
+# VPN maintenance: session open/close from handshake state, monthly quota
+# accounting (warn/suspend/restore), guest expiry, suspended enforcement,
+# and connect/offline alert mails. Hourly — the admin-panel poll only runs
+# the tick while someone watches, so expiry/quotas need this backstop.
+# Lazy import (like daily_cleanup) keeps startup import graphs acyclic.
+
+
 # Stock reservation expiry: release holds past their TTL even when the Stripe
 # webhook is missed (abandoned checkout, webhook outage). The DB now carries an
 # expires_at + pg_cron sweep, but on hosts without pg_cron (e.g. Vercel) this

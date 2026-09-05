@@ -46,6 +46,9 @@ function VpnPanelInner() {
   const [tab, setTab] = useState('peers')
   const [search, setSearch] = useState('')
   const [selectedPeer, setSelectedPeer] = useState(null)
+  const [peerActivity, setPeerActivity] = useState([])
+  const [reissuedQr, setReissuedQr] = useState('')
+  const [managing, setManaging] = useState(false)
 
   // Live up/down speed per peer, derived from cumulative WireGuard counters
   // across polls. Resets (host reboot) clamp to 0 instead of going negative.
@@ -169,6 +172,91 @@ function VpnPanelInner() {
     }
   }, [prompt, toast, load, selectedPeer])
 
+  // Refresh the open detail modal from a fresh list fetch.
+  const refreshSelected = useCallback(async (id) => {
+    try {
+      const res = await api.get('/vpn/admin/all-peers')
+      const fresh = (res.data?.peers || []).find(p => p.id === id)
+      if (fresh) setSelectedPeer(fresh)
+    } catch {}
+  }, [])
+
+  const managePeer = useCallback(async (peer, patch, okMsg) => {
+    setManaging(true)
+    try {
+      await api.patch(`/vpn/admin/peers/${peer.id}`, patch)
+      toast.success(okMsg)
+      await load()
+      await refreshSelected(peer.id)
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Update failed')
+    } finally {
+      setManaging(false)
+    }
+  }, [toast, load, refreshSelected])
+
+  const handleSetQuota = useCallback(async (peer) => {
+    const currentMb = peer.quota_bytes ? Math.round(peer.quota_bytes / 1048576) : ''
+    const answer = await prompt({
+      title: 'Monthly quota',
+      message: `Data cap in MB for "${peer.device_name}"? (0 = unlimited)`,
+      defaultValue: String(currentMb),
+      confirmText: 'Save',
+    })
+    if (answer === null) return
+    const mb = Number(answer)
+    if (!Number.isFinite(mb) || mb < 0) {
+      toast.error('Enter a number of MB (0 for unlimited)')
+      return
+    }
+    await managePeer(peer, { quota_bytes: Math.round(mb * 1048576) }, 'Quota saved')
+  }, [prompt, toast, managePeer])
+
+  const handleReissueKeys = useCallback(async (peer) => {
+    const ok = await confirm({
+      title: 'Reissue keys',
+      message: `Generate a new keypair for "${peer.device_name}"? The old config stops working immediately — update the device right away.`,
+      confirmText: 'Reissue',
+      destructive: true,
+    })
+    if (!ok) return
+    setManaging(true)
+    try {
+      const res = await api.post(`/vpn/peers/${peer.id}/rotate`)
+      setReissuedQr(res.data?.qr_code || '')
+      toast.success('Keys reissued — update the device now')
+      await load()
+      await refreshSelected(peer.id)
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Failed to reissue keys')
+    } finally {
+      setManaging(false)
+    }
+  }, [confirm, toast, load, refreshSelected])
+
+  const openPeer = useCallback((p) => {
+    setSelectedPeer(p)
+    setPeerActivity([])
+    setReissuedQr('')
+  }, [])
+
+  const closePeer = useCallback(() => {
+    setSelectedPeer(null)
+    setPeerActivity([])
+    setReissuedQr('')
+  }, [])
+
+  // Per-peer 7-day chart for the open detail modal (fetch only — resets
+  // happen in openPeer/closePeer so no setState-in-effect lint trip).
+  useEffect(() => {
+    if (!selectedPeer?.id) return
+    let cancelled = false
+    api.get(`/vpn/admin/activity?days=7&peer_id=${selectedPeer.id}`)
+      .then(r => { if (!cancelled) setPeerActivity(r.data?.days || []) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [selectedPeer?.id])
+
   const handleDeleteSession = useCallback(async (session) => {
     const ok = await confirm({
       title: 'Delete Session',
@@ -286,7 +374,7 @@ function VpnPanelInner() {
                     <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer',
                       background: selectedPeer?.id === p.id ? 'rgba(var(--green-rgb,0,255,136),0.06)' : 'transparent',
                       transition: 'background 0.15s' }}
-                      onClick={() => setSelectedPeer(selectedPeer?.id === p.id ? null : p)}
+                      onClick={() => (selectedPeer?.id === p.id ? closePeer() : openPeer(p))}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                       onMouseLeave={e => e.currentTarget.style.background = selectedPeer?.id === p.id ? 'rgba(var(--green-rgb,0,255,136),0.06)' : 'transparent'}>
                       <td style={tdStyle}>
@@ -485,7 +573,7 @@ function VpnPanelInner() {
 
       {/* Peer detail modal */}
       {selectedPeer && (
-        <Modal onClose={() => setSelectedPeer(null)} title={selectedPeer.device_name}>
+        <Modal onClose={closePeer} title={selectedPeer.device_name}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: '0 4px' }}>
             <div>
               <div style={labelStyle}>IP Address</div>
@@ -519,11 +607,92 @@ function VpnPanelInner() {
               <div style={labelStyle}>Public Key</div>
               <div style={{ ...valueStyle, fontFamily: 'var(--font-mono)', fontSize: 11, wordBreak: 'break-all' }}>{selectedPeer.public_key}</div>
             </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={labelStyle}>Expires</div>
+              <div style={valueStyle}>
+                {selectedPeer.expires_at
+                  ? `${formatTimeAgo(selectedPeer.expires_at)}${selectedPeer.status === 'expired' ? ' — expired' : ''}`
+                  : 'Never (permanent)'}
+              </div>
+            </div>
+          </div>
+
+          {/* Limits, expiry & alerts */}
+          <div style={{ borderTop: '1px solid var(--border)', marginTop: 16, paddingTop: 16 }}>
+            <div style={{ ...labelStyle, marginBottom: 8 }}>Monthly quota</div>
+            {selectedPeer.quota_bytes ? (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                  <span style={{ color: 'var(--text)' }}>
+                    {formatBytes(selectedPeer.usage_month_rx_tx || 0)} of {formatBytes(selectedPeer.quota_bytes)}
+                  </span>
+                  <span style={{ color: (selectedPeer.usage_month_rx_tx || 0) >= selectedPeer.quota_bytes * 0.8 ? 'var(--red)' : 'var(--muted)' }}>
+                    {Math.min(100, Math.round(((selectedPeer.usage_month_rx_tx || 0) / selectedPeer.quota_bytes) * 100))}%
+                  </span>
+                </div>
+                <div style={{ height: 6, borderRadius: 3, background: 'var(--bg3)' }}>
+                  <div style={{ height: '100%', borderRadius: 3, width: `${Math.min(100, ((selectedPeer.usage_month_rx_tx || 0) / selectedPeer.quota_bytes) * 100)}%`, background: 'var(--cyan)' }} />
+                </div>
+              </div>
+            ) : (
+              <div style={{ color: 'var(--muted)', fontSize: 12, marginBottom: 8 }}>Unlimited</div>
+            )}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+              <Btn label="Set quota" variant="ghost" onClick={() => handleSetQuota(selectedPeer)} />
+              {selectedPeer.quota_bytes ? <Btn label="Clear quota" variant="ghost" onClick={() => managePeer(selectedPeer, { quota_bytes: 0 }, 'Quota cleared')} /> : null}
+              <Btn
+                label={selectedPeer.notify_events ? 'Alerts: on' : 'Alerts: off'}
+                variant="ghost"
+                onClick={() => managePeer(selectedPeer, { notify_events: !selectedPeer.notify_events }, `Alerts ${selectedPeer.notify_events ? 'off' : 'on'}`)}
+              />
+            </div>
+            <div style={{ ...labelStyle, marginBottom: 8 }}>Expiry (guest access)</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+              <Btn label="+24h" variant="ghost" onClick={() => managePeer(selectedPeer, { extend_hours: 24 }, 'Extended 24h')} />
+              <Btn label="+7d" variant="ghost" onClick={() => managePeer(selectedPeer, { extend_hours: 168 }, 'Extended 7 days')} />
+              {selectedPeer.expires_at ? <Btn label="Make permanent" variant="ghost" onClick={() => managePeer(selectedPeer, { expires_at: '' }, 'Expiry cleared')} /> : null}
+            </div>
+            <div style={{ ...labelStyle, marginBottom: 8 }}>Status</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+              {selectedPeer.status === 'suspended'
+                ? <Btn label="Unsuspend" variant="ghost" onClick={() => managePeer(selectedPeer, { status: 'active' }, 'Peer unsuspended')} />
+                : <Btn label="Suspend" variant="ghost" onClick={() => managePeer(selectedPeer, { status: 'suspended' }, 'Peer suspended')} />}
+              <Btn label="Reissue keys" variant="ghost" onClick={() => handleReissueKeys(selectedPeer)} />
+            </div>
+            {managing ? <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 8 }}>Working…</div> : null}
+            {reissuedQr ? (
+              <div style={{ marginTop: 12, background: '#fff', borderRadius: 12, padding: 16, textAlign: 'center' }}>
+                <img src={reissuedQr} alt="New WireGuard QR" style={{ width: 200, height: 200 }} />
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#333', marginTop: 8 }}>
+                  New keys active — scan on the device now, old config is dead
+                </div>
+              </div>
+            ) : null}
+            {peerActivity.length > 0 ? (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ ...labelStyle, marginBottom: 8 }}>This device · 7 days</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 90 }}>
+                  {peerActivity.map(d => {
+                    const max = Math.max(...peerActivity.map(x => x.sessions), 1)
+                    const h = Math.max(4, Math.round((d.sessions / max) * 70))
+                    return (
+                      <div key={d.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                        <div style={{ color: 'var(--text)', fontSize: 10, fontWeight: 600 }}>{d.sessions}</div>
+                        <div title={`${d.date}: ${d.sessions} sessions, ↓ ${formatBytes(d.rx)} / ↑ ${formatBytes(d.tx)}`}
+                          style={{ width: '100%', height: h, borderRadius: '4px 4px 2px 2px',
+                            background: 'linear-gradient(180deg, var(--cyan), var(--green))', opacity: 0.85 }} />
+                        <div style={{ color: 'var(--muted)', fontSize: 9, fontFamily: 'var(--font-mono)' }}>{String(d.date).slice(5)}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
           <div style={{ marginTop: 20, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <Btn label="Close" variant="ghost" onClick={() => setSelectedPeer(null)} />
+            <Btn label="Close" variant="ghost" onClick={closePeer} />
             <Btn label="Rename" variant="ghost" onClick={() => handleRenamePeer(selectedPeer)} />
-            <Btn label="Delete Peer" variant="solid" color="var(--red)" textColor="#fff" onClick={() => { handleDeletePeer(selectedPeer); setSelectedPeer(null) }} />
+            <Btn label="Delete Peer" variant="solid" color="var(--red)" textColor="#fff" onClick={() => { handleDeletePeer(selectedPeer); closePeer() }} />
           </div>
         </Modal>
       )}

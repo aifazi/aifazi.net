@@ -49,6 +49,7 @@ router = APIRouter()
 class PeerCreate(BaseModel):
     device_name: str
     device_os: str = ""  # ios, android, windows, macos, linux
+    expires_in_hours: int | None = None  # guest peer: auto-removed after N hours
 
 
 class PeerResponse(BaseModel):
@@ -171,50 +172,385 @@ def _is_connected(hs: str | None) -> bool:
     return age is not None and age < CONNECTED_HANDSHAKE_MAX_AGE_S
 
 
-def _sync_sessions_from_handshakes(peers: list[dict]) -> None:
-    """Best-effort session tracking driven by live handshake state.
+def _month_key(now: datetime) -> str:
+    return now.strftime("%Y-%m")
 
-    The WireGuard app connects externally, so the backend never sees an
-    explicit "connect" event. When a peer's handshake is fresh and it has no
-    open session row, open one; when the handshake goes stale, close any open
-    session with the latest counters. Failures must never break the caller.
-    Each item in `peers` needs: id, user_id, transfer_rx, transfer_tx,
-    latest_handshake, endpoint.
+
+def _month_start_iso(now: datetime) -> str:
+    return now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat()
+
+
+def _month_usage_bytes(peer_id: str, month_start_iso: str) -> int:
+    """Closed-session traffic for a peer since the month started.
+
+    Open sessions report 0 bytes until they close, so quota enforcement lags
+    live traffic by at most one sync tick — acceptable for monthly caps.
     """
+    try:
+        res = (
+            supabase.table("vpn_sessions")
+            .select("bytes_rx,bytes_tx")
+            .eq("peer_id", peer_id)
+            .gte("connected_at", month_start_iso)
+            .limit(5000)
+            .execute()
+        )
+    except Exception:
+        return 0
+    total = 0
+    for s in (res.data or []):
+        try:
+            total += int(s.get("bytes_rx") or 0) + int(s.get("bytes_tx") or 0)
+        except (TypeError, ValueError):
+            continue
+    return total
+
+
+def _parse_iso(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+async def _sync_core(db_peers: list[dict], wg_stats: dict, now: datetime) -> tuple[list[dict], list[dict]]:
+    """Reconcile DB peers with live WireGuard state.
+
+    Handles, per peer: session open/close from handshake freshness, monthly
+    quota accounting (warn once per cycle, suspend, auto-restore on rollover),
+    guest expiry, and suspended-peer enforcement (a suspended peer that
+    reappears on the host is removed again).
+
+    Returns (events, views). Events drive alert mails; views are the
+    unredacted display rows for the admin endpoint. Failures are per-peer
+    and best-effort — they never break the caller.
+    """
+    now_iso = now.isoformat()
+    month = _month_key(now)
+    month_start = _month_start_iso(now)
+    events: list[dict] = []
+    views: list[dict] = []
+
     try:
         open_res = (
             supabase.table("vpn_sessions")
-            .select("id,peer_id")
+            .select("id,peer_id,connected_at")
             .is_("disconnected_at", "null")
             .execute()
         )
-        open_by_peer = {r["peer_id"]: r["id"] for r in (open_res.data or [])}
+        open_by_peer = {r["peer_id"]: r for r in (open_res.data or [])}
     except Exception as e:
-        log.warning("session sync: failed to list open sessions: %s", e)
-        return
-    now = datetime.now(timezone.utc).isoformat()
-    for p in peers:
+        log.warning("vpn sync: failed to list open sessions: %s", e)
+        open_by_peer = {}
+
+    for p in db_peers:
         try:
             peer_id = p["id"]
-            connected = _is_connected(p.get("latest_handshake"))
-            open_id = open_by_peer.get(peer_id)
-            if connected and not open_id:
-                endpoint = (p.get("endpoint") or "").split(":")[0]
+            stats = wg_stats.get(p.get("public_key", ""), {})
+            rx = stats.get("transfer_rx", 0)
+            tx = stats.get("transfer_tx", 0)
+            if not isinstance(rx, (int, float)):
+                rx = 0
+            if not isinstance(tx, (int, float)):
+                tx = 0
+            hs = stats.get("latest_handshake", "")
+            if not isinstance(hs, str):
+                hs = ""
+            endpoint = stats.get("endpoint", "") or ""
+            connected = _is_connected(hs)
+            status = p.get("status", "active")
+            view = {
+                "id": peer_id,
+                "user_id": p.get("user_id", ""),
+                "device_name": p.get("device_name", ""),
+                "device_os": p.get("device_os", ""),
+                "allocated_ip": p.get("allocated_ip", ""),
+                "public_key": p.get("public_key", ""),
+                "status": status,
+                "created_at": p.get("created_at", ""),
+                "transfer_rx": rx,
+                "transfer_tx": tx,
+                "connected": connected,
+                "latest_handshake": hs,
+                "endpoint": endpoint,
+                "quota_bytes": p.get("quota_bytes"),
+                "expires_at": p.get("expires_at"),
+                "notify_events": bool(p.get("notify_events")),
+            }
+
+            # --- Guest expiry ------------------------------------------------
+            exp = _parse_iso(p.get("expires_at"))
+            if exp is not None and now >= exp and status != "expired":
+                try:
+                    await remove_peer(p.get("public_key", ""), p.get("allocated_ip", ""))
+                except Exception as e:
+                    log.warning("vpn sync: WG removal failed on expiry for %s: %s", peer_id, e)
+                supabase.table("vpn_peers").update({
+                    "status": "expired",
+                }).eq("id", peer_id).execute()
+                view["status"] = "expired"
+                events.append({"type": "expired", "peer": dict(view), "user_id": p.get("user_id", "")})
+                views.append(view)
+                continue
+
+            # --- Suspended peers must stay off the host ----------------------
+            if status == "suspended":
+                if connected:
+                    # Reappeared (manual wg add?) — remove again.
+                    try:
+                        await remove_peer(p.get("public_key", ""), p.get("allocated_ip", ""))
+                    except Exception as e:
+                        log.warning("vpn sync: WG removal failed for suspended %s: %s", peer_id, e)
+                    connected = False
+                    view["connected"] = False
+                # Quota auto-restore on month rollover (usage sums reset).
+                if p.get("suspended_reason") == "quota":
+                    usage = _month_usage_bytes(peer_id, month_start)
+                    if p.get("quota_bytes") and usage < int(p["quota_bytes"]):
+                        try:
+                            peer_psk = decrypt_peer_secret(p.get("preshared_key"))
+                        except Exception:
+                            peer_psk = None
+                        try:
+                            await add_peer(
+                                public_key=p.get("public_key", ""),
+                                allowed_ips=f"{p.get('allocated_ip', '')}/32",
+                                preshared_key=peer_psk,
+                            )
+                            supabase.table("vpn_peers").update({
+                                "status": "active",
+                                "suspended_reason": None,
+                                "quota_warned_month": None,
+                            }).eq("id", peer_id).execute()
+                            view["status"] = "active"
+                            events.append({"type": "quota_restored", "peer": dict(view),
+                                           "user_id": p.get("user_id", "")})
+                        except Exception as e:
+                            log.warning("vpn sync: WG restore failed for %s: %s", peer_id, e)
+                views.append(view)
+                # Suspended peers don't open sessions.
+                _close_if_open(peer_id, open_by_peer, now_iso, rx, tx)
+                continue
+
+            # --- Monthly quota ------------------------------------------------
+            quota = p.get("quota_bytes")
+            try:
+                quota = int(quota) if quota is not None else None
+            except (TypeError, ValueError):
+                quota = None
+            if quota:
+                usage = _month_usage_bytes(peer_id, month_start)
+                view["usage_month_rx_tx"] = usage
+                if usage >= quota:
+                    try:
+                        await remove_peer(p.get("public_key", ""), p.get("allocated_ip", ""))
+                    except Exception as e:
+                        log.warning("vpn sync: WG removal failed on quota for %s: %s", peer_id, e)
+                    supabase.table("vpn_peers").update({
+                        "status": "suspended",
+                        "suspended_reason": "quota",
+                    }).eq("id", peer_id).execute()
+                    view["status"] = "suspended"
+                    view["connected"] = False
+                    events.append({"type": "quota_suspended", "peer": dict(view),
+                                   "user_id": p.get("user_id", ""), "usage": usage, "quota": quota})
+                    views.append(view)
+                    _close_if_open(peer_id, open_by_peer, now_iso, rx, tx)
+                    continue
+                if usage >= int(quota * 0.8) and p.get("quota_warned_month") != month:
+                    supabase.table("vpn_peers").update({
+                        "quota_warned_month": month,
+                    }).eq("id", peer_id).execute()
+                    events.append({"type": "quota_warned", "peer": dict(view),
+                                   "user_id": p.get("user_id", ""), "usage": usage, "quota": quota})
+
+            # --- Session open/close ------------------------------------------
+            open_row = open_by_peer.get(peer_id)
+            if connected and not open_row:
+                endpoint_ip = endpoint.split(":")[0]
                 supabase.table("vpn_sessions").insert({
                     "id": str(uuid.uuid4()),
                     "peer_id": peer_id,
                     "user_id": p.get("user_id", ""),
-                    "connected_at": now,
-                    "client_public_ip": endpoint,
+                    "connected_at": now_iso,
+                    "client_public_ip": endpoint_ip,
                 }).execute()
-            elif not connected and open_id:
+                events.append({"type": "connected", "peer": dict(view),
+                               "user_id": p.get("user_id", ""), "endpoint_ip": endpoint_ip})
+            elif not connected and open_row:
                 supabase.table("vpn_sessions").update({
-                    "disconnected_at": now,
-                    "bytes_rx": p.get("transfer_rx", 0),
-                    "bytes_tx": p.get("transfer_tx", 0),
-                }).eq("id", open_id).execute()
+                    "disconnected_at": now_iso,
+                    "bytes_rx": rx,
+                    "bytes_tx": tx,
+                }).eq("id", open_row["id"]).execute()
+                events.append({"type": "disconnected", "peer": dict(view),
+                               "user_id": p.get("user_id", ""),
+                               "connected_at": open_row.get("connected_at"),
+                               "bytes_rx": rx, "bytes_tx": tx})
+            views.append(view)
         except Exception as e:
-            log.warning("session sync: peer %s failed: %s", p.get("id"), e)
+            log.warning("vpn sync: peer %s failed: %s", p.get("id"), e)
+            views.append({
+                "id": p.get("id", ""), "user_id": "", "device_name": p.get("device_name", ""),
+                "device_os": p.get("device_os", ""), "allocated_ip": p.get("allocated_ip", ""),
+                "public_key": p.get("public_key", ""), "status": p.get("status", "active"),
+                "created_at": p.get("created_at", ""), "transfer_rx": 0, "transfer_tx": 0,
+                "connected": False, "latest_handshake": "", "endpoint": "",
+                "quota_bytes": p.get("quota_bytes"), "expires_at": p.get("expires_at"),
+                "notify_events": bool(p.get("notify_events")),
+            })
+    return events, views
+
+
+def _close_if_open(peer_id: str, open_by_peer: dict, now_iso: str, rx: int, tx: int) -> None:
+    open_row = open_by_peer.get(peer_id)
+    if not open_row:
+        return
+    try:
+        supabase.table("vpn_sessions").update({
+            "disconnected_at": now_iso,
+            "bytes_rx": rx,
+            "bytes_tx": tx,
+        }).eq("id", open_row["id"]).execute()
+    except Exception as e:
+        log.warning("vpn sync: session close failed for %s: %s", peer_id, e)
+
+
+def _mail(subject: str, *parts: str) -> tuple[str, str]:
+    """Join subject + body parts (avoids implicit string concatenation)."""
+    return subject, "".join(parts)
+
+
+def _vpn_alert_content(event: dict, username: str) -> tuple[str, str] | None:
+    """Subject + HTML body for a VPN event, or None to skip silently.
+
+    Connect/disconnect mails only go to peers opted in via `notify_events`
+    (tunnels flap on mobile networks — unfiltered they'd spam). Quota and
+    expiry mails always send: they change what the account may do.
+    Very short sessions (<60s, no traffic) never mail on disconnect.
+    """
+    peer = event.get("peer") or {}
+    name = peer.get("device_name", "VPN device")
+    etype = event.get("type")
+    if etype in ("connected", "disconnected") and not peer.get("notify_events"):
+        return None
+    if etype == "connected":
+        ep = event.get("endpoint_ip") or "unknown address"
+        return _mail(
+            f"VPN connected: {name}",
+            f"<p>Hi {username or 'there'},</p>"
+            f"<p>Your VPN device <strong>{name}</strong> just connected "
+            f"from <code>{ep}</code>.</p>"
+            f"<p>If this wasn't you, remove the device immediately.</p>",
+        )
+    if etype == "disconnected":
+        try:
+            started = _parse_iso(event.get("connected_at"))
+            dur_s = (datetime.now(timezone.utc) - started).total_seconds() if started else 0
+        except Exception:
+            dur_s = 0
+        moved = int(event.get("bytes_rx") or 0) + int(event.get("bytes_tx") or 0)
+        if dur_s < 60 and moved == 0:
+            return None
+        mins = int(dur_s // 60)
+        return _mail(
+            f"VPN disconnected: {name}",
+            f"<p>Hi {username or 'there'},</p>"
+            f"<p>Your VPN device <strong>{name}</strong> disconnected after "
+            f"about {mins} minute(s).</p>",
+        )
+    if etype == "quota_warned":
+        return _mail(
+            f"VPN data warning: {name}",
+            f"<p>Hi {username or 'there'},</p>"
+            f"<p>Your VPN device <strong>{name}</strong> used "
+            f"{_fmt_mb(event.get('usage', 0))} of its "
+            f"{_fmt_mb(event.get('quota', 0))} monthly quota (80%+).</p>",
+        )
+    if etype == "quota_suspended":
+        return _mail(
+            f"VPN suspended: {name}",
+            f"<p>Hi {username or 'there'},</p>"
+            f"<p>Your VPN device <strong>{name}</strong> hit its monthly "
+            f"quota ({_fmt_mb(event.get('quota', 0))}) and was suspended. "
+            f"It resumes automatically next month.</p>",
+        )
+    if etype == "quota_restored":
+        return _mail(
+            f"VPN restored: {name}",
+            f"<p>Hi {username or 'there'},</p>"
+            f"<p>Your VPN device <strong>{name}</strong> is active again "
+            f"for the new month.</p>",
+        )
+    if etype == "expired":
+        return _mail(
+            f"VPN guest access expired: {name}",
+            f"<p>Hi {username or 'there'},</p>"
+            f"<p>Guest VPN access for <strong>{name}</strong> has expired "
+            f"and the device was removed.</p>",
+        )
+    return None
+
+
+def _fmt_mb(n) -> str:
+    try:
+        return f"{float(n or 0) / (1024 * 1024):.1f} MB"
+    except (TypeError, ValueError):
+        return "0.0 MB"
+
+
+async def _dispatch_vpn_alerts(events: list[dict]) -> None:
+    """Mail alert content for sync events. Best-effort, never raises."""
+    if not events:
+        return
+    try:
+        from utils.email_queue import queue_email
+    except Exception as e:
+        log.warning("vpn alerts: email queue unavailable: %s", e)
+        return
+    try:
+        user_ids = list({e.get("user_id") for e in events if e.get("user_id")})
+        owners: dict[str, dict] = {}
+        if user_ids:
+            res = supabase.table("users").select("id,email,username").in_("id", user_ids).execute()
+            for r in (res.data or []):
+                owners[r["id"]] = r
+    except Exception as e:
+        log.warning("vpn alerts: owner lookup failed: %s", e)
+        return
+    for e in events:
+        try:
+            owner = owners.get(e.get("user_id", ""), {})
+            to = (owner.get("email") or "").strip()
+            if not to:
+                continue
+            content = _vpn_alert_content(e, owner.get("username", ""))
+            if not content:
+                continue
+            subject, html = content
+            await queue_email(to=to, subject=subject, html=html, purpose="vpn_alert")
+        except Exception as ex:
+            log.warning("vpn alerts: event %s failed: %s", e.get("type"), ex)
+
+
+async def vpn_maintenance_tick() -> dict:
+    """Hourly (scheduler) + on-demand reconciliation pass.
+
+    Loads all peers + live stats, runs the sync core, and dispatches alert
+    mails. Returns a small summary. Never raises.
+    """
+    try:
+        res = supabase.table("vpn_peers").select("*").execute()
+        peers = res.data or []
+        wg_stats = await parse_peer_stats()
+        events, _views = await _sync_core(peers, wg_stats, datetime.now(timezone.utc))
+        await _dispatch_vpn_alerts(events)
+        return {"peers": len(peers), "events": [e.get("type") for e in events]}
+    except Exception as e:
+        log.warning("vpn maintenance tick failed: %s", e)
+        return {"peers": 0, "events": [], "error": str(e)[:200]}
 
 
 def _generate_qr_base64(config_text: str) -> str:
@@ -325,6 +661,15 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
     except RuntimeError as e:
         raise HTTPException(503, str(e))
 
+    # Guest peers expire automatically (sync enforces + mails on expiry).
+    expires_at = None
+    if body.expires_in_hours is not None:
+        try:
+            hours = max(1, min(int(body.expires_in_hours), 720))
+        except (TypeError, ValueError):
+            raise HTTPException(400, "expires_in_hours must be 1..720")
+        expires_at = (datetime.now(timezone.utc) + timedelta(hours=hours)).isoformat()
+
     # Allocate IP + insert with retries: two concurrent creates could read the
     # same free IP, so a unique-violation on allocated_ip re-reads and retries
     # instead of failing or double-allocating.
@@ -346,6 +691,7 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
                 "device_os": body.device_os,
                 "status": "active",
                 "created_at": now,
+                "expires_at": expires_at,
             }).execute()
             break
         except Exception as e:
@@ -388,6 +734,7 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
         "config": config,
         "qr_code": f"data:image/png;base64,{qr_b64}" if qr_b64 else "",
         "status": "active",
+        "expires_at": expires_at,
     }
 
 
@@ -482,11 +829,12 @@ async def delete_peer(peer_id: str, user: dict = Depends(get_current_user)):
 class PeerUpdate(BaseModel):
     device_name: str | None = None
     device_os: str | None = None
+    notify_events: bool | None = None
 
 
 @router.patch("/peers/{peer_id}")
 async def update_peer(peer_id: str, body: PeerUpdate, user: dict = Depends(get_current_user)):
-    """Rename a peer / correct its OS tag. Scoped to the caller's peers."""
+    """Rename a peer, correct its OS tag, toggle connect alerts. Scoped to the caller's peers."""
     user_id = _get_user_id(user)
     peer = _get_peer_by_id(peer_id, user_id)
     if not peer:
@@ -499,6 +847,8 @@ async def update_peer(peer_id: str, body: PeerUpdate, user: dict = Depends(get_c
         updates["device_name"] = name
     if body.device_os is not None:
         updates["device_os"] = body.device_os.strip()[:32]
+    if body.notify_events is not None:
+        updates["notify_events"] = bool(body.notify_events)
     if not updates:
         raise HTTPException(400, "Nothing to update")
     supabase.table("vpn_peers").update(updates).eq("id", peer_id).execute()
@@ -507,9 +857,23 @@ async def update_peer(peer_id: str, body: PeerUpdate, user: dict = Depends(get_c
 
 @router.post("/peers/{peer_id}/rotate")
 async def rotate_keys(peer_id: str, user: dict = Depends(get_current_user)):
-    """Rotate a peer's WireGuard keypair. Returns new config + QR."""
+    """Rotate a peer's WireGuard keypair. Returns new config + QR.
+
+    Owners rotate their own peers; staff (e.g. from the admin panel's
+    one-click reissue) may rotate any peer.
+    """
+    from permissions import STAFF_ROLES
     user_id = _get_user_id(user)
     peer = _get_peer_by_id(peer_id, user_id)
+    if not peer and str(user.get("role", "")).lower() in STAFF_ROLES:
+        res = (
+            supabase.table("vpn_peers")
+            .select("*")
+            .eq("id", peer_id)
+            .limit(1)
+            .execute()
+        )
+        peer = (res.data or [None])[0]
     if not peer:
         raise HTTPException(404, "Peer not found")
 
@@ -619,58 +983,11 @@ async def admin_list_all_peers(user: dict = Depends(require_staff)):
     res = supabase.table("vpn_peers").select("*").order("created_at", desc=True).execute()
     peers = res.data or []
 
-    # Enrich with live WireGuard stats
+    # Reconcile + enrich via the shared sync core (sessions, quota, expiry).
+    # Runs on the full rows (needs real user_ids) BEFORE display redaction.
     wg_stats = await parse_peer_stats()
-    result = []
-    for p in peers:
-        # Same per-peer guard as list_peers: degrade, never 500 the list.
-        try:
-            stats = wg_stats.get(p.get("public_key", ""), {})
-            rx = stats.get("transfer_rx", 0)
-            tx = stats.get("transfer_tx", 0)
-            if not isinstance(rx, (int, float)):
-                rx = 0
-            if not isinstance(tx, (int, float)):
-                tx = 0
-            hs_str = stats.get("latest_handshake", "")
-            connected = _is_connected(hs_str)
-            result.append({
-                "id": p["id"],
-                "user_id": p.get("user_id", ""),
-                "device_name": p.get("device_name", ""),
-                "device_os": p.get("device_os", ""),
-                "allocated_ip": p.get("allocated_ip", ""),
-                "public_key": p.get("public_key", ""),
-                "status": p.get("status", "active"),
-                "created_at": p.get("created_at", ""),
-                "transfer_rx": rx,
-                "transfer_tx": tx,
-                "connected": bool(connected),
-                "latest_handshake": hs_str if isinstance(hs_str, str) else "",
-                "endpoint": stats.get("endpoint", ""),
-            })
-        except Exception as e:
-            log.warning("admin_list_all_peers: skipping corrupt peer %s: %s", p.get("id"), e)
-            result.append({
-                "id": p.get("id", ""),
-                "user_id": "",
-                "device_name": p.get("device_name", ""),
-                "device_os": p.get("device_os", ""),
-                "allocated_ip": p.get("allocated_ip", ""),
-                "public_key": p.get("public_key", ""),
-                "status": p.get("status", "active"),
-                "created_at": p.get("created_at", ""),
-                "transfer_rx": 0,
-                "transfer_tx": 0,
-                "connected": False,
-                "latest_handshake": "",
-                "endpoint": "",
-            })
-
-    # Best-effort: derive session rows from live handshake state so the
-    # Sessions tab reflects real connect/disconnect activity. Runs on the
-    # full rows (needs real user_ids) BEFORE display redaction below.
-    _sync_sessions_from_handshakes(result)
+    events, result = await _sync_core(peers, wg_stats, datetime.now(timezone.utc))
+    await _dispatch_vpn_alerts(events)
 
     if not is_admin:
         for p in result:
@@ -712,20 +1029,123 @@ async def admin_delete_peer(peer_id: str, _: dict = Depends(require_staff)):
     return {"message": "Peer deleted", "id": peer_id}
 
 
+class AdminPeerUpdate(BaseModel):
+    device_name: str | None = None
+    status: str | None = None  # active | suspended (manual)
+    quota_bytes: int | None = None  # null clears; 0 also clears
+    expires_at: str | None = None  # ISO timestamp, "" clears
+    notify_events: bool | None = None
+    extend_hours: int | None = None  # shift expires_at forward (guest extend)
+
+
+@router.patch("/admin/peers/{peer_id}")
+async def admin_update_peer(peer_id: str, body: AdminPeerUpdate, _: dict = Depends(require_staff)):
+    """Manage any peer: rename, suspend/unsuspend, quota, expiry, alerts."""
+    res = (
+        supabase.table("vpn_peers")
+        .select("*")
+        .eq("id", peer_id)
+        .limit(1)
+        .execute()
+    )
+    data = res.data or []
+    if not data:
+        raise HTTPException(404, "Peer not found")
+    peer = data[0]
+    updates: dict = {}
+    if body.device_name is not None:
+        name = body.device_name.strip()[:64]
+        if not name:
+            raise HTTPException(400, "Device name cannot be empty")
+        updates["device_name"] = name
+    if body.status is not None:
+        if body.status not in ("active", "suspended"):
+            raise HTTPException(400, "status must be active|suspended")
+        updates["status"] = body.status
+        updates["suspended_reason"] = "manual" if body.status == "suspended" else None
+        if body.status == "active":
+            updates["quota_warned_month"] = None
+    if body.quota_bytes is not None:
+        try:
+            q = int(body.quota_bytes)
+        except (TypeError, ValueError):
+            raise HTTPException(400, "quota_bytes must be a number")
+        updates["quota_bytes"] = q if q > 0 else None
+        if q <= 0:
+            updates["quota_warned_month"] = None
+    if body.expires_at is not None:
+        exp_raw = (body.expires_at or "").strip()
+        if not exp_raw:
+            updates["expires_at"] = None
+        else:
+            exp = _parse_iso(exp_raw)
+            if exp is None:
+                raise HTTPException(400, "expires_at must be an ISO timestamp")
+            updates["expires_at"] = exp.isoformat()
+    if body.extend_hours is not None:
+        try:
+            hours = max(1, min(int(body.extend_hours), 720))
+        except (TypeError, ValueError):
+            raise HTTPException(400, "extend_hours must be 1..720")
+        base = _parse_iso(peer.get("expires_at")) or datetime.now(timezone.utc)
+        if base.tzinfo is None:
+            base = base.replace(tzinfo=timezone.utc)
+        anchor = max(base, datetime.now(timezone.utc))
+        updates["expires_at"] = (anchor + timedelta(hours=hours)).isoformat()
+        if peer.get("status") == "expired":
+            updates["status"] = "active"
+    if body.notify_events is not None:
+        updates["notify_events"] = bool(body.notify_events)
+    if not updates:
+        raise HTTPException(400, "Nothing to update")
+
+    # Suspend takes effect immediately on the host; unsuspend re-adds.
+    if updates.get("status") == "suspended":
+        try:
+            await remove_peer(peer["public_key"], peer["allocated_ip"])
+        except Exception as e:
+            log.warning("admin update: WG removal failed for %s: %s", peer_id, e)
+    if updates.get("status") == "active" and peer.get("status") != "active":
+        try:
+            psk = decrypt_peer_secret(peer.get("preshared_key"))
+        except Exception:
+            psk = None
+        try:
+            await add_peer(
+                public_key=peer["public_key"],
+                allowed_ips=f"{peer['allocated_ip']}/32",
+                preshared_key=psk,
+            )
+        except Exception as e:
+            log.warning("admin update: WG re-add failed for %s: %s", peer_id, e)
+
+    supabase.table("vpn_peers").update(updates).eq("id", peer_id).execute()
+    return {"id": peer_id, **updates}
+
+
 @router.get("/admin/activity")
-async def admin_activity(days: int = 7, _: dict = Depends(require_staff)):
+async def admin_activity(
+    days: int = 7,
+    peer_id: str | None = None,
+    _: dict = Depends(require_staff),
+):
     """Per-day VPN activity for the Monitor tab: sessions + bytes.
 
     `days` clamped to 1..30. Bytes come from closed sessions (open ones
     report 0 until they close); session counts are exact regardless.
+    Optional `peer_id` scopes the chart to a single device.
     """
     days = max(1, min(days, 30))
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    res = (
+    q = (
         supabase.table("vpn_sessions")
         .select("connected_at,bytes_rx,bytes_tx")
         .gte("connected_at", cutoff)
-        .order("connected_at")
+    )
+    if peer_id:
+        q = q.eq("peer_id", peer_id)
+    res = (
+        q.order("connected_at")
         .limit(5000)
         .execute()
     )
