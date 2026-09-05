@@ -86,10 +86,28 @@ function VpnSection({ user }) {
     if (!confirm(`Remove "${peer.device_name}"?`)) return
     try {
       await api.delete(`/vpn/peers/${peer.id}`)
-      setSelectedPeer(null)
+      handleCloseConfig()
       fetchPeers().then(setPeers)
     } catch (err) {
       alert(err?.response?.data?.detail || 'Failed to delete device')
+    }
+  }
+
+  const handleCloseConfig = () => {
+    setSelectedPeer(null)
+    setQrCode('')
+    setConfig('')
+  }
+
+  const handleRename = async (peer) => {
+    const name = window.prompt('Rename device', peer.device_name)
+    if (!name) return
+    try {
+      const res = await api.patch(`/vpn/peers/${peer.id}`, { device_name: name })
+      setSelectedPeer({ ...peer, device_name: res.data?.device_name || name })
+      fetchPeers().then(setPeers)
+    } catch (err) {
+      alert(err?.response?.data?.detail || 'Failed to rename device')
     }
   }
 
@@ -146,7 +164,7 @@ function VpnSection({ user }) {
       {/* QR + Config modal */}
       {selectedPeer && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-          onClick={() => setSelectedPeer(null)}>
+          onClick={handleCloseConfig}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, maxWidth: 420, width: '90%', maxHeight: '85vh', overflow: 'auto' }}
             onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -154,7 +172,7 @@ function VpnSection({ user }) {
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{selectedPeer.device_name}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{selectedPeer.allocated_ip}</div>
               </div>
-              <button onClick={() => setSelectedPeer(null)} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 20, cursor: 'pointer' }}>×</button>
+              <button onClick={handleCloseConfig} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 20, cursor: 'pointer' }}>×</button>
             </div>
 
             {qrCode ? (
@@ -170,7 +188,7 @@ function VpnSection({ user }) {
 
             {config && (
               <pre style={{ background: 'var(--bg)', borderRadius: 8, padding: 12, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--muted)', overflow: 'auto', maxHeight: 120, marginBottom: 16, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-                {config}
+                {config.replace(/^(PrivateKey|PresharedKey)\s*=\s*.+$/gim, '$1 = •••••••• (hidden)')}
               </pre>
             )}
 
@@ -182,6 +200,9 @@ function VpnSection({ user }) {
                 Download .conf
               </NeonButton>
             </div>
+            <NeonButton onClick={() => handleRename(selectedPeer)} size="sm" variant="ghost" style={{ width: '100%', marginTop: 8 }}>
+              Rename Device
+            </NeonButton>
             <NeonButton onClick={() => handleDelete(selectedPeer)} size="sm" variant="ghost"
               style={{ width: '100%', marginTop: 8, borderColor: 'rgba(255,80,80,0.3)', color: 'rgba(255,80,80,0.8)' }}>
               Remove Device
