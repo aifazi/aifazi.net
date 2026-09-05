@@ -578,7 +578,14 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
         }).catch(() => {})
       } catch {}
     }
-    const onError = (e: ErrorEvent) => report('window', e.error || new Error(e.message), e.filename)
+    const onError = (e: ErrorEvent) => {
+      // Browsers deliberately mask cross-origin script errors as a bare
+      // "Script error." with no stack or filename — unactionable noise.
+      // Skip it so it never spams the monitor; real errors always carry
+      // a stack or filename and still get reported.
+      if (e.message === 'Script error.' && !e.filename && !(e.error && e.error.stack)) return
+      report('window', e.error || new Error(e.message), e.filename)
+    }
     const onRejection = (e: PromiseRejectionEvent) => report('unhandledrejection', e.reason instanceof Error ? e.reason : new Error(String(e.reason)))
     window.addEventListener('error', onError)
     window.addEventListener('unhandledrejection', onRejection)

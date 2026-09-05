@@ -750,13 +750,15 @@ async def _record_error(source: str, error_type: str, message: str, stack: str =
             supabase.table("error_logs").update({
                 "count": (row.get("count") or 0) + 1,
                 "last_seen": now,
-                "stack": (stack or "")[:2000],
+                # Keep the TAIL: Python tracebacks put the fault frame last,
+                # and head-truncation is what hid the Sep-2026 VPN fault line.
+                "stack": (stack or "")[-8000:],
             }).eq("id", row["id"]).execute()
             return {**row, "is_new": False}
         # New error — insert + alert
         row = {
             "source": source, "error_type": error_type, "message": str(message)[:1000],
-            "stack": (stack or "")[:2000], "endpoint": endpoint or "", "ip": ip or "",
+            "stack": (stack or "")[-8000:], "endpoint": endpoint or "", "ip": ip or "",
             "user_agent": user_agent or "", "url": url or "", "signature": sig,
             "first_seen": now, "last_seen": now, "count": 1, "notified": False,
         }
@@ -804,7 +806,7 @@ async def ingest_error(body: dict, request: Request):
     source = str(body.get("source", "frontend"))[:20]
     error_type = str(body.get("error_type", "Error"))[:100]
     message = str(body.get("message", "Unknown error"))[:1000]
-    stack = str(body.get("stack", ""))[:2000]
+    stack = str(body.get("stack", ""))[-8000:]
     endpoint = str(body.get("endpoint", ""))[:200]
     url = str(body.get("url", ""))[:500]
     ip = request.client.host if request.client else ""

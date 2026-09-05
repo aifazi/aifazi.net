@@ -449,7 +449,7 @@ function Dashboard({ onLogout }) {
       if (v === 'editor') setEditingPost(null)
       setView(v)
     } else {
-      toast({ title: 'No access to this section', type: 'error' })
+      toast.error('No access to this section', { title: 'Access denied' })
     }
   }
   // Fail closed: if the current view is not permitted (e.g. permissions
