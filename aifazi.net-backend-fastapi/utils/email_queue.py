@@ -293,6 +293,10 @@ async def dispatch_pending(limit: int = DEFAULT_BATCH) -> dict:
     limit = min(limit, MAX_BATCH)
 
     items = _claim(limit)
+    # WARNING (not info): app INFO logs are suppressed in production, and a
+    # silent drain is how stuck queues go unnoticed for weeks. Every run
+    # must leave an observable trace.
+    logger.warning("dispatch_pending: claimed=%d (limit=%d)", len(items), limit)
     if not items:
         return {"claimed": 0, "sent": 0, "failed": 0}
 
@@ -348,4 +352,8 @@ async def dispatch_pending(limit: int = DEFAULT_BATCH) -> dict:
             _mark_failed(qid, str(e))
             failed += 1
 
+    logger.warning(
+        "dispatch_pending: done claimed=%d sent=%d failed=%d",
+        len(items), sent, failed,
+    )
     return {"claimed": len(items), "sent": sent, "failed": failed}
