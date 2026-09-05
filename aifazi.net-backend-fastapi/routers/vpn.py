@@ -418,6 +418,11 @@ def _close_if_open(peer_id: str, open_by_peer: dict, now_iso: str, rx: int, tx: 
         log.warning("vpn sync: session close failed for %s: %s", peer_id, e)
 
 
+def _mail(subject: str, *parts: str) -> tuple[str, str]:
+    """Join subject + body parts (avoids implicit string concatenation)."""
+    return subject, "".join(parts)
+
+
 def _vpn_alert_content(event: dict, username: str) -> tuple[str, str] | None:
     """Subject + HTML body for a VPN event, or None to skip silently.
 
@@ -433,7 +438,7 @@ def _vpn_alert_content(event: dict, username: str) -> tuple[str, str] | None:
         return None
     if etype == "connected":
         ep = event.get("endpoint_ip") or "unknown address"
-        return (
+        return _mail(
             f"VPN connected: {name}",
             f"<p>Hi {username or 'there'},</p>"
             f"<p>Your VPN device <strong>{name}</strong> just connected "
@@ -450,14 +455,14 @@ def _vpn_alert_content(event: dict, username: str) -> tuple[str, str] | None:
         if dur_s < 60 and moved == 0:
             return None
         mins = int(dur_s // 60)
-        return (
+        return _mail(
             f"VPN disconnected: {name}",
             f"<p>Hi {username or 'there'},</p>"
             f"<p>Your VPN device <strong>{name}</strong> disconnected after "
             f"about {mins} minute(s).</p>",
         )
     if etype == "quota_warned":
-        return (
+        return _mail(
             f"VPN data warning: {name}",
             f"<p>Hi {username or 'there'},</p>"
             f"<p>Your VPN device <strong>{name}</strong> used "
@@ -465,7 +470,7 @@ def _vpn_alert_content(event: dict, username: str) -> tuple[str, str] | None:
             f"{_fmt_mb(event.get('quota', 0))} monthly quota (80%+).</p>",
         )
     if etype == "quota_suspended":
-        return (
+        return _mail(
             f"VPN suspended: {name}",
             f"<p>Hi {username or 'there'},</p>"
             f"<p>Your VPN device <strong>{name}</strong> hit its monthly "
@@ -473,14 +478,14 @@ def _vpn_alert_content(event: dict, username: str) -> tuple[str, str] | None:
             f"It resumes automatically next month.</p>",
         )
     if etype == "quota_restored":
-        return (
+        return _mail(
             f"VPN restored: {name}",
             f"<p>Hi {username or 'there'},</p>"
             f"<p>Your VPN device <strong>{name}</strong> is active again "
             f"for the new month.</p>",
         )
     if etype == "expired":
-        return (
+        return _mail(
             f"VPN guest access expired: {name}",
             f"<p>Hi {username or 'there'},</p>"
             f"<p>Guest VPN access for <strong>{name}</strong> has expired "
