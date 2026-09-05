@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
@@ -32,7 +32,7 @@ const OS_ICONS = { ios: '📱', android: '🤖', windows: '💻', macos: '🍎',
 
 function VpnPanelInner() {
   const { toast } = useToast()
-  const { confirm } = useDialog()
+  const { confirm, prompt } = useDialog()
   const isMobile = useIsMobile()
 
   const [peers, setPeers] = useState([])
@@ -40,10 +40,35 @@ function VpnPanelInner() {
   const [serverStatus, setServerStatus] = useState(null)
   const [activity, setActivity] = useState([])
   const [monitorSvc, setMonitorSvc] = useState(null)
+  const [rates, setRates] = useState({})
+  const ratesRef = useRef({})
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('peers')
   const [search, setSearch] = useState('')
   const [selectedPeer, setSelectedPeer] = useState(null)
+
+  // Live up/down speed per peer, derived from cumulative WireGuard counters
+  // across polls. Resets (host reboot) clamp to 0 instead of going negative.
+  const updateRates = useCallback((list) => {
+    const now = Date.now()
+    const prev = ratesRef.current
+    const next = {}
+    const display = {}
+    for (const p of list) {
+      const cur = { rx: p.transfer_rx || 0, tx: p.transfer_tx || 0, at: now }
+      const old = prev[p.id]
+      if (old && now > old.at && p.connected) {
+        const dt = (now - old.at) / 1000
+        display[p.id] = {
+          rxRate: Math.max(0, (cur.rx - old.rx) / dt),
+          txRate: Math.max(0, (cur.tx - old.tx) / dt),
+        }
+      }
+      next[p.id] = cur
+    }
+    ratesRef.current = next
+    setRates(display)
+  }, [])
 
   const load = useCallback(async () => {
     try {
@@ -54,7 +79,11 @@ function VpnPanelInner() {
         api.get('/vpn/admin/activity?days=7'),
         api.get('/monitor/status'),
       ])
-      if (peersRes.status === 'fulfilled') setPeers(peersRes.value.data?.peers || [])
+      if (peersRes.status === 'fulfilled') {
+        const list = peersRes.value.data?.peers || []
+        setPeers(list)
+        updateRates(list)
+      }
       if (statusRes.status === 'fulfilled') setServerStatus(statusRes.value.data)
       if (sessionsRes.status === 'fulfilled') setSessions(sessionsRes.value.data?.sessions || [])
       if (activityRes.status === 'fulfilled') setActivity(activityRes.value.data?.days || [])
@@ -67,7 +96,7 @@ function VpnPanelInner() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [updateRates])
 
   useEffect(() => {
     let cancelled = false
@@ -81,7 +110,11 @@ function VpnPanelInner() {
           api.get('/monitor/status'),
         ])
         if (!cancelled) {
-          if (peersRes.status === 'fulfilled') setPeers(peersRes.value.data?.peers || [])
+          if (peersRes.status === 'fulfilled') {
+            const list = peersRes.value.data?.peers || []
+            setPeers(list)
+            updateRates(list)
+          }
           if (statusRes.status === 'fulfilled') setServerStatus(statusRes.value.data)
           if (sessionsRes.status === 'fulfilled') setSessions(sessionsRes.value.data?.sessions || [])
           if (activityRes.status === 'fulfilled') setActivity(activityRes.value.data?.days || [])
@@ -98,7 +131,7 @@ function VpnPanelInner() {
     }
     run()
     return () => { cancelled = true }
-  }, [])
+  }, [updateRates])
   usePausableInterval(load, 30000)
 
   const handleDeletePeer = useCallback(async (peer) => {
@@ -117,6 +150,24 @@ function VpnPanelInner() {
       toast.error('Failed to delete peer')
     }
   }, [confirm, toast, load])
+
+  const handleRenamePeer = useCallback(async (peer) => {
+    const name = await prompt({
+      title: 'Rename device',
+      message: `New name for "${peer.device_name}" (${peer.allocated_ip})?`,
+      defaultValue: peer.device_name,
+      confirmText: 'Rename',
+    })
+    if (!name) return
+    try {
+      await api.patch(`/vpn/peers/${peer.id}`, { device_name: name })
+      toast.success('Device renamed')
+      if (selectedPeer?.id === peer.id) setSelectedPeer({ ...selectedPeer, device_name: name })
+      load()
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Failed to rename device')
+    }
+  }, [prompt, toast, load, selectedPeer])
 
   const handleDeleteSession = useCallback(async (session) => {
     const ok = await confirm({
@@ -331,6 +382,39 @@ function VpnPanelInner() {
             </div>
           )}
 
+          {/* Live now — connected devices only, one row per peer */}
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, letterSpacing: 0.8,
+            textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
+            Live now ({connectedPeers})
+          </div>
+          {connectedPeers === 0 ? (
+            <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 24 }}>
+              Nothing connected right now — rows appear here the moment a device handshakes.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 8, marginBottom: 24 }}>
+              {peers.filter(p => p.connected).map(p => (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12,
+                  background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.25)',
+                  borderRadius: 10, padding: '10px 14px' }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 5, flexShrink: 0,
+                    background: 'var(--green)', boxShadow: '0 0 8px var(--green)' }} />
+                  <span style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600, flex: 1 }}>
+                    {p.device_name}
+                    <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {p.allocated_ip}</span>
+                    {p.endpoint ? <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {p.endpoint}</span> : null}
+                  </span>
+                  <span style={{ color: 'var(--green)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+                    ↓ {formatBytes(rates[p.id]?.rxRate || 0)}/s ↑ {formatBytes(rates[p.id]?.txRate || 0)}/s
+                  </span>
+                  <span style={{ color: 'var(--text2)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+                    Σ ↓ {formatBytes(p.transfer_rx)} ↑ {formatBytes(p.transfer_tx)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Server + monitor cards */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
             <StatCard label="Server" value={serverStatus?.server_running ? 'Online' : 'Offline'}
@@ -438,6 +522,7 @@ function VpnPanelInner() {
           </div>
           <div style={{ marginTop: 20, display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <Btn label="Close" variant="ghost" onClick={() => setSelectedPeer(null)} />
+            <Btn label="Rename" variant="ghost" onClick={() => handleRenamePeer(selectedPeer)} />
             <Btn label="Delete Peer" variant="solid" color="var(--red)" textColor="#fff" onClick={() => { handleDeletePeer(selectedPeer); setSelectedPeer(null) }} />
           </div>
         </Modal>

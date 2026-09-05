@@ -479,6 +479,32 @@ async def delete_peer(peer_id: str, user: dict = Depends(get_current_user)):
     return {"message": "Peer deleted", "id": peer_id}
 
 
+class PeerUpdate(BaseModel):
+    device_name: str | None = None
+    device_os: str | None = None
+
+
+@router.patch("/peers/{peer_id}")
+async def update_peer(peer_id: str, body: PeerUpdate, user: dict = Depends(get_current_user)):
+    """Rename a peer / correct its OS tag. Scoped to the caller's peers."""
+    user_id = _get_user_id(user)
+    peer = _get_peer_by_id(peer_id, user_id)
+    if not peer:
+        raise HTTPException(404, "Peer not found")
+    updates: dict = {}
+    if body.device_name is not None:
+        name = body.device_name.strip()[:64]
+        if not name:
+            raise HTTPException(400, "Device name cannot be empty")
+        updates["device_name"] = name
+    if body.device_os is not None:
+        updates["device_os"] = body.device_os.strip()[:32]
+    if not updates:
+        raise HTTPException(400, "Nothing to update")
+    supabase.table("vpn_peers").update(updates).eq("id", peer_id).execute()
+    return {"id": peer_id, **updates}
+
+
 @router.post("/peers/{peer_id}/rotate")
 async def rotate_keys(peer_id: str, user: dict = Depends(get_current_user)):
     """Rotate a peer's WireGuard keypair. Returns new config + QR."""
@@ -822,6 +848,24 @@ async def end_session(session_id: str, user: dict = Depends(get_current_user)):
     }).eq("id", session_id).execute()
 
     return {"id": session_id, "disconnected_at": now}
+
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(session_id: str, user: dict = Depends(get_current_user)):
+    """Delete a session record belonging to the authenticated user."""
+    user_id = _get_user_id(user)
+    res = (
+        supabase.table("vpn_sessions")
+        .select("id")
+        .eq("id", session_id)
+        .eq("user_id", user_id)
+        .limit(1)
+        .execute()
+    )
+    if not (res.data or []):
+        raise HTTPException(404, "Session not found")
+    supabase.table("vpn_sessions").delete().eq("id", session_id).execute()
+    return {"message": "Session deleted", "id": session_id}
 
 
 @router.get("/sessions")
