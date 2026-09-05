@@ -80,22 +80,11 @@ jobs:
             done
           done <<< "$PROJECTS"
 
-      - name: Deploy backend to Coolify
-        env:
-          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
-        run: |
-          set -euo pipefail
-          if [ -z "${COOLIFY_WEBHOOK:-}" ]; then
-            echo "::warning::COOLIFY_WEBHOOK secret not set — skipping Coolify deploy."
-            exit 0
-          fi
-          echo "Triggering Coolify redeploy..."
-          STATUS=$(curl -fsS -o /dev/null -w "%{http_code}" -X POST "$COOLIFY_WEBHOOK")
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
-            echo "Coolify deploy triggered successfully (HTTP $STATUS)"
-          else
-            echo "::warning::Coolify webhook returned HTTP $STATUS"
-          fi
+      # NOTE (2026-09-05 incident): this workflow used to trigger a Coolify
+      # redeploy here too — removed. The GitHub-push webhook already
+      # auto-deploys, and two concurrent rolling updates on the same compose
+      # project delete each other's containers mid-healthcheck (failed
+      # deploy bqpwhh6civzmo4tua2ob2dzk). Single trigger only.
 
       - name: Prune GitHub deployment records
         env:
