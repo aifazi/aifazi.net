@@ -246,25 +246,38 @@ Proposed design (to refine before build):
 - [x] Repo: `.gitignore` covers keys/certs/signing artifacts + example
       re-allow ordering fixed; RLS lockdown migration written
       (`20260904000000_lockdown_chat_write_rls.sql`).
-- [ ] **OPS — apply the RLS migration**: files don't self-apply (no CLI
-      config). Run `20260904000000_lockdown_chat_write_rls.sql` in the
-      Supabase SQL editor (drops authenticated chat WRITES, keeps reads;
-      verified no client writes via REST — writes go through the API).
-- [ ] **OPS — nightly DB backups**: `scripts/backup-db.sh` added (VPS
-      cron + `BACKUP_PASSPHRASE` from root-only file, 7-day rotation,
-      verify step). Install: copy script to VPS, set passphrase, add
-      root crontab `0 3 * * *`, confirm first dump + test restore.
+- [x] **OPS — RLS migration applied 2026-09-05** (via `psql -f`, verified
+      in `pg_policies`): authenticated chat WRITES gone on all 5 tables,
+      reads intact, `service_role_all_*` on all 5. Follow-up fix same day:
+      the lockdown had also dropped `authenticated_read_chat_mutes/bans`,
+      silently killing live mute/ban Realtime for logged-in moderators —
+      restored (`auth_read_chat_mutes/bans`). `chat_room_user_keys`
+      verified correctly scoped (`user_id = auth.uid()`).
+- [x] **OPS — nightly DB backups installed 2026-09-05**: script at
+      `/opt/aifazi.net/scripts/backup-db.sh` (LF endings), passphrase in
+      root-only `/root/.aifazi-backup-pass` (shown once to Tanvir — needed
+      for restores), root cron `0 3 * * *`, first dump verified
+      (`postgres-20260905T082155Z.sql.gz.enc`, 304 KB, decrypt-check
+      passed), 7-day rotation. Still to do once: test restore to a
+      scratch DB.
 - [ ] **Mobile hardening leftovers**: biometric app-lock before VPN
       secrets (expo-local-authentication already installed); SecureStore
       `requireAuthentication`/`keychainAccessible` review; verify
       `secure_store_backup_rules` excludes tokens at next prebuild;
       push deep-link targets already server-authorized (verified).
 - [ ] **Decisions for Tanvir**: (a) purge unreachable bcrypt object via
-      history rewrite, or accept (unreachable, scrubbed at HEAD);
-      (b) require 1 reviewer on `main` (slows owner flow, adds eyeballs);
-      (c) Vercel preview protection (dashboard setting);
-      (d) ClamAV scan default stays OFF (turning ON 503s uploads without
-      a daemon — needs daemon deploy first).
+      history rewrite, or accept (unreachable, scrubbed at HEAD —
+      recommendation 2026-09-05: ACCEPT, no evidence of reuse; rewrite
+      would force every clone to re-clone);
+      (b) require 1 reviewer on `main` — recommendation 2026-09-05: DO NOT
+      enable. Repo has exactly one collaborator (`aifazi`); authors cannot
+      approve their own PRs, so this would deadlock ALL merges. The
+      owner-automerge + 6 required checks model is correct for solo;
+      (c) Vercel preview protection (dashboard: project Settings →
+      Deployment Protection → enable for previews);
+      (d) ClamAV scan default stays OFF — verified 2026-09-05: no daemon,
+      container, or process anywhere on the VPS; turning the default ON
+      would 503 all uploads. Deploy a daemon first if scanning is wanted.
 
 ## 7. Release process (reference)
 
