@@ -14,7 +14,7 @@ import {
 } from 'react-native'
 import { useTheme } from '@/src/theme'
 import { useOverlay } from '@/src/components/overlay'
-import { getPeer } from '@/src/lib/vpn'
+import { getPeer, rotatePeerKeys } from '@/src/lib/vpn'
 
 interface Props {
   visible: boolean
@@ -83,6 +83,29 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
   const handleClose = () => {
     clearSecrets()
     onClose()
+  }
+
+  const handleReissueKeys = async () => {
+    if (!peerId) return
+    const ok = await overlay.confirm({
+      title: 'Reissue keys?',
+      message:
+        'This generates a brand-new keypair. The old config stops ' +
+        'working immediately — update WireGuard on this device right away.',
+      confirmText: 'Reissue',
+    })
+    if (!ok) return
+    setLoading(true)
+    try {
+      const res = await rotatePeerKeys(peerId)
+      if (res.qr_code) setQrUri(res.qr_code)
+      if (res.config) setConfig(res.config)
+      overlay.toast('Keys reissued — update this device now', 'success')
+    } catch (err: any) {
+      overlay.toast(err?.response?.data?.detail ?? 'Failed to reissue keys', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleShareConfig = async () => {
@@ -249,6 +272,23 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
                   >
                     <Text style={{ color: c.text, fontSize: 14, fontWeight: '600' }}>
                       Share / Send to Device
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleReissueKeys}
+                    style={{
+                      backgroundColor: c.bg,
+                      borderRadius: 12,
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: c.border,
+                    }}
+                  >
+                    <Text style={{ color: c.text, fontSize: 14, fontWeight: '600' }}>
+                      Reissue Keys
                     </Text>
                   </TouchableOpacity>
 

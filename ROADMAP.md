@@ -147,6 +147,28 @@
       live peer freshness). Enabled in prod `enabled_services`
       2026-09-05; first check runs at the next monitor cycle (or Admin
       → Monitoring → run now).
+- [x] **VPN live traffic + one-peer-per-device view**: Monitor tab
+      "Live now" section — connected peers only, one row per device,
+      with live up/down rates (from successive polls), totals, endpoint.
+- [x] **VPN quotas**: `quota_bytes` per peer, monthly accounting from
+      closed sessions, 80% warning mail, auto-suspend + auto-restore on
+      month rollover (`suspended_reason`), admin set/clear in peer modal
+      with usage bar.
+- [x] **Guest peers**: `expires_in_hours` on create, `expires_at`
+      management (extend/clear) in admin modal, hourly scheduler +
+      sync enforcement, expiry mail.
+- [x] **Connect/offline alerts**: per-peer `notify_events` opt-in
+      (profile + admin), flap guard (<60s zero-traffic disconnects
+      silent), quota/expiry mails always send.
+- [x] **Per-peer history**: `activity?peer_id=` + mini 7d chart in the
+      peer modal.
+- [x] **One-click reissue**: rotate + QR inline in admin modal and
+      mobile PeerConfigModal; staff may rotate any peer.
+- [x] **Session delete endpoint** (`DELETE /vpn/sessions/{id}`,
+      owner-scoped) — the panel already called it (was 404).
+- [x] **Rename device**: `PATCH /vpn/peers/{id}` (owner-scoped) in
+      admin modal + profile modal; secrets masked + cleared in web
+      modal (parity with mobile).
 - [ ] **Native in-app tunnel** (mobile): needs `npx expo prebuild` +
       native WireGuard module + EAS build. Management (CRUD/QR/stats)
       works today; the tunnel itself lives in the external WireGuard app.
