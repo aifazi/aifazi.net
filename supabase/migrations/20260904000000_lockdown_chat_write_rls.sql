@@ -55,3 +55,14 @@ BEGIN
   END LOOP;
 END
 $$;
+
+-- Live-update reads the frontend Realtime subscriptions need (AdminChat
+-- subscribes to chat_mutes/chat_bans INSERT/DELETE with the authenticated
+-- client). Reads are low-risk (mute/ban/member lists render as UI badges);
+-- writes above stay backend-only.
+DROP POLICY IF EXISTS auth_read_chat_mutes ON chat_mutes;
+CREATE POLICY auth_read_chat_mutes ON chat_mutes
+  FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS auth_read_chat_bans ON chat_bans;
+CREATE POLICY auth_read_chat_bans ON chat_bans
+  FOR SELECT TO authenticated USING (true);
