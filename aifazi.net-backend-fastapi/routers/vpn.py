@@ -259,20 +259,39 @@ async def list_peers(user: dict = Depends(get_current_user)):
     wg_stats = await parse_peer_stats()
     result = []
     for p in peers:
-        stats = wg_stats.get(p["public_key"], {})
-        hs_str = stats.get("latest_handshake", "")
-        connected = _is_connected(hs_str)
-        result.append({
-            "id": p["id"],
-            "device_name": p["device_name"],
-            "device_os": p.get("device_os", ""),
-            "allocated_ip": p["allocated_ip"],
-            "status": p.get("status", "active"),
-            "created_at": p.get("created_at", ""),
-            "transfer_rx": stats.get("transfer_rx", 0),
-            "transfer_tx": stats.get("transfer_tx", 0),
-            "connected": connected,
-        })
+        # Per-peer guard: one corrupt row or unexpected WG line must degrade
+        # to safe defaults, never 500 the whole list (cf. Sep-2026
+        # float-vs-str handshake outage on these endpoints).
+        try:
+            stats = wg_stats.get(p["public_key"], {})
+            hs_str = stats.get("latest_handshake", "")
+            connected = _is_connected(hs_str)
+            rx = stats.get("transfer_rx", 0)
+            tx = stats.get("transfer_tx", 0)
+            result.append({
+                "id": p["id"],
+                "device_name": p["device_name"],
+                "device_os": p.get("device_os", ""),
+                "allocated_ip": p["allocated_ip"],
+                "status": p.get("status", "active"),
+                "created_at": p.get("created_at", ""),
+                "transfer_rx": rx if isinstance(rx, (int, float)) else 0,
+                "transfer_tx": tx if isinstance(tx, (int, float)) else 0,
+                "connected": bool(connected),
+            })
+        except Exception as e:
+            log.warning("list_peers: skipping corrupt peer %s: %s", p.get("id"), e)
+            result.append({
+                "id": p.get("id", ""),
+                "device_name": p.get("device_name", ""),
+                "device_os": p.get("device_os", ""),
+                "allocated_ip": p.get("allocated_ip", ""),
+                "status": p.get("status", "active"),
+                "created_at": p.get("created_at", ""),
+                "transfer_rx": 0,
+                "transfer_tx": 0,
+                "connected": False,
+            })
     return {"peers": result}
 
 
@@ -524,21 +543,37 @@ async def get_stats(user: dict = Depends(get_current_user)):
     total_tx = 0
     result = []
     for p in peers:
-        stats = wg_stats.get(p["public_key"], {})
-        rx = stats.get("transfer_rx", 0)
-        tx = stats.get("transfer_tx", 0)
-        total_rx += rx
-        total_tx += tx
-        hs_str = stats.get("latest_handshake", "")
-        connected = _is_connected(hs_str)
-        result.append({
-            "id": p["id"],
-            "device_name": p["device_name"],
-            "allocated_ip": p["allocated_ip"],
-            "transfer_rx": rx,
-            "transfer_tx": tx,
-            "connected": connected,
-        })
+        # Same per-peer guard as list_peers: degrade, never 500 the list.
+        try:
+            stats = wg_stats.get(p["public_key"], {})
+            rx = stats.get("transfer_rx", 0)
+            tx = stats.get("transfer_tx", 0)
+            if not isinstance(rx, (int, float)):
+                rx = 0
+            if not isinstance(tx, (int, float)):
+                tx = 0
+            total_rx += rx
+            total_tx += tx
+            hs_str = stats.get("latest_handshake", "")
+            connected = _is_connected(hs_str)
+            result.append({
+                "id": p["id"],
+                "device_name": p["device_name"],
+                "allocated_ip": p["allocated_ip"],
+                "transfer_rx": rx,
+                "transfer_tx": tx,
+                "connected": bool(connected),
+            })
+        except Exception as e:
+            log.warning("get_stats: skipping corrupt peer %s: %s", p.get("id"), e)
+            result.append({
+                "id": p.get("id", ""),
+                "device_name": p.get("device_name", ""),
+                "allocated_ip": p.get("allocated_ip", ""),
+                "transfer_rx": 0,
+                "transfer_tx": 0,
+                "connected": False,
+            })
 
     return {"peers": result, "total_rx": total_rx, "total_tx": total_tx}
 
@@ -562,26 +597,49 @@ async def admin_list_all_peers(user: dict = Depends(require_staff)):
     wg_stats = await parse_peer_stats()
     result = []
     for p in peers:
-        stats = wg_stats.get(p.get("public_key", ""), {})
-        rx = stats.get("transfer_rx", 0)
-        tx = stats.get("transfer_tx", 0)
-        hs_str = stats.get("latest_handshake", "")
-        connected = _is_connected(hs_str)
-        result.append({
-            "id": p["id"],
-            "user_id": p.get("user_id", ""),
-            "device_name": p.get("device_name", ""),
-            "device_os": p.get("device_os", ""),
-            "allocated_ip": p.get("allocated_ip", ""),
-            "public_key": p.get("public_key", ""),
-            "status": p.get("status", "active"),
-            "created_at": p.get("created_at", ""),
-            "transfer_rx": rx,
-            "transfer_tx": tx,
-            "connected": connected,
-            "latest_handshake": hs_str,
-            "endpoint": stats.get("endpoint", ""),
-        })
+        # Same per-peer guard as list_peers: degrade, never 500 the list.
+        try:
+            stats = wg_stats.get(p.get("public_key", ""), {})
+            rx = stats.get("transfer_rx", 0)
+            tx = stats.get("transfer_tx", 0)
+            if not isinstance(rx, (int, float)):
+                rx = 0
+            if not isinstance(tx, (int, float)):
+                tx = 0
+            hs_str = stats.get("latest_handshake", "")
+            connected = _is_connected(hs_str)
+            result.append({
+                "id": p["id"],
+                "user_id": p.get("user_id", ""),
+                "device_name": p.get("device_name", ""),
+                "device_os": p.get("device_os", ""),
+                "allocated_ip": p.get("allocated_ip", ""),
+                "public_key": p.get("public_key", ""),
+                "status": p.get("status", "active"),
+                "created_at": p.get("created_at", ""),
+                "transfer_rx": rx,
+                "transfer_tx": tx,
+                "connected": bool(connected),
+                "latest_handshake": hs_str if isinstance(hs_str, str) else "",
+                "endpoint": stats.get("endpoint", ""),
+            })
+        except Exception as e:
+            log.warning("admin_list_all_peers: skipping corrupt peer %s: %s", p.get("id"), e)
+            result.append({
+                "id": p.get("id", ""),
+                "user_id": "",
+                "device_name": p.get("device_name", ""),
+                "device_os": p.get("device_os", ""),
+                "allocated_ip": p.get("allocated_ip", ""),
+                "public_key": p.get("public_key", ""),
+                "status": p.get("status", "active"),
+                "created_at": p.get("created_at", ""),
+                "transfer_rx": 0,
+                "transfer_tx": 0,
+                "connected": False,
+                "latest_handshake": "",
+                "endpoint": "",
+            })
 
     # Best-effort: derive session rows from live handshake state so the
     # Sessions tab reflects real connect/disconnect activity. Runs on the
