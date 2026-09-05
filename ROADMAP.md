@@ -15,6 +15,13 @@
       2026-09-04 (row + env vars removed, only `supabase-*` remains).
       Live VPN runs natively on the host (`wg-api.service`, `wg0`).
 - [x] **Mail provider moved to Resend (decision 2026-09-05, Brevo out)**.
+      Verified live same day: `delivered` webhook flipped a row, 154
+      sent total. 12 stale `pending` rows (Aug 16–Sep 3, never claimed
+      by the drain, retry 0) cancelled 2026-09-05 — expired
+      transactional mail, would only confuse recipients. Drain
+      observability shipped (#175) so the next run is diagnosable;
+      root cause of the silent skip still open — trigger a manual
+      drain (Admin → Mail → process pending) and read claimed/sent.
       Domain verified in Resend by Tanvir. Remaining user steps:
       (a) Resend dashboard → Webhooks → Add endpoint
       `https://api.aifazi.net/api/admin/mail/queue/webhook/resend`,
