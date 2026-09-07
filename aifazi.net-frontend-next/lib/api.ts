@@ -98,6 +98,7 @@ api.interceptors.response.use(
         }
       }
     }
+    if (err.response?.status === 403) clearStaffClaims()
     return Promise.reject(err)
   }
 )
@@ -255,9 +256,29 @@ export function clearAuthTokens(opts?: { revoke?: boolean }) {
   // is destructive: a transient failure (network blip, cross-tab rotation race)
   // would permanently kill a still-valid session. Pass { revoke: false } there so
   // the cookies survive and the next hydrate self-heals via /auth/me.
+  const done = () => window.dispatchEvent(new Event('auth-change'))
   if (opts?.revoke !== false) {
-    void fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {})
+    // Await revocation BEFORE notifying: listeners re-hydrate on auth-change,
+    // and must never observe (or act on) a session the server still honors.
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+      .catch(() => {})
+      .finally(done)
+  } else {
+    done()
   }
+}
+
+/** Drop cached staff claims without touching the session.
+
+ * Called on HTTP 403: a demoted/revoked staffer keeps a stale
+ * `aifazi_effective_role` in localStorage (cleared otherwise only at
+ * logout), which gates staff UI. The backend remains the real enforcer;
+ * this just stops the UI from offering actions that will 403.
+ */
+export function clearStaffClaims() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('aifazi_effective_role')
+  localStorage.removeItem('aifazi_permissions')
   window.dispatchEvent(new Event('auth-change'))
 }
 

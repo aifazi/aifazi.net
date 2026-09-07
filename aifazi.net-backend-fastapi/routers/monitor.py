@@ -117,6 +117,7 @@ SERVICES = [
     {"name": "email",       "label": "Email Service"},
     {"name": "fivem",       "label": "FiveM Server"},
     {"name": "mobile",      "label": "Mobile App"},
+    {"name": "vpn",         "label": "VPN"},
 ]
 
 
@@ -247,6 +248,43 @@ async def _check_mobile():
         return False, lat, type(e).__name__
 
 
+async def _check_vpn():
+    """WireGuard server health: host API reachable, interface up, peer mix.
+
+    DOWN only when the server itself is unreachable/down. An idle fleet
+    (peers exist, none recently handshaked) is still UP — idleness is
+    reported in the detail string, not as an outage, so alerts don't fire
+    just because nobody is connected at 4am.
+    """
+    start = time.perf_counter()
+    try:
+        from utils.wireguard import is_interface_up, parse_peer_stats
+        from routers.vpn import CONNECTED_HANDSHAKE_MAX_AGE_S, _handshake_age_seconds
+        from database import supabase as _sb
+        up = await is_interface_up()
+        lat = round((time.perf_counter() - start) * 1000)
+        if not up:
+            return False, lat, "server down"
+        try:
+            db = _sb.table("vpn_peers").select("public_key").execute()
+            keys = [r.get("public_key", "") for r in (db.data or [])]
+        except Exception:
+            keys = []
+        connected = 0
+        try:
+            stats = await parse_peer_stats()
+            for k in keys:
+                age = _handshake_age_seconds(stats.get(k, {}).get("latest_handshake", ""))
+                if age is not None and age < CONNECTED_HANDSHAKE_MAX_AGE_S:
+                    connected += 1
+        except Exception:
+            pass
+        return True, lat, f"{len(keys)} peers, {connected} connected"
+    except Exception as e:
+        lat = round((time.perf_counter() - start) * 1000)
+        return False, lat, type(e).__name__
+
+
 CHECKERS = {
     "frontend": _check_frontend,
     "backend": _check_backend,
@@ -254,6 +292,7 @@ CHECKERS = {
     "email": _check_email,
     "fivem": _check_fivem,
     "mobile": _check_mobile,
+    "vpn": _check_vpn,
 }
 
 
@@ -750,13 +789,15 @@ async def _record_error(source: str, error_type: str, message: str, stack: str =
             supabase.table("error_logs").update({
                 "count": (row.get("count") or 0) + 1,
                 "last_seen": now,
-                "stack": (stack or "")[:2000],
+                # Keep the TAIL: Python tracebacks put the fault frame last,
+                # and head-truncation is what hid the Sep-2026 VPN fault line.
+                "stack": (stack or "")[-8000:],
             }).eq("id", row["id"]).execute()
             return {**row, "is_new": False}
         # New error — insert + alert
         row = {
             "source": source, "error_type": error_type, "message": str(message)[:1000],
-            "stack": (stack or "")[:2000], "endpoint": endpoint or "", "ip": ip or "",
+            "stack": (stack or "")[-8000:], "endpoint": endpoint or "", "ip": ip or "",
             "user_agent": user_agent or "", "url": url or "", "signature": sig,
             "first_seen": now, "last_seen": now, "count": 1, "notified": False,
         }
@@ -804,7 +845,7 @@ async def ingest_error(body: dict, request: Request):
     source = str(body.get("source", "frontend"))[:20]
     error_type = str(body.get("error_type", "Error"))[:100]
     message = str(body.get("message", "Unknown error"))[:1000]
-    stack = str(body.get("stack", ""))[:2000]
+    stack = str(body.get("stack", ""))[-8000:]
     endpoint = str(body.get("endpoint", ""))[:200]
     url = str(body.get("url", ""))[:500]
     ip = request.client.host if request.client else ""

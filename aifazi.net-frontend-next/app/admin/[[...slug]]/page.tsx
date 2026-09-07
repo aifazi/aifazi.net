@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { cookies, headers } from 'next/headers'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { SITE_URL, API_URL } from '@/lib/config'
 
@@ -8,17 +8,15 @@ const BACKEND_URL = API_URL
 async function verifyAdminSession(): Promise<{ valid: boolean; user?: any }> {
   const cookieStore = await cookies()
   const cookieHeader = cookieStore.toString()
-  const requestHeaders = await headers()
-  const forwardedFor = requestHeaders.get('x-forwarded-for')
-  const realIp = requestHeaders.get('x-real-ip')
+  // NOTE: client X-Forwarded-For / X-Real-IP are deliberately NOT forwarded.
+  // They are attacker-controlled and the backend only trusts CF-Connecting-IP
+  // behind CF-Ray — forwarding them could only pollute audit logs, never help.
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/auth/verify`, {
       method: 'GET',
       headers: {
         Cookie: cookieHeader,
-        ...(forwardedFor && { 'X-Forwarded-For': forwardedFor }),
-        ...(realIp && { 'X-Real-IP': realIp }),
       },
       cache: 'no-store',
     })
@@ -44,7 +42,9 @@ function escapeJsonForInline(value: unknown): string {
 export default async function AdminPage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { valid, user } = await verifyAdminSession()
 
-  const allowedRoles = ['admin', 'moderator', 'editor']
+  // 'chat' included: chat staff land on the Live Chat section via the
+  // dashboard's first-permitted redirect instead of a login loop.
+  const allowedRoles = ['admin', 'moderator', 'editor', 'chat']
   const isStaff = valid && user && allowedRoles.includes(user.role)
 
   if (!isStaff) {

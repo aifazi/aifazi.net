@@ -14,12 +14,24 @@
 - [x] **Coolify: delete dead `wireguard-easy` service** — soft-deleted
       2026-09-04 (row + env vars removed, only `supabase-*` remains).
       Live VPN runs natively on the host (`wg-api.service`, `wg0`).
-- [ ] **Coolify: set `MAIL_WEBHOOK_SECRET`** (runtime env, then redeploy).
-      Value generated 2026-09-03 (kept out of git — ask Tanvir):
-      64-hex string. Then configure Brevo/Resend inbound webhook:
-      `https://api.aifazi.net/api/admin/mail/queue/webhook/inbound`
-      with `X-Webhook-Key: <secret>`. Until set, `/webhook/inbound`
-      rejects all delivery events (backend logs a warning at startup).
+- [x] **Mail provider moved to Resend (decision 2026-09-05, Brevo out)**.
+      Verified live same day: `delivered` webhook flipped a row, 154
+      sent total. 12 stale `pending` rows (Aug 16–Sep 3, never claimed
+      by the drain, retry 0) cancelled 2026-09-05 — expired
+      transactional mail, would only confuse recipients. Drain
+      observability shipped (#175) so the next run is diagnosable;
+      root cause of the silent skip still open — trigger a manual
+      drain (Admin → Mail → process pending) and read claimed/sent.
+      Domain verified in Resend by Tanvir. Remaining user steps:
+      (a) Resend dashboard → Webhooks → Add endpoint
+      `https://api.aifazi.net/api/admin/mail/queue/webhook/resend`,
+      subscribe `email.delivered`, `email.bounced`, `email.complained`,
+      `email.opened`, `email.clicked`; (b) confirm the shown `whsec_…`
+      secret matches Coolify `RESEND_WEBHOOK_SECRET` (already set — if
+      the webhook is new, update the env + redeploy); (c) Admin →
+      Mail → Resend tab → paste API key + from-address on the verified
+      domain → Save → Test. The generic Brevo `/webhook/inbound` path
+      stays dormant (no `MAIL_WEBHOOK_SECRET` needed anymore).
 - [x] **Vercel: confirm Node 22 runtime** — confirmed 2026-09-04 via
       dashboard screenshot (`22.x`). (Did not fix the 500 by itself —
       the cause was the `isomorphic-dompurify` import, §1.)
@@ -79,6 +91,67 @@
       shared, and prefer Coolify file-mount secrets for the most sensitive
       values long-term.
 
+## 0c. Nextcloud Talk + VPS tune-up (2026-09-07 audit)
+
+- [x] **Talk calls fixed**: "could not establish a connection… TURN server
+      might be needed" was correct — Talk (spreed 24.0.4) had zero STUN/TURN
+      configured. Deployed `coturn/coturn:4.6` on host network
+      (`coturn` container, restart-always, config `/etc/coturn/turnserver.conf`
+      mode 600, realm `cloud.aifazi.net`, relay ports 49160–49200);
+      firewall ACCEPTs for 3478 TCP+UDP + relay range (persisted);
+      `occ talk:stun:add stun.nextcloud.com:443` +
+      `occ talk:turn:add --secret=… turn cloud.aifazi.net:3478 udp,tcp`.
+      Port 3478 verified reachable from the internet. Retest a call —
+      including one mobile-data participant — to confirm.
+- [x] **Deleted stale `nextcloud-with-postgres` service** (no containers,
+      only an sslip fqdn). Live stack is the `nextcloud` service
+      (`cloud.aifazi.net`, LE cert present).
+- [x] **Pruned 1.1 GB** unused Docker images; fixed
+      `overwrite.cli.url → https://cloud.aifazi.net`.
+- [x] **Call smoothness tuning (2026-09-07)**: set
+      `relay-ip=75.119.131.157` in coturn (was advertising private
+      10.x/fd00 candidates → failed-candidate delay) and restarted the
+      FiveM server, which was burning 44–61% CPU with zero players
+      (runaway resource — now ~22%, load avg 4.1 vs 5.8). User confirms
+      calls smoother. If FiveM climbs again with no players, find the
+      hot resource in txAdmin instead of restarting.
+- [ ] Load watch: revisit if load avg stays >5 without FiveM players
+      online. supabase-meta's 5s node healthcheck still churns CPU;
+      upstream image behavior, ignore.
+- [ ] Optional later: TURN over TLS (`turns:` on 5349 with the LE cert
+      mounted) for networks that block plain 3478; standalone signaling
+      (HPB) only if group calls with 5+ participants struggle.
+
+## 0e. Self-hosted mail test track (Stalwart, 2026-09-07)
+
+- [x] Deployed via Coolify one-click service (`stalwart-*`, pinned
+      `v0.16.13`, named volumes, healthy). Raw-docker experiment removed.
+      Ports 25/465/587/143/993/110/995/4190 published; firewall ACCEPTs
+      persisted. v0.16 notes: no `internal` directory file-config — first
+      boot MUST go through the webadmin bootstrap wizard; `-c` points at
+      the registry file (auto-created, keep it on a writable volume).
+- [x] Wizard done (hostname `mailt.aifazi.net`, RocksDB at
+      `/var/lib/stalwart/data`, admin `admin@mailt.aifazi.net`).
+      Loopback proven: SMTP-465 auth + send → local delivery → IMAP-993
+      read (`INBOX` has the probe).
+- [x] Webmail live: SnappyMail (`djmaze/snappymail`, serves :8888,
+      Traefik `mail.aifazi.net` → 8888, LE cert auto-issued) with `mailt`
+      + `aifazi.net` domain entries (IMAP 993 + SMTP 465 SSL, cert verify
+      off for Stalwart's setup cert). Full loop proven in webmail UI:
+      inbound internet mail + loopback probe both in INBOX.
+- [ ] Webadmin → Listeners → enable submission on **587** (nothing
+      listens there now; 25/465/143/993 work). Needs a TLS cert to be
+      useful — see DNS step (LE via Traefik once `mailt` resolves).
+- [ ] DNS for deliverability testing (Cloudflare, test subdomain first —
+      production `aifazi.net` MX stays on Zoho until proven):
+      `A mailt → 75.119.131.157`; `MX mailt → mailt.aifazi.net` (pri 10);
+      `TXT mailt SPF "v=spf1 mx ~all"`; DKIM `TXT` from webadmin
+      (Domains → mailt → DKIM → copy selector record); `TXT _dmarc.mailt
+      "v=dmarc1; p=none; rua=mailto:tanvir@aifazi.net"`.
+      Then: send test→Gmail (check headers auth-results), receive
+      Gmail→test@ (check arrival), only then plan the real MX cutover
+      (+ PTR `mail.aifazi.net` in Contabo panel + warmup).
+
 ## 1. Production outage follow-up (anon 500s since 2026-08-31)
 
 - [x] Root-caused (first wave): `ERR_REQUIRE_ESM` — CJS `whatwg-url@17`
@@ -132,19 +205,57 @@
       post-#157 backend deploys).
 - [ ] Users: one peer per device (never reuse a peer on two devices);
       log in as `admin@aifazi.net` to manage the existing peers.
+- [x] **VPN monitor**: `vpn` service in the uptime monitor (host API +
+      interface + peer mix check, idleness is UP not DOWN so 4am doesn't
+      page); `GET /vpn/admin/activity?days=` per-day sessions/bytes;
+      VpnPanel Monitor tab (alerts, server/uptime cards, 7-day chart,
+      live peer freshness). Enabled in prod `enabled_services`
+      2026-09-05; first check runs at the next monitor cycle (or Admin
+      → Monitoring → run now).
+- [x] **VPN live traffic + one-peer-per-device view**: Monitor tab
+      "Live now" section — connected peers only, one row per device,
+      with live up/down rates (from successive polls), totals, endpoint.
+- [x] **VPN quotas**: `quota_bytes` per peer, monthly accounting from
+      closed sessions, 80% warning mail, auto-suspend + auto-restore on
+      month rollover (`suspended_reason`), admin set/clear in peer modal
+      with usage bar.
+- [x] **Guest peers**: `expires_in_hours` on create, `expires_at`
+      management (extend/clear) in admin modal, hourly scheduler +
+      sync enforcement, expiry mail.
+- [x] **Connect/offline alerts**: per-peer `notify_events` opt-in
+      (profile + admin), flap guard (<60s zero-traffic disconnects
+      silent), quota/expiry mails always send.
+- [x] **Per-peer history**: `activity?peer_id=` + mini 7d chart in the
+      peer modal.
+- [x] **One-click reissue**: rotate + QR inline in admin modal and
+      mobile PeerConfigModal; staff may rotate any peer.
+- [x] **Session delete endpoint** (`DELETE /vpn/sessions/{id}`,
+      owner-scoped) — the panel already called it (was 404).
+- [x] **Rename device**: `PATCH /vpn/peers/{id}` (owner-scoped) in
+      admin modal + profile modal; secrets masked + cleared in web
+      modal (parity with mobile).
 - [ ] **Native in-app tunnel** (mobile): needs `npx expo prebuild` +
       native WireGuard module + EAS build. Management (CRUD/QR/stats)
       works today; the tunnel itself lives in the external WireGuard app.
-- [ ] **Certificate pinning** (#11, prep done): `react-native-ssl-pinning`
-      installed, `src/lib/sslPinning.ts` ready with live SPKI pins for
-      `api.aifazi.net` + Expo-Go-safe fallback. Activation:
-      `npx expo prebuild` → EAS production build → store release.
-      Rotation runbook is in the module header (backup pins mandatory).
+- [ ] **Certificate pinning** (#11): live SPKI pins for `api.aifazi.net`
+      extracted 2026-09-04 and kept here (leaf + chain backups):
+      `sha256/boAH2RgUdVzrKMPj3pKVN2W+3GN872/6f3ea0BgajaY=`,
+      `sha256/LoMHBotttiDko50Gi13uXW71eIy7LAttI+rYT8wXF4w=`,
+      `sha256/fk6IOKit1ild5647BH06ujSIq5XbCgqlbYl6ANhhi88=`,
+      `sha256/C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=`.
+      Do NOT use `react-native-ssl-pinning@1.6.0` — tried 2026-09-03,
+      removed same day: its 2018-era `android/build.gradle` calls
+      `jcenter()` (removed in Gradle 9) and breaks the release build.
+      Activation needs a maintained approach (`expo prebuild` + either
+      Android Network Security Config via config plugin, or a current
+      pinning library) + EAS production build + store release.
+      Rotation rule: always ship new pins alongside old ones, wait for
+      >80% adoption, then switch the server cert.
 
 ## 3. Testing (#28 — framework done, expand coverage)
 
-- [x] Vitest (`apps/mobile`: `npm test`, 8 tests) — `vpn.ts` pure
-      functions + `sslPinning` pins/fallback.
+- [x] Vitest (`apps/mobile`: `npm test`, 4 tests) — `vpn.ts` pure
+      functions (formatBytes/formatDuration/detectDeviceOs).
 - [x] Playwright (`aifazi.net-frontend-next`: `npm run test:e2e`) —
       homepage + `/api/health` smoke (caught the real outage).
 - [ ] Grow mobile coverage: API client interceptors, auth refresh flow,
@@ -181,6 +292,20 @@ Proposed design (to refine before build):
       to the registry as proof, no visual change.
 - [ ] Document `docs/widgets.md` with a minimal example widget.
 
+## 6b. PDF suite — BentoPDF declined (2026-09-04, licensing)
+
+- [x] Evaluated `ghcr.io/alam00000/bentopdf` for `/tools/files`: client-side
+      only (no API), own UI, **AGPL-3.0**. Decision: no copyleft surface —
+      embed PR #168 closed unmerged, Coolify `bento-pdf-*` service record
+      + container removed. Our File Tools stay 100% clean-room
+      (pdf-lib/pdf.js client-side + PyMuPDF backend).
+- [ ] Legal-safe paths forward (pick one): (a) buy the $79 lifetime
+      Commercial License, then embed/self-host freely incl. rebranding;
+      (b) build native tools incrementally (merge/split/compress first)
+      with pdf-lib + existing backend — full design match, zero license
+      surface. Do NOT re-introduce AGPL PDF code (jsdom-adjacent WASM,
+      cpdf, Ghostscript bundles) without the commercial license.
+
 ## 6. Small items
 
 - [ ] #14 leftover: RoamingRobot animation speed tied to live visitor
@@ -189,6 +314,76 @@ Proposed design (to refine before build):
 - [ ] TypeScript migration (#72): incremental, 200+ JSX files. Start
       with `pages-src/admin/access.js` → `.ts` + `lib/api.ts` strict
       types when touching those areas; no big-bang rewrite.
+
+## 8. Security audit follow-ups (2026-09-04 full audit — code shipped, ops pending)
+
+- [x] Backend: staff-JWT path of mail `process-pending` auth fixed
+      (missing `await` → 500); generic `/webhook/inbound` gets timestamp
+      freshness + terminal-state-sticks replay guard.
+- [x] Backend: cookie-session logout now revokes server refresh token
+      (+ previous); `require_staff` rule gaps closed (`/actions/search`,
+      `/fivem/players`, `/fivem/txadmin`, `/fivem/sync`, `/portfolio`,
+      `/auth/lookup`); moderator VPN PII redacted (user_id/endpoint IPs
+      admin-only); `WG_API_TOKEN` missing → loud startup error.
+- [x] Backend: VPN client secrets encrypted at rest (Fernet `enc1:`,
+      key from `PASETO_SECRET`); legacy plaintext rows auto-upgrade on
+      next read/rotation.
+- [x] Frontend: SSR sanitizer hardened (quote/slash-tolerant stripping,
+      forbidden elements, fail-closed `catch`); BlogPost iframe filter
+      quote-tolerant; theme-CSS builder strips breakout vectors;
+      X-Forwarded-For no longer forwarded; `chat` role admitted to admin
+      shell (lands on Live Chat); logout revokes before notifying;
+      403s clear stale staff claims; dashboard fetches gated per-section;
+      HSTS added for non-Vercel runtimes.
+- [x] Mobile: pinning lib removed (broke Gradle); VPN config preview
+      redacts keys, Share gated behind warning confirm, secrets cleared
+      on modal close.
+- [x] CI: `Frontend - Build` added as 6th required check; prune keeps
+      3 newest deployments; `create-pull-request` pinned to SHA.
+- [ ] CI debt (mypy + Bandit still `continue-on-error`): ~40 pre-existing
+      mypy errors (ssrf, jwt_compat, txadmin_service, seo_proxy,
+      file_tools, pdf_editor, store_delivery, backup, audit, newsletter
+      incl. a real un-awaited coroutine at `newsletter.py:66`, monitor,
+      fivem, mail_queue, vpn `_get_user_id`) + unresolved Bandit HIGHs
+      (report only exists as a CI artifact). Fix file-by-file with a
+      local interpreter, then drop the flags. Making them blocking now
+      would freeze `main` on pre-existing debt — verified none of the
+      errors are from this batch's code.
+- [x] Repo: `.gitignore` covers keys/certs/signing artifacts + example
+      re-allow ordering fixed; RLS lockdown migration written
+      (`20260904000000_lockdown_chat_write_rls.sql`).
+- [x] **OPS — RLS migration applied 2026-09-05** (via `psql -f`, verified
+      in `pg_policies`): authenticated chat WRITES gone on all 5 tables,
+      reads intact, `service_role_all_*` on all 5. Follow-up fix same day:
+      the lockdown had also dropped `authenticated_read_chat_mutes/bans`,
+      silently killing live mute/ban Realtime for logged-in moderators —
+      restored (`auth_read_chat_mutes/bans`). `chat_room_user_keys`
+      verified correctly scoped (`user_id = auth.uid()`).
+- [x] **OPS — nightly DB backups installed 2026-09-05**: script at
+      `/opt/aifazi.net/scripts/backup-db.sh` (LF endings), passphrase in
+      root-only `/root/.aifazi-backup-pass` (shown once to Tanvir — needed
+      for restores), root cron `0 3 * * *`, first dump verified
+      (`postgres-20260905T082155Z.sql.gz.enc`, 304 KB, decrypt-check
+      passed), 7-day rotation. Still to do once: test restore to a
+      scratch DB.
+- [ ] **Mobile hardening leftovers**: biometric app-lock before VPN
+      secrets (expo-local-authentication already installed); SecureStore
+      `requireAuthentication`/`keychainAccessible` review; verify
+      `secure_store_backup_rules` excludes tokens at next prebuild;
+      push deep-link targets already server-authorized (verified).
+- [ ] **Decisions for Tanvir**: (a) purge unreachable bcrypt object via
+      history rewrite, or accept (unreachable, scrubbed at HEAD —
+      recommendation 2026-09-05: ACCEPT, no evidence of reuse; rewrite
+      would force every clone to re-clone);
+      (b) require 1 reviewer on `main` — recommendation 2026-09-05: DO NOT
+      enable. Repo has exactly one collaborator (`aifazi`); authors cannot
+      approve their own PRs, so this would deadlock ALL merges. The
+      owner-automerge + 6 required checks model is correct for solo;
+      (c) Vercel preview protection (dashboard: project Settings →
+      Deployment Protection → enable for previews);
+      (d) ClamAV scan default stays OFF — verified 2026-09-05: no daemon,
+      container, or process anywhere on the VPS; turning the default ON
+      would 503 all uploads. Deploy a daemon first if scanning is wanted.
 
 ## 7. Release process (reference)
 
@@ -199,6 +394,15 @@ Proposed design (to refine before build):
 - Mobile → push `main` touching `apps/mobile/**` →
   `mobile-auto-release.yml` bumps tag + GitHub release →
   `mobile-release-build.yml` EAS APK+AAB → in-app updater offers it.
-- Branch protection: 5 required checks on `main`; always ship via PR.
+- Branch protection: 6 required checks on `main` (Frontend Lint &
+  Typecheck, Backend Lint & Typecheck, Mobile Lint & Typecheck, Backend
+  Security Scan, Secret Scan, Frontend - Build); always ship via PR.
   Owner PRs auto-merge on green CI (`owner-automerge.yml`; needs the
   "Allow auto-merge" repo setting ticked).
+- **Automerge cascade gap (found 2026-09-04)**: merges performed by
+  `owner-automerge` run as `GITHUB_TOKEN`, whose pushes do NOT fire
+  push-triggered workflows — mobile auto-release and prune-deployments
+  silently skip those merges (caught when v1.0.57 had to be dispatched
+  by hand). Fix options: manual `gh workflow run mobile-auto-release`
+  after such merges (works), or give automerge a PAT so downstream
+  workflows fire, or add a scheduled sweep.

@@ -66,5 +66,20 @@ test-*.js
 Dockerfile.dev
 docker-compose.web.yml
 .dockerignore
-.env.docker.example
 .env*
+# Re-allow example templates AFTER the blanket ignore above (later rules win).
+!.env.example
+!.env.local.example
+!.env.docker.example
+
+# Private keys, certs, and mobile signing artifacts (never commit).
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.mobileprovision
+*.keystore.properties
+release.keystore
+google-services.json
+GoogleService-Info.plist

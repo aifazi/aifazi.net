@@ -97,7 +97,29 @@ export const FONT_OPTIONS = [
 // cyber-dark is the no-attribute default → target :root. Everything else is
 // scoped via its data-theme attribute so overrides never leak across themes.
 export function themeSelector(themeId) {
-  return themeId === 'cyber-dark' ? ':root' : `[data-theme="${themeId}"]`
+  const slug = String(themeId || '').replace(/[^a-zA-Z0-9-_]/g, '').slice(0, 64) || 'cyber-dark'
+  return slug === 'cyber-dark' ? ':root' : `[data-theme="${slug}"]`
+}
+
+// ── CSS injection hardening ──────────────────────────────────────────────────
+// Theme customizations are stored in site-settings (editable by non-admin
+// staff) and injected into a <style> block on EVERY page. Scalars must never
+// break out of their CSS string/attribute context; the free-form `css` field
+// must never close the style block or smuggle executable payloads.
+function cssScalar(value) {
+  return String(value ?? '').replace(/[<>"'`\\]/g, '').slice(0, 500)
+}
+
+function sanitizeThemeCss(css) {
+  return String(css || '')
+    .replace(/<\/style/gi, '')
+    .replace(/<!--/g, '')
+    .replace(/javascript\s*:/gi, '')
+    .replace(/vbscript\s*:/gi, '')
+    .replace(/expression\s*\(/gi, '')
+    .replace(/-moz-binding/gi, '')
+    .replace(/behaviou?r\s*:/gi, '')
+    .slice(0, 50000)
 }
 
 // ── Uploaded font helpers ─────────────────────────────────────────────────────
@@ -124,13 +146,15 @@ export function buildFontFaceCss(uploadedFonts, usedFamilies = []) {
   const used = usedFamilies.map(f => String(f || '').trim().toLowerCase()).filter(Boolean)
   const rules = []
   for (const u of uploadedFonts) {
-    const family = String(u?.family || '').trim()
+    const family = cssScalar(u?.family || '').trim()
     if (!family || (used.length && !used.includes(family.toLowerCase()))) continue
-    const url = String(u?.url || '').trim()
-    if (!url) continue
-    const format = String(u?.format || '').trim() || 'woff2'
-    const weight = String(u?.weight || '400').trim() || '400'
-    const style = String(u?.style || 'normal').trim() || 'normal'
+    const url = cssScalar(u?.url || '').trim()
+    // Font files must come from https (or local dev hosts) — never
+    // javascript:/data: URLs smuggled through the upload record.
+    if (!url || !/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/)/i.test(url)) continue
+    const format = cssScalar(u?.format || '').trim() || 'woff2'
+    const weight = cssScalar(u?.weight || '400').trim() || '400'
+    const style = cssScalar(u?.style || 'normal').trim() || 'normal'
     rules.push(
       `@font-face{font-family:'${_cssEsc(family)}';src:url('${_cssEsc(url)}') format('${format}');font-weight:${weight};font-style:${style};font-display:swap;}`
     )
@@ -153,7 +177,7 @@ export function buildThemeCustomCss(themeId, custom, uploadedFonts = []) {
   const colors = custom.colors || {}
   for (const token of CUSTOM_COLOR_TOKENS) {
     const v = colors[token.key]
-    if (v && typeof v === 'string') lines.push(`  --${token.key}: ${v};`)
+    if (v && typeof v === 'string') lines.push(`  --${token.key}: ${cssScalar(v)};`)
   }
 
   if (typeof custom.radius === 'number' && !Number.isNaN(custom.radius)) {
@@ -165,8 +189,8 @@ export function buildThemeCustomCss(themeId, custom, uploadedFonts = []) {
 
   const bgPattern = custom.bgPattern
   if (bgPattern === 'gradient') {
-    const from = String(custom.bgGradientFrom || '').trim() || 'transparent'
-    const to = String(custom.bgGradientTo || '').trim() || from
+    const from = cssScalar(custom.bgGradientFrom || '').trim() || 'transparent'
+    const to = cssScalar(custom.bgGradientTo || '').trim() || from
     const angle = typeof custom.bgGradientAngle === 'number' ? custom.bgGradientAngle : 180
     lines.push(`  background-image: linear-gradient(${angle}deg, ${from}, ${to});`)
   } else if (bgPattern && bgPattern !== 'none' && BG_PATTERN_CSS[bgPattern]) {
@@ -174,13 +198,13 @@ export function buildThemeCustomCss(themeId, custom, uploadedFonts = []) {
   }
 
   if (custom.fontDisplay && typeof custom.fontDisplay === 'string') {
-    lines.push(`  --font-display: '${custom.fontDisplay}', 'Outfit', 'Inter', sans-serif;`)
+    lines.push(`  --font-display: '${cssScalar(custom.fontDisplay)}', 'Outfit', 'Inter', sans-serif;`)
   }
   if (custom.fontMono && typeof custom.fontMono === 'string') {
-    lines.push(`  --font-mono: '${custom.fontMono}', 'Courier New', monospace;`)
+    lines.push(`  --font-mono: '${cssScalar(custom.fontMono)}', 'Courier New', monospace;`)
   }
   if (custom.fontCode && typeof custom.fontCode === 'string') {
-    lines.push(`  --font-code: '${custom.fontCode}', monospace;`)
+    lines.push(`  --font-code: '${cssScalar(custom.fontCode)}', monospace;`)
   }
 
   // Glow intensity 0…1 → follows the theme's green/cyan (color-mix so it works
@@ -195,7 +219,8 @@ export function buildThemeCustomCss(themeId, custom, uploadedFonts = []) {
 
   // Arbitrary CSS ("and more"): accept either a full rule set or bare
   // declarations — declarations are auto-scoped to the theme selector.
-  const css = (custom.css || '').trim()
+  // Sanitized: the free-form field must not break out of the style block.
+  const css = sanitizeThemeCss((custom.css || '').trim())
   let extra = ''
   if (css) {
     extra = css.includes('{') ? css : `${sel} {\n${css}\n}`

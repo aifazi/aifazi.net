@@ -89,9 +89,11 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           // Permissions policy — restrict powerful browser APIs
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(), payment=()' },
+          // HSTS for non-Vercel runtimes (standalone/Docker). Vercel sets its
+          // own HSTS header; harmless duplication is avoided by Vercel.
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           // Content-Security-Policy is NOT set here; it is emitted per request
-          // by proxy.ts (script-src uses 'unsafe-inline' + a source allowlist so
-          // Next.js hydration scripts and the FOUC inline script both run).
+          // by proxy.ts (nonce + 'strict-dynamic', no 'unsafe-inline').
         ],
       },
     ]

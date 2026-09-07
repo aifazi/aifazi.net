@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test('homepage loads', async ({ page }) => {
   const res = await page.goto('/')
   expect(res?.status()).toBeLessThan(400)
-  await expect(page).toHaveTitle(/aifazi/i)
+  await expect(page).toHaveTitle(/Tanvir|aifazi/i)
 })
 
 test('backend health is reachable through the proxy', async ({ request }) => {

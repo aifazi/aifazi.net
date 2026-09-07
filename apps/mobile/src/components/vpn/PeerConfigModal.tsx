@@ -14,7 +14,7 @@ import {
 } from 'react-native'
 import { useTheme } from '@/src/theme'
 import { useOverlay } from '@/src/components/overlay'
-import { getPeer, type CreatePeerResult } from '@/src/lib/vpn'
+import { getPeer, rotatePeerKeys } from '@/src/lib/vpn'
 
 interface Props {
   visible: boolean
@@ -68,8 +68,56 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
     }
   }
 
+  // Secrets must never sit readable on screen: the preview redacts key
+  // material (the QR still encodes the full config for scanning).
+  const redactedConfig = config.replace(
+    /^(PrivateKey|PresharedKey)\s*=\s*.+$/gim,
+    '$1 = •••••••• (hidden)',
+  )
+
+  const clearSecrets = () => {
+    setConfig('')
+    setQrUri('')
+  }
+
+  const handleClose = () => {
+    clearSecrets()
+    onClose()
+  }
+
+  const handleReissueKeys = async () => {
+    if (!peerId) return
+    const ok = await overlay.confirm({
+      title: 'Reissue keys?',
+      message:
+        'This generates a brand-new keypair. The old config stops ' +
+        'working immediately — update WireGuard on this device right away.',
+      confirmText: 'Reissue',
+    })
+    if (!ok) return
+    setLoading(true)
+    try {
+      const res = await rotatePeerKeys(peerId)
+      if (res.qr_code) setQrUri(res.qr_code)
+      if (res.config) setConfig(res.config)
+      overlay.toast('Keys reissued — update this device now', 'success')
+    } catch (err: any) {
+      overlay.toast(err?.response?.data?.detail ?? 'Failed to reissue keys', 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleShareConfig = async () => {
     if (!config) return
+    const ok = await overlay.confirm({
+      title: 'Share VPN config?',
+      message:
+        'This file contains this device\u2019s secret WireGuard keys. ' +
+        'Anyone with it can use your VPN. Send it only to your own device.',
+      confirmText: 'Share',
+    })
+    if (!ok) return
     await Share.share({
       message: config,
       title: `${peerName}.conf`,
@@ -82,7 +130,7 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
       transparent
       animationType="slide"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
         <View
@@ -114,7 +162,7 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
                 {peerIp}
               </Text>
             </View>
-            <TouchableOpacity onPress={onClose} hitSlop={12}>
+            <TouchableOpacity onPress={handleClose} hitSlop={12}>
               <Text style={{ color: c.text2, fontSize: 20, fontWeight: '600' }}>×</Text>
             </TouchableOpacity>
           </View>
@@ -182,7 +230,7 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
                       }}
                       numberOfLines={6}
                     >
-                      {config}
+                      {redactedConfig}
                     </Text>
                   </View>
                 ) : null}
@@ -227,10 +275,27 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
                     </Text>
                   </TouchableOpacity>
 
+                  <TouchableOpacity
+                    onPress={handleReissueKeys}
+                    style={{
+                      backgroundColor: c.bg,
+                      borderRadius: 12,
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: c.border,
+                    }}
+                  >
+                    <Text style={{ color: c.text, fontSize: 14, fontWeight: '600' }}>
+                      Reissue Keys
+                    </Text>
+                  </TouchableOpacity>
+
                   {onDelete && (
                     <TouchableOpacity
                       onPress={() => {
-                        onClose()
+                        handleClose()
                         onDelete()
                       }}
                       style={{

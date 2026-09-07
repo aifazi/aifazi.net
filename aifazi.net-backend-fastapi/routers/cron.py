@@ -72,8 +72,11 @@ async def run_cleanup() -> dict:
 
     # P2: drain the mail queue so queued emails are actually delivered in production.
     mail = await dispatch_pending()
-    logger.info("cron_cleanup: mail dispatch summary %s", mail)
-    record_job_heartbeat("cron-cleanup", "ok", f"mail={mail.get('sent', 0)}")
+    logger.warning("cron_cleanup: mail dispatch summary %s", mail)
+    record_job_heartbeat(
+        "cron-cleanup", "ok",
+        f"mail claimed={mail.get('claimed', 0)} sent={mail.get('sent', 0)} failed={mail.get('failed', 0)}",
+    )
 
     # Stock reservation expiry — release holds past their TTL so abandoned
     # checkouts never permanently shrink sellable inventory. The DB also runs a
