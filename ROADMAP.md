@@ -118,6 +118,31 @@
       mounted) for networks that block plain 3478; standalone signaling
       (HPB) only if group calls with 5+ participants struggle.
 
+## 0e. Self-hosted mail test track (Stalwart, 2026-09-07)
+
+- [x] Deployed via Coolify one-click service (`stalwart-*`, pinned
+      `v0.16.13`, named volumes, healthy). Raw-docker experiment removed.
+      Ports 25/465/587/143/993/110/995/4190 published; firewall ACCEPTs
+      persisted. v0.16 notes: no `internal` directory file-config — first
+      boot MUST go through the webadmin bootstrap wizard; `-c` points at
+      the registry file (auto-created, keep it on a writable volume).
+- [x] Wizard done (hostname `mailt.aifazi.net`, RocksDB at
+      `/var/lib/stalwart/data`, admin `admin@mailt.aifazi.net`).
+      Loopback proven: SMTP-465 auth + send → local delivery → IMAP-993
+      read (`INBOX` has the probe).
+- [ ] Webadmin → Listeners → enable submission on **587** (nothing
+      listens there now; 25/465/143/993 work). Needs a TLS cert to be
+      useful — see DNS step (LE via Traefik once `mailt` resolves).
+- [ ] DNS for deliverability testing (Cloudflare, test subdomain first —
+      production `aifazi.net` MX stays on Zoho until proven):
+      `A mailt → 75.119.131.157`; `MX mailt → mailt.aifazi.net` (pri 10);
+      `TXT mailt SPF "v=spf1 mx ~all"`; DKIM `TXT` from webadmin
+      (Domains → mailt → DKIM → copy selector record); `TXT _dmarc.mailt
+      "v=dmarc1; p=none; rua=mailto:tanvir@aifazi.net"`.
+      Then: send test→Gmail (check headers auth-results), receive
+      Gmail→test@ (check arrival), only then plan the real MX cutover
+      (+ PTR `mail.aifazi.net` in Contabo panel + warmup).
+
 ## 1. Production outage follow-up (anon 500s since 2026-08-31)
 
 - [x] Root-caused (first wave): `ERR_REQUIRE_ESM` — CJS `whatwg-url@17`
