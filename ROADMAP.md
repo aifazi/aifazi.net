@@ -99,6 +99,13 @@
       `occ talk:turn:add --secret=… turn cloud.aifazi.net:3478 udp,tcp`.
       Port 3478 verified reachable from the internet. Retest a call —
       including one mobile-data participant — to confirm.
+      Verified end-to-end 2026-09-07: Talk-generated time-limited
+      credentials relay echo traffic (`tot_recv_msgs=10/10`, server
+      allocation count increments). Note: coturn `static-auth-secret` is
+      used as a literal string key (no hex-decoding); hand-rolled probes
+      must match Nextcloud's `base64(HMAC-SHA1(secret, user))` exactly.
+      Also fixed along the way: an apt-installed host `coturn` service was
+      racing the Docker daemon on :3478 (stopped/disabled/masked).
 - [x] **Deleted stale `nextcloud-with-postgres` service** (no containers,
       only an sslip fqdn). Live stack is the `nextcloud` service
       (`cloud.aifazi.net`, LE cert present).
