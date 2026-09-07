@@ -51,12 +51,16 @@
 
 ## 0b. Security & infra hardening (2026-09-04 audit — all applied)
 
-- [x] **Close public `:8000`/`:8080`**: `DOCKER-USER` DROP rules persisted
-      via `iptables-persistent`. Direct `http://75.119.131.157:8000` now
-      times out; dashboard still served via `https://vps.aifazi.net:443`
-      (Traefik path untouched); SSH-tunnel access unaffected (localhost
-      never traverses `FORWARD`). `6001/6002` (coolify-realtime) left open
-      — close later only after confirming live-logs/terminal still work.
+- [x] **Close public `:8000`/`:8080`**: direct `http://75.119.131.157:8000`
+      times out; dashboard still served via `https://vps.aifazi.net:443`;
+      SSH-tunnel access unaffected. Lesson learned 2026-09-04: a plain
+      `DOCKER-USER --dport 8080 DROP` also matches DNAT-rewritten traffic
+      (host `:8000` → coolify `:8080`) and broke coolify-sentinel pushes
+      ("out of sync"). Correct form (persisted via `iptables-persistent`,
+      v4+v6): `DOCKER-USER -i eth0 --dports 8000,8080 DROP` — matches only
+      externally-arriving packets (post-DNAT ports), never bridge/localhost
+      traffic. `6001/6002` (coolify-realtime) left open — close later only
+      after confirming live-logs/terminal still work.
 - [x] **fail2ban** installed + enabled with `sshd` jail.
 - [x] **Docs corrected**: root `README.md` + `SECURITY.md` said Railway →
       now Coolify; backend README Vercel section marked retired.
@@ -125,7 +129,20 @@
       mounted) for networks that block plain 3478; standalone signaling
       (HPB) only if group calls with 5+ participants struggle.
 
-## 0e. Self-hosted mail test track (Stalwart, 2026-09-07)
+## 0e. Self-hosted mail test track (Stalwart, 2026-09-07 — PROVEN)
+
+- [x] Full auth matrix green on both domains: SPF pass, DKIM-RSA pass
+      (`s=v2-*`), DMARC pass — including Horde-composed mail. Root cause
+      of the earlier `bh`-mismatch saga: **stale keys** (server signed
+      with different keypairs than DNS held), NOT Horde bytes or
+      multipart handling — proven by regenerating v2 keys (locally
+      generated, DNS published first, then pasted to webadmin) and
+      watching the same Horde path go pass. Lesson: never trust the
+      webadmin "published in DNS" status label; verify with real Gmail
+      `Show original` verdicts. All one-time key material shredded.
+- [ ] Remaining before production: 587 listener, IP warmup + PTR
+      `mail.aifazi.net` in Contabo panel, MX cutover from Zoho (only
+      when warm).
 
 - [x] Deployed via Coolify one-click service (`stalwart-*`, pinned
       `v0.16.13`, named volumes, healthy). Raw-docker experiment removed.
@@ -154,6 +171,28 @@
       Then: send test→Gmail (check headers auth-results), receive
       Gmail→test@ (check arrival), only then plan the real MX cutover
       (+ PTR `mail.aifazi.net` in Contabo panel + warmup).
+
+## 0d. Nextcloud apps rollout (2026-09-07)
+
+Installed + enabled 21 apps via occ (all batches):
+- Groupware: calendar 6.5.4, contacts 8.8.0, deck 1.18.4, tasks 0.18.1
+- Community: collectives 4.6.1, polls 9.2.1, announcementcenter 7.5.0,
+  external 9.0.1
+- Files: groupfolders 22.0.6, previewgenerator 5.14.0, guests 4.9.0
+- Admin/security: occweb_v2 0.2.3, twofactor_webauthn 2.7.0, tables 2.3.0,
+  terms_of_service 4.7.1
+- Docs/media: richdocuments 11.1.0 + richdocumentscode 26.4.302 (built-in
+  CODE — fine for 1–2 users; watch RAM, first open downloads the CODE
+  image), memories 8.1.0, news 28.7.0, mail 5.11.5
+- [ ] Remaining setup (Nextcloud UI): Mail → add tanvir@aifazi.net account;
+      Terms → paste ToS text; External sites → add aifazi.net link;
+      Team folders → create shares/quotas; previewgenerator → run
+      `occ preview:generate-all` overnight once (backfill), cron handles
+      new files after.
+- [ ] Skipped deliberately: Whiteboard (needs HPB signaling),
+      OnlyOffice/server (CODE covers docs for now), Recognize ML
+      (heavy on this VPS), talk_matterbridge (needs Discord bot token —
+      say the word), end-to-end-encryption (poor rating).
 
 ## 1. Production outage follow-up (anon 500s since 2026-08-31)
 
