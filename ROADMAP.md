@@ -111,13 +111,49 @@
       (`cloud.aifazi.net`, LE cert present).
 - [x] **Pruned 1.1 GB** unused Docker images; fixed
       `overwrite.cli.url → https://cloud.aifazi.net`.
-- [ ] Load drivers (expected, no action): FiveM server ~44% CPU,
-      coolify-sentinel ~19% — revisit if load avg stays >5 without FiveM
-      players online. supabase-meta's 5s node healthcheck still churns CPU;
+- [x] **Call smoothness tuning (2026-09-07)**: set
+      `relay-ip=75.119.131.157` in coturn (was advertising private
+      10.x/fd00 candidates → failed-candidate delay) and restarted the
+      FiveM server, which was burning 44–61% CPU with zero players
+      (runaway resource — now ~22%, load avg 4.1 vs 5.8). User confirms
+      calls smoother. If FiveM climbs again with no players, find the
+      hot resource in txAdmin instead of restarting.
+- [ ] Load watch: revisit if load avg stays >5 without FiveM players
+      online. supabase-meta's 5s node healthcheck still churns CPU;
       upstream image behavior, ignore.
 - [ ] Optional later: TURN over TLS (`turns:` on 5349 with the LE cert
       mounted) for networks that block plain 3478; standalone signaling
       (HPB) only if group calls with 5+ participants struggle.
+
+## 0e. Self-hosted mail test track (Stalwart, 2026-09-07)
+
+- [x] Deployed via Coolify one-click service (`stalwart-*`, pinned
+      `v0.16.13`, named volumes, healthy). Raw-docker experiment removed.
+      Ports 25/465/587/143/993/110/995/4190 published; firewall ACCEPTs
+      persisted. v0.16 notes: no `internal` directory file-config — first
+      boot MUST go through the webadmin bootstrap wizard; `-c` points at
+      the registry file (auto-created, keep it on a writable volume).
+- [x] Wizard done (hostname `mailt.aifazi.net`, RocksDB at
+      `/var/lib/stalwart/data`, admin `admin@mailt.aifazi.net`).
+      Loopback proven: SMTP-465 auth + send → local delivery → IMAP-993
+      read (`INBOX` has the probe).
+- [x] Webmail live: SnappyMail (`djmaze/snappymail`, serves :8888,
+      Traefik `mail.aifazi.net` → 8888, LE cert auto-issued) with `mailt`
+      + `aifazi.net` domain entries (IMAP 993 + SMTP 465 SSL, cert verify
+      off for Stalwart's setup cert). Full loop proven in webmail UI:
+      inbound internet mail + loopback probe both in INBOX.
+- [ ] Webadmin → Listeners → enable submission on **587** (nothing
+      listens there now; 25/465/143/993 work). Needs a TLS cert to be
+      useful — see DNS step (LE via Traefik once `mailt` resolves).
+- [ ] DNS for deliverability testing (Cloudflare, test subdomain first —
+      production `aifazi.net` MX stays on Zoho until proven):
+      `A mailt → 75.119.131.157`; `MX mailt → mailt.aifazi.net` (pri 10);
+      `TXT mailt SPF "v=spf1 mx ~all"`; DKIM `TXT` from webadmin
+      (Domains → mailt → DKIM → copy selector record); `TXT _dmarc.mailt
+      "v=dmarc1; p=none; rua=mailto:tanvir@aifazi.net"`.
+      Then: send test→Gmail (check headers auth-results), receive
+      Gmail→test@ (check arrival), only then plan the real MX cutover
+      (+ PTR `mail.aifazi.net` in Contabo panel + warmup).
 
 ## 1. Production outage follow-up (anon 500s since 2026-08-31)
 
