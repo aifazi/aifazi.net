@@ -118,7 +118,20 @@
       mounted) for networks that block plain 3478; standalone signaling
       (HPB) only if group calls with 5+ participants struggle.
 
-## 0e. Self-hosted mail test track (Stalwart, 2026-09-07)
+## 0e. Self-hosted mail test track (Stalwart, 2026-09-07 — PROVEN)
+
+- [x] Full auth matrix green on both domains: SPF pass, DKIM-RSA pass
+      (`s=v2-*`), DMARC pass — including Horde-composed mail. Root cause
+      of the earlier `bh`-mismatch saga: **stale keys** (server signed
+      with different keypairs than DNS held), NOT Horde bytes or
+      multipart handling — proven by regenerating v2 keys (locally
+      generated, DNS published first, then pasted to webadmin) and
+      watching the same Horde path go pass. Lesson: never trust the
+      webadmin "published in DNS" status label; verify with real Gmail
+      `Show original` verdicts. All one-time key material shredded.
+- [ ] Remaining before production: 587 listener, IP warmup + PTR
+      `mail.aifazi.net` in Contabo panel, MX cutover from Zoho (only
+      when warm).
 
 - [x] Deployed via Coolify one-click service (`stalwart-*`, pinned
       `v0.16.13`, named volumes, healthy). Raw-docker experiment removed.
