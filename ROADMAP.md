@@ -112,6 +112,28 @@
       mounted) for networks that block plain 3478; standalone signaling
       (HPB) only if group calls with 5+ participants struggle.
 
+## 0d. Nextcloud apps rollout (2026-09-07)
+
+Installed + enabled 21 apps via occ (all batches):
+- Groupware: calendar 6.5.4, contacts 8.8.0, deck 1.18.4, tasks 0.18.1
+- Community: collectives 4.6.1, polls 9.2.1, announcementcenter 7.5.0,
+  external 9.0.1
+- Files: groupfolders 22.0.6, previewgenerator 5.14.0, guests 4.9.0
+- Admin/security: occweb_v2 0.2.3, twofactor_webauthn 2.7.0, tables 2.3.0,
+  terms_of_service 4.7.1
+- Docs/media: richdocuments 11.1.0 + richdocumentscode 26.4.302 (built-in
+  CODE — fine for 1–2 users; watch RAM, first open downloads the CODE
+  image), memories 8.1.0, news 28.7.0, mail 5.11.5
+- [ ] Remaining setup (Nextcloud UI): Mail → add tanvir@aifazi.net account;
+      Terms → paste ToS text; External sites → add aifazi.net link;
+      Team folders → create shares/quotas; previewgenerator → run
+      `occ preview:generate-all` overnight once (backfill), cron handles
+      new files after.
+- [ ] Skipped deliberately: Whiteboard (needs HPB signaling),
+      OnlyOffice/server (CODE covers docs for now), Recognize ML
+      (heavy on this VPS), talk_matterbridge (needs Discord bot token —
+      say the word), end-to-end-encryption (poor rating).
+
 ## 1. Production outage follow-up (anon 500s since 2026-08-31)
 
 - [x] Root-caused (first wave): `ERR_REQUIRE_ESM` — CJS `whatwg-url@17`
