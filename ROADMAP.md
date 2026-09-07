@@ -130,6 +130,11 @@
       `/var/lib/stalwart/data`, admin `admin@mailt.aifazi.net`).
       Loopback proven: SMTP-465 auth + send → local delivery → IMAP-993
       read (`INBOX` has the probe).
+- [x] Webmail live: SnappyMail (`djmaze/snappymail`, serves :8888,
+      Traefik `mail.aifazi.net` → 8888, LE cert auto-issued) with `mailt`
+      + `aifazi.net` domain entries (IMAP 993 + SMTP 465 SSL, cert verify
+      off for Stalwart's setup cert). Full loop proven in webmail UI:
+      inbound internet mail + loopback probe both in INBOX.
 - [ ] Webadmin → Listeners → enable submission on **587** (nothing
       listens there now; 25/465/143/993 work). Needs a TLS cert to be
       useful — see DNS step (LE via Traefik once `mailt` resolves).
