@@ -87,6 +87,31 @@
       shared, and prefer Coolify file-mount secrets for the most sensitive
       values long-term.
 
+## 0c. Nextcloud Talk + VPS tune-up (2026-09-07 audit)
+
+- [x] **Talk calls fixed**: "could not establish a connection… TURN server
+      might be needed" was correct — Talk (spreed 24.0.4) had zero STUN/TURN
+      configured. Deployed `coturn/coturn:4.6` on host network
+      (`coturn` container, restart-always, config `/etc/coturn/turnserver.conf`
+      mode 600, realm `cloud.aifazi.net`, relay ports 49160–49200);
+      firewall ACCEPTs for 3478 TCP+UDP + relay range (persisted);
+      `occ talk:stun:add stun.nextcloud.com:443` +
+      `occ talk:turn:add --secret=… turn cloud.aifazi.net:3478 udp,tcp`.
+      Port 3478 verified reachable from the internet. Retest a call —
+      including one mobile-data participant — to confirm.
+- [x] **Deleted stale `nextcloud-with-postgres` service** (no containers,
+      only an sslip fqdn). Live stack is the `nextcloud` service
+      (`cloud.aifazi.net`, LE cert present).
+- [x] **Pruned 1.1 GB** unused Docker images; fixed
+      `overwrite.cli.url → https://cloud.aifazi.net`.
+- [ ] Load drivers (expected, no action): FiveM server ~44% CPU,
+      coolify-sentinel ~19% — revisit if load avg stays >5 without FiveM
+      players online. supabase-meta's 5s node healthcheck still churns CPU;
+      upstream image behavior, ignore.
+- [ ] Optional later: TURN over TLS (`turns:` on 5349 with the LE cert
+      mounted) for networks that block plain 3478; standalone signaling
+      (HPB) only if group calls with 5+ participants struggle.
+
 ## 1. Production outage follow-up (anon 500s since 2026-08-31)
 
 - [x] Root-caused (first wave): `ERR_REQUIRE_ESM` — CJS `whatwg-url@17`
