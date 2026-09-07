@@ -104,9 +104,15 @@
       (`cloud.aifazi.net`, LE cert present).
 - [x] **Pruned 1.1 GB** unused Docker images; fixed
       `overwrite.cli.url → https://cloud.aifazi.net`.
-- [ ] Load drivers (expected, no action): FiveM server ~44% CPU,
-      coolify-sentinel ~19% — revisit if load avg stays >5 without FiveM
-      players online. supabase-meta's 5s node healthcheck still churns CPU;
+- [x] **Call smoothness tuning (2026-09-07)**: set
+      `relay-ip=75.119.131.157` in coturn (was advertising private
+      10.x/fd00 candidates → failed-candidate delay) and restarted the
+      FiveM server, which was burning 44–61% CPU with zero players
+      (runaway resource — now ~22%, load avg 4.1 vs 5.8). User confirms
+      calls smoother. If FiveM climbs again with no players, find the
+      hot resource in txAdmin instead of restarting.
+- [ ] Load watch: revisit if load avg stays >5 without FiveM players
+      online. supabase-meta's 5s node healthcheck still churns CPU;
       upstream image behavior, ignore.
 - [ ] Optional later: TURN over TLS (`turns:` on 5349 with the LE cert
       mounted) for networks that block plain 3478; standalone signaling
