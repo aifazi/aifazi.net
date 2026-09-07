@@ -23,7 +23,7 @@
     "dompurify": "^3.4.13",
     "gsap": "^3.15.0",
     "html5-qrcode": "^2.3.8",
-    "livekit-client": "^2.5.10",
+    "livekit-client": "^2.22.2",
     "next": "^16.3.3",
     "postcss": "^8.5.10",
     "react": "^19.2.8",
