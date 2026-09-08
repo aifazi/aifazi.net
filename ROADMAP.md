@@ -143,6 +143,18 @@
 - [ ] Remaining before production: 587 listener, IP warmup + PTR
       `mail.aifazi.net` in Contabo panel, MX cutover from Zoho (only
       when warm).
+- [x] **Stalwart outage (2026-09-08)**: after the host reboot the instance
+      ran silent (no logs/listeners, idle, single ephemeral port) while
+      Coolify showed healthy — admin portal + all mail protocols down.
+      Deep investigation (strace, FDs, route/dependency tracing, pristine
+      comparison instance) inconclusive on root cause; state-triggered,
+      not environmental. Recovered by volume backup
+      (`/root/stalwart-backup-0808/`) + wipe + Coolify redeploy → clean
+      bootstrap with temp admin. Re-setup (wizard + LE cert + DKIM + test
+      mailbox) required — DKIM DNS will need re-publishing for fresh keys.
+- [ ] Backend bug spotted in log sweep: `expired-stock sweep failed: FOR
+      UPDATE is not allowed with GROUP BY clause` — fix the store
+      inventory sweep query (drop `FOR UPDATE` or restructure).
 
 - [x] Deployed via Coolify one-click service (`stalwart-*`, pinned
       `v0.16.13`, named volumes, healthy). Raw-docker experiment removed.
