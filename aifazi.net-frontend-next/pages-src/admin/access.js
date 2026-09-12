@@ -28,6 +28,7 @@ export const NAV_PERMISSION = {
   announcements: 'system.announcements', settings: 'system.settings', siteSettings: 'system.settings',
   helpdesk: 'support.helpdesk', store: 'store', fivem: 'fivem.status',
   changelog: 'changelog', monitoring: 'system.monitor', vpn: 'system.vpn',
+  identity: 'system.identity',
 }
 
 // Mirrors backend ROLE_PERMISSION_PRESETS (permissions.py). Fallback only —
