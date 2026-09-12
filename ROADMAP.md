@@ -51,12 +51,16 @@
 
 ## 0b. Security & infra hardening (2026-09-04 audit — all applied)
 
-- [x] **Close public `:8000`/`:8080`**: `DOCKER-USER` DROP rules persisted
-      via `iptables-persistent`. Direct `http://75.119.131.157:8000` now
-      times out; dashboard still served via `https://vps.aifazi.net:443`
-      (Traefik path untouched); SSH-tunnel access unaffected (localhost
-      never traverses `FORWARD`). `6001/6002` (coolify-realtime) left open
-      — close later only after confirming live-logs/terminal still work.
+- [x] **Close public `:8000`/`:8080`**: direct `http://75.119.131.157:8000`
+      times out; dashboard still served via `https://vps.aifazi.net:443`;
+      SSH-tunnel access unaffected. Lesson learned 2026-09-04: a plain
+      `DOCKER-USER --dport 8080 DROP` also matches DNAT-rewritten traffic
+      (host `:8000` → coolify `:8080`) and broke coolify-sentinel pushes
+      ("out of sync"). Correct form (persisted via `iptables-persistent`,
+      v4+v6): `DOCKER-USER -i eth0 --dports 8000,8080 DROP` — matches only
+      externally-arriving packets (post-DNAT ports), never bridge/localhost
+      traffic. `6001/6002` (coolify-realtime) left open — close later only
+      after confirming live-logs/terminal still work.
 - [x] **fail2ban** installed + enabled with `sshd` jail.
 - [x] **Docs corrected**: root `README.md` + `SECURITY.md` said Railway →
       now Coolify; backend README Vercel section marked retired.
@@ -99,6 +103,13 @@
       `occ talk:turn:add --secret=… turn cloud.aifazi.net:3478 udp,tcp`.
       Port 3478 verified reachable from the internet. Retest a call —
       including one mobile-data participant — to confirm.
+      Verified end-to-end 2026-09-07: Talk-generated time-limited
+      credentials relay echo traffic (`tot_recv_msgs=10/10`, server
+      allocation count increments). Note: coturn `static-auth-secret` is
+      used as a literal string key (no hex-decoding); hand-rolled probes
+      must match Nextcloud's `base64(HMAC-SHA1(secret, user))` exactly.
+      Also fixed along the way: an apt-installed host `coturn` service was
+      racing the Docker daemon on :3478 (stopped/disabled/masked).
 - [x] **Deleted stale `nextcloud-with-postgres` service** (no containers,
       only an sslip fqdn). Live stack is the `nextcloud` service
       (`cloud.aifazi.net`, LE cert present).
@@ -117,6 +128,83 @@
 - [ ] Optional later: TURN over TLS (`turns:` on 5349 with the LE cert
       mounted) for networks that block plain 3478; standalone signaling
       (HPB) only if group calls with 5+ participants struggle.
+
+## 0e. Self-hosted mail test track (Stalwart, 2026-09-07 — PROVEN)
+
+- [x] Full auth matrix green on both domains: SPF pass, DKIM-RSA pass
+      (`s=v2-*`), DMARC pass — including Horde-composed mail. Root cause
+      of the earlier `bh`-mismatch saga: **stale keys** (server signed
+      with different keypairs than DNS held), NOT Horde bytes or
+      multipart handling — proven by regenerating v2 keys (locally
+      generated, DNS published first, then pasted to webadmin) and
+      watching the same Horde path go pass. Lesson: never trust the
+      webadmin "published in DNS" status label; verify with real Gmail
+      `Show original` verdicts. All one-time key material shredded.
+- [ ] Remaining before production: 587 listener, IP warmup + PTR
+      `mail.aifazi.net` in Contabo panel, MX cutover from Zoho (only
+      when warm).
+- [x] **Stalwart outage (2026-09-08)**: after the host reboot the instance
+      ran silent (no logs/listeners, idle, single ephemeral port) while
+      Coolify showed healthy — admin portal + all mail protocols down.
+      Deep investigation (strace, FDs, route/dependency tracing, pristine
+      comparison instance) inconclusive on root cause; state-triggered,
+      not environmental. Recovered by volume backup
+      (`/root/stalwart-backup-0808/`) + wipe + Coolify redeploy → clean
+      bootstrap with temp admin. Re-setup (wizard + LE cert + DKIM + test
+      mailbox) required — DKIM DNS will need re-publishing for fresh keys.
+- [ ] Backend bug spotted in log sweep: `expired-stock sweep failed: FOR
+      UPDATE is not allowed with GROUP BY clause` — fix the store
+      inventory sweep query (drop `FOR UPDATE` or restructure).
+
+- [x] Deployed via Coolify one-click service (`stalwart-*`, pinned
+      `v0.16.13`, named volumes, healthy). Raw-docker experiment removed.
+      Ports 25/465/587/143/993/110/995/4190 published; firewall ACCEPTs
+      persisted. v0.16 notes: no `internal` directory file-config — first
+      boot MUST go through the webadmin bootstrap wizard; `-c` points at
+      the registry file (auto-created, keep it on a writable volume).
+- [x] Wizard done (hostname `mailt.aifazi.net`, RocksDB at
+      `/var/lib/stalwart/data`, admin `admin@mailt.aifazi.net`).
+      Loopback proven: SMTP-465 auth + send → local delivery → IMAP-993
+      read (`INBOX` has the probe).
+- [x] Webmail live: SnappyMail (`djmaze/snappymail`, serves :8888,
+      Traefik `mail.aifazi.net` → 8888, LE cert auto-issued) with `mailt`
+      + `aifazi.net` domain entries (IMAP 993 + SMTP 465 SSL, cert verify
+      off for Stalwart's setup cert). Full loop proven in webmail UI:
+      inbound internet mail + loopback probe both in INBOX.
+- [ ] Webadmin → Listeners → enable submission on **587** (nothing
+      listens there now; 25/465/143/993 work). Needs a TLS cert to be
+      useful — see DNS step (LE via Traefik once `mailt` resolves).
+- [ ] DNS for deliverability testing (Cloudflare, test subdomain first —
+      production `aifazi.net` MX stays on Zoho until proven):
+      `A mailt → 75.119.131.157`; `MX mailt → mailt.aifazi.net` (pri 10);
+      `TXT mailt SPF "v=spf1 mx ~all"`; DKIM `TXT` from webadmin
+      (Domains → mailt → DKIM → copy selector record); `TXT _dmarc.mailt
+      "v=dmarc1; p=none; rua=mailto:tanvir@aifazi.net"`.
+      Then: send test→Gmail (check headers auth-results), receive
+      Gmail→test@ (check arrival), only then plan the real MX cutover
+      (+ PTR `mail.aifazi.net` in Contabo panel + warmup).
+
+## 0d. Nextcloud apps rollout (2026-09-07)
+
+Installed + enabled 21 apps via occ (all batches):
+- Groupware: calendar 6.5.4, contacts 8.8.0, deck 1.18.4, tasks 0.18.1
+- Community: collectives 4.6.1, polls 9.2.1, announcementcenter 7.5.0,
+  external 9.0.1
+- Files: groupfolders 22.0.6, previewgenerator 5.14.0, guests 4.9.0
+- Admin/security: occweb_v2 0.2.3, twofactor_webauthn 2.7.0, tables 2.3.0,
+  terms_of_service 4.7.1
+- Docs/media: richdocuments 11.1.0 + richdocumentscode 26.4.302 (built-in
+  CODE — fine for 1–2 users; watch RAM, first open downloads the CODE
+  image), memories 8.1.0, news 28.7.0, mail 5.11.5
+- [ ] Remaining setup (Nextcloud UI): Mail → add tanvir@aifazi.net account;
+      Terms → paste ToS text; External sites → add aifazi.net link;
+      Team folders → create shares/quotas; previewgenerator → run
+      `occ preview:generate-all` overnight once (backfill), cron handles
+      new files after.
+- [ ] Skipped deliberately: Whiteboard (needs HPB signaling),
+      OnlyOffice/server (CODE covers docs for now), Recognize ML
+      (heavy on this VPS), talk_matterbridge (needs Discord bot token —
+      say the word), end-to-end-encryption (poor rating).
 
 ## 1. Production outage follow-up (anon 500s since 2026-08-31)
 
@@ -372,3 +460,69 @@ Proposed design (to refine before build):
   by hand). Fix options: manual `gh workflow run mobile-auto-release`
   after such merges (works), or give automerge a PAT so downstream
   workflows fire, or add a scheduled sweep.
+
+## 8. Identity: LDAP-first (decision 2026-09-07, replaces per-app accounts)
+
+- Rule: **create users only in lldap** (`https://ldap.aifazi.net`,
+  Coolify service `sibmqsfzzby6gkx9imqamug8`, sqlite on
+  `/opt/lldap`, compose backup at
+  `/opt/lldap/docker-compose.working.yml`). Never create users in
+  Stalwart internal directory or as Nextcloud-local users — duplicates
+  cause ambiguous delivery/login. Rejected: multi-master mesh sync
+  (passwords are one-way hashes; syncing them across systems is
+  impossible without plaintext capture — would need a custom portal
+  and still add failure modes; decision: lldap UI only, no glue code).
+- Nextcloud consumes via `user_ldap` (config `s01`, base
+  `dc=aifazi,dc=net`, quota default 10 GB) + Mail auto-provisioning
+  row (`aifazi.net` → Stalwart 993/465, login-password auth) +
+  `ldap_write_support` (password changes propagate) +
+  `ldap_contacts_backend` (directory in address book).
+- Stalwart consumes via LDAP directory backend (webadmin →
+  Management → Directory; host `lldap-sibmqsfzzby6gkx9imqamug8:3890`,
+  base `dc=aifazi,dc=net`, users `ou=people`, login `uid`/email
+  `mail`/name `cn`; internal directory stays as fallback).
+- Mail cutover 2026-09-07: Zoho MX/DKIM/SPF-include removed from
+  `aifazi.net`; MX → `mailt.aifazi.net`, SPF
+  `v=spf1 ip4:75.119.131.157 include:_spf.mx.cloudflare.net ~all`,
+  DMARC unchanged (p=none). SES subdomains untouched. PTR still via
+  Contabo panel (owner action).
+- Secrets: lldap admin + nextcloud DB user + Nextcloud admin in
+  root-only `/root/.lldap-admin-pw`, `/root/.nextcloud-db-pw`,
+  `/root/.nextcloud-admin-pw` (never git).
+- Backups: `backup-db.sh` covers DBs + `/opt/lldap`,
+  `/opt/nextcloud/html` (~1 GB/night), Stalwart volumes,
+  `/opt/fivem` minus live MariaDB dir (SQL dumps are canonical).
+  ~2 GB/night total, 7-day rotation — revisit if disk passes 30%.
+- Offboarding: delete in lldap → auth dies in mail + cloud;
+  mail/files retained per policy; clean Nextcloud remnants with
+  `occ ldap:show-remnants` + `user:delete`.
+- Open: wtf_group usable-item `RegisterHook` patch; Redis password
+  rotation (secret appeared once in an ops transcript).
+- **VPS migration (future, thinking only — NOT scheduled):** if moving to
+  a bigger box (e.g. Contabo Cloud VPS 8), decisions already made:
+  same-provider + clean rebuild (fresh Ubuntu/Docker/Coolify, migrate
+  data, redeploy per stack; old box stays live until cutover, 7-day
+  rollback window). Non-obvious gotchas recorded: ~15 Cloudflare A
+  records to flip (drop TTLs to 60s a day before), PTR re-set in Contabo
+  panel, SPF `ip4:` literal rewrite, WireGuard endpoint change forces
+  every client to re-download configs (biggest user churn — announce),
+  mail IP reputation restarts (domain auth carries over), LE auto
+  re-issues, FiveM follows `play.aifazi.net`, GitHub Actions SFTP target
+  + repo secret update, Vercel/mobile untouched. Day-one steps when
+  approved: inventory snapshot + TTL lowering (free, non-committal).
+- **Stalwart-first coexistence (2026-09-07, no glue code):**
+  `user_external` 4.0.0 IMAP backend in `config.php` (`mail.aifazi.net`
+  993/ssl, domain `aifazi.net`, strip-domain) — creating a mailbox in
+  Stalwart is enough: first Nextcloud login with the email authenticates
+  via IMAP (auto-creates the NC user), provisioned mail password follows
+  the login password. NOTE: use `mail.aifazi.net` everywhere (IMAP
+  backend + provisioning rows) — that is the name on Stalwart's LE cert;
+  `mailt.aifazi.net` (SMTP banner name) and the internal container name
+  both fail TLS verification (curl error 60, found 2026-09-07). Mail provisioning row id 2 (`*` domain,
+  `%USERID%@aifazi.net` templates) covers email-less external users; row
+  id 1 (`aifazi.net`, `%EMAIL%`) covers LDAP users (identical result by
+  the uid==localpart convention, order-independent). lldap stays
+  authoritative for non-mail users/groups; Stalwart internal directory
+  stays as fallback. Known cosmetic: first Mail-app open may provision
+  stray failing accounts for pre-existing local users — delete once via
+  `occ mail:account:delete`.
