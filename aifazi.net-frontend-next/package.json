@@ -20,7 +20,7 @@
     "@sentry/nextjs": "^10.71.0",
     "@supabase/supabase-js": "^2.43.4",
     "axios": "^1.20.0",
-    "dompurify": "^3.4.13",
+    "dompurify": "^3.4.14",
     "gsap": "^3.15.0",
     "html5-qrcode": "^2.3.8",
     "livekit-client": "^2.5.10",
