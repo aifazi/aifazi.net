@@ -684,9 +684,27 @@ def _decode_discord_link_token(token: str | None) -> dict | None:
     except Exception:
         return None
 
+def _discord_cfg():
+    """Portal (site_config) overrides env for Discord OAuth."""
+    try:
+        from utils.oauth_providers import provider_cfg
+        return provider_cfg("discord")
+    except Exception:
+        return {
+            "client_id": os.getenv("DISCORD_CLIENT_ID", ""),
+            "client_secret": os.getenv("DISCORD_CLIENT_SECRET", ""),
+            "redirect_uri": os.getenv(
+                "DISCORD_REDIRECT_URI",
+                f"{os.getenv('API_URL', 'https://api.aifazi.net')}/api/auth/discord/callback",
+            ),
+            "enabled": True,
+        }
+
+
 def _discord_oauth_url(state: str) -> str:
-    _DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
-    _DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", f"{os.getenv('API_URL', 'https://api.aifazi.net')}/api/auth/discord/callback")
+    cfg = _discord_cfg()
+    _DISCORD_CLIENT_ID = cfg.get("client_id") or ""
+    _DISCORD_REDIRECT_URI = cfg.get("redirect_uri") or f"{os.getenv('API_URL', 'https://api.aifazi.net')}/api/auth/discord/callback"
     params = _urlparse.urlencode({"client_id": _DISCORD_CLIENT_ID, "redirect_uri": _DISCORD_REDIRECT_URI, "response_type": "code", "scope": "identify email", "state": state})
     return f"https://discord.com/oauth2/authorize?{params}"
 
@@ -2085,9 +2103,9 @@ async def user_my_tickets(creds: HTTPAuthorizationCredentials | None = Depends(b
 
 @router.get("/discord/login")
 async def discord_login(dest: str = "/forum/profile", mobile: int = 0):
-    _DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
-    if not _DISCORD_CLIENT_ID:
-        raise HTTPException(500, "Discord OAuth not configured — set DISCORD_CLIENT_ID")
+    _d = _discord_cfg()
+    if not _d.get("client_id") or not _d.get("enabled", True):
+        raise HTTPException(500, "Discord OAuth not configured — set it in Admin → Identity & OAuth")
     # C2 — Sign the dest into the OAuth state so the callback can verify state hasn't
     # been tampered with and the dest is a same-origin relative path. The previous
     # implementation just sent `dest` as the state verbatim → open redirect + login-CSRF.
@@ -2097,9 +2115,9 @@ async def discord_login(dest: str = "/forum/profile", mobile: int = 0):
 
 @router.get("/discord/connect-url")
 async def discord_connect_url(dest: str = "/profile", creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
-    _DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
-    if not _DISCORD_CLIENT_ID:
-        raise HTTPException(500, "Discord OAuth not configured — set DISCORD_CLIENT_ID")
+    _d = _discord_cfg()
+    if not _d.get("client_id") or not _d.get("enabled", True):
+        raise HTTPException(500, "Discord OAuth not configured — set it in Admin → Identity & OAuth")
     payload = _get_forum_user(creds)
     if not payload:
         raise HTTPException(401, "Not authenticated")
@@ -2114,9 +2132,10 @@ async def discord_connect_url(dest: str = "/profile", creds: HTTPAuthorizationCr
 
 @router.get("/discord/callback")
 async def discord_callback(code: str = None, state: str = None, error: str = None):
-    _DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
-    _DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
-    _DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", f"{os.getenv('API_URL', 'https://api.aifazi.net')}/api/auth/discord/callback")
+    _d = _discord_cfg()
+    _DISCORD_CLIENT_ID = _d.get("client_id") or ""
+    _DISCORD_CLIENT_SECRET = _d.get("client_secret") or ""
+    _DISCORD_REDIRECT_URI = _d.get("redirect_uri") or f"{os.getenv('API_URL', 'https://api.aifazi.net')}/api/auth/discord/callback"
     state_value = _urlparse.unquote(state or "") if state else ""
     dest = "/forum/profile"
     mode = "login"

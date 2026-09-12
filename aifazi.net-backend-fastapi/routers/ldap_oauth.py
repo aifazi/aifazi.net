@@ -49,12 +49,22 @@ from utils.ldap_client import (
     bind_user,
     healthcheck as ldap_healthcheck,
 )
+from utils.oauth_store import (
+    get_access_token as _store_get_token,
+    pop_auth_code as _store_pop_code,
+    put_access_token as _store_put_token,
+    put_auth_code as _store_put_code,
+    revoke_access_token as _store_revoke_token,
+)
 
 log = logging.getLogger("ldap_oauth")
 router = APIRouter()
 
 API_URL = (os.getenv("API_URL") or "https://api.aifazi.net").rstrip("/")
 SITE_URL = (os.getenv("SITE_URL") or "https://aifazi.net").rstrip("/")
+
+_AUTH_CODE_TTL = 120  # seconds
+_OAUTH_TOKEN_TTL = 3600
 
 # ── OAuth clients ───────────────────────────────────────────────────────────────
 
@@ -85,24 +95,6 @@ def _load_clients() -> dict[str, dict[str, Any]]:
 
 def _get_client(client_id: str) -> dict[str, Any] | None:
     return _load_clients().get(client_id)
-
-
-# In-memory auth codes (single-process; fine for this deployment).
-# code → {client_id, user_id, username, role, redirect_uri, scope, exp, code_challenge, code_challenge_method}
-_auth_codes: dict[str, dict[str, Any]] = {}
-_AUTH_CODE_TTL = 120  # seconds
-
-# access_token → user payload (OAuth API access for third-party apps)
-_oauth_tokens: dict[str, dict[str, Any]] = {}
-_OAUTH_TOKEN_TTL = 3600
-
-
-def _purge_expired() -> None:
-    now = time.time()
-    for store, key in ((_auth_codes, "exp"), (_oauth_tokens, "exp")):
-        dead = [k for k, v in store.items() if v.get(key, 0) < now]
-        for k in dead:
-            store.pop(k, None)
 
 
 # ── Forum user provisioning from LLDAP ──────────────────────────────────────────
@@ -164,6 +156,36 @@ class LdapLoginBody(BaseModel):
 @router.get("/ldap/health")
 async def ldap_health():
     return {"ok": ldap_healthcheck(), "url": os.getenv("LLDAP_URL", "ldap://lldap:3890")}
+
+
+@router.get("/oauth/login-methods")
+async def login_methods():
+    """Public: which sign-in methods the login page should show."""
+    lldap_ok = False
+    try:
+        from routers.oauth_admin import get_oauth_config
+        from utils.ldap_client import healthcheck
+        cfg = get_oauth_config()
+        ldap = cfg.get("lldap") or {}
+        lldap_ok = bool(ldap.get("enabled", True)) and healthcheck()
+    except Exception:
+        lldap_ok = False
+
+    methods = {
+        "password": True,
+        "lldap": lldap_ok,
+        "discord": False,
+        "github": False,
+        "steam": False,
+    }
+    try:
+        from utils.oauth_providers import is_configured, provider_cfg
+        for name in ("discord", "github", "steam"):
+            cfg = provider_cfg(name)
+            methods[name] = bool(cfg.get("enabled", True)) and is_configured(name)
+    except Exception:
+        pass
+    return methods
 
 
 @router.post("/ldap/login")
@@ -304,8 +326,7 @@ async def oauth_authorize(
             payload = {}
         if payload.get("id") and not payload.get("tfa_pending"):
             code = secrets.token_urlsafe(32)
-            _purge_expired()
-            _auth_codes[code] = {
+            _store_put_code(code, {
                 "client_id": client_id,
                 "user_id": str(payload["id"]),
                 "username": payload.get("username") or "",
@@ -314,8 +335,7 @@ async def oauth_authorize(
                 "scope": scope,
                 "code_challenge": code_challenge,
                 "code_challenge_method": code_challenge_method or "S256",
-                "exp": time.time() + _AUTH_CODE_TTL,
-            }
+            }, _AUTH_CODE_TTL)
             q = {"code": code}
             if state:
                 q["state"] = state
@@ -370,8 +390,7 @@ async def oauth_authorize_post(
 
     user = _ensure_forum_user(ldap_user)
     code = secrets.token_urlsafe(32)
-    _purge_expired()
-    _auth_codes[code] = {
+    _store_put_code(code, {
         "client_id": client_id,
         "user_id": str(user["id"]),
         "username": user["username"],
@@ -380,8 +399,7 @@ async def oauth_authorize_post(
         "scope": scope,
         "code_challenge": code_challenge,
         "code_challenge_method": code_challenge_method or "S256",
-        "exp": time.time() + _AUTH_CODE_TTL,
-    }
+    }, _AUTH_CODE_TTL)
     # Also set first-party cookies so the browser is signed into aifazi.net
     token = make_forum_token(user["id"], user["username"], user.get("role") or "user")
     refresh = make_refresh_token(
@@ -443,17 +461,15 @@ async def oauth_token(request: Request):
         except LdapUnavailable:
             raise HTTPException(503, "Directory unavailable")
         user = _ensure_forum_user(ldap_user)
-        _purge_expired()
         access = secrets.token_urlsafe(32)
-        _oauth_tokens[access] = {
+        _store_put_token(access, {
             "user_id": str(user["id"]),
             "username": user["username"],
             "email": user.get("email") or ldap_user.email,
             "role": user.get("role") or "user",
             "groups": ldap_user.groups,
             "scope": data.get("scope") or "openid profile email",
-            "exp": time.time() + _OAUTH_TOKEN_TTL,
-        }
+        }, _OAUTH_TOKEN_TTL)
         return JSONResponse({
             "access_token": access,
             "token_type": "Bearer",
@@ -465,8 +481,8 @@ async def oauth_token(request: Request):
         raise HTTPException(400, "unsupported_grant_type")
 
     code = data.get("code") or ""
-    rec = _auth_codes.pop(code, None)
-    if not rec or rec.get("exp", 0) < time.time():
+    rec = _store_pop_code(code)
+    if not rec:
         raise HTTPException(400, "invalid_grant")
     client = _get_client(rec["client_id"])
     if not client:
@@ -484,16 +500,14 @@ async def oauth_token(request: Request):
         if not verifier or not _verify_pkce(verifier, rec["code_challenge"], rec.get("code_challenge_method") or "S256"):
             raise HTTPException(400, "invalid_grant")
 
-    _purge_expired()
     access = secrets.token_urlsafe(32)
-    _oauth_tokens[access] = {
+    _store_put_token(access, {
         "user_id": rec["user_id"],
         "username": rec["username"],
         "role": rec["role"],
         "scope": rec.get("scope") or "openid profile email",
         "client_id": rec["client_id"],
-        "exp": time.time() + _OAUTH_TOKEN_TTL,
-    }
+    }, _OAUTH_TOKEN_TTL)
     return JSONResponse({
         "access_token": access,
         "token_type": "Bearer",
@@ -508,8 +522,8 @@ async def oauth_userinfo(request: Request):
     if not auth.lower().startswith("bearer "):
         raise HTTPException(401, "Missing bearer token")
     token = auth[7:].strip()
-    rec = _oauth_tokens.get(token)
-    if not rec or rec.get("exp", 0) < time.time():
+    rec = _store_get_token(token)
+    if not rec:
         raise HTTPException(401, "invalid_token")
     claims: dict[str, Any] = {
         "sub": rec["user_id"],
@@ -534,7 +548,7 @@ async def oauth_revoke(request: Request):
         form = await request.form()
         data = {k: str(v) for k, v in form.items()}
     token = data.get("token") or ""
-    _oauth_tokens.pop(token, None)
+    _store_revoke_token(token)
     return JSONResponse({"revoked": True})
 
 
