@@ -161,6 +161,7 @@ _OPEN_EXACT: set[str] = {
     "/api/auth/oauth/token",
     "/api/auth/oauth/userinfo",
     "/api/auth/oauth/revoke",
+    "/api/auth/oauth/login-methods",
     "/api/auth/oauth/.well-known/oauth-authorization-server",
     "/api/auth/steam/login",
     "/api/auth/steam/callback",
