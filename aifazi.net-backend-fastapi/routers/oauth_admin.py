@@ -71,6 +71,42 @@ class ClientIn(BaseModel):
     public: bool = False  # public clients (SPA) — no secret required
 
 
+class ProviderIn(BaseModel):
+    enabled: bool = True
+    client_id: str = Field("", max_length=256)
+    client_secret: str = Field("", max_length=256)
+    redirect_uri: str = Field("", max_length=512)
+    api_key: str = Field("", max_length=256)  # Steam
+
+
+# Social login platforms supported by aifazi.net
+_SOCIAL_PROVIDERS = ("discord", "github", "steam")
+
+_PROVIDER_META = {
+    "discord": {
+        "label": "Discord",
+        "docs": "https://discord.com/developers/applications",
+        "env_keys": ["DISCORD_CLIENT_ID", "DISCORD_CLIENT_SECRET"],
+        "redirect_hint": "https://api.aifazi.net/api/auth/discord/callback",
+        "fields": ["client_id", "client_secret", "redirect_uri"],
+    },
+    "github": {
+        "label": "GitHub",
+        "docs": "https://github.com/settings/developers",
+        "env_keys": ["GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET"],
+        "redirect_hint": "https://api.aifazi.net/api/auth/github/callback",
+        "fields": ["client_id", "client_secret", "redirect_uri"],
+    },
+    "steam": {
+        "label": "Steam",
+        "docs": "https://steamcommunity.com/dev/apikey",
+        "env_keys": ["STEAM_API_KEY"],
+        "redirect_hint": "https://api.aifazi.net/api/forum/auth/steam/callback",
+        "fields": ["api_key"],
+    },
+}
+
+
 @router.get("")
 async def get_oauth_settings(request: Request, staff: dict = Depends(require_staff)):
     cfg = get_oauth_config()
@@ -117,6 +153,44 @@ async def get_oauth_settings(request: Request, staff: dict = Depends(require_sta
     except Exception:
         ldap_ok = False
 
+    # Social login platforms (Discord / GitHub / Steam)
+    providers_out = []
+    portal_providers = cfg.get("providers") or {}
+    import os as _os
+    for pid in _SOCIAL_PROVIDERS:
+        meta = _PROVIDER_META[pid]
+        stored = portal_providers.get(pid) or {}
+        env_client = ""
+        env_secret = ""
+        env_api = ""
+        if pid == "discord":
+            env_client = _os.getenv("DISCORD_CLIENT_ID", "")
+            env_secret = _os.getenv("DISCORD_CLIENT_SECRET", "")
+        elif pid == "github":
+            env_client = _os.getenv("GITHUB_CLIENT_ID", "")
+            env_secret = _os.getenv("GITHUB_CLIENT_SECRET", "")
+        elif pid == "steam":
+            env_api = _os.getenv("STEAM_API_KEY", "")
+        client_id = stored.get("client_id") or env_client
+        secret = stored.get("client_secret") or env_secret
+        api_key = stored.get("api_key") or env_api
+        configured = bool(api_key) if pid == "steam" else bool(client_id and secret)
+        providers_out.append({
+            "id": pid,
+            "label": meta["label"],
+            "docs": meta["docs"],
+            "redirect_hint": meta["redirect_hint"],
+            "fields": meta["fields"],
+            "enabled": bool(stored.get("enabled", True)),
+            "configured": configured,
+            "client_id": client_id,
+            "client_id_set": bool(client_id),
+            "secret_set": bool(secret) or bool(api_key),
+            "secret_masked": _mask_secret(secret or api_key),
+            "redirect_uri": stored.get("redirect_uri") or "",
+            "from_env": (not stored.get("client_id") and not stored.get("api_key")),
+        })
+
     return {
         "enabled": bool(cfg.get("enabled", True)),
         "lldap": {
@@ -130,6 +204,7 @@ async def get_oauth_settings(request: Request, staff: dict = Depends(require_sta
         },
         "lldap_healthy": ldap_ok,
         "clients": clients,
+        "providers": providers_out,
         "endpoints": {
             "authorize": "/api/auth/oauth/authorize",
             "token": "/api/auth/oauth/token",
@@ -161,6 +236,29 @@ async def put_oauth_settings(body: dict, request: Request, staff: dict = Depends
         cfg["lldap"] = ldap
     save_oauth_config(cfg)
     _audit(staff.get("username", ""), "settings_update", target="oauth", details={"keys": list(body.keys())})
+    return await get_oauth_settings(request, staff)
+
+
+@router.put("/providers/{name}")
+async def put_provider(name: str, body: ProviderIn, request: Request, staff: dict = Depends(require_staff)):
+    if name not in _SOCIAL_PROVIDERS:
+        raise HTTPException(404, "Unknown provider")
+    cfg = get_oauth_config()
+    providers = cfg.setdefault("providers", {})
+    stored = dict(providers.get(name) or {})
+    stored["enabled"] = body.enabled
+    if body.client_id:
+        stored["client_id"] = body.client_id
+    if body.client_secret:
+        stored["client_secret"] = body.client_secret
+    if body.redirect_uri:
+        stored["redirect_uri"] = body.redirect_uri
+    if body.api_key:
+        stored["api_key"] = body.api_key
+    providers[name] = stored
+    save_oauth_config(cfg)
+    _audit(staff.get("username", ""), "settings_update", target=f"oauth_provider:{name}",
+           details={"enabled": body.enabled})
     return await get_oauth_settings(request, staff)
 
 

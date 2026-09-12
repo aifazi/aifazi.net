@@ -12,8 +12,8 @@ Flow:
   github_id link endpoint — that would let a user claim someone else's identity.
 
 Vercel env vars needed:
-  GITHUB_CLIENT_ID       — from github.com/settings/developers
-  GITHUB_CLIENT_SECRET   — from github.com/settings/developers
+  _client_id()       — from github.com/settings/developers
+  _client_secret()   — from github.com/settings/developers
   FRONTEND_URL           — https://aifazi.net
   API_URL                — https://api.aifazi.net
   PASETO_SECRET          — already set
@@ -61,11 +61,23 @@ from utils.oauth_state import (
     verify_oauth_state_full,
 )
 
+from utils.oauth_providers import provider_cfg as _provider_cfg
+
 router = APIRouter()
 
-# ── Config ────────────────────────────────────────────────────────────────────
-GITHUB_CLIENT_ID     = os.getenv("GITHUB_CLIENT_ID", "")
-GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
+# ── Config (portal overrides env) ─────────────────────────────────────────────
+def _gh():
+    return _provider_cfg("github")
+
+
+def _client_id() -> str:
+    return _gh().get("client_id") or ""
+
+
+def _client_secret() -> str:
+    return _gh().get("client_secret") or ""
+
+
 API_URL              = os.getenv("API_URL", "https://api.aifazi.net").rstrip("/")
 GITHUB_REDIRECT_URI  = f"{API_URL}/api/forum/auth/github/callback"
 # Deep-link base for mobile (see routers/auth.py MOBILE_AUTH_URL). Server controls
@@ -98,7 +110,7 @@ def _decode_github_link_token(token: str | None) -> dict | None:
 
 def _github_oauth_url(state: str) -> str:
     params = _urlparse.urlencode({
-        "client_id":     GITHUB_CLIENT_ID,
+        "client_id":     _client_id(),
         "redirect_uri":  GITHUB_REDIRECT_URI,
         "scope":         "read:user user:email",
         "state":         state,
@@ -151,8 +163,8 @@ async def _fetch_github_profile(access_token: str) -> dict:
 @router.get("/login")
 async def github_login(dest: str = "/forum/profile", mobile: int = 0):
     """Redirect the player to the GitHub OAuth consent screen."""
-    if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
-        raise HTTPException(500, "GitHub OAuth not configured — set GITHUB_CLIENT_ID")
+    if not _client_id() or not _client_secret():
+        raise HTTPException(500, "GitHub OAuth not configured — set _client_id()")
     safe_dest = _safe_relative_path(dest, default="/forum/profile")
     state = make_oauth_state("github", safe_dest, mobile=bool(mobile))
     return RedirectResponse(_github_oauth_url(state))
@@ -164,8 +176,8 @@ async def github_connect_url(dest: str = "/forum/profile",
     """Return a GitHub OAuth URL that links GitHub to the current forum user.
     
     Uses HMAC-signed state (like Discord/Steam) to prevent login-CSRF."""
-    if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
-        raise HTTPException(500, "GitHub OAuth not configured — set GITHUB_CLIENT_ID")
+    if not _client_id() or not _client_secret():
+        raise HTTPException(500, "GitHub OAuth not configured — set _client_id()")
     payload = _get_forum_user(creds)
     if not payload:
         raise HTTPException(401, "Not authenticated")
@@ -184,8 +196,8 @@ async def github_connect_url(dest: str = "/forum/profile",
 @router.get("/callback")
 async def github_callback(code: str = None, state: str = None, error: str = None):
     """Exchange GitHub code, upsert forum_users, issue JWT, redirect to frontend."""
-    if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
-        raise HTTPException(500, "GitHub OAuth not configured — set GITHUB_CLIENT_ID")
+    if not _client_id() or not _client_secret():
+        raise HTTPException(500, "GitHub OAuth not configured — set _client_id()")
     front = SITE_URL
     state_value = _urlparse.unquote(state or "") if state else ""
     dest = "/forum/profile"
@@ -233,8 +245,8 @@ async def github_callback(code: str = None, state: str = None, error: str = None
             tok = await c.post(
                 GITHUB_TOKEN_URL,
                 data={
-                    "client_id":     GITHUB_CLIENT_ID,
-                    "client_secret": GITHUB_CLIENT_SECRET,
+                    "client_id":     _client_id(),
+                    "client_secret": _client_secret(),
                     "code":          code,
                     "redirect_uri":  GITHUB_REDIRECT_URI,
                 },

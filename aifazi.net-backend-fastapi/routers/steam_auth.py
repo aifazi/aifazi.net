@@ -51,10 +51,15 @@ from utils.oauth_state import (
     verify_oauth_state_full,
 )
 
+from utils.oauth_providers import provider_cfg as _provider_cfg
+
 router = APIRouter()
 
-# ── Config ────────────────────────────────────────────────────────────────────
-STEAM_API_KEY  = os.getenv("STEAM_API_KEY", "")
+# ── Config (portal overrides env) ─────────────────────────────────────────────
+def _steam() -> str:
+    return _provider_cfg("steam").get("api_key") or ""
+
+
 FRONTEND_URL   = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 API_URL        = os.getenv("API_URL", "https://api.aifazi.net").rstrip("/")
 STEAM_CALLBACK = f"{API_URL}/api/forum/auth/steam/callback"
@@ -207,13 +212,13 @@ async def _fetch_steam_profile(steam64: str) -> dict:
     Fetch username + avatar from Steam Web API.
     Returns {"username": ..., "avatar": ...} — falls back to defaults if unavailable.
     """
-    if not STEAM_API_KEY or not _httpx:
+    if not _steam() or not _httpx:
         return {"username": f"SteamUser_{steam64[-6:]}", "avatar": ""}
 
     try:
         async with _httpx.AsyncClient() as c:
             resp = await c.get(STEAM_PROF_API,
-                               params={"key": STEAM_API_KEY, "steamids": steam64},
+                               params={"key": _steam(), "steamids": steam64},
                                timeout=8)
         if resp.status_code == 200:
             players = resp.json().get("response", {}).get("players", [])
