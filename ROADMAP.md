@@ -460,3 +460,69 @@ Proposed design (to refine before build):
   by hand). Fix options: manual `gh workflow run mobile-auto-release`
   after such merges (works), or give automerge a PAT so downstream
   workflows fire, or add a scheduled sweep.
+
+## 8. Identity: LDAP-first (decision 2026-09-07, replaces per-app accounts)
+
+- Rule: **create users only in lldap** (`https://ldap.aifazi.net`,
+  Coolify service `sibmqsfzzby6gkx9imqamug8`, sqlite on
+  `/opt/lldap`, compose backup at
+  `/opt/lldap/docker-compose.working.yml`). Never create users in
+  Stalwart internal directory or as Nextcloud-local users — duplicates
+  cause ambiguous delivery/login. Rejected: multi-master mesh sync
+  (passwords are one-way hashes; syncing them across systems is
+  impossible without plaintext capture — would need a custom portal
+  and still add failure modes; decision: lldap UI only, no glue code).
+- Nextcloud consumes via `user_ldap` (config `s01`, base
+  `dc=aifazi,dc=net`, quota default 10 GB) + Mail auto-provisioning
+  row (`aifazi.net` → Stalwart 993/465, login-password auth) +
+  `ldap_write_support` (password changes propagate) +
+  `ldap_contacts_backend` (directory in address book).
+- Stalwart consumes via LDAP directory backend (webadmin →
+  Management → Directory; host `lldap-sibmqsfzzby6gkx9imqamug8:3890`,
+  base `dc=aifazi,dc=net`, users `ou=people`, login `uid`/email
+  `mail`/name `cn`; internal directory stays as fallback).
+- Mail cutover 2026-09-07: Zoho MX/DKIM/SPF-include removed from
+  `aifazi.net`; MX → `mailt.aifazi.net`, SPF
+  `v=spf1 ip4:75.119.131.157 include:_spf.mx.cloudflare.net ~all`,
+  DMARC unchanged (p=none). SES subdomains untouched. PTR still via
+  Contabo panel (owner action).
+- Secrets: lldap admin + nextcloud DB user + Nextcloud admin in
+  root-only `/root/.lldap-admin-pw`, `/root/.nextcloud-db-pw`,
+  `/root/.nextcloud-admin-pw` (never git).
+- Backups: `backup-db.sh` covers DBs + `/opt/lldap`,
+  `/opt/nextcloud/html` (~1 GB/night), Stalwart volumes,
+  `/opt/fivem` minus live MariaDB dir (SQL dumps are canonical).
+  ~2 GB/night total, 7-day rotation — revisit if disk passes 30%.
+- Offboarding: delete in lldap → auth dies in mail + cloud;
+  mail/files retained per policy; clean Nextcloud remnants with
+  `occ ldap:show-remnants` + `user:delete`.
+- Open: wtf_group usable-item `RegisterHook` patch; Redis password
+  rotation (secret appeared once in an ops transcript).
+- **VPS migration (future, thinking only — NOT scheduled):** if moving to
+  a bigger box (e.g. Contabo Cloud VPS 8), decisions already made:
+  same-provider + clean rebuild (fresh Ubuntu/Docker/Coolify, migrate
+  data, redeploy per stack; old box stays live until cutover, 7-day
+  rollback window). Non-obvious gotchas recorded: ~15 Cloudflare A
+  records to flip (drop TTLs to 60s a day before), PTR re-set in Contabo
+  panel, SPF `ip4:` literal rewrite, WireGuard endpoint change forces
+  every client to re-download configs (biggest user churn — announce),
+  mail IP reputation restarts (domain auth carries over), LE auto
+  re-issues, FiveM follows `play.aifazi.net`, GitHub Actions SFTP target
+  + repo secret update, Vercel/mobile untouched. Day-one steps when
+  approved: inventory snapshot + TTL lowering (free, non-committal).
+- **Stalwart-first coexistence (2026-09-07, no glue code):**
+  `user_external` 4.0.0 IMAP backend in `config.php` (`mail.aifazi.net`
+  993/ssl, domain `aifazi.net`, strip-domain) — creating a mailbox in
+  Stalwart is enough: first Nextcloud login with the email authenticates
+  via IMAP (auto-creates the NC user), provisioned mail password follows
+  the login password. NOTE: use `mail.aifazi.net` everywhere (IMAP
+  backend + provisioning rows) — that is the name on Stalwart's LE cert;
+  `mailt.aifazi.net` (SMTP banner name) and the internal container name
+  both fail TLS verification (curl error 60, found 2026-09-07). Mail provisioning row id 2 (`*` domain,
+  `%USERID%@aifazi.net` templates) covers email-less external users; row
+  id 1 (`aifazi.net`, `%EMAIL%`) covers LDAP users (identical result by
+  the uid==localpart convention, order-independent). lldap stays
+  authoritative for non-mail users/groups; Stalwart internal directory
+  stays as fallback. Known cosmetic: first Mail-app open may provision
+  stray failing accounts for pre-existing local users — delete once via
+  `occ mail:account:delete`.
