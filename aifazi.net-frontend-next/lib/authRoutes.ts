@@ -43,11 +43,13 @@ export function safeNextPath(value: unknown): string | null {
   return value
 }
 
-export function authProviderLoginRoute(provider: 'discord' | 'steam' | 'github', dest = '/profile') {
+export function authProviderLoginRoute(provider: 'discord' | 'steam' | 'github' | 'authentik', dest = '/profile') {
   const apiOrigin = browserApiOrigin()
   const safeDest = safeNextPath(dest) || '/profile'
-  // Discord login lives on the unified /api/auth router (routers/auth.py); Steam
-  // and GitHub keep their dedicated routers mounted at /api/forum/auth/{steam,github}.
-  const base = provider === 'discord' ? '/api/auth/discord' : `/api/forum/auth/${provider}`
+  // Discord + Authentik live on /api/auth; Steam and GitHub stay on /api/forum/auth/.
+  const base =
+    provider === 'discord' ? '/api/auth/discord' :
+    provider === 'authentik' ? '/api/auth/authentik' :
+    `/api/forum/auth/${provider}`
   return `${apiOrigin}${base}/login?dest=${encodeURIComponent(safeDest)}`
 }

@@ -155,6 +155,9 @@ _OPEN_EXACT: set[str] = {
     "/api/auth/discord/callback",
     "/api/auth/discord/connect-url",
     "/api/auth/discord/whitelist-status",
+    "/api/auth/authentik/login",
+    "/api/auth/authentik/callback",
+    "/api/auth/authentik/connect-url",
     "/api/auth/ldap/login",
     "/api/auth/ldap/health",
     "/api/auth/oauth/authorize",
@@ -564,6 +567,7 @@ from routers import (
     admin_actions,
     audit,
     auth,
+    authentik_oidc,
     backup,
     banners,
     blog,
@@ -624,6 +628,7 @@ from routers import (
 )
 
 app.include_router(auth.router,           prefix="/api/auth")
+app.include_router(authentik_oidc.router, prefix="/api/auth")
 app.include_router(ldap_oauth.router,     prefix="/api/auth")
 app.include_router(blog.router,           prefix="/api/blog")
 app.include_router(upload.router,         prefix="/api/upload")
