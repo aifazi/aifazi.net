@@ -174,6 +174,7 @@ async def login_methods():
     methods = {
         "password": True,
         "lldap": lldap_ok,
+        "authentik": bool(os.getenv("AUTHENTIK_CLIENT_SECRET") or os.getenv("AUTHENTIK_CLIENT_ID")),
         "discord": False,
         "github": False,
         "steam": False,

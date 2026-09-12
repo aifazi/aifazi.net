@@ -269,7 +269,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
 
   // Which social / directory methods the admin has configured
   const [loginMethods, setLoginMethods] = useState({
-    discord: true, github: true, steam: true, lldap: true,
+    authentik: true, discord: true, github: true, steam: true, lldap: true,
   })
   useEffect(() => {
     let alive = true
@@ -415,10 +415,21 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
         {!loading && countdown <= 0 && <span className="auth-submit-arrow" aria-hidden="true">→</span>}
       </button>
 
-      {(loginMethods.discord || loginMethods.steam || loginMethods.github || loginMethods.lldap) && (
+      {(loginMethods.authentik || loginMethods.discord || loginMethods.steam || loginMethods.github || loginMethods.lldap) && (
         <>
           <div className="auth-divider"><span>OR CONTINUE WITH</span></div>
           <div className="auth-oauth-row">
+            {loginMethods.authentik && (
+              <button type="button" className="auth-oauth auth-oauth-authentik"
+                onClick={() => { window.location.href = authProviderLoginRoute('authentik', nextPath || '/profile') }}
+                title="Sign in with Authentik">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 3L4 7.5V12c0 5 3.5 9.2 8 10.5 4.5-1.3 8-5.5 8-10.5V7.5L12 3z" stroke="currentColor" strokeWidth="1.8"/>
+                  <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span>Authentik</span>
+              </button>
+            )}
             {loginMethods.discord && (
               <button type="button" className="auth-oauth auth-oauth-discord"
                 onClick={() => { window.location.href = authProviderLoginRoute('discord', nextPath || '/profile') }}
@@ -1560,6 +1571,7 @@ export default function Login() {
         .auth-oauth-github  { color: var(--text); background: color-mix(in srgb, var(--bg3) 70%, transparent); }
         .auth-oauth-lldap   { color: #fff; background: linear-gradient(135deg, #b56cff, #7c3aed); }
         .auth-oauth-lldap:disabled { opacity: .55; cursor: not-allowed; }
+        .auth-oauth-authentik { color: #fff; background: linear-gradient(135deg, #fd5c63, #e64545); }
 
         /* Links + misc */
         .auth-link { background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; transition: opacity .15s; }
