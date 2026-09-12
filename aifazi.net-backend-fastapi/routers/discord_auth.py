@@ -31,11 +31,23 @@ from utils.email import render_template
 from utils.email_queue import queue_email
 from utils.oauth_state import _safe_relative_path, make_oauth_state, verify_oauth_state_full
 
+from utils.oauth_providers import provider_cfg as _provider_cfg
+
 router = APIRouter()
 
-# ── Config ────────────────────────────────────────────────────────────────────
-DISCORD_CLIENT_ID     = os.getenv("DISCORD_CLIENT_ID", "")
-DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
+# ── Config (portal overrides env via utils.oauth_providers) ────────────────────
+def _discord():
+    return _provider_cfg("discord")
+
+
+def _client_id() -> str:
+    return _discord().get("client_id") or ""
+
+
+def _client_secret() -> str:
+    return _discord().get("client_secret") or ""
+
+
 FRONTEND_URL          = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 API_URL               = os.getenv("API_URL", "https://api.aifazi.net").rstrip("/")
 REDIRECT_URI          = f"{API_URL}/api/discord/callback"
@@ -128,12 +140,12 @@ async def discord_login(redirect: str = ""):
     C2 — `redirect` is now signed into the OAuth state via HMAC so the callback can
     verify state integrity + reject open-redirect attempts.
     """
-    if not DISCORD_CLIENT_ID:
-        raise HTTPException(503, "Discord OAuth not configured — set DISCORD_CLIENT_ID in Vercel")
+    if not _client_id():
+        raise HTTPException(503, "Discord OAuth not configured — set it in Admin → Identity & OAuth")
     safe_dest = _safe_relative_path(redirect, default="/profile")
     state = make_oauth_state("discord", safe_dest)
     params = _urlparse.urlencode({
-        "client_id":     DISCORD_CLIENT_ID,
+        "client_id":     _client_id(),
         "redirect_uri":  REDIRECT_URI,
         "response_type": "code",
         "scope":         "identify email",
@@ -160,8 +172,8 @@ async def discord_callback(code: str = "", error: str = "", state: str = ""):
         token_resp = await client.post(
             f"{DISCORD_API}/oauth2/token",
             data={
-                "client_id":     DISCORD_CLIENT_ID,
-                "client_secret": DISCORD_CLIENT_SECRET,
+                "client_id":     _client_id(),
+                "client_secret": _client_secret(),
                 "grant_type":    "authorization_code",
                 "code":          code,
                 "redirect_uri":  REDIRECT_URI,

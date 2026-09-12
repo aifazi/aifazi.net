@@ -100,6 +100,31 @@ function OAuthSettings() {
 
   const setLdap = (k, v) => setCfg(p => ({ ...p, lldap: { ...(p.ldap || {}), [k]: v } }))
 
+  // Social provider form drafts (secrets only sent when typed)
+  const [provDraft, setProvDraft] = useState({})
+  const setProv = (id, k, v) => setProvDraft(p => ({ ...p, [id]: { ...(p[id] || {}), [k]: v } }))
+
+  const saveProvider = async (id) => {
+    setSaving(true)
+    try {
+      const d = provDraft[id] || {}
+      const r = await api.put(`/admin/oauth/providers/${id}`, {
+        enabled: d.enabled !== false,
+        client_id: d.client_id || '',
+        client_secret: d.client_secret || '',
+        redirect_uri: d.redirect_uri || '',
+        api_key: d.api_key || '',
+      })
+      setCfg(r.data)
+      setProvDraft(p => ({ ...p, [id]: {} }))
+      flash('ok', `✅ ${id} settings saved.`)
+    } catch (e) {
+      flash('err', e.response?.data?.detail || `Failed to save ${id}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const saveLdap = async () => {
     setSaving(true)
     try {
@@ -302,6 +327,105 @@ function OAuthSettings() {
           <div>Authorize: <span style={{ color: 'var(--cyan)' }}>{endpoints.authorize}</span></div>
           <div>Token: <span style={{ color: 'var(--cyan)' }}>{endpoints.token}</span></div>
           <div>Discovery: <span style={{ color: 'var(--cyan)' }}>{endpoints.discovery}</span></div>
+        </div>
+      </section>
+
+      {/* ── Social login platforms ───────────────────────────────── */}
+      <section style={{
+        background: 'var(--bg2)', border: '1px solid var(--border)',
+        borderRadius: 14, padding: isMobile ? 16 : 22, marginBottom: 20,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <Icon name="shield" size={18} style={{ color: '#22d3ee' }} />
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Social login platforms</h3>
+        </div>
+        <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 16px' }}>
+          Sign-in buttons on aifazi.net. Portal values override Coolify/Vercel env vars.
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {(cfg.providers || []).map(p => {
+            const d = provDraft[p.id] || {}
+            const isSteam = p.id === 'steam'
+            return (
+              <div key={p.id} style={{
+                padding: 16, borderRadius: 12,
+                background: 'var(--bg)', border: '1px solid var(--border)',
+              }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <strong style={{ fontSize: 14 }}>{p.label}</strong>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 10, padding: '3px 10px', borderRadius: 20,
+                    background: p.configured ? 'rgba(63,185,80,.15)' : 'rgba(248,81,73,.15)',
+                    color: p.configured ? 'var(--green)' : 'var(--red)',
+                  }}>{p.configured ? 'Configured' : 'Not configured'}</span>
+                  {p.from_env && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>from env</span>
+                  )}
+                  <a href={p.docs} target="_blank" rel="noreferrer"
+                    style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--cyan, #22d3ee)' }}>
+                    Developer docs ↗
+                  </a>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 10 }}>
+                  {!isSteam && (
+                    <>
+                      <div>
+                        <label style={labelStyle}>Client ID</label>
+                        <input style={inputStyle} value={d.client_id ?? p.client_id ?? ''}
+                          onChange={e => setProv(p.id, 'client_id', e.target.value)}
+                          placeholder={p.client_id_set ? '•••• (set)' : 'OAuth app client id'} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>
+                          Client secret {p.secret_set ? `(set — ${p.secret_masked || '••••'})` : ''}
+                        </label>
+                        <input style={inputStyle} type="password" value={d.client_secret || ''}
+                          onChange={e => setProv(p.id, 'client_secret', e.target.value)}
+                          placeholder={p.secret_set ? 'Leave blank to keep' : 'OAuth app secret'} />
+                      </div>
+                      <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
+                        <label style={labelStyle}>Redirect URI (must match the OAuth app)</label>
+                        <input style={inputStyle} value={d.redirect_uri ?? p.redirect_uri ?? ''}
+                          onChange={e => setProv(p.id, 'redirect_uri', e.target.value)}
+                          placeholder={p.redirect_hint} />
+                      </div>
+                    </>
+                  )}
+                  {isSteam && (
+                    <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
+                      <label style={labelStyle}>
+                        Steam Web API key {p.secret_set ? `(set — ${p.secret_masked || '••••'})` : ''}
+                      </label>
+                      <input style={inputStyle} type="password" value={d.api_key || ''}
+                        onChange={e => setProv(p.id, 'api_key', e.target.value)}
+                        placeholder={p.secret_set ? 'Leave blank to keep' : 'From steamcommunity.com/dev/apikey'} />
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
+                        Callback: {p.redirect_hint}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', margin: 0 }}>
+                    <input type="checkbox"
+                      checked={d.enabled ?? p.enabled}
+                      onChange={e => setProv(p.id, 'enabled', e.target.checked)} />
+                    Enabled
+                  </label>
+                  <button type="button" onClick={() => saveProvider(p.id)} disabled={saving}
+                    style={{
+                      padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                      background: 'linear-gradient(135deg,#b56cff,#9333ea)', color: '#fff', fontWeight: 600, fontSize: 12,
+                    }}>
+                    Save {p.label}
+                  </button>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </section>
 
