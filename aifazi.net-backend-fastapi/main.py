@@ -155,6 +155,13 @@ _OPEN_EXACT: set[str] = {
     "/api/auth/discord/callback",
     "/api/auth/discord/connect-url",
     "/api/auth/discord/whitelist-status",
+    "/api/auth/ldap/login",
+    "/api/auth/ldap/health",
+    "/api/auth/oauth/authorize",
+    "/api/auth/oauth/token",
+    "/api/auth/oauth/userinfo",
+    "/api/auth/oauth/revoke",
+    "/api/auth/oauth/.well-known/oauth-authorization-server",
     "/api/auth/steam/login",
     "/api/auth/steam/callback",
     "/api/auth/steam/connect-url",
@@ -249,6 +256,8 @@ _OPEN_GET_PREFIXES: tuple[str, ...] = (
     "/api/auth/verify-status",
     "/api/auth/discord/",
     "/api/auth/steam/",
+    "/api/auth/ldap/",
+    "/api/auth/oauth/",
     "/api/forum/auth/",
     # Steam auth still registered at legacy path
     "/api/forum/auth/steam/",
@@ -305,6 +314,9 @@ def _is_allowed_origin(origin: str) -> bool:
 # (max_calls, window_seconds) per path suffix
 _RL_RULES: list[tuple[str, int, int]] = [
     ("/auth/login",           5,   60),
+    ("/auth/ldap/login",      5,   60),
+    ("/auth/oauth/token",     10,  60),
+    ("/auth/oauth/authorize", 10,  60),
     ("/auth/register",       10,   60),
     ("/auth/2fa/verify",      3,   60),
     ("/auth/refresh",         20,   60),
@@ -576,6 +588,7 @@ from routers import (
     forum,
     github_auth,
     helpdesk,
+    ldap_oauth,
     mail_queue,
     mail_templates,
     mobile_admin,
@@ -584,6 +597,7 @@ from routers import (
     network,
     newsletter,
     notifications,
+    oauth_admin,
     pdf_editor,
     portfolio,
     push,
@@ -609,6 +623,7 @@ from routers import (
 )
 
 app.include_router(auth.router,           prefix="/api/auth")
+app.include_router(ldap_oauth.router,     prefix="/api/auth")
 app.include_router(blog.router,           prefix="/api/blog")
 app.include_router(upload.router,         prefix="/api/upload")
 app.include_router(contact.router,        prefix="/api/contact")
@@ -634,6 +649,7 @@ app.include_router(mail_queue.router,     prefix="/api/admin/mail/queue")
 app.include_router(mail_templates.router, prefix="/api/admin/mail/templates")
 app.include_router(banners.router,        prefix="/api/admin/banners")
 app.include_router(site_settings.router,  prefix="/api/admin/site-settings")
+app.include_router(oauth_admin.router,    prefix="/api/admin/oauth")
 app.include_router(cdn_settings.router,   prefix="/api/admin/cdn")
 app.include_router(search.router,         prefix="/api/search")
 app.include_router(newsletter.router,     prefix="/api/newsletter")
