@@ -103,7 +103,7 @@ jobs:
       - name: Create PR for version bump
         # Pinned to v7 SHA (supply-chain): verify via
         # gh api repos/peter-evans/create-pull-request/commits/v7 --jq .sha
-        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
           commit-message: "chore(mobile): bump app version to ${{ steps.tag.outputs.tag }} [skip ci]"
           branch: chore/mobile-version-${{ steps.tag.outputs.tag }}
