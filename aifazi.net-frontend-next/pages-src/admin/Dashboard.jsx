@@ -35,6 +35,7 @@ const FiveMPanel = dynamic(() => import('./FiveMPanel').then(m => m.default || m
 const StoreCenter = dynamic(() => import('./storeModules/StoreCenter').then(m => m.default || m), { ssr: false })
 const MonitoringPanel = dynamic(() => import('./MonitoringPanel').then(m => m.default || m), { ssr: false })
 const VpnPanel = dynamic(() => import('./VpnPanel').then(m => m.default || m), { ssr: false })
+const OAuthSettings = dynamic(() => import('./OAuthSettings').then(m => m.default || m), { ssr: false })
 const ChatPanel = dynamic(() => import('./ChatPanel').then(m => m.default || m), { ssr: false })
 
 const STAT_CARD_VIEWS = { content: 'content', activity: 'db', communications: 'communications', staff: 'staff' }
@@ -77,7 +78,7 @@ const PERMISSION_MODULES = [
   ['support.helpdesk','Help desk'], ['store','Store'],
   ['store.analytics','Store analytics'], ['store.customers','Store customers (CRM)'], ['store.payments','Store payments'], ['store.products','Store catalog & stock'], ['store.coupons','Store coupons'], ['store.deals','Store flash deals'], ['store.reviews','Store reviews'], ['store.orders','Store orders'], ['store.inventory','Store inventory'], ['store.delivery','Store delivery'], ['store.settings','Store settings'],
   ['fivem.status','FiveM status'], ['fivem.whitelist','FiveM whitelist'], ['fivem.forms','FiveM forms'], ['fivem.approval_log','FiveM approval log'], ['fivem.bans','FiveM bans'],
-  ['system.vpn','VPN'], ['changelog','Changelog'],
+  ['system.vpn','VPN'], ['system.identity','Identity & OAuth'], ['changelog','Changelog'],
 ]
 const PERMISSION_ACTIONS = ['view','create','edit','delete','approve','sync','manage']
 const PRESET_PERMISSIONS = {
@@ -438,6 +439,7 @@ function Dashboard({ onLogout }) {
     { key: 'changelog',    label: 'Changelog',     group: 'MANAGE',     icon: '📋',   badge: 'NEW' },
     { key: 'monitoring',   label: 'Monitoring',    group: 'SYSTEM',     icon: '📡',   badge: null },
     { key: 'vpn',          label: 'VPN',           group: 'SYSTEM',     icon: '🔒',   badge: null },
+    { key: 'identity',     label: 'Identity & OAuth', group: 'SYSTEM',  icon: '🪪',   badge: 'NEW' },
   ]
 
   // ── Role-based section access ──────────────────────────────────────────
@@ -1185,6 +1187,7 @@ function Dashboard({ onLogout }) {
           {view === 'changelog' && canView(view) && <PanelErrorBoundary label="Changelog"><Changelog /></PanelErrorBoundary>}
           {view === 'monitoring' && canView(view) && <PanelErrorBoundary label="Monitoring"><MonitoringPanel /></PanelErrorBoundary>}
           {view === 'vpn' && canView(view) && <PanelErrorBoundary label="VPN"><VpnPanel /></PanelErrorBoundary>}
+          {view === 'identity' && canView(view) && <PanelErrorBoundary label="Identity & OAuth"><OAuthSettings /></PanelErrorBoundary>}
           {view === 'fivem' && canView(view) && (
             <PanelErrorBoundary label="FiveM Server">
               <FiveMPanel defaultSection="status" />
