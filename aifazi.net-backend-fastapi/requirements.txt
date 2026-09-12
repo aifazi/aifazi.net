@@ -27,3 +27,4 @@ stripe==15.6.0
 upstash-redis==1.8.0
 redis==5.2.1
 pyclamd==0.4.0
+ldap3==2.9.1
