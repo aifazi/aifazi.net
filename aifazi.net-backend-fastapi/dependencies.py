@@ -226,9 +226,12 @@ def require_staff(request: Request, user: dict = Depends(get_current_user)) -> d
         if not has_permission(merged, module, action):
             raise HTTPException(status_code=403, detail=f"Missing permission: {module}.{action}")
     elif needed is None:
-        # Fail closed for admin/monitor surfaces that have no explicit rule.
+        # Fail closed for non-admin staff on admin/monitor surfaces that have
+        # no explicit rule. Admins keep full access (same as has_permission).
         path = str(request.url.path)
-        if path.startswith("/api/admin/") or path.startswith("/api/monitor") or path.startswith("/api/store/admin"):
+        if merged.get("role") != "admin" and (
+            path.startswith("/api/admin/") or path.startswith("/api/monitor") or path.startswith("/api/store/admin")
+        ):
             raise HTTPException(status_code=403, detail="Missing permission for this admin route")
     return merged
 
