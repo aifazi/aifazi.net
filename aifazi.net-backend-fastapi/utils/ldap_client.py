@@ -72,7 +72,7 @@ def _ldap_escape(value: str) -> str:
     out = []
     for ch in value:
         if ch in "\\*()\0":
-            out.append("\\%02x" % ord(ch))
+            out.append(f"\\{ord(ch):02x}")
         else:
             out.append(ch)
     return "".join(out)

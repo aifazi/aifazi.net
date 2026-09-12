@@ -66,7 +66,25 @@ function OAuthSettings() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const r = await api.get('/admin/oauth')
+        if (alive) setCfg(r.data)
+      } catch (e) {
+        if (alive) {
+          setMsg({
+            type: 'err',
+            text: e.response?.data?.detail || e.response?.data?.error || 'Failed to load OAuth settings',
+          })
+        }
+      } finally {
+        if (alive) setLoading(false)
+      }
+    })()
+    return () => { alive = false }
+  }, [])
 
   const setLdap = (k, v) => setCfg(p => ({ ...p, lldap: { ...(p.ldap || {}), [k]: v } }))
 
