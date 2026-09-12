@@ -49,6 +49,7 @@ function OAuthSettings() {
   const [newClient, setNewClient] = useState({ client_id: '', name: '', secret: '', redirect_uris: '', public: false })
   const [createdSecret, setCreatedSecret] = useState(null)
   const [showSecrets, setShowSecrets] = useState({})
+  const [loadError, setLoadError] = useState(null)
 
   const flash = (type, text, ms = 7000) => {
     setMsg({ type, text })
@@ -59,8 +60,14 @@ function OAuthSettings() {
     try {
       const r = await api.get('/admin/oauth')
       setCfg(r.data)
+      setLoadError(null)
     } catch (e) {
-      flash('err', e.response?.data?.detail || e.response?.data?.error || 'Failed to load OAuth settings')
+      const text = e.response?.data?.detail || e.response?.data?.error
+        || (e.response?.status === 403
+          ? '403 Forbidden — the API rejected the request. Sign out/in as admin, then hard-refresh. If it continues, redeploy the backend (Coolify) so /api/admin/oauth exists.'
+          : 'Failed to load OAuth settings')
+      setLoadError(text)
+      flash('err', text)
     } finally {
       setLoading(false)
     }
@@ -71,13 +78,18 @@ function OAuthSettings() {
     ;(async () => {
       try {
         const r = await api.get('/admin/oauth')
-        if (alive) setCfg(r.data)
+        if (alive) {
+          setCfg(r.data)
+          setLoadError(null)
+        }
       } catch (e) {
         if (alive) {
-          setMsg({
-            type: 'err',
-            text: e.response?.data?.detail || e.response?.data?.error || 'Failed to load OAuth settings',
-          })
+          const text = e.response?.data?.detail || e.response?.data?.error
+            || (e.response?.status === 403
+              ? '403 Forbidden — sign out/in as admin, then hard-refresh. If it continues, redeploy the backend so /api/admin/oauth is available.'
+              : 'Failed to load OAuth settings')
+          setLoadError(text)
+          setMsg({ type: 'err', text })
         }
       } finally {
         if (alive) setLoading(false)
@@ -154,7 +166,37 @@ function OAuthSettings() {
   }
 
   if (loading) return <div style={{ padding: 24, color: 'var(--muted)' }}>Loading identity settings…</div>
-  if (!cfg) return <div style={{ padding: 24, color: 'var(--red)' }}>Failed to load.</div>
+  if (!cfg) {
+    return (
+      <div>
+        <PageHeader
+          title="Identity & OAuth"
+          subtitle="LLDAP directory + OAuth2 clients for aifazi.net and third-party apps"
+        />
+        <div style={{
+          background: 'var(--bg2)', border: '1px solid var(--red, #f85149)',
+          borderRadius: 14, padding: 24,
+        }}>
+          <div style={{ fontWeight: 700, color: 'var(--red, #f85149)', marginBottom: 8 }}>
+            Could not load Identity settings
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 14 }}>
+            {loadError || 'The API returned an error. Sign in as admin and try again.'}
+            <br />
+            If this persists after a backend deploy, open DevTools → Network and check{' '}
+            <code style={{ fontFamily: 'var(--font-mono)' }}>/api/admin/oauth</code>.
+          </div>
+          <button type="button" onClick={() => { setLoading(true); setLoadError(null); load() }}
+            style={{
+              padding: '10px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              background: 'linear-gradient(135deg,#b56cff,#9333ea)', color: '#fff', fontWeight: 600,
+            }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const ldap = cfg.ldap || {}
   const endpoints = cfg.endpoints || {}
