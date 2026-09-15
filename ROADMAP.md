@@ -1,10 +1,55 @@
 # aifazi.net — Roadmap & TODO
 
-> Living plan. Status as of 2026-09-04 (infra audit + outage closed).
+> Living plan. Status as of 2026-09-15 (infra + security audit batches closed).
 > Checked items ship via PR to `main` (CI required, owner PRs auto-merge
 > on green via `owner-automerge.yml`) → Vercel (frontend, auto) + Coolify
 > (backend, manual deploy) + EAS auto-release (mobile, on
 > `apps/mobile/**` changes).
+
+## 0f. Identity: Authentik-first (2026-09-14, supersedes §8 LLDAP-first)
+
+- LLDAP container is gone (data kept at `/opt/lldap` + backup tar); the
+  directory is now Authentik (`auth.aifazi.net`) with the LDAP outpost
+  (`ak-outpost-ldap`, `:3389`) backed by the shared Supabase Postgres
+  (separate `authentik` database; standalone `postgresql-st40…` stopped,
+  volume retained). Nextcloud `s01` binds to the outpost; 10 users synced.
+- Authentik OIDC login shipped in-app (#212 `authentik_oidc.py`); portal
+  OAuth providers Discord/GitHub/Steam (#210 `oauth_providers.py`,
+  #211 Redis codes/tokens); identity admin gate (#209).
+- §8 rule "create users only in lldap / no glue code" is retired — user
+  lifecycle lives in Authentik now. Mail auth follows via Stalwart's LDAP
+  directory backend repointed at the outpost.
+- Open: re-enroll Authentik `admin` MFA (removed for lockout recovery);
+  add MFA to `akadmin`; mirror PG host/user/pass + postgres-service
+  deletion in Coolify UI or the next redeploy reverts the consolidation.
+
+## 0g. Security audit batch (2026-09-14/15, shipped)
+
+- Backend fail-closed auth: staff roles directory-verified (60s verdict
+  cache), banned enforced on all authed routes, 503 on directory outage
+  (`dependencies.py`, `permissions.py`).
+- Monitor hardening: `/ping` cached 300s (no check-run DoS/alert storms),
+  `/errors` ingest allowlists `source` + rejects empty messages.
+- Frontend: SSR scrubber rewritten quote-aware with entity decoding
+  (18 vectors tested); CDN proxy gets traversal rejection, transformation
+  query allowlist, active content forced to download + nosniff.
+- Internal token binds method+path+canonical-query on both sides
+  (`proxy.ts`, `main.py`); constant-time cron compare; VPN reissue needs
+  `system.vpn` manage; txadmin `/health` trimmed to `{"ok": true}`.
+- Backend pytest harness from zero: `tests/test_auth_failclosed.py`
+  (16 tests) + CI `Backend - Tests` job (7th required check — add it in
+  GitHub branch protection).
+
+## 0h. Nextcloud Talk mobile-data fix (2026-09-14, verified)
+
+- Root cause: carrier blocks UDP/3478; phone never reached TURN.
+- Fix: LE cert for `turn.aifazi.net` (Traefik dummy router), coturn TLS
+  cert swapped, Traefik TCP SNI passthrough `:443 → coturn:5349`, Talk
+  config trimmed to single `turns turn.aifazi.net:443` (proven by mobile
+  browser + app allocations). Weekly cert-refresh cron installed.
+- Note: Talk Android v24 shows app-side call bugs (browser works, app
+  fails) reported upstream 2026-wide; if the app regresses again, test
+  F-Droid 23.0.1 before touching the server.
 
 ## 0. Operations backlog (dashboard/SSH — no code deploy needed)
 

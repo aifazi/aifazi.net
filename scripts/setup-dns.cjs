@@ -3,14 +3,16 @@ const https = require("https");
 const CLOUDFLARE_TOKEN = process.env.CF_API_TOKEN;
 const ZONE_ID = process.env.CF_ZONE_ID || "";
 const FRONTEND_URL = "aifazi-net-frontend-next.vercel.app";
-const BACKEND_URL = "aifazinet-backend-fastapi.vercel.app";
+// Backend runs on Coolify (VPS), fronted by Cloudflare proxy — NOT Vercel.
+// api.aifazi.net resolves to Cloudflare edge IPs; origin is VPS_PUBLIC_IP.
+const VPS_PUBLIC_IP = process.env.VPS_PUBLIC_IP || "75.119.131.157";
 
 const dnsRecords = [
   { type: "CNAME", name: "aifazi.net", content: "cname.vercel-dns.com", ttl: 600, proxied: false },
   { type: "CNAME", name: "www.aifazi.net", content: "cname.vercel-dns.com", ttl: 600, proxied: false },
   { type: "CNAME", name: "fivem.aifazi.net", content: FRONTEND_URL, ttl: 600, proxied: false },
   { type: "CNAME", name: "cdn.aifazi.net", content: FRONTEND_URL, ttl: 600, proxied: false },
-  { type: "CNAME", name: "api.aifazi.net", content: BACKEND_URL, ttl: 600, proxied: false },
+  { type: "A", name: "api.aifazi.net", content: VPS_PUBLIC_IP, ttl: 300, proxied: true },
 ];
 
 if (!CLOUDFLARE_TOKEN) {
