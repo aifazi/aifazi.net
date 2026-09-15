@@ -424,13 +424,7 @@ async def push_approval_to_txadmin(app_id: str, user: dict = Depends(require_sta
     }
 
 
-# ─── Health check ─────────────────────────────────────────────────────────────
+# ─── Health check (liveness only — never leak config state) ───────────────────
 @router.get("/health")
 async def txadmin_webhook_health():
-    return {
-        "ok": True,
-        "webhook_secret_set":    bool(WEBHOOK_SECRET),
-        "fivem_token_set":       bool(FIVEM_SERVER_SECRET),
-        # BUG FIX #6: surface whether we are in open/insecure mode
-        "insecure_mode_active":  not IS_PRODUCTION and not WEBHOOK_SECRET and not FIVEM_SERVER_SECRET,
-    }
+    return {"ok": True}

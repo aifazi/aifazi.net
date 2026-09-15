@@ -9,6 +9,7 @@ import hmac
 import logging
 import os
 import time
+import urllib.parse
 from contextlib import asynccontextmanager
 
 import sentry_sdk
@@ -94,22 +95,32 @@ if not INTERNAL_API_SECRET:
 
 # ── H1: per-request internal token verification ────────────────────────────────
 # The Next.js middleware no longer forwards the raw INTERNAL_API_SECRET on every
-# /api/* request. Instead each request carries a short-lived, method+path-bound
-# HMAC-SHA256 token: base64url(ts) + "." + base64url(hmac(secret, "METHOD:path:ts")).
+# /api/* request. Instead each request carries a short-lived, method+path+query-bound
+# HMAC-SHA256 token: base64url(ts) + "." + base64url(hmac(secret, "METHOD:path:query:ts")).
 # Verification enforces:
 #   * signature — recomputed with the shared secret (constant-time compare)
 #   * freshness — token must be minted within _INTERNAL_TOKEN_TTL seconds
-#   * binding   — method+path must match the request being authorized
+#   * binding   — method+path+canonical-query must match the request being
+#     authorized (query is sorted key=value pairs; empty string when none)
 # A captured token therefore expires quickly and can only be replayed to the same
-# endpoint, never reused across paths or methods.
+# endpoint with the same query string, never reused across paths, methods or
+# ?role=admin-style parameter swaps.
 _INTERNAL_TOKEN_TTL = 300  # seconds (±150s skew tolerance)
 
-def _verify_internal_token(submitted: str, method: str, path: str) -> bool:
+
+def _canonical_query(raw_query: str) -> str:
+    """Sort query pairs into a canonical form both sides agree on."""
+    pairs = urllib.parse.parse_qsl(raw_query or "", keep_blank_values=True)
+    return "&".join(f"{k}={v}" for k, v in sorted(pairs))
+
+
+def _verify_internal_token(submitted: str, method: str, path: str, query: str = "") -> bool:
     """Verify a per-request HMAC token from the Next.js middleware.
 
     Returns True only if the token is structurally valid, fresh, and its HMAC
-    matches the current method+path. The raw secret is NEVER accepted as a
-    token: it would turn every captured header into a permanent credential.
+    matches the current method+path+canonical-query. The raw secret is NEVER
+    accepted as a token: it would turn every captured header into a permanent
+    credential.
     """
     if not submitted:
         return False
@@ -124,7 +135,7 @@ def _verify_internal_token(submitted: str, method: str, path: str) -> bool:
         return False
     expected = hmac.new(
         INTERNAL_API_SECRET.encode(),
-        f"{method}:{path}:{ts}".encode(),
+        f"{method}:{path}:{query}:{ts}".encode(),
         hashlib.sha256,
     ).digest()
     try:
@@ -435,8 +446,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # ── 2c. Shared (DB) rate limit for brute-force-sensitive paths ──────
         # Additional Supabase-backed check for sensitive paths as a second layer.
-        # Fail-open on DB error — if the DB is down, auth endpoints are already
-        # broken and a 429 adds no security value over the primary rate limit.
+        # Fail-closed on DB error: when the directory is unreachable we block
+        # sensitive paths rather than assume the allowance.
         if any(path.endswith(s) for s in _RL_SENSITIVE_SUFFIXES) or any(path.startswith(s) for s in _RL_PREFIXES):
             try:
                 from database import supabase as _sb
@@ -492,7 +503,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                         content={"error": "Invalid or expired token"},
                     )
                 submitted = request.headers.get("X-Internal-Token", "")
-                if not _verify_internal_token(submitted, method, path):
+                query = _canonical_query(request.url.query if hasattr(request.url, "query") else "")
+                if not _verify_internal_token(submitted, method, path, query):
                     return JSONResponse(
                         status_code=403,
                         content={"error": "Direct API access is not permitted."},

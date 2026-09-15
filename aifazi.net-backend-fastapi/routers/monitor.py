@@ -637,17 +637,30 @@ async def cron_monitor(request: Request):
 
 # ── Public ping — external uptime service (UptimeRobot/BetterStack, free) hits
 #    this every N minutes to trigger a check. Works on Hobby (no cron frequency
-#    limit needed). Returns lightweight summary. ────────────────────────────────
+#    limit needed). Returns lightweight summary. Results are cached for
+#    _PING_TTL seconds so floods can't trigger expensive check runs or
+#    alert-email storms; monitors polling every 5 min see fresh data anyway. ──
+_PING_TTL_SECONDS = 300
+_ping_cache: dict = {"at": 0.0, "payload": None}
+
+
 @router.get("/api/monitor/ping")
 async def monitor_ping(request: Request):
+    now_ts = time.monotonic()
+    cached = _ping_cache["payload"]
+    if cached is not None and (now_ts - _ping_cache["at"]) < _PING_TTL_SECONDS:
+        return cached
     results = await _run_all_checks()
     overall = "operational" if all(r["status"] == "up" for r in results) else \
               ("degraded" if any(r["status"] == "up" for r in results) else "outage")
-    return {
+    payload = {
         "status": overall,
         "ran_at": _now(),
         "services": {r["service"]: r["status"] for r in results},
     }
+    _ping_cache["at"] = now_ts
+    _ping_cache["payload"] = payload
+    return payload
 
 
 # ── Public status (sanitized — no secrets) ────────────────────────────────────
@@ -840,11 +853,19 @@ async def _send_error_alert(row: dict):
 
 # Public ingestion — frontend ErrorBoundary + window error/rejection handlers POST here.
 # Rate-limited by the global limiter. Keep it lightweight; no sensitive data.
+# `source` is allowlisted so scrapers can't invent sources to pollute triage.
+_ERROR_SOURCES = {"frontend", "backend", "mobile"}
+
+
 @router.post("/api/monitor/errors")
 async def ingest_error(body: dict, request: Request):
     source = str(body.get("source", "frontend"))[:20]
+    if source not in _ERROR_SOURCES:
+        raise HTTPException(400, "Unknown error source")
     error_type = str(body.get("error_type", "Error"))[:100]
     message = str(body.get("message", "Unknown error"))[:1000]
+    if not message.strip():
+        raise HTTPException(400, "Empty error message")
     stack = str(body.get("stack", ""))[-8000:]
     endpoint = str(body.get("endpoint", ""))[:200]
     url = str(body.get("url", ""))[:500]

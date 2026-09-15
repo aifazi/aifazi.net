@@ -6,6 +6,7 @@ becoming full admins.
 """
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from fastapi import Depends, HTTPException
@@ -119,26 +120,78 @@ def _supabase():
     return supabase
 
 
+# Short-lived verdict cache for the admin fast-path below: without it every
+# staff request would pay a directory round-trip. Only conclusive verdicts
+# (is-admin / not-admin) are cached; directory failures are never cached and
+# fail closed with 503 at the call site.
+_admin_verify_cache: dict[str, tuple[float, bool]] = {}
+_ADMIN_VERIFY_TTL = 60
+
+
+def _verify_admin_role(user_id: str, username: str) -> bool:
+    """Confirm a token-claimed admin against the directory. Fail closed."""
+    key = user_id or username
+    now = time.time()
+    hit = _admin_verify_cache.get(key)
+    if hit and (now - hit[0]) < _ADMIN_VERIFY_TTL:
+        return hit[1]
+    try:
+        sb = _supabase()
+        row = None
+        if user_id:
+            res = sb.table("users").select("id,role,banned").eq("id", user_id).limit(1).execute()
+            row = (res.data or [None])[0]
+        if not row and username:
+            res = sb.table("users").select("id,username,role,banned").ilike("username", username).limit(5).execute()
+            row = next((r for r in (res.data or []) if str(r.get("username", "")).lower() == username.lower()), None)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=503, detail="User directory unavailable")
+    if not row:
+        _admin_verify_cache[key] = (now, False)
+        return False
+    if row.get("banned"):
+        raise HTTPException(status_code=403, detail="Staff account suspended")
+    verdict = str(row.get("role") or "").lower() == "admin"
+    _admin_verify_cache[key] = (now, verdict)
+    return verdict
+
+
 def resolve_staff_access(user: dict | None) -> dict | None:
     if not user:
         return None
     role = str(user.get("role") or "").lower()
-    if role == "admin":
-        return {"role": "admin", "permissions": role_permissions("admin"), "staff_account": True, "admin_access": True}
-
     user_id = str(user.get("id") or user.get("_id") or "").strip()
     username = str(user.get("username") or "").strip()
+    if role == "admin":
+        # Never trust the JWT claim alone: confirm against the directory.
+        # _verify_admin_role raises 503 when the directory is unreachable.
+        if _verify_admin_role(user_id, username):
+            return {"role": "admin", "permissions": role_permissions("admin"), "staff_account": True, "admin_access": True}
+        return None
+
     row = None
+    db_ok = False
     try:
         sb = _supabase()
         if user_id:
             res = sb.table("users").select("id,username,email,role,staff_permissions,banned,last_seen,created_at,profile_bio,profile_avatar,email_verified").eq("id", user_id).limit(1).execute()
+            db_ok = True
             row = (res.data or [None])[0]
         if not row and username:
             res = sb.table("users").select("id,username,email,role,staff_permissions,banned,last_seen,created_at,profile_bio,profile_avatar,email_verified").ilike("username", username).limit(5).execute()
+            db_ok = True
             row = next((r for r in (res.data or []) if str(r.get("username", "")).lower() == username.lower() and r.get("role") in STAFF_ROLES), None)
+    except HTTPException:
+        raise
     except Exception:
         row = None
+
+    if not db_ok:
+        # Fail closed: without a live directory read, token-claimed staff
+        # roles must not be honored.
+        raise HTTPException(status_code=503, detail="User directory unavailable")
 
     if row and row.get("role") in STAFF_ROLES:
         eff_role = str(row.get("role") or role or "").lower()
@@ -151,8 +204,6 @@ def resolve_staff_access(user: dict | None) -> dict | None:
             "staff_account": True, "admin_access": eff_role == "admin", "staff_row": row,
         }
 
-    if role in STAFF_ROLES:
-        return {"role": role, "permissions": role_permissions(role), "staff_account": True, "admin_access": role == "admin"}
     return None
 
 
