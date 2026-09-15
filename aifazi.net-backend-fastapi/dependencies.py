@@ -90,9 +90,11 @@ def _enrich_user(payload: dict) -> dict:
         payload.update(cached[1])
         return payload
     enrichment = {}
+    db_ok = False
     try:
         from database import supabase as sb
         res = sb.table("users").select("role,username,email,staff_permissions,banned,ban_reason").eq("id", user_id).limit(1).execute()
+        db_ok = True
         if res.data:
             fu = res.data[0]
             enrichment["role"] = fu.get("role", "member")
@@ -102,11 +104,24 @@ def _enrich_user(payload: dict) -> dict:
             enrichment["ban_reason"] = fu.get("ban_reason") or ""
             if fu.get("staff_permissions"):
                 enrichment["permissions"] = fu["staff_permissions"]
+    except HTTPException:
+        raise
     except Exception:
-        pass
+        log.warning("user directory lookup failed for %s; falling back to cache", user_id)
+    if not db_ok:
+        # Fail closed: without a live directory read we cannot trust
+        # token-claimed roles. Serve stale cache if present, else 503.
+        if cached:
+            payload.update(cached[1])
+            if cached[1].get("banned"):
+                raise HTTPException(status_code=403, detail="Account suspended")
+            return payload
+        raise HTTPException(status_code=503, detail="User directory unavailable")
     if enrichment:
         _user_cache_set(user_id, now, enrichment)
         payload.update(enrichment)
+    if payload.get("banned"):
+        raise HTTPException(status_code=403, detail="Account suspended")
     return payload
 
 def decode_token(token: str) -> dict:
