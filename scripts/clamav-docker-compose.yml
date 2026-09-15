@@ -1,0 +1,26 @@
+services:
+  clamav:
+    image: clamav/clamav:1.4
+    container_name: clamav
+    restart: unless-stopped
+    networks:
+      - coolify
+    volumes:
+      - clamav-data:/var/lib/clamav
+      - /opt/clamav/clamd.conf:/etc/clamav/clamd.conf:ro
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 3310 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
+
+volumes:
+  clamav-data:
+
+networks:
+  coolify:
+    external: true

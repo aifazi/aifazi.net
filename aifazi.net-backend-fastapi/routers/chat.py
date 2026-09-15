@@ -53,71 +53,50 @@ def _strip_html_tags(text: str) -> str:
     s.feed(text)
     return s.get_text()
 
-# ── In-memory chat history cache ────────────────────────────────────────────
+# ── Chat history cache (Redis-backed with in-memory fallback) ────────────────
 # Caches the "latest N messages in a room" fetch (the hot path) for a short TTL
-# so repeat history loads don't hammer Postgres. Single-process only — when the
-# app scales to multiple API instances this should be replaced with Redis
-# (Upstash/Railway) for presence/typing/rate-limit/cross-instance invalidation.
+# so repeat history loads don't hammer Postgres. Redis provides cross-instance
+# invalidation for multi-worker deployments.
 _HISTORY_TTL = 20.0          # seconds
-_history_lock = threading.Lock()
-_history_cache: dict[str, tuple[float, list]] = {}
 
-def _get_cached_history(room_id: str, limit: int) -> list | None:
-    with _history_lock:
-        entry = _history_cache.get(room_id)
-        if entry and time.monotonic() - entry[0] < _HISTORY_TTL:
-            rows = entry[1]
-            if len(rows) >= limit:
-                return list(rows[:limit])
-    return None
+async def _get_cached_history(room_id: str, limit: int) -> list | None:
+    from utils.redis_cache import cache_get
+    return await cache_get(f"chat:history:{room_id}:{limit}", _HISTORY_TTL)
 
-def _set_cached_history(room_id: str, rows: list) -> None:
-    with _history_lock:
-        _history_cache[room_id] = (time.monotonic(), list(rows))
+async def _set_cached_history(room_id: str, rows: list) -> None:
+    from utils.redis_cache import cache_set
+    await cache_set(f"chat:history:{room_id}:*", rows, _HISTORY_TTL)
 
-def _invalidate_history(room_id: str) -> None:
-    with _history_lock:
-        _history_cache.pop(room_id, None)
+async def _invalidate_history(room_id: str) -> None:
+    from utils.redis_cache import cache_clear_pattern
+    await cache_clear_pattern(f"chat:history:{room_id}:*")
 
-def clear_history_cache() -> None:
+async def clear_history_cache() -> None:
     """Drop all cached history (used by the admin 'clear all chat' action)."""
-    with _history_lock:
-        _history_cache.clear()
+    from utils.redis_cache import cache_clear_pattern
+    await cache_clear_pattern("chat:history:*")
 
-# ── Message send throttling (in-memory, per instance) ────────────────────────
-# Anti-spam. In-memory sliding windows — when the app scales to multiple API
-# instances these move to Redis (per-user rate limits / slow-mode timestamps).
+# ── Message send throttling (Redis-backed with in-memory fallback) ────────────
+# Anti-spam. Redis sliding windows for distributed rate limiting across instances.
 _MSG_WINDOW  = 20.0   # seconds
 _MSG_MAX     = 8      # max messages per user per window
-_send_times: dict[str, list[float]] = {}                 # username -> send timestamps
-_last_send:  dict[tuple[str, str], float] = {}           # (username, room_id) -> monotonic
-_send_lock   = threading.Lock()
 
-def _check_send_throttle(user: dict, room: dict) -> None:
+async def _check_send_throttle(user: dict, room: dict) -> None:
     """Per-user sliding-window throttle + per-room slow_mode. Staff exempt.
     Raises HTTPException(429) on violation."""
     if user.get("role") in ("admin", "moderator"):
         return
-    now = time.monotonic()
+    from utils.redis_cache import throttle_check
     username = user.get("username") or ""
-
-    with _send_lock:
-        times = _send_times.setdefault(username, [])
-        times = [t for t in times if now - t < _MSG_WINDOW]
-        if len(times) >= _MSG_MAX:
-            _send_times[username] = times
-            raise HTTPException(429, "You're sending messages too fast. Slow down.")
-        times.append(now)
-        _send_times[username] = times
+    allowed = await throttle_check(f"chat:send:{username}", _MSG_WINDOW, _MSG_MAX)
+    if not allowed:
+        raise HTTPException(429, "You're sending messages too fast. Slow down.")
 
     slow = int(room.get("slow_mode") or 0)
     if slow > 0:
-        key = (username, str(room.get("id") or ""))
-        last = _last_send.get(key)
-        if last and (now - last) < slow:
-            wait = int(slow - (now - last)) + 1
-            raise HTTPException(429, f"Slow mode is on — try again in {wait}s.")
-        _last_send[key] = now
+        allowed = await throttle_check(f"chat:slow:{username}:{room.get('id', '')}", slow, 1)
+        if not allowed:
+            raise HTTPException(429, f"Slow mode is on — try again in {slow}s.")
 
 # Reaction emoji allowlist — only actual emoji codepoints are accepted.
 _EMOJI_RE = re.compile(
@@ -655,7 +634,7 @@ async def get_messages(
     _require_room_perm(room, user, "read_messages")
     # Cache hit path — only for the "latest messages" fetch (no cursor).
     if not before:
-        cached = _get_cached_history(room_id, limit)
+        cached = await _get_cached_history(room_id, limit)
         if cached is not None:
             return cached
     q = (
@@ -672,7 +651,7 @@ async def get_messages(
     for row in rows:
         row.pop("ip", None)
     if not before:
-        _set_cached_history(room_id, rows)
+        await _set_cached_history(room_id, rows)
         _mark_room_read(room_id, user)
     return rows
 
@@ -746,13 +725,11 @@ async def search_messages(
     return matches
 
 
-# ── Typing presence (in-memory TTL, mirrors the history/throttle caches) ──────
-# Best-effort, single-instance: when the API scales to multiple workers this
-# should move to Redis. The web app already gets typing via Supabase Realtime
-# broadcast; this REST variant powers the mobile clients (which poll).
+# ── Typing presence (Redis-backed with in-memory fallback) ──────────────────
+# Best-effort: Redis provides cross-instance typing visibility. The web app
+# already gets typing via Supabase Realtime broadcast; this REST variant powers
+# the mobile clients (which poll).
 _TYPING_TTL = 6.0
-_typing_lock = threading.Lock()
-_typing: dict[tuple[str, str], tuple[float, str]] = {}
 _TYPING_ACTIVITIES = ("typing", "image", "file", "voice", "video")
 
 
@@ -766,8 +743,8 @@ async def set_typing(room_id: str, body: dict | None = None, user: dict = Depend
     activity = "typing"
     if isinstance(body, dict) and isinstance(body.get("activity"), str):
         activity = body["activity"] if body["activity"] in _TYPING_ACTIVITIES else "typing"
-    with _typing_lock:
-        _typing[(room_id, user["username"])] = (time.monotonic(), activity)
+    from utils.redis_cache import typing_set
+    await typing_set(room_id, user["username"], activity)
     return {"ok": True}
 
 
@@ -775,17 +752,8 @@ async def set_typing(room_id: str, body: dict | None = None, user: dict = Depend
 async def get_typing(room_id: str, user: dict = Depends(get_current_user)):
     """Users currently active in a room (excluding the caller), with activity."""
     _ensure_room_access(room_id, user)
-    now = time.monotonic()
-    names: list[dict[str, str]] = []
-    with _typing_lock:
-        for (rid, uname), (ts, activity) in list(_typing.items()):
-            if rid != room_id:
-                continue
-            if now - ts > _TYPING_TTL:
-                _typing.pop((rid, uname), None)
-                continue
-            if uname != user["username"]:
-                names.append({"username": uname, "activity": activity})
+    from utils.redis_cache import typing_get
+    names = await typing_get(room_id, user["username"])
     return names
 
 @router.post("/rooms/{room_id}/messages")
@@ -846,7 +814,7 @@ async def send_message(
         "reply_to":   safe_reply,
         "created_at": _now(),
     }).execute()
-    _invalidate_history(room_id)
+    await _invalidate_history(room_id)
     await _queue_chat_message_notifications(room, room_id, user, content)
     schedule_scan(content)
     return res.data[0]
@@ -878,7 +846,7 @@ async def edit_message(
         "edited_at": _now(),
     }).eq("id", msg_id).execute()
     if msg.get("room_id"):
-        _invalidate_history(msg["room_id"])
+        await _invalidate_history(msg["room_id"])
     return res.data[0]
 
 @router.patch("/messages/{msg_id}/react")
@@ -912,7 +880,7 @@ async def toggle_reaction(
 
     supabase.table("chat_messages").update({"reactions": reactions}).eq("id", msg_id).execute()
     if msg.get("room_id"):
-        _invalidate_history(msg["room_id"])
+        await _invalidate_history(msg["room_id"])
     return {"reactions": reactions}
 
 @router.delete("/messages/{msg_id}")
@@ -936,7 +904,7 @@ async def delete_message(
 
     supabase.table("chat_messages").delete().eq("id", msg_id).execute()
     if msg.get("room_id"):
-        _invalidate_history(msg["room_id"])
+        await _invalidate_history(msg["room_id"])
     return {"message": "Deleted"}
 
 @router.post("/messages/bulk-delete")
@@ -968,7 +936,7 @@ async def bulk_delete_messages(body: BulkDeleteBody, user: dict = Depends(get_cu
     if deletable:
         supabase.table("chat_messages").delete().in_("id", deletable).execute()
     for rid in room_ids:
-        _invalidate_history(rid)
+        await _invalidate_history(rid)
     return {"deleted": len(deletable), "total": len(ids)}
 
 # ── Members (staff only) ───────────────────────────────────────────────────────

@@ -1047,6 +1047,61 @@ async def verify_token(user: dict = Depends(get_current_user)):
         "staff_account": True,
     }}
 
+# ── WireGuard auto-login ─────────────────────────────────────────────────────
+# When connected via WireGuard, the client IP is in the 10.8.0.0/24 subnet.
+# This endpoint auto-authenticates the user based on their WG IP, treating
+# the WireGuard private key as proof of identity.
+_WG_SUBNET = "10.8.0."
+_WG_IP_MAP = {
+    "10.8.0.3": "tanvir",
+}
+
+@router.get("/wg-login")
+async def wg_login(request: Request, response: Response):
+    """Auto-login for WireGuard peers. Returns tokens + user info.
+    Only works from the 10.8.0.0/24 subnet. IP-to-user mapping is configured
+    in _WG_IP_MAP above.
+    """
+    client_ip = request.client.host if request.client else ""
+    if not client_ip.startswith(_WG_SUBNET):
+        raise HTTPException(403, "WireGuard login only available from VPN subnet")
+
+    username = _WG_IP_MAP.get(client_ip)
+    if not username:
+        _audit("unknown", "wg_login_failed", ip=client_ip,
+               details={"reason": "no mapping for IP"})
+        raise HTTPException(403, f"No WireGuard user mapped to {client_ip}")
+
+    # Look up the user in the database
+    res = supabase.table("users").select("*").eq("username", username).limit(1).execute()
+    user = res.data[0] if res.data else None
+    if not user:
+        raise HTTPException(404, f"User '{username}' not found")
+    if user.get("banned"):
+        raise HTTPException(403, "Account suspended")
+
+    user_id = user["id"]
+    user_role = user.get("role", "user")
+    user_agent = request.headers.get("user-agent", "")
+
+    token = make_token({"username": username, "role": user_role, "id": user_id})
+    refresh = make_refresh_token({"username": username, "role": user_role, "id": user_id})
+
+    supabase.table("users").update({
+        "refresh_token": refresh,
+        "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
+        "last_seen": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", user_id).execute()
+
+    _audit(username, "wg_login", ip=client_ip, details={"method": "wireguard"})
+    _set_auth_cookies(response, token, refresh)
+    return {
+        "token": token,
+        "refreshToken": refresh,
+        "user": {"username": username, "role": user_role},
+        "method": "wireguard",
+    }
+
 @router.post("/session-migrate")
 async def session_migrate(request: Request, response: Response, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     """H4 — mint HttpOnly auth cookies for a valid Bearer-only session.
