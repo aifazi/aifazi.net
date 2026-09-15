@@ -13,57 +13,222 @@
  *   matches the client's DOMPurify output (no hydration mismatch); anything
  *   resembling active content is removed. The client re-sanitizes properly
  *   after hydration, so this is a first-paint backstop, not the only gate.
+ *
+ * Server parsing rules (all regexes below are quote-aware — a `>` inside a
+ * quoted attribute value never terminates a tag):
+ * - Forbidden elements are dropped (contents stay as inert text).
+ * - Event-handler attributes (`on*`, any quoting incl. slash-separated) cut.
+ * - URL attributes are entity-decoded before scheme checks; only
+ *   http/https/mailto/tel/cid/relative/fragment + raster `data:image/*`
+ *   survive. `srcset` is validated per candidate. `srcdoc` always dropped.
+ * - `style` keeps plain declarations; anything with `url()` (except
+ *   http/https/raster-data targets), `expression()`, `behavior` or
+ *   `-moz-binding` drops the whole attribute.
+ * - Caller `FORBID_TAGS`/`FORBID_ATTR` are honored (monotonic strictness).
  */
 import DOMPurify from 'dompurify'
 
-// Elements that can never appear in user content: drop the whole element,
-// including contents (script/style) — for void/replaced elements the pattern
-// below still matches the open tag pair form; lone tags are caught second.
-const FORBIDDEN_PAIRS =
-  /<(script|style|iframe|frame|frameset|object|embed|applet|meta|base|link|form|button|textarea|select|option|body|html|head|title|noscript|plaintext|xmp|noembed|noframes)\b[^>]*>[\s\S]*?<\/\1\s*>/gi
-const FORBIDDEN_LONE =
-  /<(script|style|iframe|frame|frameset|object|embed|applet|meta|base|link|form|input|button|textarea|select|option|body|html|head|title|noscript|plaintext|xmp|noembed|noframes)\b[^>]*\/?>/gi
+const FORBIDDEN_TAGS = new Set([
+  'script', 'style', 'iframe', 'frame', 'frameset', 'object', 'embed',
+  'applet', 'meta', 'base', 'link', 'form', 'input', 'button', 'textarea',
+  'select', 'option', 'body', 'html', 'head', 'title', 'noscript',
+  'plaintext', 'xmp', 'noembed', 'noframes',
+])
 
-// Event handlers, quoted / unquoted / slash-separated:
-//   onclick=".."  onclick='..'  onclick=..  <svg/onload=..>  <div\tonerror=..>
-const EVENT_ATTRS = /(<[^>]*?)[\s/]+on\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi
+const URL_ATTRS = new Set([
+  'href', 'src', 'xlink:href', 'action', 'formaction', 'cite', 'data',
+  'poster', 'srcset', 'background',
+])
 
-// URL attributes whose value may carry an executable scheme.
-const URL_ATTRS = /\b(href|src|xlink:href|action|formaction|cite|data|poster|srcset|background)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi
-const DANGEROUS_SCHEME = /^\s*(javascript|vbscript|data\s*:\s*text\/html|data\s*:\s*application\/xhtml)/i
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'",
+  colon: ':', tab: '\t', newline: '\n', NewLine: '\n', excl: '!',
+  sol: '/', period: '.', commat: '@',
+}
 
-function scrubUrls(tag: string): string {
-  return tag.replace(URL_ATTRS, (attr, _name, raw: string) => {
-    const value = raw.replace(/^["']|["']$/g, '')
-    if (DANGEROUS_SCHEME.test(value.replace(/[\0-\x20]+/g, ''))) return ''
-    return attr
+function decodeEntities(s: string): string {
+  return s.replace(/&(#\d+|#[xX][\dA-Fa-f]+|[A-Za-z]+);?/g, (m, ent: string) => {
+    try {
+      if (ent[0] === '#') {
+        const code = ent[1].toLowerCase() === 'x'
+          ? parseInt(ent.slice(2), 16)
+          : parseInt(ent.slice(1), 10)
+        if (Number.isFinite(code) && code > 0 && code < 0x110000) {
+          return String.fromCodePoint(code)
+        }
+        return m
+      }
+      return NAMED_ENTITIES[ent] ?? m
+    } catch {
+      return m
+    }
   })
 }
 
-function scrubServer(dirty: string): string {
+type Token = { text: string; isTag: boolean }
+
+/** Split HTML into text/tag tokens; a `>` inside quotes never ends a tag. */
+function tokenize(html: string): Token[] {
+  const out: Token[] = []
+  let i = 0
+  let buf = ''
+  const flush = () => {
+    if (buf) {
+      out.push({ text: buf, isTag: false })
+      buf = ''
+    }
+  }
+  while (i < html.length) {
+    const c = html[i]
+    if (c === '<') {
+      const n = html[i + 1] ?? ''
+      if (!/[A-Za-z/!?]/.test(n)) {
+        buf += c
+        i += 1
+        continue
+      }
+      let j = i + 1
+      let q = ''
+      while (j < html.length) {
+        const d = html[j]
+        if (q) {
+          if (d === q) q = ''
+        } else if (d === '"' || d === "'") {
+          q = d
+        } else if (d === '>') {
+          break
+        }
+        j += 1
+      }
+      flush()
+      if (j < html.length) {
+        out.push({ text: html.slice(i, j + 1), isTag: true })
+        i = j + 1
+      } else {
+        // Unterminated tag: emit as inert text, never as markup.
+        buf += html.slice(i).replace(/</g, '&lt;')
+        break
+      }
+    } else {
+      buf += c
+      i += 1
+    }
+  }
+  flush()
+  return out
+}
+
+/** True when a decoded URL value is safe to keep. */
+function isSafeUrl(raw: string): boolean {
+  const v = decodeEntities(raw).replace(/[\0-\x20]+/g, '')
+  if (!v || v.startsWith('#')) return true
+  const m = /^([A-Za-z][A-Za-z0-9+.-]*):/.exec(v)
+  if (!m) return true // relative URL
+  const scheme = m[1].toLowerCase()
+  if (scheme === 'http' || scheme === 'https' || scheme === 'mailto' || scheme === 'tel' || scheme === 'cid') {
+    return true
+  }
+  if (scheme === 'data') {
+    // Raster images only — data:text/html and data:image/svg+xml stay out.
+    return /^data:image\/(png|jpe?g|gif|webp|bmp|ico|avif);base64,/i.test(v)
+  }
+  return false
+}
+
+function isSafeSrcset(raw: string): boolean {
+  return raw.split(',').every((part) => {
+    const url = part.trim().split(/\s+/)[0] ?? ''
+    return !url || isSafeUrl(url)
+  })
+}
+
+function isSafeStyle(raw: string): boolean {
+  const v = decodeEntities(raw)
+  if (/expression\s*\(|behaviou?r\s*:|-moz-binding|binding\s*:/i.test(v)) return false
+  const urls = v.match(/url\s*\(([^)]*)\)/gi) ?? []
+  for (const u of urls) {
+    const inner = u.replace(/^url\s*\(/i, '').replace(/\)$/, '').trim().replace(/^["']|["']$/g, '')
+    if (!isSafeUrl(inner)) return false
+  }
+  return true
+}
+
+const ATTR_RE = /([^\s"'=<>`/]+)(\s*=\s*("[^"]*"|'[^']*'|[^\s"'=<>`]+))?/g
+
+function scrubTag(
+  tag: string,
+  extraForbiddenTags: Set<string>,
+  extraForbiddenAttrs: Set<string>,
+): string {
+  const m = /^<\/?\s*([A-Za-z][A-Za-z0-9]*)/.exec(tag)
+  if (!m) return ''
+  const name = m[1].toLowerCase()
+  if (FORBIDDEN_TAGS.has(name) || extraForbiddenTags.has(name)) return ''
+  if (/^<\s*\//.test(tag)) return `</${name}>`
+  const attrs: string[] = []
+  const inner = tag.replace(/^<\s*[A-Za-z][A-Za-z0-9]*\s*/, '').replace(/\s*\/?>$/, '')
+  ATTR_RE.lastIndex = 0
+  let a: RegExpExecArray | null
+  while ((a = ATTR_RE.exec(inner)) !== null) {
+    const attrName = a[1].toLowerCase()
+    const eq = a[2] ?? ''
+    let val = ''
+    if (eq) {
+      val = eq.replace(/^\s*=\s*/, '')
+      if (
+        val.length > 1 &&
+        ((val.startsWith('"') && val.endsWith('"')) ||
+          (val.startsWith("'") && val.endsWith("'")))
+      ) {
+        val = val.slice(1, -1)
+      }
+    }
+    if (attrName.startsWith('on')) continue
+    if (extraForbiddenAttrs.has(attrName)) continue
+    if (attrName === 'srcdoc') continue
+    const lower = URL_ATTRS.has(attrName)
+    if (lower && eq) {
+      if (attrName === 'srcset') {
+        if (!isSafeSrcset(val)) continue
+      } else if (!isSafeUrl(val)) {
+        continue
+      }
+    }
+    if (attrName === 'style' && eq && !isSafeStyle(val)) continue
+    attrs.push(eq ? `${attrName}="${val.replace(/"/g, '&quot;')}"` : attrName)
+  }
+  const selfClose = /\s*\/>$/.test(tag) ? ' /' : ''
+  let rebuilt = `<${name}${attrs.length ? ' ' + attrs.join(' ') : ''}${selfClose}>`
+  if (/target\s*=\s*"_blank"/i.test(rebuilt) && !/rel\s*=/i.test(rebuilt)) {
+    rebuilt = rebuilt.replace(/>$/, ' rel="noopener">')
+  }
+  return rebuilt
+}
+
+function scrubServer(dirty: string, config?: Record<string, any>): string {
+  const extraTags = new Set(
+    ([] as unknown[])
+      .concat(config?.FORBID_TAGS ?? [])
+      .map((t) => String(t ?? '').toLowerCase())
+      .filter(Boolean),
+  )
+  const extraAttrs = new Set(
+    ([] as unknown[])
+      .concat(config?.FORBID_ATTR ?? config?.FORBID_ATTRS ?? [])
+      .map((t) => String(t ?? '').toLowerCase())
+      .filter(Boolean),
+  )
   let out = String(dirty ?? '')
   out = out.replace(/<!--[\s\S]*?-->/g, '') // comments (conditional payloads)
-  out = out.replace(FORBIDDEN_PAIRS, '')
-  out = out.replace(FORBIDDEN_LONE, '')
-  // Tag-by-tag pass: strip event handlers, dangerous URLs, srcdoc and
-  // risky style payloads. Anything unparseable is left to the tag regexes
-  // above; the client DOMPurify pass remains authoritative post-hydration.
-  out = out.replace(/<[^>]+>/g, (tag) => {
-    let t = tag.replace(EVENT_ATTRS, '$1')
-    t = scrubUrls(t)
-    t = t.replace(/\ssrcdoc\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    t = t.replace(/\sstyle\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, (m) =>
-      /expression\s*\(|javascript\s*:|vbscript\s*:|behaviou?r\s*:|-moz-binding|binding\s*:/i.test(m) ? '' : m,
-    )
-    return t
-  })
-  return out
+  return tokenize(out)
+    .map((t) => (t.isTag ? scrubTag(t.text, extraTags, extraAttrs) : t.text))
+    .join('')
 }
 
 export function sanitizeHtml(dirty: string, config?: Record<string, any>): string {
   const input = String(dirty ?? '')
   if (typeof window === 'undefined') {
-    return scrubServer(input)
+    return scrubServer(input, config)
   }
   try {
     return DOMPurify.sanitize(input, config as any) as unknown as string
