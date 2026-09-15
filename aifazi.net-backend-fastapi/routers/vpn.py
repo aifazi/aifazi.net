@@ -862,10 +862,10 @@ async def rotate_keys(peer_id: str, user: dict = Depends(get_current_user)):
     Owners rotate their own peers; staff (e.g. from the admin panel's
     one-click reissue) may rotate any peer.
     """
-    from permissions import STAFF_ROLES
+    from permissions import has_permission
     user_id = _get_user_id(user)
     peer = _get_peer_by_id(peer_id, user_id)
-    if not peer and str(user.get("role", "")).lower() in STAFF_ROLES:
+    if not peer and has_permission(user, "system.vpn", "manage"):
         res = (
             supabase.table("vpn_peers")
             .select("*")
