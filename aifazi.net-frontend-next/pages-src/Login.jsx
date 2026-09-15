@@ -472,6 +472,32 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
                 <span>LLDAP</span>
               </button>
             )}
+            <button type="button" className="auth-oauth auth-oauth-wg"
+              onClick={async () => {
+                try {
+                  setGlobalError('')
+                  setLoading(true)
+                  const res = await api.get('/auth/wg-login')
+                  if (res.data?.token) {
+                    saveTokens(res.data.token, res.data.refreshToken)
+                    const dest = nextPath || '/profile'
+                    window.location.href = dest
+                  }
+                } catch (err) {
+                  const detail = err.response?.data?.detail || 'WireGuard login failed'
+                  setGlobalError(detail)
+                  setLoading(false)
+                }
+              }}
+              disabled={loading || countdown > 0}
+              title="Sign in via WireGuard VPN"
+              style={{ color: '#fff', background: 'linear-gradient(135deg, #00b4d8, #0077b6)' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                  <path d="M12 22V12M12 12L3 7M12 12l9-5" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                </svg>
+                <span>WireGuard</span>
+            </button>
           </div>
         </>
       )}
@@ -1572,6 +1598,8 @@ export default function Login() {
         .auth-oauth-lldap   { color: #fff; background: linear-gradient(135deg, #b56cff, #7c3aed); }
         .auth-oauth-lldap:disabled { opacity: .55; cursor: not-allowed; }
         .auth-oauth-authentik { color: #fff; background: linear-gradient(135deg, #fd5c63, #e64545); }
+        .auth-oauth-wg     { color: #fff; background: linear-gradient(135deg, #00b4d8, #0077b6); }
+        .auth-oauth-wg:disabled { opacity: .55; cursor: not-allowed; }
 
         /* Links + misc */
         .auth-link { background: none; border: none; cursor: pointer; padding: 0; font-weight: 600; transition: opacity .15s; }
