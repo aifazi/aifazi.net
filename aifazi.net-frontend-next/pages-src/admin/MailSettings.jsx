@@ -458,6 +458,9 @@ function MailSettings() {
                     <label style={T.label}>Password <span style={{ color: '#ff4757' }}>*</span></label>
                     <input type="password" value={cfg.smtpPassword || ''} onChange={e => set('smtpPassword', e.target.value)}
                       placeholder="App password or SMTP password" style={T.inp} autoComplete="new-password" />
+                    <p style={{ margin: '4px 0 0', fontSize: 12, color: '#f39c12' }}>
+                      If your mail server uses LDAP auth, update this password whenever you change it in LDAP.
+                    </p>
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

@@ -124,3 +124,37 @@ if docker volume inspect mbkueai1hukfyan8mei8sdbc_stalwart-data >/dev/null 2>&1;
     alpine tar -czf - -C /v data mail
 fi
 [ -d /opt/fivem/server-data ] && file_backup fivemdata tar -czf - -C /opt --exclude='fivem/server-data/db' fivem
+
+# ── Upload to Nextcloud WebDAV (offsite copy) ──────────────────────────────
+# Requires: NEXTCLOUD_WEBDAV_URL, NEXTCLOUD_WEBDAV_USER, NEXTCLOUD_WEBDAV_PASS
+# Set these in the cron environment or /root/.aifazi-backup-pass.
+NEXTCLOUD_WEBDAV_URL="${NEXTCLOUD_WEBDAV_URL:-https://cloud.aifazi.net/remote.php/dav/files/admin/aifazi-backups}"
+if [ -n "${NEXTCLOUD_WEBDAV_USER:-}" ] && [ -n "${NEXTCLOUD_WEBDAV_PASS:-}" ]; then
+  echo "backup-db: uploading to Nextcloud WebDAV..."
+  for f in "$BACKUP_DIR"/postgres-"$TS".sql.gz.enc "$BACKUP_DIR"/files-*-"$TS".tar.gz.enc; do
+    [ -f "$f" ] || continue
+    fname=$(basename "$f")
+    if curl -sS --fail --max-time 300 \
+      -u "$NEXTCLOUD_WEBDAV_USER:$NEXTCLOUD_WEBDAV_PASS" \
+      -T "$f" \
+      "$NEXTCLOUD_WEBDAV_URL/$fname" 2>/dev/null; then
+      echo "backup-db: uploaded $fname to Nextcloud"
+    else
+      echo "backup-db: FAILED to upload $fname to Nextcloud" >&2
+    fi
+  done
+  # Rotate remote backups (keep last $KEEP)
+  REMOTE_LIST=$(curl -sS --fail -u "$NEXTCLOUD_WEBDAV_USER:$NEXTCLOUD_WEBDAV_PASS" \
+    -X PROPFIND -H "Depth: 1" "$NEXTCLOUD_WEBDAV_URL" 2>/dev/null \
+    | grep -oP '<d:href>[^<]+</d:href>' | sed 's/<[^>]*>//g' | sort -r || true)
+  REMOTE_COUNT=$(echo "$REMOTE_LIST" | grep -c '\.enc$' || true)
+  if [ "$REMOTE_COUNT" -gt "$KEEP" ]; then
+    echo "$REMOTE_LIST" | tail -n +"$((KEEP + 1))" | while read -r rpath; do
+      [ -z "$rpath" ] && continue
+      curl -sS --fail -u "$NEXTCLOUD_WEBDAV_USER:$NEXTCLOUD_WEBDAV_PASS" \
+        -X DELETE "$rpath" 2>/dev/null && echo "backup-db: rotated remote $(basename "$rpath")"
+    done
+  fi
+else
+  echo "backup-db: NEXTCLOUD_WEBDAV_USER/PASS not set — skipping remote upload"
+fi

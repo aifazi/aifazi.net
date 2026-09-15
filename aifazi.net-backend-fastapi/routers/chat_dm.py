@@ -17,7 +17,6 @@ the caller is one of the two parties before reading/writing anything.
 import base64
 import json
 import secrets
-import threading
 import time
 from datetime import datetime, timezone
 
@@ -38,29 +37,23 @@ from routers.push import send_push
 
 router = APIRouter()
 
-# ── In-memory per-user throttle (mirrors chat.py) ────────────────────────────
+# ── Per-user DM throttle (Redis-backed with in-memory fallback) ─────────────
 _DM_WINDOW = 20.0
 _DM_MAX = 8
-_dm_send_times: dict[str, list[float]] = {}
-_dm_send_lock = threading.Lock()
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _check_dm_throttle(user: dict) -> None:
+async def _check_dm_throttle(user: dict) -> None:
     if user.get("role") in ("admin", "moderator"):
         return
-    now = time.monotonic()
+    from utils.redis_cache import throttle_check
     uname = (user.get("username") or "").lower()
-    with _dm_send_lock:
-        times = [t for t in _dm_send_times.setdefault(uname, []) if now - t < _DM_WINDOW]
-        if len(times) >= _DM_MAX:
-            _dm_send_times[uname] = times
-            raise HTTPException(429, "You're sending messages too fast. Slow down.")
-        times.append(now)
-        _dm_send_times[uname] = times
+    allowed = await throttle_check(f"dm:send:{uname}", _DM_WINDOW, _DM_MAX)
+    if not allowed:
+        raise HTTPException(429, "You're sending messages too fast. Slow down.")
 
 
 def _ensure_not_banned(user: dict) -> None:
@@ -634,7 +627,7 @@ async def send_dm_message(thread_id: str, body: DMMessageBody, user: dict = Depe
     peer = _peer_of(thread, user)
     if _blocked_by(user["username"], peer) or _blocked_by(peer, user["username"]):
         raise HTTPException(403, "Direct messages are not available with this user")
-    _check_dm_throttle(user)
+    await _check_dm_throttle(user)
     content = (body.content or "").strip()
     if not content:
         raise HTTPException(400, "Message cannot be empty")
@@ -725,12 +718,11 @@ async def delete_dm_message(msg_id: str, user: dict = Depends(get_current_user))
     return {"message": "Deleted"}
 
 
-# ── DM typing presence (in-memory TTL — mirrors chat.py) ──────────────────────
-# Best-effort single-instance cache; the web app additionally streams typing via
-# Supabase Realtime broadcast. This REST variant powers the mobile clients.
+# ── DM typing presence (Redis-backed with in-memory fallback) ────────────────
+# Best-effort: Redis provides cross-instance typing visibility. The web app
+# additionally streams typing via Supabase Realtime broadcast. This REST
+# variant powers the mobile clients.
 _DM_TYPING_TTL = 6.0
-_dm_typing_lock = threading.Lock()
-_dm_typing: dict[tuple[str, str], tuple[float, str]] = {}
 _DM_TYPING_ACTIVITIES = ("typing", "image", "file", "voice", "video")
 
 
@@ -744,8 +736,8 @@ async def set_dm_typing(thread_id: str, body: dict | None = None, user: dict = D
     activity = "typing"
     if isinstance(body, dict) and isinstance(body.get("activity"), str):
         activity = body["activity"] if body["activity"] in _DM_TYPING_ACTIVITIES else "typing"
-    with _dm_typing_lock:
-        _dm_typing[(thread_id, user["username"])] = (time.monotonic(), activity)
+    from utils.redis_cache import typing_set
+    await typing_set(f"dm:{thread_id}", user["username"], activity)
     return {"ok": True}
 
 
@@ -753,17 +745,8 @@ async def set_dm_typing(thread_id: str, body: dict | None = None, user: dict = D
 async def get_dm_typing(thread_id: str, user: dict = Depends(get_current_user)):
     """Users currently active in a thread (excluding the caller), with activity."""
     _get_thread(thread_id, user)
-    now = time.monotonic()
-    names: list[dict[str, str]] = []
-    with _dm_typing_lock:
-        for (tid, uname), (ts, activity) in list(_dm_typing.items()):
-            if tid != thread_id:
-                continue
-            if now - ts > _DM_TYPING_TTL:
-                _dm_typing.pop((tid, uname), None)
-                continue
-            if uname != user["username"]:
-                names.append({"username": uname, "activity": activity})
+    from utils.redis_cache import typing_get
+    names = await typing_get(f"dm:{thread_id}", user["username"])
     return names
 
 
