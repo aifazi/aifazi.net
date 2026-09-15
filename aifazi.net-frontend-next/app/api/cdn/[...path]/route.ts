@@ -40,20 +40,49 @@ export async function GET(
     )
   }
 
-  // Build asset path — strip cloud-name prefix if the caller included it
+  // Build asset path — strip cloud-name prefix if the caller included it.
+  // Each segment is validated: no traversal (., ..), no backslashes, no
+  // control characters. The upstream host is fixed to res.cloudinary.com,
+  // so the remaining risk is cost/content confusion via exotic paths —
+  // normalized + length-capped here.
   const { path } = await params
   if (path.length > 32 || path.join('/').length > 1024) {
     return NextResponse.json({ error: 'CDN path too long' }, { status: 414 })
+  }
+  for (const seg of path) {
+    const s = (() => {
+      try {
+        return decodeURIComponent(seg)
+      } catch {
+        return seg
+      }
+    })()
+    if (s === '' || s === '.' || s === '..' || s.includes('\\') || /[\0-\x1f\x7f]/.test(s)) {
+      return NextResponse.json({ error: 'Invalid CDN path' }, { status: 400 })
+    }
   }
   let assetPath = '/' + path.join('/')
   if (assetPath.startsWith('/' + cloud + '/')) {
     assetPath = assetPath.slice(('/' + cloud).length)
   }
 
-  const { search } = new URL(request.url)
-  if (search.length > 512) {
-    return NextResponse.json({ error: 'CDN query too long' }, { status: 414 })
+  // Query allowlist: Cloudinary delivery params only (w/h/crop/quality/
+  // format + a small set of common modifiers). Arbitrary query strings
+  // would let anyone burn transformations on our bill.
+  const QUERY_KEY_ALLOW = new Set([
+    'w', 'h', 'c', 'q', 'f', 'ar', 'dpr', 'cs', 'cm', 'pg', 'dn', 'fl',
+    'a', 'e', 'g', 'x', 'y', 'r', 'b', 'd', 't', 'o', 'v', 'ik',
+  ])
+  const QUERY_VAL_RE = /^[A-Za-z0-9_.,:\-/]+$/
+  const incoming = new URL(request.url).searchParams
+  const fwd = new URLSearchParams()
+  for (const [k, v] of incoming) {
+    if (!QUERY_KEY_ALLOW.has(k) || v.length > 128 || !QUERY_VAL_RE.test(v)) {
+      return NextResponse.json({ error: 'Invalid CDN query' }, { status: 400 })
+    }
+    fwd.append(k, v)
   }
+  const search = fwd.size ? `?${fwd.toString()}` : ''
   const upstream   = `https://res.cloudinary.com/${cloud}${assetPath}${search}`
 
   try {
@@ -70,9 +99,18 @@ export async function GET(
     })
 
     const out = new Headers()
-    for (const h of ['content-type', 'content-length', 'etag', 'last-modified']) {
+    const ctype = up.headers.get('content-type') ?? ''
+    for (const h of ['content-length', 'etag', 'last-modified']) {
       const v = up.headers.get(h)
       if (v) out.set(h, v)
+    }
+    out.set('Content-Type', ctype || 'application/octet-stream')
+    out.set('X-Content-Type-Options', 'nosniff')
+    // Active content (SVG/HTML/XML) served same-origin would execute in
+    // the site origin when navigated to directly — force download instead.
+    // Raster/vector-safe image, video, audio and font types render inline.
+    if (!/^(image\/(png|jpe?g|gif|webp|avif|bmp|ico)|video\/|audio\/|font\/|application\/font-|text\/css)/i.test(ctype)) {
+      out.set('Content-Disposition', 'attachment; filename="file"')
     }
     // M12 — restrict CORS to the site origin (SITE_URL); never an open cross-origin proxy
     out.set('Access-Control-Allow-Origin', SITE_URL)
