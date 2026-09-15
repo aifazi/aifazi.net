@@ -60,15 +60,22 @@ function bytesToBase64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-// ── H1: per-request internal token (HMAC-SHA256, time+method+path bound) ─────
+// ── H1: per-request internal token (HMAC-SHA256, time+method+path+query bound) ─────
 // The backend gate no longer trusts a static X-Internal-Token value. Each /api/*
-// request gets a short-lived token: base64url(ts).base64url(hmac(secret, `${method}:${pathname}:${ts}`)).
-// Even if a token is captured it expires (~5 min) and can only be replayed to
-// the same method+path it was minted for. The static secret itself is never sent.
-async function makeInternalToken(method: string, pathname: string): Promise<string> {
+// request gets a short-lived token: base64url(ts).base64url(hmac(secret, `${method}:${pathname}:${query}:${ts}`))
+// where query is the sorted `k=v&…` form (empty when none) — mirroring the
+// backend `_canonical_query`. Even if a token is captured it expires (~5 min)
+// and can only be replayed to the same method+path+query it was minted for,
+// never across `?role=admin`-style parameter swaps. The static secret itself
+// is never sent.
+async function makeInternalToken(method: string, pathname: string, searchParams?: URLSearchParams): Promise<string> {
   if (!INTERNAL_API_SECRET) return ''
   const ts = String(Math.floor(Date.now() / 1000))
-  const msg = `${method}:${pathname}:${ts}`
+  const query = [...(searchParams?.entries() ?? [])]
+    .map(([k, v]) => `${k}=${v}`)
+    .sort()
+    .join('&')
+  const msg = `${method}:${pathname}:${query}:${ts}`
   const enc = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw',
@@ -572,7 +579,7 @@ export async function proxy(request: NextRequest) {
   // ── 5. Internal token injection + cookie + auth header forwarding ──────────────
   const { headers, nonce } = secureRequest(request)
   if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
-    headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname))
+    headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname, request.nextUrl.searchParams))
   }
   // Forward cookies from frontend to backend for API routes
   if (pathname.startsWith('/api/')) {
