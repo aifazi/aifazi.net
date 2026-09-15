@@ -41,7 +41,7 @@ ENV PORT=8000
 EXPOSE 8000 51820/udp
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/api/monitor/ping')"]
+  CMD ["python", "-c", "import urllib.request, os; urllib.request.urlopen('http://localhost:' + os.environ.get('PORT', '8000') + '/api/monitor/ping')"]
 
 # Entrypoint: init WireGuard as root, then drop to app user for uvicorn.
 # WireGuard is skipped when WG_ENABLED=false (e.g. local dev without caps).

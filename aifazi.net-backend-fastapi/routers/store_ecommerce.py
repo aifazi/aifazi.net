@@ -25,6 +25,7 @@ Authenticated (JWT):
 from __future__ import annotations
 
 import asyncio
+import hmac
 import logging
 import os
 import secrets
@@ -1274,7 +1275,7 @@ async def cron_cleanup_pending_orders(creds: HTTPAuthorizationCredentials | None
     """
     if not os.getenv("CRON_SECRET"):
         raise HTTPException(503, "Cron not configured")
-    if not creds or creds.credentials != os.getenv("CRON_SECRET"):
+    if not creds or not hmac.compare_digest(creds.credentials, os.getenv("CRON_SECRET", "")):
         raise HTTPException(401, "Invalid cron secret")
     return await _cleanup_pending_orders()
 
