@@ -2183,7 +2183,7 @@ async def get_players(_: dict = Depends(require_staff)):
         try:
             return (datetime.now(timezone.utc) -
                     datetime.fromisoformat(ts.replace("Z", "+00:00"))).total_seconds() < w
-        except:
+        except (TypeError, ValueError):
             return False
     if res.data:
         d = res.data[0]

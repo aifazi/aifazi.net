@@ -4,7 +4,8 @@
 # Run after deployments or as a cron job to survive container restarts.
 set -euo pipefail
 
-BACKEND_CONTAINER=$(docker ps --format '{{.Names}}' | grep -E '^rp0p1tarlng33nepycd61adp-' | head -n 1)
+# Dynamically find the backend container ( Coolify-generated name starts with the service hash)
+BACKEND_CONTAINER=$(docker ps --filter "label=coolify.managed=true" --format '{{.Names}}' | grep -i backend | head -n 1)
 STALWART_NETWORK="mbkueai1hukfyan8mei8sdbc"
 
 if [ -z "$BACKEND_CONTAINER" ]; then

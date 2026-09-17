@@ -76,7 +76,13 @@ async def cache_clear_pattern(pattern: str) -> None:
     if redis and _redis_available:
         try:
             full_pattern = f"cache:{pattern}"
-            keys = await asyncio.to_thread(redis.keys, full_pattern)
+            keys = []
+            cursor = 0
+            while True:
+                cursor, batch = await asyncio.to_thread(redis.scan, cursor, match=full_pattern, count=100)
+                keys.extend(batch)
+                if cursor == 0:
+                    break
             if keys:
                 await asyncio.to_thread(redis.delete, *keys)
             return

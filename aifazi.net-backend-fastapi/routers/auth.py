@@ -61,6 +61,25 @@ except ImportError:
 log = logging.getLogger("auth")
 router = APIRouter()
 
+# ── Sub-router imports ─────────────────────────────────────────────────────────
+# These modules were extracted from auth.py for maintainability.
+# They add their endpoints to the main auth router via inclusion.
+from routers.auth_login import router as _login_router
+from routers.auth_2fa import router as _2fa_router
+from routers.auth_profile import router as _profile_router
+from routers.auth_sessions import router as _sessions_router
+from routers.auth_discord import router as _discord_router
+from routers.auth_register import router as _register_router
+from routers.auth_staff import router as _staff_router
+
+router.include_router(_login_router)
+router.include_router(_2fa_router)
+router.include_router(_profile_router)
+router.include_router(_sessions_router)
+router.include_router(_discord_router)
+router.include_router(_register_router)
+router.include_router(_staff_router)
+
 def _hash(pw: str) -> str:
     return _bcrypt.hashpw(pw.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
 
@@ -181,7 +200,7 @@ def _check_admin_password(submitted: str) -> bool:
 class LoginBody(BaseModel):
     username: str | None = None
     email: str | None = None
-    password: str
+    password: str = Field(min_length=1)
 
 class StaffCreateBody(BaseModel):
     username: str | None = None
@@ -713,7 +732,7 @@ def _discord_oauth_url(state: str) -> str:
 class RegisterBody(BaseModel):
     username: str
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8)
 
 class ForgotBody(BaseModel):
     identifier: str

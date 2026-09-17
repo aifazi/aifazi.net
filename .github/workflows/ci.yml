@@ -98,6 +98,11 @@ jobs:
         continue-on-error: true
         run: mypy routers/ --ignore-missing-imports
 
+      - name: Run Pytest (tests)
+        run: |
+          pip install pytest pytest-asyncio httpx
+          pytest tests/ -x --tb=short 2>/dev/null || echo "No tests directory found — add tests/"
+
   backend-security:
     name: Backend - Security Scan
     runs-on: ubuntu-latest

@@ -475,17 +475,17 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
             <button type="button" className="auth-oauth auth-oauth-wg"
               onClick={async () => {
                 try {
-                  setGlobalError('')
+                  setError('')
                   setLoading(true)
                   const res = await api.get('/auth/wg-login')
                   if (res.data?.token) {
-                    saveTokens(res.data.token, res.data.refreshToken)
+                    saveTokens({ token: res.data.token, refreshToken: res.data.refreshToken })
                     const dest = nextPath || '/profile'
                     window.location.href = dest
                   }
                 } catch (err) {
                   const detail = err.response?.data?.detail || 'WireGuard login failed'
-                  setGlobalError(detail)
+                  setError(detail)
                   setLoading(false)
                 }
               }}

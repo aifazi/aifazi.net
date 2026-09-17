@@ -14,8 +14,17 @@
 !.env.local.example
 .git
 .gitignore
+.github/
+scripts/
+supabase/
+apps/
+packages/
+fivem-resources/
 *.md
 docs/
 .vscode/
 .idea/
 .claude/
+.ruff_cache/
+.mypy_cache/
+.vercel/
