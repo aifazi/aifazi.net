@@ -467,6 +467,24 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 )
 
 
+        # ── 3b. CSRF protection ──────────────────────────────────────────────
+        # State-changing methods (POST/PUT/PATCH/DELETE) with cookies must
+        # include a custom header. Browsers can't set custom headers in
+        # cross-origin form submissions, so this blocks CSRF attacks.
+        # SameSite=Lax already blocks most CSRF; this is defense-in-depth.
+        if method in ("POST", "PUT", "PATCH", "DELETE"):
+            has_cookie = any(k.startswith("auth_token") for k in (request.cookies or {}))
+            has_xhr = request.headers.get("x-requested-with") == "XMLHttpRequest"
+            has_json_ct = "application/json" in (request.headers.get("content-type") or "")
+            has_auth_header = request.headers.get("authorization", "").lower().startswith("bearer ")
+            # Mobile app uses Bearer token (no cookies) — always allowed
+            # Web app uses cookies + custom header or JSON content type
+            if has_cookie and not has_xhr and not has_json_ct and not has_auth_header:
+                return JSONResponse(
+                    status_code=403,
+                    content={"error": "CSRF validation failed. Include X-Requested-With header."},
+                )
+
         # ── 3. Internal token gate ─────────────────────────────────────────────
         # Web frontend injects X-Internal-Token (see Next.js middleware). The
         # mobile app cannot embed that shared secret, so it authenticates with a

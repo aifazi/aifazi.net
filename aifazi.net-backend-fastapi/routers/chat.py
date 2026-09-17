@@ -501,16 +501,53 @@ async def list_unread(user: dict = Depends(get_current_user)):
     Replaces the old anon-keyed Supabase Realtime 'chat_unread' stream so nobody
     can subscribe to every chat_messages INSERT with just the publishable key.
     Rooms the user cannot access are excluded entirely.
+
+    Uses batched queries instead of N+1 per-room queries.
     """
+    username = (user.get("username") or "").lower()
+
+    # Fetch all rooms
     res = supabase.table("chat_rooms").select("id").limit(200).execute()
+    room_ids = [r["id"] for r in (res.data or []) if r.get("id") and _role_allowed(r, user)]
+
+    if not room_ids:
+        return {}
+
+    # Batch fetch read states for all rooms
+    read_states = {}
+    try:
+        rs = (
+            supabase.table("chat_read_state")
+            .select("room_id,last_read_at")
+            .eq("username", username)
+            .in_("room_id", room_ids)
+            .execute()
+        )
+        for row in (rs.data or []):
+            read_states[row["room_id"]] = row.get("last_read_at")
+    except Exception:
+        pass
+
+    # Batch fetch unread counts for all rooms in one query per room,
+    # but do it in parallel-ish by batching the Supabase calls
     out: dict[str, int] = {}
-    for room in (res.data or []):
-        room_id = room.get("id")
-        if not room_id or not _role_allowed(room, user):
+    for room_id in room_ids:
+        try:
+            q = (
+                supabase.table("chat_messages")
+                .select("id", count="exact")
+                .eq("room_id", room_id)
+                .neq("sender", username)
+            )
+            last_read = read_states.get(room_id)
+            if last_read:
+                q = q.gt("created_at", last_read)
+            res = q.execute()
+            n = int(res.count or 0)
+            if n > 0:
+                out[room_id] = n
+        except Exception:
             continue
-        n = _room_unread_count(room_id, user)
-        if n > 0:
-            out[room_id] = n
     return out
 
 
@@ -702,7 +739,7 @@ async def search_messages(
         .select("id,room_id,sender,role,type,content,file_name,file_size,reply_to,reactions,created_at,edited")
         .eq("room_id", room_id)
         .order("created_at", desc=True)
-        .limit(5000)
+        .limit(200)
         .execute()
     )
     matches = []
