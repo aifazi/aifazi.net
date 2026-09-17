@@ -35,6 +35,11 @@ ENV PORT=8000
 
 EXPOSE 8000 51820/udp
 
+COPY aifazi.net-backend-fastapi/scripts/init-wireguard.sh /usr/local/bin/init-wireguard.sh
+RUN chmod +x /usr/local/bin/init-wireguard.sh && mkdir -p /data/wireguard
+
+USER app
+
 COPY aifazi.net-backend-fastapi/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

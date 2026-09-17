@@ -13,6 +13,8 @@ from urllib.parse import urljoin, urlparse
 import httpx
 from fastapi import APIRouter, HTTPException, Query
 
+from utils.ssrf import BLOCKED_NETWORKS, is_blocked_ip
+
 router = APIRouter()
 
 ALLOWED_DOMAINS = frozenset({
@@ -35,16 +37,6 @@ ALLOWED_DOMAINS = frozenset({
 })
 
 _NUMERIC_PREFIX = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
-
-# H20 — AWS / GCP / Azure cloud metadata IPs must NEVER be fetchable.
-_BLOCKED_NETWORKS = [
-    ipaddress.ip_network("169.254.0.0/16"),       # link-local + AWS IMDS
-    ipaddress.ip_network("0.0.0.0/8"),            # "this host" / unspecified
-    ipaddress.ip_network("::/128"),               # IPv6 unspecified
-    ipaddress.ip_network("fe80::/10"),           # IPv6 link-local
-    ipaddress.ip_network("ff00::/8"),            # IPv6 multicast
-    ipaddress.ip_network("fc00::/7"),            # IPv6 ULA
-]
 
 
 def _is_safe_url(url: str) -> tuple[bool, str]:
@@ -94,7 +86,7 @@ def _validate_resolved_host(hostname: str) -> str:
             or ip_obj.is_reserved
             or ip_obj.is_multicast
             or ip_obj.is_unspecified
-            or any(ip_obj in net for net in _BLOCKED_NETWORKS)
+            or any(ip_obj in net for net in BLOCKED_NETWORKS)
         ):
             raise HTTPException(403, f"Domain resolves to blocked IP: {ip_str}")
         if safe_ip is None:

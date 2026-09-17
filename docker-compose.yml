@@ -10,7 +10,7 @@
 
 services:
   clamav:
-    image: clamav/clamav:stable
+    image: clamav/clamav:1.4
     container_name: aifazi-clamav
     # No host ports — the backend reaches clamd via the compose network as
     # `clamav:3310`. Virus definitions persist in the named volume across
@@ -82,7 +82,8 @@ services:
     env_file:
       - .env.local
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - aifazi-net
     restart: unless-stopped

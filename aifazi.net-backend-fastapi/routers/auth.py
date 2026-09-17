@@ -181,7 +181,7 @@ def _check_admin_password(submitted: str) -> bool:
 class LoginBody(BaseModel):
     username: str | None = None
     email: str | None = None
-    password: str
+    password: str = Field(min_length=1)
 
 class StaffCreateBody(BaseModel):
     username: str | None = None
@@ -713,7 +713,7 @@ def _discord_oauth_url(state: str) -> str:
 class RegisterBody(BaseModel):
     username: str
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8)
 
 class ForgotBody(BaseModel):
     identifier: str
