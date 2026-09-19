@@ -19,6 +19,11 @@ export interface MessageLike {
  * `active` so screens can fall back to polling when Realtime is unavailable
  * (no anon key configured, project not enabled, etc.). Handlers are held in a
  * ref, so the subscription never churns on re-render.
+ *
+ * NOTE: anon-key realtime depends on Supabase RLS (see supabase.ts) — the
+ * server-side filter is not a security boundary by itself. As defense in
+ * depth, every incoming row is re-checked against the requested id here and
+ * rows for other rooms/threads are dropped before reaching handlers.
  */
 export function useMessagesRealtime<T extends MessageLike>(
   table: 'chat_messages' | 'dm_messages',
@@ -37,17 +42,25 @@ export function useMessagesRealtime<T extends MessageLike>(
       setActive(false)
       return
     }
+    // Runtime guard: drop rows that don't belong to the requested room/thread.
+    const matchesId = (row: unknown): row is T => {
+      if (!row || typeof row !== 'object') return false
+      return (row as Record<string, unknown>)[column] === id
+    }
     setActive(false)
     const channel: RealtimeChannel = client
       .channel(`${table}:${column}:${id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table, filter: `${column}=eq.${id}` }, (payload) => {
-        handlersRef.current.onInsert?.(payload.new as T)
+        const row = payload.new as T
+        if (matchesId(row)) handlersRef.current.onInsert?.(row)
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table, filter: `${column}=eq.${id}` }, (payload) => {
-        handlersRef.current.onUpdate?.(payload.new as T)
+        const row = payload.new as T
+        if (matchesId(row)) handlersRef.current.onUpdate?.(row)
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table, filter: `${column}=eq.${id}` }, (payload) => {
-        handlersRef.current.onDelete?.(payload.old as T)
+        const row = payload.old as T
+        if (matchesId(row)) handlersRef.current.onDelete?.(row)
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') setActive(true)

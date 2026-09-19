@@ -11,7 +11,13 @@
 **/.venv
 **/.env
 **/.env.*
-!.env.local.example
+# Keep the local-dev template available (was `!.env.local.example`, which only
+# matched the repo root — scope repo-wide so nested templates stay visible).
+!**/.env.local.example
+# Secrets that must never enter the build context.
+**/*.pem
+**/*.key
+**/.aws/**
 .git
 .gitignore
 .github/

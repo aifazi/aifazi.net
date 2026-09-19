@@ -98,7 +98,11 @@ export default function ForumNewThread() {
               <textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
                 placeholder="Write your post... Be clear and descriptive."
                 rows={10}
+                // P2 — sane client caps mirroring expected backend limits
+                // (backend out of scope; title 200 already set above).
+                maxLength={50000}
                 style={{ ...field, resize: 'vertical', lineHeight: 1.8 }} />
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{form.content.length}/50000</div>
             </div>
 
             {/* Attachments */}
@@ -112,6 +116,7 @@ export default function ForumNewThread() {
               <label style={label}>TAGS <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(comma-separated, optional)</span></label>
               <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
                 placeholder="networking, cisco, vpn"
+                maxLength={100}
                 style={field} />
             </div>
 

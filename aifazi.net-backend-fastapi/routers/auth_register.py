@@ -11,15 +11,29 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from database import supabase
+from utils.timezone import utc_now
 
 router = APIRouter()
 log = logging.getLogger("auth.register")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net")
 MAIL_FROM = os.getenv("MAIL_FROM", "noreply@aifazi.net")
+
+
+def _token_expired(expires_at: str | None) -> bool:
+    """True when a token's expires_at is missing, unparsable, or in the past."""
+    if not expires_at:
+        return True
+    try:
+        exp = datetime.fromisoformat(str(expires_at).replace("Z", "+00:00"))
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        return exp < utc_now()
+    except (ValueError, TypeError):
+        return True
 
 
 # ── Models ───────────────────────────────────────────────────────────────────
@@ -48,20 +62,20 @@ async def check_username(username: str):
         return {"available": False, "reason": "Invalid characters"}
     res = supabase.table("users").select("username").eq("username", username.lower()).limit(1).execute()
     if res.data:
-        return {"available": False, "reason": "Username taken"}
+        return {"available": False, "reason": "Not available"}
     staff = supabase.table("staff_users").select("username").eq("username", username.lower()).limit(1).execute()
     if staff.data:
-        return {"available": False, "reason": "Username taken"}
+        return {"available": False, "reason": "Not available"}
     return {"available": True}
 
 
 @router.get("/check-email")
 async def check_email(email: str):
-    """Check if email is registered."""
+    """Anti-enumeration: always return a generic response (never reveal whether
+    an email is registered). Rate limiting in main.py further throttles probes."""
     if not email or "@" not in email:
-        return {"registered": False}
-    res = supabase.table("users").select("email").eq("email", email.lower()).limit(1).execute()
-    return {"registered": bool(res.data)}
+        raise HTTPException(400, "Invalid email")
+    return {"ok": True}
 
 
 @router.post("/register")
@@ -117,9 +131,12 @@ async def verify_email_page():
 
 @router.get("/verify-email/{token}")
 async def verify_email_token(token: str):
-    """Verify email with token."""
-    res = supabase.table("email_verification_tokens").select("username").eq("token", token).limit(1).execute()
+    """Verify email with token (one-time-use: row is deleted on success)."""
+    res = supabase.table("email_verification_tokens").select("username,expires_at").eq("token", token).limit(1).execute()
     if not res.data:
+        raise HTTPException(400, "Invalid or expired token")
+    if _token_expired(res.data[0].get("expires_at")):
+        supabase.table("email_verification_tokens").delete().eq("token", token).execute()
         raise HTTPException(400, "Invalid or expired token")
     username = res.data[0]["username"]
     supabase.table("users").update({"email_verified": True}).eq("username", username).execute()
@@ -129,14 +146,17 @@ async def verify_email_token(token: str):
 
 @router.post("/resend-verification")
 async def resend_verification(body: ForgotBody):
-    """Resend verification email."""
-    username = body.username.strip().lower()
+    """Resend verification email. Anti-enumeration: always return ok True
+    regardless of whether the account exists (400 only for malformed input)."""
+    username = (body.username or "").strip().lower()
+    if not username:
+        raise HTTPException(400, "Username is required.")
     res = supabase.table("users").select("username,email").eq("username", username).limit(1).execute()
     if not res.data:
-        raise HTTPException(400, "User not found")
+        return {"ok": True}
     user = res.data[0]
     if not user.get("email") or "@" not in user["email"]:
-        raise HTTPException(400, "No valid email on file")
+        return {"ok": True}
     token = secrets.token_urlsafe(32)
     supabase.table("email_verification_tokens").upsert({
         "username": username,
@@ -148,20 +168,24 @@ async def resend_verification(body: ForgotBody):
 
 @router.get("/verify-status")
 async def verify_status(username: str):
-    """Check if a username is verified (for registration flow)."""
-    res = supabase.table("users").select("email_verified").eq("username", username.strip().lower()).limit(1).execute()
+    """Check if a username is verified (for registration flow). Anti-enumeration:
+    never reveal whether the account exists — unknown users read as unverified."""
+    res = supabase.table("users").select("email_verified").eq("username", (username or "").strip().lower()).limit(1).execute()
     if not res.data:
-        return {"verified": False, "exists": False}
-    return {"verified": bool(res.data[0].get("email_verified")), "exists": True}
+        return {"verified": False}
+    return {"verified": bool(res.data[0].get("email_verified"))}
 
 
 @router.post("/forgot")
 async def forgot_password(body: ForgotBody):
-    """Send password reset email."""
-    username = body.username.strip().lower()
+    """Send password reset email. Anti-enumeration: always return ok True
+    regardless of whether the account exists (400 only for malformed input)."""
+    username = (body.username or "").strip().lower()
+    if not username:
+        raise HTTPException(400, "Username is required.")
     res = supabase.table("users").select("username,email").eq("username", username).limit(1).execute()
     if not res.data:
-        raise HTTPException(400, "User not found")
+        return {"ok": True}
     user = res.data[0]
     token = secrets.token_urlsafe(32)
     supabase.table("password_reset_tokens").upsert({
@@ -188,9 +212,12 @@ async def reset_password(body: ResetBody):
 
 @router.post("/reset-password/{token}")
 async def reset_password_with_token(token: str, body: ResetBody):
-    """Reset password using token from email."""
-    res = supabase.table("password_reset_tokens").select("username").eq("token", token).limit(1).execute()
+    """Reset password using token from email (one-time-use: row is deleted)."""
+    res = supabase.table("password_reset_tokens").select("username,expires_at").eq("token", token).limit(1).execute()
     if not res.data:
+        raise HTTPException(400, "Invalid or expired token")
+    if _token_expired(res.data[0].get("expires_at")):
+        supabase.table("password_reset_tokens").delete().eq("token", token).execute()
         raise HTTPException(400, "Invalid or expired token")
     username = res.data[0]["username"]
     from passlib.hash import bcrypt
@@ -202,10 +229,8 @@ async def reset_password_with_token(token: str, body: ResetBody):
 
 @router.get("/find-username")
 async def find_username(email: str):
-    """Find username by email (for password reset)."""
+    """Anti-enumeration: always return a generic response (never reveal whether
+    an email is registered, and never disclose the username)."""
     if not email or "@" not in email:
         raise HTTPException(400, "Invalid email")
-    res = supabase.table("users").select("username").eq("email", email.lower()).limit(1).execute()
-    if not res.data:
-        return {"found": False}
-    return {"found": True, "username": res.data[0]["username"]}
+    return {"ok": True}

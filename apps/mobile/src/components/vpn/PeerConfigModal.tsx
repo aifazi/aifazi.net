@@ -1,7 +1,7 @@
 /**
  * PeerConfigModal — shows QR code + config options after creating a VPN peer.
  */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -32,6 +32,13 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
   const [qrUri, setQrUri] = useState<string>('')
   const [config, setConfig] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  // Clipboard holds secret key material after copy — auto-clear after 60s so
+  // keys don't linger for the next paste. Never log or persist the config.
+  const clipboardTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (clipboardTimer.current) clearTimeout(clipboardTimer.current)
+  }, [])
 
   useEffect(() => {
     if (!visible || !peerId) return
@@ -61,7 +68,11 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
     try {
       const Clipboard = require('expo-clipboard')
       await Clipboard.setStringAsync(config)
-      overlay.toast('Config copied to clipboard', 'success')
+      overlay.toast('Config copied — clipboard clears in 60s', 'success')
+      if (clipboardTimer.current) clearTimeout(clipboardTimer.current)
+      clipboardTimer.current = setTimeout(() => {
+        Clipboard.setStringAsync('').catch(() => {})
+      }, 60_000)
     } catch (err) {
       console.error('Failed to copy:', err)
       overlay.toast('Failed to copy config', 'error')

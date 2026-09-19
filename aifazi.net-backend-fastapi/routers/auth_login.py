@@ -8,10 +8,10 @@ import os
 import secrets
 
 from fastapi import APIRouter, HTTPException, Request, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from database import supabase
-from dependencies import create_token, decode_token
+from paseto_token import create_token, decode_token
 
 router = APIRouter()
 log = logging.getLogger("auth.login")
@@ -66,7 +66,7 @@ async def login(body: LoginBody, request: Request, response: Response):
                 totp_res = supabase.table("users").select("totp_enabled").eq("username", username).limit(1).execute()
                 if totp_res.data and totp_res.data[0].get("totp_enabled"):
                     if not body.totp_code:
-                        partial = create_token({"sub": username, "role": user.get("role", "user")}, purpose="auth", expires_in=600)
+                        partial = create_token({"sub": username, "role": user.get("role", "user"), "tfa_pending": True}, purpose="auth", expires_in=600)
                         return {"requires_2fa": True, "partial_token": partial}
                     # Verify TOTP
                     import pyotp
@@ -89,7 +89,7 @@ async def login(body: LoginBody, request: Request, response: Response):
     totp_res = supabase.table("staff_users").select("totp_enabled").eq("username", username).limit(1).execute()
     if totp_res.data and totp_res.data[0].get("totp_enabled"):
         if not body.totp_code:
-            partial = create_token({"sub": username, "role": role}, purpose="auth", expires_in=600)
+            partial = create_token({"sub": username, "role": role, "tfa_pending": True}, purpose="auth", expires_in=600)
             return {"requires_2fa": True, "partial_token": partial}
         import pyotp
         secret_res = supabase.table("staff_users").select("totp_secret").eq("username", username).limit(1).execute()
@@ -101,10 +101,23 @@ async def login(body: LoginBody, request: Request, response: Response):
     return await _issue_and_set_cookies(response, username, role)
 
 
+def _mint_pair(username: str, role: str) -> tuple[str, str]:
+    """Mint an access + refresh token pair.
+
+    Access uses purpose="auth"; refresh uses purpose="refresh" so neither is
+    valid where the other is expected. token_type mirrors the convention in
+    routers/auth.py so dependencies.decode_token keeps rejecting refresh
+    tokens presented as access tokens.
+    """
+    token = create_token({"sub": username, "role": role, "token_type": "access"}, purpose="auth")
+    refresh = create_token({"sub": username, "role": role, "token_type": "refresh"}, purpose="refresh")
+    return token, refresh
+
+
 async def _issue_and_set_cookies(response: Response, username: str, role: str):
     """Issue tokens and set secure cookies."""
-    from routers.auth import _issue_tokens, _set_auth_cookies
-    token, refresh = _issue_tokens(username, role)
+    from routers.auth import _set_auth_cookies
+    token, refresh = _mint_pair(username, role)
     _set_auth_cookies(response, token, refresh)
     return {"token": token, "refreshToken": refresh}
 
@@ -119,10 +132,14 @@ async def refresh_token(request: Request, response: Response):
         payload = decode_token(refresh, purpose="refresh")
     except Exception:
         raise HTTPException(401, "Invalid or expired refresh token.")
+    if not payload:
+        raise HTTPException(401, "Invalid or expired refresh token.")
     username = payload.get("sub") or payload.get("username") or ""
     role = payload.get("role", "user")
-    from routers.auth import _issue_tokens, _set_auth_cookies
-    token, new_refresh = _issue_tokens(username, role)
+    if payload.get("tfa_pending"):
+        raise HTTPException(401, "Invalid or expired refresh token.")
+    from routers.auth import _set_auth_cookies
+    token, new_refresh = _mint_pair(username, role)
     _set_auth_cookies(response, token, new_refresh)
     return {"token": token, "refreshToken": new_refresh}
 

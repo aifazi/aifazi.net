@@ -61,6 +61,14 @@ api.interceptors.request.use((config) => {
   // Pure HttpOnly cookie auth - no Authorization header
   // withCredentials: true sends HttpOnly cookies automatically
   config.withCredentials = true
+  // CSRF: mark all state-changing requests so the backend can require this
+  // header (a cross-site form/fetch cannot set custom headers without CORS
+  // preflight, which the backend will not grant to foreign origins).
+  const method = (config.method || 'get').toLowerCase()
+  if (method === 'post' || method === 'put' || method === 'patch' || method === 'delete') {
+    config.headers = config.headers || {}
+    ;(config.headers as Record<string, string>)['X-Requested-With'] = 'XMLHttpRequest'
+  }
   return config
 })
 
@@ -162,7 +170,12 @@ export function mediaUrl(path: string): string {
   if (path.includes('res.cloudinary.com')) return cdnUrl(path)
   // Already absolute (other provider) — return as-is
   if (path.startsWith('http')) return path
-  return `${process.env.NEXT_PUBLIC_API_URL || ''}${path}`
+  // Relative paths stay relative so the browser goes through the Next.js
+  // proxy (/api/* → backend, /cdn/* → CDN route) instead of hitting the
+  // backend origin directly (CORS/session bypass). Keep signature.
+  if (path.startsWith('/api/') || path.startsWith('/cdn/')) return path
+  if (path.startsWith('/')) return `/api${path}`
+  return `/api/${path}`
 }
 
 /** Get role from localStorage (set by /auth/verify) */
@@ -214,6 +227,33 @@ export function canEdit()        { return ['admin', 'editor'].includes(getRole()
 export function canModerate()    { return ['admin', 'moderator'].includes(getRole() || '') || hasPermission('community.forum', 'manage') }
 export function hasStaffAccess() { return ['admin', 'moderator', 'editor', 'chat'].includes(getRole() || '') || Object.keys(getStoredPermissions()).length > 0 }
 
+/** Server-verified staff flag (P1-9 hardening).
+ *
+ * `hasStaffAccess()` alone reads client-editable localStorage. Staff UI must
+ * additionally require this sessionStorage flag, which is set ONLY after a
+ * server round-trip proves staff access (ensureAdminGate success or a
+ * staff-role /auth/verify response) and cleared on logout/403. An attacker
+ * editing localStorage in DevTools still cannot set this without passing the
+ * server gate in the same tab session... (sessionStorage is tab-scoped and
+ * the flag is only written on verified success).
+ */
+const STAFF_VERIFIED_KEY = 'aifazi_staff_verified'
+
+export function isStaffVerified(): boolean {
+  if (typeof window === 'undefined') return false
+  try { return sessionStorage.getItem(STAFF_VERIFIED_KEY) === '1' } catch { return false }
+}
+
+export function markStaffVerified(): void {
+  if (typeof window === 'undefined') return
+  try { sessionStorage.setItem(STAFF_VERIFIED_KEY, '1') } catch {}
+}
+
+export function clearStaffVerified(): void {
+  if (typeof window === 'undefined') return
+  try { sessionStorage.removeItem(STAFF_VERIFIED_KEY) } catch {}
+}
+
 export async function ensureAdminGate(): Promise<boolean> {
   if (typeof window === 'undefined') return false
 
@@ -229,16 +269,20 @@ export async function ensureAdminGate(): Promise<boolean> {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       })
       if (!res.ok) continue
+      markStaffVerified()
       return true
     } catch {}
   }
-  if (storedTokens.length > 0) return false
 
+  // P1-4 — ALWAYS attempt a cookie-only fetch before returning false, even
+  // when an in-memory token exists but was rejected above (the token may be
+  // stale while the HttpOnly cookie session is still valid).
   try {
     const res = await fetch('/api/auth/admin-gate-token', {
       method: 'GET',
       credentials: 'include',
     })
+    if (res.ok) markStaffVerified()
     return res.ok
   } catch {
     return false
@@ -248,6 +292,7 @@ export async function ensureAdminGate(): Promise<boolean> {
 export function clearAuthTokens(opts?: { revoke?: boolean }) {
   if (typeof window === 'undefined') return
   _memToken = null
+  clearStaffVerified()
   localStorage.removeItem('aifazi_effective_role')
   localStorage.removeItem('aifazi_permissions')
   localStorage.removeItem('aifazi_username')
@@ -260,7 +305,11 @@ export function clearAuthTokens(opts?: { revoke?: boolean }) {
   if (opts?.revoke !== false) {
     // Await revocation BEFORE notifying: listeners re-hydrate on auth-change,
     // and must never observe (or act on) a session the server still honors.
-    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
       .catch(() => {})
       .finally(done)
   } else {
@@ -279,6 +328,7 @@ export function clearStaffClaims() {
   if (typeof window === 'undefined') return
   localStorage.removeItem('aifazi_effective_role')
   localStorage.removeItem('aifazi_permissions')
+  clearStaffVerified()
   window.dispatchEvent(new Event('auth-change'))
 }
 

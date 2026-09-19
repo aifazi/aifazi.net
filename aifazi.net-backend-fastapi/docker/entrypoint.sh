@@ -13,6 +13,11 @@ if [ "${WG_ENABLED:-true}" = "true" ] && [ "$(id -u)" = "0" ]; then
     /usr/local/bin/init-wireguard.sh || echo "[entrypoint] WARNING: WireGuard init failed (non-fatal)"
 fi
 
-# Drop to app user and start uvicorn
-echo "[entrypoint] Starting uvicorn as app user..."
-exec gosu app uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}"
+# Drop to app user and start uvicorn. Skip gosu when already running
+# unprivileged (e.g. the platform runs the container as `app` directly).
+echo "[entrypoint] Starting uvicorn..."
+if [ "$(id -u)" = "0" ]; then
+    exec gosu app uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}"
+else
+    exec uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}"
+fi

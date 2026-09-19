@@ -99,9 +99,13 @@ export default function NotificationBell({ forumUser }) {
   }
 
   useEffect(() => {
+    // P2 — skip ticks while the tab is hidden (same idea as usePausableInterval:
+    // background tabs must not hammer the API with redundant polls).
+    const tick = () => { if (!document.hidden) fetchNotifications() }
+    const unreadTick = () => { if (!document.hidden) fetchUnread() }
     const init = setTimeout(fetchNotifications, 0)
-    const interval = setInterval(fetchNotifications, 30000)
-    const unreadInterval = setInterval(fetchUnread, 10000)
+    const interval = setInterval(tick, 30000)
+    const unreadInterval = setInterval(unreadTick, 10000)
     return () => { clearTimeout(init); clearInterval(interval); clearInterval(unreadInterval) }
   }, [forumUser])
 

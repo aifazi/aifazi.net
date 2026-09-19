@@ -35,6 +35,16 @@ const TYPE_ICON: Record<string, IconName> = {
 }
 
 /**
+ * In-app routes a notification link may navigate to. Everything else is
+ * opened externally (http(s) only) or ignored — and oauth/callback links are
+ * never pushed, so a crafted notification can never hijack the sign-in flow.
+ */
+const ALLOWED_LINK_ROUTES = ['/chat-room', '/dm-thread', '/forum-thread'] as const
+
+/** Room/thread ids interpolated into router URLs (see app/_layout.tsx). */
+const ROUTE_ID_RE = /^[A-Za-z0-9_-]{1,128}$/
+
+/**
  * Extract a chat room id from a notification link. Chat notifications point at
  * the web app's `/chat?room=<id>` URL; pull the room out so we can deep-link
  * into the native chat-room screen instead of bouncing to the browser.
@@ -89,12 +99,28 @@ export default function NotificationsScreen() {
       // Open them in-app so the message lands in the native chat room, not the
       // browser. Other app-domain deep links get the same treatment.
       const room = parseChatRoomFromLink(n.link)
-      if (room) {
+      if (room && ROUTE_ID_RE.test(room)) {
         router.push(`/chat-room?room=${encodeURIComponent(room)}` as Href)
         return
       }
+      // Never route into the OAuth flow from a notification link.
+      const lowered = n.link.toLowerCase()
+      if (lowered.includes('oauth/callback')) return
+      // Normalize custom-scheme deep links (aifazi://…) to paths so the
+      // allowlist below applies to them too; other schemes are never pushed.
+      const candidate = n.link.startsWith('aifazi://')
+        ? lowered.replace(/^aifazi:\/\/[^/]*/, '') || '/'
+        : n.link
+      // Only allowlisted in-app routes may be pushed; http(s) links open
+      // externally; anything else is ignored.
+      const isAllowedRoute = ALLOWED_LINK_ROUTES.some(
+        (r) => candidate === r || candidate.startsWith(`${r}?`) || candidate.startsWith(`${r}/`),
+      )
+      if (isAllowedRoute) {
+        router.push(candidate as Href)
+        return
+      }
       if (isSafeHttpUrl(n.link)) safeOpenURL(n.link)
-      else router.push(n.link as Href)
     }
   }
 

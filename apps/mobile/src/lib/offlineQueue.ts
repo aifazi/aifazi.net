@@ -1,6 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import NetInfo from '@react-native-community/netinfo'
 
+// NOTE: AsyncStorage is unencrypted — this queue holds NON-SECRET payloads
+// only (chat message bodies queued while offline). Never enqueue tokens,
+// keys, or other secrets here; those belong in SecureStore / memory.
+
 const KEY = 'aifazi_offline_queue'
 const MAX_QUEUE = 100
 const TTL_MS = 7 * 24 * 60 * 60 * 1000

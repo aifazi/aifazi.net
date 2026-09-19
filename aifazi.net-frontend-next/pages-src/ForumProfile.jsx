@@ -242,7 +242,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
   useEffect(() => { void (async () => { await loadTicket(false) })() }, [loadTicket])
 
   useEffect(() => {
-    const refresh = () => loadTicket(true)
+    const refresh = () => { if (!document.hidden) loadTicket(true) } // P2 — pause while tab hidden
     const interval = setInterval(refresh, 10_000)
     const sb = getSupabase()
     // Realtime on helpdesk rows is denied to anon by RLS — only subscribe for an
@@ -438,7 +438,7 @@ function MyTicketsTab({ user, initialTicketId, onTicketViewChange }) {
   // Auto-sync polling
   useEffect(() => {
     if (viewTicketId) return
-    const id = setInterval(loadTickets, 15_000)
+    const id = setInterval(() => { if (!document.hidden) loadTickets() }, 15_000) // P2 — pause while tab hidden
     return () => clearInterval(id)
   }, [loadTickets, viewTicketId])
 
@@ -832,7 +832,9 @@ function ProfileSessionsPanel({ staffAccount }) {
   }, [base])
   useEffect(() => {
     void (async () => { await load() })()
-    const beat = setInterval(() => api.post(`${base}/heartbeat`).then(load).catch(() => {}), 30000)
+    // P2 — heartbeat paused while the tab is hidden (session stays alive via
+    // cookie expiry, not via background pings).
+    const beat = setInterval(() => { if (!document.hidden) api.post(`${base}/heartbeat`).then(load).catch(() => {}) }, 30000)
     api.post(`${base}/heartbeat`).then(load).catch(() => {})
     return () => clearInterval(beat)
   }, [base, load])

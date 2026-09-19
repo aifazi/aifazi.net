@@ -4,6 +4,27 @@ import { redirect } from 'next/navigation'
 import { SITE_URL, API_URL } from '@/lib/config'
 
 const BACKEND_URL = API_URL
+const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET || ''
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i])
+  return Buffer.from(binary, 'binary').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+// P2 — mint the same per-request HMAC X-Internal-Token that proxy.ts stamps
+// on /api/* traffic (method + path + sorted-query + timestamp, ~5 min TTL),
+// so the SSR verify call passes the backend gate exactly like a proxied
+// browser request. Minimal duplicate of proxy.ts makeInternalToken for the
+// single path this page calls.
+async function makeInternalToken(method: string, pathname: string): Promise<string> {
+  if (!INTERNAL_API_SECRET) return ''
+  const ts = String(Math.floor(Date.now() / 1000))
+  const msg = `${method}:${pathname}::${ts}`
+  const { createHmac } = await import('crypto')
+  const sig = createHmac('sha256', INTERNAL_API_SECRET).update(msg).digest()
+  return `${bytesToBase64Url(new TextEncoder().encode(ts))}.${bytesToBase64Url(sig)}`
+}
 
 async function verifyAdminSession(): Promise<{ valid: boolean; user?: any }> {
   const cookieStore = await cookies()
@@ -13,11 +34,12 @@ async function verifyAdminSession(): Promise<{ valid: boolean; user?: any }> {
   // behind CF-Ray — forwarding them could only pollute audit logs, never help.
 
   try {
+    const headers: Record<string, string> = { Cookie: cookieHeader }
+    const internalToken = await makeInternalToken('GET', '/api/auth/verify')
+    if (internalToken) headers['X-Internal-Token'] = internalToken
     const res = await fetch(`${BACKEND_URL}/api/auth/verify`, {
       method: 'GET',
-      headers: {
-        Cookie: cookieHeader,
-      },
+      headers,
       cache: 'no-store',
     })
 
@@ -68,7 +90,9 @@ export default async function AdminPage({ params }: { params: Promise<{ slug?: s
         type="application/json"
         dangerouslySetInnerHTML={{
           __html: escapeJsonForInline({
-            role: user?.role || 'admin',
+            // P1-9 — default role is '' (no access), never 'admin': a missing
+            // role must fail closed on the client until the server says staff.
+            role: user?.role || '',
             username: user?.username || '',
             permissions: user?.permissions || {},
             staffAccount: user?.staff_account || false,

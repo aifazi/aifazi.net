@@ -26,6 +26,11 @@ services:
     mem_limit: 2g
     mem_reservation: 1g
     cpus: 2
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     # First boot downloads the signature DB, so clamd can take a while to
     # become responsive — give the healthcheck a generous start period.
     healthcheck:
@@ -33,7 +38,7 @@ services:
       interval: 60s
       timeout: 20s
       retries: 3
-      start_period: 90s
+      start_period: 300s
 
   backend:
     build:
@@ -61,6 +66,11 @@ services:
     mem_limit: 1g
     mem_reservation: 512m
     cpus: 2
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 30s
@@ -90,6 +100,11 @@ services:
     mem_limit: 2g
     mem_reservation: 512m
     cpus: 2
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ['CMD', 'wget', '--spider', '--quiet', 'http://localhost:3000']
       interval: 30s

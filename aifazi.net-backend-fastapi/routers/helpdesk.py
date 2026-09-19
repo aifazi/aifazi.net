@@ -218,22 +218,20 @@ def _priority_value(value: str | None) -> str | None:
 
 
 def _user_owns_ticket(ticket: dict, user: dict | None) -> bool:
-    """HIGH audit fix — ownership was conjunctive (`user_id AND ticket_email`), so once a
-    user legally changed their email, the email column on old tickets stopped matching
-    and they could no longer view their own past tickets. Prefer user_id match (stable
-    across email changes); fall back to email only when user_id is missing.
+    """Ownership via the stable user_id only. A previous email-fallback match
+    let anyone holding (or re-registering) an email address claim tickets that
+    were filed under it, so email matching is deliberately NOT consulted here.
     """
     if not user:
         return False
-    user_id      = str(user.get("id") or "")
-    user_email   = (user.get("email") or "").strip().lower()
+    user_id = str(user.get("id") or "")
     ticket_user_id = str(ticket.get("user_id") or "")
-    ticket_email   = (ticket.get("email") or "").strip().lower()
-    if ticket_user_id and user_id:
-        return ticket_user_id == user_id
-    if ticket_email and user_email:
-        return ticket_email == user_email
-    return False
+    return bool(user_id and ticket_user_id and ticket_user_id == user_id)
+
+
+def _is_staff(user: dict | None) -> bool:
+    """Staff bypass for ticket reads/replies (admin moderation queue)."""
+    return bool(user and user.get("role") in ("admin", "moderator", "editor", "chat", "staff"))
 
 
 def _sanitize_username(name: str) -> str:
@@ -320,6 +318,9 @@ def _get_settings() -> dict:
 # ── Public: submit ticket ──────────────────────────────────
 @router.post("/tickets")
 async def submit_ticket(body: TicketBody, user: dict | None = Depends(_optional_user)):
+    # Force-ignore any client-supplied user_id (mass-assignment): ticket
+    # ownership is derived from the authenticated session, never the request.
+    body.user_id = None
     now = datetime.now(timezone.utc).isoformat()
     linked_user_id = user.get("id") if user else None
     if user and user.get("email"):
@@ -439,8 +440,7 @@ async def my_tickets(
     if not user:
         raise HTTPException(401, "Authentication required")
     user_id = user.get("id")
-    email = (user.get("email") or "").strip()
-    if not user_id and not email:
+    if not user_id:
         return []
 
     select_cols = "id,ticket_id,subject,status,priority,category,created_at,updated_at,response,responded_at,message_count,user_id,email"
@@ -456,20 +456,12 @@ async def my_tickets(
         return query.order("created_at", desc=True).limit(100)
 
     seen: dict[str, dict] = {}
-    if user_id:
-        res = apply_filters(
-            supabase.table("helpdesk_tickets").select(select_cols).eq("user_id", user_id)
-        ).execute()
-        for t in res.data or []:
-            if t["id"] not in seen and _user_owns_ticket(t, user):
-                seen[t["id"]] = t
-    if email:
-        res = apply_filters(
-            supabase.table("helpdesk_tickets").select(select_cols).eq("email", email)
-        ).execute()
-        for t in res.data or []:
-            if t["id"] not in seen and _user_owns_ticket(t, user):
-                seen[t["id"]] = t
+    res = apply_filters(
+        supabase.table("helpdesk_tickets").select(select_cols).eq("user_id", user_id)
+    ).execute()
+    for t in res.data or []:
+        if t["id"] not in seen and _user_owns_ticket(t, user):
+            seen[t["id"]] = t
 
     tickets = sorted(
         seen.values(),
@@ -493,7 +485,7 @@ async def get_ticket(ticket_id: str, user: dict | None = Depends(_optional_user)
     if not res.data:
         raise HTTPException(404, "Ticket not found")
     ticket = res.data[0]
-    if not _user_owns_ticket(ticket, user):
+    if not _user_owns_ticket(ticket, user) and not _is_staff(user):
         raise HTTPException(403, "You can only view your own tickets")
     msgs = supabase.table("helpdesk_messages").select(
         "id,author_type,author_name,message,created_at"
@@ -513,7 +505,7 @@ async def add_message(ticket_id: str, body: MessageBody, user: dict | None = Dep
     if not ticket_res.data:
         raise HTTPException(404, "Ticket not found")
     ticket = ticket_res.data[0]
-    if not _user_owns_ticket(ticket, user):
+    if not _user_owns_ticket(ticket, user) and not _is_staff(user):
         raise HTTPException(403, "You can only reply to your own tickets")
     if ticket.get("status") in ("resolved", "closed"):
         raise HTTPException(400, "Cannot reply to a resolved or closed ticket")

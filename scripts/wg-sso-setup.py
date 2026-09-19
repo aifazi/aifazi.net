@@ -11,9 +11,11 @@ from authentik.core.models import User
 
 WG_EXPRESSION = '''
 # WireGuard Identity SSO
-# If source IP is from a known WireGuard peer, auto-authenticate.
+# Peers must be registered here (public-key/identity -> username).
+# NOTE: bind wg_users to peer public-key/identity, not source IP —
+# source IPs can be spoofed/reassigned and must never prove identity.
 wg_users = {
-    "10.8.0.3": "tanvir",
+    # e.g. "<peer-public-key>": "<username>",
 }
 
 source_ip = request.http_request.META.get("REMOTE_ADDR", "")
@@ -27,7 +29,7 @@ if source_ip in wg_users:
         return False
     return True
 
-return True
+return False
 '''
 
 existing = ExpressionPolicy.objects.filter(name="wg-identity-sso")

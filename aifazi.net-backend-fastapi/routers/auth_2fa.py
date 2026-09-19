@@ -119,14 +119,16 @@ async def twofa_recovery_codes(body: TwoFARecoveryBody, user: dict = Depends(req
 @router.post("/2fa/verify")
 async def twofa_verify(body: TwoFAVerifyBody):
     """Verify 2FA code during login (uses partial_token from login response)."""
-    from dependencies import decode_token
+    from paseto_token import create_token as _mint, decode_token as _decode_partial
     if not body.partial_token:
         raise HTTPException(400, "Missing partial token")
-    try:
-        payload = decode_token(body.partial_token, purpose="auth")
-    except Exception:
+    payload = _decode_partial(body.partial_token, purpose="auth")
+    if not payload:
         raise HTTPException(401, "Invalid or expired partial token")
+    if payload.get("tfa_pending") is not True:
+        raise HTTPException(401, "Invalid partial token")
     username = payload.get("sub") or payload.get("username") or ""
+    role = payload.get("role", "staff")
     # Check TOTP
     res = supabase.table("staff_users").select("totp_secret").eq("username", username).limit(1).execute()
     if not res.data or not res.data[0].get("totp_secret"):
@@ -135,8 +137,8 @@ async def twofa_verify(body: TwoFAVerifyBody):
     totp = pyotp.TOTP(secret)
     if totp.verify(body.code, valid_window=1):
         # Issue full token
-        from routers.auth import _issue_tokens
-        token, refresh = _issue_tokens(username, payload.get("role", "staff"))
+        token = _mint({"sub": username, "role": role, "token_type": "access"}, purpose="auth")
+        refresh = _mint({"sub": username, "role": role, "token_type": "refresh"}, purpose="refresh")
         return {"token": token, "refreshToken": refresh}
     # Check recovery codes
     rc = supabase.table("recovery_codes").select("codes").eq("username", username).limit(1).execute()
@@ -144,7 +146,7 @@ async def twofa_verify(body: TwoFAVerifyBody):
         codes = rc.data[0]["codes"]
         codes.remove(body.code)
         supabase.table("recovery_codes").update({"codes": codes}).eq("username", username).execute()
-        from routers.auth import _issue_tokens
-        token, refresh = _issue_tokens(username, payload.get("role", "staff"))
+        token = _mint({"sub": username, "role": role, "token_type": "access"}, purpose="auth")
+        refresh = _mint({"sub": username, "role": role, "token_type": "refresh"}, purpose="refresh")
         return {"token": token, "refreshToken": refresh}
     raise HTTPException(400, "Invalid 2FA code")

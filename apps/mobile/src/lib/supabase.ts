@@ -12,6 +12,13 @@ let _client: SupabaseClient | null = null
  * FastAPI backend — never Supabase JWT — so the chat tables expose anon
  * SELECT via RLS and the client uses the publishable anon key. If the env
  * vars are missing the client is null and screens fall back to polling.
+ *
+ * SECURITY: realtime access with the anon key depends entirely on Supabase
+ * Row-Level Security policies on chat_messages / dm_messages. The client-side
+ * room_id filter below is a UX convenience, NOT an access control — RLS must
+ * restrict which rows the anon role can SELECT, or any client could subscribe
+ * to every room. Defense in depth: chat-realtime.ts additionally drops any
+ * incoming row whose room/thread id does not match the requested id.
  */
 export function getSupabase(): SupabaseClient | null {
   if (_client) return _client

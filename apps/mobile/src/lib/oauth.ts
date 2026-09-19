@@ -1,5 +1,6 @@
 import * as WebBrowser from 'expo-web-browser'
-import { API_BASE } from './api'
+import * as Crypto from 'expo-crypto'
+import { API_BASE } from './getApiBase'
 
 /**
  * OAuth login/signup for the native app.
@@ -37,6 +38,27 @@ export type OAuthResult =
 type Pending = { provider: OAuthProvider; resolve: (r: OAuthResult) => void }
 let pending: Pending | null = null
 
+/**
+ * One-time OAuth `state` for deep-link verification. Generated fresh per
+ * loginWithOAuth call (expo-crypto CSPRNG), appended to the provider URL, and
+ * consumed/cleared on the first parseOAuthRedirect — never reused, never
+ * logged. NOTE: full CSRF enforcement requires the backend to echo `state`
+ * back in the redirect; when the redirect carries no state (legacy backend)
+ * the prefix check still applies but mismatch enforcement is skipped.
+ */
+let oauthState: string | null = null
+
+function clearOAuthState(): void {
+  oauthState = null
+}
+
+async function newOAuthState(): Promise<string> {
+  const bytes = await Crypto.getRandomBytesAsync(16)
+  const state = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+  oauthState = state
+  return state
+}
+
 function parseQuery(qs: string): Record<string, string> {
   const out: Record<string, string> = {}
   if (!qs) return out
@@ -61,6 +83,13 @@ export function parseOAuthRedirect(rawUrl: string, provider: OAuthProvider): OAu
   const frag = hashIdx >= 0 ? rawUrl.slice(hashIdx + 1) : ''
   const qs = qIdx >= 0 ? rawUrl.slice(qIdx + 1, hashIdx >= 0 ? hashIdx : undefined) : ''
   const params = { ...parseQuery(qs), ...parseQuery(frag) } // fragment wins
+
+  // One-time state: consume immediately so it can never be replayed.
+  const expected = oauthState
+  clearOAuthState()
+  if (expected && params.state && params.state !== expected) {
+    return { ok: false, cancelled: false, error: 'state' }
+  }
 
   if (params.twofa === 'forum' && params.partial_token) {
     return {
@@ -95,14 +124,21 @@ export function completeFromAuthRedirect(rawUrl: string, provider: OAuthProvider
   return true
 }
 
+/** Discard a pending OAuth session (e.g. flow abandoned). Clears state too. */
+export function cancelPendingOAuth() {
+  pending = null
+  clearOAuthState()
+}
+
 /**
  * Start a provider OAuth flow from the native auth session browser.
  * Resolves with the parsed result; never throws.
  */
 export async function loginWithOAuth(provider: OAuthProvider): Promise<OAuthResult> {
+  const state = await newOAuthState()
   return new Promise<OAuthResult>((resolve) => {
     pending = { provider, resolve }
-    const url = `${API_BASE}${LOGIN_PATHS[provider]}?mobile=1`
+    const url = `${API_BASE}${LOGIN_PATHS[provider]}?mobile=1&state=${encodeURIComponent(state)}`
     WebBrowser.openAuthSessionAsync(url, OAUTH_REDIRECT_BASE)
       .then((res: WebBrowser.WebBrowserAuthSessionResult) => {
         if (!pending) return // already completed via deep link
@@ -117,13 +153,13 @@ export async function loginWithOAuth(provider: OAuthProvider): Promise<OAuthResu
         // for a short grace window to let the callback route re-inject the URL.
         setTimeout(() => {
           if (!pending) return // completed via deep link during the grace period
-          pending = null
+          cancelPendingOAuth()
           resolve({ ok: false, cancelled: true })
         }, 2000)
       })
       .catch(() => {
         if (!pending) return
-        pending = null
+        cancelPendingOAuth()
         resolve({ ok: false, cancelled: false, error: 'signin_failed' })
       })
   })

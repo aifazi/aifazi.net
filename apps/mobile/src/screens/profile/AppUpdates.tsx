@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { FONT, SPACE } from '@/src/design'
-import { AppState, AppStateStatus, View, Text } from 'react-native'
+import { SPACE } from '@/src/design'
+import { View } from 'react-native'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
-import { checkForUpdate, downloadAndInstall, openInstallSettings, canRequestPackageInstalls, InstallBlockedError, type UpdateCheck } from '@/src/lib/updates'
+import { checkForUpdate, type UpdateCheck } from '@/src/lib/updates'
 import { Loader } from '@/src/components/Loader'
 
 export function AppUpdatesCard() {
@@ -12,13 +12,9 @@ export function AppUpdatesCard() {
   const [check, setCheck] = useState<UpdateCheck | null>(null)
   const [busy, setBusy] = useState(false)
   const [checkError, setCheckError] = useState('')
-  const [downloading, setDownloading] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [error, setError] = useState('')
-  const [needPerm, setNeedPerm] = useState(false)
 
   const runCheck = async () => {
-    setBusy(true); setCheckError(''); setError(''); setNeedPerm(false)
+    setBusy(true); setCheckError('')
     try {
       setCheck(await checkForUpdate())
     } catch {
@@ -31,71 +27,9 @@ export function AppUpdatesCard() {
 
   useEffect(() => { runCheck() }, [])
 
-  // Android 8+ requires the per-app "Install unknown apps" toggle before the
-  // package installer will accept our APK. The OS silently resets this after
-  // the app updates itself, so verify up front instead of hoping.
-  //
-  // Opening the settings intent backgrounds the app; `PermissionsAndroid.check`
-  // reports the app-op's OLD state until the user actually flips the toggle and
-  // returns, so re-checking immediately after launching the intent always reads
-  // "not granted" and sends the user back into Settings in a loop. Wait for the
-  // app to come back to the foreground (with a timeout fallback) before
-  // re-reading the permission.
-  const waitForForeground = (timeoutMs = 45_000): Promise<void> =>
-    new Promise((resolve) => {
-      let settled = false
-      const finish = () => {
-        if (settled) return
-        settled = true
-        sub.remove()
-        clearTimeout(timer)
-        resolve()
-      }
-      const sub = AppState.addEventListener('change', (s: AppStateStatus) => {
-        if (s === 'active') finish()
-      })
-      const timer = setTimeout(finish, timeoutMs)
-    })
-
-  const ensureInstallPerm = async (): Promise<boolean> => {
-    if (await canRequestPackageInstalls()) return true
-    setNeedPerm(true)
-    try {
-      await openInstallSettings()
-    } catch {}
-    await waitForForeground()
-    const granted = await canRequestPackageInstalls()
-    setNeedPerm(!granted)
-    return granted
-  }
-
-  const retryAfterPerm = async () => {
-    const granted = await ensureInstallPerm()
-    setNeedPerm(!granted)
-    if (granted && !downloading) await install()
-  }
-
-  const install = async () => {
-    if (!check?.release?.apkUrl) return
-    setDownloading(true); setError(''); setProgress(0)
-    try {
-      if (!(await ensureInstallPerm())) return
-      await downloadAndInstall(check.release.apkUrl, (p) => setProgress(Math.round(p.fraction * 100)), check.release.apkSize, check.release.sha256)
-    } catch (e) {
-      if (e instanceof InstallBlockedError) {
-        setError(e.message)
-        setNeedPerm(true)
-      } else {
-        setError(
-          e instanceof Error && (e.message.includes('Download incomplete') || e.message.includes('checksum'))
-            ? e.message
-            : 'Install was blocked. Open settings to allow aifazi to install apps.',
-        )
-      }
-    } finally {
-      setDownloading(false)
-    }
-  }
+  // APK sideload is disabled (see src/lib/updates.ts): updates ship via EAS
+  // Updates, applied automatically on launch. This card is informational only —
+  // it reports the latest release state and never downloads or installs.
 
   return (
     <Card title="App updates">
@@ -128,25 +62,12 @@ export function AppUpdatesCard() {
         <>
           <Muted>Version {check.latest} is available (you have {check.installed}).</Muted>
           {check.release?.notes ? <Muted style={{ marginTop: SPACE.xs }} numberOfLines={2}>{check.release.notes}</Muted> : null}
-          {downloading ? (
-            <View style={{ marginTop: SPACE.lg }}>
-              <Text style={{ color: c.accent, fontSize: FONT.md, fontWeight: '700' }}>Downloading… {progress}%</Text>
-            </View>
-          ) : needPerm ? (
-            <>
-              {error ? <Muted style={{ color: c.danger, marginTop: SPACE.md }}>{error}</Muted> : null}
-              <Muted style={{ marginTop: SPACE.md }}>
-                Android must allow aifazi to install apps before the update can continue.
-              </Muted>
-              <View style={{ marginTop: SPACE.lg }}>
-                <Btn title="Turn on install permission" onPress={retryAfterPerm} />
-              </View>
-            </>
-          ) : (
-            <View style={{ marginTop: SPACE.lg }}>
-              <Btn title="Download & install" onPress={install} />
-            </View>
-          )}
+          <Muted style={{ marginTop: SPACE.md }}>
+            Updates arrive automatically via EAS Updates — restart the app to apply the latest version.
+          </Muted>
+          <View style={{ marginTop: SPACE.lg }}>
+            <Btn title="Check again" variant="ghost" onPress={runCheck} />
+          </View>
         </>
       ) : (
         <>

@@ -220,8 +220,9 @@ async def backup_stats(_: dict = Depends(require_staff)):
             collections[table] = n
             total += n
         except Exception as e:
+            log.warning("backup stats failed for %s: %s", table, e)
             collections[table] = 0
-            errors[table] = str(e)
+            errors[table] = "unavailable"
     return {"collections": collections, "totalRecords": total, "tableCount": len(tables), "errors": errors}
 
 
@@ -253,11 +254,12 @@ async def backup(_: dict = Depends(require_admin)):
             res = _fetch_all_rows(table)
             data[table] = [_redact_row(r) for r in res]
         except Exception as e:
-            data[table] = {"error": str(e)}
-            errors[table] = str(e)
+            log.warning("backup failed for %s: %s", table, e)
+            data[table] = {"error": "unavailable"}
+            errors[table] = "unavailable"
     return JSONResponse(
         content={"exported_at": datetime.now(timezone.utc).isoformat(), "table_count": len(tables), "errors": errors, "tables": data},
-        headers={"Content-Disposition": f"attachment; filename=backup-{datetime.now().strftime('%Y%m%d')}.json"},
+        headers={"Content-Disposition": f"attachment; filename=backup-{datetime.now(timezone.utc).strftime('%Y%m%d')}.json"},
     )
 
 
@@ -299,14 +301,15 @@ async def export_sql(
             try:
                 rows = _fetch_all_rows(table)
             except Exception as e:
-                lines.append(f"-- {table}: failed to fetch data ({e})\n")
+                log.warning("backup export-sql fetch failed for %s: %s", table, e)
+                lines.append(f"-- {table}: failed to fetch data\n")
                 continue
             col_names = [c["name"] for c in columns] if columns else None
             ins = _generate_inserts(table, rows, col_names)
             lines.append(ins)
 
     sql_content = "\n".join(lines)
-    filename = f"aifazi-{mode}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.sql"
+    filename = f"aifazi-{mode}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.sql"
 
     return PlainTextResponse(
         content=sql_content,

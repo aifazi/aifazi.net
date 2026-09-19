@@ -31,18 +31,25 @@ _CLAMD_HOST = os.getenv("CLAMD_HOST", "localhost")
 _CLAMD_PORT = int(os.getenv("CLAMD_PORT", "3310"))
 _MALWARE_SCAN_ENABLED = os.getenv("MALWARE_SCAN_ENABLED", "false").lower() == "true"
 # Fail-closed by default (H3): when true, any scan failure (daemon unreachable,
-# connection error, unexpected exception, pyclamd ERROR status) rejects the
-# upload with a 503 instead of silently skipping the scan. Set
-# MALWARE_SCAN_FAIL_CLOSED=false only if you explicitly want fail-open behavior.
-# `ImportError` (pyclamd not installed) always stays fail-open so a missing
-# optional dependency never bricks uploads.
+# connection error, unexpected exception, pyclamd ERROR status, or pyclamd not
+# installed at all) rejects the upload with a 503 instead of silently skipping
+# the scan. Set MALWARE_SCAN_STRICT=false only for local dev without clamd.
+# MALWARE_SCAN_FAIL_CLOSED=false is a second, legacy kill-switch for the same.
 _MALWARE_SCAN_FAIL_CLOSED = os.getenv("MALWARE_SCAN_FAIL_CLOSED", "true").lower() == "true"
+_MALWARE_SCAN_STRICT = os.getenv("MALWARE_SCAN_STRICT", "true").lower() == "true"
 
 log = logging.getLogger("upload")
 
+def _vendor_sha1_hex(data: bytes) -> str:
+    """SHA-1 hex digest for vendor APIs that mandate it (Cloudinary request
+    signatures, Backblaze B2 content hashes). Authenticity rests on the API
+    secret, and the algorithm is dictated by the vendor, not chosen here."""
+    import hashlib
+    return hashlib.sha1(data, usedforsecurity=False).hexdigest()  # codeql[py/weak-sensitive-data-hashing]
+
 def _scan_unavailable(filename: str, reason: str) -> None:
     """Fail-closed gate: raise 503 when the scan could not run at all."""
-    if _MALWARE_SCAN_FAIL_CLOSED:
+    if _MALWARE_SCAN_FAIL_CLOSED and _MALWARE_SCAN_STRICT:
         log.error("Malware scan unavailable (fail-closed) for %s: %s", filename, reason)
         raise HTTPException(503, "Upload service temporarily unavailable — antivirus scan failed")
 
@@ -81,7 +88,8 @@ def scan_for_malware(content: bytes, filename: str) -> None:
                     _scan_unavailable(filename, f"clamd scan error: {reason}")
                     return
     except ImportError:
-        log.warning("pyclamd not installed; skipping malware scan for %s", filename)
+        log.warning("pyclamd not installed; scan unavailable for %s", filename)
+        _scan_unavailable(filename, "pyclamd not installed")
     except pyclamd.ConnectionError:
         log.warning("ClamAV connection failed; skipping malware scan for %s", filename)
         _scan_unavailable(filename, "clamd connection error")
@@ -106,8 +114,11 @@ ALLOWED_MIMETYPES = {
     "video/mp4", "video/webm",
     "audio/mpeg", "audio/ogg", "audio/wav",
     "application/pdf",
-    "application/zip",
-    "text/plain", "text/csv",
+    # NOTE: text/plain, text/csv, and application/zip are deliberately NOT in
+    # this public-bucket allowlist — served inline they enable stored-XSS /
+    # content-sniffing attacks (HTML/JS disguised as .txt/.csv, zipped payloads).
+    # Office .docx/.xlsx remain allowed: they share the PK zip container but are
+    # admitted only via their explicit MIME fallbacks in _sniff_mimetype.
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 }
@@ -250,7 +261,8 @@ async def _upload_cloudinary(content: bytes, filename: str, mimetype: str, cfg: 
 
     ts        = str(int(time.time()))
     sig_str   = f"folder={folder}&timestamp={ts}{secret}"
-    signature = hashlib.sha1(sig_str.encode()).hexdigest()
+    # Cloudinary API mandates SHA-1 for request signatures; secret provides security.
+    signature = _vendor_sha1_hex(sig_str.encode())
 
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(
@@ -311,7 +323,8 @@ async def _upload_b2(content: bytes, filename: str, mimetype: str, cfg: dict) ->
 
         # 4. Upload
         import hashlib
-        sha1 = hashlib.sha1(content).hexdigest()
+        # Backblaze B2 requires SHA-1 content hash header for uploads.
+        sha1 = _vendor_sha1_hex(content)
         r4 = await client.post(
             up_url,
             headers={
@@ -603,7 +616,8 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
             if cloud and key and secret and path:
                 ts = int(_time.time())
                 to_sign = f"public_id={path}&timestamp={ts}{secret}"
-                sig = hashlib.sha1(to_sign.encode()).hexdigest()
+                # Cloudinary API mandates SHA-1 for request signatures.
+                sig = _vendor_sha1_hex(to_sign.encode())
                 async with httpx.AsyncClient(timeout=15) as c:
                     await c.post(
                         f"https://api.cloudinary.com/v1_1/{cloud}/image/destroy",

@@ -23,8 +23,9 @@ from urllib.parse import urljoin, urlparse
 import httpx
 from fastapi import APIRouter, HTTPException, Query
 
-from routers.seo_proxy import _validate_resolved_host
+from routers.seo_proxy import _is_safe_url, _validate_resolved_host
 from utils.link_safety import check_link_safety
+from utils.ssrf import resolve_safe_ip
 
 router = APIRouter()
 
@@ -33,7 +34,24 @@ FETCH_TIMEOUT = 6.0
 
 _preview_cache: dict[str, tuple[float, dict]] = {}
 _PREVIEW_TTL = 900.0  # 15 minutes
+# P3 — bound the cache: preview URLs are attacker-controlled (unbounded key
+# space), so evict oldest-first past this cap instead of growing forever.
+_PREVIEW_CACHE_MAX_ENTRIES = 500
 _lock = asyncio.Lock()
+
+
+def _preview_cache_set(url: str, data: dict) -> None:
+    """Insert into the preview cache, evicting oldest entries past the cap."""
+    now = time.time()
+    if url in _preview_cache:
+        _preview_cache[url] = (now, data)
+        return
+    while len(_preview_cache) >= _PREVIEW_CACHE_MAX_ENTRIES:
+        try:
+            _preview_cache.pop(next(iter(_preview_cache)))
+        except StopIteration:
+            break
+    _preview_cache[url] = (now, data)
 
 
 # ── metadata extraction via stdlib HTMLParser ───────────────────────────────
@@ -145,12 +163,24 @@ async def _pinned_stream(client: httpx.AsyncClient, url: str, *, hostname: str, 
 
 @router.get("/link-preview")
 async def link_preview(url: str = Query(..., min_length=8, max_length=2048)):
-    """Unfurl a URL into {title, description, image, site}. SSRF-guarded."""
+    """Unfurl a URL into {title, description, image, site}. SSRF-guarded.
+
+    NOTE: main.py still needs an RL rule for /chat/link-preview (e.g. 10/min)
+    — the fetch is cheap but attacker-triggerable, so unauthenticated polling
+    must be throttled at the edge.
+    """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
         raise HTTPException(400, "Only http/https URLs supported")
     host = parsed.hostname or ""
     if not host:
+        raise HTTPException(400, "Address not allowed")
+    # Host allowlist (same ALLOWED_DOMAINS gate as seo_proxy) + shared
+    # utils/ssrf.py resolution guard: non-allowlisted or non-public hosts → 400.
+    safe, reason = _is_safe_url(url)
+    if not safe:
+        raise HTTPException(400, f"URL not allowed: {reason}")
+    if resolve_safe_ip(host) is None:
         raise HTTPException(400, "Address not allowed")
 
     now = time.time()
@@ -212,5 +242,5 @@ async def link_preview(url: str = Query(..., min_length=8, max_length=2048)):
     data = _extract_meta(text, url)
     data["safety"] = await check_link_safety(url)
     async with _lock:
-        _preview_cache[url] = (time.time(), data)
+        _preview_cache_set(url, data)
     return data

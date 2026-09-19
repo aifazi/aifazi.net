@@ -1407,7 +1407,25 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
   }, [roleReady])
   const role = serverRole || (readOnlyProp ? 'moderator' : null)
   const readOnly = readOnlyProp ?? (roleReady ? (role === 'editor' || role === 'moderator') : true)
-  const [token, setToken]           = useState(_preloadToken || getAuthToken());
+  // P2 — SECURITY WARNING: the pasted admin token must live in sessionStorage
+  // ONLY, never localStorage (localStorage survives browser restarts and is
+  // readable by any script on the origin forever). It is wiped when this
+  // panel unmounts so a walked-away-untabbed admin tab never keeps it.
+  const DB_TOKEN_KEY = 'db_gui_token'
+  const [token, setTokenState] = useState(() => {
+    if (_preloadToken) return _preloadToken
+    try { return sessionStorage.getItem(DB_TOKEN_KEY) || getAuthToken() || '' } catch { return getAuthToken() || '' }
+  })
+  const setToken = (t) => {
+    setTokenState(t || '')
+    try {
+      if (t) sessionStorage.setItem(DB_TOKEN_KEY, t)
+      else sessionStorage.removeItem(DB_TOKEN_KEY)
+    } catch {}
+  }
+  useEffect(() => () => {
+    try { sessionStorage.removeItem(DB_TOKEN_KEY) } catch {}
+  }, [])
   const [tokenInput, setTokenInput] = useState("");
   const [stats, setStats]           = useState(null);
   const [loading, setLoading]       = useState(false);

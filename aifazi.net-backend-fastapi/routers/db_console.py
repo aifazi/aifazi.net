@@ -1,3 +1,4 @@
+import logging
 import re
 from datetime import datetime, timezone
 
@@ -8,6 +9,7 @@ from database import supabase
 from dependencies import require_admin, require_staff
 
 router = APIRouter()
+log = logging.getLogger("db_console")
 
 class SqlRequest(BaseModel):
     sql: str
@@ -55,7 +57,45 @@ DANGEROUS_PATTERNS = [
 
 _DANGEROUS_COMPILED = [re.compile(p, re.IGNORECASE | re.DOTALL) for p in DANGEROUS_PATTERNS]
 
+# P1-10 — tables that are never readable via the console (credentials, tokens,
+# sessions, bans). Matched case-insensitively against the raw SQL.
+_BLOCKED_TABLES = (
+    "users", "staff_users", "recovery_codes", "password_reset_tokens",
+    "email_verification_tokens", "auth_sessions", "ip_bans",
+)
+_BLOCKED_TABLES_COMPILED = [re.compile(rf"\b{t}\b", re.IGNORECASE) for t in _BLOCKED_TABLES]
+
+# P1-10 — time-based exfiltration / defences probing via the SQL console.
+_BLOCKED_SQL_FUNCS = ("pg_sleep", "pg_terminate", "information_schema", "pg_catalog")
+_BLOCKED_SQL_FUNCS_COMPILED = [re.compile(rf"\b{f}\b", re.IGNORECASE) for f in _BLOCKED_SQL_FUNCS]
+
 MAX_SQL_LENGTH = 10000
+MAX_RESULT_LIMIT = 100
+
+
+def _blocked_table(sql: str) -> str | None:
+    for rx in _BLOCKED_TABLES_COMPILED:
+        if rx.search(sql):
+            return rx.pattern
+    return None
+
+
+def _blocked_func(sql: str) -> str | None:
+    for rx in _BLOCKED_SQL_FUNCS_COMPILED:
+        if rx.search(sql):
+            return rx.pattern
+    return None
+
+
+def _cap_limit(sql: str) -> str:
+    """Cap any LIMIT clause at MAX_RESULT_LIMIT (case-insensitive)."""
+    def _repl(m: re.Match) -> str:
+        try:
+            n = int(m.group(1))
+        except (TypeError, ValueError):
+            return f"LIMIT {MAX_RESULT_LIMIT}"
+        return f"LIMIT {min(n, MAX_RESULT_LIMIT)}"
+    return re.sub(r"\bLIMIT\s+(\d+)", _repl, sql, flags=re.IGNORECASE)
 
 def _is_dangerous_sql(sql: str) -> str | None:
     # Strip line comments and block comments first so `DROP /* x */ TABLE` is
@@ -93,17 +133,33 @@ async def execute_sql(req: SqlRequest, request: Request, user: dict = Depends(re
             detail="Only single SELECT queries and read-only WITH clauses are allowed."
         )
 
+    blocked_table = _blocked_table(req.sql)
+    if blocked_table:
+        raise HTTPException(
+            status_code=403,
+            detail="Query touches a restricted table and is blocked."
+        )
+
+    blocked_func = _blocked_func(req.sql)
+    if blocked_func:
+        raise HTTPException(
+            status_code=400,
+            detail="Query uses a blocked function or schema and is rejected."
+        )
+
     staff_username = user.get("username", "unknown")
     client_ip = request.client.host if request.client else ""
     now_iso = datetime.now(timezone.utc).isoformat()
 
     sql_to_run = req.sql.strip().rstrip(';')
-    # LIMIT 1000 auto-add: substring check (`"limit" not in sql_lower`) is fine — a
-    # column name `limit_log` would defensively skip the cap but the query still
-    # runs row-bounded by the DB-side exec_sql function code (best-effort safety).
+    # LIMIT cap: clamp any client-supplied LIMIT to MAX_RESULT_LIMIT and add a
+    # bounded LIMIT when none is present.
     sql_lower = req.sql.lower()
-    if sql_lower_stripped.startswith("select") and "limit" not in sql_lower:
-        sql_to_run = f"{sql_to_run} LIMIT 1000"
+    if sql_lower_stripped.startswith("select"):
+        if "limit" not in sql_lower:
+            sql_to_run = f"{sql_to_run} LIMIT {MAX_RESULT_LIMIT}"
+        else:
+            sql_to_run = _cap_limit(sql_to_run)
 
     try:
         result = supabase.rpc("exec_sql", {"sql_text": sql_to_run}).execute()
@@ -121,6 +177,7 @@ async def execute_sql(req: SqlRequest, request: Request, user: dict = Depends(re
         return {"data": result.data}
     except Exception as e:
         detail = str(e)
+        log.error("db_console exec_sql failed for user=%s: %s", staff_username, detail)
         try:
             supabase.table("audit_logs").insert({
                 "actor": staff_username,
@@ -137,7 +194,7 @@ async def execute_sql(req: SqlRequest, request: Request, user: dict = Depends(re
                 status_code=400,
                 detail="exec_sql function not found. Run migrations/005_security_hardening.sql to install it."
             )
-        raise HTTPException(status_code=400, detail=detail[:500])
+        raise HTTPException(status_code=400, detail="Query failed.")
 
 @router.get("/check")
 async def check_console(_=Depends(require_staff)):

@@ -11,6 +11,14 @@ from utils.rate_limit import invalidate_ip_bans_cache
 
 router = APIRouter()
 
+# P1-11 — allowlist for the generic collection browser. Only non-sensitive
+# collections the UI needs are writable without full admin. Sensitive stores
+# (users, staff_users, auth_sessions, ip_bans, permission tables) are DENIED
+# here — anything outside this allowlist requires require_admin.
+ALLOWED_COLLECTIONS = frozenset({
+    "posts", "threads", "replies", "contacts", "messages", "media", "newsletter",
+})
+
 COLL_TABLE = {
     "users":      "users",
     "posts":      "posts",
@@ -38,13 +46,13 @@ COLL_TABLE = {
 #   * `staff_permissions` — self-grant any module:any perm
 FORBIDDEN_FIELDS = frozenset({
     "id", "_id", "__v",
-    "password", "password_hash",
+    "password", "password_hash", "hashed_password",
+    "role", "permissions",
     "verifytoken", "verify_token", "verify_expires",
     "resettoken",  "reset_token",  "reset_expires",
     "chattoken",   "chat_token",
     "created_at", "createdat",
     "updated_at", "updatedat",
-    "role",
     "totp_secret", "totp_enabled",
     "email_verified",
     "discord_id", "steam_id",
@@ -109,7 +117,10 @@ def _validate_patch_body(body) -> dict:
 
 
 @router.patch("/collection/{coll}/{doc_id}")
-async def collection_update(coll: str, doc_id: str, request: Request, _: dict = Depends(require_staff)):
+async def collection_update(coll: str, doc_id: str, request: Request, user: dict = Depends(require_staff)):
+    # P1-11 — collections outside the allowlist require full admin.
+    if coll not in ALLOWED_COLLECTIONS and user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
     try:
         body = await request.json()
     except Exception:
@@ -131,7 +142,10 @@ async def collection_update(coll: str, doc_id: str, request: Request, _: dict = 
     return {"message": "Saved", "doc": _normalize((res.data or [{}])[0])}
 
 @router.delete("/collection/{coll}/{doc_id}")
-async def collection_delete(coll: str, doc_id: str, _: dict = Depends(require_staff)):
+async def collection_delete(coll: str, doc_id: str, user: dict = Depends(require_staff)):
+    # P1-11 — same allowlist gate as PATCH: outside the allowlist requires admin.
+    if coll not in ALLOWED_COLLECTIONS and user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
     table = COLL_TABLE.get(coll)
     if not table:
         raise HTTPException(status_code=400, detail=f"Unknown collection: {coll}")

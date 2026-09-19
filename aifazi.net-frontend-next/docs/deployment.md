@@ -52,7 +52,7 @@ Set these in the Vercel dashboard (or in `.env.local` for local development).
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous key (safe to expose — row-level security enforced on the backend) |
 | `NEXT_PUBLIC_SENTRY_DSN` | No | Sentry DSN for error reporting |
 | `NEXT_PUBLIC_COMETCHAT_APP_ID` | No | CometChat App ID (from [app.cometchat.com](https://app.cometchat.com)) |
-| `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` | No | CometChat Auth Key |
+| `COMETCHAT_AUTH_KEY` | No | CometChat Auth Key (server-only — never `NEXT_PUBLIC_`; only App ID/region are browser-safe) |
 | `NEXT_PUBLIC_COMETCHAT_REGION` | No | CometChat region (e.g. `us`) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No | VAPID public key for Web Push notifications |
 | `INTERNAL_API_SECRET` | Yes | Shared secret stamped on every `/api/*` request as `X-Internal-Token`. Must match `INTERNAL_API_SECRET` on the FastAPI backend. Generate: `openssl rand -hex 32` |

@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+// NOTE: AsyncStorage is unencrypted — NON-SECRET cache entries only (public
+// content snapshots). Never cache tokens, keys, or secrets here.
+
 export async function getCached<T>(key: string): Promise<T | null> {
   try {
     const raw = await AsyncStorage.getItem(`cache:${key}`)

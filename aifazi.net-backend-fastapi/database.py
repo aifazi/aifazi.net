@@ -58,8 +58,8 @@ def reset_client() -> None:
     if _client is not None:
         try:
             _client.postgrest.aclose()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("supabase client close during reset: %s", e)
     _client = None
 
 

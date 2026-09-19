@@ -3,6 +3,11 @@
  *
  * Manages VPN peers through the backend API. Handles device creation,
  * QR code generation, key rotation, session tracking, and connection status.
+ *
+ * SECRET HANDLING: peer configs embed private WireGuard keys. Never log them
+ * (no console.log of config/key material), never persist them to AsyncStorage
+ * or any cache — they live in component state only and are cleared on close.
+ * The copy-to-clipboard action auto-clears after 60s (see PeerConfigModal).
  */
 import { Platform } from 'react-native'
 import { api } from './api'
@@ -91,11 +96,12 @@ export async function getPeer(
   peerId: string,
   format: 'json' | 'qr' | 'conf' = 'json',
 ): Promise<PeerDetail | string> {
+  const encodedId = encodeURIComponent(peerId)
   if (format === 'json') {
-    const res = await api.get(`/vpn/peers/${peerId}?format=json`)
+    const res = await api.get(`/vpn/peers/${encodedId}?format=json`)
     return res.data
   }
-  const res = await api.get(`/vpn/peers/${peerId}?format=${format}`, {
+  const res = await api.get(`/vpn/peers/${encodedId}?format=${format}`, {
     responseType: format === 'conf' ? 'text' : 'blob',
   })
   if (format === 'conf') return res.data
@@ -113,13 +119,13 @@ export async function getPeer(
 }
 
 export async function deletePeer(peerId: string): Promise<void> {
-  await api.delete(`/vpn/peers/${peerId}`)
+  await api.delete(`/vpn/peers/${encodeURIComponent(peerId)}`)
 }
 
 export async function rotatePeerKeys(
   peerId: string,
 ): Promise<{ config: string; qr_code: string }> {
-  const res = await api.post(`/vpn/peers/${peerId}/rotate`)
+  const res = await api.post(`/vpn/peers/${encodeURIComponent(peerId)}/rotate`)
   return res.data
 }
 
@@ -142,7 +148,7 @@ export async function startVpnSession(
 export async function endVpnSession(
   sessionId: string,
 ): Promise<{ id: string; disconnected_at: string }> {
-  const res = await api.post(`/vpn/sessions/${sessionId}/end`)
+  const res = await api.post(`/vpn/sessions/${encodeURIComponent(sessionId)}/end`)
   return res.data
 }
 

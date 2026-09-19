@@ -6,6 +6,7 @@ import { getSiteConfigServer } from '@/lib/siteSettingsServer'
 import { getContentBlocksServer } from '@/lib/contentServer'
 import { themeFontUrl } from '@/core/fonts'
 import { buildThemeCustomCss, resolveThemeCustom, themeCustomFontUrl } from '@/core/themeCustom'
+import { sanitizeCssForStyleTag } from '@/lib/css-sanitize'
 import { LIGHT_THEMES as LIGHT_THEME_LIST, VALID_THEMES } from '@/core/themeCatalog'
 import { SITE_URL } from '@/lib/config'
 import './globals.css'
@@ -167,7 +168,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           try {
             tc = resolveThemeCustom(siteConfig, serverTheme, { loggedIn: false })
             uploadedFonts = Array.isArray(siteConfig.uploadedFonts) ? siteConfig.uploadedFonts : []
-            css = buildThemeCustomCss(serverTheme, tc, uploadedFonts)
+            // P1-12 — sanitize the built CSS at the injection point (strip
+            // url(, @import, expression(, behavior:, javascript:) so a stored
+            // customization can never smuggle executable payloads into <style>.
+            css = sanitizeCssForStyleTag(buildThemeCustomCss(serverTheme, tc, uploadedFonts))
             fontUrl = themeCustomFontUrl(tc, uploadedFonts)
           } catch { /* fall through with empty custom CSS */ }
           return (

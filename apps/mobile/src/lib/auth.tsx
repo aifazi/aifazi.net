@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useCallback, useState, ReactNode } from 'react'
-import { api, setAuthTokens, clearAuthTokens, ensureSession, onAuthCleared } from './api'
+import { api, setAuthTokens, clearAuthTokens, ensureSession, onAuthCleared, RefreshFailedError } from './api'
 import { loginWithOAuth as oauthLogin, OAuthProvider } from './oauth'
+import { unregisterCurrentPushToken } from './push'
 
 export interface AuthUser {
   id?: string
@@ -115,7 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await api.get('/auth/me')
       const data = res.data
       setUser((data?.user ?? data) as AuthUser)
-    } catch {
+    } catch (e) {
+      // Network failure during hydration is not a logout: keep any existing
+      // user and the stored refresh token so the next attempt can retry.
+      // Only revoked/missing credentials drop the session.
+      if (e instanceof RefreshFailedError && e.kind === 'network') return
       setUser(null)
     } finally {
       setLoading(false)
@@ -191,6 +196,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(async () => {
+    // Stop push fan-out to this device first — the backend must forget the
+    // Expo token on every logout path, not just when the layout unmounts.
+    try {
+      await unregisterCurrentPushToken()
+    } catch {}
     try {
       await api.post('/auth/logout')
     } catch {}
