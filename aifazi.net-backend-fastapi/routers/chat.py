@@ -12,6 +12,7 @@ Now includes:
 """
 import asyncio
 import base64
+import logging
 import os
 import re
 import threading
@@ -31,6 +32,7 @@ from utils.link_safety import schedule_scan
 from routers.push import _send_push_sync
 
 router = APIRouter()
+log = logging.getLogger("chat")
 
 
 def _strip_html_tags(text: str) -> str:
@@ -227,7 +229,8 @@ def _resolve_room_permissions(room_id: str, user: dict) -> set[str]:
             .execute()
             .data
         )
-    except Exception:
+    except Exception as e:
+        log.warning("chat: member role lookup failed for room=%s: %s", room_id, e)
         member = []
     if member and member[0].get("role"):
         role_name = member[0]["role"]
@@ -247,7 +250,8 @@ def _resolve_room_permissions(room_id: str, user: dict) -> set[str]:
                     .execute()
                     .data
                 )
-            except Exception:
+            except Exception as e:
+                log.warning("chat: custom role lookup failed for room=%s: %s", room_id, e)
                 r = []
             if r and isinstance(r[0].get("permissions"), list):
                 perms = {p for p in r[0]["permissions"] if p in _ROLE_PERMS}
@@ -275,8 +279,8 @@ async def _notify_chat_user(user_row: dict, subject: str, html: str, text: str, 
                 "message": message,
                 "link": link,
             }).execute()
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning("chat: notification insert failed for user=%s: %s", user_id, e)
     if email:
         await queue_email(email, subject, html, text, purpose, user_row.get("username") or "")
 
@@ -340,7 +344,8 @@ def _queue_chat_message_notifications_sync(room: dict, room_id: str, sender: dic
             "message_preview": snippet,
             "chat_url": link,
         })
-    except Exception:
+    except Exception as e:
+        log.warning("chat: template render failed: %s", e)
         subject, html = None, None
     subject = subject or fallback_subject
     html = html or fallback_html
@@ -354,8 +359,8 @@ def _queue_chat_message_notifications_sync(room: dict, room_id: str, sender: dic
     if notif_rows:
         try:
             supabase.table("notifications").insert(notif_rows).execute()
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning("chat: bulk notification insert failed: %s", e)
 
     # Native push: fan out to every recipient's registered devices (best-effort,
     # never blocks the request). The data payload carries the room id so the app
@@ -369,8 +374,8 @@ def _queue_chat_message_notifications_sync(room: dict, room_id: str, sender: dic
                 f"{sender_name}: {snippet}",
                 {"room": room_id},
             )
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning("chat: push fan-out failed for room=%s: %s", room_id, e)
 
     # Insert-only bulk email (drained by dispatch_pending) — no inline SMTP.
     for row in recipients.values():
@@ -452,8 +457,8 @@ def _mark_room_read(room_id: str, user: dict) -> None:
             {"room_id": room_id, "username": (user.get("username") or "").lower(), "last_read_at": _now()},
             on_conflict="room_id,username",
         ).execute()
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("chat: mark-room-read failed for room=%s: %s", room_id, e)
 
 
 def _room_unread_count(room_id: str, user: dict) -> int:
@@ -470,8 +475,8 @@ def _room_unread_count(room_id: str, user: dict) -> int:
             .execute()
         )
         last_read_at = rs.data[0].get("last_read_at") if rs.data else None
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("chat: read-state lookup failed for room=%s: %s", room_id, e)
     try:
         q = (
             supabase.table("chat_messages")
@@ -483,7 +488,8 @@ def _room_unread_count(room_id: str, user: dict) -> int:
             q = q.gt("created_at", last_read_at)
         res = q.execute()
         return int(res.count or 0)
-    except Exception:
+    except Exception as e:
+        log.warning("chat: unread-count lookup failed for room=%s: %s", room_id, e)
         return 0
 
 
@@ -525,8 +531,8 @@ async def list_unread(user: dict = Depends(get_current_user)):
         )
         for row in (rs.data or []):
             read_states[row["room_id"]] = row.get("last_read_at")
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("chat: batch read-state lookup failed: %s", e)
 
     # Batch fetch unread counts for all rooms in one query per room,
     # but do it in parallel-ish by batching the Supabase calls
@@ -546,7 +552,8 @@ async def list_unread(user: dict = Depends(get_current_user)):
             n = int(res.count or 0)
             if n > 0:
                 out[room_id] = n
-        except Exception:
+        except Exception as e:
+            log.warning("chat: unread count failed for room=%s: %s", room_id, e)
             continue
     return out
 
@@ -639,7 +646,8 @@ async def check_banned(room_id: str, user: dict = Depends(get_current_user)):
     try:
         res = supabase.table("chat_bans").select("id").eq("room_id", room_id).eq("username", user["username"]).execute()
         return {"banned": bool(res.data)}
-    except Exception:
+    except Exception as e:
+        log.warning("chat: ban check failed for room=%s: %s", room_id, e)
         return {"banned": False}
 
 
@@ -656,14 +664,15 @@ async def check_muted(room_id: str, user: dict = Depends(get_current_user)):
             supabase.table("chat_mutes").delete().eq("id", mute["id"]).execute()
             return {"muted": False}
         return {"muted": True, "expires_at": expires}
-    except Exception:
+    except Exception as e:
+        log.warning("chat: mute check failed for room=%s: %s", room_id, e)
         return {"muted": False}
 
 # ── Messages ───────────────────────────────────────────────────────────────────
 @router.get("/rooms/{room_id}/messages")
 async def get_messages(
     room_id: str,
-    limit: int = Query(50, le=200),
+    limit: int = Query(50, ge=1, le=100),
     before: str | None = None,
     user: dict = Depends(get_current_user),
 ):
@@ -703,7 +712,8 @@ def _decrypt_aesgcm(cipher_b64: str, key_b64: str) -> str | None:
             return None
         iv, ct = combined[:12], combined[12:]
         return AESGCM(key).decrypt(iv, ct, None).decode("utf-8", errors="replace")
-    except Exception:
+    except Exception as e:
+        log.debug("chat: message decrypt failed: %s", e)
         return None
 
 
@@ -711,7 +721,7 @@ def _decrypt_aesgcm(cipher_b64: str, key_b64: str) -> str | None:
 async def search_messages(
     room_id: str,
     q: str = Query(..., min_length=1, max_length=200),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=100),
     user: dict = Depends(get_current_user),
 ):
     """Search a channel's message history (decrypts messages server-side using the

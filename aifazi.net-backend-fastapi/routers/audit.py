@@ -54,7 +54,7 @@ async def check_table(_: dict = Depends(require_permission("system.audit", "view
 @router.get("")
 async def list_logs(
     page:  int = Query(1, ge=1),
-    limit: int = Query(50, le=500),
+    limit: int = Query(50, ge=1, le=100),
     _: dict = Depends(require_permission("system.audit", "view")),
 ):
     offset = (page - 1) * limit
@@ -87,7 +87,7 @@ async def list_logs(
 @router.get("/auth-log")
 async def list_auth_logs(
     page:  int = Query(1, ge=1),
-    limit: int = Query(50, le=500),
+    limit: int = Query(50, ge=1, le=100),
     _: dict = Depends(require_permission("system.audit", "view")),
 ):
     """#5 — Auth login activity log: every login attempt with username, IP, UA, success/fail."""

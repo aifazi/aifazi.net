@@ -110,7 +110,7 @@ async def delete_staff(staff_id: str, user: dict = Depends(require_permission("s
 @router.get("/admin-gate-token")
 async def admin_gate_token(user: dict = Depends(require_staff)):
     """Get a short-lived admin gate token for sensitive operations."""
-    from dependencies import create_token
+    from paseto_token import create_token
     username = user.get("username") or ""
     token = create_token({"sub": username, "purpose": "admin_gate"}, purpose="auth", expires_in=300)
     return {"token": token}

@@ -10,11 +10,12 @@ import os
 import secrets
 import urllib.parse
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from database import supabase
-from dependencies import create_token
+from dependencies import get_current_user
+from paseto_token import create_token
 
 router = APIRouter()
 log = logging.getLogger("auth.discord")
@@ -98,16 +99,18 @@ async def discord_callback(request: Request):
 
     # Check if user exists
     existing = supabase.table("users").select("id,username,discord_id").eq("discord_id", discord_id).limit(1).execute()
+    # Tokens are delivered via HttpOnly SameSite=Lax cookies (same
+    # _set_auth_cookies pattern as routers/auth.py) — never in the redirect
+    # URL, where they would leak via history, logs, and Referer headers.
+    from routers.auth import _set_auth_cookies
     if existing.data:
         # User exists — issue tokens
         user = existing.data[0]
         token = create_token({"sub": user["username"], "role": "user"}, purpose="auth")
         refresh = create_token({"sub": user["username"], "role": "user"}, purpose="refresh")
-        # Redirect to frontend with tokens
-        return RedirectResponse(
-            url=f"{FRONTEND_URL}/auth/callback?token={token}&refreshToken={refresh}",
-            status_code=302,
-        )
+        resp = RedirectResponse(url=f"{FRONTEND_URL}/auth/callback", status_code=302)
+        _set_auth_cookies(resp, token, refresh)
+        return resp
     else:
         # New user — create account
         new_username = f"discord_{username}"
@@ -122,10 +125,9 @@ async def discord_callback(request: Request):
         }).execute()
         token = create_token({"sub": new_username, "role": "user"}, purpose="auth")
         refresh = create_token({"sub": new_username, "role": "user"}, purpose="refresh")
-        return RedirectResponse(
-            url=f"{FRONTEND_URL}/auth/callback?token={token}&refreshToken={refresh}",
-            status_code=302,
-        )
+        resp = RedirectResponse(url=f"{FRONTEND_URL}/auth/callback", status_code=302)
+        _set_auth_cookies(resp, token, refresh)
+        return resp
 
 
 @router.get("/discord/connect-url")

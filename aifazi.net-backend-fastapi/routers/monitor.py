@@ -22,7 +22,7 @@ import socket
 import time
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from database import supabase
@@ -102,8 +102,8 @@ def _get_monitor_settings() -> dict:
         if res.data:
             settings = res.data[0].get("settings") or {}
             return settings.get("monitor") or {}
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("monitor: settings read failed, using defaults: %s", e)
     return {}
 
 
@@ -242,7 +242,8 @@ async def _check_vpn():
         try:
             db = _sb.table("vpn_peers").select("public_key").execute()
             keys = [r.get("public_key", "") for r in (db.data or [])]
-        except Exception:
+        except Exception as e:
+            logger.debug("monitor: vpn peer list read failed: %s", e)
             keys = []
         connected = 0
         try:
@@ -251,8 +252,8 @@ async def _check_vpn():
                 age = _handshake_age_seconds(stats.get(k, {}).get("latest_handshake", ""))
                 if age is not None and age < CONNECTED_HANDSHAKE_MAX_AGE_S:
                     connected += 1
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("monitor: vpn peer stats parse failed: %s", e)
         return True, lat, f"{len(keys)} peers, {connected} connected"
     except Exception as e:
         lat = round((time.perf_counter() - start) * 1000)
@@ -394,8 +395,8 @@ async def _check_ping(m):
         if res.returncode == 0:
             lat = round((time.perf_counter() - start) * 1000)
             return True, lat, "reachable"
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("monitor: ping subprocess unavailable, TCP fallback: %s", e)
     return await asyncio.to_thread(_socket_connect, safe_ip, 443, host)
 
 
@@ -589,6 +590,16 @@ async def _run_all_checks() -> list[dict]:
             if fails >= threshold:
                 await _send_alert(label, str(detail))
 
+    # Refresh the in-memory ping cache so the unauthenticated /api/monitor/ping
+    # serves fresh data without ever running checks itself.
+    overall = "operational" if all(r["status"] == "up" for r in results) else \
+              ("degraded" if any(r["status"] == "up" for r in results) else "outage")
+    _ping_cache["at"] = time.monotonic()
+    _ping_cache["payload"] = {
+        "status": overall,
+        "ran_at": _now(),
+        "services": {r["service"]: r["status"] for r in results},
+    }
     return results
 
 
@@ -610,28 +621,44 @@ async def cron_monitor(request: Request):
 
 
 # ── Public ping — external uptime service (UptimeRobot/BetterStack, free) hits
-#    this every N minutes to trigger a check. Works on Hobby (no cron frequency
-#    limit needed). Returns lightweight summary. Results are cached for
-#    _PING_TTL seconds so floods can't trigger expensive check runs or
-#    alert-email storms; monitors polling every 5 min see fresh data anyway. ──
+#    this every N minutes. It serves the last cached/stored status ONLY and
+#    never triggers checks itself (see monitor_ping). Fresh data is written by
+#    the cron tick / staff manual run, which refresh the in-memory cache below
+#    so floods can't trigger expensive check runs or alert-email storms. ──
 _PING_TTL_SECONDS = 300
 _ping_cache: dict = {"at": 0.0, "payload": None}
 
 
 @router.get("/api/monitor/ping")
 async def monitor_ping(request: Request):
+    """Serve the LAST cached/stored status only — this unauthenticated endpoint
+    must never run the full check suite (expensive fan-out + alert-email
+    side effects on every anonymous hit). Fresh checks are written by the
+    CRON_SECRET-gated /api/cron/monitor tick and the staff POST /api/monitor/run
+    path; both update _ping_cache below. 503 when no cached data exists yet."""
     now_ts = time.monotonic()
     cached = _ping_cache["payload"]
     if cached is not None and (now_ts - _ping_cache["at"]) < _PING_TTL_SECONDS:
         return cached
-    results = await _run_all_checks()
-    overall = "operational" if all(r["status"] == "up" for r in results) else \
-              ("degraded" if any(r["status"] == "up" for r in results) else "outage")
-    payload = {
-        "status": overall,
-        "ran_at": _now(),
-        "services": {r["service"]: r["status"] for r in results},
-    }
+    try:
+        res = supabase.table("uptime_checks").select("service,status,checked_at") \
+            .order("checked_at", desc=True).limit(200).execute()
+        rows = res.data or []
+    except Exception as e:
+        logger.error("monitor: ping could not read cached status: %s", e)
+        raise HTTPException(503, "Monitor status unavailable")
+    if not rows:
+        raise HTTPException(503, "Monitor status unavailable")
+    latest: dict[str, dict] = {}
+    for row in rows:
+        svc = row.get("service") or ""
+        if svc and svc not in latest:
+            latest[svc] = row
+    services = {svc: row.get("status", "unknown") for svc, row in latest.items()}
+    ran_at = max((row.get("checked_at") or "" for row in latest.values()), default="")
+    overall = "operational" if all(s == "up" for s in services.values()) else \
+              ("degraded" if any(s == "up" for s in services.values()) else "outage")
+    payload = {"status": overall, "ran_at": ran_at, "services": services}
     _ping_cache["at"] = now_ts
     _ping_cache["payload"] = payload
     return payload
@@ -735,13 +762,14 @@ async def public_status():
 
 # ── Staff: history ────────────────────────────────────────────────────────────
 @router.get("/api/monitor/checks")
-async def staff_checks(user: dict = Depends(require_staff), limit: int = 200):
+async def staff_checks(user: dict = Depends(require_staff), limit: int = Query(50, ge=1, le=100)):
     try:
         res = supabase.table("uptime_checks").select("*") \
-            .order("checked_at", desc=True).limit(min(limit, 1000)).execute()
+            .order("checked_at", desc=True).limit(limit).execute()
         return res.data or []
     except Exception as e:
-        raise HTTPException(500, f"Could not read monitor history: {e}")
+        logger.error("monitor: staff_checks failed: %s", e)
+        raise HTTPException(500, "Could not read monitor history")
 
 
 # ── Error capture (Sentry-like) ────────────────────────────────────────────────
@@ -821,8 +849,8 @@ async def _send_error_alert(row: dict):
         await queue_email(to=to, subject=subject, html=html, text="", purpose="error_alert")
     try:
         supabase.table("error_logs").update({"notified": True}).eq("id", row["id"]).execute()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("monitor: marking error notified failed: %s", e)
 
 
 # Public ingestion — frontend ErrorBoundary + window error/rejection handlers POST here.
@@ -852,13 +880,14 @@ async def ingest_error(body: dict, request: Request):
 
 # Staff: recent errors
 @router.get("/api/monitor/errors")
-async def staff_errors(user: dict = Depends(require_staff), limit: int = 100):
+async def staff_errors(user: dict = Depends(require_staff), limit: int = Query(50, ge=1, le=100)):
     try:
         res = supabase.table("error_logs").select("*") \
-            .order("last_seen", desc=True).limit(min(limit, 500)).execute()
+            .order("last_seen", desc=True).limit(limit).execute()
         return res.data or []
     except Exception as e:
-        raise HTTPException(500, f"Could not read error logs: {e}")
+        logger.error("monitor: staff_errors failed: %s", e)
+        raise HTTPException(500, "Could not read error logs")
 
 
 async def _send_error_digest() -> bool:
@@ -949,7 +978,8 @@ async def staff_update_settings(body: dict, user: dict = Depends(require_staff))
             existing["monitor"] = monitor_cfg
             supabase.table("site_config").update({"settings": existing}).eq("key", "global").execute()
     except Exception as e:
-        raise HTTPException(500, f"Could not save monitor settings: {e}")
+        logger.error("monitor: save settings failed: %s", e)
+        raise HTTPException(500, "Could not save monitor settings")
     return monitor_cfg
 
 
@@ -1002,8 +1032,8 @@ async def list_custom_monitors(user: dict = Depends(require_staff)):
                 .eq("service", f"custom:{m['id']}").order("checked_at", desc=True).limit(1).execute()
             if res.data:
                 latest = res.data[0]
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("monitor: latest-result lookup failed: %s", e)
         out.append({**m, "latest": latest})
     return out
 
@@ -1016,7 +1046,8 @@ async def create_custom_monitor(body: MonitorBody, user: dict = Depends(require_
         res = supabase.table("monitor_checks").insert(row).execute()
         return res.data[0] if res.data else row
     except Exception as e:
-        raise HTTPException(500, f"Could not create monitor: {e}")
+        logger.error("monitor: create custom monitor failed: %s", e)
+        raise HTTPException(500, "Could not create monitor")
 
 
 @router.put("/api/monitor/checks/config/{monitor_id}")
@@ -1030,7 +1061,8 @@ async def update_custom_monitor(monitor_id: str, body: MonitorBody, user: dict =
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(500, f"Could not update monitor: {e}")
+        logger.error("monitor: update custom monitor failed: %s", e)
+        raise HTTPException(500, "Could not update monitor")
 
 
 @router.delete("/api/monitor/checks/config/{monitor_id}")
@@ -1040,7 +1072,8 @@ async def delete_custom_monitor(monitor_id: str, user: dict = Depends(require_st
         supabase.table("uptime_checks").delete().eq("service", f"custom:{monitor_id}").execute()
         return {"ok": True}
     except Exception as e:
-        raise HTTPException(500, f"Could not delete monitor: {e}")
+        logger.error("monitor: delete custom monitor failed: %s", e)
+        raise HTTPException(500, "Could not delete monitor")
 
 
 @router.post("/api/monitor/checks/{monitor_id}/run")
@@ -1049,7 +1082,8 @@ async def run_custom_monitor(monitor_id: str, user: dict = Depends(require_staff
     try:
         res = supabase.table("monitor_checks").select("*").eq("id", monitor_id).limit(1).execute()
     except Exception as e:
-        raise HTTPException(500, f"Could not read monitor: {e}")
+        logger.error("monitor: read custom monitor failed: %s", e)
+        raise HTTPException(500, "Could not read monitor")
     if not res.data:
         raise HTTPException(404, "Monitor not found")
     m = res.data[0]

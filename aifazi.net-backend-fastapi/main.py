@@ -290,15 +290,21 @@ _OPEN_GET_PREFIXES: tuple[str, ...] = (
 )
 
 # ── CORS allowed origins ───────────────────────────────────────────────────────
+# Localhost origins are dev-only: they must never be trusted in production,
+# where a permissive ACAO would let any local process read credentialed API
+# responses.
 _STATIC_ORIGINS = {
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://localhost:5174",
     "https://aifazi.net",
     "https://www.aifazi.net",
     "https://admin.aifazi.net",
     FRONTEND_URL,
 }
+if not _IS_PRODUCTION:
+    _STATIC_ORIGINS |= {
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
+    }
 
 _DYNAMIC_PATTERNS: list[re.Pattern] = []
 
@@ -352,6 +358,7 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/auth/discord",         5,   60),
     ("/auth/steam",           5,   60),
     ("/auth/change-password", 3, 300),
+    ("/auth/account",         3, 300),
     ("/admin/db/sql",         5,   60),
     ("/admin/backup",        10,  300),
     ("/upload/multiple",      3,   60),
@@ -359,6 +366,14 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/file-tools/",          120,  60),
     ("/seo-proxy",            10,   60),
     ("/helpdesk/tickets",     10,   60),
+    ("/chat/link-preview",    10,   60),
+    ("/forms",                10,   60),
+    ("/forms/",               10,   60),
+    ("/store/checkout",       5,   60),
+    ("/store/checkout/cart",  5,   60),
+    ("/discord/connect",      5,   60),
+    ("/auth/discord/connect", 5,   60),
+    ("/vpn/",                 10,   60),
     ("/monitor/errors",       20,   60),
     ("/monitor/ping",         10,   60),
     ("/store/track/",         10,   60),
@@ -371,9 +386,16 @@ _RL_DEFAULT = (100, 60)   # 100 requests / 60 s general
 _RL_SENSITIVE_SUFFIXES = {suffix for suffix, _, _ in _RL_RULES}
 _RL_PREFIXES = {suffix for suffix, _, _ in _RL_RULES if suffix.endswith("/")}
 
+def _rl_path(path: str) -> str:
+    """Strip the /api mount prefix so suffix/prefix RL rules match mounted
+    routes (e.g. rule "/forms/" must match request path "/api/forms/x")."""
+    return path[4:] if path.startswith("/api/") else path
+
+
 def _get_limit(path: str) -> tuple[int, int]:
+    p = _rl_path(path)
     for suffix, calls, period in _RL_RULES:
-        if path.endswith(suffix) or (suffix in _RL_PREFIXES and path.startswith(suffix)):
+        if p.endswith(suffix) or (suffix in _RL_PREFIXES and p.startswith(suffix)):
             return calls, period
     return _RL_DEFAULT
 
@@ -448,7 +470,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # Additional Supabase-backed check for sensitive paths as a second layer.
         # Fail-closed on DB error: when the directory is unreachable we block
         # sensitive paths rather than assume the allowance.
-        if any(path.endswith(s) for s in _RL_SENSITIVE_SUFFIXES) or any(path.startswith(s) for s in _RL_PREFIXES):
+        _rp = _rl_path(path)
+        if any(_rp.endswith(s) for s in _RL_SENSITIVE_SUFFIXES) or any(_rp.startswith(s) for s in _RL_PREFIXES):
             try:
                 from database import supabase as _sb
                 res = _sb.rpc("rate_limit_check", {
@@ -739,6 +762,7 @@ async def health():
 async def global_exception_handler(request: Request, exc: Exception):
     if dsn:
         sentry_sdk.capture_exception(exc)
+    log.error("unhandled exception on %s: %s", request.url.path, exc, exc_info=True)
     # Record + alert via the in-project monitor (Sentry-like, deduped email)
     try:
         import traceback
@@ -753,11 +777,10 @@ async def global_exception_handler(request: Request, exc: Exception):
             ip=request.client.host if request.client else "",
             user_agent=request.headers.get("user-agent", "")[:300],
         )
-    except Exception:
-        pass  # never let error-reporting break the response
-    # Never leak internal details to clients in production
-    msg = str(exc) if not _IS_PRODUCTION else "An unexpected error occurred."
-    return JSONResponse(status_code=500, content={"error": msg})
+    except Exception as report_exc:
+        log.debug("error-reporting failed: %s", report_exc)  # never break the response
+    # Never leak internal details to clients — generic message in all envs.
+    return JSONResponse(status_code=500, content={"error": "An unexpected error occurred."})
 
 # Socket.IO removed — chat is now handled by Supabase Realtime.
 # Entry point: uvicorn main:app --host 0.0.0.0 --port 8000

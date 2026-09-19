@@ -36,16 +36,18 @@ _redis_last_attempt = 0.0
 _redis_retry_cooldown = 120.0
 
 
-def _2fa_redis_key(username: str) -> str:
-    return f"2fa:lockout:{username.lower()}"
+def _2fa_redis_key(username: str, ip: str = "") -> str:
+    # Key includes the client IP so one attacker's failures cannot lock a
+    # victim out of their own 2FA, and lockout state stays per (account, IP).
+    return f"2fa:lockout:{username.lower()}:{(ip or 'noip').strip().lower()}"
 
 
-def _2fa_locked_redis(username: str) -> bool:
+def _2fa_locked_redis(username: str, ip: str = "") -> bool:
     """Check if username is locked out via Redis (distributed)."""
     redis = _get_redis()
     if redis and _redis_available:
         try:
-            key = _2fa_redis_key(username)
+            key = _2fa_redis_key(username, ip)
             count = redis.get(key)
             if count and int(count) >= _2FA_MAX_FAILURES:
                 return True
@@ -54,17 +56,17 @@ def _2fa_locked_redis(username: str) -> bool:
     
     # Fallback to in-memory
     now = time.time()
-    recent = [t for t in _2fa_failures_local.get(username, []) if now - t < _2FA_LOCKOUT_WINDOW_S]
-    _2fa_failures_local[username] = recent
+    recent = [t for t in _2fa_failures_local.get(_2fa_redis_key(username, ip), []) if now - t < _2FA_LOCKOUT_WINDOW_S]
+    _2fa_failures_local[_2fa_redis_key(username, ip)] = recent
     return len(recent) >= _2FA_MAX_FAILURES
 
 
-def _2fa_record_fail_redis(username: str) -> None:
+def _2fa_record_fail_redis(username: str, ip: str = "") -> None:
     """Record a failed 2FA attempt via Redis (distributed)."""
     redis = _get_redis()
     if redis and _redis_available:
         try:
-            key = _2fa_redis_key(username)
+            key = _2fa_redis_key(username, ip)
             # Use pipeline for atomicity
             pipe = redis.pipeline()
             pipe.incr(key)
@@ -76,37 +78,40 @@ def _2fa_record_fail_redis(username: str) -> None:
     
     # Fallback to in-memory
     now = time.time()
-    _2fa_failures_local.setdefault(username, []).append(now)
-    _2fa_failures_local[username] = [t for t in _2fa_failures_local[username] if now - t < _2FA_LOCKOUT_WINDOW_S]
+    _2fa_failures_local.setdefault(_2fa_redis_key(username, ip), []).append(now)
+    _2fa_failures_local[_2fa_redis_key(username, ip)] = [t for t in _2fa_failures_local[_2fa_redis_key(username, ip)] if now - t < _2FA_LOCKOUT_WINDOW_S]
 
 
-def _2fa_clear_fails_redis(username: str) -> None:
+def _2fa_clear_fails_redis(username: str, ip: str = "") -> None:
     """Clear 2FA failures for username (success clears lockout)."""
     redis = _get_redis()
     if redis and _redis_available:
         try:
-            key = _2fa_redis_key(username)
+            key = _2fa_redis_key(username, ip)
             redis.delete(key)
         except Exception as e:
             log.warning("Redis 2FA clear fails failed: %s", e)
 
-    # Also clear in-memory
+    # Also clear in-memory (plus the legacy username-only key from before the
+    # key included the client IP, so upgrades don't leave stale lockouts).
+    _2fa_failures_local.pop(_2fa_redis_key(username, ip), None)
     _2fa_failures_local.pop(username, None)
+    _2fa_failures_local.pop(username.lower(), None)
 
 
-async def is_2fa_locked(username: str) -> bool:
+async def is_2fa_locked(username: str, ip: str = "") -> bool:
     """Async 2FA lockout check — offloads blocking Redis I/O off the loop."""
-    return await asyncio.to_thread(_2fa_locked_redis, username)
+    return await asyncio.to_thread(_2fa_locked_redis, username, ip)
 
 
-async def record_2fa_failure(username: str) -> None:
+async def record_2fa_failure(username: str, ip: str = "") -> None:
     """Async 2FA failure recorder — offloads blocking Redis I/O off the loop."""
-    await asyncio.to_thread(_2fa_record_fail_redis, username)
+    await asyncio.to_thread(_2fa_record_fail_redis, username, ip)
 
 
-async def clear_2fa_failures(username: str) -> None:
+async def clear_2fa_failures(username: str, ip: str = "") -> None:
     """Async 2FA failure clearer — offloads blocking Redis I/O off the loop."""
-    await asyncio.to_thread(_2fa_clear_fails_redis, username)
+    await asyncio.to_thread(_2fa_clear_fails_redis, username, ip)
 
 
 def _get_redis():

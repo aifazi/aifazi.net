@@ -1566,14 +1566,14 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
     role     = payload.get("role")
     user_id  = payload.get("id")
     ip = request.client.host if request.client else ""
-    if await _2fa_locked(username):
+    if await _2fa_locked(username, ip):
         raise HTTPException(429, "Too many failed 2FA attempts. Try again later.")
     if role == "admin":
         row = _get_admin_2fa()
         if not row or not row.get("totp_secret"):
             raise HTTPException(500, "2FA not configured on server")
         if not _verify_2fa_entry("admin", "", row["totp_secret"], body.code):
-            await _2fa_record_fail(username)
+            await _2fa_record_fail(username, ip)
             _audit(username, "2fa_failed", ip=ip)
             raise HTTPException(400, "Invalid code")
         token   = make_token({"username": username, "role": role})
@@ -1599,7 +1599,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
                 }).eq("id", forum_id).execute()
             except Exception:
                 pass
-        await _2fa_clear_fails(username)
+        await _2fa_clear_fails(username, ip)
         _audit(username, "admin_login_2fa", target="admin_panel", ip=ip)
         if forum_id and _upsert_forum_session(forum_id, username, ip, request.headers.get("user-agent", "")):
             _send_new_device_alert(username, (row or {}).get("email") or f"{ADMIN_USERNAME}@aifazi.net", ip, request.headers.get("user-agent", ""))
@@ -1611,7 +1611,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
             raise HTTPException(404, "User not found")
         s = res.data[0]
         if not _verify_2fa_entry("user", user_id, s["totp_secret"], body.code):
-            await _2fa_record_fail(username)
+            await _2fa_record_fail(username, ip)
             _audit(username, "2fa_failed", ip=ip)
             raise HTTPException(400, "Invalid code")
         token   = make_token({"username": s["username"], "role": s["role"], "id": s["id"]})
@@ -1619,7 +1619,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
         supabase.table("users").update({
             "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
         }).eq("id", s["id"]).execute()
-        await _2fa_clear_fails(username)
+        await _2fa_clear_fails(username, ip)
         _audit(username, "staff_login_2fa", target="admin_panel", ip=ip)
         if _upsert_forum_session(s["id"], s["username"], ip, request.headers.get("user-agent", "")):
             _send_new_device_alert(s["username"], s.get("email") or "", ip, request.headers.get("user-agent", ""))
