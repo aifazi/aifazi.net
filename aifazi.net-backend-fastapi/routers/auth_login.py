@@ -7,6 +7,7 @@ import logging
 import os
 import secrets
 
+import bcrypt as _bcrypt
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
@@ -17,6 +18,17 @@ router = APIRouter()
 log = logging.getLogger("auth.login")
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+
+
+def _verify(pw: str, hashed: str) -> bool:
+    """bcrypt verify that fails clean (False) on empty/legacy hashes."""
+    if not hashed or not hashed.startswith(("$2a$", "$2b$", "$2y$")):
+        return False
+    try:
+        return _bcrypt.checkpw(pw.encode("utf-8"), hashed.encode("utf-8"))
+    except Exception as exc:
+        log.error("bcrypt verify failed: %s", exc)
+        return False
 
 
 # ── Models ───────────────────────────────────────────────────────────────────
@@ -60,8 +72,7 @@ async def login(body: LoginBody, request: Request, response: Response):
         user_res = supabase.table("users").select("username,hashed_password,role").eq("username", username).limit(1).execute()
         user = user_res.data[0] if user_res.data else None
         if user and user.get("hashed_password"):
-            from passlib.hash import bcrypt
-            if bcrypt.verify(password, user["hashed_password"]):
+            if _verify(password, user["hashed_password"]):
                 # Check 2FA if enabled
                 totp_res = supabase.table("users").select("totp_enabled").eq("username", username).limit(1).execute()
                 if totp_res.data and totp_res.data[0].get("totp_enabled"):
@@ -79,8 +90,7 @@ async def login(body: LoginBody, request: Request, response: Response):
         raise HTTPException(401, "Invalid credentials.")
 
     # ── Staff login ──────────────────────────────────────────────────────
-    from passlib.hash import bcrypt
-    if not bcrypt.verify(password, staff["password_hash"]):
+    if not _verify(password, staff["password_hash"]):
         raise HTTPException(401, "Invalid credentials.")
 
     role = staff.get("role", "staff")

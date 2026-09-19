@@ -6,6 +6,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
+import bcrypt as _bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
@@ -15,6 +16,10 @@ from permissions import require_permission
 
 router = APIRouter()
 log = logging.getLogger("auth.staff")
+
+
+def _hash(pw: str) -> str:
+    return _bcrypt.hashpw(pw.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
 
 
 # ── Models ───────────────────────────────────────────────────────────────────
@@ -62,12 +67,11 @@ async def search_staff_users(q: str = Query("", min_length=1), user: dict = Depe
 @router.post("/staff")
 async def create_staff(body: CreateStaffBody, user: dict = Depends(require_permission("community.staff", "edit"))):
     """Create a new staff user."""
-    from passlib.hash import bcrypt
     username = body.username.strip().lower()
     existing = supabase.table("staff_users").select("username").eq("username", username).limit(1).execute()
     if existing.data:
         raise HTTPException(400, "Username already exists")
-    hashed = bcrypt.hash(body.password)
+    hashed = _hash(body.password)
     supabase.table("staff_users").insert({
         "id": str(uuid.uuid4()),
         "username": username,
@@ -86,8 +90,7 @@ async def update_staff(staff_id: str, body: UpdateStaffBody, user: dict = Depend
     """Update a staff user."""
     updates = {}
     if body.password is not None:
-        from passlib.hash import bcrypt
-        updates["password_hash"] = bcrypt.hash(body.password)
+        updates["password_hash"] = _hash(body.password)
     if body.role is not None:
         updates["role"] = body.role
     if body.display_name is not None:

@@ -534,6 +534,20 @@ async def _send_resend(cfg, to, subject, html, text):
     return data.get("id", "")
 
 
+def _smtp_tls_context(host: str):
+    """TLS context for SMTP: internal Docker hostnames (Stalwart's cert only
+    covers its public names) keep encryption but skip the hostname check on
+    the trusted container network; public hosts get full verification."""
+    import ssl
+
+    h = (host or "").lower()
+    if h in ("localhost",) or h.startswith("stalwart-") or h.endswith(".sslip.io"):
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        return ctx
+    return None
+
+
 async def _send_smtp(cfg, to, subject, html, text):
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
@@ -558,4 +572,5 @@ async def _send_smtp(cfg, to, subject, html, text):
     await aiosmtplib.send(msg, hostname=host, port=port,
         username=username, password=password,
         use_tls=encryption in ("tls", "ssl"),
-        start_tls=(encryption == "starttls"))
+        start_tls=(encryption == "starttls"),
+        tls_context=_smtp_tls_context(host))

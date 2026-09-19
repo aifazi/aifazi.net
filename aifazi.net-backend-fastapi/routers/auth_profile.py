@@ -6,6 +6,7 @@ import logging
 import os
 import uuid
 
+import bcrypt as _bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 
@@ -14,6 +15,21 @@ from dependencies import get_current_user, require_staff
 
 router = APIRouter()
 log = logging.getLogger("auth.profile")
+
+
+def _verify(pw: str, hashed: str) -> bool:
+    """bcrypt verify that fails clean (False) on empty/legacy hashes."""
+    if not hashed or not hashed.startswith(("$2a$", "$2b$", "$2y$")):
+        return False
+    try:
+        return _bcrypt.checkpw(pw.encode("utf-8"), hashed.encode("utf-8"))
+    except Exception as exc:
+        log.error("bcrypt verify failed: %s", exc)
+        return False
+
+
+def _hash(pw: str) -> str:
+    return _bcrypt.hashpw(pw.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
 
 # Avatar upload limits (P1-4): 2 MB cap, image-only extensions; the stored
 # Content-Type always comes from server-side magic-byte sniffing, never from
@@ -130,10 +146,9 @@ async def change_password(body: ChangePasswordBody, user: dict = Depends(get_cur
     res = supabase.table("users").select("hashed_password").eq("username", username).limit(1).execute()
     if not res.data or not res.data[0].get("hashed_password"):
         raise HTTPException(400, "Account uses external auth — cannot change password here.")
-    from passlib.hash import bcrypt
-    if not bcrypt.verify(body.current_password, res.data[0]["hashed_password"]):
+    if not _verify(body.current_password, res.data[0]["hashed_password"]):
         raise HTTPException(400, "Current password is incorrect.")
-    new_hash = bcrypt.hash(body.new_password)
+    new_hash = _hash(body.new_password)
     supabase.table("users").update({"hashed_password": new_hash}).eq("username", username).execute()
     return {"ok": True}
 
@@ -150,8 +165,7 @@ async def delete_account(body: DeleteAccountBody, user: dict = Depends(get_curre
     res = supabase.table("users").select("hashed_password").eq("username", username).limit(1).execute()
     if not res.data or not res.data[0].get("hashed_password"):
         raise HTTPException(400, "This account uses social login and has no password — contact support to delete your account.")
-    from passlib.hash import bcrypt
-    if not bcrypt.verify(body.current_password, res.data[0]["hashed_password"]):
+    if not _verify(body.current_password, res.data[0]["hashed_password"]):
         raise HTTPException(400, "Current password is incorrect.")
     supabase.table("users").update({
         "username": f"deleted_{uuid.uuid4().hex[:8]}",

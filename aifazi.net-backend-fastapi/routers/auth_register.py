@@ -10,6 +10,7 @@ import secrets
 import uuid
 from datetime import datetime, timezone
 
+import bcrypt as _bcrypt
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
@@ -18,6 +19,10 @@ from utils.timezone import utc_now
 
 router = APIRouter()
 log = logging.getLogger("auth.register")
+
+
+def _hash(pw: str) -> str:
+    return _bcrypt.hashpw(pw.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net")
 MAIL_FROM = os.getenv("MAIL_FROM", "noreply@aifazi.net")
@@ -97,8 +102,7 @@ async def register(body: RegisterBody):
         raise HTTPException(400, "Username already taken.")
 
     # Hash password
-    from passlib.hash import bcrypt
-    hashed = bcrypt.hash(password)
+    hashed = _hash(password)
 
     # Create user
     supabase.table("users").insert({
@@ -220,8 +224,7 @@ async def reset_password_with_token(token: str, body: ResetBody):
         supabase.table("password_reset_tokens").delete().eq("token", token).execute()
         raise HTTPException(400, "Invalid or expired token")
     username = res.data[0]["username"]
-    from passlib.hash import bcrypt
-    hashed = bcrypt.hash(body.new_password)
+    hashed = _hash(body.new_password)
     supabase.table("users").update({"hashed_password": hashed}).eq("username", username).execute()
     supabase.table("password_reset_tokens").delete().eq("token", token).execute()
     return {"ok": True}
