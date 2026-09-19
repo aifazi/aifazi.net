@@ -12,15 +12,21 @@ const GitHubIcon   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill=
 const LinkedInIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
 const TwitterIcon  = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
 
-// ── Animated status panel ─────────────────────────────────────────────────────
+// ── Live status panel ─────────────────────────────────────────────────────────
+// P2 — was hardcoded ok:true for every row (fake data). Now wired to the
+// real /monitor/status API the /status page uses; falls back to a link.
 function SystemStatus() {
-  const services = [
-    { label: 'API Server',     ok: true  },
-    { label: 'Database',       ok: true  },
-    { label: 'CDN / Media',    ok: true  },
-    { label: 'Mail Service',   ok: true  },
-    { label: 'Forum',          ok: true  },
-  ]
+  const [services, setServices] = useState(null) // null=loading, false=unavailable
+  useEffect(() => {
+    let alive = true
+    api.get('/monitor/status')
+      .then(r => { if (alive) setServices(Array.isArray(r.data?.services) ? r.data.services.slice(0, 5) : false) })
+      .catch(() => { if (alive) setServices(false) })
+    return () => { alive = false }
+  }, [])
+  const rows = Array.isArray(services) && services.length > 0
+    ? services.map(s => ({ label: s.name || s.id || 'Service', ok: s.status === 'up' }))
+    : null
   return (
     <div style={{
       background: 'color-mix(in srgb, var(--green) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 10%, transparent)',
@@ -29,24 +35,32 @@ function SystemStatus() {
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 10 }}>
         ◈ SYSTEM STATUS
       </div>
-      {services.map(s => (
-        <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{s.label}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: s.ok ? 'var(--green)' : '#ff4757',
-              boxShadow: s.ok ? '0 0 6px var(--green)' : '0 0 6px #ff4757',
-              animation: 'ftPulse 2s ease-in-out infinite',
-            }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: s.ok ? 'var(--green)' : '#ff4757', letterSpacing: 1 }}>
-              {s.ok ? 'UP' : 'DOWN'}
-            </span>
+      {services === null ? (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Checking…</div>
+      ) : rows ? (
+        rows.map(s => (
+          <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{s.label}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: s.ok ? 'var(--green)' : '#ff4757',
+                boxShadow: s.ok ? '0 0 6px var(--green)' : '0 0 6px #ff4757',
+                animation: 'ftPulse 2s ease-in-out infinite',
+              }} />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: s.ok ? 'var(--green)' : '#ff4757', letterSpacing: 1 }}>
+                {s.ok ? 'UP' : 'DOWN'}
+              </span>
+            </div>
           </div>
+        ))
+      ) : (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7 }}>
+          Status unavailable — <Link to="/status" style={{ color: 'var(--cyan)', textDecoration: 'none' }}>view live status →</Link>
         </div>
-      ))}
+      )}
       <div suppressHydrationWarning style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid color-mix(in srgb, var(--green) 10%, transparent)', fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1 }}>
-        Last checked · {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} UTC+4
+        <Link to="/status" style={{ color: 'inherit', textDecoration: 'none' }}>Live status →</Link>
       </div>
     </div>
   )
@@ -625,15 +639,20 @@ function FooterDock({ sectionLinks, platformLinks, socialLinks, handleHashLink, 
       <div style={{ padding: '28px clamp(16px,5vw,60px) 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: '#0b1118', border: '1px solid rgba(0,212,255,0.28)', borderRadius: 999, padding: '8px 14px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {dockItems.map((item, i) => {
-            const dot = { width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,212,255,0.22)', color: i === 0 ? P.accent : P.muted, fontSize: 13, textDecoration: 'none', transition: 'all 0.2s' }
-            const onEnter = e => { e.currentTarget.style.color = P.accent; e.currentTarget.style.borderColor = 'var(--cyan)'; e.currentTarget.style.transform = 'translateY(-3px)' }
-            const onLeave = e => { e.currentTarget.style.color = i === 0 ? P.accent : P.muted; e.currentTarget.style.borderColor = 'rgba(0,212,255,0.22)'; e.currentTarget.style.transform = 'none' }
+            // P1-7 — 44px touch target, 34px visual: the anchor carries 5px
+            // padding (offset by -5px margin, so layout is identical) while the
+            // inner span draws the original 34px circle. aria-label added below.
+            const dot = { padding: 5, margin: -5, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: i === 0 ? P.accent : P.muted, fontSize: 13, textDecoration: 'none', transition: 'color 0.2s, transform 0.2s' }
+            const dotInner = { width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,212,255,0.22)', transition: 'border-color 0.2s' }
+            const ring = (el, color) => { try { el.firstChild.style.borderColor = color } catch {} }
+            const onEnter = e => { e.currentTarget.style.color = P.accent; e.currentTarget.style.transform = 'translateY(-3px)'; ring(e.currentTarget, 'var(--cyan)') }
+            const onLeave = e => { e.currentTarget.style.color = i === 0 ? P.accent : P.muted; e.currentTarget.style.transform = 'none'; ring(e.currentTarget, 'rgba(0,212,255,0.22)') }
             return item.hash ? (
-              <a key={i} href={item.href} onClick={e => handleHashLink(e, item.hash)} title={item.label} style={dot} onMouseEnter={onEnter} onMouseLeave={onLeave}>{item.icon}</a>
+              <a key={i} href={item.href} onClick={e => handleHashLink(e, item.hash)} title={item.label} aria-label={item.label} style={dot} onMouseEnter={onEnter} onMouseLeave={onLeave}><span style={dotInner}>{item.icon}</span></a>
             ) : item.external ? (
-              <a key={i} href={item.href} target="_blank" rel="noopener noreferrer" title={item.label} style={dot} onMouseEnter={onEnter} onMouseLeave={onLeave}>{item.icon}</a>
+              <a key={i} href={item.href} target="_blank" rel="noopener noreferrer" title={item.label} aria-label={item.label} style={dot} onMouseEnter={onEnter} onMouseLeave={onLeave}><span style={dotInner}>{item.icon}</span></a>
             ) : (
-              <Link key={i} to={item.href} title={item.label} style={dot} onMouseEnter={onEnter} onMouseLeave={onLeave}>{item.icon}</Link>
+              <Link key={i} to={item.href} title={item.label} aria-label={item.label} style={dot} onMouseEnter={onEnter} onMouseLeave={onLeave}><span style={dotInner}>{item.icon}</span></Link>
             )
           })}
         </div>

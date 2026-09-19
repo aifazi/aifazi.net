@@ -283,7 +283,7 @@ export function ProductsTab({ categories, onOpenVariants }) {
               <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Product image</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 {form.image_url ? (
-                  <img src={form.image_url} alt="" style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)', background: 'var(--bg3)' }} />
+                  <img src={form.image_url} alt={`Preview of ${form.name || 'product'} image`} loading="lazy" style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)', background: 'var(--bg3)' }} />
                 ) : <div style={{ width: 56, height: 56, borderRadius: 8, background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🛒</div>}
                 <div style={{ flex: 1, minWidth: 200 }}>{input(form.image_url, v => inp('image_url', v), false)}</div>
                 <Btn onClick={() => document.getElementById('storeImageInput')?.click()} disabled={imageUploading} color={C}>{imageUploading ? 'UPLOADING…' : 'UPLOAD'}</Btn>
@@ -327,7 +327,7 @@ export function ProductsTab({ categories, onOpenVariants }) {
       ) : (
         products.map(p => (
           <div key={p.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            {p.image_url ? <img src={p.image_url} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)' }} /> : <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🛒</div>}
+            {p.image_url ? <img src={p.image_url} alt={`${p.name || 'Product'} thumbnail`} loading="lazy" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)' }} /> : <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🛒</div>}
             <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 {p.name}

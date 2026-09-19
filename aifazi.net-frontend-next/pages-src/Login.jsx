@@ -116,7 +116,7 @@ function PasswordStrength({ password }) {
           <span key={i} className={`auth-strength-bar ${active && i < score ? `is-on ${cls}` : ''}`} />
         ))}
       </div>
-      <span className={`auth-strength-label ${active ? `is-${cls}` : ''}`} aria-live="polite">
+      <span className={`auth-strength-label ${active ? `is-${cls}` : ''}`} role="status" aria-live="polite">
         {active ? `${label} password` : 'Password strength'}
       </span>
       {active && (
@@ -171,10 +171,10 @@ function apiErrorText(err, fallback) {
   return errorText(err?.response?.data?.detail || err?.message, fallback)
 }
 
-const ErrorBox = ({ msg }) => {
+const ErrorBox = ({ msg, id }) => {
   const text = errorText(msg)
   return text ? (
-    <div className="auth-alert auth-alert-error" role="alert">
+    <div className="auth-alert auth-alert-error" role="alert" id={id}>
       <span className="auth-alert-ico">✕</span>
       <span>{text}</span>
     </div>
@@ -248,6 +248,14 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
   const [lockoutUntil, setLockoutUntil] = useState(0)
   const [countdown, setCountdown]       = useState(0)
   const lockoutRef = useRef(null)
+  // P0-2 — CapsLock warning state for the password field.
+  const [capsOn, setCapsOn] = useState(false)
+  const capsCheck = (e) => {
+    try { setCapsOn(!!e.getModifierState?.('CapsLock')) } catch {}
+  }
+  // P1-1 — refs so submit failures can move focus to the first error.
+  const siIdRef = useRef(null)
+  const siPassRef = useRef(null)
 
   // Countdown ticker
   useEffect(() => {
@@ -285,7 +293,11 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!identifier.trim() || !password) { setError('Please enter your email/username and password.'); shake?.(formRef.current); return }
+    if (!identifier.trim() || !password) {
+      setError('Please enter your email/username and password.');
+      (!identifier.trim() ? siIdRef.current : siPassRef.current)?.focus()
+      shake?.(formRef.current); return
+    }
     if (Date.now() < lockoutUntil) return
     setLoading(true); setError('')
 
@@ -312,13 +324,30 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
         shake?.(formRef.current)
       }
     } catch (err) {
+      // P2 — surface a server 429 "try in Ns" when present; client backoff
+      // below stays as the fallback when the server gives no retry hint.
+      const status = err?.response?.status
       const detail = err?.response?.data?.detail
+      if (status === 429) {
+        const hdrSecs = parseInt(err?.response?.headers?.['retry-after'], 10)
+        const bodySecs = parseInt(err?.response?.data?.retry_after ?? err?.response?.data?.retryAfter, 10)
+        const detailSecs = typeof detail === 'string' ? parseInt((detail.match(/(\d+)\s*s/) || [])[1], 10) : NaN
+        const secs = [bodySecs, hdrSecs, detailSecs].find(n => Number.isFinite(n) && n > 0) || 0
+        if (secs > 0) setLockoutUntil(Date.now() + secs * 1000)
+        setError(typeof detail === 'string' && detail ? detail : (secs > 0 ? `Too many attempts. Try again in ${secs}s.` : 'Too many attempts. Please try again shortly.'))
+        shake?.(formRef.current)
+        siPassRef.current?.focus()
+        const fails = recordFailure(identifier)
+        if (secs <= 0) { const wait = backoffMs(fails); if (wait > 0) setLockoutUntil(Date.now() + wait) }
+        return
+      }
       if (detail === 'Email not verified') {
         setError('Please verify your email before signing in. Check your inbox.')
       } else {
         setError(detail || 'Invalid credentials. Please try again.')
       }
       shake?.(formRef.current)
+      siPassRef.current?.focus()
       const fails = recordFailure(identifier)
       const wait  = backoffMs(fails)
       if (wait > 0) { setLockoutUntil(Date.now() + wait) }
@@ -331,6 +360,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
   async function handleLdapLogin() {
     if (!identifier.trim() || !password) {
       setError('Enter your LLDAP email/username and password first.')
+      ;(!identifier.trim() ? siIdRef.current : siPassRef.current)?.focus()
       shake?.(formRef.current)
       return
     }
@@ -356,6 +386,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
     } catch (err) {
       const detail = err?.response?.data?.detail
       setError(detail || 'LLDAP login failed. Check your directory credentials.')
+      siPassRef.current?.focus()
       shake?.(formRef.current)
       const fails = recordFailure(identifier)
       const wait = backoffMs(fails)
@@ -367,7 +398,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
-      <ErrorBox msg={error} />
+      <ErrorBox msg={error} id="si-form-error" />
 
       {/* #3 — lockout countdown banner */}
       {countdown > 0 && (
@@ -379,11 +410,12 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
 
       <FieldWrap label="Email or Username" htmlFor="si-id">
         <input
-          id="si-id" type="text"
+          id="si-id" type="text" ref={siIdRef}
           placeholder="your@email.com or username"
           value={identifier}
           onChange={e => setIdentifier(e.target.value)}
           required autoComplete="username"
+          aria-invalid={!!error} aria-describedby={error ? 'si-form-error' : undefined}
           style={inputStyle}
           onFocus={focusGreen} onBlur={blurGreen}
         />
@@ -397,13 +429,17 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
             FORGOT?
           </button>
         </div>
-      } htmlFor="si-pass">
+      } htmlFor="si-pass" hint={capsOn && (
+        <span id="si-caps-warn" className="auth-field-status auth-field-status-bad" role="status">⚠ Caps Lock is on</span>
+      )}>
         <input
-          id="si-pass" type={showPass ? 'text' : 'password'}
+          id="si-pass" type={showPass ? 'text' : 'password'} ref={siPassRef}
           placeholder="••••••••"
           value={password}
           onChange={e => setPassword(e.target.value)}
+          onKeyDown={capsCheck} onKeyUp={capsCheck}
           required autoComplete={showPass ? 'off' : 'current-password'}
+          aria-invalid={!!error} aria-describedby={capsOn ? 'si-caps-warn' : error ? 'si-form-error' : undefined}
           style={{ ...inputStyle, paddingRight: 44 }}
           onFocus={focusGreen} onBlur={blurGreen}
         />
@@ -653,7 +689,7 @@ const UnStatus = ({ username, check, suggest, onSuggest }) => {
   if (check === 'checking') return <span className="auth-field-status">⏳ Checking…</span>
   if (check === 'available') return <span className="auth-field-status auth-field-status-ok">✓ Available</span>
   if (check === 'taken') return (
-    <span className="auth-field-status auth-field-status-bad">
+    <span id="su-user-taken" className="auth-field-status auth-field-status-bad" role="status">
       ✗ Taken{suggest && <> — try <button type="button" onClick={() => onSuggest()} className="auth-link auth-link-cyan" style={{ fontSize: 10, textDecoration: 'underline' }}>{suggest}</button></>}
     </span>
   )
@@ -669,6 +705,11 @@ function SignUp({ onSwitch, shake }) {
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
   const formRef = useRef(null)
+  // P1-1 — refs so submit failures can move focus to the first error.
+  const suUserRef = useRef(null)
+  const suEmailRef = useRef(null)
+  const suPassRef = useRef(null)
+  const suConfRef = useRef(null)
 
   // Username availability check
   const [unCheck,   setUnCheck]   = useState('idle') // 'idle'|'checking'|'available'|'taken'
@@ -719,12 +760,26 @@ function SignUp({ onSwitch, shake }) {
     && unCheck !== 'taken'
     && unCheck !== 'checking'
 
+  // P0-1 — same gate as canSubmit, but expressed as the blocking rule so the
+  // always-enabled submit button can explain WHY it will not go through.
+  const blockReason =
+    unCheck === 'checking' ? 'Checking username availability…'
+    : unCheck === 'taken' ? 'That username is taken — try the suggestion above.'
+    : form.username.trim().length < 3 ? 'Username needs at least 3 characters.'
+    : !form.email.trim() ? 'Email is required.'
+    : form.password.length < 8 ? 'Password needs at least 8 characters.'
+    : !form.confirm ? 'Please confirm your password.'
+    : form.password !== form.confirm ? 'Passwords do not match.'
+    : ''
+  const showBlockReason = !canSubmit && !loading && blockReason
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!form.username.trim()) { setError('Username is required'); shake?.(formRef.current); return }
-    if (!form.email.trim())    { setError('Email is required');    shake?.(formRef.current); return }
-    if (form.password.length < 8) { setError('Password must be at least 8 characters'); shake?.(formRef.current); return }
-    if (form.password !== form.confirm) { setError('Passwords do not match'); shake?.(formRef.current); return }
+    if (!form.username.trim()) { setError('Username is required'); suUserRef.current?.focus(); shake?.(formRef.current); return }
+    if (!form.email.trim())    { setError('Email is required');    suEmailRef.current?.focus(); shake?.(formRef.current); return }
+    if (unCheck === 'taken')   { setError('That username is taken — pick another.'); suUserRef.current?.focus(); shake?.(formRef.current); return }
+    if (form.password.length < 8) { setError('Password must be at least 8 characters'); suPassRef.current?.focus(); shake?.(formRef.current); return }
+    if (form.password !== form.confirm) { setError('Passwords do not match'); suConfRef.current?.focus(); shake?.(formRef.current); return }
     setLoading(true); setError('')
     try {
       await api.post('/auth/register', {
@@ -743,44 +798,56 @@ function SignUp({ onSwitch, shake }) {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
-      <ErrorBox msg={error} />
+      <ErrorBox msg={error} id="su-form-error" />
 
       <FieldWrap label="Username" htmlFor="su-user" hint={<UnStatus username={form.username} check={unCheck} suggest={unSuggest} onSuggest={() => set('username', unSuggest)} />}>
-        <input id="su-user" type="text" placeholder="CoolUsername"
+        <input id="su-user" type="text" ref={suUserRef} placeholder="CoolUsername"
           value={form.username} onChange={e => set('username', e.target.value)}
           required minLength={3} maxLength={30} autoComplete="username"
+          aria-invalid={unCheck === 'taken' || !!error} aria-describedby={unCheck === 'taken' ? 'su-user-taken' : error ? 'su-form-error' : undefined}
           style={inputStyle}
           onFocus={focusGreen} onBlur={blurGreen} />
       </FieldWrap>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: -14, marginBottom: 6 }}>{form.username.length}/30</div>
 
       <FieldWrap label="Email" htmlFor="su-email">
-        <input id="su-email" type="email" placeholder="your@email.com"
+        <input id="su-email" type="email" ref={suEmailRef} placeholder="your@email.com"
           value={form.email} onChange={e => set('email', e.target.value)}
           required autoComplete="email"
+          aria-invalid={!!error} aria-describedby={error ? 'su-form-error' : undefined}
           style={inputStyle} onFocus={focusGreen} onBlur={blurGreen} />
       </FieldWrap>
 
       <FieldWrap label="Password" htmlFor="su-pass" hint={
         <PasswordStrength password={form.password} />
       }>
-        <input id="su-pass" type={showPass ? 'text' : 'password'} placeholder="Min 8 characters"
+        <input id="su-pass" type={showPass ? 'text' : 'password'} ref={suPassRef} placeholder="Min 8 characters"
           value={form.password} onChange={e => set('password', e.target.value)}
           required minLength={8} autoComplete={showPass ? 'off' : 'new-password'}
+          aria-invalid={!!error} aria-describedby={error ? 'su-form-error' : undefined}
           style={{ ...inputStyle, paddingRight: 44 }}
           onFocus={focusGreen} onBlur={blurGreen} />
         <PassToggle show={showPass} onToggle={() => setShowPass(s => !s)} />
       </FieldWrap>
 
-      <FieldWrap label="Confirm Password" htmlFor="su-conf" hint={pwMatch && <span className="auth-field-status auth-field-status-bad">Passwords don&apos;t match</span>}>
-        <input id="su-conf" type={showConf ? 'text' : 'password'} placeholder="Repeat password"
+      <FieldWrap label="Confirm Password" htmlFor="su-conf" hint={pwMatch && <span id="su-conf-mismatch" className="auth-field-status auth-field-status-bad">Passwords don&apos;t match</span>}>
+        <input id="su-conf" type={showConf ? 'text' : 'password'} ref={suConfRef} placeholder="Repeat password"
           value={form.confirm} onChange={e => set('confirm', e.target.value)}
           required autoComplete={showConf ? 'off' : 'new-password'}
+          aria-invalid={pwMatch || !!error} aria-describedby={pwMatch ? 'su-conf-mismatch' : error ? 'su-form-error' : undefined}
           style={{ ...inputStyle, paddingRight: 44 }}
           onFocus={focusGreen} onBlur={blurGreen} />
         <PassToggle show={showConf} onToggle={() => setShowConf(s => !s)} />
       </FieldWrap>
 
-      <button type="submit" className="auth-submit" disabled={!canSubmit}>
+      {/* P0-1 — button stays enabled; the blocking rule is explained here
+          (linked via aria-describedby) instead of a dead disabled button. */}
+      {showBlockReason && (
+        <div id="su-block-reason" role="status" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 0.5, color: 'var(--orange)', textAlign: 'center', margin: '-2px 0 8px' }}>
+          {blockReason}
+        </div>
+      )}
+      <button type="submit" className="auth-submit" disabled={loading} aria-describedby={showBlockReason ? 'su-block-reason' : undefined}>
         {loading ? (
           <span className="auth-spinner" aria-hidden="true" />
         ) : 'Create account'}
@@ -840,6 +907,7 @@ function ForgotPassword({ onSwitch, shake }) {
     // pointless round-trip and mirrors the sign-in form's isEmail rule.
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError('Enter a valid email address.')
+      document.getElementById('fp-email')?.focus()
       shake?.(formRef.current)
       return
     }
@@ -874,11 +942,12 @@ function ForgotPassword({ onSwitch, shake }) {
       <p className="auth-intro">
         Enter your email address and we&apos;ll send you a link to reset your password.
       </p>
-      <ErrorBox msg={error} />
+      <ErrorBox msg={error} id="fp-form-error" />
       <FieldWrap label="Email Address" htmlFor="fp-email">
         <input id="fp-email" type="email" placeholder="your@email.com"
           value={email} onChange={e => setEmail(e.target.value)}
           required autoComplete="email"
+          aria-invalid={!!error} aria-describedby={error ? 'fp-form-error' : undefined}
           style={inputStyle} onFocus={focusGreen} onBlur={blurGreen} />
       </FieldWrap>
       <button type="submit" className="auth-submit" disabled={loading}>
@@ -906,6 +975,10 @@ function TwoFAStep({ challenge, onBack, shake }) {
   // P2 — auto-verify fires from onChange; guard against double-submit while a
   // verification request is already in flight.
   const verifyingRef = useRef(false)
+  // P0-3 — auto-verify is debounced (~600ms) so every keystroke does not fire
+  // a request; the explicit Verify button below always works immediately.
+  const verifyTimer = useRef(null)
+  useEffect(() => () => { if (verifyTimer.current) clearTimeout(verifyTimer.current) }, [])
 
   // Count down then auto-redirect when session expires
   useEffect(() => {
@@ -994,20 +1067,25 @@ function TwoFAStep({ challenge, onBack, shake }) {
         </div>
       )}
 
-      <ErrorBox msg={error} />
+      <ErrorBox msg={error} id="twofa-form-error" />
 
       <FieldWrap label="Authenticator Code" htmlFor="twofa-code">
         <input
-          id="twofa-code" type="text" inputMode="text" pattern="[A-Za-z0-9 \-]*"
+          id="twofa-code" type="text" inputMode="numeric" pattern="[0-9 ]*"
           placeholder="000 000  ·  XXXX-XXXX-XXXX" maxLength={23}
           value={code}
           onChange={e => {
             const val = e.target.value.replace(/[^A-Za-z0-9 \-]/g, '')
             setCode(val)
+            if (error) setError('')
+            if (verifyTimer.current) clearTimeout(verifyTimer.current)
             const clean = val.replace(/[\s-]/g, '')
-            if (/^\d{6}$/.test(clean) || /^[A-Za-z2-7]{12}$/.test(clean)) verify(clean)
+            if (/^\d{6}$/.test(clean) || /^[A-Za-z2-7]{12}$/.test(clean)) {
+              verifyTimer.current = setTimeout(() => verify(clean), 600)
+            }
           }}
           required autoComplete="one-time-code" autoFocus
+          aria-invalid={!!error} aria-describedby={error ? 'twofa-form-error' : undefined}
           disabled={expired || loading}
           style={{ ...inputStyle, textAlign: 'center', fontSize: 20, letterSpacing: 3, fontFamily: 'var(--font-mono)', opacity: expired ? 0.4 : 1 }}
           onFocus={focusGreen} onBlur={blurGreen}
@@ -1015,6 +1093,7 @@ function TwoFAStep({ challenge, onBack, shake }) {
         <p style={{ textAlign: 'center', margin: '6px 0 0', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 1 }}>
           Can&apos;t use your authenticator? Enter a backup recovery code instead.
         </p>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{code.replace(/[\s-]/g, '').length}/12</div>
       </FieldWrap>
 
       <button type="submit" className="auth-submit" disabled={loading || expired}>
@@ -1122,6 +1201,17 @@ export default function Login() {
       detail: msgs[discordError] || 'Discord login failed. Please try again.'
     }))
   }, [])
+
+  // P1-9 — surface the "Session expired" notice stored by the api 401
+  // handler before it redirected here with ?next=.
+  const [sessionNotice, setSessionNotice] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    try { return sessionStorage.getItem('post_login_notice') || '' } catch { return '' }
+  })
+  useEffect(() => {
+    if (!sessionNotice) return
+    try { sessionStorage.removeItem('post_login_notice') } catch {}
+  }, [sessionNotice])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1949,20 +2039,40 @@ export default function Login() {
                 <p className="auth-sub">{meta.sub}</p>
               </div>
 
+              {sessionNotice && (
+                <div className="auth-alert auth-alert-warn" role="status">
+                  <span className="auth-alert-ico">⏳</span>
+                  <span style={{ flex: 1 }}>{sessionNotice}</span>
+                  <button type="button" onClick={() => setSessionNotice('')} aria-label="Dismiss session notice"
+                    style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 13 }}>✕</button>
+                </div>
+              )}
+
               {/* Tabs */}
-              <div className="auth-tabs">
-                <div className="auth-tab-indicator" style={{ transform: `translateX(${Math.max(tabIndex, 0) * 100}%)` }} />
+              <div className="auth-tabs" role="tablist" aria-label="Authentication options">
+                <div className="auth-tab-indicator" style={{ transform: `translateX(${Math.max(tabIndex, 0) * 100}%)` }} aria-hidden="true" />
                 {TABS.map(t => (
-                  <button key={t.key} type="button"
+                  <button key={t.key} type="button" data-tab={t.key}
+                    role="tab" aria-selected={tab === t.key} tabIndex={tab === t.key ? 0 : -1}
                     className={`auth-tab${tab === t.key ? ' is-active' : ''}`}
-                    onClick={() => switchTab(t.key)}>
+                    onClick={() => switchTab(t.key)}
+                    onKeyDown={e => {
+                      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+                      e.preventDefault()
+                      const idx = TABS.findIndex(x => x.key === t.key)
+                      const next = TABS[(idx + (e.key === 'ArrowRight' ? 1 : -1) + TABS.length) % TABS.length]
+                      switchTab(next.key)
+                      requestAnimationFrame(() => {
+                        document.querySelector(`.auth-tab[data-tab="${next.key}"]`)?.focus()
+                      })
+                    }}>
                     {t.label}
                   </button>
                 ))}
               </div>
 
               {/* Form */}
-              <div key={formKey} ref={formRef}>
+              <div key={formKey} ref={formRef} role="tabpanel" aria-label={meta.title}>
                 {twoFAChallenge                && <TwoFAStep     challenge={twoFAChallenge} onBack={() => setTwoFAChallenge(null)} shake={shakeForm} />}
                 {!twoFAChallenge && tab === 'signin'   && <SignIn   onSwitch={switchTab} onTwoFA={c => setTwoFAChallenge(c)} shake={shakeForm} />}
                 {!twoFAChallenge && tab === 'register' && <SignUp   onSwitch={switchTab} shake={shakeForm} />}

@@ -51,6 +51,9 @@ interface ChatMessage {
   reactions?: Record<string, string[]>
   created_at?: string
   edited?: boolean
+  /** Local-only optimistic state: in-flight vs failed (retryable). */
+  _pending?: boolean
+  _failed?: boolean
 }
 
 interface LinkPreview {
@@ -308,27 +311,67 @@ export default function ChatRoomScreen() {
   const send = async () => {
     const content = text.trim()
     if (!content || !room) return
+    const payload = roomKey ? `ENC:${encryptText(content, roomKey)}` : content
+    const replyTo = replying
+      ? { id: replying.id, sender: replying.sender, content: replying.content ?? '' }
+      : undefined
+    // Optimistic send: render the temp message immediately, swap in the
+    // server-confirmed row on ack, mark failed (retryable) on error.
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const temp: ChatMessage = {
+      id: tempId,
+      room_id: room,
+      sender: user?.username ?? '',
+      type: 'text',
+      content: payload,
+      reply_to: replyTo ?? null,
+      created_at: new Date().toISOString(),
+      _pending: true,
+    }
+    setMessages((prev) => [...prev, temp])
+    setText('')
+    setReplying(null)
     setSending(true)
     try {
-      const payload = roomKey ? `ENC:${encryptText(content, roomKey)}` : content
-      const replyTo = replying
-        ? { id: replying.id, sender: replying.sender, content: replying.content ?? '' }
-        : undefined
       if (!isOnline()) {
-        await enqueue({ room, content: payload, type: 'text', reply_to: replyTo })
+        await enqueue({ kind: 'room', room, content: payload, type: 'text', reply_to: replyTo })
         setErr('Offline — message queued and will send when back online')
-        setText('')
-        setReplying(null)
         return
       }
-      await api.post(`/chat/rooms/${room}/messages`, { content: payload, type: 'text', reply_to: replyTo })
-      setText('')
-      setReplying(null)
+      const r = await api.post(`/chat/rooms/${room}/messages`, { content: payload, type: 'text', reply_to: replyTo })
+      const confirmed = (r.data ?? {}) as ChatMessage
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? (confirmed?.id ? { ...confirmed } : { ...m, _pending: false }) : m)),
+      )
       await load(true)
     } catch (e: any) {
-      setErr(e?.response?.data?.detail || 'Failed to send')
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, _pending: false, _failed: true } : m)))
+      setErr(e?.response?.data?.detail || 'Failed to send — tap retry on the message')
     } finally {
       setSending(false)
+    }
+  }
+
+  /** Re-post a failed optimistic message (same shape, fresh attempt). */
+  const retrySend = async (id: string) => {
+    const failed = messages.find((m) => m.id === id)
+    if (!failed || !room) return
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, _pending: true, _failed: false } : m)))
+    setErr('')
+    try {
+      const r = await api.post(`/chat/rooms/${room}/messages`, {
+        content: failed.content,
+        type: failed.type ?? 'text',
+        reply_to: failed.reply_to ?? undefined,
+      })
+      const confirmed = (r.data ?? {}) as ChatMessage
+      setMessages((prev) =>
+        prev.map((m) => (m.id === id ? (confirmed?.id ? { ...confirmed } : { ...m, _pending: false }) : m)),
+      )
+      await load(true)
+    } catch (e: any) {
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, _pending: false, _failed: true } : m)))
+      setErr(e?.response?.data?.detail || 'Failed to send — tap retry on the message')
     }
   }
 
@@ -341,8 +384,14 @@ export default function ChatRoomScreen() {
   useEffect(() => {
     const doFlush = async () => {
       if (!isOnline()) return
+      // Shared offline queue with DM threads: route each item by shape so
+      // either screen can drain the queue without dropping the other's mail.
       await flushQueue(async (item: any) => {
-        await api.post(`/chat/rooms/${item.room}/messages`, { content: item.content, type: item.type, reply_to: item.reply_to })
+        if (item.thread_id) {
+          await api.post(`/chat/dm/threads/${item.thread_id}/messages`, { content: item.content, type: item.type, reply_to: item.reply_to })
+        } else {
+          await api.post(`/chat/rooms/${item.room}/messages`, { content: item.content, type: item.type, reply_to: item.reply_to })
+        }
       })
       await load(true)
     }
@@ -548,7 +597,7 @@ export default function ChatRoomScreen() {
         <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10} style={styles.backBtn}>
           <Icon name="back" size={22} color={c.text} />
         </TouchableOpacity>
-        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>
+        <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1} maxFontSizeMultiplier={1.3}>
           {searchOpen ? 'Search chat' : roomName}
         </Text>
         {!searchOpen ? (
@@ -556,11 +605,18 @@ export default function ChatRoomScreen() {
             <TouchableOpacity
               onPress={() => router.push(`/call?room=${encodeURIComponent(room)}&name=${encodeURIComponent(roomName)}&type=voice` as Href)}
               hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Start voice call"
               style={{ marginRight: SPACE.sm }}
             >
               <Icon name="phone" size={FONT.section} color={c.accent2} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setSearchOpen(true)} hitSlop={10}>
+            <TouchableOpacity
+              onPress={() => setSearchOpen(true)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Search messages"
+            >
               <Icon name="search" size={FONT.section} color={c.text} />
             </TouchableOpacity>
           </>
@@ -638,6 +694,7 @@ export default function ChatRoomScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         {loading ? (
           <View style={{ paddingTop: SPACE.colossal, alignItems: 'center' }}>
@@ -655,6 +712,10 @@ export default function ChatRoomScreen() {
             ref={listRef}
             data={messages}
             keyExtractor={(m) => m.id}
+            // Rows are variable height (text/media/previews), so no
+            // getItemLayout — windowSize alone trims the render window.
+            windowSize={10}
+            removeClippedSubviews
             contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.giant }}
             onContentSizeChange={() => {
               if (stick.current) listRef.current?.scrollToEnd({ animated: true })
@@ -825,11 +886,27 @@ export default function ChatRoomScreen() {
                             </TouchableOpacity>
                           ) : null}
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: SPACE.sm, marginTop: SPACE.xs }}>
-                            <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs }}>
+                            <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs }} maxFontSizeMultiplier={1.3}>
                               {fmtTime(item.created_at)}
                               {item.edited ? ' · edited' : ''}
                             </Text>
+                            {item._pending ? (
+                              <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs, fontStyle: 'italic' }}>
+                                · sending…
+                              </Text>
+                            ) : null}
                           </View>
+                          {item._failed ? (
+                            <TouchableOpacity
+                              onPress={() => retrySend(item.id)}
+                              hitSlop={10}
+                              accessibilityRole="button"
+                              accessibilityLabel="Retry sending message"
+                              style={{ alignSelf: 'flex-end', marginTop: SPACE.xs, paddingVertical: SPACE.xs, paddingHorizontal: SPACE.sm }}
+                            >
+                              <Text style={{ color: c.danger, fontSize: FONT.sm, fontWeight: '700' }}>Failed — tap to retry</Text>
+                            </TouchableOpacity>
+                          ) : null}
                         </View>
                       </Pressable>
                     </View>
@@ -859,19 +936,20 @@ export default function ChatRoomScreen() {
                       ))}
                     </View>
                   ) : null}
-                  <View style={{ flexDirection: 'row', gap: SPACE.xl, marginTop: SPACE.xs, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
-                    <TouchableOpacity onPress={() => setReplying(item)} hitSlop={8}>
+                  {/* 44px min touch via padding + hitSlop (no visual growth). */}
+                  <View style={{ flexDirection: 'row', gap: SPACE.sm, marginTop: SPACE.xs, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                    <TouchableOpacity onPress={() => setReplying(item)} hitSlop={12} style={{ paddingVertical: 10, paddingHorizontal: 6 }}>
                       <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>Reply</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => showEmojiPicker((emoji) => toggleReact(item.id, emoji))} hitSlop={8}>
+                    <TouchableOpacity onPress={() => showEmojiPicker((emoji) => toggleReact(item.id, emoji))} hitSlop={12} style={{ paddingVertical: 10, paddingHorizontal: 6 }}>
                       <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>React</Text>
                     </TouchableOpacity>
                     {mine ? (
                       <>
-                        <TouchableOpacity onPress={() => startEdit(item)} hitSlop={8}>
+                        <TouchableOpacity onPress={() => startEdit(item)} hitSlop={12} style={{ paddingVertical: 10, paddingHorizontal: 6 }}>
                           <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>Edit</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => confirmDelete(item.id)} hitSlop={8}>
+                        <TouchableOpacity onPress={() => confirmDelete(item.id)} hitSlop={12} style={{ paddingVertical: 10, paddingHorizontal: 6 }}>
                           <Text style={{ color: c.danger, fontSize: FONT.sm, fontWeight: '700' }}>Delete</Text>
                         </TouchableOpacity>
                       </>
@@ -885,9 +963,13 @@ export default function ChatRoomScreen() {
         {showScrollBtn && messages.length > 0 ? (
           <TouchableOpacity
             onPress={() => { stick.current = true; setShowScrollBtn(false); listRef.current?.scrollToEnd({ animated: true }) }}
-            style={{ position: 'absolute', bottom: 90, alignSelf: 'center', backgroundColor: c.accent, borderRadius: 20, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, zIndex: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel="Scroll to new messages"
+            hitSlop={10}
+            style={{ position: 'absolute', bottom: 90, alignSelf: 'center', backgroundColor: c.accent, borderRadius: 20, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.sm, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}
           >
-            <Text style={{ color: '#fff', fontSize: FONT.sm, fontWeight: '700' }}>↓ New messages</Text>
+            <Icon name="down" size={14} color={c.onAccent} />
+            <Text style={{ color: c.onAccent, fontSize: FONT.sm, fontWeight: '700' }} maxFontSizeMultiplier={1.3}>New messages</Text>
           </TouchableOpacity>
         ) : null}
       {reactTarget ? (
@@ -919,10 +1001,24 @@ export default function ChatRoomScreen() {
         ) : null}
         {!editing ? (
           <>
-            <TouchableOpacity onPress={pickImage} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
+            <TouchableOpacity
+              onPress={pickImage}
+              disabled={uploading}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Attach image"
+              style={{ paddingRight: SPACE.xxs, paddingVertical: 10 }}
+            >
               <Icon name="image" size={FONT.lead} color={c.text} style={uploading ? { opacity: 0.4 } : undefined} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={pickDoc} disabled={uploading} hitSlop={8} style={{ paddingRight: SPACE.xxs }}>
+            <TouchableOpacity
+              onPress={pickDoc}
+              disabled={uploading}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Attach file"
+              style={{ paddingRight: SPACE.xxs, paddingVertical: 10 }}
+            >
               <Icon name="attach" size={FONT.lead} color={c.text} style={uploading ? { opacity: 0.4 } : undefined} />
             </TouchableOpacity>
             <VoiceRecorder onRecorded={uploadVoice} onError={(m) => setErr(m)} />
@@ -946,6 +1042,12 @@ export default function ChatRoomScreen() {
             placeholder={editing ? 'Edit message…' : 'Type a message…'}
             placeholderTextColor={c.muted}
             multiline
+            keyboardType="default"
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="send"
+            blurOnSubmit={false}
+            onSubmitEditing={editing ? saveEdit : send}
             style={[
               styles.inputField,
               {

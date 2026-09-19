@@ -4,6 +4,7 @@ import { useParams, Link } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useForum } from '../../context/ForumContext'
 import { Card, NeonButton, Badge, EmptyState } from '../../components/community'
+import { formatPrice } from '@/lib/format'
 
 const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)'
 const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
@@ -83,18 +84,18 @@ export default function ProductDetail() {
     </div>
   )
 
-  const price = product.price?.toFixed(2) || '0.00'
-  const compareAt = product.compare_at > 0 ? product.compare_at.toFixed(2) : null
+  const price = formatPrice(product.price ?? 0)
+  const compareAt = product.compare_at > 0 ? formatPrice(product.compare_at) : null
 
   return (
     <div className="page-container community-page" style={{ zIndex: 1, paddingTop: 40 }}>
       {/* Breadcrumb */}
-      <div style={{ padding: '0 0 20px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--muted)' }}>
+      <nav aria-label="Breadcrumb" style={{ padding: '0 0 20px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--muted)' }}>
         <Link to="/store" style={{ color: 'var(--muted)', textDecoration: 'none' }}>STORE</Link>
         <span style={{ margin: '0 8px' }}>/</span>
         {product.category && <><Link to={`/store?cat=${encodeURIComponent(product.category)}`} style={{ color: C, textDecoration: 'none' }}>{product.category.toUpperCase()}</Link><span style={{ margin: '0 8px' }}>/</span></>}
         <span style={{ color: 'var(--text)' }}>{product.name}</span>
-      </div>
+      </nav>
 
       <div className="community-shell product-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 0.9fr)', gap: 'clamp(24px, 5vw, 56px)', alignItems: 'start' }}>
         {/* Image */}
@@ -126,8 +127,8 @@ export default function ProductDetail() {
 
           {/* Price */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 24 }}>
-            <span style={{ fontSize: 36, fontWeight: 800, color: product.on_sale ? R : C }}>${price}</span>
-            {compareAt && <span style={{ fontSize: 18, color: 'var(--muted)', textDecoration: 'line-through' }}>${compareAt}</span>}
+            <span style={{ fontSize: 36, fontWeight: 800, color: product.on_sale ? R : C }}>{price}</span>
+            {compareAt && <span style={{ fontSize: 18, color: 'var(--muted)', textDecoration: 'line-through' }}>{compareAt}</span>}
           </div>
 
           {/* Quantity + Add to Cart */}
@@ -196,7 +197,7 @@ export default function ProductDetail() {
                     <div style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 10, background: 'linear-gradient(160deg, var(--cyan)12, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>🛒</div>
                   )}
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>{p.name}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: C }}>${p.price.toFixed(2)}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: C }}>{formatPrice(p.price)}</div>
                 </Card>
               </Link>
             ))}

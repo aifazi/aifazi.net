@@ -148,8 +148,8 @@ function SqlConsoleTab() {
             : Array.isArray(results) ? (
               <div>
                 <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--border)', marginBottom:10, letterSpacing:1 }}>{results.length.toLocaleString()} row{results.length !== 1 ? 's' : ''} returned</div>
-                <div style={{ overflowX:'auto' }}>
-                  <table style={{ width:'100%', borderCollapse:'collapse', fontFamily:'var(--font-mono,monospace)', fontSize:10 }}>
+                <div className="dbmon-scroll" style={{ overflowX:'auto' }}>
+                  <table className="dbmon-table" style={{ width:'100%', borderCollapse:'collapse', fontFamily:'var(--font-mono,monospace)', fontSize:10 }}>
                     <thead>
                       <tr style={{ borderBottom:'1px solid #1e2d45' }}>
                         {Object.keys(results[0] || {}).slice(0, 12).map(k => <th key={k} style={{ padding:'5px 8px', textAlign:'left', color:'var(--muted)', fontSize:8, letterSpacing:2, whiteSpace:'nowrap' }}>{k.toUpperCase()}</th>)}
@@ -169,6 +169,15 @@ function SqlConsoleTab() {
                   </table>
                   {results.length > 200 && <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--border)', textAlign:'center', padding:'12px 0', letterSpacing:1 }}>Showing 200 of {results.length.toLocaleString()} rows</div>}
                 </div>
+                {/* P1-11 — CSS-only mobile fix: sticky first column + 11px floor
+                    (full card rewrite out of scope) */}
+                <style>{`@media (max-width:640px){
+                  .dbmon-table th, .dbmon-table td { font-size:11px !important; }
+                  .dbmon-table th:first-child, .dbmon-table td:first-child {
+                    position:sticky !important; left:0 !important; z-index:1 !important;
+                    background:var(--bg2) !important;
+                  }
+                }`}</style>
               </div>
             ) : <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--green,#00ff88)' }}>{JSON.stringify(results)}</div>}
           </div>

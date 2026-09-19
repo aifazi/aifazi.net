@@ -104,6 +104,28 @@ api.interceptors.response.use(
           window.dispatchEvent(new CustomEvent('auth:expired'))
           setTimeout(() => { _expiredDispatched = false }, 1000)
         }
+        // P1-9 — global 401 UX: the refresh failed so the session is truly
+        // dead. Toast + redirect to login (non-login routes only). The 2FA
+        // verify flow is untouched: it handles its own 401 expired banner.
+        if (typeof window !== 'undefined') {
+          const path = window.location.pathname || ''
+          const url = String(original.url || '')
+          const isAuthFlow =
+            path.startsWith('/login') ||
+            path.startsWith('/auth/') ||
+            path.startsWith('/forum/auth') ||
+            url.includes('/auth/2fa') ||
+            url.includes('/auth/login')
+          if (!isAuthFlow && !path.startsWith('/login')) {
+            try {
+              window.dispatchEvent(new CustomEvent('app:toast', {
+                detail: { type: 'error', message: 'Session expired, please sign in' },
+              }))
+            } catch {}
+            try { sessionStorage.setItem('post_login_notice', 'Session expired, please sign in') } catch {}
+            window.location.assign(`/login?next=${encodeURIComponent(path + window.location.search)}`)
+          }
+        }
       }
     }
     if (err.response?.status === 403) clearStaffClaims()

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { useTheme } from '@/src/theme'
 import { FONT, SPACE } from '@/src/design'
 import { withAlpha } from '@/src/lib/color'
+import { Icon } from '@/src/components/icon'
 import { api } from '@/src/lib/api'
 
 export default function ForgotPasswordScreen() {
@@ -32,7 +33,8 @@ export default function ForgotPasswordScreen() {
   if (sent) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', padding: SPACE.xl }}>
-        <Text style={{ fontSize: 40, marginBottom: SPACE.lg }}>📧</Text>
+        <Icon name="send" size={40} color={c.accent} />
+        <View style={{ height: SPACE.lg }} />
         <Text style={{ color: c.text, fontSize: FONT.section, fontWeight: '800', marginBottom: SPACE.md, textAlign: 'center' }}>Check your email</Text>
         <Text style={{ color: c.muted, fontSize: FONT.base, textAlign: 'center', marginBottom: SPACE.xl }}>
           We sent a password reset link to {email}. Check your inbox and click the link to set a new password.
@@ -41,7 +43,7 @@ export default function ForgotPasswordScreen() {
           onPress={() => router.replace('/auth/login')}
           style={{ backgroundColor: c.accent, borderRadius: theme.buttonRadius, paddingVertical: SPACE.md, paddingHorizontal: SPACE.xl }}
         >
-          <Text style={{ color: '#000', fontSize: FONT.base, fontWeight: '700' }}>Back to Login</Text>
+          <Text style={{ color: c.onAccent, fontSize: FONT.base, fontWeight: '700' }}>Back to Login</Text>
         </TouchableOpacity>
       </View>
     )
@@ -55,7 +57,7 @@ export default function ForgotPasswordScreen() {
         </TouchableOpacity>
         <Text style={{ color: c.text, fontSize: FONT.title, fontWeight: '800', marginBottom: SPACE.xs }}>Forgot Password</Text>
         <Text style={{ color: c.muted, fontSize: FONT.base, marginBottom: SPACE.xl }}>Enter your email and we&apos;ll send you a reset link.</Text>
-        {error ? <Text style={{ color: '#ff4444', fontSize: FONT.sm, marginBottom: SPACE.md }}>{error}</Text> : null}
+        {error ? <Text style={{ color: c.danger, fontSize: FONT.sm, marginBottom: SPACE.md }}>{error}</Text> : null}
         <TextInput
           value={email}
           onChangeText={setEmail}
@@ -71,7 +73,7 @@ export default function ForgotPasswordScreen() {
           disabled={loading || !email.trim()}
           style={{ backgroundColor: loading ? withAlpha(c.accent, 0.5) : c.accent, borderRadius: theme.buttonRadius, paddingVertical: SPACE.lg, alignItems: 'center' }}
         >
-          {loading ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontSize: FONT.base, fontWeight: '700' }}>Send Reset Link</Text>}
+          {loading ? <ActivityIndicator color={c.onAccent} /> : <Text style={{ color: c.onAccent, fontSize: FONT.base, fontWeight: '700' }}>Send Reset Link</Text>}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

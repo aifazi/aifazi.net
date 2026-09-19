@@ -60,7 +60,7 @@ function Tile({
           <Text style={{ fontSize: 28, color: c.text2 }}>{label.slice(0, 1).toUpperCase() || '?'}</Text>
         </View>
       )}
-      <View style={styles.tileMeta}>
+      <View style={[styles.tileMeta, { backgroundColor: c.overlay }]}>
         <Text style={{ color: c.text, fontSize: FONT.sm, fontWeight: '700' }} numberOfLines={1}>
           {label}
         </Text>
@@ -380,9 +380,9 @@ export default function CallScreen() {
       ) : null}
 
       {screenUrl ? (
-        <View style={[styles.screen, { borderBottomColor: c.border }]}>
+        <View style={[styles.screen, { borderBottomColor: c.border, backgroundColor: c.bg }]}>
           <VideoStream streamURL={screenUrl} objectFit="contain" style={StyleSheet.absoluteFill} />
-          <View style={styles.screenTag}>
+          <View style={[styles.screenTag, { backgroundColor: c.overlay }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xs }}>
               <Icon name="video" size={FONT.md} color={c.text2} />
               <Text style={{ color: c.text2, fontSize: FONT.micro }}>Screen Share</Text>
@@ -501,8 +501,8 @@ const styles = StyleSheet.create({
     paddingVertical: SPACE.lg,
     alignItems: 'center',
   },
-  screen: { height: 200, backgroundColor: '#000', borderBottomWidth: 1, position: 'relative' },
-  screenTag: { position: 'absolute', bottom: 8, left: 12, backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 6, paddingHorizontal: SPACE.lg, paddingVertical: 3 },
+  screen: { height: 200, borderBottomWidth: 1, position: 'relative' },
+  screenTag: { position: 'absolute', bottom: 8, left: 12, borderRadius: 6, paddingHorizontal: SPACE.lg, paddingVertical: 3 },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -528,7 +528,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: SPACE.sm,
-    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   dotRow: { flexDirection: 'row', gap: SPACE.xs },
   controls: {

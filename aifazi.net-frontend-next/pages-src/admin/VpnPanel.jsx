@@ -358,8 +358,17 @@ function VpnPanelInner() {
           {filteredPeers.length === 0 ? (
             <EmptyState icon="🔒" title="No VPN peers found" hint={search ? 'Try a different search' : 'No devices have connected yet'} />
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <div className="vpn-scroll" style={{ overflowX: 'auto' }}>
+              <table className="vpn-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                {/* P1-11 — CSS-only mobile fix: sticky first column + 11px floor
+                    (full card rewrite out of scope) */}
+                <style>{`@media (max-width:640px){
+                  .vpn-table th, .vpn-table td { font-size:11px !important; }
+                  .vpn-table th:first-child, .vpn-table td:first-child {
+                    position:sticky !important; left:0 !important; z-index:1 !important;
+                    background:var(--bg2) !important;
+                  }
+                }`}</style>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
                     {['Device', 'IP', 'OS', 'Status', 'Traffic', 'Last Seen', 'Actions'].map(h => (

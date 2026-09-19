@@ -251,7 +251,7 @@ export default function ForumThread() {
       <div className="community-shell">
 
         {/* Breadcrumb */}
-        <div className="forum-breadcrumb" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
+        <nav aria-label="Breadcrumb" className="forum-breadcrumb" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
           <Link to="/forum" style={{ color: 'var(--muted)', textDecoration: 'none' }}>FORUM</Link>
           {category?.slug && (
             <>
@@ -261,7 +261,7 @@ export default function ForumThread() {
           )}
           <span>/</span>
           <span style={{ color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>{thread.title}</span>
-        </div>
+        </nav>
 
         {/* Thread hero */}
         <Card accent style={{ padding: 'clamp(24px, 4vw, 40px)', marginBottom: 22 }}>

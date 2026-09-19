@@ -140,7 +140,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
     >
       <span style={{ fontSize: 12, opacity: 0.7 }}>⌕</span>
       <span className="cmd-label" style={{ letterSpacing: 1 }}>Search</span>
-      <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--bg)', border: '1px solid var(--border)', fontSize: 8, letterSpacing: 1, lineHeight: 1.4 }}>⌘ K</span>
+      <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: 'var(--bg)', border: '1px solid var(--border)', fontSize: 11, letterSpacing: 1, lineHeight: 1.4 }}>⌘ K</span>
       <style>{`@media(max-width:900px){.cmd-label{display:none}}`}</style>
     </button>
   )

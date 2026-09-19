@@ -4,6 +4,7 @@ import api from '@/lib/api'
 import { useForum } from '../../context/ForumContext'
 import { Card, NeonButton, Badge, EmptyState } from '../../components/community'
 import { UserAvatar } from '@/lib/avatar'
+import { formatPrice, formatDateTime } from '@/lib/format'
 
 const TRUSTED_CHECKOUT_HOSTS = ['checkout.stripe.com', 'stripe.com', 'billing.stripe.com']
 function safeCheckoutRedirect(url) {
@@ -189,11 +190,11 @@ export default function AccountDashboard({ loginHref }) {
                           <Badge tone={statusBadge(o.status)}>{(o.status || '').toUpperCase()}</Badge>
                         </div>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
-                          {new Date(o.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          <span title={o.created_at ? formatDateTime(o.created_at) : ''}>{o.created_at ? new Date(o.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</span>
                           {(o.items || []).length > 0 && <> · {o.items.length} item{o.items.length !== 1 ? 's' : ''}</>}
                         </div>
                       </div>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>${total.toFixed(2)}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{formatPrice(total)}</span>
                     </div>
                   </Card>
                 )

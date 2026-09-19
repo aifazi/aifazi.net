@@ -292,11 +292,14 @@ a { text-decoration: none; color: inherit; }
 button { cursor: pointer; }
 img { max-width: 100%; }
 
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg2); }
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(var(--green), var(--cyan));
   border-radius: 2px;
+}
+@media (pointer: coarse) {
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
 }
 
 /* ══════════════════════════════════════════

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { T } from '../chat-constants'
 import api from '@/lib/api'
 import { UserAvatar, builtinAvatarEmoji, avatarUrl } from '@/lib/avatar'
+import { Dialog } from '../../../components/Dialog'
 
 export function UserSearchModal({ title, actionLabel, onSelect, onClose }) {
   const [query, setQuery] = useState('')
@@ -42,9 +43,10 @@ export function UserSearchModal({ title, actionLabel, onSelect, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }} onClick={onClose} onKeyDown={handleKeyDown}>
-      <div onClick={e => e.stopPropagation()} style={{ width: 380, maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+    <Dialog onClose={onClose} label={title || 'Search users'} zIndex={9999}
+      overlayStyle={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }}
+      initialFocusRef={inputRef}>
+      <div onKeyDown={handleKeyDown} style={{ width: 380, maxHeight: '80vh', display: 'flex', flexDirection: 'column',
         background: 'rgba(18,21,32,0.98)', border: `1px solid ${T.border}`, borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
         <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, letterSpacing: 2 }}>{title || 'SEARCH USERS'}</span>
@@ -96,6 +98,6 @@ export function UserSearchModal({ title, actionLabel, onSelect, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </Dialog>
   )
 }

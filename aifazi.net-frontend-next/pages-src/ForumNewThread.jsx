@@ -89,7 +89,7 @@ export default function ForumNewThread() {
                 placeholder="Give your thread a clear title..."
                 maxLength={200}
                 style={{ ...field, fontSize: 18 }} />
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{form.title.length}/200</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{form.title.length}/200</div>
             </div>
 
             {/* Content */}
@@ -102,7 +102,7 @@ export default function ForumNewThread() {
                 // (backend out of scope; title 200 already set above).
                 maxLength={50000}
                 style={{ ...field, resize: 'vertical', lineHeight: 1.8 }} />
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{form.content.length}/50000</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{form.content.length}/50000</div>
             </div>
 
             {/* Attachments */}
@@ -118,6 +118,7 @@ export default function ForumNewThread() {
                 placeholder="networking, cisco, vpn"
                 maxLength={100}
                 style={field} />
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{form.tags.length}/100</div>
             </div>
 
             {error && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)', padding: '10px 16px', background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.2)', borderRadius: 10 }}>{error}</div>}
