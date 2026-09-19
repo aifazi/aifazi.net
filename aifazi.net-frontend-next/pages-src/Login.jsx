@@ -1,9 +1,18 @@
 'use client'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import gsap from 'gsap'
-import api, { saveTokens, clearAuthTokens, getRole } from '@/lib/api'
+import api, { saveTokens, clearAuthTokens, getRole, ensureAdminGate } from '@/lib/api'
 import { authProviderLoginRoute, safeNextPath } from '@/lib/authRoutes'
+
+// P2 — gsap is heavy and Login is a first-paint route: lazy-load it like the
+// existing import('gsap') hook pattern (components/Hero.jsx) instead of a
+// static top-level import.
+let _gsapCache = null
+function loadGsap() {
+  if (typeof window === 'undefined') return Promise.resolve(null)
+  if (_gsapCache) return Promise.resolve(_gsapCache)
+  return import('gsap').then(m => { _gsapCache = m.gsap || m.default || m; return _gsapCache })
+}
 
 // Theme-reactive animation helpers — colors always come from var(--tokens).
 const reducedMotion = () =>
@@ -19,20 +28,25 @@ function AuthCheck({ size = 72 }) {
     const circle = circleRef.current
     const path = pathRef.current
     if (!circle || !path) return
-    if (reducedMotion()) {
-      gsap.set([circle, path], { strokeDashoffset: 0 })
-      return
-    }
-    const cLen = circle.getTotalLength()
-    const pLen = path.getTotalLength()
-    gsap.set([circle, path], {
-      strokeDasharray: (el) => (el === circle ? cLen : pLen),
-      strokeDashoffset: (el) => (el === circle ? cLen : pLen),
+    let alive = true
+    let tl = null
+    loadGsap().then(gsap => {
+      if (!alive || !gsap) return
+      if (reducedMotion()) {
+        gsap.set([circle, path], { strokeDashoffset: 0 })
+        return
+      }
+      const cLen = circle.getTotalLength()
+      const pLen = path.getTotalLength()
+      gsap.set([circle, path], {
+        strokeDasharray: (el) => (el === circle ? cLen : pLen),
+        strokeDashoffset: (el) => (el === circle ? cLen : pLen),
+      })
+      tl = gsap.timeline()
+      tl.to(circle, { strokeDashoffset: 0, duration: 0.5, ease: 'power2.out' })
+        .to(path, { strokeDashoffset: 0, duration: 0.42, ease: 'power2.out' }, '-=0.12')
     })
-    const tl = gsap.timeline()
-    tl.to(circle, { strokeDashoffset: 0, duration: 0.5, ease: 'power2.out' })
-      .to(path, { strokeDashoffset: 0, duration: 0.42, ease: 'power2.out' }, '-=0.12')
-    return () => tl.kill()
+    return () => { alive = false; if (tl) tl.kill() }
   }, [])
 
   return (
@@ -144,21 +158,12 @@ const labelStyle = {
   textTransform: 'uppercase',
 }
 
+// P3 — never render backend internals: non-string error payloads map to a
+// generic message; the raw details go to the console for debugging only.
 function errorText(value, fallback = 'Something went wrong. Please try again.') {
   if (!value) return ''
   if (typeof value === 'string') return value
-  if (Array.isArray(value)) {
-    return value
-      .map(item => {
-        if (typeof item === 'string') return item
-        if (item?.msg && Array.isArray(item?.loc)) return `${item.loc.slice(-1)[0]}: ${item.msg}`
-        if (item?.msg) return item.msg
-        return ''
-      })
-      .filter(Boolean)
-      .join(' ')
-  }
-  if (typeof value === 'object') return value.msg || value.detail || fallback
+  try { console.debug('[auth] backend error detail:', value) } catch {}
   return fallback
 }
 
@@ -233,9 +238,6 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = safeNextPath(searchParams?.get('next'))
-  const [fromForum, setFromForum] = useState(() =>
-    typeof window === 'undefined' ? false : (document.referrer.includes('/forum') || window.location.search.includes('from=forum'))
-  )
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword]     = useState('')
   const [showPass, setShowPass]     = useState(false)
@@ -477,15 +479,18 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
                 try {
                   setError('')
                   setLoading(true)
-                  const res = await api.get('/auth/wg-login')
+                  const res = await api.post('/auth/wg-login', {})
                   if (res.data?.token) {
                     saveTokens({ token: res.data.token, refreshToken: res.data.refreshToken })
                     const dest = nextPath || '/profile'
                     window.location.href = dest
+                  } else {
+                    setError('WireGuard login failed — no token received.')
                   }
                 } catch (err) {
                   const detail = err.response?.data?.detail || 'WireGuard login failed'
                   setError(detail)
+                } finally {
                   setLoading(false)
                 }
               }}
@@ -513,22 +518,44 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
 }
 
 // ── Verify Waiting (polls for activation from any device) ─────────────────────
+const VERIFY_POLL_MAX = 40 // ~2 min at 3 s intervals, then stop with a resend CTA
 function VerifyWaiting({ email, onSwitch }) {
   const router   = useRouter()
   const [activated, setActivated] = useState(false)
   const [countdown, setCountdown] = useState(3)
+  const [expired_, setExpired_] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resent, setResent] = useState(false)
   const intervalRef  = useRef(null)
   const countdownRef = useRef(null)
+  const attemptsRef  = useRef(0)
+  const pollRef = useRef(async () => {})
+
+  const resend = async () => {
+    setResending(true)
+    try {
+      await api.post('/auth/resend-verification', { email })
+      setResent(true)
+      attemptsRef.current = 0
+      setExpired_(false)
+      if (!intervalRef.current) intervalRef.current = setInterval(pollRef.current, 3000)
+    } catch {}
+    finally { setResending(false) }
+  }
 
   useEffect(() => {
     let stopped = false
 
     const poll = async () => {
+      // P1-13 — email goes in the POST JSON body, never in a GET query string
+      // (query strings are logged by proxies/CDNs and linger in history).
       try {
-        const res = await api.get(`/auth/verify-status?email=${encodeURIComponent(email)}`)
+        attemptsRef.current += 1
+        const res = await api.post('/auth/verify-status', { email })
         if (res.data?.verified && !stopped) {
           stopped = true
           clearInterval(intervalRef.current)
+          intervalRef.current = null
           setActivated(true)
           let c = 3
           countdownRef.current = setInterval(() => {
@@ -539,9 +566,25 @@ function VerifyWaiting({ email, onSwitch }) {
               onSwitch('signin')
             }
           }, 1000)
+        } else if (attemptsRef.current >= VERIFY_POLL_MAX && !stopped) {
+          // P2 — stop polling after ~40 attempts; offer a resend instead of
+          // hammering the backend forever on a background tab.
+          stopped = true
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+          setExpired_(true)
         }
-      } catch { /* silently ignore — keep polling */ }
+      } catch {
+        if (attemptsRef.current >= VERIFY_POLL_MAX && !stopped) {
+          stopped = true
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+          setExpired_(true)
+        }
+        /* otherwise silently ignore — keep polling */
+      }
     }
+    pollRef.current = poll
 
     // Poll immediately then every 3 s
     poll()
@@ -550,6 +593,7 @@ function VerifyWaiting({ email, onSwitch }) {
     return () => {
       stopped = true
       clearInterval(intervalRef.current)
+      intervalRef.current = null
       clearInterval(countdownRef.current)
     }
   }, [email, onSwitch])
@@ -577,12 +621,24 @@ function VerifyWaiting({ email, onSwitch }) {
     <div className="auth-state" style={{ textAlign: 'center', padding: '8px 0' }}>
       <div className="auth-state-ico" style={{ animation: 'authFloatY 2.4s ease-in-out infinite' }}>📬</div>
       <SuccessBox msg={`Check ${email} for a verification link to activate your account.`} />
-      {/* Live polling indicator */}
-      <div className="auth-waiting">
-        <span className="auth-waiting-dot" />
-        WAITING FOR VERIFICATION…
-      </div>
-      <div className="auth-waiting-note">This page will update automatically once you click the link</div>
+      {expired_ ? (
+        <>
+          <div className="auth-waiting-note">Still waiting? The link may have expired — request a fresh one.</div>
+          <button type="button" className="auth-submit" onClick={resend} disabled={resending}>
+            {resending ? <span className="auth-spinner" aria-hidden="true" /> : 'Resend verification email'}
+          </button>
+          {resent && <SuccessBox msg="Verification email resent. Check your inbox." />}
+        </>
+      ) : (
+        <>
+          {/* Live polling indicator */}
+          <div className="auth-waiting">
+            <span className="auth-waiting-dot" />
+            WAITING FOR VERIFICATION…
+          </div>
+          <div className="auth-waiting-note">This page will update automatically once you click the link</div>
+        </>
+      )}
       <button type="button" className="auth-ghost-btn" onClick={() => onSwitch('signin')}>
         ← BACK TO SIGN IN
       </button>
@@ -618,17 +674,22 @@ function SignUp({ onSwitch, shake }) {
   const [unCheck,   setUnCheck]   = useState('idle') // 'idle'|'checking'|'available'|'taken'
   const [unSuggest, setUnSuggest] = useState('')
   const [_timerRef] = useState({ current: null })
+  // P2 — request id so a slow earlier response can never overwrite a newer one.
+  const unReqRef = useRef(0)
 
   const checkUsername = (uname) => {
     if (_timerRef.current) clearTimeout(_timerRef.current)
     if (!uname || uname.length < 3) { setUnCheck('idle'); setUnSuggest(''); return }
     setUnCheck('checking')
     _timerRef.current = setTimeout(async () => {
+      const reqId = ++unReqRef.current
       try {
-        const res = await api.get(`/auth/check-username?username=${encodeURIComponent(uname)}`)
+        // P1-13 — username goes in the POST JSON body, never in a GET query.
+        const res = await api.post('/auth/check-username', { username: uname })
+        if (reqId !== unReqRef.current) return // stale — ignore
         if (res.data.available) { setUnCheck('available'); setUnSuggest('') }
         else                    { setUnCheck('taken');     setUnSuggest(res.data.suggestion || '') }
-      } catch { setUnCheck('idle') }
+      } catch { if (reqId === unReqRef.current) setUnCheck('idle') }
     }, 550)
   }
 
@@ -775,6 +836,13 @@ function ForgotPassword({ onSwitch, shake }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    // P2 — client-side email format check (backend re-validates); avoids a
+    // pointless round-trip and mirrors the sign-in form's isEmail rule.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError('Enter a valid email address.')
+      shake?.(formRef.current)
+      return
+    }
     setLoading(true); setError('')
     try {
       await api.post('/auth/forgot-password', { email })
@@ -835,6 +903,9 @@ function TwoFAStep({ challenge, onBack, shake }) {
   const [expired, setExpired]     = useState(false)
   const [countdown, setCountdown] = useState(30)
   const formRef = useRef(null)
+  // P2 — auto-verify fires from onChange; guard against double-submit while a
+  // verification request is already in flight.
+  const verifyingRef = useRef(false)
 
   // Count down then auto-redirect when session expires
   useEffect(() => {
@@ -845,6 +916,7 @@ function TwoFAStep({ challenge, onBack, shake }) {
   }, [expired, countdown, onBack])
 
   async function verify(raw) {
+    if (verifyingRef.current) return
     const trimmed = raw.replace(/[\s-]/g, '')
     const isTotp   = /^\d{6}$/.test(trimmed)
     const isRecovery = /^[A-Za-z2-7]{12}$/.test(trimmed)
@@ -854,6 +926,7 @@ function TwoFAStep({ challenge, onBack, shake }) {
       return
     }
     setLoading(true); setError('')
+    verifyingRef.current = true
     try {
       const verifyPath = challenge.verify_path || '/auth/2fa/verify'
       const res = await api.post(verifyPath, {
@@ -878,7 +951,7 @@ function TwoFAStep({ challenge, onBack, shake }) {
         setError(err?.response?.data?.detail || 'Invalid or expired code. Try again.')
         shake?.(formRef.current)
       }
-    } finally { setLoading(false) }
+    } finally { setLoading(false); verifyingRef.current = false }
   }
 
   async function handleSubmit(e) {
@@ -935,7 +1008,7 @@ function TwoFAStep({ challenge, onBack, shake }) {
             if (/^\d{6}$/.test(clean) || /^[A-Za-z2-7]{12}$/.test(clean)) verify(clean)
           }}
           required autoComplete="one-time-code" autoFocus
-          disabled={expired}
+          disabled={expired || loading}
           style={{ ...inputStyle, textAlign: 'center', fontSize: 20, letterSpacing: 3, fontFamily: 'var(--font-mono)', opacity: expired ? 0.4 : 1 }}
           onFocus={focusGreen} onBlur={blurGreen}
         />
@@ -1058,12 +1131,19 @@ export default function Login() {
   }, [twoFAChallenge])
 
   // ── Already logged in? Redirect away from /login ───────────────────────────
+  // P1-8 — a localStorage role alone never routes to /admin (client-editable).
+  // Staff roles are confirmed server-side via ensureAdminGate(); anything else
+  // falls back to the safe default (/ or the requested next path).
   useEffect(() => {
+    let alive = true
     const nextPath = safeNextPath(searchParams?.get('next'))
-    const go = (role) => {
+    const go = (role, staffConfirmed) => {
+      if (!alive) return
       if (nextPath) { router.replace(nextPath); return }
-      if (ADMIN_ROLES.includes(role)) {
+      if (ADMIN_ROLES.includes(role) && staffConfirmed) {
         router.replace('/admin')
+      } else if (ADMIN_ROLES.includes(role)) {
+        router.replace('/')
       } else {
         router.replace('/profile')
       }
@@ -1073,9 +1153,14 @@ export default function Login() {
     if (typeof window !== 'undefined') {
       const role = getRole()
       if (role) {
-        go(role)
+        if (ADMIN_ROLES.includes(role)) {
+          ensureAdminGate().then(ok => go(role, ok)).catch(() => go(role, false))
+        } else {
+          go(role, false)
+        }
       }
     }
+    return () => { alive = false }
   }, [])
 
   const switchTab = (t) => {
@@ -1141,7 +1226,11 @@ export default function Login() {
   const bgRef = useRef(null)
   useEffect(() => {
     if (reducedMotion() || !bgRef.current) return
-    const ctx = gsap.context(() => {
+    let alive = true
+    let ctx = null
+    loadGsap().then(gsap => {
+      if (!alive || !gsap || !bgRef.current) return
+      ctx = gsap.context(() => {
       // Aurora blob drift
       gsap.to('.auth-blob-1', { x: 80, y: 55, scale: 1.15, duration: 16, ease: 'sine.inOut', repeat: -1, yoyo: true })
       gsap.to('.auth-blob-2', { x: -70, y: -45, scale: 1.1, duration: 18, ease: 'sine.inOut', repeat: -1, yoyo: true })
@@ -1161,15 +1250,20 @@ export default function Login() {
           delay: i * 0.4,
         })
       })
-    }, bgRef)
-    return () => ctx.revert()
+      }, bgRef)
+    })
+    return () => { alive = false; if (ctx) ctx.revert() }
   }, [])
 
   // ── GSAP: illustration (orbit + float + parallax) ───────────────────────────
   const illusRef = useRef(null)
   useEffect(() => {
     if (reducedMotion() || !illusRef.current) return
-    const ctx = gsap.context(() => {
+    let alive = true
+    let ctx = null
+    loadGsap().then(gsap => {
+      if (!alive || !gsap || !illusRef.current) return
+      ctx = gsap.context(() => {
       // Orbiting rings — constant slow rotation
       gsap.to('.auth-orbit-1', { rotation: 360, duration: 46, ease: 'none', repeat: -1 })
       gsap.to('.auth-orbit-2', { rotation: -360, duration: 70, ease: 'none', repeat: -1 })
@@ -1178,8 +1272,9 @@ export default function Login() {
       gsap.to('.auth-lock-svg', { y: 12, duration: 2.6, ease: 'sine.inOut', repeat: -1, yoyo: true })
       // Glow pulse
       gsap.to('.auth-illus-glow', { opacity: 0.55, scale: 1.12, duration: 3.6, ease: 'sine.inOut', repeat: -1, yoyo: true })
-    }, illusRef)
-    return () => ctx.revert()
+      }, illusRef)
+    })
+    return () => { alive = false; if (ctx) ctx.revert() }
   }, [])
 
   // ── GSAP: mouse parallax on the illustration ─────────────────────────────────
@@ -1189,66 +1284,87 @@ export default function Login() {
     if (!hero) return
     const layers = hero.querySelectorAll('.auth-illus-inner, .auth-hero-title, .auth-hero-sub')
     if (!layers.length) return
-    const to = Array.from(layers).map(el => ({
-      el,
-      x: gsap.quickTo(el, 'x', { duration: 0.9, ease: 'power3.out' }),
-      y: gsap.quickTo(el, 'y', { duration: 0.9, ease: 'power3.out' }),
-    }))
-    const onMove = (e) => {
-      const r = hero.getBoundingClientRect()
-      const dx = (e.clientX - r.left) / r.width - 0.5
-      const dy = (e.clientY - r.top) / r.height - 0.5
-      to.forEach((t, i) => {
-        const depth = (i + 1) * 12
-        t.x(dx * depth)
-        t.y(dy * depth)
-      })
-    }
-    window.addEventListener('mousemove', onMove, { passive: true })
-    return () => window.removeEventListener('mousemove', onMove)
+    let alive = true
+    let to = []
+    let onMove = null
+    loadGsap().then(gsap => {
+      if (!alive || !gsap) return
+      to = Array.from(layers).map(el => ({
+        el,
+        x: gsap.quickTo(el, 'x', { duration: 0.9, ease: 'power3.out' }),
+        y: gsap.quickTo(el, 'y', { duration: 0.9, ease: 'power3.out' }),
+      }))
+      onMove = (e) => {
+        const r = hero.getBoundingClientRect()
+        const dx = (e.clientX - r.left) / r.width - 0.5
+        const dy = (e.clientY - r.top) / r.height - 0.5
+        to.forEach((t, i) => {
+          const depth = (i + 1) * 12
+          t.x(dx * depth)
+          t.y(dy * depth)
+        })
+      }
+      window.addEventListener('mousemove', onMove, { passive: true })
+    })
+    return () => { alive = false; if (onMove) window.removeEventListener('mousemove', onMove) }
   }, [])
 
   // ── GSAP: cursor spotlight following the mouse over the card ───────────────
   const glowRef = useRef(null)
   useEffect(() => {
     if (reducedMotion() || typeof window === 'undefined' || !glowRef.current) return
-    const xTo = gsap.quickTo(glowRef.current, 'x', { duration: 0.7, ease: 'power3.out' })
-    const yTo = gsap.quickTo(glowRef.current, 'y', { duration: 0.7, ease: 'power3.out' })
-    const onMove = (e) => {
-      const card = document.querySelector('.auth-shell')
-      if (!card) return
-      const r = card.getBoundingClientRect()
-      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return
-      xTo(e.clientX)
-      yTo(e.clientY)
-    }
-    window.addEventListener('mousemove', onMove, { passive: true })
-    return () => window.removeEventListener('mousemove', onMove)
+    let alive = true
+    let onMove = null
+    loadGsap().then(gsap => {
+      if (!alive || !gsap || !glowRef.current) return
+      const xTo = gsap.quickTo(glowRef.current, 'x', { duration: 0.7, ease: 'power3.out' })
+      const yTo = gsap.quickTo(glowRef.current, 'y', { duration: 0.7, ease: 'power3.out' })
+      onMove = (e) => {
+        const card = document.querySelector('.auth-shell')
+        if (!card) return
+        const r = card.getBoundingClientRect()
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return
+        xTo(e.clientX)
+        yTo(e.clientY)
+      }
+      window.addEventListener('mousemove', onMove, { passive: true })
+    })
+    return () => { alive = false; if (onMove) window.removeEventListener('mousemove', onMove) }
   }, [])
 
   // ── GSAP: card + header entrance timeline ───────────────────────────────────
   const cardRef = useRef(null)
   useEffect(() => {
     if (reducedMotion() || !cardRef.current) return
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
-    tl.fromTo(cardRef.current,
-        { opacity: 0, y: 30, scale: 0.96 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.6 })
-      .fromTo(cardRef.current.querySelectorAll('.auth-head, .auth-tabs, .auth-brand-mobile'),
-        { opacity: 0, y: 14 },
-        { opacity: 1, y: 0, duration: 0.45, stagger: 0.09 }, '-=0.25')
-    return () => tl.kill()
+    let alive = true
+    let tl = null
+    loadGsap().then(gsap => {
+      if (!alive || !gsap || !cardRef.current) return
+      tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+      tl.fromTo(cardRef.current,
+          { opacity: 0, y: 30, scale: 0.96 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.6 })
+        .fromTo(cardRef.current.querySelectorAll('.auth-head, .auth-tabs, .auth-brand-mobile'),
+          { opacity: 0, y: 14 },
+          { opacity: 1, y: 0, duration: 0.45, stagger: 0.09 }, '-=0.25')
+    })
+    return () => { alive = false; if (tl) tl.kill() }
   }, [])
 
   // ── GSAP: hero entrance ──────────────────────────────────────────────────────
   const heroRef = useRef(null)
   useEffect(() => {
     if (reducedMotion() || !heroRef.current) return
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
-    tl.fromTo(heroRef.current.querySelectorAll('.auth-hero-brand, .auth-hero-title, .auth-hero-sub, .auth-illus, .auth-feature'),
-      { opacity: 0, y: 24 },
-      { opacity: 1, y: 0, duration: 0.55, stagger: 0.08 })
-    return () => tl.kill()
+    let alive = true
+    let tl = null
+    loadGsap().then(gsap => {
+      if (!alive || !gsap || !heroRef.current) return
+      tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+      tl.fromTo(heroRef.current.querySelectorAll('.auth-hero-brand, .auth-hero-title, .auth-hero-sub, .auth-illus, .auth-feature'),
+        { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.55, stagger: 0.08 })
+    })
+    return () => { alive = false; if (tl) tl.kill() }
   }, [])
 
   // ── GSAP: stagger form fields on tab/form change ────────────────────────────
@@ -1259,21 +1375,27 @@ export default function Login() {
       '.auth-field-wrap, .auth-submit, .auth-oauth-row, .auth-switch-line, .auth-intro, .auth-state, .auth-2fa-title, .auth-2fa-sub'
     )
     if (!els.length) return
-    gsap.fromTo(els,
-      { opacity: 0, y: 16 },
-      { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power2.out' })
+    loadGsap().then(gsap => {
+      if (!gsap) return
+      gsap.fromTo(els,
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.5, stagger: 0.06, ease: 'power2.out' })
+    })
   }, [formKey])
 
   // ── GSAP: form shake on invalid submission ──────────────────────────────────
   const shakeForm = (el) => {
     if (reducedMotion() || !el) return
-    gsap.fromTo(el,
-      { x: 0 },
-      { keyframes: [
-        { x: -10, duration: 0.07 }, { x: 10, duration: 0.07 },
-        { x: -8, duration: 0.06 }, { x: 8, duration: 0.06 },
-        { x: -4, duration: 0.05 }, { x: 0, duration: 0.05 },
-      ], ease: 'power2.out' })
+    loadGsap().then(gsap => {
+      if (!gsap) return
+      gsap.fromTo(el,
+        { x: 0 },
+        { keyframes: [
+          { x: -10, duration: 0.07 }, { x: 10, duration: 0.07 },
+          { x: -8, duration: 0.06 }, { x: 8, duration: 0.06 },
+          { x: -4, duration: 0.05 }, { x: 0, duration: 0.05 },
+        ], ease: 'power2.out' })
+    })
   }
 
   return (

@@ -101,7 +101,7 @@ Copy `.env.local.example` to `.env.local` and fill in every value.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous (public) key |
 | `NEXT_PUBLIC_SENTRY_DSN` | No | Sentry DSN for error reporting |
 | `NEXT_PUBLIC_COMETCHAT_APP_ID` | No | CometChat App ID |
-| `NEXT_PUBLIC_COMETCHAT_AUTH_KEY` | No | CometChat Auth Key |
+| `COMETCHAT_AUTH_KEY` | No | CometChat Auth Key (server-only — never `NEXT_PUBLIC_`; only App ID/region are browser-safe) |
 | `NEXT_PUBLIC_COMETCHAT_REGION` | No | CometChat region (e.g. `us`) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No | VAPID public key for Web Push notifications |
 | `INTERNAL_API_SECRET` | Yes | Shared secret stamped on every `/api/*` request by Edge middleware. Must match the backend's `INTERNAL_API_SECRET`. Generate with `openssl rand -hex 32` |

@@ -64,7 +64,8 @@ export default function DMPanel({ me, onClose }) {
 
   useEffect(() => {
     loadThreads()
-    const iv = setInterval(loadThreads, LIST_POLL)
+    // P2 — pause polls while the tab is hidden (usePausableInterval equivalent).
+    const iv = setInterval(() => { if (!document.hidden) loadThreads() }, LIST_POLL)
     return () => clearInterval(iv)
   }, [loadThreads])
 
@@ -94,13 +95,14 @@ export default function DMPanel({ me, onClose }) {
 
   useEffect(() => {
     if (!threadId) return
-    const iv = setInterval(() => loadMsgs(threadId), MSG_POLL)
+    const iv = setInterval(() => { if (!document.hidden) loadMsgs(threadId) }, MSG_POLL) // P2 — pause while tab hidden
     return () => clearInterval(iv)
   }, [threadId, loadMsgs])
 
   useEffect(() => {
     if (!threadId) return
     const pollTyping = () => {
+      if (document.hidden) return // P2 — pause while tab hidden
       api.get(`/chat/dm/threads/${threadId}/typing`).then(r => setTyping(Array.isArray(r.data) ? r.data.map(normalizeTypingActivity) : [])).catch(() => {})
     }
     pollTyping()

@@ -43,13 +43,19 @@ export function safeNextPath(value: unknown): string | null {
   return value
 }
 
+/**
+ * OAuth login URLs are SAME-ORIGIN relative paths (`/api/...`) so the browser
+ * request always passes through the Next.js proxy (proxy.ts stamps
+ * X-Internal-Token + forwards cookies). Never build an absolute backend URL
+ * here — that would bypass the proxy and cause CORS/session failures.
+ * See docs/api-auth.md.
+ */
 export function authProviderLoginRoute(provider: 'discord' | 'steam' | 'github' | 'authentik', dest = '/profile') {
-  const apiOrigin = browserApiOrigin()
   const safeDest = safeNextPath(dest) || '/profile'
   // Discord + Authentik live on /api/auth; Steam and GitHub stay on /api/forum/auth/.
   const base =
     provider === 'discord' ? '/api/auth/discord' :
     provider === 'authentik' ? '/api/auth/authentik' :
     `/api/forum/auth/${provider}`
-  return `${apiOrigin}${base}/login?dest=${encodeURIComponent(safeDest)}`
+  return `${base}/login?dest=${encodeURIComponent(safeDest)}`
 }

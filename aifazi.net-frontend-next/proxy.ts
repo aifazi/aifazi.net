@@ -42,6 +42,26 @@ const PASETO_SECRET       = process.env.PASETO_SECRET || ''
 // INTERNAL_API_SECRET — the backend deliberately never falls back either,
 // so reusing it here would break admin-gate verification when the keys differ.
 const ADMIN_GATE_SECRET   = process.env.ADMIN_GATE_SECRET || ''
+// MAIL_WEBHOOK_SECRET must be set in prod — the mail-queue webhook/inbound +
+// process-pending exemptions below are gated on it. When empty, those routes
+// fall back to the admin-session gate (fail-closed, never open).
+const MAIL_WEBHOOK_SECRET = process.env.MAIL_WEBHOOK_SECRET || ''
+
+/** Constant-time string compare (avoids early-exit timing oracle). */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (!a || !b || a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
+/** P0-2 — self-auth mail webhooks prove knowledge of MAIL_WEBHOOK_SECRET via
+ * the server-only `x-webhook-secret` header instead of an admin session. */
+function isWebhookAuthorized(request: NextRequest): boolean {
+  if (!MAIL_WEBHOOK_SECRET) return false
+  const provided = request.headers.get('x-webhook-secret') || ''
+  return timingSafeEqual(provided, MAIL_WEBHOOK_SECRET)
+}
 const ADMIN_ROLES         = new Set(['admin', 'moderator', 'editor', 'chat'])
 
 // ── Base64url helpers ────────────────────────────────────────────────────────
@@ -404,6 +424,8 @@ export async function proxy(request: NextRequest) {
   // not the raw Host header which an attacker controls.
   const hostname = (request.nextUrl.hostname || request.headers.get('host') || '').split(':')[0]
   const { pathname } = request.nextUrl
+  // P2 — lowercase once, reuse in every startsWith classification below.
+  const lowerPath = pathname.toLowerCase()
 
   // ── 6b. Admin API protection (defense-in-depth) ──────────────────────────
   // H2 — the backend's require_staff/require_permission remain authoritative;
@@ -414,22 +436,29 @@ export async function proxy(request: NextRequest) {
   // Checked before the hostname branches so it applies on every subdomain
   // (fivem/store/status shared /api prefixes return early below).
   const isAdminApiRoute =
-    pathname.toLowerCase().startsWith('/api/admin/') ||
-    pathname.toLowerCase().startsWith('/api/content/')
+    lowerPath.startsWith('/api/admin/') ||
+    lowerPath.startsWith('/api/content/')
   if (isAdminApiRoute) {
     const isPreflight = request.method === 'OPTIONS'
     const isPublicAdminGet =
       request.method === 'GET' && (
-        pathname.startsWith('/api/admin/banners') ||
-        pathname.startsWith('/api/admin/site-settings')
+        lowerPath.startsWith('/api/admin/banners') ||
+        lowerPath.startsWith('/api/admin/site-settings')
       )
     const isPublicContentGet =
       request.method === 'GET' &&
-      (pathname === '/api/content' || pathname.startsWith('/api/content/'))
+      (lowerPath === '/api/content' || lowerPath.startsWith('/api/content/'))
     const isSelfAuthWebhook =
-      pathname === '/api/admin/mail/queue/webhook/inbound' ||
-      pathname === '/api/admin/mail/queue/process-pending'
-    if (!isPreflight && !isPublicAdminGet && !isPublicContentGet && !isSelfAuthWebhook) {
+      lowerPath === '/api/admin/mail/queue/webhook/inbound' ||
+      lowerPath === '/api/admin/mail/queue/process-pending'
+    // P0-2 — webhook/inbound + process-pending are exempt from the admin
+    // gate ONLY with a valid x-webhook-secret (server-to-server). Anything
+    // else on these paths gets a 403 here, never the admin-session check.
+    if (!isPreflight && !isPublicAdminGet && !isPublicContentGet && isSelfAuthWebhook) {
+      if (!isWebhookAuthorized(request)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    } else if (!isPreflight && !isPublicAdminGet && !isPublicContentGet) {
       const sessionCookie = request.cookies.get('admin_session')?.value
       if (!sessionCookie || !(await isAdminSessionValid(sessionCookie, hostname))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -456,7 +485,7 @@ export async function proxy(request: NextRequest) {
       redirectUrl.pathname = '/whitelist'
       return withCors(NextResponse.redirect(redirectUrl, { status: 308 }), request.headers.get('origin') || '')
     }
-    if (pathname === '/fivem' || pathname.startsWith('/fivem/')) {
+    if (pathname === '/fivem' || lowerPath.startsWith('/fivem/')) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.hostname = FIVEM_HOSTNAME
       redirectUrl.pathname = pathname === '/fivem' ? '/' : pathname.replace(/^\/fivem/, '')
@@ -469,12 +498,12 @@ export async function proxy(request: NextRequest) {
     const origin = request.headers.get('origin') || ''
     if (
       FIVEM_SHARED_PATHS.has(pathname) ||
-      FIVEM_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
+      FIVEM_SHARED_PREFIXES.some(prefix => lowerPath === prefix || lowerPath.startsWith(`${prefix}/`))
     ) {
       const { headers, nonce } = secureRequest(request)
       headers.set('x-fivem-domain', 'true')
-      if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
-        headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname))
+      if (lowerPath.startsWith('/api/') && INTERNAL_API_SECRET) {
+        headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname, request.nextUrl.searchParams))
       }
       return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
     }
@@ -485,7 +514,7 @@ export async function proxy(request: NextRequest) {
       headers.set('x-fivem-domain', 'true')
       return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
     }
-    if (pathname.startsWith('/fivem')) {
+    if (lowerPath.startsWith('/fivem')) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = pathname.replace(/^\/fivem/, '') || '/'
       return withCors(NextResponse.redirect(redirectUrl, { status: 308 }), origin)
@@ -499,7 +528,7 @@ export async function proxy(request: NextRequest) {
 
   // ── 4. Store — canonicalize root /store to the store subdomain ───────────
   if (STORE_ENABLED && ROOT_HOSTNAMES.has(hostname)) {
-    if (pathname === '/store' || pathname.startsWith('/store/')) {
+    if (pathname === '/store' || lowerPath.startsWith('/store/')) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.hostname = STORE_HOSTNAME
       redirectUrl.pathname = pathname === '/store' ? '/' : pathname.replace(/^\/store/, '')
@@ -513,12 +542,12 @@ export async function proxy(request: NextRequest) {
     const origin = request.headers.get('origin') || ''
     if (
       STORE_SHARED_PATHS.has(pathname) ||
-      STORE_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
+      STORE_SHARED_PREFIXES.some(prefix => lowerPath === prefix || lowerPath.startsWith(`${prefix}/`))
     ) {
       const { headers, nonce } = secureRequest(request)
       headers.set('x-store-domain', 'true')
-      if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
-        headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname))
+      if (lowerPath.startsWith('/api/') && INTERNAL_API_SECRET) {
+        headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname, request.nextUrl.searchParams))
       }
       return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
     }
@@ -529,7 +558,7 @@ export async function proxy(request: NextRequest) {
       headers.set('x-store-domain', 'true')
       return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
     }
-    if (pathname.startsWith('/store')) {
+    if (lowerPath.startsWith('/store')) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = pathname.replace(/^\/store/, '') || '/'
       return withCors(NextResponse.redirect(redirectUrl, { status: 308 }), origin)
@@ -546,12 +575,12 @@ export async function proxy(request: NextRequest) {
     const origin = request.headers.get('origin') || ''
     if (
       STATUS_SHARED_PATHS.has(pathname) ||
-      STATUS_SHARED_PREFIXES.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`))
+      STATUS_SHARED_PREFIXES.some(prefix => lowerPath === prefix || lowerPath.startsWith(`${prefix}/`))
     ) {
       const { headers, nonce } = secureRequest(request)
       headers.set('x-status-domain', 'true')
-      if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
-        headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname))
+      if (lowerPath.startsWith('/api/') && INTERNAL_API_SECRET) {
+        headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname, request.nextUrl.searchParams))
       }
       return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
     }
@@ -563,9 +592,9 @@ export async function proxy(request: NextRequest) {
   }
 
   // ── 6. Admin route protection ─────────────────────────────────────────────
-  const isAdminRoute = pathname.toLowerCase().startsWith('/admin') ||
-    pathname.toLowerCase() === '/forum/admin' || pathname.toLowerCase().startsWith('/forum/admin/') ||
-    pathname.toLowerCase() === '/tools/db' || pathname.toLowerCase().startsWith('/tools/db/')
+  const isAdminRoute = lowerPath.startsWith('/admin') ||
+    lowerPath === '/forum/admin' || lowerPath.startsWith('/forum/admin/') ||
+    lowerPath === '/tools/db' || lowerPath.startsWith('/tools/db/')
   if (isAdminRoute) {
     const sessionCookie = request.cookies.get('admin_session')?.value
     if (!sessionCookie || !(await isAdminSessionValid(sessionCookie, hostname))) {
@@ -578,11 +607,11 @@ export async function proxy(request: NextRequest) {
 
   // ── 5. Internal token injection + cookie + auth header forwarding ──────────────
   const { headers, nonce } = secureRequest(request)
-  if (pathname.startsWith('/api/') && INTERNAL_API_SECRET) {
+  if (lowerPath.startsWith('/api/') && INTERNAL_API_SECRET) {
     headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname, request.nextUrl.searchParams))
   }
   // Forward cookies from frontend to backend for API routes
-  if (pathname.startsWith('/api/')) {
+  if (lowerPath.startsWith('/api/')) {
     const cookieHeader = request.headers.get('cookie')
     if (cookieHeader) {
       headers.set('cookie', cookieHeader)

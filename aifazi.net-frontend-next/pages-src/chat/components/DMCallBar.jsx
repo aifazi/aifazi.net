@@ -4,7 +4,8 @@
 // `dm-{threadId}` room, and gives a compact mute + hang-up control. Works with
 // the mobile app's DM call (same token endpoint + room naming).
 import { useState, useEffect, useRef } from 'react'
-import { Room } from 'livekit-client'
+// P2 — livekit-client is heavy: lazy-load it only when a call actually starts
+// (same await import() pattern as VoicePanel.jsx), never in the bundle.
 import { T } from '../chat-constants'
 import { dmLiveKitTokenPath } from '@fazi/shared'
 import api from '@/lib/api'
@@ -26,6 +27,7 @@ export function DMCallBar({ threadId, peer, me, onEnd }) {
         const { token, url, encryption_key } = res.data || {}
         if (!token || !url) { setStatus('error'); setError('LiveKit is not configured on the server'); return }
 
+        const { Room } = await import('livekit-client')
         const room = new Room({ adaptiveStream: true, dynacast: true })
         if (encryption_key) {
           try {

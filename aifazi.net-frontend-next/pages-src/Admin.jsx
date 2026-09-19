@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { useNavigate } from '@/lib/router-compat'
-import api, { getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess } from '@/lib/api'
+import api, { getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess, isStaffVerified, markStaffVerified } from '@/lib/api'
 
 // The dashboard shell (and all its sub-panels) only loads once staff access is verified.
 const Dashboard = dynamic(() => import('./admin/Dashboard').then(m => m.default || m), { ssr: false })
@@ -35,6 +35,9 @@ export default function Admin({ serverUser: serverUserProp }) {
       // Server already verified - hydrate localStorage from server data.
       // `checking` already starts false when hasServerAuth, so no setState here.
       setEffectiveAccess(serverUser)
+      // P1-9 — the SSR page already proved staff access server-side, so mint
+      // the tab-scoped verified flag for the client-side hasStaffAccess checks.
+      markStaffVerified()
       return
     }
 
@@ -44,7 +47,13 @@ export default function Admin({ serverUser: serverUserProp }) {
         const verified = await api.get('/auth/verify')
         setEffectiveAccess(verified.data?.user)
         const role = verified.data?.user?.role || getRole()
-        if ((role === 'user' || !role) && !hasStaffAccess()) { navigate('/profile', { replace: true }); setChecking(false); return }
+        // P1-9 — a successful /auth/verify IS a server round-trip proving the
+        // session's role: mint the tab-scoped verified flag for staff roles,
+        // then require it alongside the localStorage claims. A forged
+        // aifazi_effective_role in DevTools cannot pass without the backend
+        // agreeing in this same tab session.
+        if (role && role !== 'user') markStaffVerified()
+        if ((role === 'user' || !role) && !(hasStaffAccess() && isStaffVerified())) { navigate('/profile', { replace: true }); setChecking(false); return }
         setAuthed(true)
       }
       catch {

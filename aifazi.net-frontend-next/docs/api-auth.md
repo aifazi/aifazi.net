@@ -188,7 +188,7 @@ cdnUrl('https://res.cloudinary.com/mycloud/image/upload/v1/photo.jpg')
 // → 'https://cdn.aifazi.net/image/upload/v1/photo.jpg'
 
 // Smart helper — handles Cloudinary, absolute, and relative paths
-mediaUrl('/uploads/avatar.png')      // → 'https://api.aifazi.net/uploads/avatar.png'
+mediaUrl('/uploads/avatar.png')      // → '/api/uploads/avatar.png' (relative, via the Next.js proxy)
 mediaUrl('https://example.com/x.png') // → 'https://example.com/x.png' (unchanged)
 mediaUrl('https://res.cloudinary.com/...') // → rewrites through CDN
 ```
