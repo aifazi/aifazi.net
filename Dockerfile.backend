@@ -20,26 +20,30 @@ RUN pip install --no-cache-dir -r requirements.txt \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wireguard-tools iptables iproute2 gosu curl \
+    libjpeg62-turbo zlib1g \
     && rm -rf /var/lib/apt/lists/*
 
-COPY aifazi.net-backend-fastapi/ .
+# Create the non-root user BEFORE copying app files so COPY --chown resolves.
+RUN addgroup --system app && adduser --system --group app \
+    && mkdir -p /app /data/wireguard \
+    && chown -R app:app /app \
+    && chown -R app:app /data/wireguard
+
+COPY --chown=app:app aifazi.net-backend-fastapi/ ./
 
 COPY aifazi.net-backend-fastapi/scripts/init-wireguard.sh /usr/local/bin/init-wireguard.sh
-RUN chmod +x /usr/local/bin/init-wireguard.sh && mkdir -p /data/wireguard
-
-RUN addgroup --system app && adduser --system --group app \
-    && mkdir -p /app && chown -R app:app /app \
-    && chown -R app:app /data/wireguard
+RUN chmod +x /usr/local/bin/init-wireguard.sh
 
 ENV PORT=8000
 
 EXPOSE 8000 51820/udp
 
-COPY aifazi.net-backend-fastapi/scripts/init-wireguard.sh /usr/local/bin/init-wireguard.sh
-RUN chmod +x /usr/local/bin/init-wireguard.sh && mkdir -p /data/wireguard
-
-USER app
-
 COPY aifazi.net-backend-fastapi/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD ["python", "-c", "import urllib.request, os; urllib.request.urlopen('http://localhost:' + os.environ.get('PORT', '8000') + '/api/monitor/ping')"]
+
+# Drop privileges last — all COPY/chmod above must run as root.
+USER app
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

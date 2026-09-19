@@ -93,15 +93,16 @@ jobs:
         # TODO(mypy-debt): ~40 pre-existing errors (ssrf, jwt_compat,
         # txadmin_service, seo_proxy, file_tools, pdf_editor,
         # store_delivery, backup, audit, newsletter, monitor, fivem,
-        # mail_queue, vpn _get_user_id) — see run 33925502736. Fix them,
-        # then drop continue-on-error to make this truly blocking.
-        continue-on-error: true
+        # mail_queue, vpn _get_user_id) — see run 33925502736. Fix them;
+        # this step is blocking until then (do NOT re-add continue-on-error).
+        continue-on-error: false
         run: mypy routers/ --ignore-missing-imports
 
       - name: Run Pytest (tests)
         run: |
           pip install pytest pytest-asyncio httpx
-          pytest tests/ -x --tb=short 2>/dev/null || echo "No tests directory found — add tests/"
+          if [ ! -d tests ]; then echo "No tests directory found — add tests/"; exit 1; fi
+          pytest tests/ -x --tb=short
 
   backend-security:
     name: Backend - Security Scan
@@ -130,9 +131,9 @@ jobs:
 
       - name: Run Bandit (static analysis)
         # TODO(bandit-debt): HIGH findings pre-date this change; triage the
-        # bandit-report.json artifact, fix or scope-exclude, then drop
-        # continue-on-error to make this truly blocking.
-        continue-on-error: true
+        # bandit-report.json artifact and fix or scope-exclude. This step is
+        # blocking (do NOT re-add continue-on-error).
+        continue-on-error: false
         run: bandit -r routers/ -f json -o bandit-report.json --severity-level high
 
       - name: Upload Bandit report

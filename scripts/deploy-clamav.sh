@@ -22,16 +22,24 @@ services:
     image: clamav/clamav:1.4
     container_name: clamav
     restart: unless-stopped
+    mem_limit: 2g
+    mem_reservation: 1g
+    cpus: 2
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - coolify
     volumes:
       - clamav-data:/var/lib/clamav
       - /opt/clamav/clamd.conf:/etc/clamav/clamd.conf:ro
     healthcheck:
-      test: ["CMD-SHELL", "clamdscan --version 2>/dev/null || exit 1"]
+      test: ["CMD", "clamdcheck.sh"]
       interval: 60s
-      timeout: 15s
-      retries: 5
+      timeout: 20s
+      retries: 3
       start_period: 300s
 
 volumes:
