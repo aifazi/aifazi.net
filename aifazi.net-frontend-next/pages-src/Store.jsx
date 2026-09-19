@@ -113,7 +113,7 @@ export default function StorePage({ fivem = false }) {
   }
 
   const addToCart = async (product) => {
-    if (!user) { window.location.href = loginHref; return }
+    if (!user) { navigate(loginHref); return }
     setCartLoading(true)
     try {
       await api.post('/store/cart', { product_id: product.id, quantity: 1 })
@@ -144,7 +144,7 @@ export default function StorePage({ fivem = false }) {
   }
 
   const checkoutCart = async () => {
-    if (!user) { window.location.href = loginHref; return }
+    if (!user) { navigate(loginHref); return }
     setError(''); setCheckoutCartLoading(true)
     const origin = typeof window !== 'undefined' ? window.location.origin : SITE_URL
     try {

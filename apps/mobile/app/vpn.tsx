@@ -259,7 +259,7 @@ export default function VpnScreen() {
             }}
           >
             <Text style={{ color: c.text2, fontSize: 14, textAlign: 'center' }}>
-              No VPN devices yet.{'\n'}Tap "Add Device" to set up your first VPN connection.
+              No VPN devices yet.{'\n'}Tap &quot;Add Device&quot; to set up your first VPN connection.
             </Text>
           </View>
         ) : (
