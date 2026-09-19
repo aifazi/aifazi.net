@@ -89,7 +89,7 @@ function RichLinkCard({ url, right }) {
       <a href={preview.url || url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
         {preview.image && (
           // eslint-disable-next-line @next/next/no-img-element -- external preview image, not from CDN
-          <img src={preview.image} alt="" loading="lazy"
+          <img src={preview.image} alt={preview.title || 'Link preview image'} loading="lazy"
             style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block', borderBottom: `1px solid ${T.border}` }}
             onError={e => { e.target.style.display = 'none' }} />
         )}
@@ -143,7 +143,7 @@ export function MediaPreviews({ text, onMediaClick, right }) {
         if (isImageUrl(clean)) {
           return <div key={i} style={{ maxWidth: 420 }}>
             {/* eslint-disable-next-line @next/next/no-img-element -- user-provided chat image, external */ }
-            <img src={clean} alt="" loading="lazy" style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, objectFit: 'cover', cursor: 'pointer', border: `1px solid ${T.border}` }}
+            <img src={clean} alt="Image linked in chat message" loading="lazy" style={{ maxWidth: '100%', maxHeight: 300, borderRadius: 8, objectFit: 'cover', cursor: 'pointer', border: `1px solid ${T.border}` }}
               onError={e => { e.target.style.display = 'none' }} onClick={() => onMediaClick?.({ url: clean, type: 'image' })} />
           </div>
         }

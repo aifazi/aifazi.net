@@ -53,8 +53,8 @@ export default function RegisterScreen() {
         <Reveal dir="up" delay={200} duration={520}>
         <View style={{ marginTop: SPACE.huge }}>
           <Field label="Username" value={username} onChangeText={setUsername} placeholder="tanvir" autoCapitalize="none" />
-          <Field label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" autoCapitalize="none" />
-          <Field label="Password" value={password} onChangeText={setPassword} secure placeholder="At least 8 characters" autoCapitalize="none" />
+          <Field label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" />
+          <Field label="Password" value={password} onChangeText={setPassword} secure placeholder="At least 8 characters" autoCapitalize="none" returnKeyType="done" onSubmitEditing={submit} />
           <Btn title={busy ? 'Creating…' : 'Create Account'} onPress={submit} disabled={busy} />
         </View>
         </Reveal>

@@ -340,6 +340,8 @@ export default function AdminChat({ embedded=false }) {
       const data = r.data||[]
       setMsgs(data)
       setHasMore(data.length >= 50)
+      msgTrackRef.current = { room: room.id, len: data.length }
+      setNewCount(0); setNearBottom(true)
       setTimeout(() => { listRef.current?.scrollTo(0, listRef.current.scrollHeight) }, 100)
     })
 
@@ -484,20 +486,62 @@ export default function AdminChat({ embedded=false }) {
     try { await api.patch(`/chat/messages/${msgId}`, { content }); setEditing(null) } catch {}
   }, [])
 
-  const sendFile = async (e) => {
+  const sendFile = (e) => {
     const file = e.target.files?.[0]
+    if (!file) return
+    startUpload(file)
+  }
+
+  // P0-4 — upload with live progress (XMLHttpRequest onUploadProgress),
+  // thumbnail preview before send, and a cancel button aborting the request.
+  // Keeps the 10MB limit + notify.error behaviour of the old fetch call.
+  const cleanupUpload = () => {
+    setUploading(false); setUploadPct(0)
+    setPendingFile(prev => { if (prev?.url) { try { URL.revokeObjectURL(prev.url) } catch {} } return null })
+    if (fileRef.current) fileRef.current.value = ''
+  }
+  const cancelUpload = () => {
+    if (uploadXhr.current) uploadXhr.current.abort()
+    else cleanupUpload()
+  }
+  const startUpload = (file) => {
     if (!file || !room) return
-    if (file.size > 10*1024*1024) { notify.error('File too large (max 10 MB)'); return }
+    if (file.size > 10*1024*1024) { notify.error('File too large (max 10 MB)'); if (fileRef.current) fileRef.current.value = ''; return }
+    const roomId = room.id
     broadcastTyping(file.type?.startsWith('image/') ? 'image' : 'file')
-    setUploading(true)
-    try {
-      const form = new FormData(); form.append('file', file)
-      const up = await api.post('/upload/single', form, { headers:{'Content-Type':'multipart/form-data'} })
-      await api.post(`/chat/rooms/${room.id}/messages`, {
-        content: up.data.url, type:'file', file_name: file.name, file_size: String(file.size)
-      })
-    } catch { notify.error('Upload failed') }
-    finally { setUploading(false); if (fileRef.current) fileRef.current.value = '' }
+    let previewUrl = ''
+    try { previewUrl = URL.createObjectURL(file) } catch {}
+    setPendingFile({ name: file.name, size: file.size, url: previewUrl, isImage: !!file.type?.startsWith('image/') })
+    setUploading(true); setUploadPct(0)
+    const xhr = new XMLHttpRequest()
+    uploadXhr.current = xhr
+    // Same path the axios client uses (baseURL /api → backend rewrite);
+    // withCredentials carries the HttpOnly session cookie.
+    xhr.open('POST', '/api/upload/single', true)
+    xhr.withCredentials = true
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && e.total > 0) setUploadPct(Math.round((e.loaded / e.total) * 100))
+      else setUploadPct(p => Math.min(90, p + 10))
+    }
+    xhr.onload = async () => {
+      uploadXhr.current = null
+      try {
+        if (xhr.status < 200 || xhr.status >= 300) throw new Error('upload')
+        const data = JSON.parse(xhr.responseText || '{}')
+        const url = data.url || data.data?.url
+        if (!url) throw new Error('upload')
+        await api.post(`/chat/rooms/${roomId}/messages`, {
+          content: url, type:'file', file_name: file.name, file_size: String(file.size)
+        })
+      } catch { notify.error('Upload failed') }
+      finally { cleanupUpload() }
+    }
+    xhr.onerror = () => { uploadXhr.current = null; notify.error('Upload failed'); cleanupUpload() }
+    xhr.onabort = () => { uploadXhr.current = null; cleanupUpload() }
+    const form = new FormData(); form.append('file', file)
+    try { xhr.send(form) }
+    catch { uploadXhr.current = null; notify.error('Upload failed'); cleanupUpload() }
   }
 
   // ── Voice note recorder (room chat) ─────────────────────────────────────
@@ -570,7 +614,10 @@ export default function AdminChat({ embedded=false }) {
       const r = await api.get(`/chat/rooms/${room.id}/messages?limit=50&before=${encodeURIComponent(oldest)}`)
       const older = r.data || []
       setHasMore(older.length >= 50)
-      if (older.length) setMsgs(prev => [...older, ...prev])
+      if (older.length) {
+        if (msgTrackRef.current.room === room.id) msgTrackRef.current.len += older.length
+        setMsgs(prev => [...older, ...prev])
+      }
     } catch {} finally { setLoadingMore(false) }
   }, [room?.id, loadingMore, hasMore])
 
@@ -599,16 +646,55 @@ export default function AdminChat({ embedded=false }) {
   const clearSearch = useCallback(() => {
     setSearchQ(''); setSearchResults(null)
   }, [])
+  const scrollToBottom = useCallback((smooth = true) => {
+    const el = listRef.current
+    if (!el) return
+    try { el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }) }
+    catch { el.scrollTo(0, el.scrollHeight) }
+    setNewCount(0); setNearBottom(true)
+  }, [])
+
+  // P1-3 — track whether the user is near the bottom; scrolling up keeps
+  // position while new arrivals accumulate behind the "↓ New messages" pill.
   const onScroll = useCallback(() => {
     if (!listRef.current) return
-    if (listRef.current.scrollTop < 80 && hasMore && !loadingMore) {
+    const el = listRef.current
+    const nb = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    setNearBottom(nb)
+    if (nb) setNewCount(0)
+    if (el.scrollTop < 80 && hasMore && !loadingMore) {
       loadOlder()
     }
   }, [hasMore, loadingMore, loadOlder])
 
+  // P1-3 — auto-scroll only when already near the bottom; otherwise bump the
+  // pill counter. History (re)loads sync the tracker so they never count.
+  useEffect(() => {
+    const t = msgTrackRef.current
+    if (!room || t.room !== room.id) return
+    if (msgs.length > t.len) {
+      const added = msgs.length - t.len
+      const el = listRef.current
+      const nb = el ? (el.scrollHeight - el.scrollTop - el.clientHeight < 160) : nearBottom
+      if (nb) {
+        requestAnimationFrame(() => {
+          const l = listRef.current
+          if (l) { try { l.scrollTo({ top: l.scrollHeight }) } catch { l.scrollTo(0, l.scrollHeight) } }
+        })
+        setNewCount(0)
+      } else {
+        setNewCount(c => c + added)
+      }
+    } else if (msgs.length < t.len) {
+      setNewCount(0)
+    }
+    t.len = msgs.length
+  }, [msgs, room?.id])
+
   // ── Room actions ──────────────────────────────────────────────────────────
   const joinRoom = useCallback((r) => {
     setRoom(r)
+    setNewCount(0); setNearBottom(true)
     if (isMobile) setShowSidebar(false)
     if (r.type === 'voice' || r.type === 'video') {
       if (callRoom && r.id !== callRoom.id) leaveCall()
@@ -953,7 +1039,7 @@ export default function AdminChat({ embedded=false }) {
               {dmOpen ? (
                 <DMPanel me={me} onClose={() => setDmOpen(false)} />
               ) : room ? (
-                <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
+                <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0, position:'relative' }}>
                   {searchOpen && (
                     <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'color-mix(in srgb, var(--cyan) 8%, transparent)', borderBottom:`1px solid color-mix(in srgb, var(--cyan) 20%, transparent)`, flexShrink:0 }}>
                       <span style={{ fontSize:12 }}>🔍</span>
@@ -974,6 +1060,17 @@ export default function AdminChat({ embedded=false }) {
                   )}
                   {loadingMore && <div style={{ textAlign:'center', padding:'4px', fontFamily:T.mono, fontSize:10, color:T.muted, flexShrink:0 }}>Loading older messages…</div>}
                   <ChatMessageList msgs={searchResults !== null ? searchResults : msgs} me={me} isAdmin={isAdmin} onDel={delMsg} onReply={setReplyTo} onEdit={setEditing} onReact={react} onMediaClick={setMediaViewer} elRef={listRef} onScroll={searchResults !== null ? undefined : onScroll} onMention={handleMention} muteUser={muteUser} unmuteUser={unmuteUser} kickUser={kickUser} banUser={banUser} unbanUser={unbanUser} roomMutes={roomMutes} roomBans={roomBans} onBatchDel={batchDelMsgs}/>
+                  {/* P1-3 — appears when scrolled up and new messages arrive */}
+                  {!nearBottom && newCount > 0 && (
+                    <button onClick={() => scrollToBottom()}
+                      style={{ position:'absolute', bottom:86, left:'50%', transform:'translateX(-50%)', zIndex:20,
+                        display:'flex', alignItems:'center', gap:6, padding:'7px 16px', borderRadius:20,
+                        border:'1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', background:'rgba(18,21,32,0.95)',
+                        color:'var(--cyan)', fontFamily:T.mono, fontSize:11, cursor:'pointer',
+                        boxShadow:'0 4px 16px rgba(0,0,0,0.5)', backdropFilter:'blur(4px)', whiteSpace:'nowrap' }}>
+                      ↓ {newCount} new message{newCount === 1 ? '' : 's'}
+                    </button>
+                  )}
                   {typLabel && <div style={{ padding:'2px 18px 4px', fontFamily:T.mono, fontSize:10, color:T.muted, flexShrink:0, fontStyle:'italic' }}>{typLabel}</div>}
                   {editing && <EditBar msg={editing} onSave={saveEdit} onCancel={()=>setEditing(null)}/>}
                   {replyTo && (
@@ -987,6 +1084,35 @@ export default function AdminChat({ embedded=false }) {
                   {isMutedByStaff && (
                     <div style={{ padding:'6px 14px', background:'rgba(255,215,0,0.08)', borderTop:`1px solid rgba(255,215,0,0.2)`, fontFamily:T.mono, fontSize:10, color:T.warn, textAlign:'center', flexShrink:0 }}>
                       You are muted in this channel by a moderator
+                    </div>
+                  )}
+                  {/* P0-4 — upload progress: thumbnail preview + % + cancel */}
+                  {pendingFile && (
+                    <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 14px',
+                      background:'color-mix(in srgb, var(--cyan) 6%, transparent)',
+                      borderTop:`1px solid color-mix(in srgb, var(--cyan) 15%, transparent)`, flexShrink:0 }}>
+                      {pendingFile.isImage && pendingFile.url ? (
+                        <img src={pendingFile.url} alt={`Upload preview of ${pendingFile.name}`}
+                          style={{ width:44, height:44, objectFit:'cover', borderRadius:8, border:`1px solid ${T.border}`, flexShrink:0 }} />
+                      ) : (
+                        <span style={{ fontSize:24, flexShrink:0 }} aria-hidden="true">📎</span>
+                      )}
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontFamily:T.mono, fontSize:10, color:T.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                          {pendingFile.name}
+                        </div>
+                        <div role="progressbar" aria-valuenow={uploadPct} aria-valuemin={0} aria-valuemax={100} aria-label={`Uploading ${pendingFile.name}`}
+                          style={{ height:5, borderRadius:3, background:'rgba(255,255,255,0.1)', overflow:'hidden', marginTop:5 }}>
+                          <div style={{ height:'100%', width:`${uploadPct}%`, borderRadius:3,
+                            background:'linear-gradient(90deg, var(--green), var(--cyan))', transition:'width 0.15s' }} />
+                        </div>
+                      </div>
+                      <span style={{ fontFamily:T.mono, fontSize:10, color:T.muted, flexShrink:0 }}>{uploadPct}%</span>
+                      <button onClick={cancelUpload}
+                        style={{ padding:'5px 12px', border:`1px solid ${T.border}`, borderRadius:7, background:'transparent',
+                          color:T.muted, fontFamily:T.mono, fontSize:10, cursor:'pointer', flexShrink:0 }}>
+                        ✕ Cancel
+                      </button>
                     </div>
                   )}
                   {/* Input bar */}

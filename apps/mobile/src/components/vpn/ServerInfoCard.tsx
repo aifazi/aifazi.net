@@ -31,7 +31,7 @@ export function ServerInfoCard({ endpoint, subnet, dns, publicIp, serverRunning 
             width: 10,
             height: 10,
             borderRadius: 5,
-            backgroundColor: serverRunning ? '#00ff88' : '#ff4444',
+            backgroundColor: serverRunning ? c.success : c.danger,
             marginRight: 10,
           }}
         />

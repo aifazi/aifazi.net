@@ -36,6 +36,40 @@ export const unstable_settings = {
 const ROUTE_ID_RE = /^[A-Za-z0-9_-]{1,128}$/
 
 /**
+ * Route a push payload to the right screen. Handles chat rooms, DM threads
+ * (call invites + DM text), forum threads, and blog posts — never oauth.
+ * Returns true when a navigation was performed.
+ */
+function routePushData(data: Record<string, any>, push: (href: Href) => void): boolean {
+  if (!data || typeof data !== 'object') return false
+  const s = (v: unknown) => (typeof v === 'string' ? v : undefined)
+  const room = s(data.room)
+  if (room && ROUTE_ID_RE.test(room)) {
+    push(`/chat-room?room=${encodeURIComponent(room)}` as Href)
+    return true
+  }
+  // DM text or incoming call invite — land on the thread where the call card
+  // (type: 'call') renders with an Accept button.
+  const threadId = s(data.thread_id)
+  if (threadId && ROUTE_ID_RE.test(threadId)) {
+    push(`/dm-thread?thread_id=${encodeURIComponent(threadId)}` as Href)
+    return true
+  }
+  if (data.call) return false
+  const forumId = s(data.forum_id) ?? s(data.threadId) ?? (data.type === 'forum' ? s(data.id) : undefined)
+  if (forumId && ROUTE_ID_RE.test(forumId)) {
+    push(`/forum-thread?id=${encodeURIComponent(forumId)}` as Href)
+    return true
+  }
+  const slug = s(data.slug) ?? (data.type === 'blog' ? s(data.id) : undefined)
+  if (slug && /^[A-Za-z0-9_.-]{1,160}$/.test(slug)) {
+    push(`/blog-post?slug=${encodeURIComponent(slug)}` as Href)
+    return true
+  }
+  return false
+}
+
+/**
  * Feeds the active app theme into React Navigation so the native-stack
  * container and scenes use the app's background instead of the light default
  * (`rgb(242, 242, 242)`). Without this, any transparent area in a screen leaks
@@ -130,21 +164,17 @@ function RootNav() {
       })
     }
     sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data ?? {}
-      const room = data.room as string | undefined
-      if (room && ROUTE_ID_RE.test(room)) {
-        router.push(`/chat-room?room=${encodeURIComponent(room)}` as Href)
-        return
-      }
-      // Incoming call invite — land on the DM thread where the call card
-      // (type: 'call') renders with an Accept button.
-      if (data.call) {
-        const threadId = data.thread_id as string | undefined
-        if (threadId && ROUTE_ID_RE.test(threadId)) {
-          router.push(`/dm-thread?thread_id=${encodeURIComponent(threadId)}` as Href)
-        }
-      }
+      const data = (response.notification.request.content.data ?? {}) as Record<string, any>
+      routePushData(data, (href) => router.push(href))
     })
+    // Cold start: the tap that launched the app never fires the listener above.
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (!response) return
+        const data = (response.notification.request.content.data ?? {}) as Record<string, any>
+        routePushData(data, (href) => router.push(href))
+      })
+      .catch(() => {})
     return () => {
       if (sub) sub.remove()
       if (tokenRegistered && pushTokenRef.current) {

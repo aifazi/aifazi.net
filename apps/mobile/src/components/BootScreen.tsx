@@ -17,7 +17,7 @@ export function BootScreen({ label = 'LOADING' }: { label?: string }) {
       <Loader size={64} label={label} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.md, marginTop: 22 }}>
         <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: withAlpha(c.accent, 0.6) }} />
-        <Text style={[micro(9, 3), { color: c.muted }]}>AIFAZI.NET</Text>
+        <Text style={[micro(10, 3), { color: c.muted }]}>AIFAZI.NET</Text>
         <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: withAlpha(c.accent2, 0.6) }} />
       </View>
     </View>

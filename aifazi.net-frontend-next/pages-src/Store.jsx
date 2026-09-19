@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams, useNavigate } from '@/lib/router-compat'
+import { useSearchParams, useNavigate, Link } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
@@ -54,6 +54,10 @@ export default function StorePage({ fivem = false }) {
   const [checkoutLoading, setCheckoutLoading] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  // P1-8 — remembers the failed action so the error banner can offer Retry.
+  const [failedAction, setFailedAction] = useState(null) // { label, run } | null
+  const fail = (msg, run, label = 'Retry') => { setError(msg); setFailedAction(run ? { run, label } : null) }
+  const clearError = () => { setError(''); setFailedAction(null) }
   const [tab, setTab] = useState(() => searchParams?.get('tab') || 'home')
   const [activeCategory, setActiveCategory] = useState(() => searchParams?.get('cat') || '')
   const [searchQuery, setSearchQuery] = useState(() => searchParams?.get('q') || '')
@@ -109,7 +113,7 @@ export default function StorePage({ fivem = false }) {
   }
 
   const addToCart = async (product) => {
-    if (!user) { window.location.href = loginHref; return }
+    if (!user) { navigate(loginHref); return }
     setCartLoading(true)
     try {
       await api.post('/store/cart', { product_id: product.id, quantity: 1 })
@@ -117,7 +121,7 @@ export default function StorePage({ fivem = false }) {
       openCartAfterAdd()
       setNotice(`Added ${product.name}`)
       setTimeout(() => setNotice(''), 2500)
-    } catch (err) { setError(err?.response?.data?.detail || 'Could not add to cart.') }
+    } catch (err) { fail(err?.response?.data?.detail || 'Could not add to cart.', () => addToCart(product)) }
     finally { setCartLoading(false) }
   }
 
@@ -126,21 +130,21 @@ export default function StorePage({ fivem = false }) {
       if (qty < 1) await api.delete(`/store/cart/${item.id}`)
       else await api.patch(`/store/cart/${item.id}`, { quantity: qty })
       loadCart(); dispatchCartUpdate()
-    } catch (err) { setError(err?.response?.data?.detail || 'Could not update cart.') }
+    } catch (err) { fail(err?.response?.data?.detail || 'Could not update cart.', () => updateCartQty(item, qty)) }
   }
 
   const removeCartItem = async (item) => {
     try { await api.delete(`/store/cart/${item.id}`); loadCart(); dispatchCartUpdate() }
-    catch (err) { setError(err?.response?.data?.detail || 'Could not remove.') }
+    catch (err) { fail(err?.response?.data?.detail || 'Could not remove.', () => removeCartItem(item)) }
   }
 
   const clearCart = async () => {
     try { await api.post('/store/cart/clear'); loadCart(); dispatchCartUpdate() }
-    catch (err) { setError(err?.response?.data?.detail || 'Could not clear.') }
+    catch (err) { fail(err?.response?.data?.detail || 'Could not clear.', () => clearCart()) }
   }
 
   const checkoutCart = async () => {
-    if (!user) { window.location.href = loginHref; return }
+    if (!user) { navigate(loginHref); return }
     setError(''); setCheckoutCartLoading(true)
     const origin = typeof window !== 'undefined' ? window.location.origin : SITE_URL
     try {
@@ -149,8 +153,8 @@ export default function StorePage({ fivem = false }) {
         cancel_url: `${origin}/store`,
       })
       if (r.data?.url) safeCheckoutRedirect(r.data.url)
-      else setError('Checkout could not be started.')
-    } catch (err) { setError(err?.response?.data?.detail || 'Checkout failed.') }
+      else fail('Checkout could not be started.', () => checkoutCart())
+    } catch (err) { fail(err?.response?.data?.detail || 'Checkout failed.', () => checkoutCart()) }
     finally { setCheckoutCartLoading(false) }
   }
 
@@ -164,7 +168,7 @@ export default function StorePage({ fivem = false }) {
         cancel_url: `${origin}/store`,
       })
       if (r.data?.url) safeCheckoutRedirect(r.data.url)
-    } catch (err) { setError(err?.response?.data?.detail || 'Checkout failed.') }
+    } catch (err) { fail(err?.response?.data?.detail || 'Checkout failed.', () => handleSubscribe(plan)) }
     finally { setCheckoutLoading('') }
   }
 
@@ -207,7 +211,7 @@ export default function StorePage({ fivem = false }) {
 
   const handleTabClick = (k) => {
     if (k === 'profile') { navigate('/profile'); return }
-    setTabAndUrl(k); setError(''); setNotice('')
+    setTabAndUrl(k); setError(''); setFailedAction(null); setNotice('')
   }
 
   return (
@@ -219,13 +223,33 @@ export default function StorePage({ fivem = false }) {
             <div style={{ padding: '12px 20px', background: mix(G, 12), border: `1px solid ${mix(G, 30)}`, borderRadius: 12, color: G, fontSize: 13, fontWeight: 600, textAlign: 'center' }}>{notice}</div>
           )}
           {error && (
-            <div style={{ padding: '12px 20px', background: mix(R, 12), border: `1px solid ${mix(R, 30)}`, borderRadius: 12, color: R, fontSize: 13, fontWeight: 600, textAlign: 'center', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{error}</span>
-              <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: R, cursor: 'pointer', fontWeight: 700 }}>✕</button>
+            <div style={{ padding: '12px 20px', background: mix(R, 12), border: `1px solid ${mix(R, 30)}`, borderRadius: 12, color: R, fontSize: 13, fontWeight: 600, textAlign: 'center', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <span style={{ flex: 1 }}>{error}</span>
+              {failedAction && (
+                <button onClick={() => { const a = failedAction; setFailedAction(null); setError(''); a.run() }}
+                  style={{ background: 'none', border: `1px solid ${R}`, borderRadius: 8, color: R, cursor: 'pointer', fontWeight: 700, padding: '4px 14px', fontSize: 12, whiteSpace: 'nowrap' }}>
+                  ↻ {failedAction.label}
+                </button>
+              )}
+              <button onClick={clearError} aria-label="Dismiss error" style={{ background: 'none', border: 'none', color: R, cursor: 'pointer', fontWeight: 700 }}>✕</button>
             </div>
           )}
         </div>
       )}
+
+      {/* P2 — breadcrumb trail (the admin Breadcrumb is admin-view-bound,
+          so a simple Back + trail is used here instead) */}
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '18px 24px 0' }}>
+        <nav aria-label="Breadcrumb" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--muted)' }}>
+          <Link to="/" style={{ color: 'var(--muted)', textDecoration: 'none' }}>HOME</Link>
+          <span style={{ margin: '0 8px' }}>/</span>
+          {tab === 'home' ? (
+            <span style={{ color: 'var(--text)' }}>STORE</span>
+          ) : (
+            <><Link to="/store" style={{ color: 'var(--muted)', textDecoration: 'none' }}>STORE</Link><span style={{ margin: '0 8px' }}>/</span><span style={{ color: 'var(--text)' }}>{tab.toUpperCase()}</span></>
+          )}
+        </nav>
+      </div>
 
       {/* ── HOME TAB ── */}
       {tab === 'home' && (

@@ -25,6 +25,10 @@ function ExperienceItem({ job, i }) {
 
   useEffect(() => {
     const el = ref.current; if (!el) return
+    // P2 — reduced-motion gate mirroring the Login.jsx pattern: no
+    // ScrollTrigger slide-in when the user prefers reduced motion.
+    if (typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     let ctx
     Promise.all([
       import('gsap').then(m => m.gsap),

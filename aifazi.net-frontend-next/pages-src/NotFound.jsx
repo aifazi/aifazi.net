@@ -34,17 +34,23 @@ export default function NotFound() {
   const [glitching, setGlitching] = useState(false)
 
   useEffect(() => {
-    TERMINAL_LINES.forEach(line => {
+    const timers = TERMINAL_LINES.map(line =>
       setTimeout(() => setLines(prev => [...prev, line]), line.delay)
-    })
+    )
 
-    // Random glitch triggers
-    const glitchInterval = setInterval(() => {
-      setGlitching(true)
-      setTimeout(() => setGlitching(false), 200)
-    }, 3000)
+    // Random glitch triggers — disabled when the user prefers reduced motion
+    // (mirrors the Login.jsx reducedMotion() pattern).
+    let glitchInterval = null
+    const reduced = typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!reduced) {
+      glitchInterval = setInterval(() => {
+        setGlitching(true)
+        setTimeout(() => setGlitching(false), 200)
+      }, 3000)
+    }
 
-    return () => clearInterval(glitchInterval)
+    return () => { timers.forEach(clearTimeout); if (glitchInterval) clearInterval(glitchInterval) }
   }, [])
 
   return (
@@ -145,7 +151,7 @@ export default function NotFound() {
               network-diagnostic.sh
             </span>
           </div>
-          <div style={{ padding: '16px 20px', minHeight: 160 }}>
+          <div aria-live="polite" style={{ padding: '16px 20px', minHeight: 160 }}>
             {lines.map((line, i) => (
               <div key={i} style={{
                 fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.9,
@@ -172,7 +178,7 @@ export default function NotFound() {
           <Link to="/" className="btn-primary">← Back to Home</Link>
           <Link to="/blog" className="btn-outline">Read Blog</Link>
           <Link to="/forum" className="btn-outline">Visit Forum</Link>
-          <Link to="/tools" className="btn-outline">🛠️ Tools</Link>
+          <Link to="/tools" className="btn-outline">Browse Tools</Link>
           <Link to="/contact" className="btn-outline">Contact</Link>
         </div>
 

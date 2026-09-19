@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { Card, Badge, NeonButton } from '../../components/community'
+import { formatPrice, formatDateTime } from '@/lib/format'
 
 const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)'
 
@@ -69,13 +70,13 @@ export default function OrderTrackingPage() {
               ORDER #{order.order_number}
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 3vw, 32px)', fontWeight: 700, color: 'var(--text)', margin: '0 0 14px' }}>
-              {order.items?.[0]?.product_name || 'Order'} — ${total.toFixed(2)}
+              {order.items?.[0]?.product_name || 'Order'} — {formatPrice(total)}
             </h2>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Badge tone={st === 'delivered' ? 'green' : st === 'cancelled' ? 'red' : 'cyan'} glow>
                 {st.toUpperCase()}
               </Badge>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }} title={order.created_at ? formatDateTime(order.created_at) : ''}>
                 Placed {order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
               </span>
             </div>
@@ -173,7 +174,7 @@ export default function OrderTrackingPage() {
                       <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: 13 }}>{(ev.status || '').toUpperCase()}</div>
                       {ev.note && <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 3 }}>{ev.note}</div>}
                       <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)', fontSize: 10, marginTop: 4 }}>
-                        {ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}
+                        <span title={ev.created_at ? formatDateTime(ev.created_at) : ''}>{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</span>
                       </div>
                     </div>
                   </div>
@@ -191,12 +192,12 @@ export default function OrderTrackingPage() {
                   <span style={{ color: 'var(--text)' }}>{it.product_name}</span>
                   <span style={{ color: 'var(--muted)', marginLeft: 6 }}>× {it.quantity}</span>
                 </span>
-                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>${((it.line_total_cents || 0) / 100).toFixed(2)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>{formatPrice((it.line_total_cents || 0) / 100)}</span>
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
               <span style={{ color: 'var(--text)' }}>Total</span>
-              <span style={{ fontFamily: 'var(--font-mono)', color: G }}>${total.toFixed(2)}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', color: G }}>{formatPrice(total)}</span>
             </div>
           </Card>
 

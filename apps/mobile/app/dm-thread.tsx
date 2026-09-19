@@ -33,6 +33,8 @@ import { MarkdownText } from '@/src/components/markdown'
 import { openInApp } from '@/src/lib/url'
 import { extractUrl, isImageUrl } from '@/src/lib/links'
 import { withAlpha, contrastText } from '@/src/lib/color'
+import { isOnline, enqueue, flushQueue } from '@/src/lib/offlineQueue'
+import NetInfo from '@react-native-community/netinfo'
 
 interface LinkPreview {
   title?: string
@@ -55,6 +57,9 @@ interface DMMessage {
   reactions?: Record<string, string[]>
   created_at?: string
   edited?: boolean
+  /** Local-only optimistic state: in-flight vs failed (retryable). */
+  _pending?: boolean
+  _failed?: boolean
 }
 
 interface DMThreadPayload {
@@ -95,10 +100,11 @@ interface RowProps {
   onLongPress: () => void
   onOpenLink: (url: string) => void
   onJoinCall: () => void
+  onRetry: () => void
 }
 
 function MessageRow(props: RowProps) {
-  const { mine, c, theme, item, body, replyBody, isImage, isVoice, isCall, preview, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress, onOpenLink, onJoinCall } = props
+  const { mine, c, theme, item, body, replyBody, isImage, isVoice, isCall, preview, reactions, onReply, onReact, onEdit, onDelete, onToggleReact, onLongPress, onOpenLink, onJoinCall, onRetry } = props
   const { pan, panHandlers } = useSwipeToReply({ onReply })
   const mineText = mine ? contrastText(c.accent2) : c.text
   const mineMuted = mine ? withAlpha(contrastText(c.accent2), 0.65) : c.muted
@@ -217,11 +223,27 @@ function MessageRow(props: RowProps) {
               </View>
             ) : null}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: SPACE.sm, marginTop: SPACE.xs }}>
-              <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs }}>
+              <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs }} maxFontSizeMultiplier={1.3}>
                 {fmtTime(item.created_at)}
                 {item.edited ? ' · edited' : ''}
               </Text>
+              {item._pending ? (
+                <Text style={{ color: mine ? mineMuted : c.muted, fontSize: FONT.xs, fontStyle: 'italic' }}>
+                  · sending…
+                </Text>
+              ) : null}
             </View>
+            {item._failed ? (
+              <TouchableOpacity
+                onPress={onRetry}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Retry sending message"
+                style={{ alignSelf: 'flex-end', marginTop: SPACE.xs, paddingVertical: SPACE.xs, paddingHorizontal: SPACE.sm }}
+              >
+                <Text style={{ color: c.danger, fontSize: FONT.sm, fontWeight: '700' }}>Failed — tap to retry</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         </TouchableOpacity>
       </Animated.View>
@@ -249,19 +271,20 @@ function MessageRow(props: RowProps) {
           ))}
         </View>
       ) : null}
-      <View style={{ flexDirection: 'row', gap: SPACE.xl, marginTop: SPACE.xs, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
-        <TouchableOpacity onPress={onReply} hitSlop={8}>
+      {/* 44px min touch via padding + hitSlop (no visual growth). */}
+      <View style={{ flexDirection: 'row', gap: SPACE.md, marginTop: SPACE.xs, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+        <TouchableOpacity onPress={onReply} hitSlop={12} style={{ paddingVertical: 10, paddingHorizontal: 6 }}>
           <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>Reply</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={onReact} hitSlop={8}>
+        <TouchableOpacity onPress={onReact} hitSlop={12} style={{ paddingVertical: 10, paddingHorizontal: 6 }}>
           <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>React</Text>
         </TouchableOpacity>
         {mine ? (
           <>
-            <TouchableOpacity onPress={onEdit} hitSlop={8}>
+            <TouchableOpacity onPress={onEdit} hitSlop={12} style={{ paddingVertical: 10, paddingHorizontal: 6 }}>
               <Text style={{ color: c.muted, fontSize: FONT.sm, fontWeight: '700' }}>Edit</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={onDelete} hitSlop={8}>
+            <TouchableOpacity onPress={onDelete} hitSlop={12} style={{ paddingVertical: 10, paddingHorizontal: 6 }}>
               <Text style={{ color: c.danger, fontSize: FONT.sm, fontWeight: '700' }}>Delete</Text>
             </TouchableOpacity>
           </>
@@ -429,22 +452,98 @@ export default function DMThreadScreen() {
   const send = async () => {
     const content = text.trim()
     if (!content || !thread_id) return
+    const payload = threadKey ? `ENC:${encryptText(content, threadKey)}` : content
+    const replyTo = replying
+      ? { id: replying.id, sender: replying.sender, content: replying.content ?? '' }
+      : undefined
+    // Optimistic temp row (same shape as DMMessage); offline sends go through
+    // the shared offlineQueue and flush on reconnect.
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const temp: DMMessage = {
+      id: tempId,
+      thread_id,
+      sender: user?.username ?? '',
+      type: 'text',
+      content: payload,
+      reply_to: replyTo ?? null,
+      created_at: new Date().toISOString(),
+      _pending: true,
+    }
+    setMessages((prev) => [...prev, temp])
+    setText('')
+    setReplying(null)
     setSending(true)
     try {
-      const payload = threadKey ? `ENC:${encryptText(content, threadKey)}` : content
-      const replyTo = replying
-        ? { id: replying.id, sender: replying.sender, content: replying.content ?? '' }
-        : undefined
-      await api.post(`/chat/dm/threads/${thread_id}/messages`, { content: payload, type: 'text', reply_to: replyTo })
-      setText('')
-      setReplying(null)
+      if (!isOnline()) {
+        await enqueue({ kind: 'dm', thread_id, content: payload, type: 'text', reply_to: replyTo })
+        setErr('Offline — message queued and will send when back online')
+        return
+      }
+      const r = await api.post(`/chat/dm/threads/${thread_id}/messages`, { content: payload, type: 'text', reply_to: replyTo })
+      const confirmed = (r.data ?? {}) as DMMessage
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? (confirmed?.id ? { ...confirmed } : { ...m, _pending: false }) : m)),
+      )
       await load(true)
     } catch (e: any) {
-      setErr(e?.response?.data?.detail || 'Failed to send')
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, _pending: false, _failed: true } : m)))
+      setErr(e?.response?.data?.detail || 'Failed to send — tap retry on the message')
     } finally {
       setSending(false)
     }
   }
+
+  /** Re-post a failed/queued DM (same shape, fresh attempt). */
+  const retrySend = async (id: string) => {
+    const failed = messages.find((m) => m.id === id)
+    if (!failed || !thread_id) return
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, _pending: true, _failed: false } : m)))
+    setErr('')
+    try {
+      const r = await api.post(`/chat/dm/threads/${thread_id}/messages`, {
+        content: failed.content,
+        type: failed.type ?? 'text',
+        reply_to: failed.reply_to ?? undefined,
+      })
+      const confirmed = (r.data ?? {}) as DMMessage
+      setMessages((prev) =>
+        prev.map((m) => (m.id === id ? (confirmed?.id ? { ...confirmed } : { ...m, _pending: false }) : m)),
+      )
+      await load(true)
+    } catch (e: any) {
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, _pending: false, _failed: true } : m)))
+      setErr(e?.response?.data?.detail || 'Failed to send — tap retry on the message')
+    }
+  }
+
+  /** Flush queued DMs when back online (shared queue — route each item by shape). */
+  const [online, setOnline] = useState(isOnline())
+  useEffect(() => {
+    const subNet = NetInfo.addEventListener((state) => setOnline(!!state.isConnected))
+    return () => subNet()
+  }, [])
+  useEffect(() => {
+    if (!thread_id) return
+    const doFlush = async () => {
+      if (!isOnline()) return
+      await flushQueue(async (item: any) => {
+        if (item.thread_id) {
+          await api.post(`/chat/dm/threads/${item.thread_id}/messages`, { content: item.content, type: item.type, reply_to: item.reply_to })
+        } else if (item.room) {
+          await api.post(`/chat/rooms/${item.room}/messages`, { content: item.content, type: item.type, reply_to: item.reply_to })
+        } else {
+          return
+        }
+      })
+      await load(true)
+    }
+    doFlush()
+    const sub = NetInfo.addEventListener((state) => {
+      if (state.isConnected) doFlush()
+    })
+    return () => sub()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thread_id])
 
   /** Heartbeat to the server with what we're doing (throttled for typing). */
   const heartbeatTyping = useCallback((activity: TypingActivityKind = 'typing') => {
@@ -649,6 +748,11 @@ export default function DMThreadScreen() {
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: c.bg }]} edges={['top', 'bottom']}>
+      {!online && (
+        <View style={{ backgroundColor: c.danger, paddingVertical: 6, alignItems: 'center' }}>
+          <Text style={{ color: c.onAccent, fontSize: 11, fontWeight: '700', letterSpacing: 1 }} maxFontSizeMultiplier={1.3}>Offline — messages queued</Text>
+        </View>
+      )}
       <View style={[styles.header, { borderBottomColor: c.border }]}>
         <TouchableOpacity onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Go back" hitSlop={10} style={styles.backBtn}>
           <Icon name="back" size={22} color={c.text} />
@@ -659,6 +763,8 @@ export default function DMThreadScreen() {
         <TouchableOpacity
           onPress={startCall}
           hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="Start call"
         >
           <Icon name="phone" size={FONT.section} color={c.text} />
         </TouchableOpacity>
@@ -764,6 +870,7 @@ export default function DMThreadScreen() {
                     onLongPress={() => onLongPress(item)}
                     onOpenLink={openLink}
                     onJoinCall={joinCall}
+                    onRetry={() => retrySend(item.id)}
                   />
                   {seen ? (
                     <View style={{ alignItems: 'flex-end', marginTop: -4, marginBottom: SPACE.xs }}>
@@ -810,6 +917,12 @@ export default function DMThreadScreen() {
           placeholder={editing ? 'Edit message…' : 'Type a message…'}
           placeholderTextColor={c.muted}
           multiline
+          keyboardType="default"
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="send"
+          blurOnSubmit={false}
+          onSubmitEditing={editing ? saveEdit : send}
           style={[
             styles.input,
             {

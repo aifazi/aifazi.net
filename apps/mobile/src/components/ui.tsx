@@ -1,4 +1,4 @@
-import { ReactNode, useRef, useState } from 'react'
+import { ReactNode, useRef, useState, type Ref } from 'react'
 import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, ScrollView, DimensionValue, ActivityIndicator, Animated } from 'react-native'
 import { BlurView } from 'expo-blur'
 import { useTheme } from '@/src/theme'
@@ -270,6 +270,10 @@ export function Field({
   keyboardType,
   maxLength,
   autoFocus,
+  returnKeyType,
+  onSubmitEditing,
+  blurOnSubmit,
+  inputRef,
 }: {
   label: string
   value: string
@@ -280,6 +284,10 @@ export function Field({
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'number-pad'
   maxLength?: number
   autoFocus?: boolean
+  returnKeyType?: 'done' | 'go' | 'next' | 'search' | 'send'
+  onSubmitEditing?: () => void
+  blurOnSubmit?: boolean
+  inputRef?: Ref<TextInput>
 }) {
   const { theme, framework } = useTheme()
   const c = theme.colors
@@ -302,6 +310,10 @@ export function Field({
         keyboardType={keyboardType}
         maxLength={maxLength}
         autoFocus={autoFocus}
+        returnKeyType={returnKeyType}
+        onSubmitEditing={onSubmitEditing ? () => onSubmitEditing() : undefined}
+        blurOnSubmit={blurOnSubmit}
+        ref={inputRef}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={{

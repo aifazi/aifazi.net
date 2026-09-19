@@ -1,17 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FONT, SPACE } from '@/src/design'
-import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native'
+import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity, TextInput } from 'react-native'
 import { useRouter } from 'expo-router'
+import * as LocalAuthentication from 'expo-local-authentication'
 import { Screen } from '@/src/components/Screen'
 import { Title, Muted, Btn, Field } from '@/src/components/ui'
 import { useAuth } from '@/src/lib/auth'
+import { getRefreshToken } from '@/src/lib/api'
 import { OAuthButtons } from '@/src/components/OAuthButtons'
 import { useTheme } from '@/src/theme'
 import { useOverlay } from '@/src/components/overlay'
 import { Reveal } from '@/src/components/motion'
 
 export default function LoginScreen() {
-  const { login, verify2FA } = useAuth()
+  const { login, verify2FA, refresh } = useAuth()
   const router = useRouter()
   const { theme } = useTheme()
   const c = theme.colors
@@ -21,6 +23,44 @@ export default function LoginScreen() {
   const [busy, setBusy] = useState(false)
   const [pending2FA, setPending2FA] = useState<{ partialToken: string; username?: string } | null>(null)
   const [code, setCode] = useState('')
+  const [biometric, setBiometric] = useState(false)
+  const passwordRef = useRef<TextInput>(null)
+
+  // Biometric unlock: offered only when a stored session (refresh token) plus
+  // enrolled biometrics both exist. Authenticates locally, then rehydrates the
+  // session via the normal refresh path.
+  useEffect(() => {
+    let live = true
+    ;(async () => {
+      try {
+        const [stored, hw, enrolled] = await Promise.all([
+          getRefreshToken(),
+          LocalAuthentication.hasHardwareAsync(),
+          LocalAuthentication.isEnrolledAsync(),
+        ])
+        if (live && stored && hw && enrolled) setBiometric(true)
+      } catch {
+        /* no biometrics — password form stays */
+      }
+    })()
+    return () => {
+      live = false
+    }
+  }, [])
+
+  const unlockBiometric = async () => {
+    try {
+      const res = await LocalAuthentication.authenticateAsync({ promptMessage: 'Unlock aifazi.net' })
+      if (!res.success) return
+      setBusy(true)
+      await refresh()
+      router.back()
+    } catch {
+      alert({ message: 'Biometric unlock failed — sign in with your password.' })
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const submit = async () => {
     if (!identifier.trim() || !password) {
@@ -84,6 +124,8 @@ export default function LoginScreen() {
                 keyboardType="number-pad"
                 maxLength={6}
                 autoFocus
+                returnKeyType="done"
+                onSubmitEditing={submit2FA}
               />
               <Btn title={busy ? 'Verifying…' : 'Verify'} onPress={submit2FA} disabled={busy || code.length < 6} />
             </View>
@@ -95,12 +137,41 @@ export default function LoginScreen() {
             <Reveal dir="up" delay={160} duration={520}><Muted>Welcome back to aifazi.net</Muted></Reveal>
             <Reveal dir="up" delay={200} duration={520}>
             <View style={{ marginTop: SPACE.huge }}>
-              <Field label="Username / Email" value={identifier} onChangeText={setIdentifier} placeholder="tanvir" autoCapitalize="none" />
-              <Field label="Password" value={password} onChangeText={setPassword} secure placeholder="••••••••" autoCapitalize="none" />
+              <Field
+                label="Username / Email"
+                value={identifier}
+                onChangeText={setIdentifier}
+                placeholder="tanvir"
+                autoCapitalize="none"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+              />
+              <Field
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                secure
+                placeholder="••••••••"
+                autoCapitalize="none"
+                returnKeyType="done"
+                onSubmitEditing={submit}
+                inputRef={passwordRef}
+              />
               <TouchableOpacity onPress={() => router.push('/auth/forgot-password')} style={{ alignSelf: 'flex-end', marginBottom: SPACE.lg }}>
                 <Text style={{ color: c.accent, fontSize: FONT.sm }}>Forgot password?</Text>
               </TouchableOpacity>
               <Btn title={busy ? 'Signing in…' : 'Sign In'} onPress={submit} disabled={busy} />
+              {biometric ? (
+                <TouchableOpacity
+                  onPress={unlockBiometric}
+                  disabled={busy}
+                  accessibilityRole="button"
+                  accessibilityLabel="Unlock with biometrics"
+                  style={{ alignSelf: 'center', marginTop: SPACE.lg, paddingVertical: SPACE.sm, paddingHorizontal: SPACE.xl }}
+                >
+                  <Text style={{ color: c.accent2, fontSize: FONT.base, fontWeight: '700' }}>Unlock with biometrics</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
             </Reveal>
             <Reveal dir="up" delay={240} duration={520}>

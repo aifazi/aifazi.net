@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { T, ROLES } from '../chat-constants'
 import api from '@/lib/api'
+import { Dialog } from '../../../components/Dialog'
 
 const MODES = [
   { key: 'public', label: 'Public' },
@@ -111,9 +112,8 @@ export function ChannelModal({ initial, onSave, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(3px)' }} />
-      <div style={{ position: 'relative', background: 'rgba(18,21,34,0.98)', border: `1px solid ${T.border}`, borderRadius: 14, padding: '24px', width: 440, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+    <Dialog onClose={onClose} label={editing ? 'Edit channel' : 'Create channel'} zIndex={300}>
+      <div style={{ background: 'rgba(18,21,34,0.98)', border: `1px solid ${T.border}`, borderRadius: 14, padding: '24px', width: 440, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
         <h3 style={{ fontFamily: T.display, fontSize: 16, color: T.text, margin: '0 0 18px' }}>{editing ? 'Edit Channel' : 'Create Channel'}</h3>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
@@ -219,6 +219,6 @@ export function ChannelModal({ initial, onSave, onClose }) {
           <button onClick={onClose} style={{ padding: '10px 18px', border: `1px solid ${T.border}`, borderRadius: 8, background: 'transparent', color: T.muted, fontFamily: T.mono, fontSize: 11, cursor: 'pointer' }}>CANCEL</button>
         </div>
       </div>
-    </div>
+    </Dialog>
   )
 }

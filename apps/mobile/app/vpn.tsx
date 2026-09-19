@@ -172,8 +172,20 @@ export default function VpnScreen() {
   if (loading) {
     return (
       <Screen>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={c.accent} />
+        <View style={{ flex: 1, padding: 16, gap: 12 }}>
+          {[160, 90, 120].map((h, i) => (
+            <View
+              key={i}
+              style={{
+                height: h,
+                borderRadius: 16,
+                backgroundColor: c.bg2,
+                borderWidth: 1,
+                borderColor: c.border,
+              }}
+            />
+          ))}
+          <ActivityIndicator size="small" color={c.accent} style={{ marginTop: 8 }} />
         </View>
       </Screen>
     )
@@ -227,9 +239,9 @@ export default function VpnScreen() {
             }}
           >
             {creating ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={c.onAccent} />
             ) : (
-              <Text style={{ color: peers.length >= 5 ? c.text2 : '#fff', fontWeight: '600', fontSize: 14 }}>
+              <Text style={{ color: peers.length >= 5 ? c.text2 : c.onAccent, fontWeight: '600', fontSize: 14 }}>
                 + Add Device
               </Text>
             )}

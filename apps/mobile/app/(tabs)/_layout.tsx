@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router'
 import { ColorValue, TouchableOpacity, View, Animated, Easing } from 'react-native'
 import { BlurView } from 'expo-blur'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
@@ -9,6 +9,8 @@ import { SPACE, tagLabel } from '@/src/design'
 import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
 import { CommandPaletteProvider, useCommandPalette } from '@/src/components/command-palette'
+import { useAuth } from '@/src/lib/auth'
+import { api } from '@/src/lib/api'
 
 /**
  * Tab icon with an animated active state: springs up + glows when focused and
@@ -70,6 +72,39 @@ function TabNavigator() {
   const insets = useSafeAreaInsets()
   const radius = theme.radius || 18
   const isGlass = theme.id.includes('glass') || theme.id.includes('macos')
+  const { isAuthed } = useAuth()
+  const [unread, setUnread] = useState(0)
+
+  // Tab badge: reuse the same unread sources the Chat screen already polls
+  // (DM thread unread + forum notifications). Same 15s cadence, negligible
+  // extra cost — two light GETs alongside the existing message polling.
+  useEffect(() => {
+    if (!isAuthed) {
+      setUnread(0)
+      return
+    }
+    let live = true
+    const poll = async () => {
+      try {
+        const [dms, notifs] = await Promise.all([
+          api.get('/chat/dm/threads').catch(() => ({ data: [] })),
+          api.get('/forum/notifications').catch(() => ({ data: [] })),
+        ])
+        if (!live) return
+        const dmUnread = ((dms.data ?? []) as { unread?: number }[]).reduce((n, t) => n + (t.unread ?? 0), 0)
+        const notifUnread = (Array.isArray(notifs.data) ? notifs.data : []).filter((n: any) => !n.read).length
+        setUnread(dmUnread + notifUnread)
+      } catch {
+        /* badge stays stale on error — never break the tab bar */
+      }
+    }
+    poll()
+    const timer = setInterval(poll, 15_000)
+    return () => {
+      live = false
+      clearInterval(timer)
+    }
+  }, [isAuthed])
 
   return (
     <Tabs
@@ -109,7 +144,15 @@ function TabNavigator() {
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: (p) => <TabIcon name="home" {...p} /> }} />
       <Tabs.Screen name="forum" options={{ title: 'Forum', tabBarIcon: (p) => <TabIcon name="forum" {...p} /> }} />
       <Tabs.Screen name="blog" options={{ title: 'Blog', tabBarIcon: (p) => <TabIcon name="blog" {...p} /> }} />
-      <Tabs.Screen name="chat" options={{ title: 'Chat', tabBarIcon: (p) => <TabIcon name="chat" {...p} /> }} />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'Chat',
+          tabBarIcon: (p) => <TabIcon name="chat" {...p} />,
+          tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,
+          tabBarBadgeStyle: { backgroundColor: c.danger, color: '#fff', fontSize: 10, fontWeight: '800' },
+        }}
+      />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: (p) => <TabIcon name="profile" {...p} /> }} />
     </Tabs>
   )

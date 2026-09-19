@@ -3,6 +3,7 @@ import NextImage from 'next/image'
 import { Link } from '@/lib/router-compat'
 import { Badge } from '../../components/community'
 import { useWishlist } from '@/lib/wishlist'
+import { formatPrice } from '@/lib/format'
 
 const C = 'var(--cyan)'
 
@@ -55,9 +56,9 @@ export default function StoreProductCard({ product, cartLoading, addToCart }) {
         <div className="ec-product-cat">{product.category || 'Store'}</div>
         <div className="ec-product-name">{product.name}</div>
         <div className="ec-product-price">
-          <span className="ec-product-price-current" style={{ color }}>${product.price.toFixed(2)}</span>
+          <span className="ec-product-price-current" style={{ color }}>{formatPrice(product.price)}</span>
           {product.compare_at > 0 && (
-            <span className="ec-product-price-compare">${product.compare_at.toFixed(2)}</span>
+            <span className="ec-product-price-compare">{formatPrice(product.compare_at)}</span>
           )}
         </div>
       </div>

@@ -1,18 +1,18 @@
 import { getAuthToken } from '@/lib/api'
 
 export const T = {
-  sidebar:   'rgba(10,12,18,0.95)',
-  main:      'rgba(15,17,24,0.98)',
-  bubble:    'rgba(30,34,48,0.9)',
+  sidebar:   'var(--bg)',
+  main:      'var(--bg)',
+  bubble:    'var(--bg3)',
   bubbleOwn: 'color-mix(in srgb, var(--green) 10%, transparent)',
-  input:     'rgba(22,26,38,0.95)',
-  border:    'rgba(255,255,255,0.07)',
-  accent:    '#00ff88',
-  accentB:   '#00d4ff',
+  input:     'var(--bg2)',
+  border:    'var(--border)',
+  accent:    'var(--green)',
+  accentB:   'var(--cyan)',
   danger:    '#ff4757',
   warn:      '#ffd700',
-  muted:     'rgba(180,190,210,0.5)',
-  text:      'rgba(225,230,245,0.92)',
+  muted:     'var(--muted)',
+  text:      'var(--text)',
   mono:      'var(--font-mono)',
   display:   'var(--font-display)',
 }
@@ -49,6 +49,17 @@ export const fmtDt = d => {
   const y = new Date(n)
   y.setDate(n.getDate() - 1)
   return dt.toDateString() === y.toDateString() ? 'Yesterday' : dt.toLocaleDateString([], { month: 'short', day: 'numeric' })
+}
+
+// P0-6 — absolute timestamp with tz abbreviation for `title` attributes next
+// to the relative Today/Yesterday/MMM d labels (displayed text unchanged).
+export const fmtDtTitle = d => {
+  try {
+    return new Intl.DateTimeFormat([], {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
+    }).format(new Date(d))
+  } catch { return new Date(d).toLocaleString() }
 }
 
 export const fmtSz = b => {

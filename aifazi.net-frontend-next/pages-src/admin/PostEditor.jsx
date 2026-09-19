@@ -630,7 +630,7 @@ function PostEditor({ post, onSave, onCancel }) {
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>𝕏 / TWITTER</div>
                 <div style={{ border: '1px solid #2f3336', borderRadius: 12, overflow: 'hidden', maxWidth: 500, background: '#000' }}>
                   {form.cover_image && (
-                    <img src={form.cover_image} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
+                    <img src={form.cover_image} alt="X card cover preview" loading="lazy" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
                   )}
                   <div style={{ padding: '10px 14px 12px' }}>
                     <div style={{ fontSize: 11, color: '#71767b', marginBottom: 2, fontFamily: 'sans-serif' }}>{ogDomain}</div>
@@ -644,7 +644,7 @@ function PostEditor({ post, onSave, onCancel }) {
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>LINKEDIN</div>
                 <div style={{ border: '1px solid #d0d7de', borderRadius: 2, overflow: 'hidden', maxWidth: 500, background: '#fff' }}>
                   {form.cover_image && (
-                    <img src={form.cover_image} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
+                    <img src={form.cover_image} alt="LinkedIn card cover preview" loading="lazy" style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
                   )}
                   <div style={{ padding: '8px 12px 10px', background: '#f3f6f8' }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#000000e6', fontFamily: 'sans-serif', lineHeight: 1.4 }}>{ogTitle.length > 70 ? ogTitle.slice(0, 67) + '...' : ogTitle}</div>

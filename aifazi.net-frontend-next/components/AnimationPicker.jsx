@@ -144,7 +144,7 @@ function PreviewCard({ anim, selected, onSelect }) {
         {anim.label}
       </span>
       {anim.engine === 'gsap' && (
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 1.5, color: isSelected ? '#000' : 'var(--cyan)', background: isSelected ? 'var(--green)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)', padding: '1px 5px', borderRadius: 8 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5, color: isSelected ? '#000' : 'var(--cyan)', background: isSelected ? 'var(--green)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)', padding: '1px 5px', borderRadius: 8 }}>
           GSAP
         </span>
       )}

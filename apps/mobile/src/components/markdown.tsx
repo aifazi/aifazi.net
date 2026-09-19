@@ -53,7 +53,7 @@ export function MarkdownText({
   const lines = content.split('\n')
   const link = theme.colors.link
   return (
-    <Text style={{ color, fontSize: FONT.base, lineHeight: 19 }}>
+    <Text style={{ color, fontSize: FONT.base, lineHeight: 19 }} maxFontSizeMultiplier={1.3}>
       {lines.map((line, i) => (
         <Text key={i}>
           {parseInline(line, color, link, onLink)}

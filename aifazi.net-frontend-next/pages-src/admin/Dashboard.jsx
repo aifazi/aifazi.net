@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import NextImage from 'next/image'
 import { useNavigate } from '@/lib/router-compat'
 import api, { getRole, getUsername, setEffectiveAccess, getAuthToken } from '@/lib/api'
 import { useToast } from '../../components/Toast'
@@ -796,7 +797,7 @@ function Dashboard({ onLogout }) {
                       style={{ width: 30, height: 30, padding: 0, justifyContent: 'center', marginTop: 1, flexShrink: 0 }}
                     />
                     {post.cover_image && !isMobile && (
-                      <img src={post.cover_image} alt="" style={{ width: 72, height: 52, objectFit: 'cover', flexShrink: 0 }} />
+                      <NextImage src={post.cover_image} alt={`Cover image for ${post.title || 'post'}`} width={72} height={52} loading="lazy" style={{ objectFit: 'cover', flexShrink: 0 }} />
                     )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 15 : 17, fontWeight: 600, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

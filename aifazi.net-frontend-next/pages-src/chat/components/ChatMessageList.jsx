@@ -2,10 +2,27 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useMenu, contextMenu } from '../../../core/menu'
 import { dialog } from '../../../core/dialog'
-import { T, fmt, fmtDt, fmtSz, aCol } from '../chat-constants'
+import { T, fmt, fmtDt, fmtDtTitle, fmtSz, aCol } from '../chat-constants'
 import { Avatar } from './Avatar'
 import { Markdown } from './Markdown'
 import { MediaPreviews } from './MediaPreview'
+
+// P1-4 — delivered/seen ticks for own messages. Room messages carry no
+// dedicated receipt payload (DM read state lives in DMPanel's peerLastRead),
+// so this renders from message.status/seen fields when the backend provides
+// them and skips gracefully (renders nothing) otherwise.
+function ReceiptTicks({ msg }) {
+  const status = msg.status
+  const seen = msg.seen === true || msg.read === true || status === 'seen' || status === 'read'
+  const delivered = msg.delivered === true || status === 'delivered' || status === 'sent'
+  if (!seen && !delivered) return null
+  return (
+    <span title={seen ? 'Seen' : 'Delivered'} aria-label={seen ? 'Seen' : 'Delivered'}
+      style={{ fontSize: 10, color: seen ? T.accentB : T.muted, fontFamily: T.mono, letterSpacing: -1 }}>
+      ✓✓
+    </span>
+  )
+}
 
 export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onReact, onMediaClick, elRef, onScroll, onPin, pinnedIds, onBatchDel, muteUser, kickUser, banUser, unmuteUser, unbanUser, roomMutes, roomBans, onMention }) {
   const [emojiPicker, setEmojiPicker] = useState(null)
@@ -100,7 +117,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
       {grouped.map((item, i) => {
         if (item.type === 'date') return (
           <div key={`d-${i}`} style={{ textAlign: 'center', padding: '8px 0', fontFamily: T.mono, fontSize: 10, color: T.muted, letterSpacing: 1 }}>
-            <span style={{ background: 'rgba(255,255,255,0.04)', padding: '2px 10px', borderRadius: 10 }}>{item.date}</span>
+            <span title={fmtDtTitle(item.ts)} style={{ background: 'rgba(255,255,255,0.04)', padding: '2px 10px', borderRadius: 10 }}>{item.date}</span>
           </div>
         )
         const isMe = item.sender === me
@@ -129,9 +146,10 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                     ] : []),
                   ], { header: item.sender }) }}
                   style={{ fontWeight:700, fontSize:13, color:aCol(item.sender), fontFamily:T.display, cursor:'pointer' }}>{item.sender}</span>
-                <span style={{ fontSize: 10, color: T.muted, fontFamily: T.mono }}>{fmt(item.created_at)}</span>
+                <span title={fmtDtTitle(item.created_at)} style={{ fontSize: 10, color: T.muted, fontFamily: T.mono }}>{fmt(item.created_at)}</span>
                 {item.edited && <span style={{ fontSize: 9, color: T.muted, fontStyle: 'italic' }}>(edited)</span>}
                 {isPinned(item.id) && <span style={{ fontSize:9, color:T.accent }}>📌</span>}
+                {isMe && <ReceiptTicks msg={item} />}
               </div>
               {group.map((m, gi) => (
                 <div key={m.id || gi} style={{ display:'flex', gap:8, marginBottom:2, alignItems:'flex-start',
@@ -151,7 +169,10 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                   )}
                   <div style={{ lineHeight: 1.5, fontSize: 13, color: T.text, wordBreak: 'break-word' }}>
                     {m.type === 'image' ? (
-                      <img src={m.content} alt="" loading="lazy" style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, objectFit: 'contain', cursor: 'pointer' }}
+                      // P1-6 — next/image skipped here: src is an arbitrary
+                      // user-supplied URL outside next.config remotePatterns;
+                      // meaningful alt + lazy loading instead.
+                      <img src={m.content} alt={`Image shared by ${m.sender || 'a user'}`} loading="lazy" style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 8, objectFit: 'contain', cursor: 'pointer' }}
                         onClick={() => onMediaClick?.({ url: m.content, type: m.type })} />
                     ) : m.type === 'voice' ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
