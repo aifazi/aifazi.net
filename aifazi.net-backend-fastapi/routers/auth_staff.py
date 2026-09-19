@@ -1,120 +1,73 @@
 """auth_staff.py — Staff management (CRUD, permissions, search).
 
-Extracted from auth.py. Handles staff user management for admin panel.
+Thin wrappers over routers/auth.py (monolith) handlers: staff are `users`
+rows with staff roles, so delegation guarantees zero behavior drift from the
+shapes the admin panel was built against. The split router is included first,
+so these routes serve; the monolith copies are shadowed but kept as reference.
 """
 import logging
-import uuid
-from datetime import datetime, timezone
 
-import bcrypt as _bcrypt
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, Query, Request
 
 from database import supabase
-from dependencies import get_current_user, require_staff
-from permissions import require_permission
+from dependencies import require_admin, require_staff
 
 router = APIRouter()
 log = logging.getLogger("auth.staff")
 
 
-def _hash(pw: str) -> str:
-    return _bcrypt.hashpw(pw.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
-
-
-# ── Models ───────────────────────────────────────────────────────────────────
-class CreateStaffBody(BaseModel):
-    username: str
-    password: str = Field(min_length=8)
-    role: str = "staff"
-    display_name: str | None = None
-    email: str | None = None
-
-
-class UpdateStaffBody(BaseModel):
-    password: str | None = None
-    role: str | None = None
-    display_name: str | None = None
-    email: str | None = None
-    is_active: bool | None = None
-
-
-# ── Routes ───────────────────────────────────────────────────────────────────
 @router.get("/permissions")
 async def get_permissions(user: dict = Depends(require_staff)):
-    """Get current user's permissions."""
+    """Current user's role + effective permissions (any staff; admin catalog
+    lives at the monolith's admin-only handler)."""
     username = user.get("username") or ""
     role = user.get("role", "staff")
-    res = supabase.table("staff_users").select("permissions").eq("username", username).limit(1).execute()
-    permissions = res.data[0].get("permissions", []) if res.data else []
+    res = supabase.table("users").select("staff_permissions").eq("username", username).limit(1).execute()
+    permissions = res.data[0].get("staff_permissions", []) if res.data else []
     return {"role": role, "permissions": permissions}
 
 
 @router.get("/staff")
-async def list_staff(user: dict = Depends(require_permission("community.staff", "view"))):
-    """List all staff users."""
-    res = supabase.table("staff_users").select("username,role,display_name,email,is_active,created_at").order("created_at", desc=True).execute()
-    return res.data or []
+async def list_staff(admin: dict = Depends(require_admin)):
+    from routers.auth import get_staff as _mono_list
+
+    return await _mono_list(admin)
 
 
 @router.get("/staff/search-users")
-async def search_staff_users(q: str = Query("", min_length=1), user: dict = Depends(require_permission("community.staff", "view"))):
-    """Search staff users by username."""
-    res = supabase.table("staff_users").select("username,role,display_name,email").ilike("username", f"%{q}%").limit(20).execute()
-    return res.data or []
+async def search_staff_users(q: str = Query("", min_length=1), admin: dict = Depends(require_admin)):
+    from routers.auth import search_staff_users as _mono_search
+
+    return await _mono_search(q, admin)
 
 
 @router.post("/staff")
-async def create_staff(body: CreateStaffBody, user: dict = Depends(require_permission("community.staff", "edit"))):
-    """Create a new staff user."""
-    username = body.username.strip().lower()
-    existing = supabase.table("staff_users").select("username").eq("username", username).limit(1).execute()
-    if existing.data:
-        raise HTTPException(400, "Username already exists")
-    hashed = _hash(body.password)
-    supabase.table("staff_users").insert({
-        "id": str(uuid.uuid4()),
-        "username": username,
-        "password_hash": hashed,
-        "role": body.role,
-        "display_name": body.display_name or username,
-        "email": body.email,
-        "is_active": True,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }).execute()
-    return {"ok": True, "username": username}
+async def create_staff(payload: dict, request: Request, admin: dict = Depends(require_admin)):
+    """Create a staff user. Accepts the monolith's StaffCreateBody shape."""
+    from routers.auth import StaffCreateBody
+    from routers.auth import create_staff as _mono_create
+
+    return await _mono_create(StaffCreateBody(**(payload or {})), request, admin)
 
 
 @router.put("/staff/{staff_id}")
-async def update_staff(staff_id: str, body: UpdateStaffBody, user: dict = Depends(require_permission("community.staff", "edit"))):
-    """Update a staff user."""
-    updates = {}
-    if body.password is not None:
-        updates["password_hash"] = _hash(body.password)
-    if body.role is not None:
-        updates["role"] = body.role
-    if body.display_name is not None:
-        updates["display_name"] = body.display_name
-    if body.email is not None:
-        updates["email"] = body.email
-    if body.is_active is not None:
-        updates["is_active"] = body.is_active
-    if updates:
-        supabase.table("staff_users").update(updates).eq("id", staff_id).execute()
-    return {"ok": True}
+async def update_staff(staff_id: str, payload: dict, admin: dict = Depends(require_admin)):
+    from routers.auth import StaffUpdateBody
+    from routers.auth import update_staff as _mono_update
+
+    return await _mono_update(staff_id, StaffUpdateBody(**(payload or {})), admin)
 
 
 @router.delete("/staff/{staff_id}")
-async def delete_staff(staff_id: str, user: dict = Depends(require_permission("community.staff", "delete"))):
-    """Delete a staff user."""
-    supabase.table("staff_users").delete().eq("id", staff_id).execute()
-    return {"ok": True}
+async def delete_staff(staff_id: str, request: Request, admin: dict = Depends(require_admin)):
+    from routers.auth import delete_staff as _mono_delete
+
+    return await _mono_delete(staff_id, request, admin)
 
 
 @router.get("/admin-gate-token")
 async def admin_gate_token(user: dict = Depends(require_staff)):
-    """Get a short-lived admin gate token for sensitive operations."""
-    from paseto_token import create_token
-    username = user.get("username") or ""
-    token = create_token({"sub": username, "purpose": "admin_gate"}, purpose="auth", expires_in=300)
-    return {"token": token}
+    """Short-lived admin gate token for sensitive operations."""
+    from routers.auth import make_admin_gate_token
+
+    return {"token": make_admin_gate_token({"username": user.get("username") or ""})}

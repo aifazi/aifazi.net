@@ -7,8 +7,7 @@ import logging
 import os
 import re
 import secrets
-import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import bcrypt as _bcrypt
 from fastapi import APIRouter, HTTPException
@@ -68,9 +67,6 @@ async def check_username(username: str):
     res = supabase.table("users").select("username").eq("username", username.lower()).limit(1).execute()
     if res.data:
         return {"available": False, "reason": "Not available"}
-    staff = supabase.table("staff_users").select("username").eq("username", username.lower()).limit(1).execute()
-    if staff.data:
-        return {"available": False, "reason": "Not available"}
     return {"available": True}
 
 
@@ -93,36 +89,31 @@ async def register(body: RegisterBody):
     if not re.match(r"^[a-zA-Z0-9_]+$", username):
         raise HTTPException(400, "Username must be alphanumeric with underscores only.")
 
-    # Check availability
+    # Check availability (staff live in users with staff roles — one check covers all)
     existing = supabase.table("users").select("username").eq("username", username).limit(1).execute()
     if existing.data:
-        raise HTTPException(400, "Username already taken.")
-    staff = supabase.table("staff_users").select("username").eq("username", username).limit(1).execute()
-    if staff.data:
         raise HTTPException(400, "Username already taken.")
 
     # Hash password
     hashed = _hash(password)
 
-    # Create user
+    # Create user (banned defaults False = active; no is_active column)
     supabase.table("users").insert({
         "username": username,
-        "hashed_password": hashed,
+        "password_hash": hashed,
         "email": email or f"{username}@placeholder.local",
         "role": "user",
-        "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }).execute()
 
-    # Send verification email if email provided
+    # Stash a verification token on the users row (mirrors monolith register).
+    # NOTE: the verification email itself is sent by the mail-queue flow.
     if email and "@" in email:
         token = secrets.token_urlsafe(32)
-        supabase.table("email_verification_tokens").upsert({
-            "username": username,
-            "token": token,
-            "expires_at": (datetime.now(timezone.utc) + __import__("datetime").timedelta(hours=24)).isoformat(),
-        }, on_conflict="username").execute()
-        # TODO: Send verification email via mail queue
+        supabase.table("users").update({
+            "verify_token": token,
+            "verify_expires": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
+        }).eq("username", username).execute()
 
     return {"ok": True, "message": "Account created. Please check your email for verification."}
 
@@ -135,16 +126,16 @@ async def verify_email_page():
 
 @router.get("/verify-email/{token}")
 async def verify_email_token(token: str):
-    """Verify email with token (one-time-use: row is deleted on success)."""
-    res = supabase.table("email_verification_tokens").select("username,expires_at").eq("token", token).limit(1).execute()
+    """Verify email with token (one-time-use: token cleared on success)."""
+    res = supabase.table("users").select("username,verify_expires").eq("verify_token", token).limit(1).execute()
     if not res.data:
         raise HTTPException(400, "Invalid or expired token")
-    if _token_expired(res.data[0].get("expires_at")):
-        supabase.table("email_verification_tokens").delete().eq("token", token).execute()
+    if _token_expired(res.data[0].get("verify_expires")):
         raise HTTPException(400, "Invalid or expired token")
     username = res.data[0]["username"]
-    supabase.table("users").update({"email_verified": True}).eq("username", username).execute()
-    supabase.table("email_verification_tokens").delete().eq("token", token).execute()
+    supabase.table("users").update({
+        "email_verified": True, "verify_token": None, "verify_expires": None,
+    }).eq("username", username).execute()
     return {"ok": True, "message": "Email verified!"}
 
 
@@ -162,11 +153,10 @@ async def resend_verification(body: ForgotBody):
     if not user.get("email") or "@" not in user["email"]:
         return {"ok": True}
     token = secrets.token_urlsafe(32)
-    supabase.table("email_verification_tokens").upsert({
-        "username": username,
-        "token": token,
-        "expires_at": (datetime.now(timezone.utc) + __import__("datetime").timedelta(hours=24)).isoformat(),
-    }, on_conflict="username").execute()
+    supabase.table("users").update({
+        "verify_token": token,
+        "verify_expires": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
+    }).eq("username", username).execute()
     return {"ok": True}
 
 
@@ -192,11 +182,10 @@ async def forgot_password(body: ForgotBody):
         return {"ok": True}
     user = res.data[0]
     token = secrets.token_urlsafe(32)
-    supabase.table("password_reset_tokens").upsert({
-        "username": username,
-        "token": token,
-        "expires_at": (datetime.now(timezone.utc) + __import__("datetime").timedelta(hours=1)).isoformat(),
-    }, on_conflict="username").execute()
+    supabase.table("users").update({
+        "reset_token": token,
+        "reset_expires": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+    }).eq("username", username).execute()
     # TODO: Send reset email via mail queue
     return {"ok": True}
 
@@ -216,17 +205,17 @@ async def reset_password(body: ResetBody):
 
 @router.post("/reset-password/{token}")
 async def reset_password_with_token(token: str, body: ResetBody):
-    """Reset password using token from email (one-time-use: row is deleted)."""
-    res = supabase.table("password_reset_tokens").select("username,expires_at").eq("token", token).limit(1).execute()
+    """Reset password using token from email (one-time-use: token cleared)."""
+    res = supabase.table("users").select("username,reset_expires").eq("reset_token", token).limit(1).execute()
     if not res.data:
         raise HTTPException(400, "Invalid or expired token")
-    if _token_expired(res.data[0].get("expires_at")):
-        supabase.table("password_reset_tokens").delete().eq("token", token).execute()
+    if _token_expired(res.data[0].get("reset_expires")):
         raise HTTPException(400, "Invalid or expired token")
     username = res.data[0]["username"]
     hashed = _hash(body.new_password)
-    supabase.table("users").update({"hashed_password": hashed}).eq("username", username).execute()
-    supabase.table("password_reset_tokens").delete().eq("token", token).execute()
+    supabase.table("users").update({
+        "password_hash": hashed, "reset_token": None, "reset_expires": None,
+    }).eq("username", username).execute()
     return {"ok": True}
 
 

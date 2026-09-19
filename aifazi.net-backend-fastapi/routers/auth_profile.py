@@ -3,15 +3,15 @@
 Extracted from auth.py. Handles user self-service profile management.
 """
 import logging
-import os
 import uuid
+from datetime import datetime, timezone
 
 import bcrypt as _bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 
 from database import supabase
-from dependencies import get_current_user, require_staff
+from dependencies import get_current_user
 
 router = APIRouter()
 log = logging.getLogger("auth.profile")
@@ -75,14 +75,20 @@ class DeleteAccountBody(BaseModel):
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
+# NOTE: the users table uses profile_bio/profile_avatar (not display_name/
+# avatar_url) and has no website_url column — display_name/website_url are
+# accepted for client compat but only username-backed fields are persisted.
 @router.get("/me")
 async def get_me(user: dict = Depends(get_current_user)):
     """Get current user profile."""
     username = user.get("username") or ""
-    res = supabase.table("users").select("username,display_name,bio,avatar_url,website_url,role,created_at").eq("username", username).limit(1).execute()
+    res = supabase.table("users").select("username,email,avatar,bio,profile_avatar,profile_bio,role,banned,created_at").eq("username", username).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "User not found")
-    return res.data[0]
+    row = res.data[0]
+    avatar = row.get("profile_avatar") or row.get("avatar") or ""
+    bio = row.get("profile_bio") or row.get("bio") or ""
+    return {**row, "display_name": username, "avatar_url": avatar, "bio": bio, "is_active": not row.get("banned", False)}
 
 
 @router.put("/me")
@@ -90,15 +96,15 @@ async def update_me(body: ProfileBody, user: dict = Depends(get_current_user)):
     """Update current user profile."""
     username = user.get("username") or ""
     updates = {}
-    if body.display_name is not None:
-        updates["display_name"] = body.display_name
     if body.bio is not None:
+        updates["profile_bio"] = body.bio[:1000]
         updates["bio"] = body.bio[:500]
     if body.avatar_url is not None:
-        updates["avatar_url"] = body.avatar_url
-    if body.website_url is not None:
-        updates["website_url"] = body.website_url
+        updates["profile_avatar"] = body.avatar_url[:500]
+        updates["avatar"] = body.avatar_url[:500]
+    # display_name/website_url have no backing columns — intentionally ignored.
     if updates:
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         supabase.table("users").update(updates).eq("username", username).execute()
     return {"ok": True}
 
@@ -135,7 +141,7 @@ async def upload_avatar(request: Request, user: dict = Depends(get_current_user)
     path = f"avatars/{username}/{uuid.uuid4().hex[:8]}.{ext}"
     supabase.storage.from_("uploads").upload(path, file_bytes, {"content_type": sniffed})
     public_url = f"{supabase.storage.get_public_url(path)}"
-    supabase.table("users").update({"avatar_url": public_url}).eq("username", username).execute()
+    supabase.table("users").update({"profile_avatar": public_url, "avatar": public_url}).eq("username", username).execute()
     return {"avatar_url": public_url}
 
 
@@ -143,13 +149,13 @@ async def upload_avatar(request: Request, user: dict = Depends(get_current_user)
 async def change_password(body: ChangePasswordBody, user: dict = Depends(get_current_user)):
     """Change password for authenticated user."""
     username = user.get("username") or ""
-    res = supabase.table("users").select("hashed_password").eq("username", username).limit(1).execute()
-    if not res.data or not res.data[0].get("hashed_password"):
+    res = supabase.table("users").select("password_hash").eq("username", username).limit(1).execute()
+    if not res.data or not res.data[0].get("password_hash"):
         raise HTTPException(400, "Account uses external auth — cannot change password here.")
-    if not _verify(body.current_password, res.data[0]["hashed_password"]):
+    if not _verify(body.current_password, res.data[0]["password_hash"]):
         raise HTTPException(400, "Current password is incorrect.")
     new_hash = _hash(body.new_password)
-    supabase.table("users").update({"hashed_password": new_hash}).eq("username", username).execute()
+    supabase.table("users").update({"password_hash": new_hash}).eq("username", username).execute()
     return {"ok": True}
 
 
@@ -162,17 +168,18 @@ async def delete_account(body: DeleteAccountBody, user: dict = Depends(get_curre
     to throttle password-guessing against account deletion.
     """
     username = user.get("username") or ""
-    res = supabase.table("users").select("hashed_password").eq("username", username).limit(1).execute()
-    if not res.data or not res.data[0].get("hashed_password"):
+    res = supabase.table("users").select("password_hash").eq("username", username).limit(1).execute()
+    if not res.data or not res.data[0].get("password_hash"):
         raise HTTPException(400, "This account uses social login and has no password — contact support to delete your account.")
-    if not _verify(body.current_password, res.data[0]["hashed_password"]):
+    if not _verify(body.current_password, res.data[0]["password_hash"]):
         raise HTTPException(400, "Current password is incorrect.")
     supabase.table("users").update({
         "username": f"deleted_{uuid.uuid4().hex[:8]}",
-        "display_name": "Deleted User",
+        "profile_bio": "",
         "bio": "",
-        "avatar_url": "",
-        "hashed_password": "",
-        "is_active": False,
+        "profile_avatar": "",
+        "avatar": "",
+        "password_hash": "",
+        "banned": True,
     }).eq("username", username).execute()
     return {"ok": True}
