@@ -40,6 +40,13 @@ _MALWARE_SCAN_STRICT = os.getenv("MALWARE_SCAN_STRICT", "true").lower() == "true
 
 log = logging.getLogger("upload")
 
+def _vendor_sha1_hex(data: bytes) -> str:
+    """SHA-1 hex digest for vendor APIs that mandate it (Cloudinary request
+    signatures, Backblaze B2 content hashes). Authenticity rests on the API
+    secret, and the algorithm is dictated by the vendor, not chosen here."""
+    import hashlib
+    return hashlib.sha1(data, usedforsecurity=False).hexdigest()  # codeql[py/weak-sensitive-data-hashing]
+
 def _scan_unavailable(filename: str, reason: str) -> None:
     """Fail-closed gate: raise 503 when the scan could not run at all."""
     if _MALWARE_SCAN_FAIL_CLOSED and _MALWARE_SCAN_STRICT:
@@ -255,7 +262,7 @@ async def _upload_cloudinary(content: bytes, filename: str, mimetype: str, cfg: 
     ts        = str(int(time.time()))
     sig_str   = f"folder={folder}&timestamp={ts}{secret}"
     # Cloudinary API mandates SHA-1 for request signatures; secret provides security.
-    signature = hashlib.sha1(sig_str.encode(), usedforsecurity=False).hexdigest()
+    signature = _vendor_sha1_hex(sig_str.encode())
 
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(
@@ -317,7 +324,7 @@ async def _upload_b2(content: bytes, filename: str, mimetype: str, cfg: dict) ->
         # 4. Upload
         import hashlib
         # Backblaze B2 requires SHA-1 content hash header for uploads.
-        sha1 = hashlib.sha1(content, usedforsecurity=False).hexdigest()
+        sha1 = _vendor_sha1_hex(content)
         r4 = await client.post(
             up_url,
             headers={
@@ -610,7 +617,7 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
                 ts = int(_time.time())
                 to_sign = f"public_id={path}&timestamp={ts}{secret}"
                 # Cloudinary API mandates SHA-1 for request signatures.
-                sig = hashlib.sha1(to_sign.encode(), usedforsecurity=False).hexdigest()
+                sig = _vendor_sha1_hex(to_sign.encode())
                 async with httpx.AsyncClient(timeout=15) as c:
                     await c.post(
                         f"https://api.cloudinary.com/v1_1/{cloud}/image/destroy",

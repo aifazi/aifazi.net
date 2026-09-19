@@ -7,10 +7,11 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from database import supabase
-from dependencies import get_current_user, require_staff, require_permission
+from dependencies import get_current_user, require_staff
+from permissions import require_permission
 
 router = APIRouter()
 log = logging.getLogger("auth.staff")
@@ -45,21 +46,21 @@ async def get_permissions(user: dict = Depends(require_staff)):
 
 
 @router.get("/staff")
-async def list_staff(user: dict = Depends(require_permission("staff:read"))):
+async def list_staff(user: dict = Depends(require_permission("community.staff", "view"))):
     """List all staff users."""
     res = supabase.table("staff_users").select("username,role,display_name,email,is_active,created_at").order("created_at", desc=True).execute()
     return res.data or []
 
 
 @router.get("/staff/search-users")
-async def search_staff_users(q: str = Query("", min_length=1), user: dict = Depends(require_permission("staff:read"))):
+async def search_staff_users(q: str = Query("", min_length=1), user: dict = Depends(require_permission("community.staff", "view"))):
     """Search staff users by username."""
     res = supabase.table("staff_users").select("username,role,display_name,email").ilike("username", f"%{q}%").limit(20).execute()
     return res.data or []
 
 
 @router.post("/staff")
-async def create_staff(body: CreateStaffBody, user: dict = Depends(require_permission("staff:write"))):
+async def create_staff(body: CreateStaffBody, user: dict = Depends(require_permission("community.staff", "edit"))):
     """Create a new staff user."""
     from passlib.hash import bcrypt
     username = body.username.strip().lower()
@@ -81,7 +82,7 @@ async def create_staff(body: CreateStaffBody, user: dict = Depends(require_permi
 
 
 @router.put("/staff/{staff_id}")
-async def update_staff(staff_id: str, body: UpdateStaffBody, user: dict = Depends(require_permission("staff:write"))):
+async def update_staff(staff_id: str, body: UpdateStaffBody, user: dict = Depends(require_permission("community.staff", "edit"))):
     """Update a staff user."""
     updates = {}
     if body.password is not None:
@@ -101,7 +102,7 @@ async def update_staff(staff_id: str, body: UpdateStaffBody, user: dict = Depend
 
 
 @router.delete("/staff/{staff_id}")
-async def delete_staff(staff_id: str, user: dict = Depends(require_permission("staff:delete"))):
+async def delete_staff(staff_id: str, user: dict = Depends(require_permission("community.staff", "delete"))):
     """Delete a staff user."""
     supabase.table("staff_users").delete().eq("id", staff_id).execute()
     return {"ok": True}

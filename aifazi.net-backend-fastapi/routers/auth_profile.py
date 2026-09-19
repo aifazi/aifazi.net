@@ -6,7 +6,7 @@ import logging
 import os
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 
 from database import supabase
@@ -99,7 +99,7 @@ async def upload_avatar(request: Request, user: dict = Depends(get_current_user)
     username = user.get("username") or ""
     form = await request.form()
     file = form.get("file")
-    if not file:
+    if not file or not isinstance(file, UploadFile):
         raise HTTPException(400, "No file provided")
     # Upload to Supabase Storage
     file_bytes = await file.read()
