@@ -1,15 +1,16 @@
-"""auth_sessions.py — Session management (list, heartbeat, delete).
+"""auth_sessions.py — Session management (list, heartbeat, revoke).
 
-Extracted from auth.py. Handles session lifecycle for user accounts.
+Mirrors routers/auth.py (monolith): website sessions live in admin_sessions,
+keyed by username; current session is matched by IP + user-agent.
 """
 import logging
-import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from database import supabase
 from dependencies import get_current_user
+from utils.audit import record as _audit
 
 router = APIRouter()
 log = logging.getLogger("auth.sessions")
@@ -17,75 +18,99 @@ log = logging.getLogger("auth.sessions")
 
 @router.get("/sessions")
 async def list_sessions(request: Request, user: dict = Depends(get_current_user)):
-    """List active sessions for the current user."""
-    username = user.get("username") or ""
-    # Get user_id from username
-    u = supabase.table("users").select("id").eq("username", username).limit(1).execute()
-    if not u.data:
-        return []
-    user_id = u.data[0]["id"]
-    res = (
-        supabase.table("user_sessions")
-        .select("id,user_agent,last_active_at,created_at")
-        .eq("user_id", user_id)
-        .order("last_active_at", desc=True)
-        .limit(50)
-        .execute()
-    )
-    sessions = res.data or []
-    # Mark current session
-    current_ua = request.headers.get("user-agent", "")
-    for s in sessions:
-        s["is_current"] = s.get("user_agent") == current_ua
-    return sessions
+    """Return all active sessions for the current user."""
+    username = user.get("username")
+    token_str = (request.headers.get("Authorization") or "").replace("Bearer ", "")
+    try:
+        rows = supabase.table("admin_sessions") \
+            .select("*") \
+            .eq("username", username) \
+            .order("last_active", desc=True) \
+            .execute()
+        sessions = rows.data or []
+        client_ip = request.client.host if request.client else ""
+        ua = request.headers.get("user-agent", "")
+        for s in sessions:
+            s["current"] = (s.get("ip") == client_ip and s.get("user_agent") == ua)
+        return {"sessions": sessions, "total": len(sessions)}
+    except Exception as exc:
+        return {"sessions": [], "total": 0, "error": str(exc)}
 
 
 @router.post("/sessions/heartbeat")
 async def session_heartbeat(request: Request, user: dict = Depends(get_current_user)):
-    """Update last_active_at for the current session."""
-    username = user.get("username") or ""
-    u = supabase.table("users").select("id").eq("username", username).limit(1).execute()
-    if not u.data:
-        return {"ok": False}
-    user_id = u.data[0]["id"]
+    """Keep session alive, report concurrent sessions, prune stale ones."""
+    username = user.get("username")
+    client_ip = request.client.host if request.client else ""
     ua = request.headers.get("user-agent", "")
-    if not ua:
-        return {"ok": False}
-    # Upsert session
-    existing = supabase.table("user_sessions").select("id").eq("user_id", user_id).eq("user_agent", ua).limit(1).execute()
     now = datetime.now(timezone.utc).isoformat()
-    if existing.data:
-        supabase.table("user_sessions").update({"last_active_at": now}).eq("id", existing.data[0]["id"]).execute()
-    else:
-        supabase.table("user_sessions").insert({
-            "id": str(uuid.uuid4()),
-            "user_id": user_id,
-            "user_agent": ua,
-            "last_active_at": now,
-            "created_at": now,
-        }).execute()
-    return {"ok": True}
+    try:
+        existing = supabase.table("admin_sessions") \
+            .select("id") \
+            .eq("username", username) \
+            .eq("ip", client_ip) \
+            .eq("user_agent", ua) \
+            .execute()
+        if existing.data:
+            supabase.table("admin_sessions") \
+                .update({"last_active": now}) \
+                .eq("id", existing.data[0]["id"]) \
+                .execute()
+        else:
+            supabase.table("admin_sessions").insert({
+                "user_id":    user.get("id") or "admin",
+                "username":   username,
+                "role":       user.get("role", ""),
+                "ip":         client_ip,
+                "user_agent": ua,
+                "last_active": now,
+            }).execute()
+        all_sessions = supabase.table("admin_sessions") \
+            .select("id,ip,user_agent,last_active") \
+            .eq("username", username) \
+            .execute()
+        others = [s for s in (all_sessions.data or [])
+                  if not (s.get("ip") == client_ip and s.get("user_agent") == ua)]
+        stale_cutoff = (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()
+        for s in others:
+            if s.get("last_active", "") < stale_cutoff:
+                supabase.table("admin_sessions").delete().eq("id", s["id"]).execute()
+        active_others = [s for s in others if s.get("last_active", "") >= stale_cutoff]
+        return {
+            "ok": True,
+            "concurrent_sessions": len(active_others),
+            "conflict": len(active_others) > 0,
+            "others": [{"ip": s["ip"], "last_active": s["last_active"]} for s in active_others],
+        }
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
 
 
 @router.delete("/sessions/{session_id}")
-async def delete_session(session_id: str, user: dict = Depends(get_current_user)):
-    """Delete a specific session."""
-    username = user.get("username") or ""
-    u = supabase.table("users").select("id").eq("username", username).limit(1).execute()
-    if not u.data:
-        raise HTTPException(404, "User not found")
-    user_id = u.data[0]["id"]
-    supabase.table("user_sessions").delete().eq("id", session_id).eq("user_id", user_id).execute()
-    return {"ok": True}
+async def revoke_session(session_id: str, user: dict = Depends(get_current_user)):
+    """Revoke a specific session by ID (owner only)."""
+    username = user.get("username")
+    row = supabase.table("admin_sessions").select("username").eq("id", session_id).execute()
+    if not row.data or row.data[0].get("username") != username:
+        raise HTTPException(404, "Session not found")
+    supabase.table("admin_sessions").delete().eq("id", session_id).execute()
+    _audit(username, "session_revoked", target=session_id)
+    return {"revoked": True}
 
 
 @router.delete("/sessions")
-async def delete_all_sessions(user: dict = Depends(get_current_user)):
-    """Delete all sessions except the current one."""
-    username = user.get("username") or ""
-    u = supabase.table("users").select("id").eq("username", username).limit(1).execute()
-    if not u.data:
-        return {"ok": True}
-    user_id = u.data[0]["id"]
-    supabase.table("user_sessions").delete().eq("user_id", user_id).execute()
-    return {"ok": True}
+async def revoke_all_other_sessions(request: Request, user: dict = Depends(get_current_user)):
+    """Revoke all sessions except the current one."""
+    username = user.get("username")
+    client_ip = request.client.host if request.client else ""
+    ua = request.headers.get("user-agent", "")
+    all_rows = supabase.table("admin_sessions") \
+        .select("id,ip,user_agent") \
+        .eq("username", username) \
+        .execute()
+    to_delete = [s["id"] for s in (all_rows.data or [])
+                 if not (s.get("ip") == client_ip and s.get("user_agent") == ua)]
+    if to_delete:
+        supabase.table("admin_sessions").delete().in_("id", to_delete).execute()
+    _audit(username, "sessions_revoke_all", details={"count": len(to_delete)})
+    return {"revoked": len(to_delete)}

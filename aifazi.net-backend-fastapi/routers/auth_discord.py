@@ -3,7 +3,6 @@
 Extracted from auth.py. Handles Discord OAuth flow for user authentication
 and account linking.
 """
-import hashlib
 import hmac
 import logging
 import os
@@ -15,7 +14,6 @@ from fastapi.responses import RedirectResponse
 
 from database import supabase
 from dependencies import get_current_user
-from paseto_token import create_token
 
 router = APIRouter()
 log = logging.getLogger("auth.discord")
@@ -102,29 +100,40 @@ async def discord_callback(request: Request):
     # Tokens are delivered via HttpOnly SameSite=Lax cookies (same
     # _set_auth_cookies pattern as routers/auth.py) — never in the redirect
     # URL, where they would leak via history, logs, and Referer headers.
-    from routers.auth import _set_auth_cookies
+    from datetime import datetime, timezone
+
+    from routers.auth import _set_auth_cookies, make_forum_token, make_refresh_token
+    avatar_url = f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar}.png" if avatar else ""
     if existing.data:
-        # User exists — issue tokens
+        # User exists — issue forum-style tokens (id included for /refresh).
         user = existing.data[0]
-        token = create_token({"sub": user["username"], "role": "user"}, purpose="auth")
-        refresh = create_token({"sub": user["username"], "role": "user"}, purpose="refresh")
+        token = make_forum_token(user["id"], user["username"], "user")
+        refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": "user"}, 60 * 24 * 7)
+        supabase.table("users").update({
+            "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", user["id"]).execute()
         resp = RedirectResponse(url=f"{FRONTEND_URL}/auth/callback", status_code=302)
         _set_auth_cookies(resp, token, refresh)
         return resp
     else:
-        # New user — create account
+        # New user — create account (banned defaults False = active).
         new_username = f"discord_{username}"
-        supabase.table("users").insert({
+        ins = supabase.table("users").insert({
             "username": new_username,
             "discord_id": discord_id,
             "discord_username": username,
             "email": email,
-            "avatar_url": f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar}.png" if avatar else "",
+            "avatar": avatar_url,
+            "profile_avatar": avatar_url,
             "role": "user",
-            "is_active": True,
         }).execute()
-        token = create_token({"sub": new_username, "role": "user"}, purpose="auth")
-        refresh = create_token({"sub": new_username, "role": "user"}, purpose="refresh")
+        new_id = ins.data[0]["id"] if ins.data else None
+        token = make_forum_token(new_id, new_username, "user")
+        refresh = make_refresh_token({"id": new_id, "username": new_username, "role": "user"}, 60 * 24 * 7)
+        if new_id:
+            supabase.table("users").update({
+                "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("id", new_id).execute()
         resp = RedirectResponse(url=f"{FRONTEND_URL}/auth/callback", status_code=302)
         _set_auth_cookies(resp, token, refresh)
         return resp
