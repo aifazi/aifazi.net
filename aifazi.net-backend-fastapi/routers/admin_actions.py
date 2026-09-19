@@ -53,7 +53,6 @@ FORBIDDEN_FIELDS = frozenset({
     "chattoken",   "chat_token",
     "created_at", "createdat",
     "updated_at", "updatedat",
-    "role",
     "totp_secret", "totp_enabled",
     "email_verified",
     "discord_id", "steam_id",

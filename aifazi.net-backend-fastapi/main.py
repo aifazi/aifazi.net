@@ -760,13 +760,14 @@ async def health():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+
     if dsn:
         sentry_sdk.capture_exception(exc)
-    log.error("unhandled exception on %s: %s", request.url.path, exc, exc_info=True)
+    log.error("unhandled exception on %s: %s\n%s", request.url.path, exc,
+              "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
     # Record + alert via the in-project monitor (Sentry-like, deduped email)
     try:
-        import traceback
-
         from routers.monitor import _record_error
         await _record_error(
             source="backend",

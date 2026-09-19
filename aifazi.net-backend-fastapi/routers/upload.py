@@ -254,7 +254,8 @@ async def _upload_cloudinary(content: bytes, filename: str, mimetype: str, cfg: 
 
     ts        = str(int(time.time()))
     sig_str   = f"folder={folder}&timestamp={ts}{secret}"
-    signature = hashlib.sha1(sig_str.encode()).hexdigest()
+    # Cloudinary API mandates SHA-1 for request signatures; secret provides security.
+    signature = hashlib.sha1(sig_str.encode(), usedforsecurity=False).hexdigest()
 
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(
@@ -315,7 +316,8 @@ async def _upload_b2(content: bytes, filename: str, mimetype: str, cfg: dict) ->
 
         # 4. Upload
         import hashlib
-        sha1 = hashlib.sha1(content).hexdigest()
+        # Backblaze B2 requires SHA-1 content hash header for uploads.
+        sha1 = hashlib.sha1(content, usedforsecurity=False).hexdigest()
         r4 = await client.post(
             up_url,
             headers={
@@ -607,7 +609,8 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
             if cloud and key and secret and path:
                 ts = int(_time.time())
                 to_sign = f"public_id={path}&timestamp={ts}{secret}"
-                sig = hashlib.sha1(to_sign.encode()).hexdigest()
+                # Cloudinary API mandates SHA-1 for request signatures.
+                sig = hashlib.sha1(to_sign.encode(), usedforsecurity=False).hexdigest()
                 async with httpx.AsyncClient(timeout=15) as c:
                     await c.post(
                         f"https://api.cloudinary.com/v1_1/{cloud}/image/destroy",
