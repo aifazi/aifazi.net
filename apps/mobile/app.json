@@ -49,26 +49,25 @@
       },
       "bitcode": false
     },
-    "android": {
-      "permissions": [
-        "INTERNET",
-        "ACCESS_NETWORK_STATE",
-        "RECORD_AUDIO",
-        "CAMERA",
-        "MODIFY_AUDIO_SETTINGS",
-        "BLUETOOTH_CONNECT",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_MEDIA_PROJECTION",
-        "FOREGROUND_SERVICE_MICROPHONE",
-        "WAKE_LOCK",
-        "REQUEST_INSTALL_PACKAGES",
-        "POST_NOTIFICATIONS"
-      ],
+      "android": {
+        "permissions": [
+          "INTERNET",
+          "ACCESS_NETWORK_STATE",
+          "RECORD_AUDIO",
+          "CAMERA",
+          "MODIFY_AUDIO_SETTINGS",
+          "BLUETOOTH_CONNECT",
+          "FOREGROUND_SERVICE",
+          "FOREGROUND_SERVICE_MEDIA_PROJECTION",
+          "FOREGROUND_SERVICE_MICROPHONE",
+          "WAKE_LOCK",
+          "POST_NOTIFICATIONS"
+        ],
       "adaptiveIcon": {
         "backgroundColor": "#060a0f",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "monochromeImage": "./assets/images/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": true,
       "package": "net.aifazi.mobile",
@@ -132,7 +131,8 @@
         }
       ],
       "./plugins/with-release-signing",
-      "./plugins/with-gradle-memory"
+      "./plugins/with-gradle-memory",
+      "./plugins/with-android-manifest"
     ],
     "experiments": {
       "typedRoutes": true

@@ -18,7 +18,6 @@ import { AuthProvider, useAuth } from '@/src/lib/auth'
 import { OverlayProvider } from '@/src/components/overlay'
 import { BootScreen } from '@/src/components/BootScreen'
 import { AmbientBackground } from '@/src/components/motion'
-import { startIntegrityChecks, stopIntegrityChecks } from '@/src/lib/integrity'
 import { configurePushNotifications, registerPushToken, unregisterPushToken } from '@/src/lib/push'
 import * as Notifications from 'expo-notifications'
 
@@ -27,6 +26,14 @@ export { ErrorBoundary } from '@/src/components/ErrorBoundary'
 export const unstable_settings = {
   initialRouteName: '(tabs)',
 }
+
+/**
+ * Room/thread ids are interpolated into router URLs from push payloads and
+ * notification links. Only alphanumerics, dash, and underscore (max 128
+ * chars) may navigate — anything else is dropped so a crafted payload can
+ * never drive the router to an unexpected route.
+ */
+const ROUTE_ID_RE = /^[A-Za-z0-9_-]{1,128}$/
 
 /**
  * Feeds the active app theme into React Navigation so the native-stack
@@ -96,15 +103,15 @@ function ThemeTransitionOverlay() {
 function RootNav() {
   const { theme } = useTheme()
   const c = theme.colors
-  const { loading: authLoading, isAuthed } = useAuth()
+  const { loading: authLoading, isAuthed, user } = useAuth()
   const router = useRouter()
-  const pushTokenRef = useRef<string | null>(null)
+  // Push token held for this session, keyed by user id so an account switch
+  // never unregisters (or leaks) another user's registration.
+  const pushTokenRef = useRef<{ userId: string; token: string } | null>(null)
 
-  // Start anti-tamper integrity checks
-  useEffect(() => {
-    startIntegrityChecks()
-    return () => stopIntegrityChecks()
-  }, [])
+  // NOTE: runtime integrity checks were removed — src/lib/integrity.js was a
+  // no-op stub (always-true) with no real-check dep installed, so wiring it at
+  // boot provided only a false sense of security.
 
   // Native push (expo-notifications). Configure the foreground handler + Android
   // channel once; register the Expo push token with the backend once the user is
@@ -113,10 +120,11 @@ function RootNav() {
     configurePushNotifications()
     let tokenRegistered = false
     let sub: ReturnType<typeof Notifications.addNotificationResponseReceivedListener> | undefined
-    if (isAuthed) {
-      registerPushToken().then((token) => {
+    const userId = user?.id ?? user?._id
+    if (isAuthed && userId) {
+      registerPushToken(userId).then((token) => {
         if (token) {
-          pushTokenRef.current = token
+          pushTokenRef.current = { userId, token }
           tokenRegistered = true
         }
       })
@@ -124,7 +132,7 @@ function RootNav() {
     sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data ?? {}
       const room = data.room as string | undefined
-      if (room) {
+      if (room && ROUTE_ID_RE.test(room)) {
         router.push(`/chat-room?room=${encodeURIComponent(room)}` as Href)
         return
       }
@@ -132,7 +140,7 @@ function RootNav() {
       // (type: 'call') renders with an Accept button.
       if (data.call) {
         const threadId = data.thread_id as string | undefined
-        if (threadId) {
+        if (threadId && ROUTE_ID_RE.test(threadId)) {
           router.push(`/dm-thread?thread_id=${encodeURIComponent(threadId)}` as Href)
         }
       }
@@ -140,11 +148,11 @@ function RootNav() {
     return () => {
       if (sub) sub.remove()
       if (tokenRegistered && pushTokenRef.current) {
-        unregisterPushToken(pushTokenRef.current)
+        unregisterPushToken(pushTokenRef.current.token)
         pushTokenRef.current = null
       }
     }
-  }, [isAuthed, router])
+  }, [isAuthed, user?.id, user?._id, router])
 
   // EAS Update OTA wiring: native side is configured with checkAutomatically
   // "NEVER", so this is the single place that checks for a newer bundle for the
@@ -154,6 +162,9 @@ function RootNav() {
   const segments = useSegments()
   const segmentsRef = useRef(segments)
   segmentsRef.current = segments
+  // Set when an update was downloaded while the user was on a call/auth route
+  // and the reload had to be deferred — retried once they navigate away.
+  const otaPendingRef = useRef(false)
   useEffect(() => {
     if (__DEV__ || !Updates.isEnabled) return
     let active = true
@@ -166,8 +177,12 @@ function RootNav() {
         const route = segmentsRef.current.join('/')
         // Never hot-reload mid-flow: the access token is memory-only (H4), so a
         // reload while signing in / verifying 2FA / calling wipes it and the app
-        // lands back on the boot screen mid-auth. Apply on next launch instead.
-        if (route.startsWith('call') || route.startsWith('auth')) return
+        // lands back on the boot screen mid-auth. Defer until the route clears.
+        if (route.startsWith('call') || route.startsWith('auth')) {
+          otaPendingRef.current = true
+          return
+        }
+        otaPendingRef.current = false
         await Updates.reloadAsync()
       } catch {
         // Best-effort OTA — never block boot on network/update failures.
@@ -186,6 +201,15 @@ function RootNav() {
       subAppState.remove()
     }
   }, [])
+
+  // Retry a deferred OTA reload after leaving call/auth routes.
+  useEffect(() => {
+    if (!otaPendingRef.current || __DEV__ || !Updates.isEnabled) return
+    const route = segments.join('/')
+    if (route.startsWith('call') || route.startsWith('auth')) return
+    otaPendingRef.current = false
+    Updates.reloadAsync().catch(() => {})
+  }, [segments])
 
   if (authLoading) return <BootScreen label="LOADING PLATFORM" />
   return (

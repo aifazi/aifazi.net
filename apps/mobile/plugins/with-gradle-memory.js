@@ -18,6 +18,10 @@ const { withGradleProperties, withAppBuildGradle } = require('@expo/config-plugi
 //
 // lintVital is also disabled in release builds: it runs an extra full lint
 // pass on every module for zero runtime value and burns the same scarce heap.
+// TODO(nightly-lint): re-enable checkReleaseBuilds on a nightly CI lane (not
+// the release lane) so lint regressions are still caught without OOMing the
+// 2-core / 7 GB release runner. Build behavior below is intentionally
+// untouched — comment-only change.
 const MEMORY_PROPS = [
   { key: 'org.gradle.jvmargs', value: '-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+UseParallelGC' },
   { key: 'kotlin.daemon.jvmargs', value: '-Xmx1536m -XX:MaxMetaspaceSize=512m' },

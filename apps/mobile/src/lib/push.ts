@@ -45,9 +45,17 @@ export async function configurePushNotifications() {
   await ensureChannel()
 }
 
+/**
+ * Current push registration, keyed by user id so a token registered for user
+ * A is never unregistered as (or leaked to) user B after account switching.
+ * The AuthProvider logout flow calls unregisterCurrentPushToken() so the
+ * backend fan-out stops targeting this device on every logout path.
+ */
+let currentPush: { userId: string; token: string } | null = null
+
 /** Acquire the Expo push token for this install and register it with the
  * backend so the chat fan-out can reach this device. */
-export async function registerPushToken() {
+export async function registerPushToken(userId?: string) {
   try {
     const perms = await Notifications.getPermissionsAsync()
     let granted = perms.granted
@@ -61,6 +69,7 @@ export async function registerPushToken() {
     const token = await Notifications.getExpoPushTokenAsync({ projectId })
     if (!token?.data) return null
     await api.post('/push/register', { token: token.data })
+    if (userId) currentPush = { userId, token: token.data }
     return token.data
   } catch {
     return null // Best-effort — never break boot/auth over push.
@@ -73,5 +82,14 @@ export async function unregisterPushToken(token: string | null) {
     await api.post('/push/unregister', { token })
   } catch {
     // Non-fatal; the token row is cleaned on next app open if it 400s.
+  } finally {
+    if (currentPush?.token === token) currentPush = null
   }
+}
+
+/** Unregister whichever token is currently held (logout flow). Never throws. */
+export async function unregisterCurrentPushToken() {
+  const held = currentPush
+  currentPush = null
+  if (held) await unregisterPushToken(held.token)
 }

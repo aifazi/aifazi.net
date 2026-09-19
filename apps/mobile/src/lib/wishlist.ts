@@ -2,6 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useSyncExternalStore, useCallback, useEffect, useState } from 'react'
 import { api } from './api'
 
+// NOTE: AsyncStorage is unencrypted — the wishlist holds NON-SECRET product
+// ids only. Never store tokens, keys, or secrets in this module.
+
 const KEY = 'aifazi_wishlist'
 let _cache: string[] = []
 let _cacheRaw = '[]'
