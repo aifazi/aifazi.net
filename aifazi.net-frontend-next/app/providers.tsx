@@ -277,7 +277,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   // Local-only personality write: resolves THEME_FRAMEWORK for the theme id
   // and merges the 5 framework keys into siteConfig state (no backend write,
   // no event dispatch — purely this browser's preview). Unmapped ids no-op.
-  const applyFrameworkForTheme = (id: string) => {
+  function applyFrameworkForTheme(id: string) {
     try {
       applyThemeFramework(id, (k: string, v: string) =>
         setSiteConfig(prev => (prev && (prev as Record<string, any>)[k] === v ? prev : { ...prev, [k]: v }))
