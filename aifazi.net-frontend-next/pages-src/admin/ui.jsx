@@ -10,7 +10,7 @@ import React, { useEffect, useRef } from 'react'
 export const MONO = 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)'
 
 /* ── Button ─────────────────────────────────────────────────────────────── */
-export function Btn({ onClick, children, color = 'var(--green)', disabled, danger, small, ghost, full, variant = 'solid', style, type = 'button', ...rest }) {
+export function Btn({ onClick, children, label, textColor, color = 'var(--green)', disabled, danger, small, ghost, full, variant = 'solid', style, type = 'button', ...rest }) {
   const base = {
     fontFamily: MONO, fontSize: small ? 9 : 10, letterSpacing: 1.5, fontWeight: 700,
     padding: small ? '6px 12px' : '9px 16px', borderRadius: 6, cursor: disabled ? 'not-allowed' : 'pointer',
@@ -30,8 +30,9 @@ export function Btn({ onClick, children, color = 'var(--green)', disabled, dange
     base.background = danger ? '#ff4757' : color
     base.color = '#000'
   }
+  if (textColor) base.color = textColor
   return (
-    <button type={type} onClick={onClick} disabled={disabled} style={base} {...rest}>{children}</button>
+    <button type={type} onClick={onClick} disabled={disabled} style={base} {...rest}>{children ?? label}</button>
   )
 }
 
