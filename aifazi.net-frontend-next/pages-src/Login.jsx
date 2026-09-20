@@ -298,7 +298,12 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
       (!identifier.trim() ? siIdRef.current : siPassRef.current)?.focus()
       shake?.(formRef.current); return
     }
-    if (Date.now() < lockoutUntil) return
+    if (Date.now() < lockoutUntil) {
+      const s = Math.ceil((lockoutUntil - Date.now()) / 1000)
+      setCountdown(s)
+      setError(`Too many attempts. Try again in ${s}s.`)
+      shake?.(formRef.current); return
+    }
     setLoading(true); setError('')
 
     try {
