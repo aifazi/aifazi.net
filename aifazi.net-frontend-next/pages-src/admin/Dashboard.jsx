@@ -91,6 +91,123 @@ const PRESET_PERMISSIONS = {
 function canViewNavItem(item) {
   return canViewKey(item.key)
 }
+
+const ABUSE_SURFACES = [
+  ['chat', 'Chat rooms'],
+  ['forum', 'Forum account'],
+  ['vpn', 'VPN peers'],
+  ['fivem', 'FiveM'],
+  ['ip', 'IP address'],
+]
+// Abuse kill-switch modal: ban a user across every surface in one action.
+// Never auto-closes on partial failure — the per-surface result panel stays
+// open so staff can see exactly what failed. Undo restores prior state via
+// the undo_token returned by POST /admin/actions/abuse-ban.
+function AbuseBanModal({ target, onClose }) {
+  const toast = useToast()
+  const [surfaces, setSurfaces] = useState({ chat: true, forum: true, vpn: true, fivem: true, ip: true })
+  const [reason, setReason] = useState('')
+  const [ip, setIp] = useState('')
+  const [understand, setUnderstand] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState(null)
+  const [undoBusy, setUndoBusy] = useState(false)
+  const [undone, setUndone] = useState(null)
+
+  const toggle = k => setSurfaces(p => ({ ...p, [k]: !p[k] }))
+  const reasonOk = reason.trim().length >= 3
+  const canBan = understand && reasonOk && !busy && !result
+
+  const runBan = async () => {
+    if (!reasonOk) { toast.error('Reason is required (min 3 characters)', { title: 'Ban blocked' }); return }
+    setBusy(true)
+    try {
+      const picked = ABUSE_SURFACES.map(([k]) => k).filter(k => surfaces[k])
+      const payload = { username: target.username, user_id: target._id || target.id || undefined, reason: reason.trim(), surfaces: picked, confirm: true }
+      if (ip.trim()) payload.ip = ip.trim()
+      const r = await api.post('/admin/actions/abuse-ban', payload)
+      setResult(r.data)
+      if (r.data?.ok) toast.success(`Banned everywhere: ${target.username}`, { title: 'Abuse Ban' })
+      else toast.error('Partial failure — review per-surface results below', { title: 'Abuse Ban' })
+    } catch (err) {
+      toast.error(err.response?.data?.detail || err.response?.data?.error || 'Ban failed', { title: 'Abuse Ban' })
+    } finally { setBusy(false) }
+  }
+
+  const runUndo = async () => {
+    if (!result?.undo_token) return
+    setUndoBusy(true)
+    try {
+      const r = await api.post('/admin/actions/abuse-unban', { undo_token: result.undo_token, confirm: true })
+      setUndone(r.data)
+      if (r.data?.ok) toast.success(`Ban undone: ${target.username}`, { title: 'Undone' })
+      else toast.error('Partial undo — review per-surface results', { title: 'Undo' })
+    } catch (err) {
+      toast.error(err.response?.data?.detail || err.response?.data?.error || 'Undo failed', { title: 'Undo' })
+    } finally { setUndoBusy(false) }
+  }
+
+  const copyReason = async () => {
+    try { await navigator.clipboard.writeText(reason.trim()); toast.success('Reason copied', { title: 'Copied' }) }
+    catch { toast.error('Copy failed', { title: 'Error' }) }
+  }
+
+  const resultRows = obj => Object.entries(obj?.results || {}).map(([k, v]) => (
+    <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'baseline' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', textTransform: 'uppercase' }}>{k}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, textAlign: 'right', color: v?.ok ? 'var(--green)' : '#ff4757' }}>
+        {v?.ok ? 'OK' : 'FAIL'} — {v?.detail || v?.error || ''}
+      </span>
+    </div>
+  ))
+
+  return (
+    <Modal open onClose={onClose} width={560} title="Ban Everywhere">
+      <div style={{ padding: 24 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: '#ff4757', marginBottom: 6 }}>🚫 ABUSE KILL-SWITCH — {target.username}</div>
+        {!result ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <label style={S.label}>Surfaces</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {ABUSE_SURFACES.map(([k, label]) => (
+                  <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: surfaces[k] ? 'var(--text)' : 'var(--muted)', border: `1px solid ${surfaces[k] ? 'var(--green)' : 'var(--border)'}`, borderRadius: 6, padding: '7px 10px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!!surfaces[k]} onChange={() => toggle(k)} />{label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div><label style={S.label}>Reason (required, min 3 chars)</label><input value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Spam, abuse, ban evasion..." style={S.input} /></div>
+            <div><label style={S.label}>Explicit IP <span style={{ textTransform: 'none', letterSpacing: 0 }}>(optional — else last known IP is used)</span></label><input value={ip} onChange={e => setIp(e.target.value)} placeholder="1.2.3.4" style={S.input} /></div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={understand} onChange={e => setUnderstand(e.target.checked)} />I understand this bans the user everywhere
+            </label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={runBan} disabled={!canBan} style={{ ...S.btn('rgba(255,71,87,0.15)', '#ff4757'), border: '1px solid rgba(255,71,87,0.4)', flex: 2, opacity: canBan ? 1 : 0.5, cursor: canBan ? 'pointer' : 'not-allowed' }}>{busy ? 'BANNING...' : 'BAN'}</button>
+              <button type="button" onClick={onClose} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', flex: 1 }}>CANCEL</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: result.ok ? 'var(--green)' : '#ff4757' }}>{result.ok ? 'BANNED EVERYWHERE' : 'PARTIAL FAILURE — REVIEW BELOW'}</div>
+            <div>{resultRows(result)}</div>
+            {undone && (
+              <div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: undone.ok ? 'var(--green)' : '#ff4757', marginBottom: 4 }}>UNDO RESULT</div>
+                {resultRows(undone)}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {!undone && <button type="button" onClick={runUndo} disabled={undoBusy} style={{ ...S.btn('var(--bg3)', 'var(--text)'), border: '1px solid var(--border)', flex: 1, opacity: undoBusy ? 0.6 : 1 }}>{undoBusy ? 'UNDOING...' : '↩ UNDO BAN'}</button>}
+              <button type="button" onClick={copyReason} style={{ ...S.btn('var(--bg3)', 'var(--muted)'), border: '1px solid var(--border)', flex: 1 }}>COPY REASON</button>
+              <button type="button" onClick={onClose} style={{ ...S.btn(), flex: 1 }}>CLOSE</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+  )
+}
 function permissionForRole(role) { return JSON.parse(JSON.stringify(PRESET_PERMISSIONS[role] || PRESET_PERMISSIONS.editor)) }
 function PermissionEditor({ value = {}, onChange }) {
   const toggle = (module, action) => {
@@ -161,6 +278,7 @@ function Dashboard({ onLogout }) {
   const [newStaff, setNewStaff] = useState({ mode: 'standalone', forum_user_id: '', username: '', email: '', password: '', role: 'editor', module_permissions: permissionForRole('editor') })
   const [staffSaving, setStaffSaving] = useState(false)
   const [editingStaff, setEditingStaff] = useState(null) // staff member being edited
+  const [abuseTarget, setAbuseTarget] = useState(null) // kill-switch modal target
   const [editStaffForm, setEditStaffForm] = useState({ username: '', email: '', role: '', password: '', forum_user_id: '', module_permissions: {} })
   const [staffUserQuery, setStaffUserQuery] = useState('')
   const [staffUserResults, setStaffUserResults] = useState([])
@@ -1220,6 +1338,11 @@ function Dashboard({ onLogout }) {
                       <div><label style={S.label}>Email</label><input type="email" value={editStaffForm.email} onChange={e => setEditStaffForm(p => ({ ...p, email: e.target.value }))} style={S.input} required /></div>
                       <div><label style={S.label}>New Password <span style={{ color: 'var(--muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(leave blank to keep current)</span></label><input type="password" value={editStaffForm.password} onChange={e => setEditStaffForm(p => ({ ...p, password: e.target.value }))} placeholder="" style={S.input} minLength={8} /></div>
                       <PermissionEditor value={editStaffForm.module_permissions} onChange={module_permissions => setEditStaffForm(p => ({ ...p, module_permissions }))} />
+                      <div style={{ border: '1px solid rgba(255,71,87,0.35)', background: 'rgba(255,71,87,0.06)', borderRadius: 8, padding: 12 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: '#ff4757', marginBottom: 8 }}>DANGER ZONE</div>
+                        <button type="button" onClick={() => setAbuseTarget(editingStaff)} style={{ ...S.btn('rgba(255,71,87,0.15)', '#ff4757'), border: '1px solid rgba(255,71,87,0.4)', width: '100%' }}>🚫 BAN EVERYWHERE</button>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 8 }}>Suspends chat, forum, VPN, FiveM + IP in one action. Undo available.</div>
+                      </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button type="submit" disabled={staffSaving} style={{ ...S.btn(), flex: 1, opacity: staffSaving ? 0.7 : 1 }}>{staffSaving ? 'SAVING...' : ' SAVE'}</button>
                         <button type="button" onClick={() => setEditingStaff(null)} style={{ ...S.btn('var(--bg3)', 'var(--muted)'), border: '1px solid var(--border)', flex: 1 }}>CANCEL</button>
@@ -1227,6 +1350,9 @@ function Dashboard({ onLogout }) {
                     </form>
                   </div>
                 </Modal>
+              )}
+              {abuseTarget && (
+                <AbuseBanModal target={abuseTarget} onClose={() => setAbuseTarget(null)} />
               )}
             </div>
           )}
