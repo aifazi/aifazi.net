@@ -27,10 +27,30 @@ from pydantic import BaseModel
 
 from database import supabase
 from dependencies import require_staff
+from permissions import require_permission
+from utils.audit import record as _audit
 from utils.ssrf import BLOCKED_NETWORKS, is_blocked_ip
 
 router = APIRouter()
 logger = logging.getLogger("monitor")
+
+MONITOR_MANAGE = require_permission("system.monitor", "manage")
+
+
+def _actor(user: dict) -> str:
+    return str(user.get("username") or user.get("id") or "staff")
+
+
+def _ip(request: Request | None) -> str:
+    try:
+        return request.client.host if request and request.client else ""
+    except Exception:
+        return ""
+
+
+def _email_ok(email: str) -> bool:
+    import re
+    return bool(re.fullmatch(r"[^@\s;,]+@[^@\s;,]+\.[^@\s;,]+", email))
 
 CRON_SECRET = os.getenv("CRON_SECRET", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
@@ -110,7 +130,12 @@ def _get_monitor_settings() -> dict:
 def _alert_emails() -> list[str]:
     cfg = _get_monitor_settings()
     raw = cfg.get("alert_emails") or DEFAULT_ALERT_EMAILS
-    return [e.strip() for e in raw.replace(";", ",").split(",") if e.strip()]
+    out = [e.strip() for e in raw.replace(";", ",").split(",") if e.strip()]
+    # Validate, warn don't fail: a typo'd address must not silently kill alerts.
+    bad = [e for e in out if not _email_ok(e)]
+    if bad:
+        logger.warning("monitor: %d alert email(s) look invalid and may not deliver: %s", len(bad), bad)
+    return out
 
 
 def _alert_threshold() -> int:
@@ -385,11 +410,13 @@ async def _check_ping(m):
         return False, 0, "target resolves to a blocked network or has no usable address"
     # Prefer a subprocess ping; fall back to a TCP connect on the PINNED IP
     # (serverless sandboxes often lack the ping binary or ICMP privileges).
+    # NOTE: ping the resolved safe_ip, NOT the hostname — pinging the hostname
+    # would re-resolve DNS and re-open the rebinding TOCTOU the PINNED IP closes.
     import subprocess
     start = time.perf_counter()
     try:
         res = await asyncio.to_thread(
-            subprocess.run, ["ping", "-c", "1", "-W", "2", host],
+            subprocess.run, ["ping", "-c", "1", "-W", "2", safe_ip],
             capture_output=True, text=True, timeout=6,
         )
         if res.returncode == 0:
@@ -932,9 +959,12 @@ def _html(s) -> str:
 
 
 # ── Staff: run now ────────────────────────────────────────────────────────────
+# NOTE: rate-limit follow-up — main.py should cap POST /api/monitor/run at
+# ~5/min per staff account; a full check sweep fans out to every service.
 @router.post("/api/monitor/run")
-async def staff_run(user: dict = Depends(require_staff)):
+async def staff_run(request: Request, user: dict = Depends(MONITOR_MANAGE)):
     results = await _run_all_checks()
+    _audit(_actor(user), "monitor_run", target="monitor", ip=_ip(request))
     return {"ran_at": _now(), "results": results}
 
 
@@ -951,9 +981,14 @@ async def staff_get_settings(user: dict = Depends(require_staff)):
 
 
 @router.put("/api/monitor/settings")
-async def staff_update_settings(body: dict, user: dict = Depends(require_staff)):
+async def staff_update_settings(body: dict, request: Request, user: dict = Depends(MONITOR_MANAGE)):
     # Validate + sanitize
     emails = str(body.get("alert_emails", "") or "")
+    bad = [e.strip() for e in emails.replace(";", ",").split(",") if e.strip() and not _email_ok(e.strip())]
+    if bad:
+        # Warn, don't fail — save the settings so alerts keep flowing to the
+        # valid addresses while the typo is fixed.
+        logger.warning("monitor: saving settings with suspicious alert email(s): %s", bad)
     try:
         threshold = max(1, int(body.get("alert_threshold", DEFAULT_ALERT_THRESHOLD)))
     except (TypeError, ValueError):
@@ -980,6 +1015,9 @@ async def staff_update_settings(body: dict, user: dict = Depends(require_staff))
     except Exception as e:
         logger.error("monitor: save settings failed: %s", e)
         raise HTTPException(500, "Could not save monitor settings")
+    _audit(_actor(user), "monitor_settings_update", target="monitor",
+           details={"alert_threshold": monitor_cfg["alert_threshold"],
+                    "enabled_services": monitor_cfg["enabled_services"]}, ip=_ip(request))
     return monitor_cfg
 
 
@@ -1006,7 +1044,9 @@ def _clean_monitor(body: MonitorBody) -> dict:
     if not body.target.strip():
         raise HTTPException(400, "Target is required")
     mode = body.mode if body.mode in ("contains", "not_contains") else "contains"
-    interval = max(5, int(body.interval_seconds or 60))
+    # Minimum 60s interval — sub-minute custom monitors turn the cron sweep
+    # into a self-inflicted DoS against the checked targets.
+    interval = max(60, int(body.interval_seconds or 60))
     return {
         "name": body.name.strip()[:80],
         "type": body.type,
@@ -1039,11 +1079,13 @@ async def list_custom_monitors(user: dict = Depends(require_staff)):
 
 
 @router.post("/api/monitor/checks/config")
-async def create_custom_monitor(body: MonitorBody, user: dict = Depends(require_staff)):
+async def create_custom_monitor(body: MonitorBody, request: Request, user: dict = Depends(MONITOR_MANAGE)):
     row = _clean_monitor(body)
     row["created_at"] = _now()
     try:
         res = supabase.table("monitor_checks").insert(row).execute()
+        _audit(_actor(user), "monitor_create", target="monitor_checks",
+               details={"name": row.get("name"), "type": row.get("type")}, ip=_ip(request))
         return res.data[0] if res.data else row
     except Exception as e:
         logger.error("monitor: create custom monitor failed: %s", e)
@@ -1051,12 +1093,13 @@ async def create_custom_monitor(body: MonitorBody, user: dict = Depends(require_
 
 
 @router.put("/api/monitor/checks/config/{monitor_id}")
-async def update_custom_monitor(monitor_id: str, body: MonitorBody, user: dict = Depends(require_staff)):
+async def update_custom_monitor(monitor_id: str, body: MonitorBody, request: Request, user: dict = Depends(MONITOR_MANAGE)):
     row = _clean_monitor(body)
     try:
         res = supabase.table("monitor_checks").update(row).eq("id", monitor_id).execute()
         if not res.data:
             raise HTTPException(404, "Monitor not found")
+        _audit(_actor(user), "monitor_update", target=f"monitor_checks:{monitor_id}", ip=_ip(request))
         return res.data[0]
     except HTTPException:
         raise
@@ -1066,10 +1109,11 @@ async def update_custom_monitor(monitor_id: str, body: MonitorBody, user: dict =
 
 
 @router.delete("/api/monitor/checks/config/{monitor_id}")
-async def delete_custom_monitor(monitor_id: str, user: dict = Depends(require_staff)):
+async def delete_custom_monitor(monitor_id: str, request: Request, user: dict = Depends(MONITOR_MANAGE)):
     try:
         supabase.table("monitor_checks").delete().eq("id", monitor_id).execute()
         supabase.table("uptime_checks").delete().eq("service", f"custom:{monitor_id}").execute()
+        _audit(_actor(user), "monitor_delete", target=f"monitor_checks:{monitor_id}", ip=_ip(request))
         return {"ok": True}
     except Exception as e:
         logger.error("monitor: delete custom monitor failed: %s", e)
@@ -1077,7 +1121,7 @@ async def delete_custom_monitor(monitor_id: str, user: dict = Depends(require_st
 
 
 @router.post("/api/monitor/checks/{monitor_id}/run")
-async def run_custom_monitor(monitor_id: str, user: dict = Depends(require_staff)):
+async def run_custom_monitor(monitor_id: str, user: dict = Depends(MONITOR_MANAGE)):
     """Run a single monitor now and return its result (no history write)."""
     try:
         res = supabase.table("monitor_checks").select("*").eq("id", monitor_id).limit(1).execute()

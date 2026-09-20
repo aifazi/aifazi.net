@@ -7,14 +7,31 @@ DM requests/threads/blocks, and high-level stats. Mounted at /api/chat/admin.
 """
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from database import supabase
 from dependencies import require_staff
+from permissions import require_permission
 from routers.chat import _room_access
 from routers.chat_dm import _get_or_create_thread_id
+from utils.audit import record as _audit
 
 router = APIRouter()
+
+# NOTE: rate-limit follow-up — main.py should cap /chat/admin at ~20/min per
+# staff account. These endpoints fan out to several Supabase round-trips each.
+CHAT_MANAGE = require_permission("community.chat", "manage")
+
+
+def _actor(user: dict) -> str:
+    return str(user.get("username") or user.get("id") or "staff")
+
+
+def _ip(request: Request | None) -> str:
+    try:
+        return request.client.host if request and request.client else ""
+    except Exception:
+        return ""
 
 
 def _now() -> str:
@@ -73,7 +90,7 @@ async def admin_stats(_: dict = Depends(require_staff)):
 
 
 @router.get("/admin/rooms")
-async def admin_rooms(_: dict = Depends(require_staff)):
+async def admin_rooms(_: dict = Depends(CHAT_MANAGE)):
     res = (
         supabase.table("chat_rooms")
         .select("id,name,description,color,emoji,is_private,read_only,slow_mode,type,allowed_roles,allowed_users,speak_roles,screen_share_roles,created_at")
@@ -95,11 +112,11 @@ async def admin_rooms(_: dict = Depends(require_staff)):
 
 
 @router.get("/admin/members")
-async def admin_members(_: dict = Depends(require_staff)):
+async def admin_members(limit: int = Query(200, ge=1, le=200), _: dict = Depends(CHAT_MANAGE)):
     res = (
         supabase.table("chat_members")
         .select("id,user_id,username,room_id,role,joined_at")
-        .limit(10000)
+        .limit(limit)
         .execute()
     )
     members = res.data or []
@@ -115,7 +132,8 @@ async def admin_members(_: dict = Depends(require_staff)):
 
 @router.get("/admin/mutes")
 async def admin_mutes(_: dict = Depends(require_staff)):
-    res = supabase.table("chat_mutes").select("*").limit(5000).execute()
+    # Explicit allowlist — never select("*") on moderation tables.
+    res = supabase.table("chat_mutes").select("id,room_id,user_id,username,reason,expires_at,created_at").limit(5000).execute()
     rows = res.data or []
     names = _room_names()
     now = _now()
@@ -134,7 +152,8 @@ async def admin_mutes(_: dict = Depends(require_staff)):
 
 @router.get("/admin/bans")
 async def admin_bans(_: dict = Depends(require_staff)):
-    res = supabase.table("chat_bans").select("*").limit(5000).execute()
+    # Explicit allowlist — never select("*") on moderation tables.
+    res = supabase.table("chat_bans").select("id,room_id,user_id,username,reason,created_at,expires_at").limit(5000).execute()
     rows = res.data or []
     names = _room_names()
     for b in rows:
@@ -146,7 +165,8 @@ async def admin_bans(_: dict = Depends(require_staff)):
 
 @router.get("/admin/roles")
 async def admin_roles(_: dict = Depends(require_staff)):
-    res = supabase.table("chat_room_roles").select("*").limit(5000).execute()
+    # Explicit allowlist — never select("*") on role tables.
+    res = supabase.table("chat_room_roles").select("id,room_id,name,permissions,created_at").limit(5000).execute()
     rows = res.data or []
     names = _room_names()
     for r in rows:
@@ -157,7 +177,7 @@ async def admin_roles(_: dict = Depends(require_staff)):
 
 
 @router.get("/admin/recent-messages")
-async def admin_recent_messages(limit: int = Query(30, ge=1, le=200), _: dict = Depends(require_staff)):
+async def admin_recent_messages(limit: int = Query(30, ge=1, le=200), _: dict = Depends(CHAT_MANAGE)):
     res = (
         supabase.table("chat_messages")
         .select("id,room_id,sender,content,type,file_name,created_at,edited")
@@ -182,8 +202,9 @@ def _user_meta() -> dict[str, dict]:
 
 
 @router.get("/admin/dm/requests")
-async def admin_dm_requests(status: str = Query("", pattern="^(pending|accepted|rejected)?$"), _: dict = Depends(require_staff)):
-    q = supabase.table("dm_requests").select("*").order("created_at", desc=True).limit(2000)
+async def admin_dm_requests(status: str = Query("", pattern="^(pending|accepted|rejected)?$"), _: dict = Depends(CHAT_MANAGE)):
+    # Explicit allowlist — DM rows carry private content; expose routing/status only.
+    q = supabase.table("dm_requests").select("id,sender,recipient,status,created_at").order("created_at", desc=True).limit(2000)
     if status:
         q = q.eq("status", status)
     rows = q.execute().data or []
@@ -199,13 +220,25 @@ async def admin_dm_requests(status: str = Query("", pattern="^(pending|accepted|
 
 
 @router.get("/admin/dm/threads")
-async def admin_dm_threads(_: dict = Depends(require_staff)):
-    res = supabase.table("dm_threads").select("*").order("last_message_at", desc=True).limit(2000).execute()
+async def admin_dm_threads(limit: int = Query(100, ge=1, le=200), _: dict = Depends(CHAT_MANAGE)):
+    # Explicit allowlist — encryption_key must never leave the server.
+    res = supabase.table("dm_threads").select("id,party_a,party_b,created_at,last_message_at").order("last_message_at", desc=True).limit(limit).execute()
     threads = res.data or []
+    # Single grouped count: the Supabase client has no server-side GROUP BY
+    # here, so fetch the thread_id column for the visible page in ONE query
+    # and tally in Python instead of one COUNT per thread (N+1). The tally
+    # scan is capped at 5000 message rows so a huge thread can't blow memory.
+    counts: dict[str, int] = {}
+    ids = [t.get("id") for t in threads if t.get("id")]
+    if ids:
+        rows = supabase.table("dm_messages").select("thread_id").in_("thread_id", ids).limit(5000).execute().data or []
+        for r in rows:
+            tid = r.get("thread_id")
+            if tid:
+                counts[tid] = counts.get(tid, 0) + 1
     meta = _user_meta()
     for t in threads:
-        cnt = supabase.table("dm_messages").select("id", count="exact").eq("thread_id", t["id"]).limit(1).execute()
-        t["message_count"] = int(cnt.count or 0)
+        t["message_count"] = counts.get(t.get("id"), 0)
         a = meta.get(t.get("party_a") or "", {})
         b = meta.get(t.get("party_b") or "", {})
         t["a_avatar"] = a.get("avatar") or ""
@@ -217,14 +250,15 @@ async def admin_dm_threads(_: dict = Depends(require_staff)):
 
 
 @router.get("/admin/dm/blocks")
-async def admin_dm_blocks(_: dict = Depends(require_staff)):
-    res = supabase.table("dm_blocks").select("*").order("created_at", desc=True).limit(2000).execute()
+async def admin_dm_blocks(_: dict = Depends(CHAT_MANAGE)):
+    # Explicit allowlist — expose routing/participants only.
+    res = supabase.table("dm_blocks").select("id,blocker,blocked,reason,created_at").order("created_at", desc=True).limit(2000).execute()
     return res.data or []
 
 
 @router.post("/admin/dm/requests/{request_id}/accept")
-async def admin_accept_dm_request(request_id: str, _: dict = Depends(require_staff)):
-    res = supabase.table("dm_requests").select("*").eq("id", request_id).single().execute()
+async def admin_accept_dm_request(request_id: str, request: Request, user: dict = Depends(CHAT_MANAGE)):
+    res = supabase.table("dm_requests").select("id,sender,recipient,status,created_at").eq("id", request_id).single().execute()
     if not res.data:
         raise HTTPException(404, "Request not found")
     req = res.data
@@ -232,25 +266,30 @@ async def admin_accept_dm_request(request_id: str, _: dict = Depends(require_sta
         raise HTTPException(400, "Request already handled")
     supabase.table("dm_requests").update({"status": "accepted"}).eq("id", request_id).execute()
     thread_id = _get_or_create_thread_id(req["sender"], req["recipient"])
+    _audit(_actor(user), "admin_dm_request_accept", target=f"dm_requests:{request_id}",
+           details={"sender": req.get("sender"), "recipient": req.get("recipient")}, ip=_ip(request))
     return {"ok": True, "thread_id": thread_id, "sender": req["sender"], "recipient": req["recipient"]}
 
 
 @router.post("/admin/dm/requests/{request_id}/reject")
-async def admin_reject_dm_request(request_id: str, _: dict = Depends(require_staff)):
-    res = supabase.table("dm_requests").select("*").eq("id", request_id).single().execute()
+async def admin_reject_dm_request(request_id: str, request: Request, user: dict = Depends(CHAT_MANAGE)):
+    res = supabase.table("dm_requests").select("id,sender,recipient,status,created_at").eq("id", request_id).single().execute()
     if not res.data:
         raise HTTPException(404, "Request not found")
     supabase.table("dm_requests").update({"status": "rejected"}).eq("id", request_id).execute()
+    _audit(_actor(user), "admin_dm_request_reject", target=f"dm_requests:{request_id}", ip=_ip(request))
     return {"ok": True}
 
 
 @router.delete("/admin/dm/requests/{request_id}")
-async def admin_delete_dm_request(request_id: str, _: dict = Depends(require_staff)):
+async def admin_delete_dm_request(request_id: str, request: Request, user: dict = Depends(CHAT_MANAGE)):
     supabase.table("dm_requests").delete().eq("id", request_id).execute()
+    _audit(_actor(user), "admin_dm_request_delete", target=f"dm_requests:{request_id}", ip=_ip(request))
     return {"ok": True}
 
 
 @router.delete("/admin/dm/blocks/{block_id}")
-async def admin_unblock(block_id: str, _: dict = Depends(require_staff)):
+async def admin_unblock(block_id: str, request: Request, user: dict = Depends(CHAT_MANAGE)):
     supabase.table("dm_blocks").delete().eq("id", block_id).execute()
+    _audit(_actor(user), "admin_dm_unblock", target=f"dm_blocks:{block_id}", ip=_ip(request))
     return {"ok": True}

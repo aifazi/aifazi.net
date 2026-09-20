@@ -7,9 +7,28 @@ from pydantic import BaseModel
 
 from database import supabase
 from dependencies import require_staff
+from permissions import require_permission
+from utils.audit import record as _audit
 from utils.rate_limit import invalidate_ip_bans_cache
 
+import logging
+
+log = logging.getLogger("admin_actions")
+
 router = APIRouter()
+
+CHAT_MANAGE = require_permission("community.chat", "manage")
+
+
+def _actor(user: dict) -> str:
+    return str(user.get("username") or user.get("id") or "staff")
+
+
+def _ip(request: Request | None) -> str:
+    try:
+        return request.client.host if request and request.client else ""
+    except Exception:
+        return ""
 
 # P1-11 — allowlist for the generic collection browser. Only non-sensitive
 # collections the UI needs are writable without full admin. Sensitive stores
@@ -27,7 +46,10 @@ COLL_TABLE = {
     "contacts":   "contacts",
     "messages":   "chat_messages",
     "media":      "media",
-    "staff":      "users",
+    # NOTE 2026-09: the legacy coll="staff" alias for the users table was
+    # removed — read-only grep of aifazi.net-frontend-next showed no usage of
+    # the generic collection browser with coll="staff". Staff account edits
+    # must go through the dedicated user-management flows, never this browser.
     "newsletter": "newsletter_subs",
 }
 
@@ -74,6 +96,15 @@ FORBIDDEN_FIELDS = frozenset({
     "github_id", "github_username", "github_avatar",
     "fivem_id", "fivem_license", "license_hex", "license2_hex",
     "forum_user_id", "admin_2fa",
+    # Role / privilege columns — any of these lets a staffer self-promote or
+    # rebind permissions through the generic browser. Dedicated flows only.
+    "is_admin", "is_staff", "superuser", "role_id", "user_role",
+    "permissions_json",
+    # Ban / verification state — bypasses the moderated ban + verify flows.
+    "ban_expires", "is_banned", "is_verified",
+    # NOTE: per-collection column allowlists are the follow-up — FORBIDDEN_FIELDS
+    # is a denylist ratchet, not a full allowlist. Any new sensitive column must
+    # be added here until each collection gets its own explicit allowlist.
 })
 
 def _normalize(doc):
@@ -139,10 +170,12 @@ async def collection_update(coll: str, doc_id: str, request: Request, user: dict
     if not safe:
         raise HTTPException(status_code=400, detail="No updatable fields provided")
     res = supabase.table(table).update(safe).eq("id", doc_id).execute()
+    _audit(_actor(user), "admin_collection_update", target=f"{table}:{doc_id}",
+           details={"coll": coll, "fields": sorted(safe.keys())}, ip=_ip(request))
     return {"message": "Saved", "doc": _normalize((res.data or [{}])[0])}
 
 @router.delete("/collection/{coll}/{doc_id}")
-async def collection_delete(coll: str, doc_id: str, user: dict = Depends(require_staff)):
+async def collection_delete(coll: str, doc_id: str, request: Request, user: dict = Depends(require_staff)):
     # P1-11 — same allowlist gate as PATCH: outside the allowlist requires admin.
     if coll not in ALLOWED_COLLECTIONS and user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
@@ -150,59 +183,81 @@ async def collection_delete(coll: str, doc_id: str, user: dict = Depends(require
     if not table:
         raise HTTPException(status_code=400, detail=f"Unknown collection: {coll}")
     supabase.table(table).delete().eq("id", doc_id).execute()
+    _audit(_actor(user), "admin_collection_delete", target=f"{table}:{doc_id}",
+           details={"coll": coll}, ip=_ip(request))
     return {"message": "Deleted"}
 
 
 # ── Maintenance actions ───────────────────────────────────────────────────────
 @router.post("/actions/db/clear-sessions")
-async def clear_sessions(_: dict = Depends(require_staff)):
+async def clear_sessions(request: Request, user: dict = Depends(require_staff)):
     try:
         supabase.table("auth_sessions").delete().lt("expires_at", "now()").execute()
     except Exception:
         pass  # table may not exist
+    _audit(_actor(user), "admin_clear_sessions", target="auth_sessions", ip=_ip(request))
     return {"message": "Expired sessions cleared"}
 
 @router.post("/actions/db/purge-unverified")
-async def purge_unverified(_: dict = Depends(require_staff)):
+async def purge_unverified(request: Request, user: dict = Depends(require_staff)):
     from datetime import datetime, timedelta, timezone
     cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
     res = supabase.table("users").delete().eq("email_verified", False).lt("created_at", cutoff).execute()
     deleted = len(res.data or [])
+    _audit(_actor(user), "admin_purge_unverified", target="users",
+           details={"deleted": deleted, "cutoff": cutoff}, ip=_ip(request))
     return {"message": f"Purged {deleted} unverified accounts older than 7 days"}
 
 @router.post("/actions/db/compact")
-async def compact_db(_: dict = Depends(require_staff)):
+async def compact_db(request: Request, user: dict = Depends(require_staff)):
+    _audit(_actor(user), "admin_compact_db", target="db", ip=_ip(request))
     return {"message": "Database compaction is managed automatically by Supabase"}
 
 @router.post("/actions/posts/recalculate-views")
-async def recalculate_views(_: dict = Depends(require_staff)):
+async def recalculate_views(request: Request, user: dict = Depends(require_staff)):
+    _audit(_actor(user), "admin_recalculate_views", target="posts", ip=_ip(request))
     return {"message": "View counts are stored directly — no recalculation needed"}
 
+class ChatClearBody(BaseModel):
+    confirm: bool = False
+
+
 @router.post("/actions/chat/clear-all")
-async def clear_chat(_: dict = Depends(require_staff)):
+async def clear_chat(request: Request, body: ChatClearBody | None = None, user: dict = Depends(CHAT_MANAGE)):
+    # Destructive chat wipe — requires community.chat.manage (NOT bare staff)
+    # plus an explicit {"confirm": true} body so a stray POST can't nuke history.
+    if not body or not body.confirm:
+        raise HTTPException(status_code=400, detail="Confirmation required: pass {\"confirm\": true}")
     supabase.table("chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
     from routers.chat import clear_history_cache
     await clear_history_cache()
+    _audit(_actor(user), "admin_chat_clear_all", target="chat_messages",
+           details={"confirm": True}, ip=_ip(request))
     return {"message": "All chat messages deleted"}
 
 @router.post("/actions/search/rebuild")
-async def rebuild_search(_: dict = Depends(require_staff)):
+async def rebuild_search(request: Request, user: dict = Depends(require_staff)):
+    _audit(_actor(user), "admin_rebuild_search", target="search", ip=_ip(request))
     return {"message": "Full-text search indexes rebuilt via Supabase (automatic)"}
 
 @router.post("/actions/cache/flush")
-async def flush_cache(_: dict = Depends(require_staff)):
+async def flush_cache(request: Request, user: dict = Depends(require_staff)):
+    _audit(_actor(user), "admin_flush_cache", target="cache", ip=_ip(request))
     return {"message": "Server cache flushed"}
 
 @router.post("/actions/stats/refresh")
-async def refresh_stats(_: dict = Depends(require_staff)):
+async def refresh_stats(request: Request, user: dict = Depends(require_staff)):
+    _audit(_actor(user), "admin_refresh_stats", target="stats", ip=_ip(request))
     return {"message": "Stats will refresh on next poll"}
 
 @router.post("/actions/newsletter/{sub_id}/toggle-active")
-async def newsletter_toggle_active(sub_id: str, _: dict = Depends(require_staff)):
+async def newsletter_toggle_active(sub_id: str, request: Request, user: dict = Depends(require_staff)):
     cur = supabase.table("newsletter_subs").select("status").eq("id", sub_id).single().execute()
     cur_status = (cur.data or {}).get("status", "active")
     new_status = "inactive" if cur_status == "active" else "active"
     supabase.table("newsletter_subs").update({"status": new_status}).eq("id", sub_id).execute()
+    _audit(_actor(user), "admin_newsletter_toggle", target=f"newsletter_subs:{sub_id}",
+           details={"from": cur_status, "to": new_status}, ip=_ip(request))
     return {"message": "Activated" if new_status == "active" else "Deactivated"}
 
 
@@ -217,11 +272,12 @@ async def list_sessions(_: dict = Depends(require_staff)):
     return {"sessions": sessions}
 
 @router.delete("/sessions/{session_id}")
-async def revoke_session(session_id: str, _: dict = Depends(require_staff)):
+async def revoke_session(session_id: str, request: Request, user: dict = Depends(require_staff)):
     try:
         supabase.table("auth_sessions").delete().eq("id", session_id).execute()
     except Exception:
         pass
+    _audit(_actor(user), "admin_session_revoke", target=f"auth_sessions:{session_id}", ip=_ip(request))
     return {"message": "Session revoked"}
 
 
@@ -229,6 +285,7 @@ async def revoke_session(session_id: str, _: dict = Depends(require_staff)):
 class IpBanBody(BaseModel):
     ip: str
     reason: str | None = ""
+    confirm: bool = False
 
 def _validate_ip(ip_str: str) -> bool:
     import ipaddress
@@ -237,6 +294,16 @@ def _validate_ip(ip_str: str) -> bool:
         return True
     except ValueError:
         return False
+
+def _ban_prefixlen_ok(ip_str: str) -> bool:
+    """True when the ban scope is narrow enough to be safe without extra
+    confirmation: /24+ for IPv4, /64+ for IPv6 (single addresses always OK)."""
+    import ipaddress
+    try:
+        net = ipaddress.ip_network(ip_str, strict=False)
+        return net.prefixlen >= (24 if net.version == 4 else 64)
+    except ValueError:
+        return True  # _validate_ip reports the real error
 
 @router.get("/ip-bans")
 async def list_ip_bans(_: dict = Depends(require_staff)):
@@ -248,27 +315,31 @@ async def list_ip_bans(_: dict = Depends(require_staff)):
     return {"bans": bans}
 
 @router.post("/ip-bans")
-async def add_ip_ban(body: IpBanBody, _: dict = Depends(require_staff)):
+async def add_ip_ban(body: IpBanBody, request: Request, user: dict = Depends(require_staff)):
     if not _validate_ip(body.ip):
         raise HTTPException(400, f"Invalid IP address or CIDR: {body.ip}")
+    # A /0–/23 (v4) or /0–/63 (v6) ban blackholes huge ranges — require an
+    # explicit {"confirm": true} so it can't happen by typo.
+    if not _ban_prefixlen_ok(body.ip) and not body.confirm:
+        raise HTTPException(400, "Ban scope too broad (need /24 or narrower for IPv4, /64 or narrower for IPv6) — pass {\"confirm\": true} to proceed")
     from datetime import datetime, timezone
     row = {"ip": body.ip, "reason": body.reason or "", "created_at": datetime.now(timezone.utc).isoformat()}
     try:
         res = supabase.table("ip_bans").insert(row).execute()
         invalidate_ip_bans_cache()
+        _audit(_actor(user), "admin_ip_ban_add", target=f"ip_bans:{body.ip}",
+               details={"reason": body.reason or "", "confirmed_wide": not _ban_prefixlen_ok(body.ip)}, ip=_ip(request))
         return {"message": f"Banned {body.ip}", "ban": _normalize((res.data or [{}])[0])}
     except Exception as e:
-        import logging
-        import os
-        logging.getLogger(__name__).error("ban_ip error: %s", e, exc_info=True)
-        detail = str(e) if os.getenv("ENV", "production") != "production" else "An internal error occurred."
-        raise HTTPException(status_code=500, detail=detail)
+        log.warning("ban_ip error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="An internal error occurred.")
 
 @router.delete("/ip-bans/{ban_id}")
-async def remove_ip_ban(ban_id: str, _: dict = Depends(require_staff)):
+async def remove_ip_ban(ban_id: str, request: Request, user: dict = Depends(require_staff)):
     try:
         supabase.table("ip_bans").delete().eq("id", ban_id).execute()
         invalidate_ip_bans_cache()
     except Exception:
         pass
+    _audit(_actor(user), "admin_ip_ban_remove", target=f"ip_bans:{ban_id}", ip=_ip(request))
     return {"message": "IP ban removed"}

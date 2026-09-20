@@ -58,10 +58,13 @@ DANGEROUS_PATTERNS = [
 _DANGEROUS_COMPILED = [re.compile(p, re.IGNORECASE | re.DOTALL) for p in DANGEROUS_PATTERNS]
 
 # P1-10 — tables that are never readable via the console (credentials, tokens,
-# sessions, bans). Matched case-insensitively against the raw SQL.
+# sessions, bans, billing + subscription + mail internals). Matched
+# case-insensitively against the raw SQL.
 _BLOCKED_TABLES = (
     "users", "staff_users", "recovery_codes", "password_reset_tokens",
     "email_verification_tokens", "auth_sessions", "ip_bans",
+    "site_config", "email_config", "store_transactions", "user_subscriptions",
+    "mail_queue", "admin_2fa",
 )
 _BLOCKED_TABLES_COMPILED = [re.compile(rf"\b{t}\b", re.IGNORECASE) for t in _BLOCKED_TABLES]
 
@@ -96,6 +99,17 @@ def _cap_limit(sql: str) -> str:
             return f"LIMIT {MAX_RESULT_LIMIT}"
         return f"LIMIT {min(n, MAX_RESULT_LIMIT)}"
     return re.sub(r"\bLIMIT\s+(\d+)", _repl, sql, flags=re.IGNORECASE)
+
+
+def _offset_over_cap(sql: str) -> bool:
+    """Reject OFFSET > 1000 — deep offsets are a full-table-scan DoS vector."""
+    m = re.search(r"\bOFFSET\s+(\d+)", sql, flags=re.IGNORECASE)
+    if not m:
+        return False
+    try:
+        return int(m.group(1)) > 1000
+    except (TypeError, ValueError):
+        return True
 
 def _is_dangerous_sql(sql: str) -> str | None:
     # Strip line comments and block comments first so `DROP /* x */ TABLE` is
@@ -153,9 +167,13 @@ async def execute_sql(req: SqlRequest, request: Request, user: dict = Depends(re
 
     sql_to_run = req.sql.strip().rstrip(';')
     # LIMIT cap: clamp any client-supplied LIMIT to MAX_RESULT_LIMIT and add a
-    # bounded LIMIT when none is present.
+    # bounded LIMIT when none is present. Applies to WITH-queries too — a
+    # `WITH ... SELECT` wrapper must not bypass the cap — and OFFSET > 1000
+    # is rejected outright for both shapes.
+    if _offset_over_cap(sql_to_run):
+        raise HTTPException(status_code=400, detail="OFFSET over 1000 is not allowed.")
     sql_lower = req.sql.lower()
-    if sql_lower_stripped.startswith("select"):
+    if sql_lower_stripped.startswith("select") or sql_lower_stripped.startswith("with"):
         if "limit" not in sql_lower:
             sql_to_run = f"{sql_to_run} LIMIT {MAX_RESULT_LIMIT}"
         else:

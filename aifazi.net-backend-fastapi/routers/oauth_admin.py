@@ -8,18 +8,80 @@ Migration: none beyond the existing site_config.settings JSONB column.
 """
 from __future__ import annotations
 
+import ipaddress
 import re
 import secrets
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from database import supabase
-from dependencies import require_staff
+from dependencies import require_admin
 from utils.audit import record as _audit
+from utils.ssrf import is_blocked_ip, resolve_public_ips
 
 router = APIRouter()
+
+# Cloud metadata DNS names that never appear as literal IPs but still grant
+# instance credentials when fetched server-side.
+_METADATA_HOSTS = frozenset({
+    "metadata.google.internal", "metadata.google.com",
+    "instance-data", "instance-data-compute",
+})
+
+# "__CLEAR__" is the admin-portal sentinel for wiping a stored secret without
+# sending the plaintext over the wire. Any secret field equal to this value is
+# cleared (never stored) and the clearing is audited.
+CLEAR_SENTINEL = "__CLEAR__"
+
+
+def _validate_public_https_uri(uri: str) -> str:
+    """OAuth redirect URIs must be public https — no http downgrade, no
+    localhost / private-IP / link-local / cloud-metadata targets (SSRF)."""
+    raw = (uri or "").strip()
+    try:
+        u = urlparse(raw)
+    except Exception:
+        raise HTTPException(400, f"Invalid redirect_uri: {raw[:80]}")
+    if u.scheme != "https" or not u.hostname:
+        raise HTTPException(400, f"redirect_uri must be an https URL: {raw[:80]}")
+    host = u.hostname.lower()
+    if host == "localhost" or host in _METADATA_HOSTS:
+        raise HTTPException(400, f"redirect_uri host not allowed: {host}")
+    try:
+        if is_blocked_ip(ipaddress.ip_address(host)):
+            raise HTTPException(400, f"redirect_uri host not allowed: {host}")
+    except ValueError:
+        if not resolve_public_ips(host):
+            raise HTTPException(400, f"redirect_uri host is private/unresolvable: {host}")
+    return raw
+
+
+def _validate_ldap_url(url: str) -> str:
+    """LDAP URL must use ldap(s)://. Loopback/link-local/metadata targets are
+    rejected via the shared SSRF helpers; RFC1918 is still permitted so the
+    default internal `ldap://lldap:3890` Docker service keeps working."""
+    raw = (url or "").strip()
+    try:
+        u = urlparse(raw)
+    except Exception:
+        raise HTTPException(400, f"Invalid LDAP URL: {raw[:80]}")
+    if u.scheme not in ("ldap", "ldaps") or not u.hostname:
+        raise HTTPException(400, "LDAP URL must use ldap:// or ldaps:// with a host")
+    host = u.hostname.lower()
+    if host == "localhost" or host in _METADATA_HOSTS:
+        raise HTTPException(400, f"LDAP host not allowed: {host}")
+    try:
+        ip = ipaddress.ip_address(host)
+        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_unspecified:
+            raise HTTPException(400, f"LDAP host not allowed: {host}")
+        if str(ip) == "169.254.169.254":
+            raise HTTPException(400, f"LDAP host not allowed: {host}")
+    except ValueError:
+        pass  # hostnames validated at connect time; scheme already enforced
+    return raw
 
 
 def _get_settings() -> dict:
@@ -108,7 +170,7 @@ _PROVIDER_META = {
 
 
 @router.get("")
-async def get_oauth_settings(request: Request, staff: dict = Depends(require_staff)):
+async def get_oauth_settings(request: Request, staff: dict = Depends(require_admin)):
     cfg = get_oauth_config()
     ldap = cfg.get("lldap") or {}
     clients_raw = cfg.get("clients") or {}
@@ -216,8 +278,9 @@ async def get_oauth_settings(request: Request, staff: dict = Depends(require_sta
 
 
 @router.put("")
-async def put_oauth_settings(body: dict, request: Request, staff: dict = Depends(require_staff)):
+async def put_oauth_settings(body: dict, request: Request, staff: dict = Depends(require_admin)):
     cfg = get_oauth_config()
+    cleared = False
     if "enabled" in body:
         cfg["enabled"] = bool(body["enabled"])
     if "lldap" in body and isinstance(body["lldap"], dict):
@@ -226,8 +289,14 @@ async def put_oauth_settings(body: dict, request: Request, staff: dict = Depends
         for k in ("enabled", "url", "base_dn", "users_ou", "bind_dn"):
             if k in src:
                 ldap[k] = src[k]
-        # Only overwrite password when a non-empty value is provided
-        if src.get("bind_password"):
+        if "url" in src and src["url"]:
+            ldap["url"] = _validate_ldap_url(str(src["url"]))
+        # Only overwrite password when a non-empty value is provided;
+        # the "__CLEAR__" sentinel wipes it (audited below).
+        if src.get("bind_password") == CLEAR_SENTINEL:
+            ldap["bind_password"] = ""
+            cleared = True
+        elif src.get("bind_password"):
             ldap["bind_password"] = src["bind_password"]
         ldap.setdefault("url", "ldap://lldap:3890")
         ldap.setdefault("base_dn", "dc=aifazi,dc=net")
@@ -235,35 +304,45 @@ async def put_oauth_settings(body: dict, request: Request, staff: dict = Depends
         ldap.setdefault("enabled", True)
         cfg["lldap"] = ldap
     save_oauth_config(cfg)
-    _audit(staff.get("username", ""), "settings_update", target="oauth", details={"keys": list(body.keys())})
+    _audit(staff.get("username", ""), "settings_update", target="oauth",
+           details={"keys": list(body.keys()), "bind_password_cleared": cleared})
     return await get_oauth_settings(request, staff)
 
 
 @router.put("/providers/{name}")
-async def put_provider(name: str, body: ProviderIn, request: Request, staff: dict = Depends(require_staff)):
+async def put_provider(name: str, body: ProviderIn, request: Request, staff: dict = Depends(require_admin)):
     if name not in _SOCIAL_PROVIDERS:
         raise HTTPException(404, "Unknown provider")
+    if body.redirect_uri:
+        body.redirect_uri = _validate_public_https_uri(body.redirect_uri)
     cfg = get_oauth_config()
     providers = cfg.setdefault("providers", {})
     stored = dict(providers.get(name) or {})
     stored["enabled"] = body.enabled
+    cleared: list[str] = []
     if body.client_id:
         stored["client_id"] = body.client_id
-    if body.client_secret:
+    if body.client_secret == CLEAR_SENTINEL:
+        stored.pop("client_secret", None)
+        cleared.append("client_secret")
+    elif body.client_secret:
         stored["client_secret"] = body.client_secret
     if body.redirect_uri:
         stored["redirect_uri"] = body.redirect_uri
-    if body.api_key:
+    if body.api_key == CLEAR_SENTINEL:
+        stored.pop("api_key", None)
+        cleared.append("api_key")
+    elif body.api_key:
         stored["api_key"] = body.api_key
     providers[name] = stored
     save_oauth_config(cfg)
     _audit(staff.get("username", ""), "settings_update", target=f"oauth_provider:{name}",
-           details={"enabled": body.enabled})
+           details={"enabled": body.enabled, "cleared": cleared})
     return await get_oauth_settings(request, staff)
 
 
 @router.post("/test-ldap")
-async def test_ldap(request: Request, staff: dict = Depends(require_staff)):
+async def test_ldap(request: Request, staff: dict = Depends(require_admin)):
     cfg = get_oauth_config()
     ldap = cfg.get("lldap") or {}
     import os
@@ -291,16 +370,18 @@ async def test_ldap(request: Request, staff: dict = Depends(require_staff)):
 
 
 @router.post("/clients")
-async def create_client(body: ClientIn, request: Request, staff: dict = Depends(require_staff)):
+async def create_client(body: ClientIn, request: Request, staff: dict = Depends(require_admin)):
     cfg = get_oauth_config()
     clients = cfg.setdefault("clients", {})
     if body.client_id in clients:
         raise HTTPException(409, "client_id already exists")
-    secret = body.secret or (secrets.token_urlsafe(32) if not body.public else "")
+    uris = [_validate_public_https_uri(u) for u in body.redirect_uris if u.strip()]
+    secret = "" if body.secret == CLEAR_SENTINEL else body.secret
+    secret = secret or (secrets.token_urlsafe(32) if not body.public else "")
     clients[body.client_id] = {
         "name": body.name,
         "secret": secret,
-        "redirect_uris": [u.strip() for u in body.redirect_uris if u.strip()],
+        "redirect_uris": uris,
         "public": body.public,
     }
     save_oauth_config(cfg)
@@ -317,21 +398,28 @@ async def create_client(body: ClientIn, request: Request, staff: dict = Depends(
 
 
 @router.put("/clients/{client_id}")
-async def update_client(client_id: str, body: ClientIn, request: Request, staff: dict = Depends(require_staff)):
+async def update_client(client_id: str, body: ClientIn, request: Request, staff: dict = Depends(require_admin)):
     cfg = get_oauth_config()
     clients = cfg.setdefault("clients", {})
     if client_id not in clients:
         raise HTTPException(404, "Client not found")
     existing = clients[client_id]
-    secret = body.secret if body.secret else existing.get("secret", "")
+    uris = [_validate_public_https_uri(u) for u in body.redirect_uris if u.strip()]
+    cleared = False
+    if body.secret == CLEAR_SENTINEL:
+        secret = ""
+        cleared = True
+    else:
+        secret = body.secret if body.secret else existing.get("secret", "")
     clients[client_id] = {
         "name": body.name,
         "secret": secret,
-        "redirect_uris": [u.strip() for u in body.redirect_uris if u.strip()],
+        "redirect_uris": uris,
         "public": body.public,
     }
     save_oauth_config(cfg)
-    _audit(staff.get("username", ""), "settings_update", target="oauth_client", details={"client_id": client_id})
+    _audit(staff.get("username", ""), "settings_update", target="oauth_client",
+           details={"client_id": client_id, "secret_cleared": cleared})
     return {
         "client_id": client_id,
         "name": body.name,
@@ -343,7 +431,7 @@ async def update_client(client_id: str, body: ClientIn, request: Request, staff:
 
 
 @router.delete("/clients/{client_id}")
-async def delete_client(client_id: str, request: Request, staff: dict = Depends(require_staff)):
+async def delete_client(client_id: str, request: Request, staff: dict = Depends(require_admin)):
     cfg = get_oauth_config()
     clients = cfg.get("clients") or {}
     if client_id not in clients:

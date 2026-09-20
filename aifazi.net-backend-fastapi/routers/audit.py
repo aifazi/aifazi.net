@@ -16,7 +16,7 @@ import json as _json
 import logging
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from database import supabase
 from permissions import require_permission
@@ -25,6 +25,11 @@ from utils.audit import record as audit_record
 
 logger = logging.getLogger("audit.router")
 router = APIRouter()
+
+AUDIT_EXPORT = require_permission("system.audit", "export")
+
+# CSV export row cap — the previous loop paginated without a ceiling and could
+# stream the entire table. 10k rows is the hard ceiling for a single export.
 
 
 # ── Health / migration helpers ─────────────────────────────────────────────────
@@ -125,17 +130,32 @@ async def list_auth_logs(
 
 
 @router.get("/export")
-async def export_logs(_: dict = Depends(require_permission("system.audit", "view"))):
-    """Stream the full audit log as CSV (paginated internally)."""
+async def export_logs(
+    request: Request,
+    since: str | None = Query(None, description="Only rows created at/after this ISO timestamp"),
+    user: dict = Depends(AUDIT_EXPORT),
+):
+    """Stream the audit log as CSV (paginated internally, capped at 10k rows)."""
     rows = []
     page = 0
-    while True:
-        res = supabase.table("audit_logs").select("*").order("created_at", desc=True).range(page * 500, page * 500 + 499).execute()
+    while len(rows) < 10000:
+        q = supabase.table("audit_logs").select("*").order("created_at", desc=True)
+        if since:
+            q = q.gte("created_at", since)
+        res = q.range(page * 500, page * 500 + 499).execute()
         data = res.data or []
         rows.extend(data)
         if len(data) < 500:
             break
         page += 1
+    rows = rows[:10000]
+    audit_record(
+        actor=str(user.get("username") or user.get("id") or "staff"),
+        action="audit_export",
+        target="audit_logs",
+        details={"rows": len(rows), "since": since or ""},
+        ip=request.client.host if request.client else "",
+    )
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["created_at", "actor", "action", "target", "ip", "role", "user_agent", "details"])
@@ -171,14 +191,21 @@ async def log_event(body: dict, _: dict = Depends(require_permission("system.aud
 
 @router.delete("")
 async def purge_logs(
+    request: Request,
     olderThanDays: int = Query(90, ge=1),
-    _: dict = Depends(require_permission("system.audit", "delete")),
+    user: dict = Depends(require_permission("system.audit", "delete")),
 ):
     """C4 — purging audit logs is destructive and must require admin or an explicit
     system.audit.delete permission. Previously any moderator (who only has view) could
     wipe the audit trail — a privilege escalation that contradicts the role matrix."""
     cutoff = (datetime.now(timezone.utc) - timedelta(days=olderThanDays)).isoformat()
+    actor = str(user.get("username") or user.get("id") or "staff")
+    # Log the purge BEFORE deleting (with the cutoff only — never row contents,
+    # which would defeat the purge and could leak purged secrets into the trail).
+    audit_record(actor=actor, action="audit_purge", target="audit_logs",
+                 details={"cutoff": cutoff, "olderThanDays": olderThanDays},
+                 ip=request.client.host if request.client else "")
     # Supabase delete returns deleted rows
     res = supabase.table("audit_logs").delete().lt("created_at", cutoff).execute()
     deleted = len(res.data) if res.data else 0
-    return {"deleted": deleted, "cutoff": cutoff}
+    return {"deleted": deleted, "cutoff": cutoff, "purged_by": actor}

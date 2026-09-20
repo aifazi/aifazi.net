@@ -23,12 +23,13 @@ import os
 import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from database import supabase
 from permissions import require_any_permission
 from routers.store_ecommerce import _mark_order_paid
+from utils.audit import record as _audit
 
 log = logging.getLogger("store.terminal")
 router = APIRouter()
@@ -37,6 +38,24 @@ STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 
 # Pay + manage in-person payments, or full store admins.
 POS = require_any_permission("store", "store.payments", action="manage")
+
+# POS sanity bounds — a mistyped quantity/price must never create a six-figure order.
+MAX_POS_QTY = 999
+# Fallback per-unit cap ($5,000) used only when no catalog price is available to
+# anchor the 2×-catalog clamp below (free/custom items). Catalog-anchored items
+# use 0 < unit ≤ 2× catalog instead.
+MAX_POS_UNIT_CENTS = 500000
+
+
+def _actor(user: dict) -> str:
+    return str(user.get("username") or user.get("id") or "staff")
+
+
+def _ip(request: Request | None) -> str:
+    try:
+        return request.client.host if request and request.client else ""
+    except Exception:
+        return ""
 
 
 def _now() -> str:
@@ -176,7 +195,7 @@ class PosOrderBody(BaseModel):
 
 
 @router.post("/terminal/orders")
-async def create_pos_order(body: PosOrderBody, _: dict = Depends(POS)):
+async def create_pos_order(body: PosOrderBody, request: Request, user: dict = Depends(POS)):
     if not body.items:
         raise HTTPException(400, "Order must have at least one item")
     s = supabase
@@ -195,32 +214,46 @@ async def create_pos_order(body: PosOrderBody, _: dict = Depends(POS)):
             variant_rows[v["id"]] = v
             vid_to_pid[v["id"]] = v.get("product_id")
 
+    def _clamp_unit(override: int | None, catalog_cents: int) -> int:
+        """Staff price overrides must stay in (0, 2×catalog]; without a catalog
+        price to anchor to, fall back to the flat MAX_POS_UNIT_CENTS cap."""
+        if override is None:
+            return int(catalog_cents or 0)
+        if catalog_cents and catalog_cents > 0:
+            if override < 1 or override > 2 * int(catalog_cents):
+                raise HTTPException(400, "Price override must be within 2× of catalog price")
+            return override
+        if override < 1 or override > MAX_POS_UNIT_CENTS:
+            raise HTTPException(400, "Price override exceeds the per-unit cap")
+        return override
+
     # Validate + build line items
     lines = []
     subtotal = 0
     for it in body.items:
+        qty = min(max(1, it.quantity), MAX_POS_QTY)
         if it.variant_id:
             v = variant_rows.get(it.variant_id)
             if not v or not v.get("active", True):
                 raise HTTPException(404, f"Variant not found: {it.variant_id}")
-            unit = it.unit_price_cents if it.unit_price_cents is not None else int(v.get("price_cents") or 0)
+            unit = _clamp_unit(it.unit_price_cents, int(v.get("price_cents") or 0))
             lines.append({"product_id": v["product_id"], "variant_id": v["id"],
                           "product_name": v.get("name") or "",
                           "variant_name": v.get("name") or "",
-                          "quantity": max(1, it.quantity),
+                          "quantity": qty,
                           "unit_price_cents": unit,
-                          "line_total_cents": unit * max(1, it.quantity)})
+                          "line_total_cents": unit * qty})
         else:
             p = prod_rows.get(it.product_id)
             if not p or not p.get("active", True):
                 raise HTTPException(404, f"Product not found: {it.product_id}")
-            unit = it.unit_price_cents if it.unit_price_cents is not None else int(p.get("price_cents") or 0)
+            unit = _clamp_unit(it.unit_price_cents, int(p.get("price_cents") or 0))
             lines.append({"product_id": p["id"], "variant_id": None,
                           "product_name": p.get("name") or "",
                           "variant_name": None,
-                          "quantity": max(1, it.quantity),
+                          "quantity": qty,
                           "unit_price_cents": unit,
-                          "line_total_cents": unit * max(1, it.quantity)})
+                          "line_total_cents": unit * qty})
     subtotal = sum(l["line_total_cents"] for l in lines)
 
     # Coupon
@@ -298,6 +331,9 @@ async def create_pos_order(body: PosOrderBody, _: dict = Depends(POS)):
     except Exception:
         pass
 
+    _audit(_actor(user), "pos_order_create", target=f"store_orders:{order_id}",
+           details={"order_number": order_number, "total_cents": subtotal - discount,
+                    "items": len(lines)}, ip=_ip(request))
     return {"order_id": order_id, "order_number": order_number,
             "subtotal_cents": subtotal, "discount_cents": discount,
             "total_cents": subtotal - discount, "currency": "usd", "location_id": loc}
@@ -382,7 +418,7 @@ async def get_pos_payment_intent(order_id: str, _: dict = Depends(POS)):
 
 
 @router.post("/terminal/capture/{order_id}")
-async def capture_pos_order(order_id: str, _: dict = Depends(POS)):
+async def capture_pos_order(order_id: str, request: Request, user: dict = Depends(POS)):
     res = supabase.table("store_orders").select("id,payment_intent_id,status").eq("id", order_id).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Order not found")
@@ -404,13 +440,15 @@ async def capture_pos_order(order_id: str, _: dict = Depends(POS)):
     risk = _risk_from_intent(pi)
     if pi.get("status") in ("succeeded", "requires_capture"):
         await asyncio.to_thread(_mark_order_paid, order_id, pid, **risk)
+        _audit(_actor(user), "pos_order_capture", target=f"store_orders:{order_id}",
+               details={"payment_intent_id": pid}, ip=_ip(request))
         return {"ok": True, "payment_intent_id": pid, "status": "paid",
                 "radar": risk.get("risk_level"), "risk_score": risk.get("risk_score")}
     raise HTTPException(400, f"Payment not ready to capture (status={pi.get('status')})")
 
 
 @router.post("/terminal/void/{order_id}")
-async def void_pos_order(order_id: str, _: dict = Depends(POS)):
+async def void_pos_order(order_id: str, request: Request, user: dict = Depends(POS)):
     res = supabase.table("store_orders").select("id,payment_intent_id,status").eq("id", order_id).limit(1).execute()
     if not res.data:
         raise HTTPException(404, "Order not found")
@@ -424,6 +462,7 @@ async def void_pos_order(order_id: str, _: dict = Depends(POS)):
         except Exception as exc:
             log.warning("cancel PI %s failed: %s", pid, exc)
     supabase.table("store_orders").update({"status": "cancelled", "updated_at": _now()}).eq("id", order_id).execute()
+    _audit(_actor(user), "pos_order_void", target=f"store_orders:{order_id}", ip=_ip(request))
     return {"ok": True, "status": "cancelled"}
 
 

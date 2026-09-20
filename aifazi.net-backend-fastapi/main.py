@@ -376,7 +376,9 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/vpn/",                 10,   60),
     ("/monitor/errors",       20,   60),
     ("/monitor/ping",         10,   60),
+    ("/monitor/run",          5,    60),
     ("/store/track/",         10,   60),
+    ("/chat/admin/",          20,   60),
 ]
 _RL_DEFAULT = (100, 60)   # 100 requests / 60 s general
 
