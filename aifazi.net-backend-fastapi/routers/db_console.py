@@ -221,3 +221,65 @@ async def check_console(_=Depends(require_staff)):
         return {"available": True}
     except Exception:
         return {"available": False, "detail": "exec_sql function not available. Run migrations/005_security_hardening.sql."}
+
+
+SIZE_SQL = (
+    "SELECT schemaname AS schema_name, tablename AS table_name, "
+    "pg_total_relation_size(schemaname || '.' || tablename) AS size_bytes "
+    "FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema') "
+    "ORDER BY size_bytes DESC LIMIT 20"
+)
+EXT_SQL = "SELECT 1 AS ok FROM pg_extension WHERE extname = 'pg_stat_statements' LIMIT 1"
+SLOW_SQL = (
+    "SELECT query, calls, mean_exec_time AS mean_ms FROM pg_stat_statements "
+    "ORDER BY mean_exec_time DESC LIMIT 20"
+)
+
+
+@router.get("/health")
+async def db_health(user: dict = Depends(require_admin)):
+    """Read-only table-size + slow-query overview.
+
+    Sizes come from pg_total_relation_size (top 20). Slow queries need the
+    pg_stat_statements extension — availability is checked first and a missing
+    extension degrades gracefully (sizes still returned). Single read-only
+    statements, LIMITs hard-coded.
+    """
+    sizes: list[dict] = []
+    try:
+        res = supabase.rpc("exec_sql", {"sql_text": SIZE_SQL}).execute()
+        for r in (res.data or []):
+            try:
+                sizes.append({"schema": r.get("schema_name"), "table": r.get("table_name"),
+                              "size_bytes": int(r.get("size_bytes") or 0)})
+            except (TypeError, ValueError):
+                continue
+    except Exception as e:
+        log.warning("db health sizes failed: %s", e)
+
+    has_pgs = False
+    try:
+        res = supabase.rpc("exec_sql", {"sql_text": EXT_SQL}).execute()
+        has_pgs = bool(res.data)
+    except Exception as e:
+        log.warning("db health extension check failed: %s", e)
+
+    slow: list[dict] = []
+    if has_pgs:
+        try:
+            res = supabase.rpc("exec_sql", {"sql_text": SLOW_SQL}).execute()
+            for r in (res.data or []):
+                try:
+                    calls = int(r.get("calls") or 0)
+                except (TypeError, ValueError):
+                    calls = 0
+                try:
+                    mean = float(r.get("mean_ms") or 0)
+                except (TypeError, ValueError):
+                    mean = 0.0
+                slow.append({"query": str(r.get("query") or "")[:120],
+                             "calls": calls, "mean_ms": round(mean, 2)})
+        except Exception as e:
+            log.warning("db health slow queries failed: %s", e)
+
+    return {"sizes": sizes, "slow_queries": slow, "pg_stat_statements": has_pgs}

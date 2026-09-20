@@ -9,9 +9,10 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from database import supabase
+from dependencies import require_admin
 from utils.email_queue import dispatch_pending
 
 router = APIRouter()
@@ -49,6 +50,89 @@ def _auth(request: Request):
 async def cron_cleanup(request: Request):
     _auth(request)
     return await run_cleanup()
+
+
+# Job definitions owned by this module: the single daily Vercel tick plus the
+# sub-jobs run_cleanup records heartbeats for (see run_cleanup below).
+JOBS = [
+    {"name": "cron-cleanup", "source": "cron.py", "schedule": "daily 03:00 UTC (Vercel cron)", "interval_seconds": 86400},
+    {"name": "monitor", "source": "cron.py", "schedule": "daily (inside cleanup tick)", "interval_seconds": 86400},
+    {"name": "error-digest", "source": "cron.py", "schedule": "daily (inside cleanup tick)", "interval_seconds": 86400},
+    {"name": "backup", "source": "backup.py", "schedule": "on-demand export", "interval_seconds": None},
+]
+
+
+def _parse_ts(ts) -> datetime | None:
+    try:
+        dt = datetime.fromisoformat(str(ts))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
+    except Exception:
+        return None
+
+
+@router.get("/api/admin/jobs")
+async def admin_jobs(user: dict = Depends(require_admin)):
+    """Cron overseer: aggregate cron.py job definitions, cron-type custom
+    monitor checks, and the backup last_run. Read-only."""
+    now = datetime.now(timezone.utc)
+    defs = [dict(j) for j in JOBS]
+
+    try:
+        from routers.monitor import _get_custom_monitors
+        customs = [m for m in _get_custom_monitors(enabled_only=False)
+                   if (m.get("type") == "cron")]
+    except Exception as e:
+        logger.warning("admin_jobs: custom monitors unavailable: %s", e)
+        customs = []
+    for m in customs:
+        try:
+            interval = max(1, int(m.get("interval_seconds") or 60))
+        except (TypeError, ValueError):
+            interval = 60
+        defs.append({"name": str(m.get("target") or "unknown"), "source": "monitor-checks",
+                     "schedule": f"every {interval}s", "interval_seconds": interval})
+
+    # backup.py keeps no schedule/last_run itself — use the latest audited
+    # backup export as its last_run (audit_logs may be on either schema).
+    backup_last = None
+    for col in ("action", "event"):
+        try:
+            res = supabase.table("audit_logs").select("created_at") \
+                .like(col, "backup_export%").order("created_at", desc=True).limit(1).execute()
+            if res.data:
+                backup_last = res.data[0].get("created_at")
+            break
+        except Exception:
+            continue
+
+    beats: dict = {}
+    try:
+        names = sorted({d["name"] for d in defs})
+        res = supabase.table("job_heartbeats").select("job,last_run_at,last_status") \
+            .in_("job", names).execute()
+        for row in (res.data or []):
+            beats[row.get("job")] = row
+    except Exception as e:
+        logger.warning("admin_jobs: heartbeats unavailable: %s", e)
+
+    out = []
+    for d in defs:
+        name = d["name"]
+        interval = d.get("interval_seconds")
+        beat = beats.get(name) or {}
+        last_run = beat.get("last_run_at") or (backup_last if name == "backup" else None)
+        dt = _parse_ts(last_run) if last_run else None
+        next_run = (dt + timedelta(seconds=interval)).isoformat() if (dt and interval) else None
+        late = False
+        if interval:
+            late = True if dt is None else (now - dt).total_seconds() > 2 * interval
+        out.append({"name": name, "source": d["source"], "schedule": d.get("schedule"),
+                    "last_run": dt.isoformat() if dt else None,
+                    "last_status": beat.get("last_status"),
+                    "next_run": next_run, "late": late})
+    return out
 
 
 async def run_cleanup() -> dict:

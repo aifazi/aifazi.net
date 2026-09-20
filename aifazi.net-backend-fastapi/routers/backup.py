@@ -20,6 +20,8 @@ from utils.audit import record as _audit
 log = logging.getLogger("backup")
 router = APIRouter()
 
+RESTORE_TEST_PREFIX = "restore_test_"
+
 FALLBACK_TABLES = [
     "posts", "media", "contacts", "users", "forum_categories",
     "forum_threads", "forum_replies", "chat_rooms", "chat_messages", "chat_members",
@@ -342,3 +344,100 @@ async def export_sql(
         media_type="application/sql",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/restore-test")
+async def restore_test(
+    request: Request,
+    target: str = Query("", description="Scratch DB name; must start with restore_test_"),
+    user: dict = Depends(require_admin),
+):
+    """Restore drill: replay the live export path and validate it is restorable.
+
+    Why a dry-run: this backup flow keeps NO stored dump artifacts and never
+    shells out to pg_dump/pg_restore — every export is generated live via the
+    Supabase client (_discover_tables + _fetch_all_rows), and the app has no
+    direct Postgres connection (database.py only holds SUPABASE_URL + the
+    service-role key), so a scratch CREATE DATABASE is not possible from here.
+    The drill therefore regenerates the exact DDL + INSERT SQL each table's
+    export would emit and cross-checks fetched row counts against the stats
+    manifest. Fully read-only: zero writes to prod data. The run is audited.
+    """
+    import re
+    import time
+
+    start = time.perf_counter()
+    actor = str(user.get("username") or user.get("id") or "admin")
+    ip = request.client.host if request.client else ""
+
+    name = (target or "").strip() or (
+        f"restore_test_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+    )
+    if not name.startswith(RESTORE_TEST_PREFIX):
+        raise HTTPException(400, f"Refusing: scratch DB name must start with {RESTORE_TEST_PREFIX!r}")
+    if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+        raise HTTPException(400, f"Invalid scratch DB name: {name}")
+
+    tables = _discover_tables()
+    if not tables:
+        raise HTTPException(404, "No backup artifact exists — run a backup export first, then retry the restore test.")
+
+    # Manifest: same per-table counts backup_stats reports.
+    compared_against: dict[str, int] = {}
+    for table in tables:
+        try:
+            res = supabase.table(table).select("id", count="exact").execute()
+            compared_against[table] = res.count or 0
+        except Exception as e:
+            log.warning("restore-test manifest count failed for %s: %s", table, e)
+
+    full_schema = _fetch_schema_via_rpc()
+    table_counts: dict[str, int] = {}
+    per_table: list[dict] = []
+    failures: dict[str, str] = {}
+    for table in tables:
+        try:
+            rows = _fetch_all_rows(table)
+        except Exception as e:
+            log.warning("restore-test fetch failed for %s: %s", table, e)
+            failures[table] = "fetch failed"
+            per_table.append({"table": table, "rows": None, "expected": compared_against.get(table),
+                              "match": False, "sql_ok": False, "error": "fetch failed"})
+            continue
+        columns = full_schema.get(table) or _fetch_schema_via_sample(table)
+        try:
+            ddl = _generate_create_table(table, columns)
+            ins = _generate_inserts(table, rows, [c["name"] for c in columns] if columns else None)
+            sql_ok = bool(ddl.strip()) and "no schema available" not in ddl
+        except Exception as e:
+            log.warning("restore-test SQL regen failed for %s: %s", table, e)
+            sql_ok = False
+        n = len(rows)
+        table_counts[table] = n
+        expected = compared_against.get(table)
+        match = (expected is None) or (n == expected)
+        per_table.append({"table": table, "rows": n, "expected": expected,
+                          "match": match, "sql_ok": sql_ok})
+
+    duration_s = round(time.perf_counter() - start, 2)
+    ok = bool(per_table) and not failures and all(p["match"] and p["sql_ok"] for p in per_table)
+    try:
+        _audit(actor, "backup_restore_test", target=name,
+               details={"tables": len(tables), "ok": ok, "duration_s": duration_s,
+                        "failures": sorted(failures)},
+               ip=ip)
+    except Exception:
+        pass
+    return {
+        "ok": ok,
+        "mode": "dry-run",
+        "target": name,
+        "table_counts": table_counts,
+        "compared_against": {"source": "backup_stats", "counts": compared_against},
+        "per_table": per_table,
+        "failures": failures,
+        "duration_s": duration_s,
+        "tables": len(tables),
+        "note": "Dry-run: no stored dump/scratch Postgres available (live Supabase-client export flow); "
+                "validated generated DDL+INSERTs and row counts vs the stats manifest. No prod data written.",
+    }

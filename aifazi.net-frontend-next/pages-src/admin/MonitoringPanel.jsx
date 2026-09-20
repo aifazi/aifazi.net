@@ -617,12 +617,79 @@ function ErrorsTab() {
   )
 }
 
+function JobsTab() {
+  const toast = useToast()
+  const [jobs, setJobs] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const load = () => {
+    setLoading(true)
+    api.get('/admin/jobs').then(r => setJobs(r.data || [])).catch(() => toast.error('Could not load jobs'))
+      .finally(() => setLoading(false))
+  }
+  useEffect(() => {
+    const t = setTimeout(load, 0)
+    return () => clearTimeout(t)
+  }, [])
+
+  const fmtTs = ts => {
+    if (!ts) return '—'
+    try { return new Date(ts).toLocaleString() } catch { return ts }
+  }
+
+  if (loading) return <div className="loader" />
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C }}>SCHEDULED JOBS</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>Cron definitions, cron-type monitors and backup freshness — late means no run within 2× its interval.</div>
+        </div>
+        <button onClick={load} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '8px 14px', cursor: 'pointer', background: 'transparent', color: C, border: `1px solid ${C}45`, borderRadius: 8, fontWeight: 700 }}>↻ REFRESH</button>
+      </div>
+      {jobs.length === 0 ? <EmptyState icon="⏰" title="No jobs found" hint="Jobs appear once cron heartbeats or cron-type monitors exist." />
+        : (
+          <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 10 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: MONO, fontSize: 11 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg2)' }}>
+                  {['JOB', 'SOURCE', 'SCHEDULE', 'LAST RUN', 'NEXT RUN', 'STATUS'].map(h => (
+                    <th key={h} style={{ padding: '9px 12px', textAlign: 'left', color: 'var(--muted)', fontSize: 8, letterSpacing: 2 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {jobs.map(j => {
+                  const color = j.late ? R : j.last_run ? G : O
+                  const label = j.late ? 'LATE' : j.last_run ? 'OK' : 'NO DATA'
+                  return (
+                    <tr key={`${j.source}:${j.name}`} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '9px 12px', color: 'var(--text)', fontWeight: 700 }}>{j.name}</td>
+                      <td style={{ padding: '9px 12px', color: 'var(--muted)' }}>{j.source}</td>
+                      <td style={{ padding: '9px 12px', color: 'var(--muted)' }}>{j.schedule || '—'}</td>
+                      <td style={{ padding: '9px 12px', color: 'var(--muted)' }}>{fmtTs(j.last_run)}</td>
+                      <td style={{ padding: '9px 12px', color: 'var(--muted)' }}>{fmtTs(j.next_run)}</td>
+                      <td style={{ padding: '9px 12px' }}>
+                        <span style={{ fontSize: 8, letterSpacing: 1, padding: '2px 8px', background: `${color}1a`, border: `1px solid ${color}55`, color, borderRadius: 99, fontWeight: 700 }}>{label}</span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+    </div>
+  )
+}
+
 export default function MonitoringPanel() {
   const [tab, setTab] = useState('status')
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10, flexWrap: 'wrap' }}>
-        {[['status', '📊 Status'], ['monitors', '🛰️ Monitors'], ['settings', '⚙️ Settings'], ['errors', '🚨 Errors'], ['mobile', '📱 Mobile']].map(([k, l]) => (
+        {[['status', '📊 Status'], ['monitors', '🛰️ Monitors'], ['jobs', '⏰ Jobs'], ['settings', '⚙️ Settings'], ['errors', '🚨 Errors'], ['mobile', '📱 Mobile']].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} style={{
             fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '8px 16px', cursor: 'pointer',
             background: tab === k ? 'var(--green)' : 'transparent', color: tab === k ? '#000' : 'var(--muted)',
@@ -630,7 +697,7 @@ export default function MonitoringPanel() {
           }}>{l}</button>
         ))}
       </div>
-      {tab === 'status' ? <StatusTab /> : tab === 'monitors' ? <MonitorsTab /> : tab === 'settings' ? <SettingsTab /> : tab === 'errors' ? <ErrorsTab /> : <MobileAppTab />}
+      {tab === 'status' ? <StatusTab /> : tab === 'monitors' ? <MonitorsTab /> : tab === 'jobs' ? <JobsTab /> : tab === 'settings' ? <SettingsTab /> : tab === 'errors' ? <ErrorsTab /> : <MobileAppTab />}
     </div>
   )
 }
