@@ -48,12 +48,42 @@ class RegisterBody(BaseModel):
 
 
 class ForgotBody(BaseModel):
-    username: str
+    """Accepts username OR email — Login.jsx/ForumAuth.jsx send {email}."""
+    username: str | None = None
+    email: str | None = None
+
+
+class CheckUsernameBody(BaseModel):
+    username: str = ""
+
+
+class VerifyStatusBody(BaseModel):
+    username: str | None = None
+    email: str | None = None
+
+
+class FindUsernameBody(BaseModel):
+    email: str = ""
 
 
 class ResetBody(BaseModel):
     username: str
     new_password: str = Field(min_length=8)
+
+
+def _find_account(username: str | None = None, email: str | None = None):
+    """Resolve a users row by username or email (case-insensitive)."""
+    if username and username.strip():
+        res = supabase.table("users").select("username,email").ilike("username", username.strip()).limit(5).execute()
+        needle = username.strip().lower()
+        row = next((r for r in (res.data or []) if (r.get("username") or "").lower() == needle), None)
+        if row:
+            return row
+    if email and "@" in email:
+        res = supabase.table("users").select("username,email").ilike("email", email.strip()).limit(5).execute()
+        needle = email.strip().lower()
+        return next((r for r in (res.data or []) if (r.get("email") or "").lower() == needle), None)
+    return None
 
 
 # ── Routes ───────────────────────────────────────────────────────────────────
@@ -68,6 +98,12 @@ async def check_username(username: str):
     if res.data:
         return {"available": False, "reason": "Not available"}
     return {"available": True}
+
+
+@router.post("/check-username")
+async def check_username_post(body: CheckUsernameBody):
+    """POST twin (Login.jsx sends JSON body); same logic as GET."""
+    return await check_username(body.username or "")
 
 
 @router.get("/check-email")
@@ -141,12 +177,14 @@ async def verify_email_token(token: str):
 
 @router.post("/resend-verification")
 async def resend_verification(body: ForgotBody):
-    """Resend verification email. Anti-enumeration: always return ok True
-    regardless of whether the account exists (400 only for malformed input)."""
-    username = (body.username or "").strip().lower()
-    if not username:
-        raise HTTPException(400, "Username is required.")
-    res = supabase.table("users").select("username,email").eq("username", username).limit(1).execute()
+    """Resend verification email. Accepts username OR email (Login.jsx and
+    ForumAuth.jsx send {email}). Anti-enumeration: always return ok True."""
+    if not (body.username and body.username.strip()) and not (body.email and body.email.strip()):
+        raise HTTPException(400, "Username or email is required.")
+    row = _find_account(body.username, body.email)
+    if not row:
+        return {"ok": True}
+    res = supabase.table("users").select("username,email").eq("username", row["username"]).limit(1).execute()
     if not res.data:
         return {"ok": True}
     user = res.data[0]
@@ -156,7 +194,7 @@ async def resend_verification(body: ForgotBody):
     supabase.table("users").update({
         "verify_token": token,
         "verify_expires": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
-    }).eq("username", username).execute()
+    }).eq("username", user["username"]).execute()
     return {"ok": True}
 
 
@@ -170,17 +208,31 @@ async def verify_status(username: str):
     return {"verified": bool(res.data[0].get("email_verified"))}
 
 
+@router.post("/verify-status")
+async def verify_status_post(body: VerifyStatusBody):
+    """POST twin (Login.jsx sends {email}). Unknown accounts read as unverified."""
+    row = _find_account(body.username, body.email)
+    if not row:
+        return {"verified": False}
+    res = supabase.table("users").select("email_verified").eq("username", row["username"]).limit(1).execute()
+    if not res.data:
+        return {"verified": False}
+    return {"verified": bool(res.data[0].get("email_verified"))}
+
+
 @router.post("/forgot")
 async def forgot_password(body: ForgotBody):
-    """Send password reset email. Anti-enumeration: always return ok True
-    regardless of whether the account exists (400 only for malformed input)."""
-    username = (body.username or "").strip().lower()
-    if not username:
-        raise HTTPException(400, "Username is required.")
-    res = supabase.table("users").select("username,email").eq("username", username).limit(1).execute()
-    if not res.data:
+    """Send password reset email. Accepts username OR email. Anti-enumeration:
+    always return ok True regardless of whether the account exists."""
+    if not (body.username and body.username.strip()) and not (body.email and body.email.strip()):
+        raise HTTPException(400, "Username or email is required.")
+    row = _find_account(body.username, body.email)
+    if not row:
         return {"ok": True}
-    user = res.data[0]
+    username = row["username"]
+    user_res = supabase.table("users").select("username,email").eq("username", username).limit(1).execute()
+    if not user_res.data:
+        return {"ok": True}
     token = secrets.token_urlsafe(32)
     supabase.table("users").update({
         "reset_token": token,
@@ -226,3 +278,9 @@ async def find_username(email: str):
     if not email or "@" not in email:
         raise HTTPException(400, "Invalid email")
     return {"ok": True}
+
+
+@router.post("/find-username")
+async def find_username_post(body: FindUsernameBody):
+    """POST twin (ForumAuth.jsx sends {email}); same generic response."""
+    return await find_username(body.email or "")
