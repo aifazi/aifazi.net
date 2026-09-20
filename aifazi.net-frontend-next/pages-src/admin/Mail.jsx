@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import MailSettings from './MailSettings'
 import MailQueue from './MailQueue'
+import MailStalwart from './MailStalwart'
 import MailTemplates from './MailTemplates'
 import CdnSettings from './CdnSettings'
 import { PageHeader } from './shared'
@@ -10,6 +11,7 @@ import { Icon } from './icons'
 const TABS = [
   { key: 'settings',  label: 'Settings',  icon: 'dots' },
   { key: 'queue',     label: 'Queue',     icon: 'mail' },
+  { key: 'stalwart',  label: 'Stalwart',  icon: 'send' },
   { key: 'templates', label: 'Templates', icon: 'clipboard' },
   { key: 'cdn',       label: 'CDN',       icon: 'database' },
 ]
@@ -30,7 +32,7 @@ export default function Mail({ initialTab = 'queue' }) {
         subtitle="Outgoing email settings, delivery queue, notification templates, and media delivery configuration."
       />
 
-      <div style={{ display: 'flex', gap: 3, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24, maxWidth: 560 }}>
+      <div style={{ display: 'flex', gap: 3, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24, maxWidth: 680 }}>
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
             fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5,
@@ -47,6 +49,7 @@ export default function Mail({ initialTab = 'queue' }) {
 
       {tab === 'settings'  && <MailSettings />}
       {tab === 'queue'     && <MailQueue />}
+      {tab === 'stalwart'  && <MailStalwart />}
       {tab === 'templates' && <MailTemplates />}
       {tab === 'cdn'       && <CdnSettings />}
     </div>

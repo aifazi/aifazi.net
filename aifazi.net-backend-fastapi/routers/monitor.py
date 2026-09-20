@@ -20,13 +20,14 @@ import logging
 import os
 import socket
 import time
+from collections import deque
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from database import supabase
-from dependencies import require_staff
+from dependencies import require_admin, require_staff
 from permissions import require_permission
 from utils.audit import record as _audit
 from utils.ssrf import BLOCKED_NETWORKS, is_blocked_ip
@@ -1141,3 +1142,57 @@ async def run_custom_monitor(monitor_id: str, user: dict = Depends(MONITOR_MANAG
         raise HTTPException(400, "Unsupported monitor type")
     ok, lat, detail = await checker(m)
     return {"ok": ok, "status": "up" if ok else "down", "latency_ms": lat, "detail": str(detail)[:200]}
+
+
+# ── Deploy-train visibility (Coolify webhook receiver) ────────────────────────
+# Coolify webhook setup (configure per service in Coolify → service → Webhooks):
+#   URL:    https://api.aifazi.net/api/admin/deploy/event
+#   Header: x-deploy-secret: <DEPLOY_WEBHOOK_SECRET env value>
+#   Body:   {"service": "<name>", "commit": "<sha>", "status": "success|failed|...\"",
+#            "url": "<coolify deployment url>", "at": "<iso timestamp>"}
+# Rollback is out of scope here — use the Coolify deployment_url from the event.
+# No new DB tables: the last 50 events live in a process-local deque (lost on
+# restart) and every event is also persisted as an audit_logs row (details JSONB).
+_DEPLOY_EVENTS: deque = deque(maxlen=50)
+
+
+class DeployEventBody(BaseModel):
+    service: str = ""
+    commit: str = ""
+    status: str = ""
+    url: str = ""
+    at: str = ""
+
+
+@router.post("/api/admin/deploy/event")
+async def deploy_event(request: Request, body: DeployEventBody):
+    """Unauthenticated webhook receiver — auth is the shared secret header."""
+    secret = os.getenv("DEPLOY_WEBHOOK_SECRET", "")
+    if not secret:
+        raise HTTPException(503, "DEPLOY_WEBHOOK_SECRET is not configured")
+    given = request.headers.get("x-deploy-secret", "")
+    if not given or not hmac.compare_digest(given, secret):
+        raise HTTPException(403, "Invalid deploy secret")
+    service = (body.service or "").strip()[:80]
+    if not service:
+        raise HTTPException(422, "service is required")
+    evt = {
+        "service": service,
+        "commit": (body.commit or "").strip()[:80],
+        "status": (body.status or "").strip()[:30] or "unknown",
+        "url": (body.url or "").strip()[:500],
+        "at": (body.at or "").strip()[:40] or _now(),
+    }
+    _DEPLOY_EVENTS.appendleft(evt)
+    _audit("deploy", "deploy_event", target=service, details=evt, ip=_ip(request))
+    return {"ok": True}
+
+
+@router.get("/api/admin/deploy/status")
+async def deploy_status(user: dict = Depends(require_admin)):
+    """Recent deploy events (newest first) + latest event per service."""
+    events = list(_DEPLOY_EVENTS)
+    latest: dict[str, dict] = {}
+    for e in events:
+        latest.setdefault(e.get("service") or "unknown", e)
+    return {"events": events, "services": latest}

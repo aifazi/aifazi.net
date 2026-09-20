@@ -61,12 +61,19 @@ api.interceptors.request.use((config) => {
   // Pure HttpOnly cookie auth - no Authorization header
   // withCredentials: true sends HttpOnly cookies automatically
   config.withCredentials = true
+  // Impersonation ("view as"): an explicit Bearer header wins over the
+  // HttpOnly admin cookie in the backend's CookieHTTPBearer, so the admin
+  // session underneath is never touched. Explicit per-request headers win.
+  config.headers = config.headers || {}
+  if (_impersonateToken && !(config.headers as Record<string, string>)['Authorization']) {
+    ;(config.headers as Record<string, string>)['Authorization'] = `Bearer ${_impersonateToken}`
+  }
+  if (_impersonateToken) (config as any)._impersonated = true
   // CSRF: mark all state-changing requests so the backend can require this
   // header (a cross-site form/fetch cannot set custom headers without CORS
   // preflight, which the backend will not grant to foreign origins).
   const method = (config.method || 'get').toLowerCase()
   if (method === 'post' || method === 'put' || method === 'patch' || method === 'delete') {
-    config.headers = config.headers || {}
     ;(config.headers as Record<string, string>)['X-Requested-With'] = 'XMLHttpRequest'
   }
   return config
@@ -79,6 +86,12 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config
+    // Impersonated requests must never trigger the admin-cookie refresh or
+    // wipe admin claims: an expired view-as token just ends the impersonation.
+    if (err.response?.status === 401 && (original as any)?._impersonated) {
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('impersonation:expired'))
+      return Promise.reject(err)
+    }
     if (
       err.response?.status === 401 &&
       !original._retry &&
@@ -357,4 +370,33 @@ export function clearStaffClaims() {
 /** Save access token in memory. Backend sets HttpOnly cookies on login/refresh. */
 export function saveTokens({ token, refreshToken: _ignored }: { token?: string; refreshToken?: string }) {
   setAccessToken(token ?? null)
+}
+
+// ── User impersonation ("view as") ──────────────────────────────────────────
+// The impersonated token lives in memory ONLY (like the access token) and is
+// NEVER written to cookies/storage — saveTokens() only touches _memToken and
+// HttpOnly cookies are JS-invisible, so the admin session survives untouched
+// and clearing this token instantly restores it (no re-login needed).
+let _impersonateToken: string | null = null
+let _impersonateUsername: string | null = null
+
+/** Set (or clear) the in-memory impersonation token. Admin token untouched. */
+export function setImpersonationToken(token: string | null, username?: string | null) {
+  _impersonateToken = token
+  _impersonateUsername = token ? (username ?? null) : null
+}
+
+/** Get the current impersonation token from memory. */
+export function getImpersonationToken(): string | null {
+  return _impersonateToken
+}
+
+/** Username being impersonated (for the banner), or null. */
+export function getImpersonationUsername(): string | null {
+  return _impersonateUsername
+}
+
+/** True while a view-as session is active. */
+export function isImpersonating(): boolean {
+  return !!_impersonateToken
 }

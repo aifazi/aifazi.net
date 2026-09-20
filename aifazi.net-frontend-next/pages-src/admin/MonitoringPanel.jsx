@@ -684,12 +684,78 @@ function JobsTab() {
   )
 }
 
+function ReleasesTab() {
+  const toast = useToast()
+  const [events, setEvents] = useState([])
+  const [services, setServices] = useState({})
+  const [loading, setLoading] = useState(true)
+
+  const load = () => {
+    setLoading(true)
+    api.get('/admin/deploy/status').then(r => {
+      setEvents(r.data?.events || [])
+      setServices(r.data?.services || {})
+    }).catch(() => toast.error('Could not load deploy status')).finally(() => setLoading(false))
+  }
+  useEffect(load, [])
+
+  const statusColor = s => {
+    const t = (s || '').toLowerCase()
+    if (['success', 'deployed', 'finished', 'live'].includes(t)) return G
+    if (['failed', 'failure', 'error'].includes(t)) return R
+    return O
+  }
+  const fmtTs = ts => { if (!ts) return '—'; try { return new Date(ts).toLocaleString() } catch { return ts } }
+  const names = Object.keys(services)
+
+  if (loading) return <div className="loader" />
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C }}>RELEASES</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>Latest Coolify deployments per service — newest first. Rollback happens in the Coolify UI via the deployment link.</div>
+        </div>
+        <button onClick={load} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '8px 14px', cursor: 'pointer', background: 'transparent', color: C, border: `1px solid ${C}45`, borderRadius: 8, fontWeight: 700 }}>↻ REFRESH</button>
+      </div>
+      {names.length === 0 ? <EmptyState icon="🚀" title="No deploy events yet" hint="Configure the Coolify webhook (POST /api/admin/deploy/event, header x-deploy-secret) to light this up." />
+        : (
+          <div style={{ display: 'grid', gap: 10 }}>
+            {names.map(name => {
+              const e = services[name] || {}
+              const color = statusColor(e.status)
+              return (
+                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, flexWrap: 'wrap' }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 8, background: `${color}14`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🚀</div>
+                  <div style={{ flex: 1, minWidth: 160 }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{name}</div>
+                    <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
+                      {(e.commit || '—').slice(0, 12)} · {fmtTs(e.at)}
+                    </div>
+                  </div>
+                  <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '3px 10px', background: `${color}1a`, border: `1px solid ${color}55`, color, borderRadius: 99, fontWeight: 700 }}>{(e.status || 'UNKNOWN').toUpperCase()}</span>
+                  {e.url ? <a href={e.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: MONO, fontSize: 10, color: C }}>Coolify ↗</a>
+                    : <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>no link</span>}
+                </div>
+              )
+            })}
+            {events.length > names.length && (
+              <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', textAlign: 'center', paddingTop: 4 }}>
+                + {events.length - names.length} older event(s) in history
+              </div>
+            )}
+          </div>
+        )}
+    </div>
+  )
+}
+
 export default function MonitoringPanel() {
   const [tab, setTab] = useState('status')
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10, flexWrap: 'wrap' }}>
-        {[['status', '📊 Status'], ['monitors', '🛰️ Monitors'], ['jobs', '⏰ Jobs'], ['settings', '⚙️ Settings'], ['errors', '🚨 Errors'], ['mobile', '📱 Mobile']].map(([k, l]) => (
+        {[['status', '📊 Status'], ['monitors', '🛰️ Monitors'], ['releases', '🚀 Releases'], ['jobs', '⏰ Jobs'], ['settings', '⚙️ Settings'], ['errors', '🚨 Errors'], ['mobile', '📱 Mobile']].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} style={{
             fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '8px 16px', cursor: 'pointer',
             background: tab === k ? 'var(--green)' : 'transparent', color: tab === k ? '#000' : 'var(--muted)',
@@ -697,7 +763,7 @@ export default function MonitoringPanel() {
           }}>{l}</button>
         ))}
       </div>
-      {tab === 'status' ? <StatusTab /> : tab === 'monitors' ? <MonitorsTab /> : tab === 'jobs' ? <JobsTab /> : tab === 'settings' ? <SettingsTab /> : tab === 'errors' ? <ErrorsTab /> : <MobileAppTab />}
+      {tab === 'status' ? <StatusTab /> : tab === 'monitors' ? <MonitorsTab /> : tab === 'releases' ? <ReleasesTab /> : tab === 'jobs' ? <JobsTab /> : tab === 'settings' ? <SettingsTab /> : tab === 'errors' ? <ErrorsTab /> : <MobileAppTab />}
     </div>
   )
 }

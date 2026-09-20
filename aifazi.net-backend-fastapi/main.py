@@ -666,6 +666,7 @@ from routers import (
     site_settings,
     sitemap,
     stats,
+    stalwart_admin,
     steam_auth,
     store,
     store_admin,
@@ -708,6 +709,7 @@ app.include_router(backup.router,         prefix="/api/admin/backup")
 app.include_router(email_settings.router, prefix="/api/admin/email")
 app.include_router(mail_queue.router,     prefix="/api/admin/mail/queue")
 app.include_router(mail_templates.router, prefix="/api/admin/mail/templates")
+app.include_router(stalwart_admin.router,  prefix="/api/admin/mail/stalwart")
 app.include_router(banners.router,        prefix="/api/admin/banners")
 app.include_router(site_settings.router,  prefix="/api/admin/site-settings")
 app.include_router(oauth_admin.router,    prefix="/api/admin/oauth")
