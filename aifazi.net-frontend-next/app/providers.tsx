@@ -26,6 +26,7 @@ import { DialogProvider } from '@/core/dialog'
 import { loadFontForTheme as loadThemeFont } from '@/core/fonts'
 import { applyThemeCustom, resolveThemeCustom } from '@/core/themeCustom'
 import { VALID_THEMES, LIGHT_THEMES, THEME_PAIRS } from '@/core/themeCatalog'
+import { applyThemeFramework } from '@/core/framework-styles'
 import { isAdmin as checkIsAdmin, getAuthToken } from '@/lib/api'
 import { usePathname } from 'next/navigation'
 
@@ -243,6 +244,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     if (cachedConfig?.lockTheme && cachedConfig?.globalTheme && VALID_THEMES.includes(cachedConfig.globalTheme)) {
       // Admin has locked the theme — apply immediately to avoid FOUC
       setThemeState(cachedConfig.globalTheme)
+      applyFrameworkForTheme(cachedConfig.globalTheme)
       if (cachedConfig.globalTheme === 'cyber-dark') document.documentElement.removeAttribute('data-theme')
       else document.documentElement.setAttribute('data-theme', cachedConfig.globalTheme)
       loadFontForTheme(cachedConfig.globalTheme)
@@ -256,6 +258,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
       } else if (!userExplicitlyChose && cachedConfig?.globalTheme && VALID_THEMES.includes(cachedConfig.globalTheme)) {
         // No explicit user choice — apply the site's global default immediately (avoids FOUC)
         setThemeState(cachedConfig.globalTheme)
+        applyFrameworkForTheme(cachedConfig.globalTheme)
         if (cachedConfig.globalTheme === 'cyber-dark') document.documentElement.removeAttribute('data-theme')
         else document.documentElement.setAttribute('data-theme', cachedConfig.globalTheme)
         loadFontForTheme(cachedConfig.globalTheme)
@@ -271,12 +274,28 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     })()
   }, [])
 
+  // Local-only personality write: resolves THEME_FRAMEWORK for the theme id
+  // and merges the 5 framework keys into siteConfig state (no backend write,
+  // no event dispatch — purely this browser's preview). Unmapped ids no-op.
+  const applyFrameworkForTheme = (id: string) => {
+    try {
+      applyThemeFramework(id, (k: string, v: string) =>
+        setSiteConfig(prev => (prev && (prev as Record<string, any>)[k] === v ? prev : { ...prev, [k]: v }))
+      )
+    } catch {}
+  }
+
   const setTheme = (id: string) => {
     if (!VALID_THEMES.includes(id)) return
     // If admin has locked the theme, silently ignore user theme changes
     if (siteConfig.lockTheme && siteConfig.globalTheme && VALID_THEMES.includes(siteConfig.globalTheme)) return
     loadFontForTheme(id)
     setThemeState(id)
+    // Per-theme UI personality — menu/dialog/input/surface/notify follow the
+    // theme's vibe (local siteConfig only, never persisted globally, so one
+    // visitor's preview can't clobber the admin's site-wide framework; an
+    // explicitly applied package still wins via the eff merge below).
+    applyFrameworkForTheme(id)
     if (LIGHT_THEMES.includes(id)) localStorage.setItem('last-light-theme', id)
     else                           localStorage.setItem('last-dark-theme', id)
     localStorage.setItem('site-theme', id)
@@ -430,12 +449,12 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
         return next
       })
       if (data.globalTheme && VALID_THEMES.includes(data.globalTheme)) {
-        if (data.lockTheme) setThemeState(data.globalTheme)
+        if (data.lockTheme) { setThemeState(data.globalTheme); applyFrameworkForTheme(data.globalTheme) }
         // Apply the site's global default only when the user has never explicitly
         // picked a theme. In incognito (empty localStorage) the built-in default
         // 'cyber-dark' was already written by the [theme] effect, so we can't use
         // site-theme as the signal — we use the dedicated user-set flag instead.
-        else if (!localStorage.getItem('site-theme-user-set')) setThemeState(data.globalTheme)
+        else if (!localStorage.getItem('site-theme-user-set')) { setThemeState(data.globalTheme); applyFrameworkForTheme(data.globalTheme) }
       }
     } finally {
       setSiteConfigReady(true)
@@ -476,6 +495,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
           if (shouldApplyTheme) {
             loadFontForTheme(nextTheme)
             setThemeState(nextTheme)
+            applyFrameworkForTheme(nextTheme)
           }
         }
       }
@@ -504,6 +524,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
           if (shouldApplyTheme) {
             loadFontForTheme(parsed.globalTheme)
             setThemeState(parsed.globalTheme)
+            applyFrameworkForTheme(parsed.globalTheme)
           }
         }
       } catch {}

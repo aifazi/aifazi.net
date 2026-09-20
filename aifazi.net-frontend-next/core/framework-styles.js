@@ -368,6 +368,98 @@ export const DEFAULT_FRAMEWORK = {
   followOsTheme:  false,
 }
 
+// ── Per-theme UI personalities ─────────────────────────────────────────────
+// Every VALID_THEMES id (core/themeCatalog.js) maps to its menu / dialog /
+// input / surface / notify style ids. Colors & fonts are untouched — only the
+// siteConfig framework keys (menuStyle, dialogStyle, inputStyle,
+// surfaceStyle, notifyStyle) follow the theme's vibe. Only ids from the
+// MENU_/DIALOG_/INPUT_/SURFACE_/NOTIFY_STYLES vocabularies above are used.
+export const THEME_FRAMEWORK = {
+  'cyber-dark':     { menu: 'cyber',    dialog: 'cyber',    input: 'cyber',    surface: 'cyber-grid', notify: 'chip'   },
+  'cyber-light':    { menu: 'minimal',  dialog: 'sheet',    input: 'minimal',  surface: 'clean-app',  notify: 'chip'   },
+  'light':          { menu: 'minimal',  dialog: 'sheet',    input: 'minimal',  surface: 'clean-app',  notify: 'chip'   },
+  'midnight':       { menu: 'command',  dialog: 'split',    input: 'command',  surface: 'dashboard',  notify: 'inbox'  },
+  'midnight-light': { menu: 'command',  dialog: 'split',    input: 'command',  surface: 'dashboard',  notify: 'inbox'  },
+  'crimson':        { menu: 'command',  dialog: 'drawer',   input: 'command',  surface: 'dashboard',  notify: 'banner' },
+  'crimson-light':  { menu: 'command',  dialog: 'drawer',   input: 'command',  surface: 'dashboard',  notify: 'banner' },
+  'ocean':          { menu: 'glass',    dialog: 'drawer',   input: 'glass',    surface: 'glass-dock', notify: 'float'  },
+  'ocean-light':    { menu: 'glass',    dialog: 'drawer',   input: 'glass',    surface: 'glass-dock', notify: 'float'  },
+  'amber':          { menu: 'rail',     dialog: 'sheet',    input: 'pill',     surface: 'dashboard',  notify: 'chip'   },
+  'amber-light':    { menu: 'rail',     dialog: 'sheet',    input: 'pill',     surface: 'dashboard',  notify: 'chip'   },
+  'rose':           { menu: 'floating', dialog: 'sheet',    input: 'pill',     surface: 'clean-app',  notify: 'float'  },
+  'rose-light':     { menu: 'floating', dialog: 'sheet',    input: 'pill',     surface: 'clean-app',  notify: 'float'  },
+  'forest':         { menu: 'command',  dialog: 'drawer',   input: 'minimal',  surface: 'dashboard',  notify: 'inbox'  },
+  'forest-light':   { menu: 'command',  dialog: 'drawer',   input: 'minimal',  surface: 'dashboard',  notify: 'inbox'  },
+  'lava':           { menu: 'neon',     dialog: 'drawer',   input: 'brutal',   surface: 'neon-stage', notify: 'banner' },
+  'lava-light':     { menu: 'neon',     dialog: 'drawer',   input: 'brutal',   surface: 'neon-stage', notify: 'banner' },
+  'toxic':          { menu: 'matrix',   dialog: 'split',    input: 'crt',      surface: 'terminal',   notify: 'hud'    },
+  'toxic-light':    { menu: 'matrix',   dialog: 'split',    input: 'crt',      surface: 'terminal',   notify: 'hud'    },
+  'ice':            { menu: 'glass',    dialog: 'sheet',    input: 'pill',     surface: 'clean-app',  notify: 'banner' },
+  'glass-dark':     { menu: 'glass',    dialog: 'glass',    input: 'glass',    surface: 'glass-dock', notify: 'glass'  },
+  'glass-light':    { menu: 'glass',    dialog: 'glass',    input: 'glass',    surface: 'glass-dock', notify: 'glass'  },
+  'brutalist':      { menu: 'rail',     dialog: 'brutal',   input: 'brutal',   surface: 'brutalist',  notify: 'chip'   },
+  'brutalist-dark': { menu: 'rail',     dialog: 'brutal',   input: 'brutal',   surface: 'brutalist',  notify: 'chip'   },
+  'synthwave':      { menu: 'neon',     dialog: 'split',    input: 'crt',      surface: 'neon-stage', notify: 'glitch' },
+  'synthwave-light':{ menu: 'neon',     dialog: 'split',    input: 'crt',      surface: 'neon-stage', notify: 'glitch' },
+  'paper':          { menu: 'paper',    dialog: 'paper',    input: 'paper',    surface: 'paper-doc',  notify: 'minimal'},
+  'paper-dark':     { menu: 'paper',    dialog: 'paper',    input: 'paper',    surface: 'paper-doc',  notify: 'minimal'},
+  'neumorph':       { menu: 'floating', dialog: 'sheet',    input: 'pill',     surface: 'clean-app',  notify: 'float'  },
+  'neumorph-dark':  { menu: 'floating', dialog: 'sheet',    input: 'pill',     surface: 'clean-app',  notify: 'float'  },
+  'terminal':       { menu: 'terminal', dialog: 'terminal', input: 'terminal', surface: 'terminal',   notify: 'terminal'},
+  'terminal-light': { menu: 'terminal', dialog: 'terminal', input: 'terminal', surface: 'terminal',   notify: 'terminal'},
+  'macos':          { menu: 'floating', dialog: 'sheet',    input: 'pill',     surface: 'clean-app',  notify: 'banner' },
+  'macos-dark':     { menu: 'floating', dialog: 'sheet',    input: 'pill',     surface: 'clean-app',  notify: 'banner' },
+  'neon-noir':      { menu: 'neon',     dialog: 'drawer',   input: 'minimal',  surface: 'neon-stage', notify: 'hud'    },
+  'neon-noir-light':{ menu: 'neon',     dialog: 'drawer',   input: 'minimal',  surface: 'neon-stage', notify: 'hud'    },
+  'pastel':         { menu: 'floating', dialog: 'sheet',    input: 'pill',     surface: 'clean-app',  notify: 'float'  },
+  'pastel-dark':    { menu: 'floating', dialog: 'sheet',    input: 'pill',     surface: 'clean-app',  notify: 'float'  },
+  'win95':          { menu: 'rail',     dialog: 'sheet',    input: 'minimal',  surface: 'clean-app',  notify: 'chip'   },
+  'win95-dark':     { menu: 'rail',     dialog: 'sheet',    input: 'minimal',  surface: 'clean-app',  notify: 'chip'   },
+  'aurora':         { menu: 'holo',     dialog: 'drawer',   input: 'holo',     surface: 'holo',       notify: 'chip'   },
+  'aurora-light':   { menu: 'holo',     dialog: 'drawer',   input: 'holo',     surface: 'holo',       notify: 'chip'   },
+  'ember-dark':     { menu: 'command',  dialog: 'split',    input: 'command',  surface: 'dashboard',  notify: 'banner' },
+  'ember-light':    { menu: 'command',  dialog: 'split',    input: 'command',  surface: 'dashboard',  notify: 'banner' },
+  'cobalt-dark':    { menu: 'command',  dialog: 'drawer',   input: 'command',  surface: 'dashboard',  notify: 'hud'    },
+  'cobalt-light':   { menu: 'command',  dialog: 'drawer',   input: 'command',  surface: 'dashboard',  notify: 'hud'    },
+  'slate-dark':     { menu: 'minimal',  dialog: 'sheet',    input: 'minimal',  surface: 'clean-app',  notify: 'chip'   },
+  'slate-light':    { menu: 'minimal',  dialog: 'sheet',    input: 'minimal',  surface: 'clean-app',  notify: 'chip'   },
+  'honey-dark':     { menu: 'rail',     dialog: 'sheet',    input: 'pill',     surface: 'dashboard',  notify: 'inbox'  },
+  'honey-light':    { menu: 'rail',     dialog: 'sheet',    input: 'pill',     surface: 'dashboard',  notify: 'inbox'  },
+  'violet-dark':    { menu: 'floating', dialog: 'split',    input: 'pill',     surface: 'clean-app',  notify: 'float'  },
+  'violet-light':   { menu: 'floating', dialog: 'split',    input: 'pill',     surface: 'clean-app',  notify: 'float'  },
+  'teal-dark':      { menu: 'glass',    dialog: 'drawer',   input: 'glass',    surface: 'glass-dock', notify: 'float'  },
+  'teal-light':     { menu: 'glass',    dialog: 'drawer',   input: 'glass',    surface: 'glass-dock', notify: 'float'  },
+  'mario':          { menu: 'arcade',   dialog: 'drawer',   input: 'brutal',   surface: 'brutalist',  notify: 'banner' },
+  'mario-light':    { menu: 'arcade',   dialog: 'drawer',   input: 'brutal',   surface: 'brutalist',  notify: 'banner' },
+  'minecraft':      { menu: 'arcade',   dialog: 'drawer',   input: 'brutal',   surface: 'brutalist',  notify: 'banner' },
+  'minecraft-light':{ menu: 'arcade',   dialog: 'drawer',   input: 'brutal',   surface: 'brutalist',  notify: 'banner' },
+  'sonic':          { menu: 'arcade',   dialog: 'drawer',   input: 'brutal',   surface: 'brutalist',  notify: 'banner' },
+  'sonic-light':    { menu: 'arcade',   dialog: 'drawer',   input: 'brutal',   surface: 'brutalist',  notify: 'banner' },
+  'pacman':         { menu: 'arcade',   dialog: 'split',    input: 'crt',      surface: 'neon-stage', notify: 'glitch' },
+  'pacman-light':   { menu: 'arcade',   dialog: 'split',    input: 'crt',      surface: 'neon-stage', notify: 'glitch' },
+  'dracula':        { menu: 'command',  dialog: 'split',    input: 'command',  surface: 'dashboard',  notify: 'banner' },
+  'nord':           { menu: 'minimal',  dialog: 'sheet',    input: 'minimal',  surface: 'clean-app',  notify: 'chip'   },
+  'tokyo-night':    { menu: 'neon',     dialog: 'drawer',   input: 'crt',      surface: 'neon-stage', notify: 'hud'    },
+  'gruvbox':        { menu: 'terminal', dialog: 'sheet',    input: 'terminal', surface: 'terminal',   notify: 'inbox'  },
+  'solarized-dark': { menu: 'command',  dialog: 'split',    input: 'command',  surface: 'dashboard',  notify: 'chip'   },
+  'monokai':        { menu: 'matrix',   dialog: 'drawer',   input: 'crt',      surface: 'terminal',   notify: 'glitch' },
+  'catppuccin':     { menu: 'floating', dialog: 'split',    input: 'pill',     surface: 'clean-app',  notify: 'float'  },
+  'one-dark':       { menu: 'minimal',  dialog: 'drawer',   input: 'minimal',  surface: 'dashboard',  notify: 'chip'   },
+}
+
+// Resolve a theme's personality into siteConfig framework keys via write().
+// Unmapped ids are left untouched (defensive — never clobbers explicit config).
+export function applyThemeFramework(id, write) {
+  const entry = THEME_FRAMEWORK[id]
+  if (!entry || typeof write !== 'function') return false
+  if (entry.menu)    write('menuStyle', entry.menu)
+  if (entry.dialog)  write('dialogStyle', entry.dialog)
+  if (entry.input)   write('inputStyle', entry.input)
+  if (entry.surface) write('surfaceStyle', entry.surface)
+  if (entry.notify)  write('notifyStyle', entry.notify)
+  return true
+}
+
 // Loading screen & animation preset are site-wide settings managed in
 // Theme Library → ⚙ Global Settings (not per-component framework choices).
 export const FRAMEWORK_CATEGORIES = [

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from 'react'
 import * as SecureStore from 'expo-secure-store'
 import { AppState, useColorScheme } from 'react-native'
-import { THEMES, THEME_IDS, Theme, ThemeId, webThemeToMobile, toggleTheme as toggleThemeId } from './themes'
+import { THEMES, THEME_IDS, Theme, ThemeId, resolveTheme, webThemeToMobile, toggleTheme as toggleThemeId } from './themes'
 import { getSiteConfig, SiteConfig } from './lib/siteConfig'
 import { resolveFramework, ResolvedFramework } from './framework'
 
@@ -124,7 +124,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ThemeCtx>(
     () => ({
-      theme: THEMES[id],
+      theme: resolveTheme(id),
       framework: resolveFramework(THEMES[id], siteConfig),
       setTheme,
       cycleTheme,
