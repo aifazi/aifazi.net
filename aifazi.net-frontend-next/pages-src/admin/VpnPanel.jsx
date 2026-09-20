@@ -38,6 +38,19 @@ function formatTimeAgo(ts) {
 
 const OS_ICONS = { ios: '📱', android: '🤖', windows: '💻', macos: '🍎', linux: '🐧', unknown: '❓' }
 
+// Module-level copy button (react-compiler forbids creating components
+// during render). Receives the stable copyText callback via onCopy.
+function CopyBtn({ text, label, onCopy }) {
+  return (
+    <button onClick={() => onCopy(text, label)} title={`Copy ${label || 'to clipboard'}`}
+      style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '3px 8px',
+        background: 'transparent', color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.35)',
+        borderRadius: 5, cursor: 'pointer', flexShrink: 0 }}>
+      ⧉ COPY
+    </button>
+  )
+}
+
 function VpnPanelInner() {
   const toast = useToast()
   const { confirm, prompt } = useDialog()
@@ -82,15 +95,6 @@ function VpnPanelInner() {
       }
     }
   }, [toast])
-
-  const CopyBtn = ({ text, label }) => (
-    <button onClick={() => copyText(text, label)} title={`Copy ${label || 'to clipboard'}`}
-      style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '3px 8px',
-        background: 'transparent', color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.35)',
-        borderRadius: 5, cursor: 'pointer', flexShrink: 0 }}>
-      ⧉ COPY
-    </button>
-  )
 
   // Live up/down speed per peer, derived from cumulative WireGuard counters
   // across polls. Resets (host reboot) clamp to 0 instead of going negative.
@@ -632,14 +636,14 @@ function VpnPanelInner() {
             <div style={{ gridColumn: '1 / -1' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <div style={{ ...labelStyle, marginBottom: 0 }}>User ID</div>
-                <CopyBtn text={selectedPeer.user_id} label="User ID" />
+                <CopyBtn text={selectedPeer.user_id} label="User ID" onCopy={copyText} />
               </div>
               <div style={{ ...valueStyle, fontFamily: 'var(--font-mono)', fontSize: 11, wordBreak: 'break-all' }}>{selectedPeer.user_id}</div>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <div style={{ ...labelStyle, marginBottom: 0 }}>Public Key</div>
-                <CopyBtn text={selectedPeer.public_key} label="Public key" />
+                <CopyBtn text={selectedPeer.public_key} label="Public key" onCopy={copyText} />
               </div>
               <div style={{ ...valueStyle, fontFamily: 'var(--font-mono)', fontSize: 11, wordBreak: 'break-all' }}>{selectedPeer.public_key}</div>
             </div>
@@ -703,8 +707,8 @@ function VpnPanelInner() {
                   New keys active — scan on the device now, old config is dead
                 </div>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' }}>
-                  {reissuedConf ? <CopyBtn text={reissuedConf} label=".conf" /> : null}
-                  <CopyBtn text={reissuedQr} label="QR payload" />
+                  {reissuedConf ? <CopyBtn text={reissuedConf} label=".conf" onCopy={copyText} /> : null}
+                  <CopyBtn text={reissuedQr} label="QR payload" onCopy={copyText} />
                 </div>
                 {reissuedConf ? (
                   <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#333', background: '#f1f1f1',

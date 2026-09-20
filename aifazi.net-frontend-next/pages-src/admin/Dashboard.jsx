@@ -218,7 +218,10 @@ function Dashboard({ onLogout }) {
       if (typeof r.data?.openTickets === 'number') setOpenTickets(r.data.openTickets)
     } catch {}
   }
-  useEffect(() => { if (canViewKey('helpdesk')) fetchOpenTickets() }, [])
+  useEffect(() => {
+    const t = setTimeout(() => { if (canViewKey('helpdesk')) fetchOpenTickets() }, 0)
+    return () => clearTimeout(t)
+  }, [])
   usePausableInterval(fetchOpenTickets, canViewKey('helpdesk') ? 60000 : null)
 
   // Deep-link: #/admin?view=helpdesk&ticket=ID opens that ticket.
