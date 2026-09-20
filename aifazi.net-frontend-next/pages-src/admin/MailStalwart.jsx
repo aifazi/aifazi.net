@@ -32,7 +32,10 @@ export default function MailStalwart() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const t = setTimeout(load, 0)
+    return () => clearTimeout(t)
+  }, [load])
 
   const act = async (queueId, action) => {
     if (action === 'drop') {

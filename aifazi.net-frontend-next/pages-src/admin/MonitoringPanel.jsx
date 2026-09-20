@@ -697,7 +697,10 @@ function ReleasesTab() {
       setServices(r.data?.services || {})
     }).catch(() => toast.error('Could not load deploy status')).finally(() => setLoading(false))
   }
-  useEffect(load, [])
+  useEffect(() => {
+    const t = setTimeout(load, 0)
+    return () => clearTimeout(t)
+  }, [])
 
   const statusColor = s => {
     const t = (s || '').toLowerCase()
