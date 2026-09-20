@@ -199,6 +199,54 @@ const THEMES = [
     bg: '#031210', bg2: '#061c19', bg3: '#0a2823', primary: '#2dd4bf', secondary: '#5eead4',
     text: '#d5fff8', muted: '#3d6f66', border: 'rgba(45,212,191,0.22)',
   },
+  {
+    id: 'dracula', name: 'Dracula', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Vampire purple & hot pink on plum black — the beloved editor theme.',
+    bg: '#282a36', bg2: '#2f3242', bg3: '#383c4e', primary: '#bd93f9', secondary: '#ff79c6',
+    text: '#f8f8f2', muted: '#7a86a8', border: 'rgba(189,147,249,0.22)',
+  },
+  {
+    id: 'nord', name: 'Nord', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Arctic frost blues on polar night — calm and clinical.',
+    bg: '#2e3440', bg2: '#3b4252', bg3: '#434c5e', primary: '#88c0d0', secondary: '#81a1c1',
+    text: '#eceff4', muted: '#7b88a0', border: 'rgba(136,192,208,0.2)',
+  },
+  {
+    id: 'tokyo-night', name: 'Tokyo Night', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Neon blue & violet glow on midnight indigo.',
+    bg: '#1a1b26', bg2: '#232433', bg3: '#2a2d3f', primary: '#7aa2f7', secondary: '#bb9af7',
+    text: '#c0caf5', muted: '#6a739d', border: 'rgba(122,162,247,0.22)',
+  },
+  {
+    id: 'gruvbox', name: 'Gruvbox', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Retro groove warm yellow & aqua on dark umber.',
+    bg: '#282828', bg2: '#32302f', bg3: '#3c3836', primary: '#fabd2f', secondary: '#83a598',
+    text: '#ebdbb2', muted: '#a89984', border: 'rgba(250,189,47,0.2)',
+  },
+  {
+    id: 'solarized-dark', name: 'Solarized', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Precision teal & blue on deep cyan-black.',
+    bg: '#002b36', bg2: '#073642', bg3: '#0d3c47', primary: '#268bd2', secondary: '#2aa198',
+    text: '#93a1a1', muted: '#6b7f87', border: 'rgba(38,139,210,0.22)',
+  },
+  {
+    id: 'monokai', name: 'Monokai', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Lime & hot pink on warm charcoal — the classic.',
+    bg: '#272822', bg2: '#32332d', bg3: '#3b3d35', primary: '#a6e22e', secondary: '#66d9ef',
+    text: '#f8f8f2', muted: '#8a8674', border: 'rgba(166,226,46,0.2)',
+  },
+  {
+    id: 'catppuccin', name: 'Catppuccin', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Pastel mauve & sky on espresso mocha.',
+    bg: '#11111b', bg2: '#181825', bg3: '#1e1e2e', primary: '#cba6f7', secondary: '#89b4fa',
+    text: '#cdd6f4', muted: '#7f849c', border: 'rgba(203,166,247,0.22)',
+  },
+  {
+    id: 'one-dark', name: 'One Dark', tag: 'DARK', type: 'design', style: 'cyber',
+    desc: 'Atom blue & purple on graphite — subdued and sharp.',
+    bg: '#282c34', bg2: '#21252b', bg3: '#2c313c', primary: '#61afef', secondary: '#c678dd',
+    text: '#abb2bf', muted: '#7f848e', border: 'rgba(97,175,239,0.2)',
+  },
   // ── THEME PACKAGES ────────────────────────────────────────────────────────
   {
     id: 'pkg:holo-deck', name: 'Holo Deck', tag: 'STYLE', type: 'package', style: 'holo',
