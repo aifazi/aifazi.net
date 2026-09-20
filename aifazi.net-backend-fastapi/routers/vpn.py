@@ -922,6 +922,13 @@ async def rotate_keys(peer_id: str, user: dict = Depends(get_current_user)):
     }
 
 
+@router.post("/admin/peers/{peer_id}/rotate")
+async def admin_rotate_keys(peer_id: str, user: dict = Depends(require_staff)):
+    """Admin alias for one-click reissue (VpnPanel). rotate_keys already
+    enforces owner-or-manage internally; this gate keeps it staff-only."""
+    return await rotate_keys(peer_id, user)
+
+
 @router.get("/stats")
 async def get_stats(user: dict = Depends(get_current_user)):
     """Get traffic statistics for all user's peers."""

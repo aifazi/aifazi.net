@@ -31,6 +31,7 @@ const STATUS_CFG = {
   sent:      { label:'SENT',      bg:'rgba(74,222,128,0.1)',  border:'rgba(74,222,128,0.35)',  color:'#4ade80' },
   delivered: { label:'DELIVERED', bg:'rgba(74,222,128,0.15)', border:'rgba(74,222,128,0.45)',  color:'#22c55e' },
   failed:    { label:'FAILED',    bg:'rgba(248,113,113,0.1)', border:'rgba(248,113,113,0.35)', color:'#f87171' },
+  bounced:   { label:'BOUNCED',   bg:'rgba(251,146,60,0.1)',  border:'rgba(251,146,60,0.35)',  color:'#fb923c' },
   cancelled: { label:'CANCELLED', bg:'rgba(112,112,160,0.1)', border:'rgba(112,112,160,0.3)',  color:'#7070a0' },
   resent:    { label:'RESENT',    bg:'rgba(251,146,60,0.1)',  border:'rgba(251,146,60,0.35)',  color:'#fb923c' },
   retrying:  { label:'RETRYING',  bg:'rgba(251,146,60,0.15)', border:'rgba(251,146,60,0.4)',   color:'#fb923c' },
@@ -220,7 +221,7 @@ export default function MailQueue() {
     return em && (em.status === 'failed' || em.status === 'pending' || em.status === 'sending')
   })
 
-  const FILTERS = ['all','pending','sending','sent','delivered','failed','cancelled','resent','retrying']
+  const FILTERS = ['all','pending','sending','sent','delivered','failed','bounced','cancelled','resent','retrying']
 
   return (
     <div style={{ maxWidth:1100, paddingBottom:60 }}>
