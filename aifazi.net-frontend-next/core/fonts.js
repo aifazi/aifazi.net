@@ -77,6 +77,17 @@ const REGISTRY = {
   'teal-dark':    'family=Poppins:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400',
   'teal-light':   'family=Poppins:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400',
 
+  // Iconic developer palettes — 8 editor-inspired dark themes
+  // (pairings reuse Google families already present in this file)
+  dracula:         'family=Poppins:wght@400;600;700;800&family=Fira+Code:wght@300;400;500;600',
+  nord:            'family=Outfit:wght@300;400;600;700&family=Fira+Code:wght@300;400;500;600',
+  'tokyo-night':   'family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500;600',
+  gruvbox:         'family=Nunito:wght@300;400;600;700;800&family=Space+Mono:wght@400;700',
+  'solarized-dark':'family=Quicksand:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500;600',
+  monokai:         'family=Bungee&family=JetBrains+Mono:wght@300;400;500;600',
+  catppuccin:      'family=Nunito:wght@300;400;600;700;800&family=Fira+Code:wght@300;400;500;600',
+  'one-dark':      'family=Raleway:wght@300;400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600',
+
   // ── Family variants (bridge to base) ──
   'terminal-light':    'family=VT323',
   'synthwave-light':   'family=Orbitron:wght@400;600;700;900',

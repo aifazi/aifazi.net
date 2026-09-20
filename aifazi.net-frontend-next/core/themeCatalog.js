@@ -42,6 +42,8 @@ export const VALID_THEMES = [
   'minecraft','minecraft-light',
   'sonic','sonic-light',
   'pacman','pacman-light',
+  'dracula','nord','tokyo-night','gruvbox',
+  'solarized-dark','monokai','catppuccin','one-dark',
 ]
 
 export const LIGHT_THEMES = [

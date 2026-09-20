@@ -422,6 +422,12 @@ const STYLE_TEMPLATES = [
   { id: 'tpl-ocean-deep', name: 'Ocean Deep', tag: 'CALM', desc: 'Electric blue and teal over a downward gradient — immersive and cool.',
     swatch: ['#020d1a', '#3b82f6', '#06b6d4'],
     draft: { fontDisplay: 'Raleway', fontMono: 'Fira Code', fontCode: 'Fira Code', glow: 0.7, radius: 10, borderWidth: 1, bgPattern: 'none', bgGradientFrom: '#020d1a', bgGradientTo: '#062b4a', bgGradientAngle: 150, colors: { green: '#3b82f6', cyan: '#06b6d4' } } },
+  { id: 'tpl-midnight-oil', name: 'Midnight Oil', tag: 'CALM', desc: 'Deep navy with an amber glow — generous rounding over a subtle dot grid.',
+    swatch: ['#0a1128', '#f5b301', '#ff8f00'],
+    draft: { fontDisplay: 'Syne', fontMono: 'JetBrains Mono', fontCode: 'JetBrains Mono', glow: 0.6, radius: 18, borderWidth: 1, bgPattern: 'dots', colors: { green: '#f5b301', cyan: '#ff8f00', orange: '#ffb74d' } } },
+  { id: 'tpl-paper-clean', name: 'Paper Clean', tag: 'EDITORIAL', desc: 'Crisp light editorial — serif display, flat surfaces, zero glow, no texture.',
+    swatch: ['#faf9f6', '#1a1a1a', '#8a6d2f'],
+    draft: { fontDisplay: 'Libre Baskerville', fontMono: 'Courier Prime', fontCode: 'Courier Prime', glow: 0, radius: 6, borderWidth: 1, bgPattern: 'none' } },
 ]
 
 // Merge a style template into a full customization draft (base keeps its theme
@@ -1054,14 +1060,15 @@ function ThemeLibrary() {
   const [moreSearch, setMoreSearch] = useState('')
   const [styleLibOpen, setStyleLibOpen] = useState(false)
   const [styleQuery, setStyleQuery] = useState('')
+  const [styleTag, setStyleTag] = useState('ALL')
   const [styleApplyFor, setStyleApplyFor] = useState({})   // templateId -> chosen themeId
 
   const styleLibTags = useMemo(() => ['ALL', ...Array.from(new Set(STYLE_TEMPLATES.map(t => t.tag)))], [])
   const styleLibList = useMemo(() => {
     const q = styleQuery.trim().toLowerCase()
-    const tag = styleLibTags.includes(moreTag) ? moreTag : 'ALL'
+    const tag = styleLibTags.includes(styleTag) ? styleTag : 'ALL'
     return STYLE_TEMPLATES.filter(t => (tag === 'ALL' || t.tag === tag) && (!q || t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)))
-  }, [styleQuery, moreTag, styleLibTags])
+  }, [styleQuery, styleTag, styleLibTags])
 
   // ── Framework state (menu / notify / dialog only) ────────────────────────
   const [fwDraft, setFwDraft] = useState(() => ({
@@ -1909,13 +1916,6 @@ function ThemeLibrary() {
     return { isActive: picked || matches, isCustomized: picked && !matches }
   }, [siteConfig?.themePackage, siteConfig?.globalTheme, globalThemeId, gAppearance, fwDraft, bgAnimation, gridPattern])
 
-  const randomTheme = () => {    const others = THEME_DEFS.filter(t => t.id !== theme)
-    const pick = others[Math.floor(Math.random() * others.length)]
-    setPendingTheme(pick.id)
-    setPreviewTheme(pick.id)
-    toast.success(`Previewing ${pick.name}`, { title: '🎲 Random Theme' })
-  }
-
   const copyAnimClass = (id) => {
     navigator.clipboard.writeText(id).catch(() => {})
     setCopiedAnim(id)
@@ -1936,6 +1936,13 @@ function ThemeLibrary() {
     if (tagFilter  === 'STYLE')  return t.type === 'design'
     return true
   })
+
+  // Dice button — apply a random theme from the currently filtered list
+  const randomTheme = () => {
+    const pool = filteredThemes.length > 0 ? filteredThemes : THEME_DEFS
+    const pick = pool[Math.floor(Math.random() * pool.length)]
+    if (pick) applyTheme(pick.id)
+  }
 
   // P2 — sync globalThemeId when siteConfig.globalTheme changes
   const globalThemeVal = siteConfig?.globalTheme || ''
@@ -2218,7 +2225,7 @@ function ThemeLibrary() {
               <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.4 }}>⭐</span>
               {themeSearch && <button onClick={() => setThemeSearch('')} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>✕</button>}
             </div>
-            <button onClick={randomTheme} title="Pick a random theme" style={{
+            <button onClick={randomTheme} title="Apply a random theme from the filtered list" style={{
               fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '8px 14px',
               background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)',
               color: '#c084fc', cursor: 'pointer', borderRadius: 6, transition: 'all 0.15s', flexShrink: 0,
@@ -2289,6 +2296,7 @@ function ThemeLibrary() {
               const isActive   = theme === t.id
               const isSelected = pendingTheme === t.id
               const isFocused  = focusedIdx === idx
+              const isNew      = NEW_THEME_IDS.has(t.id)
               const ts = tagStyle(t.tag)
               return (
                 <div key={t.id} className="tl-card"
@@ -2333,7 +2341,7 @@ function ThemeLibrary() {
                     {/* Favorite heart */}
                     <button onClick={e => { e.stopPropagation(); toggleFav(t.id) }} title={isFav(t.id) ? 'Remove favorite' : 'Add to favorites'}
                       style={{ position: 'absolute', bottom: 8, right: 8, background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, lineHeight: 1, opacity: isFav(t.id) ? 1 : 0.25, transition: 'opacity 0.2s', padding: 2 }}
-                    >{isFav(t.id) ? '○' : '○'}</button>
+                    >{isFav(t.id) ? '●' : '○'}</button>
                   </div>
 
                   {/* Info row */}
@@ -2818,7 +2826,8 @@ function ThemeLibrary() {
                           ))}
                         </div>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: t.primary, flex: 1 }}>{t.name}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, padding: '2px 6px', background: ts.bg, border: `1px solid ${ts.border}`, color: ts.color, borderRadius: 3 }}>{t.tag}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, padding: '2px 6px', background: ts.bg, border: `1px solid ${ts.border}`, color: ts.color, borderRadius: 3 }}>{t.tag}</span>
+                      {isNew && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, fontWeight: 700, letterSpacing: 2, padding: '2px 6px', color: t.primary, border: `1px solid ${t.primary}88`, borderRadius: 3 }}>NEW</span>}
                         <button onClick={e => { e.stopPropagation(); toggleFav(t.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 2 }}>⭐</button>
                       </div>
                       <div style={{ padding: '8px 14px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -3191,9 +3200,9 @@ function ThemeLibrary() {
               style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {styleLibTags.map(tag => {
-                const on = moreTag === tag
+                const on = styleTag === tag
                 return (
-                  <button key={tag} onClick={() => setMoreTag(tag)}
+                  <button key={tag} onClick={() => setStyleTag(tag)}
                     style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: on ? 'var(--purple)' : 'transparent', color: on ? '#000' : 'var(--muted)', border: `1px solid ${on ? 'var(--purple)' : 'var(--border)'}`, borderRadius: 6 }}>
                     {tag}
                   </button>

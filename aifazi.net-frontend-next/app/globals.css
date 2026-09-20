@@ -3353,6 +3353,15 @@ input.terminal-command-input:focus-visible {
 [data-theme="violet-light"] { --font-display:'Syne',sans-serif; --font-mono:'JetBrains Mono',monospace; --font-code:'JetBrains Mono',monospace; }
 [data-theme="teal-dark"] { --font-display:'Poppins',sans-serif; --font-mono:'DM Mono',monospace; --font-code:'DM Mono',monospace; }
 [data-theme="teal-light"] { --font-display:'Poppins',sans-serif; --font-mono:'DM Mono',monospace; --font-code:'DM Mono',monospace; }
+/* ── Iconic developer palette font stacks ── */
+[data-theme="dracula"] { --font-display:'Poppins',sans-serif; --font-mono:'Fira Code',monospace; --font-code:'Fira Code',monospace; }
+[data-theme="nord"] { --font-display:'Outfit',sans-serif; --font-mono:'Fira Code',monospace; --font-code:'Fira Code',monospace; }
+[data-theme="tokyo-night"] { --font-display:'Orbitron',sans-serif; --font-mono:'JetBrains Mono',monospace; --font-code:'JetBrains Mono',monospace; }
+[data-theme="gruvbox"] { --font-display:'Nunito',sans-serif; --font-mono:'Space Mono',monospace; --font-code:'Space Mono',monospace; }
+[data-theme="solarized-dark"] { --font-display:'Quicksand',sans-serif; --font-mono:'Fira Code',monospace; --font-code:'Fira Code',monospace; }
+[data-theme="monokai"] { --font-display:'Bungee',sans-serif; --font-mono:'JetBrains Mono',monospace; --font-code:'JetBrains Mono',monospace; }
+[data-theme="catppuccin"] { --font-display:'Nunito',sans-serif; --font-mono:'Fira Code',monospace; --font-code:'Fira Code',monospace; }
+[data-theme="one-dark"] { --font-display:'Raleway',sans-serif; --font-mono:'JetBrains Mono',monospace; --font-code:'JetBrains Mono',monospace; }
 
 /* Final form/input synchronization layer.
    Keeps ordinary forms readable when switching theme families between dark and light. */
@@ -5024,6 +5033,100 @@ img, video, svg { max-width: 100%; height: auto; }
   --shadow-card: 0 4px 14px rgba(0,0,0,0.10); --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
   --nav-bg-scrolled: rgba(244,240,224,0.96); --nav-bg-top: rgba(244,240,224,0.88);
   --grid-line: rgba(201,168,0,0.04); color-scheme: light;
+}
+
+/* ══════════════════════════════════════════
+   ICONIC DEVELOPER PALETTES — 8 editor-inspired dark themes
+   dracula · nord · tokyo-night · gruvbox · solarized-dark · monokai · catppuccin · one-dark
+   ══════════════════════════════════════════ */
+
+/* ── Dracula — vampire purple & hot pink on plum black ── */
+[data-theme="dracula"] {
+  --bg:#282a36; --bg2:#2f3242; --bg3:#383c4e; --bg4:#343746;
+  --green:#bd93f9; --cyan:#ff79c6; --orange:#ffb86c; --red:#ff5555; --purple:#d6b4fe;
+  --text:#f8f8f2; --text2:#b8c0d8; --muted:#7a86a8; --link:#8be9fd;
+  --border:rgba(189,147,249,0.22); --border2:rgba(189,147,249,0.1);
+  --glow:0 0 20px rgba(189,147,249,0.35); --glow-cyan:0 0 20px rgba(255,121,198,0.3);
+  --shadow-card:0 8px 40px rgba(40,42,54,0.7); --shadow-sm:0 2px 12px rgba(40,42,54,0.5);
+  --nav-bg-scrolled:rgba(40,42,54,0.97); --nav-bg-top:rgba(40,42,54,0.6);
+  --grid-line:rgba(189,147,249,0.05); color-scheme:dark;
+}
+/* ── Nord — arctic frost blues on polar night ── */
+[data-theme="nord"] {
+  --bg:#2e3440; --bg2:#3b4252; --bg3:#434c5e; --bg4:#363d4d;
+  --green:#88c0d0; --cyan:#81a1c1; --orange:#d08770; --red:#bf616a; --purple:#b48ead;
+  --text:#eceff4; --text2:#c3cad6; --muted:#7b88a0; --link:#88c0d0;
+  --border:rgba(136,192,208,0.2); --border2:rgba(136,192,208,0.09);
+  --glow:0 0 20px rgba(136,192,208,0.35); --glow-cyan:0 0 20px rgba(129,161,193,0.3);
+  --shadow-card:0 8px 40px rgba(46,52,64,0.7); --shadow-sm:0 2px 12px rgba(46,52,64,0.5);
+  --nav-bg-scrolled:rgba(46,52,64,0.97); --nav-bg-top:rgba(46,52,64,0.6);
+  --grid-line:rgba(136,192,208,0.05); color-scheme:dark;
+}
+/* ── Tokyo Night — neon blue & violet glow on midnight indigo ── */
+[data-theme="tokyo-night"] {
+  --bg:#1a1b26; --bg2:#232433; --bg3:#2a2d3f; --bg4:#262839;
+  --green:#7aa2f7; --cyan:#bb9af7; --orange:#ff9e64; --red:#f7768e; --purple:#c9aefc;
+  --text:#c0caf5; --text2:#9aa3c7; --muted:#6a739d; --link:#7dcfff;
+  --border:rgba(122,162,247,0.22); --border2:rgba(122,162,247,0.1);
+  --glow:0 0 20px rgba(122,162,247,0.35); --glow-cyan:0 0 20px rgba(187,154,247,0.3);
+  --shadow-card:0 8px 40px rgba(26,27,38,0.7); --shadow-sm:0 2px 12px rgba(26,27,38,0.5);
+  --nav-bg-scrolled:rgba(26,27,38,0.97); --nav-bg-top:rgba(26,27,38,0.6);
+  --grid-line:rgba(122,162,247,0.05); color-scheme:dark;
+}
+/* ── Gruvbox — retro groove warm yellow & aqua on dark umber ── */
+[data-theme="gruvbox"] {
+  --bg:#282828; --bg2:#32302f; --bg3:#3c3836; --bg4:#35322f;
+  --green:#fabd2f; --cyan:#83a598; --orange:#fe8019; --red:#fb4934; --purple:#d3869b;
+  --text:#ebdbb2; --text2:#c9bfa9; --muted:#a89984; --link:#83a598;
+  --border:rgba(250,189,47,0.2); --border2:rgba(250,189,47,0.09);
+  --glow:0 0 20px rgba(250,189,47,0.35); --glow-cyan:0 0 20px rgba(131,165,152,0.3);
+  --shadow-card:0 8px 40px rgba(40,40,40,0.7); --shadow-sm:0 2px 12px rgba(40,40,40,0.5);
+  --nav-bg-scrolled:rgba(40,40,40,0.97); --nav-bg-top:rgba(40,40,40,0.6);
+  --grid-line:rgba(250,189,47,0.05); color-scheme:dark;
+}
+/* ── Solarized Dark — precision teal & blue on deep cyan-black ── */
+[data-theme="solarized-dark"] {
+  --bg:#002b36; --bg2:#073642; --bg3:#0d3c47; --bg4:#0a3842;
+  --green:#268bd2; --cyan:#2aa198; --orange:#cb4b16; --red:#dc322f; --purple:#6c71c4;
+  --text:#93a1a1; --text2:#7d9199; --muted:#6b7f87; --link:#268bd2;
+  --border:rgba(38,139,210,0.22); --border2:rgba(38,139,210,0.1);
+  --glow:0 0 20px rgba(38,139,210,0.35); --glow-cyan:0 0 20px rgba(42,161,152,0.3);
+  --shadow-card:0 8px 40px rgba(0,43,54,0.7); --shadow-sm:0 2px 12px rgba(0,43,54,0.5);
+  --nav-bg-scrolled:rgba(0,43,54,0.97); --nav-bg-top:rgba(0,43,54,0.6);
+  --grid-line:rgba(38,139,210,0.05); color-scheme:dark;
+}
+/* ── Monokai — lime & hot pink on warm charcoal ── */
+[data-theme="monokai"] {
+  --bg:#272822; --bg2:#32332d; --bg3:#3b3d35; --bg4:#373931;
+  --green:#a6e22e; --cyan:#66d9ef; --orange:#fd971f; --red:#f92672; --purple:#ae81ff;
+  --text:#f8f8f2; --text2:#c2beb0; --muted:#8a8674; --link:#66d9ef;
+  --border:rgba(166,226,46,0.2); --border2:rgba(166,226,46,0.09);
+  --glow:0 0 20px rgba(166,226,46,0.35); --glow-cyan:0 0 20px rgba(102,217,239,0.3);
+  --shadow-card:0 8px 40px rgba(39,40,34,0.7); --shadow-sm:0 2px 12px rgba(39,40,34,0.5);
+  --nav-bg-scrolled:rgba(39,40,34,0.97); --nav-bg-top:rgba(39,40,34,0.6);
+  --grid-line:rgba(166,226,46,0.05); color-scheme:dark;
+}
+/* ── Catppuccin — pastel mauve & sky on espresso mocha ── */
+[data-theme="catppuccin"] {
+  --bg:#11111b; --bg2:#181825; --bg3:#1e1e2e; --bg4:#1b1b28;
+  --green:#cba6f7; --cyan:#89b4fa; --orange:#fab387; --red:#f38ba8; --purple:#d8bcff;
+  --text:#cdd6f4; --text2:#a3abc4; --muted:#7f849c; --link:#89dceb;
+  --border:rgba(203,166,247,0.22); --border2:rgba(203,166,247,0.1);
+  --glow:0 0 20px rgba(203,166,247,0.35); --glow-cyan:0 0 20px rgba(137,180,250,0.3);
+  --shadow-card:0 8px 40px rgba(17,17,27,0.7); --shadow-sm:0 2px 12px rgba(17,17,27,0.5);
+  --nav-bg-scrolled:rgba(17,17,27,0.97); --nav-bg-top:rgba(17,17,27,0.6);
+  --grid-line:rgba(203,166,247,0.05); color-scheme:dark;
+}
+/* ── One Dark — atom blue & purple on graphite ── */
+[data-theme="one-dark"] {
+  --bg:#282c34; --bg2:#21252b; --bg3:#2c313c; --bg4:#262b33;
+  --green:#61afef; --cyan:#56b6c2; --orange:#d19a66; --red:#e06c75; --purple:#c678dd;
+  --text:#abb2bf; --text2:#8f96a3; --muted:#7f848e; --link:#61afef;
+  --border:rgba(97,175,239,0.2); --border2:rgba(97,175,239,0.09);
+  --glow:0 0 20px rgba(97,175,239,0.35); --glow-cyan:0 0 20px rgba(86,182,194,0.3);
+  --shadow-card:0 8px 40px rgba(40,44,52,0.7); --shadow-sm:0 2px 12px rgba(40,44,52,0.5);
+  --nav-bg-scrolled:rgba(40,44,52,0.97); --nav-bg-top:rgba(40,44,52,0.6);
+  --grid-line:rgba(97,175,239,0.05); color-scheme:dark;
 }
 
 /* ════════════ KEYFRAMES (shared by store/admin skeletons) ════════════ */
