@@ -8,6 +8,7 @@ const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15'
 const money = c => `$${((c || 0) / 100).toFixed(2)}`
 const fmt = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+const tzAbbr = (() => { try { return new Date().toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop() } catch { return '' } })()
 
 const EMPTY = { code: '', description: '', type: 'percent', value_cents: 0, value_percent: 10, min_subtotal_cents: 0, max_uses: 0, per_user_limit: 0, product_ids: [], category_id: null, active: true, starts_at: null, expires_at: null }
 
@@ -202,7 +203,7 @@ export default function CouponsTab() {
               <div style={{ flex: 1 }} />
               <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', textAlign: 'right' }}>
                 {c.used_count || 0} / {c.max_uses || '∞'} uses
-                <div>{c.expires_at ? `exp ${fmt(c.expires_at)}` : 'no expiry'}</div>
+                <div>{c.expires_at ? `exp ${fmt(c.expires_at)}${tzAbbr ? ` ${tzAbbr}` : ''}` : 'no expiry'}</div>
               </div>
               <button onClick={() => toggleActive(c)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>{active ? 'PAUSE' : 'ACTIVATE'}</button>
               <button onClick={() => startEdit(c)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>

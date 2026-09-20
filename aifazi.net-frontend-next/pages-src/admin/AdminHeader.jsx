@@ -102,7 +102,7 @@ const SEARCH_NAV = [
   { key:'changelog',     icon:'clipboard',label:'Changelog',      group:'Manage'     },
 ]
 
-function SearchModal({ onClose, setView }) {
+function SearchModal({ onClose, setView, navItems }) {
   const [q, setQ] = useState('')
   const inputRef = useRef(null)
   const [cursor, setCursor] = useState(0)
@@ -112,7 +112,13 @@ function SearchModal({ onClose, setView }) {
     setCursor(0)
   }
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50) }, [])
-  const permittedNav = SEARCH_NAV.filter((n) => canViewKey(n.key))
+  // When the dashboard passes its permission-filtered navItems, search them
+  // directly so search always mirrors the sidebar; otherwise fall back to
+  // the static SEARCH_NAV list (still permission-filtered via canViewKey).
+  const baseNav = Array.isArray(navItems) && navItems.length > 0
+    ? navItems.map(n => ({ key: n.key, icon: n.icon || 'grid', label: n.label || n.key, group: n.group || 'Admin' }))
+    : SEARCH_NAV
+  const permittedNav = baseNav.filter((n) => canViewKey(n.key))
   const results = q
     ? permittedNav.filter(n => n.label.toLowerCase().includes(q.toLowerCase()) || n.group.toLowerCase().includes(q.toLowerCase()))
     : permittedNav
@@ -235,10 +241,12 @@ const PAGE_LABELS = {
   home:'Dashboard', content:'Content Hub', posts:'Posts', editor:'New Post', media:'Media',
   themes:'Theme Library', theme:'Theme Library', framework:'Theme Library',
   communications:'Communications', contacts:'Contacts', staff:'Staff', forum:'Forum',
-  chat:'Chat', newsletter:'Newsletter', db:'Database', delivery:'Mail & CDN', mail:'Mail',
+  chat:'Chat', 'chat-admin':'Chat Mgmt', newsletter:'Newsletter', db:'Database', delivery:'Mail & CDN', mail:'Mail',
   cdn:'CDN', backup:'Backup', audit:'Audit Log', settings:'Settings',
   siteSettings:'Settings', announcements:'Announcements', helpdesk:'Help Desk',
   stats:'Analytics', changelog:'Changelog',
+  vpn:'VPN', monitoring:'Monitoring', fivem:'FiveM Server', store:'Store',
+  identity:'Identity & OAuth', 'content-blocks':'Content Blocks', 'page-builder':'Page Builder',
 }
 
 function Breadcrumb({ view }) {
@@ -261,7 +269,7 @@ function Breadcrumb({ view }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    MAIN EXPORT
 ───────────────────────────────────────────────────────────────────────────── */
-export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed, onToggleSidebar }) {
+export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed, onToggleSidebar, navItems }) {
   const username = getUsername()
   const role = getRole()
   const [stats, setStats] = useState({ visitors:'—', posts:'—', msgs:'—' })
@@ -510,7 +518,7 @@ export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed,
         </div>
       </header>
 
-      {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} setView={setView} />}
+      {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} setView={setView} navItems={navItems} />}
     </>
   )
 }

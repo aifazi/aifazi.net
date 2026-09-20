@@ -58,15 +58,25 @@ function ToastContainer() { return null; }
 // The axios `api` client is available for structured calls; raw fetch is used
 // here for flexibility with dynamic paths and non-JSON payloads.
 async function adminAction(token, path, body = null) {
-  const res = await fetch(`/api/admin/stats/actions/${path}`, {
-    method:"POST",
-    headers:{"Content-Type":"application/json", Authorization:`Bearer ${token}`},
-    ...(body ? {body:JSON.stringify(body)} : {}),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || res.statusText);
-  return data;
+  // Both backend prefixes are live: user/toggle actions are served under
+  // /api/admin/stats/actions/* (stats router) while DB maintenance actions
+  // are served under /api/admin/actions/* (admin_actions router). Route
+  // through this one helper so both call shapes keep working.
+  const base = /^(db\/|posts\/recalculate|chat\/|search\/|cache\/|stats\/)/.test(path)
+    ? `/admin/actions/${path}`
+    : `/admin/stats/actions/${path}`;
+  try {
+    const res = await api.post(base, body || {}, { headers: { Authorization: `Bearer ${token}` } });
+    return res.data;
+  } catch (e) {
+    throw new Error(e?.response?.data?.error || e.message);
+  }
 }
+
+// The shared axios client has baseURL '/api' (+401 refresh / global expiry
+// UX), so strip the '/api' prefix when routing raw paths through it.
+const ap = (p) => p.replace(/^\/api/, '') || '/';
+const authCfg = (token) => ({ headers: { Authorization: `Bearer ${token}` } });
 
 function Btn({ label, color="var(--cyan,#00d4ff)", onClick, disabled, tiny, danger }) {
   const c = danger ? "var(--red,#ff4757)" : color;
@@ -250,7 +260,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                   </div>
                 ) : (
                   <div>
-                    <input value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="Ban reason (optional)" style={{...inp, marginBottom:10}} />
+                    <input value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="Ban reason (optional)" aria-label="Ban reason" style={{...inp, marginBottom:10}} />
                     <Btn label={busy==="ban"?"BANNING...":"BAN BAN USER"} danger disabled={!!busy} onClick={() => run("ban",`users/${u._id}/ban`,{reason:banReason})} />
                   </div>
                 )}
@@ -272,7 +282,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
               </div>
               <div style={{ position:"relative", marginBottom:10 }}>
                 <input type={showPass?"text":"password"} value={newPass} onChange={e => setNewPass(e.target.value)}
-                  placeholder="New password (min 8 chars)" style={{...inp, paddingRight:40}} />
+                  placeholder="New password (min 8 chars)" aria-label="New password" style={{...inp, paddingRight:40}} />
                 <button onClick={() => setShowPass(p=>!p)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"var(--muted)", cursor:"pointer", fontSize:13 }}>{showPass?"HIDE":"SHOW"}</button>
               </div>
               {newPass.length>0 && newPass.length<8 && <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--red,#ff4757)", marginBottom:8 }}>Min 8 characters ({newPass.length}/8)</div>}
@@ -319,8 +329,8 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
           {tab==="email" && (
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:16 }}>
               <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>SEND EMAIL TO {u.email}</div>
-              <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Subject" style={{...inp, marginBottom:10}} />
-              <textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} placeholder="Message body..." rows={6}
+              <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Subject" aria-label="Email subject" style={{...inp, marginBottom:10}} />
+              <textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} placeholder="Message body..." rows={6} aria-label="Email body"
                 style={{...inp, resize:"vertical", marginBottom:12, lineHeight:1.6}} />
               <Btn label={busy==="send-email"?"SENDING...":` EMAIL SEND EMAIL`} color="var(--cyan,#00d4ff)"
                 disabled={!emailSubject.trim()||!emailBody.trim()||!!busy}
@@ -367,12 +377,9 @@ function EditModal({ doc, coll, token, onClose, onSaved }) {
       try { payload[k] = JSON.parse(v); } catch { payload[k] = v; }
     }
     try {
-      const res = await fetch(`/api/admin/collection/${coll}/${doc._id}`, {
-        method:"PATCH", headers:{"Content-Type":"application/json", Authorization:`Bearer ${token}`}, body:JSON.stringify(payload),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error||res.statusText); }
+      await api.patch(ap(`/api/admin/collection/${coll}/${doc._id}`), payload, authCfg(token));
       onSaved(); onClose();
-    } catch(e) { setError(e.message); }
+    } catch(e) { setError(e?.response?.data?.error || e.message); }
     finally { setSaving(false); }
   };
 
@@ -426,6 +433,7 @@ function CollectionBrowser({ token, toast }) {
   const [page, setPage]     = useState(1);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [query, setQuery] = useState(""); // committed search term actually sent to the backend
   const [editDoc, setEditDoc] = useState(null);
   const [userDoc, setUserDoc] = useState(null);
   const [deleting, setDeleting] = useState(null);
@@ -450,22 +458,27 @@ function CollectionBrowser({ token, toast }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const q = search ? `&search=${encodeURIComponent(search)}` : "";
-      const res = await fetch(`/api/admin/stats/collection/${coll}?page=${page}&limit=20${q}`, {
-        headers:{Authorization:`Bearer ${token}`},
-      });
-      const d = await res.json();
+      const q = query ? `&search=${encodeURIComponent(query)}` : "";
+      const res = await api.get(ap(`/api/admin/stats/collection/${coll}?page=${page}&limit=20${q}`), authCfg(token));
+      const d = res.data;
       const docs = coll === "users" ? (d.docs || []).map(normalizeUserDoc) : (d.docs || []);
       setData({ ...d, docs }); setSelected(new Set());
     } catch { setData(null); }
     finally { setLoading(false); }
-  }, [coll, page, token, search]);
+  }, [coll, page, token, query]);
+
+  // Debounce typing into the committed query (300ms); clearing reloads page 1
+  useEffect(() => {
+    const t = setTimeout(() => { setPage(1); setQuery(search); }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const [prevColl, setPrevColl] = useState(coll);
   if (prevColl !== coll) {
     setPrevColl(coll);
     setPage(1);
     setSearch("");
+    setQuery("");
   }
 
   useEffect(() => { void (async () => { await load() })() }, [load]);
@@ -475,7 +488,7 @@ function CollectionBrowser({ token, toast }) {
     if (!ok) return;
     setDeleting(id);
     try {
-      await fetch(`/api/admin/collection/${coll}/${id}`, { method:"DELETE", headers:{Authorization:`Bearer ${token}`} });
+      await api.delete(ap(`/api/admin/collection/${coll}/${id}`), authCfg(token));
       toast.add("Deleted"); load();
     } catch(e) { toast.add("Delete failed: "+e.message,"error"); }
     finally { setDeleting(null); }
@@ -524,11 +537,11 @@ function CollectionBrowser({ token, toast }) {
 
       {/* Search */}
       <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&load()}
-          placeholder={`Search ${coll}...`}
+        <input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){setPage(1);setQuery(search);}}}
+          placeholder={`Search ${coll}...`} aria-label={`Search ${coll}`}
           style={{ flex:1, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"8px 12px", outline:"none" }} />
-        <button onClick={load} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"8px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,#00d4ff)", border:"1px solid #00d4ff33", cursor:"pointer" }}>SEARCH</button>
-        {search && <button onClick={()=>{setSearch("");}} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"8px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
+        <button onClick={()=>{setPage(1);setQuery(search);}} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"8px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,#00d4ff)", border:"1px solid #00d4ff33", cursor:"pointer" }}>SEARCH</button>
+        {search && <button aria-label="Clear search" onClick={()=>{setSearch("");setPage(1);setQuery("");}} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"8px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
       </div>
 
       {loading && <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)", letterSpacing:3 }}>LOADING...</div>}
@@ -544,7 +557,7 @@ function CollectionBrowser({ token, toast }) {
               <button onClick={async ()=>{
                 const ok = await confirm({ title: `Delete ${selected.size} Documents`, message: `Permanently delete ${selected.size} selected documents? This cannot be undone.`, variant: 'danger', confirmLabel: `DELETE ${selected.size}` });
                 if (!ok) return;
-                Promise.all([...selected].map(id => fetch(`/api/admin/collection/${coll}/${id}`,{method:"DELETE",headers:{Authorization:`Bearer ${token}`}})))
+                Promise.all([...selected].map(id => api.delete(ap(`/api/admin/collection/${coll}/${id}`), authCfg(token))))
                   .then(()=>{toast.add(`Deleted ${selected.size} docs`);load();})
                   .catch(()=>toast.add("Bulk delete failed","error"));
               }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, padding:"4px 10px", background:"rgba(255,71,87,0.06)", color:"var(--red,#ff4757)", border:"1px solid #ff475730", cursor:"pointer" }}>
@@ -620,14 +633,31 @@ function ExportPanel({ token, toast, stats }) {
   const [limit, setLimit]           = useState(1000);
   const COLLS = ["users","posts","threads","replies","contacts","messages","media","staff","newsletter"];
 
+  const csvEscape = (v) => {
+    if (v === null || v === undefined) return '';
+    const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
   const doExport = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/stats/collection/${collection}?page=1&limit=${limit}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      const docs = data.docs || [];
+      const perPage = 500;
+      let docs = [];
+      let total = Infinity;
+      let page = 1;
+      while (docs.length < limit && docs.length < total) {
+        const res = await api.get(ap(`/api/admin/stats/collection/${collection}?page=${page}&limit=${Math.min(perPage, limit)}`), authCfg(token));
+        const data = res.data;
+        const batch = data.docs || [];
+        if (page === 1) total = data.total ?? batch.length;
+        if (batch.length === 0) break;
+        docs = docs.concat(batch);
+        if (docs.length >= total || batch.length < perPage) break;
+        page += 1;
+      }
+      docs = docs.slice(0, limit);
+      total = total === Infinity ? docs.length : total;
       let blob, filename;
       if (format === "json") {
         blob = new Blob([JSON.stringify(docs, null, 2)], { type: "application/json" });
@@ -635,14 +665,14 @@ function ExportPanel({ token, toast, stats }) {
       } else {
         if (!docs.length) { toast.add("No data to export","error"); setLoading(false); return; }
         const keys = Object.keys(docs[0]).filter(k => k !== "__v");
-        const rows = [keys.join(","), ...docs.map(d => keys.map(k => JSON.stringify(d[k] ?? "")).join(","))];
+        const rows = [keys.map(csvEscape).join(","), ...docs.map(d => keys.map(k => csvEscape(d[k])).join(","))];
         blob = new Blob([rows.join("\n")], { type: "text/csv" });
         filename = `${collection}_export_${new Date().toISOString().slice(0,10)}.csv`;
       }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
-      toast.add(`Exported ${docs.length} ${collection} records as ${format.toUpperCase()}`);
+      toast.add(`Exported ${docs.length} of ${total.toLocaleString()} ${collection} records as ${format.toUpperCase()}`);
     } catch(e) { toast.add("Export failed: " + e.message, "error"); }
     finally { setLoading(false); }
   };
@@ -720,10 +750,8 @@ function QueryPanel({ token, toast }) {
     setLoading(true);
     try {
       const q = filterKey && filterVal ? `&search=${encodeURIComponent(filterVal)}` : "";
-      const res = await fetch(`/api/admin/stats/collection/${collection}?page=1&limit=${limit}${q}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const res = await api.get(ap(`/api/admin/stats/collection/${collection}?page=1&limit=${limit}${q}`), authCfg(token));
+      const data = res.data;
       setResults(data);
       toast.add(`Found ${data.total} records`);
     } catch(e) { toast.add("Query failed: "+e.message, "error"); }
@@ -802,9 +830,8 @@ function MaintenancePanel({ token, toast, onRefresh }) {
     if (!ok) return;
     setBusy(label);
     try {
-      const res = await fetch(`/api/admin/actions/${path}`, { method, headers:{ Authorization:`Bearer ${token}`, "Content-Type":"application/json" } });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || res.statusText);
+      const data = await adminAction(token, path);
+      void method;
       toast.add(data.message || label + " completed");
       onRefresh?.();
     } catch(e) { toast.add(e.message, "error"); }
@@ -868,14 +895,13 @@ function DbHealthTab({ token, toast }) {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/stats/db-health`, { headers:{ Authorization:`Bearer ${token}` } });
-      if (!res.ok) throw new Error(res.statusText);
-      setData(await res.json());
+      const res = await api.get(ap(`/api/admin/stats/db-health`), authCfg(token));
+      setData(res.data);
     } catch(e) {
       // Fallback: pull what we can from /api/admin/stats
       try {
-        const r2 = await fetch(`/api/admin/stats`, { headers:{ Authorization:`Bearer ${token}` } });
-        const s = await r2.json();
+        const r2 = await api.get(ap(`/api/admin/stats`), authCfg(token));
+        const s = r2.data;
         setData({ fallback: true, counts: s.counts, uptime: s.uptime });
       } catch {}
     }
@@ -887,8 +913,7 @@ function DbHealthTab({ token, toast }) {
     if (!ok) return;
     setBusy(label);
     try {
-      const res = await fetch(`/api/admin/actions/${path}`, { method:"POST", headers:{ Authorization:`Bearer ${token}` } });
-      const d = await res.json();
+      const d = await adminAction(token, path);
       toast.add(d.message || `${label} completed`);
       load();
     } catch(e) { toast.add(e.message,"error"); }
@@ -1048,10 +1073,8 @@ function NewsletterTab({ token, toast }) {
     setLoading(true);
     try {
       const qs = q ? `&search=${encodeURIComponent(q)}` : "";
-      const res = await fetch(`/api/admin/stats/collection/newsletter?page=${p}&limit=${PER}${qs}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const res = await api.get(ap(`/api/admin/stats/collection/newsletter?page=${p}&limit=${PER}${qs}`), authCfg(token));
+      const data = res.data;
       setSubs(data.docs || []); setTotal(data.total || 0);
     } catch {}
     finally { setLoading(false); }
@@ -1062,10 +1085,8 @@ function NewsletterTab({ token, toast }) {
   const toggle = async (sub) => {
     setBusy(sub._id);
     try {
-      const r = await fetch(`/api/admin/actions/newsletter/${sub._id}/toggle-active`, {
-        method:"POST", headers:{ Authorization:`Bearer ${token}` }
-      });
-      const d = await r.json();
+      const r = await api.post(ap(`/api/admin/actions/newsletter/${sub._id}/toggle-active`), {}, authCfg(token));
+      const d = r.data;
       toast.add(d.message || "Updated");
       setSubs(s => s.map(x => x._id === sub._id ? {...x, active: !x.active} : x));
     } catch(e) { toast.add(e.message,"error"); }
@@ -1077,7 +1098,7 @@ function NewsletterTab({ token, toast }) {
     if (!ok) return;
     setBusy(id);
     try {
-      await fetch(`/api/admin/collection/newsletter/${id}`, { method:"DELETE", headers:{ Authorization:`Bearer ${token}` } });
+      await api.delete(ap(`/api/admin/collection/newsletter/${id}`), authCfg(token));
       toast.add("Removed"); setSubs(s => s.filter(x => x._id !== id)); setTotal(t => t - 1);
     } catch(e) { toast.add(e.message,"error"); }
     finally { setBusy(""); }
@@ -1110,7 +1131,7 @@ function NewsletterTab({ token, toast }) {
 
       <div style={{ display:"flex", gap:8, marginBottom:16 }}>
         <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key==="Enter" && (setPage(1), load(1, search))}
-          placeholder="Search by email..." style={{ flex:1, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
+          placeholder="Search by email..." aria-label="Search newsletter subscribers" style={{ flex:1, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
         <button onClick={() => { setPage(1); load(1, search); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"9px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,#00d4ff)", border:"1px solid #00d4ff33", cursor:"pointer" }}>SEARCH</button>
         {search && <button onClick={() => { setSearch(""); setPage(1); load(1, ""); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
       </div>
@@ -1164,35 +1185,50 @@ function NewsletterTab({ token, toast }) {
 }
 
 // ------------------------- A -------------------------UDIT LOG TAB ----------
-function AuditLogTab({ token }) {
+function AuditLogTab({ token, toast }) {
   const [logs, setLogs]       = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage]       = useState(1);
   const [total, setTotal]     = useState(0);
   const [filter, setFilter]   = useState("");
 
-  const load = useCallback(async (p = page) => {
-    setLoading(true);
+  const [debouncedFilter, setDebouncedFilter] = useState(filter);
+  useEffect(() => {
+    const t = setTimeout(() => { setPage(1); setDebouncedFilter(filter); }, 300);
+    return () => clearTimeout(t);
+  }, [filter]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setLoading(true);
+      try {
+        const q = debouncedFilter ? `&event=${encodeURIComponent(debouncedFilter)}` : "";
+        const res = await api.get(ap(`/api/admin/audit?page=${page}&limit=30${q}`), authCfg(token));
+        const data = res.data;
+        if (!cancelled) { setLogs(data.logs || []); setTotal(data.total || 0); }
+      } catch {}
+      finally { if (!cancelled) setLoading(false); }
+    };
+    run();
+    return () => { cancelled = true };
+  }, [page, debouncedFilter, token]);
+
+  const exportCsv = async () => {
     try {
-      const q = filter ? `&event=${encodeURIComponent(filter)}` : "";
-      const res = await fetch(`/api/admin/audit?page=${p}&limit=30${q}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setLogs(data.logs || []);
-      setTotal(data.total || 0);
-    } catch {}
-    finally { setLoading(false); }
-  }, [page, filter, token]);
-
-  const [prevFilter, setPrevFilter] = useState(filter);
-  if (prevFilter !== filter) {
-    setPrevFilter(filter);
-    setPage(1);
-  }
-
-  useEffect(() => { void (async () => { await load(page) })() }, [page]);
-  useEffect(() => { void (async () => { await load(1) })() }, [filter]);
+      const res = await api.get('/admin/audit/export', { responseType: 'blob' });
+      const blob = res.data instanceof Blob ? res.data : new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      toast?.add(`Exported audit log`);
+    } catch (e) {
+      toast?.add(e?.response?.data?.error || e.message || 'Audit export failed', 'error');
+    }
+  };
 
   const pages = Math.ceil(total / 30) || 1;
   const ACTION_COLOR = { login:"var(--green,#00ff88)", logout:"var(--orange,#ff6b35)", create:"var(--cyan,#00d4ff)", delete:"var(--red,#ff4757)", ban:"var(--red,#ff4757)", unban:"var(--green,#00ff88)", role:"var(--yellow,#ffd700)", update:"var(--purple,#a78bfa)", verify:"var(--green,#00ff88)", password:"var(--orange,#ff6b35)", fail:"var(--red,#ff4757)", upload:"var(--cyan,#00d4ff)" };
@@ -1204,13 +1240,13 @@ function AuditLogTab({ token }) {
     <div>
       <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:3, color:"var(--border)", marginBottom:20 }}>AUDIT LOG</div>
       <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
-        <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filter by action keyword (e.g. login, ban, create)..."
+        <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filter by action keyword (e.g. login, ban, create)..." aria-label="Filter audit log"
           style={{ flex:1, minWidth:220, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
         {filter && <button onClick={() => { setFilter(""); setPage(1); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
-        <a href="/api/admin/audit/export" download
-          style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"9px 14px", background:"transparent", color:"var(--green)", border:"1px solid rgba(0,255,136,0.35)", cursor:"pointer", textDecoration:"none" }}>
+        <button onClick={exportCsv}
+          style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"9px 14px", background:"transparent", color:"var(--green)", border:"1px solid rgba(0,255,136,0.35)", cursor:"pointer" }}>
           ⬇ EXPORT CSV
-        </a>
+        </button>
       </div>
       {loading ? (
         <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)", letterSpacing:3 }}>LOADING...</div>
@@ -1264,11 +1300,11 @@ function SessionsTab({ token, toast }) {
     setLoading(true);
     try {
       const [sRes, bRes] = await Promise.allSettled([
-        fetch(`/api/admin/sessions`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`/api/admin/ip-bans`,   { headers: { Authorization: `Bearer ${token}` } }),
+        api.get(ap(`/api/admin/sessions`), authCfg(token)),
+        api.get(ap(`/api/admin/ip-bans`), authCfg(token)),
       ]);
-      if (sRes.status === "fulfilled" && sRes.value.ok) setSessions(await sRes.value.json().then(d => d.sessions || d || []));
-      if (bRes.status === "fulfilled" && bRes.value.ok) setIpBans(await bRes.value.json().then(d => d.bans || d || []));
+      if (sRes.status === "fulfilled") { const d = sRes.value.data; setSessions(d.sessions || d || []); }
+      if (bRes.status === "fulfilled") { const d = bRes.value.data; setIpBans(d.bans || d || []); }
     } catch {}
     finally { setLoading(false); }
   };
@@ -1276,9 +1312,12 @@ function SessionsTab({ token, toast }) {
   useEffect(() => { void (async () => { await load() })() }, []);
 
   const revokeSession = async (id) => {
+    if (!id) return;
+    const ok = await confirm({ title: 'Revoke Session', message: 'Sign out this session?', variant: 'danger', confirmLabel: 'REVOKE' });
+    if (!ok) return;
     setBusy(id);
     try {
-      await fetch(`/api/admin/sessions/${id}`, { method:"DELETE", headers: { Authorization: `Bearer ${token}` } });
+      await api.delete(ap(`/api/admin/sessions/${id}`), authCfg(token));
       toast.add("Session revoked"); setSessions(s => s.filter(x => (x._id || x.id) !== id));
     } catch(e) { toast.add(e.message,"error"); }
     finally { setBusy(""); }
@@ -1288,12 +1327,8 @@ function SessionsTab({ token, toast }) {
     if (!newIp.trim()) return;
     setBusy("add");
     try {
-      const res = await fetch(`/api/admin/ip-bans`, {
-        method:"POST", headers:{"Content-Type":"application/json", Authorization: `Bearer ${token}`},
-        body: JSON.stringify({ ip: newIp.trim(), reason: banReason })
-      });
-      if (!res.ok) throw new Error((await res.json()).error || "Failed");
-      const data = await res.json();
+      const res = await api.post(ap(`/api/admin/ip-bans`), { ip: newIp.trim(), reason: banReason }, authCfg(token));
+      const data = res.data;
       setIpBans(b => [...b, data.ban || data]); setNewIp(""); setBanReason("");
       toast.add("IP banned");
     } catch(e) { toast.add(e.message,"error"); }
@@ -1301,9 +1336,10 @@ function SessionsTab({ token, toast }) {
   };
 
   const removeBan = async (id) => {
+    if (!id) return;
     setBusy(id);
     try {
-      await fetch(`/api/admin/ip-bans/${id}`, { method:"DELETE", headers:{ Authorization:`Bearer ${token}` } });
+      await api.delete(ap(`/api/admin/ip-bans/${id}`), authCfg(token));
       toast.add("Ban removed"); setIpBans(b => b.filter(x => (x._id||x.id) !== id));
     } catch(e) { toast.add(e.message,"error"); }
     finally { setBusy(""); }
@@ -1392,7 +1428,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
     }
     return null
   })
-  const [roleReady, setRoleReady] = useState(Boolean(getAuthToken()))
+  const [roleReady, setRoleReady] = useState(() => (getAuthToken() ? true : null))
   useEffect(() => {
     if (roleReady) return
     let active = true
@@ -1441,12 +1477,11 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
     if (!t) return;
     setLoading(true); setError("");
     try {
-      const res = await fetch(`/api/admin/stats`, { headers:{Authorization:`Bearer ${t}`} });
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      const data = await res.json();
+      const res = await api.get(ap(`/api/admin/stats`), authCfg(t));
+      const data = res.data;
       setStats(data); setLastUpdate(new Date());
       setPulse(true); setTimeout(()=>setPulse(false), 600);
-    } catch(e) { setError(e.message); }
+    } catch(e) { setError(e?.response?.data?.error || e.message); }
     finally { setLoading(false); }
   }, [token, setStats]);
 
@@ -1494,8 +1529,8 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
   return (
     <div style={{ minHeight: _preloadToken ? "auto" : "100vh", background: _preloadToken ? "transparent" : "var(--bg)", color:"var(--text)", fontFamily:"var(--font-mono,monospace)" }}>
 
-      {/* #19 - Read-only mode banner */}
-      {readOnly && (
+      {/* #19 - Read-only mode banner (only once the role has resolved) */}
+      {readOnly && roleReady !== null && (
         <div style={{
           padding: '8px 24px', background: 'color-mix(in srgb, var(--cyan) 7%, transparent)',
           borderBottom: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)',
@@ -1504,6 +1539,13 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
         }}>
           <span>LOCK</span>
           <span>READ-ONLY MODE - Query, Maintenance and Export tabs are hidden for your role ({role?.toUpperCase()}). Contact an admin for write access.</span>
+        </div>
+      )}
+
+      {/* Role still resolving — skeleton instead of role-gated UI */}
+      {roleReady === null && (
+        <div style={{ padding: '8px 24px', borderBottom: '1px solid var(--border)', fontFamily: 'monospace', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>
+          RESOLVING ACCESS…
         </div>
       )}
 
@@ -1763,7 +1805,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
 
         {/* -- AUDIT LOG -- */}
         {activeTab==="audit" && (
-          <AuditLogTab token={token} />
+          <AuditLogTab token={token} toast={toast} />
         )}
       </div>
     </div>

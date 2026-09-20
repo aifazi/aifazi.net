@@ -74,6 +74,7 @@ function useIsMobile(bp = 768) {
 
 // --- Shared styles ------------------------------------------------------------
 const S = {
+  mainPad: '24px',
   input: {
     background: 'var(--bg3)', border: '1px solid var(--border)',
     color: 'var(--text)', fontFamily: 'var(--font-display)',

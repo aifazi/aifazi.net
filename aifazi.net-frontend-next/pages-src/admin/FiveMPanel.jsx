@@ -38,7 +38,7 @@ function Btn({ onClick, color=G, children, small, disabled, danger, full, ...res
 
 function RelTime({ iso }) {
   if (!iso) return <span style={{color:MUTED}}>—</span>
-  return <span title={new Date(iso).toLocaleString()} style={{color:MUTED, fontSize:11}}><KitRelTime iso={iso} /></span>
+  return <span title={new Date(iso).toLocaleString(undefined, { timeZoneName: 'short' })} style={{color:MUTED, fontSize:11}}><KitRelTime iso={iso} /></span>
 }
 
 function SourceBadge({ source }) {
