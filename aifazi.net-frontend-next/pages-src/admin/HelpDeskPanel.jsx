@@ -445,7 +445,7 @@ function HelpDeskSettings() {
 }
 
 // ── Main Panel ─────────────────────────────────────────────
-export default function HelpDeskPanel() {
+export default function HelpDeskPanel({ initialTicketId }) {
   const toast = useToast()
   const { confirm } = useDialog()
   const isMobile = useIsMobile()
@@ -556,6 +556,28 @@ export default function HelpDeskPanel() {
       toast.success(`${tkid(ticket)} → ${status}`, { title: 'Updated' })
     } catch (e) { toast.error(e.response?.data?.error || 'Update failed') }
   }
+
+  // Deep-link: open the ticket from #/admin?view=helpdesk&ticket=ID.
+  const deepOpenedRef = useRef(null)
+  useEffect(() => {
+    if (initialTicketId && deepOpenedRef.current !== initialTicketId) {
+      deepOpenedRef.current = initialTicketId
+      openTicket(initialTicketId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTicketId])
+
+  // Keep the hash shareable while a ticket is open (replaceState: no history spam).
+  useEffect(() => {
+    try {
+      const h = window.location.hash || ''
+      if (!h.startsWith('#/admin')) return
+      const next = selected
+        ? `#/admin?view=helpdesk&ticket=${encodeURIComponent(tid(selected))}`
+        : '#/admin?view=helpdesk'
+      if (h !== next) window.history.replaceState(null, '', next)
+    } catch {}
+  }, [selected])
 
   const ago = d => {
     if (!d) return '—'

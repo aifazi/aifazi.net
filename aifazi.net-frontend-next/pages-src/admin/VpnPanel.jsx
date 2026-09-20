@@ -39,7 +39,7 @@ function formatTimeAgo(ts) {
 const OS_ICONS = { ios: '📱', android: '🤖', windows: '💻', macos: '🍎', linux: '🐧', unknown: '❓' }
 
 function VpnPanelInner() {
-  const { toast } = useToast()
+  const toast = useToast()
   const { confirm, prompt } = useDialog()
   const isMobile = useIsMobile()
 
@@ -56,7 +56,41 @@ function VpnPanelInner() {
   const [selectedPeer, setSelectedPeer] = useState(null)
   const [peerActivity, setPeerActivity] = useState([])
   const [reissuedQr, setReissuedQr] = useState('')
+  const [reissuedConf, setReissuedConf] = useState('')
   const [managing, setManaging] = useState(false)
+
+  // Copy helper — clipboard API with textarea/execCommand fallback.
+  const copyText = useCallback(async (text, label) => {
+    if (!text) return
+    const done = () => toast.success(`${label || 'Value'} copied to clipboard`)
+    try {
+      await navigator.clipboard.writeText(text)
+      done()
+    } catch {
+      try {
+        const ta = document.createElement('textarea')
+        ta.value = text
+        ta.style.position = 'fixed'
+        ta.style.opacity = '0'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        ta.remove()
+        done()
+      } catch {
+        toast.error('Copy failed — select the text manually')
+      }
+    }
+  }, [toast])
+
+  const CopyBtn = ({ text, label }) => (
+    <button onClick={() => copyText(text, label)} title={`Copy ${label || 'to clipboard'}`}
+      style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '3px 8px',
+        background: 'transparent', color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.35)',
+        borderRadius: 5, cursor: 'pointer', flexShrink: 0 }}>
+      ⧉ COPY
+    </button>
+  )
 
   // Live up/down speed per peer, derived from cumulative WireGuard counters
   // across polls. Resets (host reboot) clamp to 0 instead of going negative.
@@ -208,6 +242,7 @@ function VpnPanelInner() {
     try {
       const res = await api.post(`/vpn/admin/peers/${peer.id}/rotate`)
       setReissuedQr(res.data?.qr_code || '')
+      setReissuedConf(res.data?.config || '')
       toast.success('Keys reissued — update the device now')
       await load()
       await refreshSelected(peer.id)
@@ -222,12 +257,14 @@ function VpnPanelInner() {
     setSelectedPeer(p)
     setPeerActivity([])
     setReissuedQr('')
+    setReissuedConf('')
   }, [])
 
   const closePeer = useCallback(() => {
     setSelectedPeer(null)
     setPeerActivity([])
     setReissuedQr('')
+    setReissuedConf('')
   }, [])
 
   // Per-peer 7-day chart for the open detail modal (fetch only — resets
@@ -593,11 +630,17 @@ function VpnPanelInner() {
               <div style={valueStyle}>{formatBytes(selectedPeer.transfer_tx)}</div>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <div style={labelStyle}>User ID</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <div style={{ ...labelStyle, marginBottom: 0 }}>User ID</div>
+                <CopyBtn text={selectedPeer.user_id} label="User ID" />
+              </div>
               <div style={{ ...valueStyle, fontFamily: 'var(--font-mono)', fontSize: 11, wordBreak: 'break-all' }}>{selectedPeer.user_id}</div>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <div style={labelStyle}>Public Key</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <div style={{ ...labelStyle, marginBottom: 0 }}>Public Key</div>
+                <CopyBtn text={selectedPeer.public_key} label="Public key" />
+              </div>
               <div style={{ ...valueStyle, fontFamily: 'var(--font-mono)', fontSize: 11, wordBreak: 'break-all' }}>{selectedPeer.public_key}</div>
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
@@ -659,6 +702,15 @@ function VpnPanelInner() {
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#333', marginTop: 8 }}>
                   New keys active — scan on the device now, old config is dead
                 </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+                  {reissuedConf ? <CopyBtn text={reissuedConf} label=".conf" /> : null}
+                  <CopyBtn text={reissuedQr} label="QR payload" />
+                </div>
+                {reissuedConf ? (
+                  <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#333', background: '#f1f1f1',
+                    borderRadius: 6, padding: 8, marginTop: 8, textAlign: 'left', overflow: 'auto',
+                    maxHeight: 160, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{reissuedConf}</pre>
+                ) : null}
               </div>
             ) : null}
             {peerActivity.length > 0 ? (

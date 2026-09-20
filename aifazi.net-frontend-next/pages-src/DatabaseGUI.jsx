@@ -1221,7 +1221,8 @@ function AuditLogTab({ token, toast }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audit_export_${new Date().toISOString().slice(0, 10)}.csv`;
+      const _d = new Date(), _p = n => String(n).padStart(2, '0');
+      a.download = `audit-${_d.getFullYear()}-${_p(_d.getMonth() + 1)}-${_p(_d.getDate())}.csv`;
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
       toast?.add(`Exported audit log`);

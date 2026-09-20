@@ -134,6 +134,8 @@ function Dashboard({ onLogout }) {
   const username = getUsername()
 
   const [view, setView] = useState('home')
+  const [openTickets, setOpenTickets] = useState(0)
+  const [deepTicket, setDeepTicket] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('admin_sidebar_collapsed') === '1' } catch { return false }
@@ -208,6 +210,34 @@ function Dashboard({ onLogout }) {
     run()
   }, [])
   usePausableInterval(checkExpiry, 30000)
+
+  // Open helpdesk ticket count for the sidebar badge (60s, pauses when hidden).
+  const fetchOpenTickets = async () => {
+    try {
+      const r = await api.get('/helpdesk/admin/stats')
+      if (typeof r.data?.openTickets === 'number') setOpenTickets(r.data.openTickets)
+    } catch {}
+  }
+  useEffect(() => { if (canViewKey('helpdesk')) fetchOpenTickets() }, [])
+  usePausableInterval(fetchOpenTickets, canViewKey('helpdesk') ? 60000 : null)
+
+  // Deep-link: #/admin?view=helpdesk&ticket=ID opens that ticket.
+  useEffect(() => {
+    const applyHash = () => {
+      try {
+        const m = (window.location.hash || '').match(/^#\/admin\?(.*)$/)
+        if (!m || !canViewKey('helpdesk')) return
+        const qs = new URLSearchParams(m[1])
+        if (qs.get('view') === 'helpdesk') {
+          setView('helpdesk')
+          setDeepTicket(qs.get('ticket') || null)
+        }
+      } catch {}
+    }
+    applyHash()
+    window.addEventListener('hashchange', applyHash)
+    return () => window.removeEventListener('hashchange', applyHash)
+  }, [])
 
   const fetchDashStats = async () => {
     try {
@@ -472,7 +502,7 @@ function Dashboard({ onLogout }) {
     { key: 'backup',       label: 'Backup & Export', group: 'SYSTEM',   icon: '💾', badge: null },
     { key: 'delivery',      label: 'Mail & CDN',    group: 'SYSTEM',     icon: '📨',  badge: null, aliases: ['mail', 'cdn'] },
 
-    { key: 'helpdesk',     label: 'Help Desk',     group: 'SUPPORT',    icon: '🎫', badge: null },
+    { key: 'helpdesk',     label: 'Help Desk',     group: 'SUPPORT',    icon: '🎫', badge: openTickets > 0 ? openTickets : null },
     { key: 'store',        label: 'Store',         group: 'BUSINESS',   icon: '🛒', badge: null },
     { key: 'fivem',        label: 'FiveM Server',  group: 'FIVEM',      icon: '🎮', badge: null },
     { key: 'changelog',    label: 'Changelog',     group: 'MANAGE',     icon: '📋',   badge: 'NEW' },
@@ -1224,7 +1254,7 @@ function Dashboard({ onLogout }) {
           )}
           {view === 'stats' && canView(view) && <PanelErrorBoundary label="Statistics"><StatsPanel /></PanelErrorBoundary>}
 
-          {view === 'helpdesk' && canView(view) && <PanelErrorBoundary label="Help Desk"><HelpDeskPanel /></PanelErrorBoundary>}
+          {view === 'helpdesk' && canView(view) && <PanelErrorBoundary label="Help Desk"><HelpDeskPanel initialTicketId={deepTicket} /></PanelErrorBoundary>}
           {view === 'store' && canView(view) && <PanelErrorBoundary label="Store"><StoreCenter /></PanelErrorBoundary>}
           {view === 'changelog' && canView(view) && <PanelErrorBoundary label="Changelog"><Changelog /></PanelErrorBoundary>}
           {view === 'monitoring' && canView(view) && <PanelErrorBoundary label="Monitoring"><MonitoringPanel /></PanelErrorBoundary>}

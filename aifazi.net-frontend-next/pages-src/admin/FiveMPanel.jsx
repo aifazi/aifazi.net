@@ -68,11 +68,34 @@ function BanSyncBadge({ synced }) {
 }
 
 function PlayerIdentifiers({ app }) {
+  const toast = useToast()
   const ids = [
     ['license', app.fivem_license],
     ['steam', app.steam_hex],
     ['fivem', app.fivem_id],
   ].filter(([, value]) => value)
+
+  const copy = async (e, value) => {
+    e.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(value)
+      toast.success('Identifier copied')
+    } catch {
+      try {
+        const ta = document.createElement('textarea')
+        ta.value = value
+        ta.style.position = 'fixed'
+        ta.style.opacity = '0'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        ta.remove()
+        toast.success('Identifier copied')
+      } catch {
+        toast.error('Copy failed — select the text manually')
+      }
+    }
+  }
 
   if (!ids.length) return null
   return (
@@ -80,8 +103,12 @@ function PlayerIdentifiers({ app }) {
       {ids.map(([label, value])=>(
         <span key={`${label}-${value}`} style={{fontSize:10,color:MUTED,fontFamily:MONO,
           background:BG3,border:`1px solid ${BD}`,borderRadius:5,padding:'3px 6px',
-          maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis'}}>
+          maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',
+          display:'inline-flex',alignItems:'center',gap:4}}>
           {label}:{value}
+          <button onClick={e => copy(e, value)} title={`Copy ${label} identifier`}
+            style={{background:'none',border:'none',color:C,cursor:'pointer',fontSize:10,
+              padding:'0 2px',lineHeight:1}}>⧉</button>
         </span>
       ))}
     </div>
