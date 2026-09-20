@@ -20,6 +20,7 @@ from pydantic import BaseModel
 import txadmin_service as txa
 from database import safe_search_term, supabase
 from dependencies import get_current_user, require_admin, require_staff
+from utils.audit import record as _audit
 from utils.fivem_shared import active_priority as shared_active_priority
 from utils.fivem_shared import now as shared_now
 from utils.fivem_shared import push_realtime as shared_push_realtime
@@ -2583,6 +2584,95 @@ async def txadmin_status(_: dict = Depends(require_staff)):
         "session_ok": txa._is_valid(),
         "configured": bool(txa.TXADMIN_USERNAME and txa.TXADMIN_PASSWORD),
     }
+
+
+# ─── txAdmin live actions ────────────────────────────────────────────────────
+_TXADMIN_ACTIONS = ("kick", "ban", "stop-resource", "start-resource")
+
+
+class TxAdminActionBody(BaseModel):
+    action: str
+    target: str = ""
+    reason: str | None = None
+    confirm: bool = False
+
+
+def _resolve_live_netid(target: str) -> str | None:
+    """Resolve a player name or server id to a txAdmin netid using the latest
+    fivem_players snapshot (written by the Lua heartbeat)."""
+    want = (target or "").strip().lower()
+    if not want:
+        return None
+    if want.isdigit():
+        return want
+    try:
+        res = supabase.table("fivem_players").select("players").eq("id", "main").execute()
+    except Exception:
+        return None
+    players = ((res.data or [{}])[0].get("players") or []) if res.data else []
+    for p in players:
+        if not isinstance(p, dict):
+            continue
+        name = str(p.get("name") or p.get("username") or "").strip().lower()
+        sid = str(p.get("server_id") or p.get("id") or p.get("netid") or "")
+        if want == name or (sid and want == sid.lower()):
+            return sid or None
+    return None
+
+
+@router.post("/txadmin/action")
+async def txadmin_live_action(
+    body: TxAdminActionBody,
+    request: Request,
+    user: dict = Depends(require_admin),
+):
+    """Live txAdmin moderation (kick/ban/resource stop-start).
+
+    Uses the SAME txadmin_service session (TXADMIN_URL + TXADMIN_USERNAME /
+    TXADMIN_PASSWORD) as GET /fivem/txadmin/status — the secret never leaves
+    the server. Every call is audited.
+    """
+    action = (body.action or "").strip().lower()
+    if action not in _TXADMIN_ACTIONS:
+        raise HTTPException(400, f"Unknown action. Allowed: {', '.join(_TXADMIN_ACTIONS)}")
+    if not body.confirm:
+        raise HTTPException(400, "Live actions require confirm:true")
+    target = (body.target or "").strip()
+    if not target:
+        raise HTTPException(422, "target is required")
+    reason = (body.reason or "").strip() or "Actioned by admin"
+    actor = str(user.get("username") or user.get("id") or "admin")
+
+    if action == "kick":
+        netid = _resolve_live_netid(target)
+        if not netid:
+            raise HTTPException(404, f"Player '{target}' is not online (no matching netid)")
+        ok, detail = await txa.request(
+            "POST", "/player/kick", {"reason": reason},
+            params={"mutex": "current", "netid": str(netid)},
+        )
+    elif action == "ban":
+        if target.isdigit():
+            ok, detail = await txa.ban_online_player(int(target), reason, "permanent")
+        else:
+            ok, detail = await txa.ban_by_identifiers([target], target, reason, "permanent")
+        # txAdmin fires playerBanned -> Lua forwards -> backend records the
+        # fivem_bans row, so no direct DB write here.
+    else:
+        # NOTE: verify these paths against your txAdmin version; txa.request
+        # surfaces txAdmin's own response as `detail` so a wrong path is
+        # visible immediately instead of failing silently.
+        verb = "stop" if action == "stop-resource" else "start"
+        ok, detail = await txa.request(
+            "POST", f"/resources/{verb}", {"name": target},
+            params={"mutex": "current"},
+        )
+
+    _audit(actor, f"txadmin_{action}", target=target,
+           details={"reason": reason, "ok": bool(ok),
+                    "detail": str(detail)[:300] if detail else ""},
+           ip=request.client.host if request.client else "")
+    return {"ok": bool(ok), "action": action, "target": target, "detail": detail}
 
 
 # â”€â”€â”€ Connect token gate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import api, { refreshCdnConfig } from '@/lib/api'
+import { useDialog } from '../../components/Dialog'
 import { Select } from '../../core/ui.jsx'
 import { S, useIsMobile, PageHeader } from './shared'
 import { Icon } from './icons'
@@ -27,6 +28,129 @@ const SecretField = ({ label, placeholder, help, value, onChange, T }) => {
           placeholder={placeholder} style={T.inp} autoComplete="new-password" />
       )}
       {help && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>{help}</div>}
+    </div>
+  )
+}
+
+function formatBytes(n) {
+  const v = Number(n) || 0
+  if (v < 1024) return `${v} B`
+  if (v < 1024 * 1024) return `${(v / 1024).toFixed(1)} KB`
+  if (v < 1024 * 1024 * 1024) return `${(v / 1024 / 1024).toFixed(1)} MB`
+  return `${(v / 1024 / 1024 / 1024).toFixed(2)} GB`
+}
+
+// -- Orphan sweeper: uploads in `media` no longer referenced by posts/content --
+function OrphanSweeper({ T, flash }) {
+  const dialog = useDialog()
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState({})
+  const [deleting, setDeleting] = useState(false)
+
+  const load = async () => {
+    setLoading(true)
+    try {
+      const r = await api.get('/admin/cdn/orphans')
+      setData(r.data)
+      setSelected({})
+    } catch (e) {
+      flash('err', e.response?.data?.detail || 'Failed to load orphans')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { load() }, [])
+
+  const orphans = data?.orphans || []
+  const selKeys = orphans.filter(o => selected[o.key]).map(o => o.key)
+  const selBytes = orphans.filter(o => selected[o.key]).reduce((a, o) => a + (Number(o.size) || 0), 0)
+  const totalBytes = orphans.reduce((a, o) => a + (Number(o.size) || 0), 0)
+  const allChecked = orphans.length > 0 && selKeys.length === orphans.length
+
+  const delSelected = async () => {
+    if (!selKeys.length) return
+    const ok = await dialog.confirm({
+      title: `Delete ${selKeys.length} orphan file(s)?`,
+      message: `Permanently removes ${formatBytes(selBytes)} from the CDN provider. Cannot be undone.`,
+      confirmText: 'Delete', danger: true,
+    })
+    if (!ok) return
+    setDeleting(true)
+    try {
+      const r = await api.post('/admin/cdn/orphans/delete', { keys: selKeys.slice(0, 50), confirm: true })
+      const res = r.data?.results || []
+      const okN = res.filter(x => x.ok).length
+      const skipped = r.data?.skipped_not_orphan || []
+      flash(okN === res.length ? 'ok' : 'err',
+        `Deleted ${okN}/${res.length} orphan(s).${skipped.length ? ` Skipped ${skipped.length} no-longer-orphaned.` : ''}`)
+      await load()
+    } catch (e) {
+      flash('err', e.response?.data?.detail || 'Delete failed')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  if (loading) return (
+    <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+      SCANNING UPLOADS…
+    </div>
+  )
+
+  return (
+    <div style={T.card}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--text)', fontWeight: 700 }}>
+          🧹 ORPHANED UPLOADS
+        </div>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+          {orphans.length} orphan(s) · {formatBytes(totalBytes)} reclaimable · scanned {data?.scanned ?? 0} rows across {data?.total_uploads ?? 0} uploads
+        </span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <button onClick={load} disabled={loading || deleting} style={T.btn('ghost')}>↻ RESCAN</button>
+          <button onClick={delSelected} disabled={!selKeys.length || deleting} style={T.btn('danger')}>
+            {deleting ? 'DELETING…' : `DELETE SELECTED (${selKeys.length})`}
+          </button>
+        </div>
+      </div>
+      {orphans.length === 0 ? (
+        <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>No orphans — every upload is referenced.</div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+                <th style={{ padding: '8px' }}>
+                  <input type="checkbox" checked={allChecked}
+                    onChange={e => {
+                      const next = {}
+                      if (e.target.checked) orphans.forEach(o => { next[o.key] = true })
+                      setSelected(next)
+                    }} />
+                </th>
+                <th style={{ padding: '8px' }}>KEY</th>
+                <th style={{ padding: '8px' }}>SIZE</th>
+                <th style={{ padding: '8px' }}>LAST SEEN</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orphans.map(o => (
+                <tr key={o.key} style={{ borderTop: '1px solid var(--border)' }}>
+                  <td style={{ padding: '8px' }}>
+                    <input type="checkbox" checked={!!selected[o.key]}
+                      onChange={e => setSelected(p => ({ ...p, [o.key]: e.target.checked }))} />
+                  </td>
+                  <td style={{ padding: '8px', fontFamily: 'var(--font-mono)', fontSize: 11, wordBreak: 'break-all' }}>{o.key}</td>
+                  <td style={{ padding: '8px', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{formatBytes(o.size)}</td>
+                  <td style={{ padding: '8px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{o.last_seen || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
@@ -214,7 +338,7 @@ function CdnSettings() {
 
       {/* -- Section tabs ---------------------------------------------------- */}
       <div style={{ display: 'flex', gap: 3, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24, width: 'fit-content', maxWidth: '100%', overflowX: 'auto' }}>
-        {[['provider','Provider'],['credentials','Credentials'],['domain','Custom Domain'],['guide','Setup Guide']].map(([k, label]) => (
+        {[['provider','Provider'],['credentials','Credentials'],['domain','Custom Domain'],['orphans','Orphans'],['guide','Setup Guide']].map(([k, label]) => (
           <button key={k} onClick={() => setActiveSection(k)} style={T.tabBtn(activeSection === k)}>
             {label.toUpperCase()}
           </button>
@@ -505,6 +629,13 @@ function CdnSettings() {
       )}
 
       {/* --------------------------------------------------------------------
+          ORPHANS
+      -------------------------------------------------------------------- */}
+      {activeSection === 'orphans' && (
+        <OrphanSweeper T={T} flash={flash} />
+      )}
+
+      {/* --------------------------------------------------------------------
           SETUP GUIDE
       -------------------------------------------------------------------- */}
       {activeSection === 'guide' && (
@@ -607,7 +738,7 @@ function CdnSettings() {
       )}
 
       {/* -- Sticky Save bar (always visible) ---------------------------------- */}
-      {activeSection !== 'guide' && (
+      {activeSection !== 'guide' && activeSection !== 'orphans' && (
         <div style={{ position: 'sticky', bottom: 0, background: 'var(--bg)', borderTop: '1px solid var(--border)', padding: '14px 0', marginTop: 32, display: 'flex', gap: 10, alignItems: 'center' }}>
           <button onClick={save} disabled={saving || testing} style={T.btn('primary')}>
             {saving ? 'SAVING...' : '💾 SAVE ALL SETTINGS'}

@@ -1299,9 +1299,123 @@ function HistoryPanel() {
   )
 }
 
+// ── LIVE (txAdmin actions) ──────────────────────────────────────────────────
+// Online players from the Lua heartbeat snapshot (GET /fivem/players) with
+// per-player kick/ban, plus per-resource stop/start by name. All destructive
+// calls go to POST /fivem/txadmin/action server-side — the txAdmin secret
+// never reaches the client. (Per-resource CPU has no server-side source:
+// /fivem/status only exposes resource_count, so only the count is shown.)
+function LivePanel() {
+  const toast = useToast()
+  const dialog = useDialog()
+  const [players, setPlayers] = useState([])
+  const [updatedAt, setUpdatedAt] = useState(null)
+  const [resCount, setResCount] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [reason, setReason] = useState('')
+  const [resource, setResource] = useState('')
+  const [busy, setBusy] = useState(null)
+
+  const load = useCallback(async () => {
+    const [pRes, sRes] = await Promise.allSettled([
+      api.get('/fivem/players'), api.get('/fivem/stats'),
+    ])
+    if (pRes.status === 'fulfilled') {
+      setPlayers(pRes.value.data?.players || [])
+      setUpdatedAt(pRes.value.data?.updated_at || null)
+    }
+    if (sRes.status === 'fulfilled') setResCount(sRes.value.data?.resource_count ?? null)
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+  usePausableInterval(load, 15000)
+
+  const runAction = async (action, target, dangerLabel) => {
+    const t = String(target || '').trim()
+    if (!t) { toast.error('No target'); return }
+    const ok = await dialog.confirm({
+      title: `${dangerLabel}?`,
+      message: `${action} "${t}"${reason.trim() ? ` — reason: ${reason.trim()}` : ''}`,
+      confirmText: dangerLabel, danger: true,
+    })
+    if (!ok) return
+    setBusy(`${action}:${t}`)
+    try {
+      const r = await api.post('/fivem/txadmin/action',
+        { action, target: t, reason: reason.trim() || undefined, confirm: true })
+      if (r.data?.ok) toast.success(`✅ ${action} → ${t}`)
+      else toast.error(`txAdmin error: ${JSON.stringify(r.data?.detail || 'unknown').slice(0, 200)}`)
+      await load()
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || `${action} failed`)
+    } finally { setBusy(null) }
+  }
+
+  if (loading) return <div style={{color:MUTED,fontFamily:MONO,padding:20}}>loading…</div>
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:20}}>
+      <div style={{background:BG2,border:`1px solid ${BD}`,borderRadius:12,padding:16}}>
+        <div style={{fontSize:11,color:MUTED,fontFamily:MONO,letterSpacing:1,marginBottom:8}}>
+          ACTION REASON (APPLIED TO KICK / BAN)
+        </div>
+        <Input value={reason} onChange={setReason} placeholder="e.g. RDM — staff decision" />
+        <div style={{fontSize:11,color:MUTED,marginTop:8,fontFamily:MONO}}>
+          {players.length} online · resources: {resCount ?? '—'}
+          {updatedAt && <span> · snapshot <RelTime iso={updatedAt} /></span>}
+        </div>
+      </div>
+
+      <div style={{background:BG2,border:`1px solid ${BD}`,borderRadius:12,padding:16}}>
+        <div style={{fontSize:13,fontWeight:700,color:TEXT,marginBottom:12}}>⚡ Online players</div>
+        {players.length === 0 ? (
+          <div style={{color:MUTED,fontFamily:MONO,fontSize:12}}>No online players in the latest snapshot.</div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {players.map((p, i) => {
+              const name = p?.name || p?.username || 'Unknown'
+              const sid = String(p?.server_id ?? p?.id ?? p?.netid ?? '')
+              const key = `${sid || name}-${i}`
+              return (
+                <div key={key} style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',
+                  background:BG3,border:`1px solid ${BD}`,borderRadius:8,padding:'8px 12px'}}>
+                  <span style={{fontWeight:700,color:TEXT,fontSize:13}}>{name}</span>
+                  {sid && <span style={{fontFamily:MONO,fontSize:11,color:MUTED}}>id:{sid}</span>}
+                  {p?.ping != null && <span style={{fontFamily:MONO,fontSize:11,color:MUTED}}>{p.ping}ms</span>}
+                  <span style={{marginLeft:'auto',display:'flex',gap:8}}>
+                    <Btn small color="#facc15" danger disabled={!sid || busy === `kick:${sid || name}`}
+                      onClick={() => runAction('kick', sid || name, 'Kick player')}>Kick</Btn>
+                    <Btn small danger disabled={busy === `ban:${sid || name}`}
+                      onClick={() => runAction('ban', sid || name, 'Ban player')}>Ban</Btn>
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <div style={{background:BG2,border:`1px solid ${BD}`,borderRadius:12,padding:16}}>
+        <div style={{fontSize:13,fontWeight:700,color:TEXT,marginBottom:12}}>🧩 Resources</div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+          <div style={{flex:'1 1 220px'}}>
+            <Input value={resource} onChange={setResource} placeholder="resource name (e.g. qbx_core)" />
+          </div>
+          <Btn small color={C} disabled={!resource.trim() || busy === `stop-resource:${resource.trim()}`}
+            onClick={() => runAction('stop-resource', resource, 'Stop resource')}>Stop</Btn>
+          <Btn small color={G} disabled={!resource.trim() || busy === `start-resource:${resource.trim()}`}
+            onClick={() => runAction('start-resource', resource, 'Start resource')}>Start</Btn>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── MAIN EXPORT ───────────────────────────────────────────────────────────────
 const SECTIONS = [
   {key:'status',    label:'Server Status', icon:'🖥️'},
+  {key:'live',      label:'Live',          icon:'⚡'},
   {key:'whitelist', label:'Whitelist',     icon:'📋'},
   {key:'forms',     label:'Forms',         icon:'🧾'},
   {key:'history',   label:'Approval Log',  icon:'📜'},
@@ -1325,6 +1439,7 @@ export default function FiveMPanel({ defaultSection='status' }) {
         ))}
       </div>
       {section==='status'    && <ServerStatusPanel/>}
+      {section==='live'      && <LivePanel/>}
       {section==='whitelist' && <WhitelistPanel/>}
       {section==='forms'     && <FormsPanel/>}
       {section==='history'   && <HistoryPanel/>}
