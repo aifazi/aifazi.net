@@ -25,6 +25,15 @@ router = APIRouter()
 log = logging.getLogger("auth.2fa")
 
 
+def _is_env_admin(user: dict) -> bool:
+    """True only for the env-configured admin (ADMIN_USERNAME). Other
+    role=admin rows are staff accounts with their OWN users-row TOTP —
+    they must never touch the shared admin_2fa slot."""
+    from routers.auth import ADMIN_USERNAME
+
+    return (user.get("username") or "") == ADMIN_USERNAME
+
+
 # ── Models ───────────────────────────────────────────────────────────────────
 class TwoFAVerifyBody(BaseModel):
     partial_token: str
@@ -50,7 +59,7 @@ class RecoveryCodesBody(BaseModel):
 async def twofa_status(user: dict = Depends(get_current_user)):
     from routers.auth import _get_admin_2fa, _has_recovery_codes
 
-    if user.get("role") == "admin":
+    if _is_env_admin(user):
         row = _get_admin_2fa()
         return {
             "enabled": bool(row and row.get("enabled")),
@@ -70,7 +79,7 @@ async def twofa_setup(user: dict = Depends(get_current_user)):
     secret = pyotp.random_base32()
     label = user.get("username", ADMIN_USERNAME)
     uri = pyotp.TOTP(secret).provisioning_uri(name=label, issuer_name="aifazi.net")
-    if user.get("role") == "admin":
+    if _is_env_admin(user):
         _upsert_admin_2fa({"totp_secret": secret, "enabled": False})
     else:
         supabase.table("users").update(
@@ -83,7 +92,7 @@ async def twofa_setup(user: dict = Depends(get_current_user)):
 async def twofa_enable(body: TwoFAEnableBody, user: dict = Depends(get_current_user)):
     from routers.auth import _get_admin_2fa, _rotate_recovery_codes, _upsert_admin_2fa
 
-    if user.get("role") == "admin":
+    if _is_env_admin(user):
         row = _get_admin_2fa()
         if not row or not row.get("totp_secret"):
             raise HTTPException(400, "Call /2fa/setup first")
@@ -119,7 +128,7 @@ async def twofa_disable(body: TwoFADisableBody, user: dict = Depends(get_current
         _verify_2fa_entry,
     )
 
-    if user.get("role") == "admin":
+    if _is_env_admin(user):
         if not _check_admin_password(body.password):
             raise HTTPException(400, "Invalid password")
         row = _get_admin_2fa()
@@ -157,7 +166,7 @@ async def twofa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get
         _verify_2fa_entry,
     )
 
-    if user.get("role") == "admin":
+    if _is_env_admin(user):
         if not _check_admin_password(body.password):
             raise HTTPException(400, "Invalid password")
         row = _get_admin_2fa()
@@ -176,8 +185,8 @@ async def twofa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get
         if s.get("totp_enabled") and s.get("totp_secret"):
             if not _verify_2fa_entry("user", user["id"], s["totp_secret"], body.code):
                 raise HTTPException(400, "Invalid 2FA code")
-    codes = _rotate_recovery_codes("admin" if user.get("role") == "admin" else "user",
-                                   "" if user.get("role") == "admin" else user["id"])
+    codes = _rotate_recovery_codes("admin" if _is_env_admin(user) else "user",
+                                   "" if _is_env_admin(user) else user["id"])
     _audit(user.get("username"), "2fa_recovery_codes_rotated")
     return {"recovery_codes": codes}
 
@@ -210,7 +219,9 @@ async def twofa_verify(body: TwoFAVerifyBody, request: Request, response: Respon
     ip = request.client.host if request.client else ""
     if await _2fa_locked(username, ip):
         raise HTTPException(429, "Too many failed 2FA attempts. Try again later.")
-    if role == "admin":
+    from routers.auth import ADMIN_USERNAME as _ADMIN_USERNAME
+
+    if username == _ADMIN_USERNAME:
         row = _get_admin_2fa()
         if not row or not row.get("totp_secret"):
             raise HTTPException(500, "2FA not configured on server")
