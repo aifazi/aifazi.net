@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import NextImage from 'next/image'
 import { useNavigate } from '@/lib/router-compat'
-import api, { getRole, getUsername, setEffectiveAccess, getAuthToken } from '@/lib/api'
+import api, { getRole, getUsername, setEffectiveAccess, getAuthToken, setImpersonationToken, getImpersonationUsername } from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { Checkbox, Select } from '../../core/ui.jsx'
@@ -283,6 +283,10 @@ function Dashboard({ onLogout }) {
   const [staffUserQuery, setStaffUserQuery] = useState('')
   const [staffUserResults, setStaffUserResults] = useState([])
   const [staffUserLoading, setStaffUserLoading] = useState(false)
+  // User impersonation ("view as") — token held in memory by lib/api, admin
+  // HttpOnly cookie session underneath is never touched.
+  const [impersonating, setImpersonating] = useState(() => getImpersonationUsername())
+  const [impersonateBusy, setImpersonateBusy] = useState(false)
   const [selectedPosts, setSelectedPosts] = useState(new Set())
   const [selectedContacts, setSelectedContacts] = useState(new Set())
   const [replyModal, setReplyModal] = useState(null)  // single contact | 'bulk'
@@ -489,6 +493,75 @@ function Dashboard({ onLogout }) {
     }
   }
 
+  // User impersonation: short-lived (~15 min) "view as" session. The token is
+  // memory-only and the admin cookie session is preserved, so exiting needs no
+  // re-login. Admin-to-admin impersonation is refused server-side (403).
+  const startImpersonate = async target => {
+    const userId = target.forum_user_id || target.id || target._id
+    const name = target.username || 'user'
+    if (!userId) { toast.error('No user id for this account', { title: 'Error' }); return }
+    const ok = await confirm({
+      title: `View site as ${name}?`,
+      message: `You will browse as ${name} for ~15 minutes with their permissions (admin areas will deny you). Your own admin session stays intact underneath. Entry and exit are written to the audit log.`,
+      variant: 'info',
+      confirmLabel: 'IMPERSONATE',
+    })
+    if (!ok) return
+    setImpersonateBusy(true)
+    try {
+      const r = await api.post('/auth/staff/impersonate', { user_id: String(userId), confirm: true })
+      try {
+        sessionStorage.setItem('aifazi_pre_impersonate', JSON.stringify({
+          role: localStorage.getItem('aifazi_effective_role'),
+          username: localStorage.getItem('aifazi_username'),
+          permissions: localStorage.getItem('aifazi_permissions'),
+        }))
+      } catch {}
+      const user = r.data?.user || { username: name, role: 'user' }
+      setImpersonationToken(r.data.token, user.username)
+      setEffectiveAccess(user)
+      // Drop stale staff claims so the UI gates to the target's access level.
+      if (user.role !== 'admin') {
+        try { localStorage.removeItem('aifazi_permissions') } catch {}
+      }
+      setImpersonating(user.username)
+      toast.success(`Viewing as ${user.username} — admin session preserved`, { title: 'Impersonation started' })
+    } catch (err) { toast.error(err.response?.data?.detail || 'Impersonation failed', { title: 'Error' }) }
+    finally { setImpersonateBusy(false) }
+  }
+
+  const exitImpersonation = async () => {
+    // Tell the server first (still holding the impersonated token) so the
+    // exit is audited, then drop the memory token and reload as admin.
+    try { await api.post('/auth/staff/unimpersonate', {}) } catch {}
+    setImpersonationToken(null)
+    try {
+      const raw = sessionStorage.getItem('aifazi_pre_impersonate')
+      if (raw) {
+        const prev = JSON.parse(raw)
+        if (prev.role) localStorage.setItem('aifazi_effective_role', prev.role)
+        if (prev.username) localStorage.setItem('aifazi_username', prev.username)
+        if (prev.permissions) localStorage.setItem('aifazi_permissions', prev.permissions)
+        else localStorage.removeItem('aifazi_permissions')
+      }
+      sessionStorage.removeItem('aifazi_pre_impersonate')
+    } catch {}
+    setImpersonating(null)
+    try { const v = await api.get('/auth/me'); setEffectiveAccess(v.data?.user) } catch {}
+    window.location.reload()
+  }
+
+  // Auto-exit the banner if the short-lived view-as token expires mid-session.
+  useEffect(() => {
+    const onExpired = () => {
+      setImpersonationToken(null)
+      setImpersonating(null)
+      toast.error('View-as session expired — you are back to your admin session', { title: 'Impersonation ended' })
+    }
+    window.addEventListener('impersonation:expired', onExpired)
+    return () => window.removeEventListener('impersonation:expired', onExpired)
+  }, [])
+
   const handleUpdateStaff = async e => {
     e.preventDefault(); setStaffSaving(true)
     try {
@@ -691,6 +764,13 @@ function Dashboard({ onLogout }) {
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', zIndex: 10 }}>
+      {/* Impersonation banner — fixed top, distinct amber, always visible while viewing as another user */}
+      {impersonating && (
+        <div style={{ background: '#f59e0b', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '8px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, fontWeight: 700, flexShrink: 0, zIndex: 2000, flexWrap: 'wrap' }}>
+          <span>👁 VIEWING AS {impersonating} — actions are audited · admin session preserved</span>
+          <button onClick={exitImpersonation} style={{ background: '#000', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '5px 14px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, fontWeight: 700, cursor: 'pointer' }}>EXIT IMPERSONATION</button>
+        </div>
+      )}
       {/*  Global Admin Header (desktop)  */}
       {!isMobile && (
         <AdminHeader view={view} setView={goView} navItems={navItems.filter(canViewNavItem)}
@@ -1271,6 +1351,7 @@ function Dashboard({ onLogout }) {
                     </div>
                   )}
                   <button onClick={() => { setEditingStaff(s); setEditStaffForm({ username: s.username, email: s.email, role: s.role, password: '', forum_user_id: s.forum_user_id || '', module_permissions: s.module_permissions || s.permissions || permissionForRole(s.role) }) }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 10, padding: '6px 12px', flexShrink: 0 }}>EDIT</button>
+                  <button onClick={() => startImpersonate(s)} disabled={impersonateBusy} style={{ ...S.btn('transparent', '#fbbf24'), border: '1px solid rgba(251,191,36,0.3)', fontSize: 10, padding: '6px 12px', flexShrink: 0 }}>VIEW AS</button>
                   <button onClick={() => handleDeleteStaff(s._id, s.username)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 10, padding: '6px 12px', flexShrink: 0 }}>REMOVE</button>
                 </div>
               ))}
