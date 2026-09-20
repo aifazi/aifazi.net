@@ -6,12 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from database import supabase
-from dependencies import require_staff
+from dependencies import require_admin, require_staff
 from permissions import require_permission
 from utils.audit import record as _audit
 from utils.rate_limit import invalidate_ip_bans_cache
 
 import logging
+import secrets
 
 log = logging.getLogger("admin_actions")
 
@@ -343,3 +344,399 @@ async def remove_ip_ban(ban_id: str, request: Request, user: dict = Depends(requ
         pass
     _audit(_actor(user), "admin_ip_ban_remove", target=f"ip_bans:{ban_id}", ip=_ip(request))
     return {"message": "IP ban removed"}
+
+
+# ── Abuse kill-switch ─────────────────────────────────────────────────────────
+# NOTE (rate limiting): main.py should cap /admin/actions/abuse-* at a low
+# rate (e.g. ~5/min per admin account). These endpoints fan out to many
+# Supabase round-trips and are destructive; they enforce require_admin +
+# confirm:true server-side but carry no per-route throttle of their own.
+#
+# No new DB tables: the undo payload (per-surface prior state) lives in the
+# audit row's details JSON alongside the undo_token. Undo looks the row up
+# by scanning recent admin_abuse_ban rows for a matching undo_token.
+
+ABUSE_SURFACES = ("chat", "forum", "vpn", "fivem", "ip")
+
+
+class AbuseBanBody(BaseModel):
+    username: str | None = None
+    user_id: str | None = None
+    reason: str = ""
+    surfaces: list[str] | None = None
+    confirm: bool = False
+    ip: str | None = None
+
+
+class AbuseUnbanBody(BaseModel):
+    undo_token: str = ""
+    confirm: bool = False
+
+
+def _abuse_find_user(username: str | None, user_id: str | None) -> dict | None:
+    """Resolve the ban target to a users row (user_id first, then username)."""
+    try:
+        if user_id:
+            res = supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
+            if res.data:
+                return res.data[0]
+        if username:
+            res = supabase.table("users").select("*").eq("username", username).limit(1).execute()
+            if res.data:
+                return res.data[0]
+            res = supabase.table("users").select("*").ilike("username", username).limit(5).execute()
+            for row in (res.data or []):
+                if (row.get("username") or "").lower() == username.lower():
+                    return row
+            if res.data:
+                return res.data[0]
+    except Exception as exc:
+        log.warning("abuse-ban user lookup failed: %s", exc)
+    return None
+
+
+def _abuse_last_ip(target: dict) -> str:
+    """Best-effort last known IP: admin_sessions, then forum_sessions."""
+    uname = (target.get("username") or "").strip()
+    uid = str(target.get("id") or "").strip()
+    candidates = []
+    if uname:
+        candidates.append(("admin_sessions", "username", uname))
+    if uid:
+        candidates.append(("forum_sessions", "user_id", uid))
+    if uname:
+        candidates.append(("forum_sessions", "username", uname))
+    for table, key, val in candidates:
+        try:
+            res = supabase.table(table).select("ip,last_active").eq(key, val).limit(25).execute()
+            rows = sorted(res.data or [], key=lambda r: r.get("last_active") or "", reverse=True)
+            for row in rows:
+                ip = (row.get("ip") or "").strip()
+                if ip:
+                    return ip
+        except Exception:
+            continue
+    return ""
+
+
+def _abuse_fivem_identifiers(target: dict) -> list[str]:
+    """Collect prefixed FiveM identifiers from the linked users row."""
+    prefixed = ("license:", "license2:", "steam:", "discord:", "fivem:")
+    out: list[str] = []
+
+    def _push(raw: str | None, prefix: str):
+        val = (raw or "").strip()
+        if not val or val in out:
+            return
+        low = val.lower()
+        if any(low.startswith(p) for p in prefixed):
+            out.append(val)
+        elif prefix:
+            labelled = f"{prefix}{val}"
+            if labelled not in out:
+                out.append(labelled)
+
+    for key in ("fivem_license", "license", "license2", "license_hex", "license2_hex"):
+        _push(target.get(key), "license:")
+    for key in ("steam_hex", "steam_id", "steam"):
+        _push(target.get(key), "steam:")
+    for key in ("discord_id",):
+        _push(target.get(key), "discord:")
+    for key in ("fivem_id",):
+        _push(target.get(key), "fivem:")
+    return out
+
+
+def _abuse_primary_identifier(ids: list[str]) -> str | None:
+    for prefix in (("license:", "license2:"), ("steam",), ("discord:",), ("fivem:",)):
+        for ident in ids:
+            if ident.lower().startswith(prefix):
+                return ident
+    return ids[0] if ids else None
+
+
+def _find_abuse_audit(undo_token: str) -> dict | None:
+    """Find the admin_abuse_ban audit row holding this undo_token."""
+    for col in ("action", "event"):  # full schema first, then legacy alias
+        try:
+            res = (
+                supabase.table("audit_logs")
+                .select("id,actor,action,target,details,created_at")
+                .eq(col, "admin_abuse_ban")
+                .order("created_at", desc=True)
+                .limit(200)
+                .execute()
+            )
+        except Exception:
+            continue
+        for row in (res.data or []):
+            details = row.get("details") or row.get("meta") or {}
+            if isinstance(details, dict) and details.get("undo_token") == undo_token:
+                return row
+    return None
+
+
+@router.post("/actions/abuse-ban")
+async def abuse_ban(body: AbuseBanBody, request: Request, user: dict = Depends(require_admin)):
+    from datetime import datetime, timezone
+    if not body.confirm:
+        raise HTTPException(status_code=400, detail='Confirmation required: pass {"confirm": true}')
+    reason = (body.reason or "").strip()
+    if len(reason) < 3:
+        raise HTTPException(status_code=400, detail="Reason is required (min 3 characters)")
+    requested = list(body.surfaces) if body.surfaces else list(ABUSE_SURFACES)
+    seen, surfaces = set(), []
+    for surface in requested:
+        if surface not in ABUSE_SURFACES:
+            raise HTTPException(status_code=400, detail=f"Unknown surface: {surface}")
+        if surface not in seen:
+            seen.add(surface)
+            surfaces.append(surface)
+
+    target = _abuse_find_user((body.username or "").strip() or None, (body.user_id or "").strip() or None)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    actor = _actor(user)
+    if (target.get("role") or "") == "admin":
+        raise HTTPException(status_code=403, detail="Admins cannot be abuse-banned")
+    if str(target.get("id") or "") == str(user.get("id") or "") or \
+            (target.get("username") or "").lower() == (actor or "").lower():
+        raise HTTPException(status_code=403, detail="You cannot ban yourself")
+    if body.ip and not _validate_ip(body.ip.strip()):
+        raise HTTPException(status_code=400, detail=f"Invalid IP address or CIDR: {body.ip}")
+
+    now = datetime.now(timezone.utc).isoformat()
+    target_id = str(target.get("id") or "")
+    target_name = target.get("username") or ""
+    results: dict = {}
+    prior: dict = {"target_user_id": target_id, "target_username": target_name}
+
+    # ── chat: ban from every room (skip rooms already banned; undo only removes ours)
+    if "chat" in surfaces:
+        try:
+            rooms = supabase.table("chat_rooms").select("id").limit(500).execute()
+            room_ids = [r.get("id") for r in (rooms.data or []) if r.get("id")]
+            existing = supabase.table("chat_bans").select("room_id").eq("username", target_name).execute()
+            already = {r.get("room_id") for r in (existing.data or []) if r.get("room_id")}
+            created, failed = [], []
+            for room_id in room_ids:
+                if room_id in already:
+                    continue
+                try:
+                    row = {"room_id": room_id, "username": target_name, "banned_by": actor,
+                           "reason": reason, "created_at": now}
+                    if target_id:
+                        row["user_id"] = target_id
+                    supabase.table("chat_bans").upsert(row, on_conflict="room_id,username").execute()
+                    # Lose access immediately, mirroring POST /chat/rooms/{id}/ban.
+                    supabase.table("chat_members").delete().eq("room_id", room_id).eq("username", target_name).execute()
+                    created.append(room_id)
+                except Exception as exc:
+                    failed.append(room_id)
+                    log.warning("abuse-ban chat failed room %s: %s", room_id, exc)
+            prior["chat_created"] = created
+            prior["chat_preexisting"] = sorted(already)
+            results["chat"] = {"ok": not failed, "detail": f"banned in {len(created)} rooms ({len(already)} already banned)" + (f"; {len(failed)} failed" if failed else "")}
+            if failed:
+                results["chat"]["error"] = f"{len(failed)} rooms failed"
+        except Exception as exc:
+            log.warning("abuse-ban chat surface failed: %s", exc, exc_info=True)
+            results["chat"] = {"ok": False, "error": "Chat ban failed"}
+
+    # ── forum: users.banned + ban_reason direct update (pattern from routers/forum.py)
+    if "forum" in surfaces:
+        try:
+            prior["forum"] = {"banned": bool(target.get("banned")), "ban_reason": target.get("ban_reason") or ""}
+            supabase.table("users").update({"banned": True, "ban_reason": reason}).eq("id", target_id).execute()
+            results["forum"] = {"ok": True, "detail": "account suspended"}
+        except Exception as exc:
+            log.warning("abuse-ban forum surface failed: %s", exc, exc_info=True)
+            results["forum"] = {"ok": False, "error": "Forum suspend failed"}
+
+    # ── vpn: suspend all peers (DB status; the periodic VPN sync enforces WG host removal)
+    if "vpn" in surfaces:
+        try:
+            res = supabase.table("vpn_peers").select("id,status,suspended_reason").eq("user_id", target_id).execute()
+            peers = res.data or []
+            prior["vpn_peers"] = [{"id": p.get("id"), "status": p.get("status"),
+                                   "suspended_reason": p.get("suspended_reason")} for p in peers]
+            suspended, already_count, failed = 0, 0, 0
+            for peer in peers:
+                if peer.get("status") == "suspended":
+                    already_count += 1
+                    continue
+                try:
+                    supabase.table("vpn_peers").update(
+                        {"status": "suspended", "suspended_reason": "manual"}
+                    ).eq("id", peer.get("id")).execute()
+                    suspended += 1
+                except Exception as exc:
+                    failed += 1
+                    log.warning("abuse-ban vpn failed peer %s: %s", peer.get("id"), exc)
+            results["vpn"] = {"ok": failed == 0, "detail": f"suspended {suspended} peers ({already_count} already suspended)" + (f"; {failed} failed" if failed else "")}
+            if failed:
+                results["vpn"]["error"] = f"{failed} peers failed"
+        except Exception as exc:
+            log.warning("abuse-ban vpn surface failed: %s", exc, exc_info=True)
+            results["vpn"] = {"ok": False, "error": "VPN suspend failed"}
+
+    # ── fivem: website ban row queued for txAdmin/qbx sync (mirrors POST /fivem/bans)
+    if "fivem" in surfaces:
+        try:
+            ids = _abuse_fivem_identifiers(target)
+            if not ids:
+                results["fivem"] = {"ok": True, "detail": "skipped — no linked FiveM identifiers"}
+            else:
+                res = supabase.table("fivem_bans").select("id,identifier,all_ids").eq("active", True).limit(500).execute()
+                idset = set(ids)
+                clashes = [b.get("id") for b in (res.data or [])
+                           if (b.get("identifier") in idset) or bool(idset & set(b.get("all_ids") or []))]
+                if clashes:
+                    prior["fivem_preexisting"] = clashes
+                    results["fivem"] = {"ok": True, "detail": "already has an active ban — left untouched"}
+                else:
+                    ban_row = {"identifier": _abuse_primary_identifier(ids), "all_ids": ids,
+                               "player_name": target_name, "reason": reason, "duration": "permanent",
+                               "expires_at": None, "banned_by": actor, "banned_at": now,
+                               "active": True, "source": "website",
+                               "txadmin_synced": False, "txadmin_action_id": None}
+                    ins = supabase.table("fivem_bans").insert(ban_row).execute()
+                    ban_id = ((ins.data or [{}])[0] or {}).get("id")
+                    prior["fivem_ban_id"] = ban_id
+                    results["fivem"] = {"ok": True, "detail": "banned — queued for server sync", "ban_id": ban_id}
+        except Exception as exc:
+            log.warning("abuse-ban fivem surface failed: %s", exc, exc_info=True)
+            results["fivem"] = {"ok": False, "error": "FiveM ban failed"}
+
+    # ── ip: explicit IP else last known IP from admin/forum sessions
+    if "ip" in surfaces:
+        try:
+            ip_addr = (body.ip or "").strip() or _abuse_last_ip(target)
+            if not ip_addr:
+                results["ip"] = {"ok": True, "detail": "skipped — no known IP"}
+            elif not _validate_ip(ip_addr):
+                results["ip"] = {"ok": False, "error": f"Resolved IP is not valid: {ip_addr}"}
+            else:
+                ins = supabase.table("ip_bans").insert(
+                    {"ip": ip_addr, "reason": reason, "created_at": now}).execute()
+                ban_id = ((ins.data or [{}])[0] or {}).get("id")
+                invalidate_ip_bans_cache()
+                prior["ip_ban_id"] = ban_id
+                prior["ip"] = ip_addr
+                results["ip"] = {"ok": True, "detail": f"banned {ip_addr}", "ban_id": ban_id}
+        except Exception as exc:
+            log.warning("abuse-ban ip surface failed: %s", exc, exc_info=True)
+            results["ip"] = {"ok": False, "error": "IP ban failed"}
+
+    undo_token = secrets.token_urlsafe(32)
+    audit_ok = _audit(actor, "admin_abuse_ban", target=f"users:{target_id} ({target_name})",
+                      details={"reason": reason, "surfaces": surfaces, "results": results,
+                               "undo_token": undo_token, "prior": prior},
+                      ip=_ip(request))
+    if not audit_ok:
+        log.warning("abuse-ban audit write failed — undo token %s may not be recoverable", undo_token)
+    all_ok = all(r.get("ok") for r in results.values())
+    return {"ok": all_ok, "results": results, "undo_token": undo_token,
+            "audit_persisted": audit_ok,
+            "target": {"user_id": target_id, "username": target_name}}
+
+
+@router.post("/actions/abuse-unban")
+async def abuse_unban(body: AbuseUnbanBody, request: Request, user: dict = Depends(require_admin)):
+    from datetime import datetime, timezone
+    if not body.confirm:
+        raise HTTPException(status_code=400, detail='Confirmation required: pass {"confirm": true}')
+    if not (body.undo_token or "").strip():
+        raise HTTPException(status_code=400, detail="undo_token is required")
+    row = _find_abuse_audit((body.undo_token or "").strip())
+    if not row:
+        raise HTTPException(status_code=404, detail="Undo token not found")
+    details = row.get("details") or {}
+    prior = details.get("prior") or {}
+    actor = _actor(user)
+    now = datetime.now(timezone.utc).isoformat()
+    target_id = prior.get("target_user_id") or ""
+    target_name = prior.get("target_username") or ""
+    results: dict = {}
+
+    # forum: restore prior banned flag + reason
+    if "forum" in prior:
+        try:
+            supabase.table("users").update(
+                {"banned": bool(prior["forum"].get("banned")),
+                 "ban_reason": prior["forum"].get("ban_reason") or ""}
+            ).eq("id", target_id).execute()
+            results["forum"] = {"ok": True, "detail": "suspend lifted"}
+        except Exception as exc:
+            log.warning("abuse-unban forum failed: %s", exc)
+            results["forum"] = {"ok": False, "error": "Forum restore failed"}
+
+    # chat: remove only the bans this kill-switch created
+    if prior.get("chat_created") or "chat" in (details.get("surfaces") or []):
+        try:
+            removed = 0
+            for room_id in (prior.get("chat_created") or []):
+                try:
+                    supabase.table("chat_bans").delete().eq("room_id", room_id).eq("username", target_name).execute()
+                    removed += 1
+                except Exception as exc:
+                    log.warning("abuse-unban chat failed room %s: %s", room_id, exc)
+            results["chat"] = {"ok": True, "detail": f"removed {removed} bans (pre-existing left intact)"}
+        except Exception as exc:
+            log.warning("abuse-unban chat failed: %s", exc)
+            results["chat"] = {"ok": False, "error": "Chat restore failed"}
+
+    # vpn: restore each peer's prior status (unsuspend re-adds on next sync)
+    if "vpn_peers" in prior:
+        try:
+            restored, failed = 0, 0
+            for peer in (prior.get("vpn_peers") or []):
+                try:
+                    supabase.table("vpn_peers").update(
+                        {"status": peer.get("status") or "active",
+                         "suspended_reason": peer.get("suspended_reason")}
+                    ).eq("id", peer.get("id")).execute()
+                    restored += 1
+                except Exception as exc:
+                    failed += 1
+                    log.warning("abuse-unban vpn failed peer %s: %s", peer.get("id"), exc)
+            results["vpn"] = {"ok": failed == 0, "detail": f"restored {restored} peers" + (f"; {failed} failed" if failed else "")}
+            if failed:
+                results["vpn"]["error"] = f"{failed} peers failed"
+        except Exception as exc:
+            log.warning("abuse-unban vpn failed: %s", exc)
+            results["vpn"] = {"ok": False, "error": "VPN restore failed"}
+
+    # fivem: lift only the ban row this kill-switch created (pre-existing rows untouched)
+    if prior.get("fivem_ban_id"):
+        try:
+            supabase.table("fivem_bans").update(
+                {"active": False, "unbanned_by": actor, "unbanned_at": now,
+                 "source": "txadmin_unban_pending", "txadmin_synced": False}
+            ).eq("id", prior["fivem_ban_id"]).execute()
+            results["fivem"] = {"ok": True, "detail": "ban lifted — queued for server sync"}
+        except Exception as exc:
+            log.warning("abuse-unban fivem failed: %s", exc)
+            results["fivem"] = {"ok": False, "error": "FiveM restore failed"}
+    elif "fivem" in (details.get("surfaces") or []):
+        results["fivem"] = {"ok": True, "detail": "nothing to restore"}
+
+    # ip: delete the ip-ban row this kill-switch created
+    if prior.get("ip_ban_id"):
+        try:
+            supabase.table("ip_bans").delete().eq("id", prior["ip_ban_id"]).execute()
+            invalidate_ip_bans_cache()
+            results["ip"] = {"ok": True, "detail": f"unbanned {prior.get('ip') or ''}".strip()}
+        except Exception as exc:
+            log.warning("abuse-unban ip failed: %s", exc)
+            results["ip"] = {"ok": False, "error": "IP restore failed"}
+    elif "ip" in (details.get("surfaces") or []):
+        results["ip"] = {"ok": True, "detail": "nothing to restore"}
+
+    _audit(actor, "admin_abuse_unban", target=row.get("target") or f"users:{target_id} ({target_name})",
+           details={"undo_token": body.undo_token.strip(), "restores_audit_id": row.get("id"),
+                    "results": results},
+           ip=_ip(request))
+    all_ok = all(r.get("ok") for r in results.values())
+    return {"ok": all_ok, "results": results,
+            "target": {"user_id": target_id, "username": target_name}}
