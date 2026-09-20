@@ -61,7 +61,10 @@ function OrphanSweeper({ T, flash }) {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const t = setTimeout(load, 0)
+    return () => clearTimeout(t)
+  }, [])
 
   const orphans = data?.orphans || []
   const selKeys = orphans.filter(o => selected[o.key]).map(o => o.key)

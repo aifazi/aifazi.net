@@ -1328,7 +1328,10 @@ function LivePanel() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const t = setTimeout(load, 0)
+    return () => clearTimeout(t)
+  }, [load])
   usePausableInterval(load, 15000)
 
   const runAction = async (action, target, dangerLabel) => {

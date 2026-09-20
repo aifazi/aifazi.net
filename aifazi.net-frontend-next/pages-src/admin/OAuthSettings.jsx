@@ -89,7 +89,10 @@ function OAuthSettings() {
     }
   }, [])
 
-  useEffect(() => { loadIdUsers() }, [loadIdUsers])
+  useEffect(() => {
+    const t = setTimeout(loadIdUsers, 0)
+    return () => clearTimeout(t)
+  }, [loadIdUsers])
 
   const toggleIdentity = async (u, enable) => {
     const ok = await dialog.confirm({
