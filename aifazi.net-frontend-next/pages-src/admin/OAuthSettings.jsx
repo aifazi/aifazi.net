@@ -1,6 +1,7 @@
 'use client'
 import React, { useCallback, useEffect, useState } from 'react'
 import api from '@/lib/api'
+import { useDialog } from '../../components/Dialog'
 import { S, useIsMobile, PageHeader } from './shared'
 import { Icon } from './icons'
 
@@ -40,6 +41,7 @@ function Flash({ msg }) {
 
 function OAuthSettings() {
   const isMobile = useIsMobile()
+  const dialog = useDialog()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -50,6 +52,8 @@ function OAuthSettings() {
   const [createdSecret, setCreatedSecret] = useState(null)
   const [showSecrets, setShowSecrets] = useState({})
   const [loadError, setLoadError] = useState(null)
+  const [idUsers, setIdUsers] = useState(null)
+  const [idLoading, setIdLoading] = useState(true)
 
   const flash = (type, text, ms = 7000) => {
     setMsg({ type, text })
@@ -72,6 +76,43 @@ function OAuthSettings() {
       setLoading(false)
     }
   }, [])
+
+  const loadIdUsers = useCallback(async () => {
+    setIdLoading(true)
+    try {
+      const r = await api.get('/admin/identity/users')
+      setIdUsers(r.data)
+    } catch (e) {
+      flash('err', e.response?.data?.detail || 'Failed to load identity users')
+    } finally {
+      setIdLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const t = setTimeout(loadIdUsers, 0)
+    return () => clearTimeout(t)
+  }, [loadIdUsers])
+
+  const toggleIdentity = async (u, enable) => {
+    const ok = await dialog.confirm({
+      title: `${enable ? 'Enable' : 'Disable'} ${u.username}?`,
+      message: enable
+        ? 'Re-activate this identity.'
+        : 'Deactivate this identity. The user will not be able to sign in.',
+      confirmText: enable ? 'Enable' : 'Disable',
+      danger: !enable,
+    })
+    if (!ok) return
+    try {
+      await api.post(`/admin/identity/users/${u.id}/${enable ? 'enable' : 'disable'}`, { confirm: true })
+      flash('ok', `✅ ${u.username} ${enable ? 'enabled' : 'disabled'}.`)
+      loadIdUsers()
+    } catch (e) {
+      // 501 while AUTHENTIK_API_TOKEN is not configured — surfaced as-is
+      flash('err', e.response?.data?.detail || 'Failed to update identity')
+    }
+  }
 
   useEffect(() => {
     let alive = true
@@ -427,6 +468,67 @@ function OAuthSettings() {
             )
           })}
         </div>
+      </section>
+
+      {/* ── Identity users (local list annotated with Authentik linkage) ── */}
+      <section style={{
+        background: 'var(--bg2)', border: '1px solid var(--border)',
+        borderRadius: 14, padding: isMobile ? 16 : 22, marginBottom: 20,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <Icon name="users" size={18} style={{ color: '#b56cff' }} />
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Identity Users</h3>
+          {idUsers && !idUsers.authentik_admin && (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+              padding: '3px 10px', borderRadius: 8,
+              background: 'rgba(210,153,34,.12)', border: '1px solid rgba(210,153,34,.4)',
+              color: 'var(--yellow, #d29922)',
+            }}>LOCAL MODE — AUTHENTIK ADMIN TOKEN NOT CONFIGURED</span>
+          )}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14 }}>
+          Local users with Authentik linkage status. Disable/enable requires an Authentik admin token.
+        </div>
+        {idLoading ? (
+          <div style={{ padding: 16, color: 'var(--muted)', fontSize: 13 }}>Loading users…</div>
+        ) : (idUsers?.users || []).length === 0 ? (
+          <div style={{ padding: 16, color: 'var(--muted)', fontSize: 13 }}>No users found.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {(idUsers.users || []).map(u => (
+              <div key={u.id} style={{
+                display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center',
+                padding: '10px 14px', borderRadius: 12,
+                background: 'var(--bg)', border: '1px solid var(--border)',
+              }}>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{u.username}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+                    {u.email || 'no email'} · {u.role}
+                  </div>
+                </div>
+                <span style={{ fontSize: 12 }}>{u.authentik_linked ? '🔗 Authentik' : '👤 Local'}</span>
+                <span style={{ fontSize: 12, color: u.active ? 'var(--green)' : 'var(--red)' }}>
+                  {u.active ? '✅ Active' : '🚫 Disabled'}
+                </span>
+                {u.active ? (
+                  <button type="button" onClick={() => toggleIdentity(u, false)}
+                    style={{
+                      padding: '6px 12px', borderRadius: 8, border: '1px solid var(--red, #f85149)',
+                      background: 'transparent', color: 'var(--red, #f85149)', cursor: 'pointer', fontSize: 12,
+                    }}>Disable</button>
+                ) : (
+                  <button type="button" onClick={() => toggleIdentity(u, true)}
+                    style={{
+                      padding: '6px 12px', borderRadius: 8, border: '1px solid var(--green, #3fb950)',
+                      background: 'transparent', color: 'var(--green, #3fb950)', cursor: 'pointer', fontSize: 12,
+                    }}>Enable</button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── Clients ──────────────────────────────────────────────── */}

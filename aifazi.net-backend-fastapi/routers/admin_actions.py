@@ -12,6 +12,7 @@ from utils.audit import record as _audit
 from utils.rate_limit import invalidate_ip_bans_cache
 
 import logging
+import os
 import secrets
 
 log = logging.getLogger("admin_actions")
@@ -740,3 +741,67 @@ async def abuse_unban(body: AbuseUnbanBody, request: Request, user: dict = Depen
     all_ok = all(r.get("ok") for r in results.values())
     return {"ok": all_ok, "results": results,
             "target": {"user_id": target_id, "username": target_name}}
+
+
+# ── Authentik user lifecycle (read-first, safe subset) ────────────────────────
+# No usable Authentik admin credential exists server-side (only the OIDC
+# client id/secret + issuer in authentik_oidc.py; no API token, no LDAP write
+# path). So: list-only against the LOCAL users table annotated with Authentik
+# linkage (users.authentik_id, written by the OIDC callback), and stub
+# disable/enable with 501 until AUTHENTIK_API_TOKEN is configured. No LDAP
+# writes, no password handling anywhere.
+def _authentik_admin_configured() -> bool:
+    return bool(os.getenv("AUTHENTIK_API_TOKEN", "").strip())
+
+
+@router.get("/identity/users")
+async def list_identity_users(_: dict = Depends(require_admin)):
+    """Local users annotated with Authentik linkage status."""
+    try:
+        res = supabase.table("users") \
+            .select("id,username,email,role,banned,authentik_id,last_seen") \
+            .order("last_seen", desc=True).limit(200).execute()
+    except Exception as exc:
+        raise HTTPException(502, f"Could not list users: {str(exc)[:150]}")
+    users = [{
+        "id": r.get("id"),
+        "username": r.get("username") or "",
+        "email": r.get("email") or "",
+        "role": r.get("role") or "user",
+        "active": not bool(r.get("banned")),
+        "authentik_linked": bool(r.get("authentik_id")),
+        "last_seen": r.get("last_seen"),
+    } for r in (res.data or [])]
+    return {
+        "users": users,
+        "total": len(users),
+        "authentik_admin": _authentik_admin_configured(),
+        "mode": "authentik" if _authentik_admin_configured() else "local",
+    }
+
+
+class IdentityToggleBody(BaseModel):
+    confirm: bool = False
+
+
+async def _identity_toggle_stub(user_id: str, enable: bool, body: IdentityToggleBody,
+                                request: Request, admin: dict):
+    if not body.confirm:
+        raise HTTPException(400, "This action requires confirm:true")
+    _audit(_actor(admin), f"identity_user_{'enable' if enable else 'disable'}",
+           target=f"users:{user_id}",
+           details={"enabled": enable, "status": "not_configured"},
+           ip=_ip(request))
+    raise HTTPException(501, "Authentik admin token not configured (set AUTHENTIK_API_TOKEN)")
+
+
+@router.post("/identity/users/{user_id}/disable")
+async def disable_identity_user(user_id: str, body: IdentityToggleBody,
+                                request: Request, admin: dict = Depends(require_admin)):
+    await _identity_toggle_stub(user_id, False, body, request, admin)
+
+
+@router.post("/identity/users/{user_id}/enable")
+async def enable_identity_user(user_id: str, body: IdentityToggleBody,
+                               request: Request, admin: dict = Depends(require_admin)):
+    await _identity_toggle_stub(user_id, True, body, request, admin)

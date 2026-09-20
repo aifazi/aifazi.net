@@ -9,10 +9,12 @@ Migration (run once in Supabase SQL editor):
         ON CONFLICT (key) DO NOTHING;
 """
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from database import call_with_retry, supabase
-from dependencies import require_staff
+from dependencies import require_admin, require_staff
+from routers.cdn_upload import get_cdn_config as _get_cdn_config
+from utils.audit import record as _audit
 
 router = APIRouter()
 
@@ -142,3 +144,123 @@ async def test_connection(body: dict, _: dict = Depends(require_staff)):
         return {"message": f"{provider.upper()} credentials saved. Upload a file to verify connectivity."}
 
     raise HTTPException(400, f"Unknown provider: {provider}")
+
+
+# ── Orphan sweeper ────────────────────────────────────────────────────────────
+# Uploads are tracked in the `media` table (see routers/upload.py::_save_media).
+# An upload is "orphaned" when neither its stored `url` nor its `storage_path`
+# string appears anywhere in the latest content/blog rows.
+_ORPHAN_MEDIA_LIMIT = 1000
+_ORPHAN_SCAN_LIMIT = 500
+_ORPHAN_SCAN_TABLES = (
+    ("posts", "content,cover_image,excerpt"),
+    ("content_blocks", "value"),
+)
+
+
+def _scan_table(table: str, cols: str) -> list[dict]:
+    try:
+        res = supabase.table(table).select(cols) \
+            .order("created_at", desc=True).limit(_ORPHAN_SCAN_LIMIT).execute()
+    except Exception:
+        try:
+            res = supabase.table(table).select(cols).limit(_ORPHAN_SCAN_LIMIT).execute()
+        except Exception:
+            return []
+    return res.data or []
+
+
+def _compute_orphans() -> dict:
+    """Fresh server-side orphan computation. The delete endpoint re-runs this
+    per call and intersects — a client-supplied key list is never trusted."""
+    cfg = _get_cdn_config()
+    _ = cfg  # provider creds stay server-side; only stored URL strings are matched
+    media_res = supabase.table("media").select("*") \
+        .order("created_at", desc=True).limit(_ORPHAN_MEDIA_LIMIT).execute()
+    media_rows = media_res.data or []
+
+    corpus_parts: list[str] = []
+    scanned = 0
+    for table, cols in _ORPHAN_SCAN_TABLES:
+        rows = _scan_table(table, cols)
+        scanned += len(rows)
+        for row in rows:
+            for val in row.values():
+                if val:
+                    corpus_parts.append(val if isinstance(val, str) else str(val))
+    corpus = "\n".join(corpus_parts)
+
+    orphans = []
+    for m in media_rows:
+        url = m.get("url") or ""
+        sp = m.get("storage_path") or ""
+        if (url and url in corpus) or (sp and sp in corpus):
+            continue
+        orphans.append({
+            "key": sp or str(m.get("id")),
+            "url": url,
+            "size": m.get("size") or 0,
+            "last_seen": m.get("created_at"),
+        })
+    return {"orphans": orphans, "scanned": scanned, "total_uploads": len(media_rows)}
+
+
+@router.get("/orphans")
+async def list_orphans(_: dict = Depends(require_admin)):
+    return _compute_orphans()
+
+
+@router.post("/orphans/delete")
+async def delete_orphans(body: dict, request: Request, user: dict = Depends(require_admin)):
+    keys = body.get("keys") or []
+    if not body.get("confirm"):
+        raise HTTPException(400, "Orphan deletion requires confirm:true")
+    if not isinstance(keys, list) or not keys:
+        raise HTTPException(422, "keys must be a non-empty list")
+    if len(keys) > 50:
+        raise HTTPException(400, "Maximum 50 keys per call")
+    wanted = {str(k).strip() for k in keys if str(k).strip()}
+    if not wanted:
+        raise HTTPException(422, "keys must be a non-empty list")
+
+    fresh = _compute_orphans()
+    allowed = {o["key"] for o in fresh["orphans"]}
+    targets = sorted(wanted & allowed)
+    skipped = sorted(wanted - allowed)
+
+    # Same provider-delete path as the upload flows (routers/upload.py).
+    # Lazy import: upload.py must never import this module back.
+    from routers.upload import delete_file
+    id_by_key: dict[str, str] = {}
+    try:
+        all_media = supabase.table("media").select("id,storage_path") \
+            .limit(_ORPHAN_MEDIA_LIMIT).execute()
+        for m in all_media.data or []:
+            if m.get("storage_path"):
+                id_by_key[str(m["storage_path"])] = m.get("id")
+            id_by_key[str(m.get("id"))] = m.get("id")
+    except Exception:
+        pass
+
+    results: list[dict] = []
+    for key in targets:
+        mid = id_by_key.get(key)
+        if not mid:
+            results.append({"key": key, "ok": False, "error": "row not found"})
+            continue
+        try:
+            await delete_file(mid, user)
+            results.append({"key": key, "ok": True})
+        except HTTPException as exc:
+            results.append({"key": key, "ok": False, "error": str(exc.detail)[:200]})
+        except Exception as exc:
+            results.append({"key": key, "ok": False, "error": str(exc)[:200]})
+
+    actor = str(user.get("username") or user.get("id") or "admin")
+    _audit(actor, "cdn_orphan_delete", target="cdn_orphans",
+           details={"requested": sorted(wanted),
+                    "deleted": [r["key"] for r in results if r["ok"]],
+                    "failed": [r for r in results if not r["ok"]],
+                    "skipped_not_orphan": skipped},
+           ip=request.client.host if request.client else "")
+    return {"results": results, "skipped_not_orphan": skipped}
