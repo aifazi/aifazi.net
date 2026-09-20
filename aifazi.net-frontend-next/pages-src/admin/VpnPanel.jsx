@@ -112,10 +112,12 @@ function VpnPanelInner() {
   }, [updateRates])
 
   // Single mount effect — all VPN data flows through `load` above (polled below).
+  // Deferred via timeout: calling setState synchronously in an effect body
+  // trips react-compiler's set-state-in-effect rule (cascading renders).
   useEffect(() => {
     mountedRef.current = true
-    load()
-    return () => { mountedRef.current = false }
+    const t = setTimeout(() => { if (mountedRef.current) load() }, 0)
+    return () => { mountedRef.current = false; clearTimeout(t) }
   }, [load])
   usePausableInterval(load, 30000)
 

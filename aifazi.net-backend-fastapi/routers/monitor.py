@@ -49,8 +49,13 @@ def _ip(request: Request | None) -> str:
 
 
 def _email_ok(email: str) -> bool:
-    import re
-    return bool(re.fullmatch(r"[^@\s;,]+@[^@\s;,]+\.[^@\s;,]+", email))
+    """Loose email sanity check without regex (avoids ReDoS-class patterns)."""
+    if not isinstance(email, str) or email.count("@") != 1:
+        return False
+    if any(c in email for c in (" ", "\t", "\n", ";", ",")):
+        return False
+    local, _, domain = email.partition("@")
+    return bool(local) and "." in domain and not domain.startswith(".")
 
 CRON_SECRET = os.getenv("CRON_SECRET", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")

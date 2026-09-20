@@ -289,7 +289,7 @@ async def put_oauth_settings(body: dict, request: Request, staff: dict = Depends
         for k in ("enabled", "url", "base_dn", "users_ou", "bind_dn"):
             if k in src:
                 ldap[k] = src[k]
-        if "url" in src and src["url"]:
+        if src.get("url"):
             ldap["url"] = _validate_ldap_url(str(src["url"]))
         # Only overwrite password when a non-empty value is provided;
         # the "__CLEAR__" sentinel wipes it (audited below).
