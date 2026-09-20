@@ -895,6 +895,12 @@ function DbHealthTab({ token, toast }) {
   const load = async () => {
     setLoading(true);
     try {
+      const res = await api.get(ap(`/api/admin/db/health`), authCfg(token));
+      const h = res.data || {};
+      setData({ health: true, sizes: h.sizes || [], slowQueriesNew: h.slow_queries || [], pgss: h.pg_stat_statements !== false });
+      return;
+    } catch {}
+    try {
       const res = await api.get(ap(`/api/admin/stats/db-health`), authCfg(token));
       setData(res.data);
     } catch(e) {
@@ -945,6 +951,51 @@ function DbHealthTab({ token, toast }) {
 
       {data && (
         <div style={{ display:"grid", gap:16 }}>
+
+          {/* Table sizes (top 20) from /api/admin/db/health */}
+          {data.health && data.sizes && (
+            <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>TABLE SIZES · TOP 20</div>
+              {data.sizes.length === 0
+                ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)" }}>No size data.</div>
+                : <div style={{ overflowX:"auto" }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"var(--font-mono,monospace)", fontSize:11 }}>
+                      <thead>
+                        <tr style={{ borderBottom:"1px solid #1e2d45" }}>
+                          {["TABLE","SCHEMA","SIZE"].map(h => <th key={h} style={{ padding:"7px 10px", textAlign:"left", color:"var(--muted)", fontSize:8, letterSpacing:2 }}>{h}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.sizes.map((t, i) => (
+                          <tr key={i} style={{ borderBottom:"1px solid #0a1016" }}>
+                            <td style={{ padding:"8px 10px", color:"var(--text)" }}>{t.table}</td>
+                            <td style={{ padding:"8px 10px", color:"var(--muted)" }}>{t.schema}</td>
+                            <td style={{ padding:"8px 10px", color:"var(--green,#00ff88)" }}>{bytes(t.size_bytes)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>}
+            </div>
+          )}
+
+          {/* Slow queries from /api/admin/db/health */}
+          {data.health && (
+            <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>SLOW QUERIES</div>
+              {!data.pgss
+                ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)" }}>pg_stat_statements not installed — sizes above still work.</div>
+                : !data.slowQueriesNew || data.slowQueriesNew.length === 0
+                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)" }}>No slow-query data.</div>
+                  : data.slowQueriesNew.map((q, i) => (
+                      <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 90px 80px", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016", fontFamily:"var(--font-mono,monospace)", fontSize:10 }}>
+                        <span style={{ color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={q.query}>{q.query}</span>
+                        <span style={{ color:"var(--red,#ff4757)" }}>{q.mean_ms}ms</span>
+                        <span style={{ color:"var(--muted)" }}>×{q.calls}</span>
+                      </div>
+                    ))}
+            </div>
+          )}
 
           {/* Storage */}
           {(data.storage || data.counts) && (

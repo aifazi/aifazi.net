@@ -240,6 +240,9 @@ function BackupTab() {
   const [statsError, setStatsError] = useState('')
   const [downloading, setDownloading] = useState(false)
   const [downloadingJson, setDownloadingJson] = useState(false)
+  const [rtLoading, setRtLoading] = useState(false)
+  const [rtResult, setRtResult] = useState(null)
+  const [rtError, setRtError] = useState('')
   const notify = useNotify()
 
   const [options, setOptions] = useState({
@@ -301,6 +304,22 @@ function BackupTab() {
   }
 
   const toggle = (key) => setOptions(o => ({ ...o, [key]: !o[key] }))
+
+  const testRestore = async () => {
+    setRtLoading(true); setRtError(''); setRtResult(null)
+    try {
+      const r = await api.post('/admin/backup/restore-test')
+      setRtResult(r.data)
+      if (r.data?.ok) notify.success(`Restore drill passed (${r.data.duration_s}s)`)
+      else notify.error('Restore drill found mismatches')
+    } catch (e) {
+      const msg = e.response?.status === 404
+        ? 'No backup artifact exists — run a backup export first.'
+        : (e.response?.data?.detail || e.message || 'Restore test failed')
+      setRtError(msg)
+      notify.error(msg)
+    } finally { setRtLoading(false) }
+  }
 
   return (
     <div style={{ maxWidth: 700 }}>
@@ -431,6 +450,53 @@ function BackupTab() {
         <div style={{ marginTop:14, fontFamily:'var(--font-mono,monospace)', fontSize:8, color:'var(--border)', lineHeight:1.8, padding:'10px 14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)' }}>
           Includes discovered public tables · Passwords, tokens and nested secrets redacted · Store securely
         </div>
+      </div>
+
+      {/* Restore drill */}
+      <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', padding:'20px 24px', marginTop:24 }}>
+        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, letterSpacing:3, color:'var(--muted)', marginBottom:12 }}>RESTORE DRILL</div>
+        <p style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--muted)', lineHeight:1.8, marginBottom:16 }}>
+          Replays the live export and validates every table&apos;s generated SQL plus row counts vs the snapshot. Read-only — no prod data is touched.
+        </p>
+        <button onClick={testRestore} disabled={rtLoading}
+          style={{
+            width:'100%', padding:'14px 24px',
+            background: rtLoading ? 'color-mix(in srgb, var(--orange) 5%, transparent)' : 'color-mix(in srgb, var(--orange) 12%, transparent)',
+            border:`1px solid ${rtLoading ? 'color-mix(in srgb, var(--orange) 20%, transparent)' : 'color-mix(in srgb, var(--orange) 50%, transparent)'}`,
+            color: rtLoading ? 'var(--muted)' : 'var(--orange,#ff6b35)',
+            fontFamily:'var(--font-mono,monospace)', fontSize:11, letterSpacing:2, fontWeight:700,
+            cursor: rtLoading ? 'not-allowed' : 'pointer',
+          }}>
+          <span style={{ fontSize:11, marginRight:8 }}>[DRILL]</span>
+          {rtLoading ? 'TESTING RESTORE...' : 'TEST RESTORE'}
+        </button>
+        {rtError && <div style={{ marginTop:12, fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--red,#ff4757)', lineHeight:1.6 }}>{rtError}</div>}
+        {rtResult && (
+          <div style={{ marginTop:16 }}>
+            <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14, fontFamily:'var(--font-mono,monospace)', fontSize:10 }}>
+              <span style={{
+                padding:'2px 10px', borderRadius:99, fontWeight:700, letterSpacing:1,
+                background: rtResult.ok ? 'rgba(0,255,136,0.1)' : 'rgba(255,71,87,0.1)',
+                border: `1px solid ${rtResult.ok ? 'rgba(0,255,136,0.4)' : 'rgba(255,71,87,0.4)'}`,
+                color: rtResult.ok ? 'var(--green,#00ff88)' : 'var(--red,#ff4757)',
+              }}>{rtResult.ok ? 'PASS' : 'FAIL'}</span>
+              <span style={{ color:'var(--muted)' }}>{rtResult.tables} tables · {rtResult.duration_s}s</span>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))', gap:8 }}>
+              {(rtResult.per_table || []).map(p => {
+                const good = p.match && p.sql_ok
+                return (
+                  <div key={p.table} title={`${p.table}: ${p.rows ?? '?'} rows (expected ${p.expected ?? '?'})`}
+                    style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, fontFamily:'var(--font-mono,monospace)', fontSize:10, padding:'7px 10px', background:'var(--bg3)', border:'1px solid var(--border)' }}>
+                    <span style={{ color: good ? 'var(--green,#00ff88)' : 'var(--red,#ff4757)', fontWeight:700 }}>{good ? '✓' : '✗'}</span>
+                    <span style={{ color:'var(--muted)', textTransform:'capitalize', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.table}</span>
+                    <span style={{ color:'var(--text)', fontWeight:700 }}>{(p.rows ?? 0).toLocaleString()}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
