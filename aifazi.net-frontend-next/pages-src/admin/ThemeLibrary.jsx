@@ -17,6 +17,7 @@ import {
 } from './SiteSettings'
 import {
   FRAMEWORK_CATEGORIES, DEFAULT_FRAMEWORK, NOTIFY_POSITIONS, THEME_PACKAGES,
+  THEME_FRAMEWORK, applyThemeFramework,
 } from '../../core/framework-styles.js'
 import {
   CUSTOM_COLOR_TOKENS, applyThemeCustom, themeSelector,
@@ -1631,6 +1632,9 @@ function ThemeLibrary() {
   const pendingDef = THEME_DEFS.find(t => t.id === pendingTheme)
 
   const applyTheme = (id) => {
+    // NOTE: the theme's UI personality (menu/dialog/input/surface/notify from
+    // THEME_FRAMEWORK) follows automatically inside providers setTheme — local
+    // preview only, no backend write here.
     setTheme(id)
     setPendingTheme(null)
     setPreviewTheme(null)
@@ -1674,9 +1678,19 @@ function ThemeLibrary() {
     try {
       // '__clear__' sentinel means "remove global theme  let users choose"
       const newVal = id === '__clear__' ? '' : (globalThemeId === id ? '' : id)
-      await api.put('/admin/site-settings', { globalTheme: newVal })
+      // Per-theme UI personality — mirror applyThemePackage's framework write
+      // path so the global theme carries its menu/dialog/input/surface/notify
+      // vibe for all visitors. (Package-apply stays untouched: an explicitly
+      // applied package's framework still wins.)
+      const fwPatch = {}
+      if (newVal) applyThemeFramework(newVal, (k, v) => { fwPatch[k] = v })
+      const payload = { globalTheme: newVal, ...fwPatch }
+      await api.put('/admin/site-settings', payload)
       clearSiteSettingsCache()
-      window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { globalTheme: newVal } }))
+      Object.entries(fwPatch).forEach(([k, v]) => {
+        if (v) localStorage.setItem(k.replace(/([A-Z])/g, '-$1').toLowerCase(), v)
+      })
+      window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: payload }))
       if (refreshSiteConfig) await refreshSiteConfig()
       setGlobalThemeId(newVal)
       const name = THEME_DEFS.find(x => x.id === newVal)?.name
@@ -2353,6 +2367,16 @@ function ThemeLibrary() {
                       {isSelected && !isActive && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: t.primary, marginLeft: 'auto' }}>⭐ SELECTED</span>}
                     </div>
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: t.muted, lineHeight: 1.6, margin: '0 0 8px' }}>{t.desc}</p>
+                    {(() => { const fw = THEME_FRAMEWORK[t.id]; if (!fw) return null; return (
+                      <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', margin: '0 0 8px' }}>
+                        {[['menu', fw.menu], ['dialog', fw.dialog], ['input', fw.input], ['surface', fw.surface], ['notify', fw.notify]].map(([k, v]) => (
+                          <span key={k} title={`${k}: ${v}`}
+                            style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 1, padding: '1px 5px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${t.border}`, color: t.muted, borderRadius: 3 }}>
+                            {k}:{v}
+                          </span>
+                        ))}
+                      </div>
+                    ) })()}
                     <div style={{ display: 'flex', gap: 4 }}>
                       {[t.bg, t.bg2, t.bg3, t.primary, t.secondary, t.orange].map((c, i) => (
                         <div key={i} style={{ width: 14, height: 14, borderRadius: 3, background: c, border: '1px solid rgba(255,255,255,0.08)' }} />

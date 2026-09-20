@@ -1637,6 +1637,21 @@ export function webThemeToMobile(id?: string | null): ThemeId {
 }
 
 /**
+ * Theme-personality fallback rule: resolve any string id to a Theme, with
+ * unknown/future ids collapsing to neutral defaults (radius 8 /
+ * buttonRadius 5 / mono false) instead of undefined — defensive, mirrors the
+ * web fallback. cyber-dark already carries exactly those neutral geometry
+ * defaults, so it anchors the fallback; the spread pins the contract even if
+ * cyber-dark's geometry ever changes.
+ */
+export function resolveTheme(id?: string | null): Theme {
+  const known = (id && (THEMES as Record<string, Theme>)[id]) || null
+  if (known) return known
+  const base = THEMES['cyber-dark']
+  return { ...base, radius: 8, buttonRadius: 5, mono: false }
+}
+
+/**
  * Web-style light/dark family pairs. Every curated mobile theme resolves to its
  * light/dark counterpart within the SAME family so the "toggle dark/light"
  * action matches what the web's family switcher does (aurora ↔ aurora-light).
