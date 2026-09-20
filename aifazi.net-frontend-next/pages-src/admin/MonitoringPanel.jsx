@@ -627,7 +627,10 @@ function JobsTab() {
     api.get('/admin/jobs').then(r => setJobs(r.data || [])).catch(() => toast.error('Could not load jobs'))
       .finally(() => setLoading(false))
   }
-  useEffect(load, [])
+  useEffect(() => {
+    const t = setTimeout(load, 0)
+    return () => clearTimeout(t)
+  }, [])
 
   const fmtTs = ts => {
     if (!ts) return '—'
