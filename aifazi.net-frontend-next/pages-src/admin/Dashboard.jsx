@@ -235,21 +235,26 @@ function Dashboard({ onLogout }) {
       })
 
       setHealthStatus({
-        'API Server':   health?.status === 'OK' ? { status: 'operational', color: '#00ff88' } : { status: 'degraded', color: '#ff4757' },
-        'Database':     health?.db === false    ? { status: 'degraded', color: '#ff4757' }    : { status: 'operational', color: '#00ff88' },
-        'Mail Service': { status: 'configured',  color: '#ffd700' },
-        'CDN Storage':  { status: 'configured',  color: '#ffd700' },
-        'Chat Server':  health?.status === 'OK' ? { status: 'operational', color: '#00ff88' } : { status: 'unknown', color: '#888' },
-        'Forum':        { status: 'operational', color: '#00ff88' },
+        'API Server':   health?.status === 'OK' ? { status: 'operational', color: '#00ff88' } : health ? { status: 'degraded', color: '#ff4757' } : { status: 'unknown', color: '#888' },
+        'Database':     health?.db === false    ? { status: 'degraded', color: '#ff4757' }    : health ? { status: 'operational', color: '#00ff88' } : { status: 'unknown', color: '#888' },
+        'Mail Service': { status: 'unknown',  color: '#888' },
+        'CDN Storage':  { status: 'unknown',  color: '#888' },
+        'Chat Server':  health?.status === 'OK' ? { status: 'operational', color: '#00ff88' } : health ? { status: 'unknown', color: '#888' } : { status: 'unknown', color: '#888' },
+        'Forum':        { status: 'unknown', color: '#888' },
       })
 
       if (auditLogs.length > 0) {
-        setActivityFeed(auditLogs.map(l => ({
-          id: l._id,
-          icon: l.action?.includes('delete') ? '🗑' : l.action?.includes('login') ? '🔑' : l.action?.includes('create') ? '➕' : l.action?.includes('ban') ? '🚫' : '⚙️',
-          text: `${l.actor || 'system'} — ${(l.action || '').replace(/_/g, ' ')}${l.target ? `  ${l.target}` : ''}`,
-          time: l.createdAt,
-        })))
+        setActivityFeed(auditLogs.map(l => {
+          const event = l.event || l.action || ''
+          const username = l.username || l.actor || 'system'
+          const target = l.meta?.target || l.target || ''
+          return {
+            id: l._id,
+            icon: event?.includes('delete') ? '🗑' : event?.includes('login') ? '🔑' : event?.includes('create') ? '➕' : event?.includes('ban') ? '🚫' : '⚙️',
+            text: `${username} — ${(event || '').replace(/_/g, ' ')}${target ? `  ${target}` : ''}`,
+            time: l.createdAt,
+          }
+        }))
       }
     } catch {}
   }
@@ -258,13 +263,24 @@ function Dashboard({ onLogout }) {
   usePausableInterval(fetchDashStats, view === 'home' ? 60000 : null)
 
   const fetchStaff    = async () => { try { const r = await api.get('/auth/staff'); setStaff(r.data) } catch {} finally { setLoading(false) } }
-  const searchStaffUsers = async q => {
+  const staffSearchTimer = useRef(null)
+  const staffSearchId = useRef(0)
+  const searchStaffUsers = q => {
     setStaffUserQuery(q)
-    if (!q || q.trim().length < 2) { setStaffUserResults([]); return }
+    if (staffSearchTimer.current) clearTimeout(staffSearchTimer.current)
+    if (!q || q.trim().length < 2) { setStaffUserResults([]); setStaffUserLoading(false); return }
     setStaffUserLoading(true)
-    try { const r = await api.get(`/auth/staff/search-users?q=${encodeURIComponent(q.trim())}`); setStaffUserResults(r.data?.users || []) }
-    catch { setStaffUserResults([]) }
-    finally { setStaffUserLoading(false) }
+    const id = ++staffSearchId.current
+    staffSearchTimer.current = setTimeout(async () => {
+      try {
+        const r = await api.get(`/auth/staff/search-users?q=${encodeURIComponent(q.trim())}`)
+        if (staffSearchId.current === id) setStaffUserResults(r.data?.users || [])
+      } catch {
+        if (staffSearchId.current === id) setStaffUserResults([])
+      } finally {
+        if (staffSearchId.current === id) setStaffUserLoading(false)
+      }
+    }, 300)
   }
   const selectStaffUser = u => {
     setNewStaff(p => ({ ...p, mode:'existing', forum_user_id:u.id, username:u.username || '', email:u.email || '', password:'' }))
@@ -327,7 +343,6 @@ function Dashboard({ onLogout }) {
     try {
       const payload = { ...editStaffForm }
       if (!payload.password) delete payload.password // don't send empty password
-      if (!payload.password) delete payload.password
       const res = await api.put(`/auth/staff/${editingStaff._id}`, payload)
       setStaff(p => p.map(s => s._id === editingStaff._id ? { ...s, ...res.data } : s))
       setEditingStaff(null); toast.success('Staff member updated', { title: 'Updated' })
@@ -342,10 +357,14 @@ function Dashboard({ onLogout }) {
     if (!selectedPosts.size) return
     const ok = await confirm({ title: `Delete ${selectedPosts.size} Posts`, message: `Permanently delete ${selectedPosts.size} selected posts?`, variant: 'danger', confirmLabel: 'DELETE ALL' })
     if (!ok) return
-    await Promise.allSettled([...selectedPosts].map(id => api.delete(`/blog/${id}`)))
+    const results = await Promise.allSettled([...selectedPosts].map(id => api.delete(`/blog/${id}`)))
+    const done = results.filter(r => r.status === 'fulfilled').length
+    const failed = results.length - done
+    const n = selectedPosts.size
     setPosts(p => p.filter(x => !selectedPosts.has(x.id)))
     setSelectedPosts(new Set())
-    toast.success(`${selectedPosts.size} posts deleted`, { title: 'Bulk Delete' })
+    toast.success(`${done} of ${n} posts deleted`, { title: 'Bulk Delete' })
+    if (failed > 0) toast.error(`${failed} of ${n} posts failed to delete`, { title: 'Bulk Delete' })
   }
 
   const bulkPublishPosts = async (publish) => {
@@ -353,23 +372,31 @@ function Dashboard({ onLogout }) {
     const label = publish ? 'Publish' : 'Unpublish'
     const ok = await confirm({ title: `${label} ${selectedPosts.size} Posts`, message: `${label} ${selectedPosts.size} selected posts?`, confirmLabel: label.toUpperCase() })
     if (!ok) return
-    await Promise.allSettled([...selectedPosts].map(id => {
+    const ids = [...selectedPosts]
+    const results = await Promise.allSettled(ids.map(id => {
       const post = posts.find(p => p.id === id)
       return post ? api.put(`/blog/${id}`, { ...post, published: publish }) : Promise.resolve()
     }))
+    const done = results.filter(r => r.status === 'fulfilled').length
+    const failed = results.length - done
     await fetchPosts()
     setSelectedPosts(new Set())
-    toast.success(`${selectedPosts.size} posts ${publish ? 'published' : 'unpublished'}`, { title: label })
+    toast.success(`${done} of ${ids.length} posts ${publish ? 'published' : 'unpublished'}`, { title: label })
+    if (failed > 0) toast.error(`${failed} of ${ids.length} posts failed to ${publish ? 'publish' : 'unpublish'}`, { title: label })
   }
 
   const bulkDeleteContacts = async () => {
     if (!selectedContacts.size) return
     const ok = await confirm({ title: `Delete ${selectedContacts.size} Messages`, message: `Permanently delete ${selectedContacts.size} selected messages?`, variant: 'danger', confirmLabel: 'DELETE ALL' })
     if (!ok) return
-    await Promise.allSettled([...selectedContacts].map(id => api.delete(`/contact/${id}`)))
+    const results = await Promise.allSettled([...selectedContacts].map(id => api.delete(`/contact/${id}`)))
+    const done = results.filter(r => r.status === 'fulfilled').length
+    const failed = results.length - done
+    const n = selectedContacts.size
     setContacts(c => c.filter(x => !selectedContacts.has(x.id)))
     setSelectedContacts(new Set())
-    toast.success(`${selectedContacts.size} messages deleted`, { title: 'Bulk Delete' })
+    toast.success(`${done} of ${n} messages deleted`, { title: 'Bulk Delete' })
+    if (failed > 0) toast.error(`${failed} of ${n} messages failed to delete`, { title: 'Bulk Delete' })
   }
 
   const handleSavePost = async data => {
@@ -391,7 +418,18 @@ function Dashboard({ onLogout }) {
     if (!ok) return
     await api.delete(`/contact/${id}`); setContacts(c => c.filter(x => x.id !== id)); toast.success('Message deleted', { title: 'Deleted' })
   }
-  const togglePublish = async post => { await api.put(`/blog/${post.id}`, { ...post, published: !post.published }); fetchPosts() }
+  const togglePublish = async post => {
+    const next = !post.published
+    setPosts(p => p.map(x => x.id === post.id ? { ...x, published: next } : x))
+    try {
+      await api.put(`/blog/${post.id}`, { ...post, published: next })
+      toast.success(next ? 'Post published' : 'Post unpublished', { title: next ? 'Published' : 'Unpublished' })
+      fetchPosts()
+    } catch (err) {
+      setPosts(p => p.map(x => x.id === post.id ? { ...x, published: post.published } : x))
+      toast.error(err.response?.data?.detail || err.response?.data?.error || 'Failed to update post', { title: 'Error' })
+    }
+  }
   const formatDate = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
   //  Derived: filtered + sorted posts 
@@ -480,7 +518,7 @@ function Dashboard({ onLogout }) {
       if (e.key === 's') goView('store')
       if (e.key === 'f') goView('fivem')
       if (e.key === 'd') goView('db')
-      if (e.key === 'g') goView('settings')
+      if (e.key === 'g') goView('siteSettings')
       if (e.key === 'a') goView('audit')
       if (e.key === 'x') goView('helpdesk')
       if (e.key === 'b') goView('backup')
@@ -504,7 +542,7 @@ function Dashboard({ onLogout }) {
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', zIndex: 10 }}>
       {/*  Global Admin Header (desktop)  */}
       {!isMobile && (
-        <AdminHeader view={view} setView={goView}
+        <AdminHeader view={view} setView={goView} navItems={navItems.filter(canViewNavItem)}
           onLogout={onLogout} sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
       )}
       {/* Mobile top bar */}
@@ -657,12 +695,12 @@ function Dashboard({ onLogout }) {
                         Object.keys(healthStatus).length > 0
                           ? healthStatus
                           : {
-                              'API Server':  { status: 'checking', color: '#888' },
-                              'Database':    { status: 'checking', color: '#888' },
-                              'Mail Service':{ status: 'configured', color: '#ffd700' },
-                              'CDN Storage': { status: 'configured', color: '#ffd700' },
-                              'Chat Server': { status: 'checking', color: '#888' },
-                              'Forum':       { status: 'operational', color: '#00ff88' },
+                              'API Server':  { status: 'unknown', color: '#888' },
+                              'Database':    { status: 'unknown', color: '#888' },
+                              'Mail Service':{ status: 'unknown', color: '#888' },
+                              'CDN Storage': { status: 'unknown', color: '#888' },
+                              'Chat Server': { status: 'unknown', color: '#888' },
+                              'Forum':       { status: 'unknown', color: '#888' },
                             }
                       ).map(([label, s]) => (
                         <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -1005,15 +1043,18 @@ function Dashboard({ onLogout }) {
                           if (replyModal === 'bulk') {
                             // Bulk: send to all selected contacts
                             const targets = contacts.filter(c => selectedContacts.has(c.id))
-                            await Promise.allSettled(targets.map(c =>
+                            const results = await Promise.allSettled(targets.map(c =>
                               api.post(`/contact/${c.id}/reply`, {
                                 subject: replySubject,
                                 body: replyBody.replace(/\{\{name\}\}/g, c.name || 'there'),
                               })
                             ))
+                            const done = results.filter(r => r.status === 'fulfilled').length
+                            const failed = results.length - done
                             setContacts(cs => cs.map(c => selectedContacts.has(c.id) ? { ...c, replied: true } : c))
                             setSelectedContacts(new Set())
-                            toast.success(`Bulk reply sent to ${targets.length} contacts`, { title: '📨 Bulk Reply' })
+                            toast.success(`Bulk reply sent to ${done} of ${targets.length} contacts`, { title: '📨 Bulk Reply' })
+                            if (failed > 0) toast.error(`${failed} of ${targets.length} replies failed`, { title: '📨 Bulk Reply' })
                           } else {
                             await api.post(`/contact/${replyModal.id}/reply`, { subject: replySubject, body: replyBody })
                             setContacts(cs => cs.map(c => c.id === replyModal.id ? { ...c, replied: true } : c))

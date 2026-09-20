@@ -10,11 +10,12 @@
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from database import supabase
 from dependencies import require_admin, require_staff
+from utils.audit import record as _audit
 
 log = logging.getLogger("backup")
 router = APIRouter()
@@ -49,7 +50,13 @@ SENSITIVE_COLS = {"password_hash", "password", "refresh_token", "totp_secret",
                    "verify_token", "reset_token", "api_key", "api_secret",
                    "secret_key", "access_token", "private_key",
                    "encryption_key", "session_token", "service_role_key"}
-SENSITIVE_KEY_PARTS = ("password", "secret", "token", "private", "api_secret", "service_role", "totp")
+# Substring match is case-insensitive on the raw key: covers provider keys that
+# embed "apikey" without separators (bunny/resend/brevo) and SMTP passwords
+# that the generic "password" part already catches but are listed explicitly so
+# a future refactor can't silently drop them.
+SENSITIVE_KEY_PARTS = ("password", "secret", "token", "private", "api_secret", "service_role", "totp",
+                       "apikey", "api_key", "smtppassword", "smtppass",
+                       "bunnyapikey", "resendapikey", "brevoapikey")
 
 def _is_sensitive_key(key: str) -> bool:
     k = str(key or "").lower()
@@ -169,11 +176,16 @@ def _fetch_schema_via_sample(table: str) -> list[dict]:
         return []
 
 
+def _qi(name: str) -> str:
+    """Quote a SQL identifier, doubling embedded quotes (table/column names)."""
+    return '"' + str(name or "").replace('"', '""') + '"'
+
+
 def _generate_create_table(table: str, columns: list[dict], if_not_exists: bool = True) -> str:
     if not columns:
         return f"-- {table}: no schema available\n"
     clause = "CREATE TABLE IF NOT EXISTS" if if_not_exists else "CREATE TABLE"
-    lines = [f"{clause} public.{table} ("]
+    lines = [f"{clause} public.{_qi(table)} ("]
     col_defs = []
     for col in columns:
         name = col["name"]
@@ -182,7 +194,7 @@ def _generate_create_table(table: str, columns: list[dict], if_not_exists: bool 
         null_clause = "" if col.get("nullable", True) else " NOT NULL"
         default = col.get("default")
         def_clause = f" DEFAULT {default}" if default else ""
-        col_defs.append(f'    "{name}" {sql_type}{null_clause}{def_clause}')
+        col_defs.append(f'    {_qi(name)} {sql_type}{null_clause}{def_clause}')
     lines.append(",\n".join(col_defs))
     lines.append("\n);\n")
     return "\n".join(lines)
@@ -196,13 +208,13 @@ def _generate_inserts(table: str, rows: list[dict], columns: list[str] | None = 
     safe_cols = [c for c in columns if not _is_sensitive_key(c)]
     if not safe_cols:
         return f"-- {table}: all columns are sensitive, skipping data export\n"
-    col_list = ", ".join(f'"{c}"' for c in safe_cols)
+    col_list = ", ".join(_qi(c) for c in safe_cols)
     lines = []
     lines.append(f"\n-- {table}: {len(rows)} row(s)")
     for row in rows:
         row = _redact_row(row)
         vals = ", ".join(_sql_escape(row.get(c)) for c in safe_cols)
-        lines.append(f"INSERT INTO public.{table} ({col_list}) VALUES ({vals});")
+        lines.append(f"INSERT INTO public.{_qi(table)} ({col_list}) VALUES ({vals});")
     lines.append("")
     return "\n".join(lines)
 
@@ -245,7 +257,7 @@ def _fetch_all_rows(table: str, page_size: int = 1000, max_rows: int = 200000) -
 
 
 @router.get("")
-async def backup(_: dict = Depends(require_admin)):
+async def backup(request: Request, user: dict = Depends(require_admin)):
     data = {}
     errors = {}
     tables = _discover_tables()
@@ -257,6 +269,12 @@ async def backup(_: dict = Depends(require_admin)):
             log.warning("backup failed for %s: %s", table, e)
             data[table] = {"error": "unavailable"}
             errors[table] = "unavailable"
+    try:
+        _audit(str(user.get("username") or user.get("id") or "admin"), "backup_export",
+               target="backup_json", details={"tables": len(tables)},
+               ip=request.client.host if request.client else "")
+    except Exception:
+        pass
     return JSONResponse(
         content={"exported_at": datetime.now(timezone.utc).isoformat(), "table_count": len(tables), "errors": errors, "tables": data},
         headers={"Content-Disposition": f"attachment; filename=backup-{datetime.now(timezone.utc).strftime('%Y%m%d')}.json"},
@@ -265,10 +283,11 @@ async def backup(_: dict = Depends(require_admin)):
 
 @router.get("/export-sql")
 async def export_sql(
+    request: Request,
     mode: str = Query("schema", description="schema | data | full"),
     tables: str = Query("", description="comma-separated table filter"),
     if_not_exists: bool = Query(True, description="Use IF NOT EXISTS in CREATE TABLE"),
-    _: dict = Depends(require_admin),
+    user: dict = Depends(require_admin),
 ):
     if mode not in ("schema", "data", "full"):
         raise HTTPException(400, "mode must be one of: schema, data, full")
@@ -311,6 +330,13 @@ async def export_sql(
     sql_content = "\n".join(lines)
     filename = f"aifazi-{mode}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.sql"
 
+    try:
+        _audit(str(user.get("username") or user.get("id") or "admin"), "backup_export_sql",
+               target=f"backup_{mode}",
+               details={"tables": target_tables if filter_tables else "all"},
+               ip=request.client.host if request and request.client else "")
+    except Exception:
+        pass
     return PlainTextResponse(
         content=sql_content,
         media_type="application/sql",

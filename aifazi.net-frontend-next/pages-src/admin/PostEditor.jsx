@@ -440,7 +440,16 @@ function PostEditor({ post, onSave, onCancel }) {
     cover_image: post?.cover_image || '',
     video_url:   post?.video_url   || '',
     category:    post?.category    || 'General',
-    tags:        post ? (typeof post.tags === 'string' ? JSON.parse(post.tags) : post.tags).join(', ') : '',
+    tags:        (() => {
+      const t = post?.tags
+      if (!t) return ''
+      if (Array.isArray(t)) return t.join(', ')
+      if (typeof t === 'string') {
+        try { const p = JSON.parse(t); if (Array.isArray(p)) return p.join(', ') } catch {}
+        return t
+      }
+      return ''
+    })(),
     published:   post?.published === 1 || post?.published === true || false,
     publish_at:  post?.publish_at ? new Date(post.publish_at).toISOString().slice(0, 16) : '',
   }
@@ -691,7 +700,7 @@ function PostEditor({ post, onSave, onCancel }) {
           {form.publish_at && new Date(form.publish_at) > new Date() && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, padding: '3px 10px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.35)', color: '#a855f7', borderRadius: 4 }}>
-                📅 SCHEDULED — {new Date(form.publish_at).toLocaleString()}
+                📅 SCHEDULED — {new Date(form.publish_at).toLocaleString(undefined, { timeZoneName: 'short' })}
               </span>
               <button type="button" onClick={() => set('publish_at', '')} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11 }}>✕ clear</button>
             </div>

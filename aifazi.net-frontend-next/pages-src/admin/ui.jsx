@@ -95,7 +95,18 @@ export function Skeleton({ width = '100%', height = 12, style }) {
 /* ── Relative time ──────────────────────────────────────────────────────── */
 export function RelTime({ iso, now }) {
   if (!iso) return '—'
+  void now
   const ms = Date.now() - new Date(iso).getTime()
+  if (ms < 0) {
+    const f = -ms
+    const m = Math.floor(f / 60000)
+    if (m < 1) return 'in a moment'
+    if (m < 60) return `in ${m}m`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `in ${h}h`
+    const d = Math.floor(h / 24)
+    return d < 7 ? `in ${d}d` : new Date(iso).toLocaleDateString()
+  }
   const m = Math.floor(ms / 60000)
   if (m < 1) return 'just now'
   if (m < 60) return `${m}m ago`
