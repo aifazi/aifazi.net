@@ -10,6 +10,7 @@ import base64
 import logging
 import mimetypes
 import os
+from urllib.parse import urlparse
 import uuid
 
 import httpx
@@ -29,7 +30,7 @@ MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB hard cap
 # ── ClamAV malware scanning ────────────────────────────────────────────────────
 _CLAMD_HOST = os.getenv("CLAMD_HOST", "localhost")
 _CLAMD_PORT = int(os.getenv("CLAMD_PORT", "3310"))
-_MALWARE_SCAN_ENABLED = os.getenv("MALWARE_SCAN_ENABLED", "false").lower() == "true"
+_MALWARE_SCAN_ENABLED = os.getenv("MALWARE_SCAN_ENABLED", "true").lower() == "true"
 # Fail-closed by default (H3): when true, any scan failure (daemon unreachable,
 # connection error, unexpected exception, pyclamd ERROR status, or pyclamd not
 # installed at all) rejects the upload with a 503 instead of silently skipping
@@ -43,7 +44,15 @@ log = logging.getLogger("upload")
 def _vendor_sha1_hex(data: bytes) -> str:
     """SHA-1 hex digest for vendor APIs that mandate it (Cloudinary request
     signatures, Backblaze B2 content hashes). Authenticity rests on the API
-    secret, and the algorithm is dictated by the vendor, not chosen here."""
+    secret, and the algorithm is dictated by the vendor, not chosen here.
+
+    NOTE (CodeQL py/weak-sensitive-data-hashing): this MUST stay SHA-1.
+    Cloudinary's upload/destroy signature spec requires SHA-1 of the
+    params+secret string, and Backblaze B2 requires a SHA-1 hex digest in the
+    `X-Bz-Content-Sha1` header. Switching to SHA-256 would break uploads and
+    deletes against both vendors. This is never used for password hashing or
+    any locally-verified credential — only for vendor-mandated wire values.
+    """
     import hashlib
     return hashlib.sha1(data, usedforsecurity=False).hexdigest()  # codeql[py/weak-sensitive-data-hashing]
 
@@ -208,6 +217,26 @@ def _safe_storage_filename(filename: str) -> str:
     return base or "file"
 
 
+def _is_cloudinary_url(url: str) -> bool:
+    """True when *url* is an http(s) URL served from Cloudinary's CDN.
+
+    Replaces the old `"res.cloudinary.com" in url` substring allow-check
+    (CodeQL py/incomplete-url-substring-sanitization): a substring test is
+    bypassed by `https://evil.com/?x=res.cloudinary.com` or by the sibling
+    domain `https://res.cloudinary.com.evil.com/`. Parsing with urlparse and
+    comparing the lowercased hostname exactly (allowing genuine Cloudinary
+    subdomains) rejects both, while requiring an http/https scheme.
+    """
+    try:
+        parts = urlparse((url or "").strip())
+    except ValueError:
+        return False
+    if parts.scheme not in ("http", "https"):
+        return False
+    host = (parts.hostname or "").lower()
+    return host == "res.cloudinary.com" or host.endswith(".res.cloudinary.com")
+
+
 def _save_media(filename: str, original_name: str, mimetype: str, size: int, url: str,
                 storage_path: str, provider: str) -> dict:
     row = supabase.table("media").insert({
@@ -229,7 +258,7 @@ async def _upload_to_provider(content: bytes, filename: str, mimetype: str, cfg:
 
     if provider == "cloudinary":
         public_url, storage_path = await _upload_cloudinary(content, filename, mimetype, cfg)
-        if custom_domain and "res.cloudinary.com" in public_url:
+        if custom_domain and _is_cloudinary_url(public_url):
             cloud = cfg.get("cloudinaryCloudName", "").strip()
             public_url = public_url.replace(f"https://res.cloudinary.com/{cloud}", custom_domain)
     elif provider == "r2":
@@ -250,7 +279,6 @@ async def _upload_to_provider(content: bytes, filename: str, mimetype: str, cfg:
 
 async def _upload_cloudinary(content: bytes, filename: str, mimetype: str, cfg: dict) -> tuple[str, str]:
     """Upload via Cloudinary REST API. Returns (secure_url, public_id)."""
-    import hashlib
     import time
     cloud  = cfg.get("cloudinaryCloudName", "").strip()
     key    = cfg.get("cloudinaryApiKey", "").strip()
@@ -322,7 +350,6 @@ async def _upload_b2(content: bytes, filename: str, mimetype: str, cfg: dict) ->
         up_token = up["authorizationToken"]
 
         # 4. Upload
-        import hashlib
         # Backblaze B2 requires SHA-1 content hash header for uploads.
         sha1 = _vendor_sha1_hex(content)
         r4 = await client.post(
@@ -397,7 +424,11 @@ async def _upload_bunny(content: bytes, filename: str, mimetype: str, cfg: dict)
 
 
 async def _upload_supabase(content: bytes, filename: str, mimetype: str) -> tuple[str, str]:
-    """Upload to Supabase Storage. Returns (public_url, storage_path)."""
+    """Upload to Supabase Storage. Returns (public_url, storage_path).
+    
+    When IMGPROXY_URL is configured, the public_url is an imgproxy URL that
+    provides on-the-fly image transforms. Otherwise returns the raw Storage URL.
+    """
     ext = os.path.splitext(filename)[1] or ""
     storage_path = f"media/{uuid.uuid4()}{ext}"
     try:
@@ -408,13 +439,26 @@ async def _upload_supabase(content: bytes, filename: str, mimetype: str) -> tupl
         )
     except Exception as e:
         err = str(e)
+        log.exception("Supabase upload failed")
         if "Bucket not found" in err or "not found" in err.lower():
             raise HTTPException(500,
                 "Storage bucket 'media' not found. "
                 "Create a public bucket named 'media' in your Supabase project under Storage.")
         if "already exists" not in err.lower():
-            raise HTTPException(500, f"Upload failed: {err}")
-    public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{storage_path}"
+            raise HTTPException(500, "Upload failed")
+    
+    raw_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{storage_path}"
+    
+    # Return imgproxy URL if configured, otherwise raw Storage URL
+    try:
+        from utils.imgproxy import imgproxy_url_for_storage, is_imgproxy_configured
+        if is_imgproxy_configured():
+            public_url = imgproxy_url_for_storage(storage_path, bucket=SUPABASE_BUCKET)
+        else:
+            public_url = raw_url
+    except ImportError:
+        public_url = raw_url
+    
     return public_url, storage_path
 
 
@@ -608,7 +652,6 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
         elif provider == "cloudinary":
             # Cloudinary destroy uses the public_id (stored in storage_path) +
             # a signed request. We use the timestamp+signature approach.
-            import hashlib
             import time as _time
             cloud  = cfg.get("cloudinaryCloudName", "").strip()
             key    = cfg.get("cloudinaryApiKey", "").strip()
@@ -674,9 +717,8 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
     except Exception as _del_exc:
         # Best-effort — we still drop the media row so the admin sees the file
         # gone from the library, but the CDN bytes may persist.
-        import logging as _logging
-        _logging.getLogger("upload").warning("CDN delete failed for %s: %s", provider, _del_exc)
-        deletion_errors.append(str(_del_exc)[:200])
+        log.warning("CDN delete failed for %s: %s", provider, _del_exc, exc_info=True)
+        deletion_errors.append("CDN delete failed")
 
     supabase.table("media").delete().eq("id", media_id).execute()
     return {"message": "Deleted", "cdn_delete_errors": deletion_errors}

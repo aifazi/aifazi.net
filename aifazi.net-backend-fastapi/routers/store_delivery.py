@@ -1,7 +1,10 @@
 """
 routers/store_delivery.py — Delivery agent management, assignments, scanning
 """
+from __future__ import annotations
+
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -13,7 +16,7 @@ router = APIRouter()
 
 
 def _user_id(user: dict) -> str:
-    return user.get("id") or user.get("sub")
+    return str(user.get("id") or user.get("sub") or "")
 
 
 def _get_agent(user_id: str) -> dict | None:
@@ -215,7 +218,7 @@ async def my_assignments(user: dict = Depends(get_current_user), status: str | N
     items_res = supabase.table("store_order_items").select(
         "id,order_id,product_name,quantity,line_total_cents"
     ).in_("order_id", order_ids).execute().data or []
-    items_by_order = {}
+    items_by_order: dict[str, list[dict[str, Any]]] = {}
     for it in items_res:
         items_by_order.setdefault(it["order_id"], []).append(it)
 
@@ -374,7 +377,7 @@ async def order_delivery_tracking(order_no: str):
     o = order.data
     agent_info = None
     assignment_info = None
-    scan_events = []
+    scan_events: list[dict[str, Any]] = []
 
     if o.get("delivery_agent_id"):
         agent = supabase.table("delivery_agents").select("id,display_name,phone,vehicle,status,current_area").eq("id", o["delivery_agent_id"]).single().execute()

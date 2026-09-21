@@ -303,7 +303,7 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     _st = {"dest": "/forum/profile", "mobile": False}
     try:
         _st = verify_oauth_state_full(state, "steam")
-        dest = _st["dest"]
+        dest = str(_st.get("dest", dest))
     except ValueError:
         return RedirectResponse(f"{front}/login?steam_error=state")
     dest = _safe_relative_path(dest, default="/forum/profile")
@@ -337,14 +337,14 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
 
             current_user_id = link_payload["id"]
             if _active_identity_locked(current_user_id):
-                safe_dest = dest if str(dest).startswith("/") else "/profile"
+                safe_dest = _safe_relative_path(dest)
                 sep = "&" if "?" in safe_dest else "?"
-                return RedirectResponse(f"{front}{safe_dest}{sep}steam_error=identity_locked")
+                return RedirectResponse(front + safe_dest + sep + "steam_error=identity_locked")
             ex = supabase.table("users").select("id,username").eq("steam_id", steam64).execute()
             if ex.data and ex.data[0]["id"] != current_user_id:
-                safe_dest = dest if str(dest).startswith("/") else "/profile"
+                safe_dest = _safe_relative_path(dest)
                 sep = "&" if "?" in safe_dest else "?"
-                return RedirectResponse(f"{front}{safe_dest}{sep}steam_error=duplicate")
+                return RedirectResponse(front + safe_dest + sep + "steam_error=duplicate")
 
             row = supabase.table("users").select("*").eq("id", current_user_id).execute()
             if not row.data:
@@ -401,15 +401,15 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
 
     if mode != "connect" and user.get("totp_enabled") and user.get("totp_secret"):
         partial = _make_forum_2fa_token(user["id"], user["username"], user.get("role", "user"), "steam")
-        safe_dest = _urlparse.quote(dest, safe="/")
+        safe_dest = _urlparse.quote(_safe_relative_path(dest), safe="/")
         safe_user = _urlparse.quote(user.get("username") or "")
         safe_partial = _urlparse.quote(partial, safe="")
-        return RedirectResponse(f"{front}{m_login}#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
+        return RedirectResponse(front + m_login + "#twofa=forum&partial_token=" + safe_partial + "&username=" + safe_user + "&next=" + safe_dest)
 
     token = _make_forum_token(user["id"], user["username"], user.get("role", "user"))
     _record_activity(user["id"], user["username"], "steam_connect" if mode == "connect" else "steam_login", f"steam64={steam64}")
 
-    safe_dest = _urlparse.quote(dest, safe="/")
+    safe_dest = _urlparse.quote(_safe_relative_path(dest), safe="/")
     # For brand-new Steam accounts, send to profile edit tab so they can set email
     new_flag = "&new_account=1" if is_new_account else ""
     # Set HttpOnly auth cookies (primary) + keep hash for legacy mobile deep links.
@@ -425,12 +425,12 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
             pass
         if _st.get("mobile"):
             # App deep link — deliver tokens via fragment (no cookie jar on the app).
-            return RedirectResponse(f"{front}#token={token}&refresh={refresh}&dest={safe_dest}{new_flag}")
-        resp = RedirectResponse(f"{front}/auth/steam-callback#dest={_urlparse.quote(dest, safe='/')}")
+            return RedirectResponse(front + "#token=" + token + "&refresh=" + refresh + "&dest=" + safe_dest + new_flag)
+        resp = RedirectResponse(front + "/auth/steam-callback#dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/'))
         _set_auth_cookies(resp, token, refresh)
         return resp
     except Exception:
-        return RedirectResponse(f"{front}/auth/steam-callback#dest={_urlparse.quote(dest, safe='/')}")
+        return RedirectResponse(front + "/auth/steam-callback#dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/'))
 
 
 @router.delete("/disconnect")

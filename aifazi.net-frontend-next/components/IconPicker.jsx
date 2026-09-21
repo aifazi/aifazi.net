@@ -36,6 +36,26 @@ export const EMOJI_OPTIONS = [
 export function isLordicon(v) { return typeof v === 'string' && v.startsWith('http') && v.endsWith('.json') }
 export function isImageUrl(v) { return typeof v === 'string' && v.startsWith('http') && !v.endsWith('.json') }
 
+// Allowlist for icon src values (CodeQL js/xss-through-dom): `value` is
+// admin/content-controlled text that flows into <lord-icon src> / <img src>.
+// React escapes text children, but URL attributes need scheme validation —
+// `javascript:`/`data:text/html` must never reach `src`. https, relative
+// paths, local-dev http and raster data-images pass; everything else falls
+// back to the placeholder glyph.
+function safeIconSrc(v) {
+  if (typeof v !== 'string') return undefined
+  const s = v.trim()
+  if (!s) return undefined
+  // CodeQL js/xss-through-dom barrier: strip HTML metacharacters on the
+  // allow-path. Legit URLs never contain raw `<>"'`, so valid input is
+  // unchanged; anything smuggling markup into `src` is neutralized.
+  if (/^https:\/\//i.test(s)) return s.replace(/[<>"']/g, '')
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(s)) return s.replace(/[<>"']/g, '')
+  if (/^data:image\/(png|jpe?g|gif|webp|bmp|ico|avif);base64,/i.test(s)) return s.replace(/[<>"']/g, '')
+  if (/^\/(?!\/)/.test(s)) return s.replace(/[<>"']/g, '')
+  return undefined
+}
+
 export function useLordiconScript() {
   useEffect(() => {
     if (document.querySelector('[data-lordicon-loaded]')) return
@@ -48,18 +68,19 @@ export function useLordiconScript() {
 
 // ─── Universal icon renderer ───────────────────────────────────────────────
 export function IconDisplay({ value, size = 36 }) {
-  if (isLordicon(value)) {
+  const safeSrc = safeIconSrc(value)
+  if (isLordicon(value) && safeSrc) {
     return (
       <lord-icon
-        src={value}
+        src={safeSrc}
         trigger="hover"
         colors="primary:#00d4ff,secondary:#00ff88"
         style={{ width: size, height: size }}
       />
     )
   }
-  if (isImageUrl(value)) {
-    return <img src={value} alt="" style={{ width: size, height: size, objectFit: 'contain' }} />
+  if (isImageUrl(value) && safeSrc) {
+    return <img src={safeSrc} alt="" style={{ width: size, height: size, objectFit: 'contain' }} />
   }
   return <span style={{ fontSize: size * 0.85, lineHeight: 1 }}>{value || '❓'}</span>
 }

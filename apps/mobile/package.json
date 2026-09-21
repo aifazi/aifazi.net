@@ -43,7 +43,8 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.27.0",
     "react-native-svg": "15.15.4",
-    "react-native-web": "~0.21.0"
+    "react-native-web": "~0.21.0",
+    "tsdav": "^2.3.3"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",

@@ -209,11 +209,11 @@ async def discord_callback(code: str = "", error: str = "", state: str = ""):
 
     # Mobile deep link — return token in fragment for app to capture
     if mobile:
-        return RedirectResponse(f"aifazi://auth/discord?token={jwt_token}&dest={_urlparse.quote(dest, safe='/')}")
+        return RedirectResponse("aifazi://auth/discord?token=" + jwt_token + "&dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/'))
 
     # Web — set HttpOnly cookie (primary) + keep hash for legacy clients; frontend
     # prefers cookie via /auth/me and clears hash immediately. Token never in query.
-    resp = RedirectResponse(f"{FRONTEND_URL}/auth/discord#dest={_urlparse.quote(dest, safe='/')}")
+    resp = RedirectResponse(FRONTEND_URL + "/auth/discord#dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/'))
     resp.set_cookie(key="auth_token", value=jwt_token, httponly=True, secure=True, samesite="lax", max_age=JWT_EXPIRE*60, path="/")
     return resp
 

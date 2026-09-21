@@ -18,6 +18,7 @@ Clients are configured via OAUTH_CLIENTS JSON env:
 """
 from __future__ import annotations
 
+import html
 import json
 import logging
 import os
@@ -49,6 +50,7 @@ from utils.ldap_client import (
     bind_user,
     healthcheck as ldap_healthcheck,
 )
+from utils.oauth_state import _safe_relative_path
 from utils.oauth_store import (
     get_access_token as _store_get_token,
     pop_auth_code as _store_pop_code,
@@ -312,8 +314,13 @@ async def oauth_authorize(
     client = _get_client(client_id)
     if not client:
         raise HTTPException(400, "Unknown client_id")
-    if redirect_uri not in (client.get("redirect_uris") or []):
+    _allowed_uris = client.get("redirect_uris") or []
+    if redirect_uri not in _allowed_uris:
         raise HTTPException(400, "Invalid redirect_uri")
+    # Use the allowlisted entry (trusted source) rather than raw user input.
+    _safe_redirect = _allowed_uris[_allowed_uris.index(redirect_uri)]
+    if _safe_redirect.startswith("/") and "://" not in _safe_redirect:
+        _safe_redirect = _safe_relative_path(_safe_redirect, default="/")
     if response_type != "code":
         raise HTTPException(400, "Only response_type=code is supported")
 
@@ -340,22 +347,23 @@ async def oauth_authorize(
             q = {"code": code}
             if state:
                 q["state"] = state
-            sep = "&" if "?" in redirect_uri else "?"
-            return _Redir(f"{redirect_uri}{sep}{urlencode(q)}")
+            sep = "&" if "?" in _safe_redirect else "?"
+            # urlencode quotes code/state; base is the allowlisted client URI.
+            return _Redir(_safe_redirect + sep + urlencode(q))
 
     app_name = client.get("name") or client_id
-    html = _LOGIN_PAGE.format(
-        app_name=app_name,
-        action=f"{API_URL}/api/auth/oauth/authorize",
-        client_id=client_id,
-        redirect_uri=redirect_uri,
-        state=state,
-        scope=scope,
-        code_challenge=code_challenge,
-        code_challenge_method=code_challenge_method or "S256",
+    html_page = _LOGIN_PAGE.format(
+        app_name=html.escape(str(app_name)),
+        action=html.escape(f"{API_URL}/api/auth/oauth/authorize", quote=True),
+        client_id=html.escape(client_id, quote=True),
+        redirect_uri=html.escape(redirect_uri, quote=True),
+        state=html.escape(state, quote=True),
+        scope=html.escape(scope, quote=True),
+        code_challenge=html.escape(code_challenge, quote=True),
+        code_challenge_method=html.escape(code_challenge_method or "S256", quote=True),
         error_html="",
     )
-    return HTMLResponse(html)
+    return HTMLResponse(html_page)
 
 
 @router.post("/oauth/authorize")
@@ -372,20 +380,28 @@ async def oauth_authorize_post(
     code_challenge_method: str = Form("S256"),
 ):
     client = _get_client(client_id)
-    if not client or redirect_uri not in (client.get("redirect_uris") or []):
+    _allowed_uris = (client.get("redirect_uris") or []) if client else []
+    if not client or redirect_uri not in _allowed_uris:
         raise HTTPException(400, "Invalid client or redirect_uri")
+    # Use the allowlisted entry (trusted source) rather than raw user input.
+    _safe_redirect = _allowed_uris[_allowed_uris.index(redirect_uri)]
+    if _safe_redirect.startswith("/") and "://" not in _safe_redirect:
+        _safe_redirect = _safe_relative_path(_safe_redirect, default="/")
     try:
         ldap_user = bind_user(username, password)
     except LdapAuthFailed:
-        html = _LOGIN_PAGE.format(
-            app_name=client.get("name") or client_id,
-            action=f"{API_URL}/api/auth/oauth/authorize",
-            client_id=client_id, redirect_uri=redirect_uri, state=state,
-            scope=scope, code_challenge=code_challenge,
-            code_challenge_method=code_challenge_method or "S256",
+        html_page = _LOGIN_PAGE.format(
+            app_name=html.escape(str(client.get("name") or client_id)),
+            action=html.escape(f"{API_URL}/api/auth/oauth/authorize", quote=True),
+            client_id=html.escape(client_id, quote=True),
+            redirect_uri=html.escape(redirect_uri, quote=True),
+            state=html.escape(state, quote=True),
+            scope=html.escape(scope, quote=True),
+            code_challenge=html.escape(code_challenge, quote=True),
+            code_challenge_method=html.escape(code_challenge_method or "S256", quote=True),
             error_html='<div class="err">Invalid username or password</div>',
         )
-        return HTMLResponse(html, status_code=401)
+        return HTMLResponse(html_page, status_code=401)
     except LdapUnavailable:
         raise HTTPException(503, "Directory unavailable")
 
@@ -419,8 +435,9 @@ async def oauth_authorize_post(
     q = {"code": code}
     if state:
         q["state"] = state
-    sep = "&" if "?" in redirect_uri else "?"
-    return _Redir(f"{redirect_uri}{sep}{urlencode(q)}")
+    sep = "&" if "?" in _safe_redirect else "?"
+    # urlencode quotes code/state; base is the allowlisted client URI.
+    return _Redir(_safe_redirect + sep + urlencode(q))
 
 
 @router.post("/oauth/token")

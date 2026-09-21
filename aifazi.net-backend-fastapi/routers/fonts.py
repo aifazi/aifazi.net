@@ -48,6 +48,11 @@ _FONT_TYPES = {
 _FAMILY_SAFE = re.compile(r"[^A-Za-z0-9 _-]+")
 _WEIGHTS = ("100", "200", "300", "400", "500", "600", "700", "800", "900")
 
+# Allowlist for /from-url imports: only the Google Fonts file/CDN hosts
+# referenced by this feature (see docstring + CSP font-src). Anything else
+# is rejected with 400 so a full user-controlled URL can't drive SSRF.
+_ALLOWED_FONT_HOSTS = frozenset({"fonts.gstatic.com", "fonts.googleapis.com"})
+
 
 def _host_is_private(hostname: str) -> bool:
     """True when a host resolves to a non-public IP (SSRF guard)."""
@@ -264,9 +269,10 @@ async def import_font_from_url(
 ):
     """Download a font file from an external URL and import it into the library.
 
-    Works with direct .woff2/.ttf/.otf/.woff URLs from any CDN, including
-    Google Fonts' gstatic file URLs. The payload is streamed (25 MB cap),
-    magic-byte sniffed, malware scanned, then stored in R2 like an upload.
+    Only direct .woff2/.ttf/.otf/.woff URLs on the Google Fonts hosts
+    (fonts.gstatic.com, fonts.googleapis.com) are accepted. The payload is
+    streamed (25 MB cap), magic-byte sniffed, malware scanned, then stored
+    in R2 like an upload.
     """
     url = (body.url or "").strip()
     if not url:
@@ -274,6 +280,8 @@ async def import_font_from_url(
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https") or not parsed.hostname:
         raise HTTPException(400, "Only http(s) URLs are supported")
+    if (parsed.hostname or "").lower() not in _ALLOWED_FONT_HOSTS:
+        raise HTTPException(400, "Only Google Fonts hosts are allowed")
     if _host_is_private(parsed.hostname):
         raise HTTPException(400, "URL host is not publicly reachable")
 

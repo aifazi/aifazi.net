@@ -80,7 +80,7 @@ class StatsResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 def _get_user_id(user: dict) -> str:
-    return user.get("id") or user.get("sub")
+    return str(user.get("id") or user.get("sub") or "")
 
 
 def _get_user_peers(user_id: str) -> list[dict]:
@@ -520,19 +520,19 @@ async def _dispatch_vpn_alerts(events: list[dict]) -> None:
     except Exception as e:
         log.warning("vpn alerts: owner lookup failed: %s", e)
         return
-    for e in events:
+    for evt in events:
         try:
-            owner = owners.get(e.get("user_id", ""), {})
+            owner = owners.get(evt.get("user_id", ""), {})
             to = (owner.get("email") or "").strip()
             if not to:
                 continue
-            content = _vpn_alert_content(e, owner.get("username", ""))
+            content = _vpn_alert_content(evt, owner.get("username", ""))
             if not content:
                 continue
             subject, html = content
             await queue_email(to=to, subject=subject, html=html, purpose="vpn_alert")
         except Exception as ex:
-            log.warning("vpn alerts: event %s failed: %s", e.get("type"), ex)
+            log.warning("vpn alerts: event %s failed: %s", evt.get("type"), ex)
 
 
 async def vpn_maintenance_tick() -> dict:

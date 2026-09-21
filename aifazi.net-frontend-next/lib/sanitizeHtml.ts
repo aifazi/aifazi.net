@@ -219,7 +219,15 @@ function scrubServer(dirty: string, config?: Record<string, any>): string {
       .filter(Boolean),
   )
   let out = String(dirty ?? '')
-  out = out.replace(/<!--[\s\S]*?-->/g, '') // comments (conditional payloads)
+  // Strip comments to a fixpoint so nested/overlapping openers cannot leave
+  // a comment behind, then drop any unterminated trailing comment (no `-->`)
+  // so `<!--` cannot survive sanitization (fail closed).
+  let prevComment = ''
+  while (prevComment !== out) {
+    prevComment = out
+    out = out.replace(/<!--[\s\S]*?-->/g, '')
+  }
+  out = out.replace(/<!--[\s\S]*$/g, '')
   return tokenize(out)
     .map((t) => (t.isTag ? scrubTag(t.text, extraTags, extraAttrs) : t.text))
     .join('')

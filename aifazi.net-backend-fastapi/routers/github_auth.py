@@ -194,7 +194,7 @@ async def github_connect_url(dest: str = "/forum/profile",
 
 
 @router.get("/callback")
-async def github_callback(code: str = None, state: str = None, error: str = None):
+async def github_callback(code: str | None = None, state: str | None = None, error: str | None = None):
     """Exchange GitHub code, upsert forum_users, issue JWT, redirect to frontend."""
     if not _client_id() or not _client_secret():
         raise HTTPException(500, "GitHub OAuth not configured — set _client_id()")
@@ -223,7 +223,7 @@ async def github_callback(code: str = None, state: str = None, error: str = None
     else:
         try:
             _st = verify_oauth_state_full(state_value, "github")
-            dest = _st["dest"]
+            dest = str(_st.get("dest", dest))
         except ValueError:
             return RedirectResponse(f"{front}/login?github_error=state")
 
@@ -278,17 +278,17 @@ async def github_callback(code: str = None, state: str = None, error: str = None
 
     # 3. Find or create forum_users row
     try:
-        if mode == "connect":
+        if mode == "connect" and link_payload:
             current_user_id = link_payload["id"]
             if _active_identity_locked(current_user_id):
-                safe_dest = dest if str(dest).startswith("/") else "/profile"
+                safe_dest = _safe_relative_path(dest)
                 sep = "&" if "?" in safe_dest else "?"
-                return RedirectResponse(f"{front}{safe_dest}{sep}github_error=identity_locked")
+                return RedirectResponse(front + safe_dest + sep + "github_error=identity_locked")
             ex = supabase.table("users").select("id,username").eq("github_id", github_id).execute()
             if ex.data and ex.data[0]["id"] != current_user_id:
-                safe_dest = dest if str(dest).startswith("/") else "/profile"
+                safe_dest = _safe_relative_path(dest)
                 sep = "&" if "?" in safe_dest else "?"
-                return RedirectResponse(f"{front}{safe_dest}{sep}github_error=duplicate")
+                return RedirectResponse(front + safe_dest + sep + "github_error=duplicate")
 
             row = supabase.table("users").select("*").eq("id", current_user_id).execute()
             if not row.data:
@@ -321,9 +321,9 @@ async def github_callback(code: str = None, state: str = None, error: str = None
                         # a GitHub account using that (unclaimed/bouncing) address
                         # could otherwise hijack the victim's forum account.
                         log.info("github callback: refusing email-match link to unverified account for %s", github_email)
-                        safe_dest = dest if str(dest).startswith("/") else "/profile"
+                        safe_dest = _safe_relative_path(dest)
                         sep = "&" if "?" in safe_dest else "?"
-                        return RedirectResponse(f"{front}{safe_dest}{sep}github_error=email_unverified")
+                        return RedirectResponse(front + safe_dest + sep + "github_error=email_unverified")
                     if user:
                         _ensure_identity_available("github_id", github_id, user["id"], "GitHub account")
                         supabase.table("users").update({
@@ -359,10 +359,10 @@ async def github_callback(code: str = None, state: str = None, error: str = None
     # 4. Issue the same JWT the rest of the site uses
     if mode != "connect" and user.get("totp_enabled") and user.get("totp_secret"):
         partial = make_forum_2fa_token(user["id"], user["username"], user.get("role", "user"), "github")
-        safe_dest = _urlparse.quote(dest, safe="/")
+        safe_dest = _urlparse.quote(_safe_relative_path(dest), safe="/")
         safe_user = _urlparse.quote(user.get("username") or "")
         safe_partial = _urlparse.quote(partial, safe="")
-        return RedirectResponse(f"{front}{m_login}#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
+        return RedirectResponse(front + m_login + "#twofa=forum&partial_token=" + safe_partial + "&username=" + safe_user + "&next=" + safe_dest)
 
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
     _record_user_activity(user["id"], user["username"], "github_connect" if mode == "connect" else "github_login", f"github_id={github_id}")
@@ -379,14 +379,14 @@ async def github_callback(code: str = None, state: str = None, error: str = None
             pass
         if _st.get("mobile"):
             # App deep link — deliver tokens via fragment (no cookie jar on the app).
-            safe_dest = _urlparse.quote(dest, safe="/")
-            return RedirectResponse(f"{front}#token={token}&refresh={refresh}&dest={safe_dest}")
-        resp = RedirectResponse(f"{front}/auth/github-callback#dest={_urlparse.quote(dest, safe='/')}")
+            safe_dest = _urlparse.quote(_safe_relative_path(dest), safe="/")
+            return RedirectResponse(front + "#token=" + token + "&refresh=" + refresh + "&dest=" + safe_dest)
+        resp = RedirectResponse(front + "/auth/github-callback#dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/'))
         _set_auth_cookies(resp, token, refresh)
         return resp
     except Exception:
-        safe_dest = _urlparse.quote(dest, safe="/")
-        return RedirectResponse(f"{front}/auth/github-callback#token={token}&dest={safe_dest}")
+        safe_dest = _urlparse.quote(_safe_relative_path(dest), safe="/")
+        return RedirectResponse(front + "/auth/github-callback#token=" + token + "&dest=" + safe_dest)
 
 
 @router.delete("/disconnect")

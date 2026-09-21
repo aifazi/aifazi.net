@@ -31,6 +31,7 @@ import os
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -109,7 +110,7 @@ def _product_payload(row: dict, variants=None, deal=None, rating=None) -> dict:
         "price": (row.get("price_cents") or 0) / 100,
         "compare_at_cents": row.get("compare_at_cents"),
         "compare_at": (row.get("compare_at_cents") or 0) / 100 if row.get("compare_at_cents") else None,
-        "on_sale": bool(row.get("compare_at_cents") and row.get("compare_at_cents") > (row.get("price_cents") or 0)),
+        "on_sale": bool(row.get("compare_at_cents") and int(row.get("compare_at_cents") or 0) > int(row.get("price_cents") or 0)),
         "image_url": row.get("image_url") or "",
         "type": row.get("type") or "physical",
         "in_stock": not row.get("track_inventory", True) or int(row.get("stock_qty") or 0) > 0,
@@ -124,7 +125,7 @@ def _product_payload(row: dict, variants=None, deal=None, rating=None) -> dict:
         "rating": rating or {"rating": None, "count": 0},
     }
     if deal:
-        deal_price = max(0, round(payload["price_cents"] * (100 - int(deal.get("discount_percent") or 0)) / 100))
+        deal_price = max(0, round(int(str(payload["price_cents"])) * (100 - int(str(deal.get("discount_percent") or 0))) / 100))
         payload["deal"] = {
             "id": deal.get("id"),
             "name": deal.get("name"),
@@ -291,7 +292,7 @@ async def list_products(category: str | None = None, featured: bool | None = Non
 
     out = []
     for r in rows:
-        pid = r.get("id")
+        pid = str(r.get("id") or "")
         # transform raw variant rows
         transformed = []
         for v in variants.get(pid, []):
@@ -770,8 +771,8 @@ async def my_orders(user: dict = Depends(get_current_user)):
            .execute())
     orders = res.data or []
     # Batch items + downloads — TWO round-trips total instead of 2 per order.
-    item_rows = {}
-    dl_rows = {}
+    item_rows: dict[str, list[dict[str, Any]]] = {}
+    dl_rows: dict[str, list[dict[str, Any]]] = {}
     if orders:
         ids = [o["id"] for o in orders]
         items = (supabase.table("store_order_items")
@@ -960,7 +961,7 @@ async def invoice_detail(invoice_no: str, user: dict = Depends(get_current_user)
     if not res.data:
         raise HTTPException(404, "Invoice not found")
     inv = res.data[0]
-    items = []
+    items: list[Any] = []
     if inv.get("order_id"):
         items = (supabase.table("store_order_items")
                  .select("product_name,product_sku,unit_price_cents,quantity,line_total_cents")
@@ -1206,7 +1207,7 @@ def _mark_order_paid(order_id: str, payment_intent_id: str | None,
                     "product_name": it.get("product_name") or prods[pid].get("name") or "Digital item",
                     "token": _download_token(),
                     "file_url": prods[pid].get("digital_file_url"),
-                    "filename": _download_filename(prods[pid].get("digital_file_url")),
+                    "filename": _download_filename(str(prods[pid].get("digital_file_url") or "")),
                     "downloads_allowed": int(prods[pid].get("download_limit") or 5),
                     "expires_at": expires_at,
                 }).execute()

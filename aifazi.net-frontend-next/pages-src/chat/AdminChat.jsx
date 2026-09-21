@@ -404,30 +404,8 @@ export default function AdminChat({ embedded=false }) {
   }, [])
 
   const joinCall = useCallback(async (r) => {
-    // Leave any existing call first
-    if (callRoom) leaveCall()
-
-    if (!navigator.mediaDevices?.getUserMedia) {
-      notify.error('Microphone/Camera access is not available in this browser')
-      return
-    }
-    try {
-      const tokenRes = await api.get(`/chat/livekit/token?room_id=${r.id}`)
-      const { token, url, can_publish, can_screen_share, encryption_key, role: tokenRole } = tokenRes.data
-      if (!token) { notify.error('LiveKit token was empty — check backend env vars'); return }
-      if (!url) { notify.error('LiveKit URL was empty — check LIVEKIT_URL env var'); return }
-      setCallRoom({ ...r, _lkToken: token, _lkUrl: url, _canPublish: can_publish, _canScreenShare: can_screen_share, _e2eeKey: encryption_key, _myRole: tokenRole || role || 'member' })
-      setCanScreenShare(can_screen_share || isAdmin)
-      setMuted(false)
-      setCamOff(false)
-    } catch (e) {
-      const status = e.response?.status
-      const detail = e.response?.data?.detail || ''
-      if (status === 403) notify.error(detail || 'No permission to join this voice channel')
-      else if (detail) notify.error(detail)
-      else notify.error('Cannot join voice channel — check connection')
-    }
-  }, [isAdmin, callRoom])
+    window.open(process.env.NEXT_PUBLIC_TALK_URL || 'https://nextcloud.aifazi.net/apps/spreed', '_blank')
+  }, [])
 
   const togMute = () => setMuted(m => !m)
   const togCam = () => setCamOff(c => !c)
@@ -970,10 +948,7 @@ export default function AdminChat({ embedded=false }) {
                               { icon: roomE2EE ? '🔐' : '🔐', label: roomE2EE ? 'Disable E2EE' : 'Enable E2EE', 
                                 action: async ()=>{
                                   setShowAdminMenu(false);
-                                  try {
-                                    await api.post(`/chat/livekit/rooms/${room.id}/e2ee`, { enabled: !roomE2EE });
-                                    notify.success(`E2EE ${roomE2EE ? 'disabled' : 'enabled'}`);
-                                  } catch { notify.error('Failed to toggle E2EE') }
+                                   notify.info('E2EE toggle is not available (LiveKit removed)')
                                 }, 
                                 color: roomE2EE ? T.warn : T.accent },
                             ].map((it,i)=>(
@@ -1236,7 +1211,7 @@ class VoiceErrorBoundary extends Component {
     return { crashed: true, error: err }
   }
   componentDidCatch(err) {
-    console.error('[VoiceErrorBoundary] LiveKit panel crashed:', err)
+    console.error('[VoiceErrorBoundary] Voice panel crashed:', err)
   }
   render() {
     if (this.state.crashed) {

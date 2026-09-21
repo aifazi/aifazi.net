@@ -3,6 +3,7 @@ routers/network.py — Network utilities (Ping, Traceroute, DNS Lookup)
 Proves networking expertise via live backend tools.
 """
 import asyncio
+import logging
 import platform
 import socket
 
@@ -12,6 +13,8 @@ from dependencies import require_staff
 from utils.ssrf import resolve_public_ips
 
 router = APIRouter()
+
+log = logging.getLogger("network")
 
 def _validate_host(host: str):
     """Sanitize + reject hosts that resolve into private/loopback/metadata space
@@ -50,7 +53,8 @@ async def ping(host: str = Query(..., min_length=1), _: dict = Depends(require_s
     except HTTPException:
         raise
     except Exception as e:
-        return {"error": str(e), "status": "error"}
+        log.exception("ping failed for %s", clean_host)
+        return {"error": "Internal error", "status": "error"}
 
 @router.get("/dns")
 async def dns_lookup(host: str = Query(..., min_length=1), _: dict = Depends(require_staff)):
@@ -67,7 +71,8 @@ async def dns_lookup(host: str = Query(..., min_length=1), _: dict = Depends(req
     except HTTPException:
         raise
     except Exception as e:
-        return {"error": str(e), "status": "error"}
+        log.exception("dns lookup failed for %s", clean_host)
+        return {"error": "Internal error", "status": "error"}
 
 @router.get("/whois")
 async def whois(host: str = Query(..., min_length=1), _: dict = Depends(require_staff)):

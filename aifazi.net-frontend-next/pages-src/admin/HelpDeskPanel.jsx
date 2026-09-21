@@ -241,8 +241,15 @@ function HelpDeskSettings() {
       const next = { ...prev }
       const keys = path.split('.')
       let obj = next
-      for (let i = 0; i < keys.length - 1; i++) obj = obj[keys[i]] || (obj[keys[i]] = {})
-      obj[keys[keys.length - 1]] = value
+      for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i]
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') return next
+        if (typeof obj !== 'object' || obj === null) return next
+        obj = obj[key] || (obj[key] = {})
+      }
+      const last = keys[keys.length - 1]
+      if (last === '__proto__' || last === 'constructor' || last === 'prototype') return next
+      obj[last] = value
       return next
     })
   }

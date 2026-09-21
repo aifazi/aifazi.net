@@ -8,6 +8,11 @@ on:
   push:
     branches:
       - main
+  # Nightly backstop: pushes to main made by GITHUB_TOKEN automations
+  # (e.g. owner-automerge) do NOT trigger `push` workflows, so without
+  # this the prune would silently stop running on bot-merged days.
+  schedule:
+    - cron: "17 2 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -121,3 +126,28 @@ jobs:
               echo "::warning::GitHub record delete failed: $ID"
             echo "[$ENV] deleted record $ID"
           done < /tmp/envs.tsv
+
+      - name: Prune stale PR preview environments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Per-PR Vercel environments (e.g. "aifazi / aifazi.net-pr-115") get
+          # one record each, so the keep-3 rule above never trims them. Delete
+          # records in *-pr-* environments older than 7 days (active PR
+          # previews are always newer).
+          CUTOFF=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          gh api "repos/${GITHUB_REPO}/deployments" --paginate \
+            -q '.[] | [.id,.environment,.created_at] | @tsv' > /tmp/all.tsv
+          awk -F'\t' -v cutoff="$CUTOFF" '$2 ~ /-pr-[0-9]+/ && $3 < cutoff { print $1 }' /tmp/all.tsv > /tmp/stale.txt || true
+          if [ ! -s /tmp/stale.txt ]; then
+            echo "No stale PR preview records."
+            exit 0
+          fi
+          while read -r ID; do
+            gh api -X POST "repos/${GITHUB_REPO}/deployments/${ID}/statuses" -f state=inactive >/dev/null || true
+            gh api -X DELETE "repos/${GITHUB_REPO}/deployments/${ID}" >/dev/null || \
+              echo "::warning::GitHub record delete failed: $ID"
+            echo "deleted stale PR record $ID"
+          done < /tmp/stale.txt

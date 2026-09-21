@@ -365,7 +365,7 @@ def _queue_chat_message_notifications_sync(room: dict, room_id: str, sender: dic
     # Native push: fan out to every recipient's registered devices (best-effort,
     # never blocks the request). The data payload carries the room id so the app
     # can deep-link straight into the room on tap.
-    push_user_ids = [row.get("id") for row in recipients.values() if row.get("id")]
+    push_user_ids = [str(row.get("id")) for row in recipients.values() if row.get("id")]
     if push_user_ids:
         try:
             _send_push_sync(
@@ -847,7 +847,7 @@ async def send_message(
             "content": str(body.reply_to.get("content", ""))[:200],
         }
 
-    _check_send_throttle(user, room)
+    await _check_send_throttle(user, room)
 
     res = supabase.table("chat_messages").insert({
         "room_id":    room_id,

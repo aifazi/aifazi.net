@@ -63,7 +63,7 @@ async def subscribe(body: SubBody):
             "confirm_url": confirm_url,
         })
         from utils.email_queue import queue_email
-        queue_email(body.email, subject or "Confirm your subscription", html or f"<p>Click to confirm: <a href='{confirm_url}'>Confirm</a></p>", "newsletter_confirm")
+        await queue_email(body.email, subject or "Confirm your subscription", html or f"<p>Click to confirm: <a href='{confirm_url}'>Confirm</a></p>", "newsletter_confirm")
     except Exception:
         pass  # Don't leak whether email sending failed
     return {"message": "Confirmation email sent. Check your inbox."}

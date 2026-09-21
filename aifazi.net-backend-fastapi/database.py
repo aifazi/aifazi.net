@@ -9,7 +9,7 @@ import re
 import httpx
 from dotenv import load_dotenv
 
-from supabase import Client, create_client
+from supabase import Client, create_client  # type: ignore
 
 load_dotenv()
 

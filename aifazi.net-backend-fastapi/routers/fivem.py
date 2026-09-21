@@ -95,7 +95,8 @@ def _effective_whitelist_status(app: dict | None) -> dict | None:
 
 
 def _player_identifiers(player: dict) -> dict[str, Any]:
-    identifiers = player.get("identifiers") if isinstance(player.get("identifiers"), list) else []
+    raw_ids = player.get("identifiers")
+    identifiers = list(raw_ids) if isinstance(raw_ids, list) else []
     out: dict[str, Any] = {"all": []}
 
     for raw in identifiers:
@@ -2522,7 +2523,7 @@ async def bulk_approve_whitelist(
         body.priority_tier, body.priority_level, body.priority_expires_at,
     )
     now_iso = _now()
-    results = {"approved": 0, "errors": []}
+    results: dict[str, Any] = {"approved": 0, "errors": []}
 
     apps_res = (
         supabase.table("fivem_whitelist").select("*")

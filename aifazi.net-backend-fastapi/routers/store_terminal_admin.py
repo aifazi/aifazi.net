@@ -141,7 +141,7 @@ async def terminal_readers(location: str | None = None, _: dict = Depends(POS)):
     if not STRIPE_SECRET_KEY:
         return []
     try:
-        kw = {"limit": 50}
+        kw: dict[str, int | str] = {"limit": 50}
         if location:
             kw["location"] = location
         return [r.to_dict() for r in _stripe().terminal.Reader.list(**kw)]

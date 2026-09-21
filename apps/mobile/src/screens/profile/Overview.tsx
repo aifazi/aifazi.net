@@ -119,6 +119,7 @@ export function OverviewTab({ goEdit }: { goEdit: () => void }) {
 
         <View style={{ marginTop: SPACE.xxl, gap: SPACE.lg }}>
           <Btn title="VPN" variant="ghost" onPress={() => router.push('/vpn' as Href)} />
+          <Btn title="Calendar" variant="ghost" onPress={() => router.push('/calendar' as Href)} />
           <Btn title="My chat" variant="ghost" onPress={() => router.push('/chat')} />
           <Btn title="Log out" variant="danger" onPress={logOut} />
         </View>

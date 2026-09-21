@@ -83,7 +83,7 @@ async def list_customers(search: str = "", limit: int = 100, _: dict = Depends(C
             "paid_orders_count": len(paid),
             "spent_cents": spent,
             "spent": spent / 100,
-            "last_order_at": max((o.get("created_at") for o in orders), default=None),
+            "last_order_at": max((o.get("created_at") for o in orders if o.get("created_at")), default=None),  # type: ignore[type-var]
         })
     return out
 

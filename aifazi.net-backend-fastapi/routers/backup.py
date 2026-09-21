@@ -9,6 +9,7 @@
 """
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -260,8 +261,8 @@ def _fetch_all_rows(table: str, page_size: int = 1000, max_rows: int = 200000) -
 
 @router.get("")
 async def backup(request: Request, user: dict = Depends(require_admin)):
-    data = {}
-    errors = {}
+    data: dict[str, Any] = {}
+    errors: dict[str, str] = {}
     tables = _discover_tables()
     for table in tables:
         try:

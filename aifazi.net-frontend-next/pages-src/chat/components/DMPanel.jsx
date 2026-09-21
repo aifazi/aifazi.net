@@ -15,7 +15,7 @@ import { Markdown } from './Markdown'
 import { MediaPreviews } from './MediaPreview'
 import { MediaViewer } from './MediaViewer'
 import { DMCallBar } from './DMCallBar'
-import { dmLiveKitInvitePath, parseCallInvite, normalizeTypingActivity, typingSummary } from '@fazi/shared'
+import { parseCallInvite, normalizeTypingActivity, typingSummary } from '@fazi/shared'
 
 const LIST_POLL = 15000
 const MSG_POLL = 4000
@@ -179,11 +179,9 @@ export default function DMPanel({ me, onClose }) {
     try { await api.patch(`/chat/dm/messages/${id}`, { content: encrypted }); setEditing(null); loadMsgs(threadId) } catch {}
   }
 
-  // ── DM call: ring the peer (call message + push) and open the call bar ───
+  // ── DM call: redirect to Nextcloud Talk ─────────────────────────────────
   const startCall = async () => {
-    if (!threadId) return
-    api.post(dmLiveKitInvitePath(threadId)).catch(() => {})
-    setInCall(true)
+    window.open(process.env.NEXT_PUBLIC_TALK_URL || 'https://nextcloud.aifazi.net/apps/spreed', '_blank')
   }
 
   const parseCall = (m) => parseCallInvite(m.content)

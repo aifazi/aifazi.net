@@ -53,7 +53,7 @@ def resolve_public_ips(host: str) -> list[str]:
             continue
         if is_blocked_ip(ip_obj):
             return []
-        out.append(info[4][0])
+        out.append(str(info[4][0]))
     return out
 
 

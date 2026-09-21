@@ -111,15 +111,27 @@ function cssScalar(value) {
 }
 
 function sanitizeThemeCss(css) {
-  return String(css || '')
-    .replace(/<\/style/gi, '')
-    .replace(/<!--/g, '')
-    .replace(/javascript\s*:/gi, '')
-    .replace(/vbscript\s*:/gi, '')
-    .replace(/expression\s*\(/gi, '')
-    .replace(/-moz-binding/gi, '')
-    .replace(/behaviou?r\s*:/gi, '')
-    .slice(0, 50000)
+  // Fixpoint loop (CodeQL js/incomplete-multi-character-sanitization): a single
+  // pass can create new `<!--` / `</style` matches from fragments (e.g.
+  // `<!<!--->` → `<!-->`), so repeat until stable. Replacements only delete
+  // characters, so the loop always terminates.
+  let out = String(css || '')
+  let prev = null
+  while (prev !== out) {
+    prev = out
+    out = out
+      .replace(/<\/style/gi, '')
+      // Break (don't delete) the comment opener: deleting `<!--` can fuse
+      // neighboring fragments into a fresh `<!--`; `<! --` can never match it.
+      .replace(/<!--/g, '<! --')
+      .replace(/--!?>/g, '')
+      .replace(/javascript\s*:/gi, '')
+      .replace(/vbscript\s*:/gi, '')
+      .replace(/expression\s*\(/gi, '')
+      .replace(/-moz-binding/gi, '')
+      .replace(/behaviou?r\s*:/gi, '')
+  }
+  return out.slice(0, 50000)
 }
 
 // ── Uploaded font helpers ─────────────────────────────────────────────────────

@@ -701,11 +701,28 @@ export default function BlogPost({ initialPost }) {
   })
   // Only allow youtube/vimeo embeds — strip any other iframe src (e.g. https://evil.com, javascript:).
   // The src match is quote-tolerant: unquoted and missing src are treated as untrusted (removed).
-  const sanitizedContent = _rawSanitized.replace(/<iframe\b[^>]*>/gi, (m) => {
-    const srcMatch = m.match(/\ssrc\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/i)
+  // Quote-aware + fixpoint (CodeQL js/incomplete-multi-character-sanitization):
+  // `[^>]*` would end the tag early on a `>` inside a quoted attr and a single
+  // pass can leave `<iframe` behind via overlapping constructs, so repeat to
+  // stability. Closing tags carry no attrs and are harmless alone; drop them
+  // only when no allowlisted opener remains so legitimate embeds keep theirs.
+  const IFRAME_SRC_ALLOW = /^(https:\/\/(www\.youtube\.com|www\.youtube-nocookie\.com|player\.vimeo\.com)\/embed\/)/
+  const isAllowedIframeOpen = (m) => {
+    const srcMatch = m.match(/\ssrc\s*=\s*("[^"]*"|'[^']*'|[^\s>"']+)/i)
     const src = (srcMatch?.[1] || '').replace(/^["']|["']$/g, '')
-    return /^(https:\/\/(www\.youtube\.com|www\.youtube-nocookie\.com|player\.vimeo\.com)\/embed\/)/.test(src) ? m : ''
-  })
+    return IFRAME_SRC_ALLOW.test(src)
+  }
+  let sanitizedContent = _rawSanitized
+  for (let i = 0; i < 10; i++) {
+    const next = sanitizedContent.replace(/<iframe\b(?:(?:"[^"]*"|'[^']*'|[^>"'])*)>/gi, (m) =>
+      (isAllowedIframeOpen(m) ? m : '')
+    )
+    if (next === sanitizedContent) break
+    sanitizedContent = next
+  }
+  if (!/<iframe\b/i.test(sanitizedContent)) {
+    sanitizedContent = sanitizedContent.replace(/<\/iframe\s*>/gi, '')
+  }
 
   return (
     <div className="page-container" style={{ position: 'relative', zIndex: 1 }}>

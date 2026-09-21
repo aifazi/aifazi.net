@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import secrets
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
@@ -245,7 +246,7 @@ async def admin_products(_: dict = Depends(CATALOG)):
     out = []
     for p in rows:
         payload = _product_payload(p)
-        payload["variant_count"] = vcount.get(p.get("id"), 0)
+        payload["variant_count"] = vcount.get(str(p.get("id") or ""), 0)
         out.append(payload)
     return out
 
@@ -340,7 +341,7 @@ async def admin_orders(status: str | None = None, _: dict = Depends(ORDERS)):
     res = q.execute()
     orders = res.data or []
     # Batch item fetch — ONE round-trip instead of one per order.
-    item_rows = {}
+    item_rows: dict[str, list[dict[str, Any]]] = {}
     if orders:
         ids = [o["id"] for o in orders]
         items = (supabase.table("store_order_items")
