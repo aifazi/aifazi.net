@@ -5,6 +5,23 @@ import { Checkbox, Select } from '../../core/ui.jsx'
 import { S, useIsMobile, PageHeader } from './shared'
 import { SITE_URL } from '@/lib/config'
 
+function isBrevoRelayAddress(value) {
+  if (typeof value !== 'string') return false
+  const raw = value.trim()
+  if (!raw) return false
+  const at = raw.lastIndexOf('@')
+  if (at >= 0) {
+    const domain = raw.slice(at + 1).toLowerCase()
+    return domain === 'smtp-brevo.com' || domain.endsWith('.smtp-brevo.com')
+  }
+  try {
+    const host = new URL(raw.includes('://') ? raw : `https://${raw}`).hostname.toLowerCase()
+    return host === 'smtp-brevo.com' || host.endsWith('.smtp-brevo.com')
+  } catch {
+    return false
+  }
+}
+
 function MailSettings() {
   const [cfg, setCfg]               = useState(null)
   const [loading, setLoading]       = useState(true)
@@ -323,13 +340,13 @@ function MailSettings() {
                     <label style={T.label}>From Email <span style={{ color: '#ff4757' }}>*</span></label>
                     <input type="email" value={cfg.brevoFromEmail || ''} onChange={e => set('brevoFromEmail', e.target.value)}
                       placeholder="noreply@yourdomain.com"
-                      style={{ ...T.inp, borderColor: cfg.brevoFromEmail?.includes('smtp-brevo.com') ? '#ff4757' : undefined }} />
-                    {cfg.brevoFromEmail?.includes('smtp-brevo.com') && (
+                      style={{ ...T.inp, borderColor: isBrevoRelayAddress(cfg.brevoFromEmail) ? '#ff4757' : undefined }} />
+                    {isBrevoRelayAddress(cfg.brevoFromEmail) && (
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', marginTop: 5, lineHeight: 1.5 }}>
                         ? This is a Brevo relay address, not a sender. Use your real email e.g. noreply@yourdomain.com or your own Gmail.
                       </div>
                     )}
-                    {!cfg.brevoFromEmail?.includes('smtp-brevo.com') && (
+                    {!isBrevoRelayAddress(cfg.brevoFromEmail) && (
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Must be verified in Brevo ? Senders &amp; Domains</div>
                     )}
                   </div>

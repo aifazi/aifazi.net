@@ -14,6 +14,7 @@ import re
 import secrets
 import urllib.parse as _urlparse
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import bcrypt as _bcrypt
 import pyotp
@@ -262,7 +263,7 @@ _RECOVERY_CODE_COUNT = 8
 _RECOVERY_CODE_RE = re.compile(r"^[A-Z2-7]{12}$")
 
 def _gen_recovery_codes(n: int = _RECOVERY_CODE_COUNT) -> list[str]:
-    out = []
+    out: list[str] = []
     while len(out) < n:
         code = "".join(secrets.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567") for _ in range(12))
         fmt = f"{code[:4]}-{code[4:8]}-{code[8:]}"
@@ -995,7 +996,7 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
         refresh_accepted = _hmac.compare_digest(stored, token_str)
         if not refresh_accepted and previous:
             refresh_accepted = _hmac.compare_digest(previous, token_str)
-            age_s = _REFRESH_ROTATION_GRACE + 1
+            age_s: float = _REFRESH_ROTATION_GRACE + 1
             if rotated_at:
                 try:
                     age_s = (datetime.now(timezone.utc) - datetime.fromisoformat(str(rotated_at))).total_seconds()
@@ -1035,7 +1036,7 @@ async def logout(request: Request, response: Response):
         user = _paseto_decode_token(token_str, purpose="auth") if token_str else {}
     except Exception:
         user = {}
-    if user.get("id"):
+    if user and user.get("id"):
         supabase.table("users").update({
             "refresh_token": None,
             "previous_refresh_token": None,
@@ -1269,7 +1270,7 @@ async def update_self(body: AdminSelfUpdateBody, request: Request, user: dict = 
     if getattr(body, "newUsername", None):
         if not body.currentPassword or not _check_admin_password(body.currentPassword):
             raise HTTPException(400, "Current password incorrect")
-        new_uname = body.newUsername.strip()
+        new_uname = str(body.newUsername or "").strip()
         if len(new_uname) < 3:
             raise HTTPException(400, "Username must be at least 3 characters")
         # Env-based admin login/display username is controlled by ADMIN_USERNAME.
@@ -1339,7 +1340,8 @@ async def list_sessions(request: Request, user: dict = Depends(get_current_user)
             s["current"] = (s.get("ip") == client_ip and s.get("user_agent") == ua)
         return {"sessions": sessions, "total": len(sessions)}
     except Exception as exc:
-        return {"sessions": [], "total": 0, "error": str(exc)}
+        log.exception("list_sessions failed for %s", username)
+        return {"sessions": [], "total": 0, "error": "Internal error"}
 
 
 @router.post("/sessions/heartbeat")
@@ -1391,7 +1393,8 @@ async def session_heartbeat(request: Request, user: dict = Depends(get_current_u
             "others": [{"ip": s["ip"], "last_active": s["last_active"]} for s in active_others],
         }
     except Exception as exc:
-        return {"ok": False, "error": str(exc)}
+        log.exception("session_heartbeat failed for %s", username)
+        return {"ok": False, "error": "Internal error"}
 
 
 @router.delete("/sessions/{session_id}")
@@ -1422,7 +1425,7 @@ async def revoke_all_other_sessions(request: Request, user: dict = Depends(get_c
                  if not (s.get("ip") == client_ip and s.get("user_agent") == ua)]
     if to_delete:
         supabase.table("admin_sessions").delete().in_("id", to_delete).execute()
-    _audit(username, "sessions_revoke_all", details={"count": len(to_delete)})
+    _audit(username or "", "sessions_revoke_all", details={"count": len(to_delete)})
     return {"revoked": len(to_delete)}
 
 # ── 2FA routes ─────────────────────────────────────────────────────────────────
@@ -1471,7 +1474,7 @@ async def tfa_enable(body: TwoFAEnableBody, user: dict = Depends(get_current_use
             raise HTTPException(400, "Invalid code")
         supabase.table("users").update({"totp_enabled": True}).eq("id", user["id"]).execute()
         recovery = _rotate_recovery_codes("user", user["id"])
-    _audit(user.get("username"), "2fa_enabled")
+    _audit(user.get("username") or "", "2fa_enabled")
     return {"enabled": True, "recovery_codes": recovery}
 
 # Alias: frontend calls /2fa/confirm → same logic as /2fa/enable
@@ -1486,7 +1489,7 @@ async def tfa_disable(body: TwoFADisableBody, user: dict = Depends(get_current_u
             raise HTTPException(400, "Invalid password")
         row = _get_admin_2fa()
         if row and row.get("enabled") and row.get("totp_secret"):
-            if not _verify_2fa_entry("admin", "", row["totp_secret"], body.code):
+            if not _verify_2fa_entry("admin", "", row["totp_secret"], body.code or ""):
                 raise HTTPException(400, "Invalid 2FA code")
         _upsert_admin_2fa({"enabled": False, "totp_secret": None, "recovery_codes": None})
     else:
@@ -1499,12 +1502,12 @@ async def tfa_disable(body: TwoFADisableBody, user: dict = Depends(get_current_u
         if not _verify(body.password, s["password_hash"]):
             raise HTTPException(400, "Invalid password")
         if s.get("totp_enabled") and s.get("totp_secret"):
-            if not _verify_2fa_entry("user", user["id"], s["totp_secret"], body.code):
+            if not _verify_2fa_entry("user", user["id"], s["totp_secret"], body.code or ""):
                 raise HTTPException(400, "Invalid 2FA code")
         supabase.table("users").update(
             {"totp_enabled": False, "totp_secret": None, "recovery_codes": None}
         ).eq("id", user["id"]).execute()
-    _audit(user.get("username"), "2fa_disabled")
+    _audit(user.get("username") or "", "2fa_disabled")
     return {"enabled": False}
 
 class RecoveryCodesBody(BaseModel):
@@ -1533,11 +1536,11 @@ async def tfa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get_c
         if not _verify(body.password, s["password_hash"]):
             raise HTTPException(400, "Invalid password")
         if s.get("totp_enabled") and s.get("totp_secret"):
-            if not _verify_2fa_entry("user", user["id"], s["totp_secret"], body.code):
+            if not _verify_2fa_entry("user", user["id"], s["totp_secret"], body.code or ""):
                 raise HTTPException(400, "Invalid 2FA code")
     codes = _rotate_recovery_codes("admin" if user.get("role") == "admin" else "user",
                                    "" if user.get("role") == "admin" else user["id"])
-    _audit(user.get("username"), "2fa_recovery_codes_rotated")
+    _audit(user.get("username") or "", "2fa_recovery_codes_rotated")
     return {"recovery_codes": codes}
 
 # 2FA brute-force lockout (distributed via Redis, in-memory fallback)
@@ -1564,7 +1567,7 @@ async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response
         raise HTTPException(400, "Not a 2FA challenge token")
     username = payload.get("username") or "unknown"
     role     = payload.get("role")
-    user_id  = payload.get("id")
+    user_id  = str(payload.get("id") or "")
     ip = request.client.host if request.client else ""
     if await _2fa_locked(username, ip):
         raise HTTPException(429, "Too many failed 2FA attempts. Try again later.")
@@ -1637,7 +1640,8 @@ async def config_check(request: Request, _=Depends(require_admin)):
         test_hash = _bcrypt.hashpw(b"test", _bcrypt.gensalt())
         bcrypt_ok = _bcrypt.checkpw(b"test", test_hash)
     except Exception as exc:
-        bcrypt_error = str(exc)
+        log.exception("config_check bcrypt probe failed")
+        bcrypt_error = "Internal error"
 
     return {
         "admin_password_is_set": bool(pw),
@@ -1656,8 +1660,16 @@ async def check_username(username: str):
     taken = bool(_username_owner(username))
     if not taken:
         return {"available": True, "suggestion": None}
-    import re as _re
-    base = _re.sub(r"\d+$", "", username)[:28]
+    # Linear-time trailing-digit strip (no regex — py/polynomial-redos clean):
+    # walk back over ASCII digits once, O(n). Equivalent to
+    # `re.sub(r"\d+$", "", username[:100])[:28]` for the ASCII usernames this
+    # endpoint accepts; capping at 100 is semantics-preserving here since the
+    # result is sliced to 28 chars and only a trailing digit-run is stripped.
+    _capped = username[:100]
+    _end = len(_capped)
+    while _end > 0 and "0" <= _capped[_end - 1] <= "9":
+        _end -= 1
+    base = _capped[:_end][:28]
     for n in range(1, 100):
         candidate = f"{base}{n}"
         if not _find_user_by_ci("username", candidate, "id,username"):
@@ -1859,7 +1871,7 @@ async def update_profile(body: ProfileBody, creds: HTTPAuthorizationCredentials 
     access = resolve_staff_access(payload)
     if access and access.get("role") == "admin" and not user_id:
         admin_name = os.getenv("ADMIN_USERNAME", "admin")
-        patch = {"profile_bio": (body.bio or "").strip()[:1000], "profile_avatar": (body.avatar or "").strip()[:500], "updated_at": datetime.now(timezone.utc).isoformat()}
+        patch: dict[str, Any] = {"profile_bio": (body.bio or "").strip()[:1000], "profile_avatar": (body.avatar or "").strip()[:500], "updated_at": datetime.now(timezone.utc).isoformat()}
         if body.email is not None:
             email = _normalized_email(str(body.email))
             current = supabase.table("admin_2fa").select("email,email_verified").eq("username", admin_name).limit(1).execute()
@@ -2205,7 +2217,7 @@ async def discord_connect_url(dest: str = "/profile", creds: HTTPAuthorizationCr
     return {"url": _discord_oauth_url(state)}
 
 @router.get("/discord/callback")
-async def discord_callback(code: str = None, state: str = None, error: str = None):
+async def discord_callback(code: str | None = None, state: str | None = None, error: str | None = None):
     _d = _discord_cfg()
     _DISCORD_CLIENT_ID = _d.get("client_id") or ""
     _DISCORD_CLIENT_SECRET = _d.get("client_secret") or ""
@@ -2228,7 +2240,7 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
         # C2 — verify the signed state token. Fail closed on any mismatch (login-CSRF).
         try:
             _st = verify_oauth_state_full(state_value, "discord")
-            dest = _st["dest"]
+            dest = str(_st.get("dest", dest))
         except ValueError:
             front = SITE_URL
             return _Redir(f"{front}/login?discord_error=state")
@@ -2268,17 +2280,17 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     except Exception:
         return _Redir(f"{front}{m_login}?discord_error=3")
     try:
-        if mode == "connect":
+        if mode == "connect" and link_payload:
             current_user_id = link_payload["id"]
             if _active_identity_locked(current_user_id):
-                safe_dest = dest if str(dest).startswith("/") else "/profile"
+                safe_dest = _safe_relative_path(dest, default="/profile")
                 sep = "&" if "?" in safe_dest else "?"
-                return _Redir(f"{front}{safe_dest}{sep}discord_error=identity_locked")
+                return _Redir(front + safe_dest + sep + "discord_error=identity_locked")
             ex = supabase.table("users").select("id,username").eq("discord_id", discord_id).execute()
             if ex.data and ex.data[0]["id"] != current_user_id:
-                safe_dest = dest if str(dest).startswith("/") else "/profile"
+                safe_dest = _safe_relative_path(dest, default="/profile")
                 sep = "&" if "?" in safe_dest else "?"
-                return _Redir(f"{front}{safe_dest}{sep}discord_error=duplicate")
+                return _Redir(front + safe_dest + sep + "discord_error=duplicate")
             row = supabase.table("users").select("*").eq("id", current_user_id).execute()
             if not row.data:
                 return _Redir(f"{front}/login?discord_error=missing")
@@ -2305,9 +2317,9 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
                         # a Discord account using that (unclaimed/bouncing) address
                         # could otherwise hijack the victim's forum account.
                         log.warning("discord callback: refusing email-match link to unverified account for %s", discord_email)
-                        safe_dest = dest if str(dest).startswith("/") else "/profile"
+                        safe_dest = _safe_relative_path(dest, default="/profile")
                         sep = "&" if "?" in safe_dest else "?"
-                        return _Redir(f"{front}{safe_dest}{sep}discord_error=email_unverified")
+                        return _Redir(front + safe_dest + sep + "discord_error=email_unverified")
                     if user:
                         _ensure_identity_available("discord_id", discord_id, user["id"], "Discord account")
                         supabase.table("users").update({
@@ -2347,10 +2359,10 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
         return _Redir(f"{front}{m_login}?discord_error=banned")
     if mode != "connect" and user.get("totp_enabled") and user.get("totp_secret"):
         partial = make_forum_2fa_token(user["id"], user["username"], user.get("role", "user"), "discord")
-        safe_dest = _urlparse.quote(dest, safe="/")
+        safe_dest = _urlparse.quote(_safe_relative_path(dest, default="/profile"), safe="/")
         safe_user = _urlparse.quote(user.get("username") or "")
         safe_partial = _urlparse.quote(partial, safe="")
-        return _Redir(f"{front}{m_login}#twofa=forum&partial_token={safe_partial}&username={safe_user}&next={safe_dest}")
+        return _Redir(front + m_login + "#twofa=forum&partial_token=" + safe_partial + "&username=" + safe_user + "&next=" + safe_dest)
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
     refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
     try:
@@ -2360,17 +2372,17 @@ async def discord_callback(code: str = None, state: str = None, error: str = Non
     except Exception:
         pass
     _record_user_activity(user["id"], user["username"], "discord_connect" if mode == "connect" else "discord_login", f"discord_id={discord_id}")
-    safe_dest = _urlparse.quote(dest, safe="/")
+    safe_dest = _urlparse.quote(_safe_relative_path(dest, default="/profile"), safe="/")
     if _st.get("mobile"):
         # App deep link: deliver the refresh token in the fragment (the app has no
         # cookie jar), skip HttpOnly cookies, and let the app store both tokens.
-        return _Redir(f"{front}#token={token}&refresh={refresh}&dest={safe_dest}")
+        return _Redir(front + "#token=" + token + "&refresh=" + refresh + "&dest=" + safe_dest)
     # M9 — deliver the token as a URL hash fragment, NOT a query param, so it
     # never lands in server logs or Referer headers. The frontend callback
     # (DiscordAuthCallback.jsx) already reads the fragment first.
     # H4 — also set HttpOnly auth cookies so the session survives without
     # localStorage; the fragment token stays as a legacy fallback.
-    resp = _Redir(f"{front}/auth/discord-callback#token={token}&dest={safe_dest}")
+    resp = _Redir(front + "/auth/discord-callback#token=" + token + "&dest=" + safe_dest)
     _set_auth_cookies(resp, token, refresh)
     return resp
 

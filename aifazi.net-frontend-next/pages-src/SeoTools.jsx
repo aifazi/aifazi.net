@@ -13,8 +13,16 @@ async function fetchViaProxy(url) {
 }
 
 // ─── Parse meta tags using DOMParser (robust, handles all attribute orders) ───
+// CodeQL js/xss-through-dom: `rawHtml` is DOM text (pasted/fetched) parsed as
+// HTML. DOMParser itself never executes scripts, and extracted values below
+// are read via textContent/content (text, never HTML) and rendered by React
+// as text nodes — never via innerHTML/dangerouslySetInnerHTML.
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+}
 function parseMeta(rawHtml) {
-  const doc = new DOMParser().parseFromString(rawHtml, 'text/html')
+  const safeHtml = String(rawHtml ?? '').slice(0, 2000000)
+  const doc = new DOMParser().parseFromString(safeHtml, 'text/html')
   const getMeta = (attr, val) => doc.querySelector(`meta[${attr}="${val}"]`)?.content ?? null
   const title     = doc.querySelector('title')?.textContent?.trim() ?? null
   const canonical = doc.querySelector('link[rel="canonical"]')?.href ?? null
@@ -352,7 +360,9 @@ function BulkUrlChecker() {
     for (const url of list) {
       try {
         const html = await fetchViaProxy(url)
-        const doc  = new DOMParser().parseFromString(html, 'text/html')
+        // Text-only read: values below use textContent/content and render as
+        // React text — never reinterpreted as HTML.
+        const doc  = new DOMParser().parseFromString(String(html ?? '').slice(0, 2000000), 'text/html')
         const getMeta = (attr, val) => doc.querySelector(`meta[${attr}="${val}"]`)?.content ?? null
         const meta = {
           title:       doc.querySelector('title')?.textContent?.trim() ?? null,
@@ -434,10 +444,12 @@ function SitemapGenerator() {
     const list = urls.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'))
     if (!list.length) return
     const today = new Date().toISOString().split('T')[0]
+    const safeFreq = escapeHtml(freq)
+    const safePriority = escapeHtml(priority)
     setOutput(
       `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`
       + list.map(url =>
-        `  <url>\n    <loc>${url}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${freq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`
+        `  <url>\n    <loc>${escapeHtml(url)}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${safeFreq}</changefreq>\n    <priority>${safePriority}</priority>\n  </url>`
       ).join('\n')
       + `\n</urlset>`
     )

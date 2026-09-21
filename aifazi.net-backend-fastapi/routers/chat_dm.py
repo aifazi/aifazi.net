@@ -26,12 +26,6 @@ from pydantic import BaseModel
 from database import safe_search_term, _escape_ilike, supabase
 from dependencies import get_current_user
 from routers.chat import _EMOJI_RE
-from routers.chat_livekit import (
-    LIVEKIT_KEY,
-    LIVEKIT_SECRET,
-    LIVEKIT_URL,
-    _generate_token,
-)
 from utils.link_safety import schedule_scan
 from routers.push import send_push
 
@@ -298,7 +292,7 @@ async def list_threads(user: dict = Depends(get_current_user)):
         p = supabase.table("users").select("username,avatar,role,last_seen").in_("username", peers).execute()
         peer_meta: dict[str, dict] = {}
         for u in (p.data or []):
-            meta[u["username"]] = u
+            peer_meta[u["username"]] = u
         for t in out:
             meta = peer_meta.get(t["peer"], {})
             t["peer_avatar"] = meta.get("avatar") or ""
@@ -342,105 +336,6 @@ async def dm_encryption_key(thread_id: str, user: dict = Depends(get_current_use
         "thread_id": thread["id"],
         "encryption_key": thread.get("encryption_key") or "",
     }
-
-
-# ── DM voice/video calls (LiveKit) ─────────────────────────────────────────────
-# A DM call is a LiveKit room keyed by the thread id, encrypted with the same
-# AES-256 key that protects the thread's text messages. Only the two parties
-# can mint a token (see _get_thread), and blocked pairs can't call.
-
-@router.get("/dm/threads/{thread_id}/livekit/token")
-async def dm_livekit_token(thread_id: str, user: dict = Depends(get_current_user)):
-    """Mint a LiveKit token for a 1:1 DM call between the thread's two parties."""
-    if not LIVEKIT_URL or not LIVEKIT_KEY or not LIVEKIT_SECRET:
-        raise HTTPException(503, "LiveKit env vars not set: LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET")
-    thread = _get_thread(thread_id, user)
-    peer = _peer_of(thread, user)
-    if _blocked_by(user["username"], peer) or _blocked_by(peer, user["username"]):
-        raise HTTPException(403, "Direct messages are not available with this user")
-
-    username = (user.get("username") or "unknown")
-    role = (user.get("role") or "user")
-    livekit_room = f"dm-{thread_id}"
-    encryption_key = thread.get("encryption_key") or ""
-    if not encryption_key:
-        key = base64.b64encode(secrets.token_bytes(32)).decode()
-        encryption_key = key
-        try:
-            supabase.table("dm_threads").update({"encryption_key": key}).eq("id", thread_id).execute()
-        except Exception:
-            pass
-    token = _generate_token(
-        identity=username,
-        room_id=livekit_room,
-        can_publish=True,
-        can_subscribe=True,
-        can_screen_share=role in ("admin", "moderator"),
-        metadata=json.dumps({"username": username, "role": role, "dm_thread": thread_id}),
-        e2ee_key=encryption_key,
-    )
-    return {
-        "token": token,
-        "url": LIVEKIT_URL,
-        "can_publish": True,
-        "can_screen_share": role in ("admin", "moderator"),
-        "identity": username,
-        "username": username,
-        "role": role,
-        "room": livekit_room,
-        "thread_id": thread_id,
-        "peer": peer,
-        "encryption_key": encryption_key,
-    }
-
-
-@router.get("/dm/livekit/status")
-async def dm_livekit_status(_: dict = Depends(get_current_user)):
-    return {
-        "available": bool(LIVEKIT_URL and LIVEKIT_KEY and LIVEKIT_SECRET),
-        "configured": bool(LIVEKIT_URL),
-    }
-
-
-@router.post("/dm/threads/{thread_id}/livekit/invite")
-async def dm_livekit_invite(thread_id: str, user: dict = Depends(get_current_user)):
-    """Ring the DM peer: insert a `call` message into the thread and push a
-    notification so they can join the LiveKit DM room. The joining client mints
-    its own token via /dm/threads/{thread_id}/livekit/token on Accept."""
-    if not LIVEKIT_URL or not LIVEKIT_KEY or not LIVEKIT_SECRET:
-        raise HTTPException(503, "LiveKit env vars not set: LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET")
-    thread = _get_thread(thread_id, user)
-    peer = _peer_of(thread, user)
-    if _blocked_by(user["username"], peer) or _blocked_by(peer, user["username"]):
-        raise HTTPException(403, "Direct messages are not available with this user")
-
-    content = json.dumps({"video": False, "caller": (user.get("username") or ""), "at": _now()}, ensure_ascii=False)
-    row = (
-        supabase.table("dm_messages")
-        .insert({
-            "thread_id": thread_id,
-            "sender": user["username"],
-            "content": content[:4000],
-            "type": "call",
-        })
-        .execute()
-    )
-    _bump_thread(thread_id)
-    # Best-effort push to the peer so their phone rings even when the app is
-    # backgrounded. Never breaks the invite path.
-    try:
-        peer_rec = _get_user(peer)
-        peer_uid = str(peer_rec.get("id") or "")
-        if peer_uid:
-            await send_push(
-                [peer_uid],
-                f"Incoming call from {user['username']}",
-                "Tap to join the call",
-                {"call": True, "mode": "dm", "thread_id": thread_id, "peer": user["username"]},
-            )
-    except Exception:
-        pass
-    return row.data[0]
 
 
 # ── DM requests + blocks ──────────────────────────────────────────────────────

@@ -584,9 +584,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         supabase_host = os.getenv("NEXT_PUBLIC_SUPABASE_URL", "").removeprefix("https://").split("/")[0]
         supabase_ws   = f"wss://{supabase_host}" if supabase_host else ""
         supabase_https= f"https://{supabase_host}" if supabase_host else ""
-        livekit_host  = os.getenv("NEXT_PUBLIC_LIVEKIT_URL", "").removeprefix("wss://").split("/")[0]
-        livekit_ws    = f"wss://{livekit_host}" if livekit_host else ""
-        livekit_https = f"https://{livekit_host}" if livekit_host else ""
+
         sentry_dsn_host = ""
         _dsn = os.getenv("NEXT_PUBLIC_SENTRY_DSN", "")
         if _dsn.startswith("https://"):
@@ -598,9 +596,6 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             "'self'",
             supabase_https if supabase_https else "",
             supabase_ws if supabase_ws else "",
-            livekit_https if livekit_https else "",
-            livekit_ws if livekit_ws else "",
-            "wss://*.livekit.cloud https://*.livekit.cloud",
             sentry_https if sentry_https else "",
         ]))
         csp = (
@@ -631,7 +626,6 @@ from routers import (
     chat_admin,
     chat_ai,
     chat_dm,
-    chat_livekit,
     chat_url_preview,
     contact,
     content,
@@ -696,7 +690,6 @@ app.include_router(push.router,           prefix="/api/push")
 app.include_router(forum.router,          prefix="/api/forum")
 
 app.include_router(chat_ai.router,        prefix="/api/chat/ai")
-app.include_router(chat_livekit.router,  prefix="/api/chat")
 app.include_router(chat.router,           prefix="/api/chat")
 app.include_router(chat_dm.router,        prefix="/api/chat")
 app.include_router(chat_admin.router,     prefix="/api/chat")

@@ -58,21 +58,19 @@ export function buildCallInvite(caller: string, video = false): string {
   return JSON.stringify({ video, caller, at: new Date().toISOString() })
 }
 
-// ── LiveKit paths & helpers (both apps talk to the same backend) ────────────
+// ── DM helpers (both apps talk to the same backend) ──────────────────────────
 export function dmRoomName(threadId: string): string {
   return `dm-${threadId}`
 }
 
+// DEPRECATED: LiveKit has been removed. Voice/video calls use Nextcloud Talk.
+// These paths return 503 from the backend.
 export function dmLiveKitTokenPath(threadId: string): string {
   return `/chat/dm/threads/${encodeURIComponent(threadId)}/livekit/token`
 }
 
 export function dmLiveKitInvitePath(threadId: string): string {
   return `/chat/dm/threads/${encodeURIComponent(threadId)}/livekit/invite`
-}
-
-export function roomLiveKitTokenPath(roomId: string): string {
-  return `/chat/livekit/token?room_id=${encodeURIComponent(roomId)}`
 }
 
 export function callInvitePushData(threadId: string, peer: string): CallInvitePushData {

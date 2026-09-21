@@ -61,7 +61,7 @@ async def admin_stats(_: dict = Depends(require_staff)):
         t = r.get("type") or "text"
         by_type[t] = by_type.get(t, 0) + 1
     dm_req = supabase.table("dm_requests").select("status").limit(5000).execute().data or []
-    req_by_status = {}
+    req_by_status: dict[str, int] = {}
     for r in dm_req:
         s = r.get("status") or "pending"
         req_by_status[s] = req_by_status.get(s, 0) + 1

@@ -312,25 +312,40 @@ function FloatingToolbar({ position, onCommand, onClose }) {
   )
 }
 
-// Decode HTML entities (e.g. &amp; → &, &lt; → <) for plain-text rendering
+// Decode HTML entities (e.g. &amp; → &, &lt; → <) for plain-text rendering.
+// NOTE (CodeQL js/xss-through-dom): this must NOT use `textarea.innerHTML`
+// (DOM text reinterpreted as HTML). Pure string decoding below — no DOM sink.
 function decodeEntities(str) {
   if (typeof str !== 'string') return str
-  if (typeof document === 'undefined') {
-    // Server-side decode — must mirror the browser's textarea decode below so
-    // SSR and hydration render identical text (esp. &nbsp; / numeric entities).
-    const named = {
-      amp:'&', lt:'<', gt:'>', quot:'"', apos:"'", nbsp:'\u00a0', ndash:'\u2013', mdash:'\u2014',
-      hellip:'\u2026', copy:'\u00a9', reg:'\u00ae', trade:'\u2122', times:'\u00d7', divide:'\u00f7',
-      middot:'\u00b7', bull:'\u2022', lsquo:'\u2018', rsquo:'\u2019', ldquo:'\u201c', rdquo:'\u201d',
-      deg:'\u00b0', para:'\u00b6', sect:'\u00a7', laquo:'\u00ab', raquo:'\u00bb', euro:'\u20ac', pound:'\u00a3',
-    }
-    return str
-      .replace(/&#(\d+);/g, (m, num) => { try { return String.fromCodePoint(Number(num)) } catch { return m } })
-      .replace(/&([a-zA-Z]+);/g, (m, name) => (name in named ? named[name] : m))
+  // Must mirror the browser's textarea decode so SSR and hydration render
+  // identical text (esp. &nbsp; / numeric entities).
+  const named = {
+    amp:'&', lt:'<', gt:'>', quot:'"', apos:"'", nbsp:'\u00a0', ndash:'\u2013', mdash:'\u2014',
+    hellip:'\u2026', copy:'\u00a9', reg:'\u00ae', trade:'\u2122', times:'\u00d7', divide:'\u00f7',
+    middot:'\u00b7', bull:'\u2022', lsquo:'\u2018', rsquo:'\u2019', ldquo:'\u201c', rdquo:'\u201d',
+    deg:'\u00b0', para:'\u00b6', sect:'\u00a7', laquo:'\u00ab', raquo:'\u00bb', euro:'\u20ac', pound:'\u00a3',
   }
-  const txt = document.createElement('textarea')
-  txt.innerHTML = str
-  return txt.value
+  return String(str)
+    .replace(/&#(\d+);/g, (m, num) => { try { return String.fromCodePoint(Number(num)) } catch { return m } })
+    .replace(/&#[xX]([0-9a-fA-F]+);/g, (m, hex) => { try { return String.fromCodePoint(parseInt(hex, 16)) } catch { return m } })
+    .replace(/&([a-zA-Z]+);/g, (m, name) => (name in named ? named[name] : m))
+}
+
+// Allowlist for image src values (CodeQL js/xss-through-dom): content URLs
+// flow into <img src>. React escapes text/alt, but URL attributes need scheme
+// validation so `javascript:`/`data:text/html` never reach `src`.
+function safeImageSrc(v) {
+  if (typeof v !== 'string') return ''
+  const s = v.trim()
+  if (!s) return ''
+  // CodeQL js/xss-through-dom barrier: strip HTML metacharacters on the
+  // allow-path. Legit URLs never contain raw `<>"'`, so valid input is
+  // unchanged; anything smuggling markup into `src` is neutralized.
+  if (/^https:\/\//i.test(s)) return s.replace(/[<>"']/g, '')
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//i.test(s)) return s.replace(/[<>"']/g, '')
+  if (/^data:image\/(png|jpe?g|gif|webp|bmp|ico|avif);base64,/i.test(s)) return s.replace(/[<>"']/g, '')
+  if (/^\/(?!\/)/.test(s) || /^\.\//.test(s)) return s.replace(/[<>"']/g, '')
+  return ''
 }
 
 // ── EditableText — rich contentEditable with floating toolbar ──────────────────
@@ -1404,7 +1419,7 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
   const fileRef = useRef()
 
   if (!isAdmin) {
-    return <img src={value || defaultValue} alt={altValue || defaultAlt} style={style} />
+    return <img src={safeImageSrc(value) || safeImageSrc(defaultValue)} alt={altValue || defaultAlt} style={style} />
   }
 
   const openModal = () => { setDraftUrl(value || defaultValue); setDraftAlt(altValue || defaultAlt); setOpen(true) }
@@ -1443,7 +1458,7 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
         onMouseEnter={e => e.currentTarget.style.outline = '2px solid var(--cyan)'}
         onMouseLeave={e => e.currentTarget.style.outline = '1px dashed rgba(0,212,255,0.35)'}
       >
-        <img src={value || defaultValue} alt={altValue || defaultAlt} style={imgStyle} />
+        <img src={safeImageSrc(value) || safeImageSrc(defaultValue)} alt={altValue || defaultAlt} style={imgStyle} />
         <span style={{
           position: 'absolute', bottom: -8, right: -8,
           background: 'var(--cyan)', color: '#000',
@@ -1460,7 +1475,7 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
         }} onClick={() => setOpen(false)}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 12 }}>EDIT IMAGE · {contentKey}</div>
-            <img src={draftUrl} alt={draftAlt} style={{ width: '100%', maxHeight: 180, objectFit: 'contain', marginBottom: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }} onError={e => { e.currentTarget.style.opacity = 0.25 }} onLoad={e => { e.currentTarget.style.opacity = 1 }} />
+            <img src={safeImageSrc(draftUrl)} alt={draftAlt} style={{ width: '100%', maxHeight: 180, objectFit: 'contain', marginBottom: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }} onError={e => { e.currentTarget.style.opacity = 0.25 }} onLoad={e => { e.currentTarget.style.opacity = 1 }} />
             <div style={{ marginBottom: 10 }}>
               <label style={{ fontSize: 9, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>IMAGE URL</label>
               <div style={{ display: 'flex', gap: 6 }}>

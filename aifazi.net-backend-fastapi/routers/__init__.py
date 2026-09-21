@@ -18,7 +18,6 @@ from . import (
     chat_admin,
     chat_ai,
     chat_dm,
-    chat_livekit,
     chat_url_preview,
     contact,
     content,

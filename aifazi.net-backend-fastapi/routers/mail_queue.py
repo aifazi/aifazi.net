@@ -7,6 +7,7 @@ import hmac
 import logging
 import os
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -260,7 +261,7 @@ async def resend_webhook(request: Request):
     if not msg_id:
         raise HTTPException(400, "Invalid webhook body: missing data.email_id")
 
-    updates = {"status": mapped}
+    updates: dict[str, Any] = {"status": mapped}
     ts = data.get("created_at") or payload.get("created_at")
     updates["sent_at"] = ts if ts else datetime.now(timezone.utc).isoformat()
     updates["tracking_data"] = {"recipient": recipient, "resend_type": event_type}
@@ -450,7 +451,7 @@ async def delivery_webhook(request: Request):
     if not mapped:
         return {"ok": False, "reason": "unknown_event"}
 
-    updates = {"status": mapped}
+    updates: dict[str, Any] = {"status": mapped}
     if body.timestamp:
         updates["sent_at"] = body.timestamp
     if body.details:

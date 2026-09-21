@@ -5,7 +5,6 @@ Templates are fetched from mail_templates by purpose key.
 """
 import html as _html_mod
 import logging
-import re
 from datetime import datetime, timezone
 
 import httpx
@@ -29,6 +28,46 @@ def _c(cfg: dict, *keys: str, default: str = "") -> str:
         if cfg.get(k):
             return cfg[k]
     return default
+
+
+def _strip_html_tags_linear(s: str) -> str:
+    """Replace `<...>` tags with a single space in one linear pass (no regex).
+
+    Equivalent to ``re.sub(r'<[^>]+>', ' ', s)``: a ``<`` followed by one or
+    more non-``>`` chars (``<`` itself is allowed inside, exactly like the
+    ``[^>]`` class) and a closing ``>`` becomes ``' '``; a ``<>``, a bare
+    ``<`` without a later ``>``, or text outside tags is kept verbatim.
+    Single-pass state machine — no backtracking, always O(n).
+    """
+    if not s or "<" not in s:
+        return s
+    out: list[str] = []
+    tag_buf: list[str] | None = None  # None = outside a candidate tag
+    has_content = False
+    for ch in s:
+        if tag_buf is None:
+            if ch == "<":
+                tag_buf = []
+                has_content = False
+            else:
+                out.append(ch)
+        else:
+            if ch == ">":
+                if has_content:
+                    out.append(" ")
+                else:
+                    out.append("<>")
+                tag_buf = None
+            else:
+                # Any non-`>` char (including a second `<`) is tag content,
+                # mirroring the `[^>]` class exactly.
+                tag_buf.append(ch)
+                has_content = True
+    if tag_buf is not None:
+        # Unclosed candidate — flush literally.
+        out.append("<")
+        out.extend(tag_buf)
+    return "".join(out)
 
 
 async def _get_config() -> dict:
@@ -498,7 +537,11 @@ async def _send_brevo(cfg, to, subject, html, text):
         raise ValueError("Brevo API key not configured")
     if not from_email:
         raise ValueError("Brevo From Email not configured")
-    plain = text or re.sub(r'<[^>]+>', ' ', html).strip() or subject
+    # Linear-time tag strip (no regex — py/polynomial-redos clean): single-pass
+    # state machine, so pathological HTML cannot burn CPU; input is still
+    # capped as defense-in-depth. Match semantics equal `<[^>]+>` → ' '.
+    _html_capped = html[:200_000] if isinstance(html, str) and len(html) > 200_000 else html
+    plain = text or _strip_html_tags_linear(_html_capped).strip() or subject
     async with httpx.AsyncClient(timeout=15) as client:
         r = await client.post(
             "https://api.brevo.com/v3/smtp/email",

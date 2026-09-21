@@ -20,6 +20,7 @@ import base64
 import io
 import time
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
@@ -380,7 +381,7 @@ async def search_pdf(request: Request, body: SearchBody, _: dict = Depends(get_c
         return {"total": 0, "matches": []}
     doc = fitz.open(stream=sess["bytes"], filetype="pdf")
     low_query = query.lower()
-    results = []
+    results: list[dict[str, Any]] = []
     for i in range(doc.page_count):
         if body.match_case:
             rects = [r for r in doc[i].search_for(query)]

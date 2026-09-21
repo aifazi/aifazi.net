@@ -199,10 +199,20 @@ export function cdnUrl(url: string): string {
   return url
 }
 
+/** True when a URL's hostname is exactly (or a subdomain of) res.cloudinary.com. */
+function isCloudinaryHost(value: string): boolean {
+  try {
+    const host = new URL(value).hostname.toLowerCase()
+    return host === 'res.cloudinary.com' || host.endsWith('.res.cloudinary.com')
+  } catch {
+    return false
+  }
+}
+
 export function mediaUrl(path: string): string {
   if (!path) return ''
   // Absolute Cloudinary URL — rewrite through CDN if custom domain is set
-  if (path.includes('res.cloudinary.com')) return cdnUrl(path)
+  if (isCloudinaryHost(path)) return cdnUrl(path)
   // Already absolute (other provider) — return as-is
   if (path.startsWith('http')) return path
   // Relative paths stay relative so the browser goes through the Next.js

@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@fazi/shared": "file:../packages/shared",
-    "@livekit/components-react": "^2.6.11",
     "@noble/ciphers": "^2.3.0",
     "@sentry/nextjs": "^10.74.0",
     "@supabase/supabase-js": "^2.116.0",
@@ -23,7 +22,6 @@
     "dompurify": "^3.4.15",
     "gsap": "^3.15.0",
     "html5-qrcode": "^2.3.8",
-    "livekit-client": "^2.22.3",
     "next": "^16.3.5",
     "postcss": "^8.5.28",
     "react": "^19.3.0",

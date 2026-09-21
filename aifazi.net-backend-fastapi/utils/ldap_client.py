@@ -7,6 +7,11 @@ from dataclasses import dataclass, field
 
 log = logging.getLogger("ldap")
 
+try:
+    from ldap3.utils.conv import escape_filter_chars as _ldap3_escape_filter_chars  # type: ignore
+except ImportError:  # ldap3 not installed (e.g. lightweight test env)
+    _ldap3_escape_filter_chars = None  # type: ignore[assignment]
+
 # Defaults match the production Coolify LLDAP service on the mailnet.
 # Runtime values prefer admin-portal config (site_config.settings.oauth.lldap)
 # and fall back to env vars.
@@ -83,7 +88,10 @@ def _normalize_identifier(identifier: str) -> tuple[str, str]:
     ident = (identifier or "").strip()
     if not ident:
         raise LdapAuthFailed("Empty credentials")
-    safe = _ldap_escape(ident)
+    if _ldap3_escape_filter_chars is not None:
+        safe = _ldap3_escape_filter_chars(ident)
+    else:
+        safe = _ldap_escape(ident)
     if "@" in ident:
         return ident, f"(&(objectClass=person)(mail={safe}))"
     return ident, f"(&(objectClass=person)(uid={safe}))"

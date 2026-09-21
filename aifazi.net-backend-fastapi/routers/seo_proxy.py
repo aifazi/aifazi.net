@@ -90,7 +90,7 @@ def _validate_resolved_host(hostname: str) -> str:
         ):
             raise HTTPException(403, f"Domain resolves to blocked IP: {ip_str}")
         if safe_ip is None:
-            safe_ip = ip_str  # first safe address wins
+            safe_ip = str(ip_str)  # first safe address wins
     if safe_ip is None:
         raise HTTPException(502, f"Hostname has no usable address: {hostname}")
     return safe_ip

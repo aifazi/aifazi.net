@@ -124,7 +124,7 @@ class _JWTCompat:
 
         return self._decode_xcha(parts, secret, leeway)
 
-    def _decode_xcha(self, parts: list, secret: bytes, leeway: int) -> dict:
+    def _decode_xcha(self, parts: list, secret: bytes, leeway: float) -> dict:
         xcha = self._get_xcha(secret)
         try:
             encrypted = self._b64url_decode(parts[1])
@@ -139,7 +139,7 @@ class _JWTCompat:
         except (ValueError, TypeError) as e:
             raise JWTError(f"Invalid token: {e}")
 
-    def _check_expiry(self, data: dict, leeway: int) -> None:
+    def _check_expiry(self, data: dict, leeway: float) -> None:
         exp = data.get("exp")
         if exp and time.time() > exp + leeway:
             raise ExpiredSignatureError("Signature has expired")

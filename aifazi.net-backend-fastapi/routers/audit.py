@@ -15,6 +15,7 @@ import io
 import json as _json
 import logging
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 
@@ -136,7 +137,7 @@ async def export_logs(
     user: dict = Depends(AUDIT_EXPORT),
 ):
     """Stream the audit log as CSV (paginated internally, capped at 10k rows)."""
-    rows = []
+    rows: list[dict[str, Any]] = []
     page = 0
     while len(rows) < 10000:
         q = supabase.table("audit_logs").select("*").order("created_at", desc=True)

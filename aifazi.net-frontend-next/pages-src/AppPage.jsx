@@ -172,7 +172,7 @@ export default function AppPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14, margin: '46px 0 26px' }}>
           {[
             ['💬', 'Chat channels & DMs', 'Realtime messaging with replies, reactions, edit & swipe-to-reply.'],
-            ['📞', 'Voice & video calls', 'LiveKit-powered calls and screen share right from the app.'],
+            ['📞', 'Voice & video calls', 'Nextcloud Talk-powered calls and screen share right from the app.'],
             ['📖', 'Blog & forum on the go', 'Read, comment and reply — synced with the main site.'],
           ].map(([icon, title, desc]) => (
             <div key={title} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '18px', background: 'var(--bg2)' }}>

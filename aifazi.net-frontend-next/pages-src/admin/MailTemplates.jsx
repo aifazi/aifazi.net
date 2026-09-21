@@ -58,6 +58,21 @@ const PURPOSES = [
 const GROUPS = [...new Set(PURPOSES.map(p => p.group))]
 
 const THEME_VARS = ['{{theme_bg}}','{{theme_bg2}}','{{theme_bg3}}','{{theme_primary}}','{{theme_secondary}}','{{theme_orange}}','{{theme_text}}','{{theme_muted}}','{{theme_border}}']
+
+/* Strip tags to plain text. Loops to a fixpoint so nested/overlapping markup
+ * (e.g. `<scr<script>ipt>`) cannot leave a tag behind, then drops any
+ * unterminated remnant (e.g. `<script` without `>`) so it cannot survive. */
+function stripHtmlToText(value) {
+  let text = String(value ?? '')
+  let prev = ''
+  while (prev !== text) {
+    prev = text
+    text = text.replace(/<[^>]+>/g, '')
+  }
+  text = text.replace(/<\s*\/?\s*[A-Za-z!?][^<>]*$/g, '').replace(/</g, '')
+  return text.replace(/\s{2,}/g, '\n').trim()
+}
+
 PURPOSES.forEach(p => { p.vars = [...p.vars, ...THEME_VARS] })
 
 /* ── Default template HTML per purpose ─────────────────────────────────────── */
@@ -386,7 +401,7 @@ const [saveError, setSaveError] = useState('')
         <div style={{ padding:'14px 16px', background:C.bg2, border:`1px solid ${C.border}`,
           borderRadius:4, fontFamily:C.mono, fontSize:11, color:C.muted, lineHeight:1.8,
           whiteSpace:'pre-wrap', minHeight:200 }}>
-          {html.replace(/<[^>]+>/g, '').replace(/\s{2,}/g, '\n').trim()}
+          {stripHtmlToText(html)}
         </div>
       )}
 

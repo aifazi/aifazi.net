@@ -7,6 +7,7 @@ import csv
 import html
 import io
 import json
+import logging
 import re
 import zipfile
 
@@ -16,6 +17,8 @@ from fastapi.responses import StreamingResponse
 from dependencies import get_current_user
 
 router = APIRouter()
+
+log = logging.getLogger("file_tools")
 
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB hard cap
 MAX_RENDER_PX = 4096  # max rendered edge (px) — prevents pixel-bomb memory exhaustion
@@ -352,7 +355,8 @@ async def repair_pdf(file: UploadFile = File(...), _: dict = Depends(get_current
     try:
         doc = fitz.open(stream=await _read(file), filetype="pdf")
     except Exception as e:
-        raise HTTPException(400, f"Cannot read PDF: {e}")
+        log.warning("repair_pdf failed: %s", e, exc_info=True)
+        raise HTTPException(400, "Cannot read PDF")
     return _pdf_stream(doc, "repaired.pdf")
 
 @router.post("/pdf/to-word")
@@ -385,7 +389,7 @@ async def pdf_to_excel(file: UploadFile = File(...), _: dict = Depends(get_curre
     for i in range(doc.page_count):
         lines = doc[i].get_text().split('\n')
         for ln in lines:
-            if ln.strip(): all_rows.append([i+1, ln.strip()])
+            if ln.strip(): all_rows.append([str(i+1), ln.strip()])
     doc.close()
     try:
         import openpyxl; wb = openpyxl.Workbook(); ws = wb.active; ws.title = "PDF Text"
@@ -488,7 +492,7 @@ async def text_to_pdf(file: UploadFile | None=File(None), text: str=Form(""),
     raw = (await _read(file)).decode('utf-8','replace') if file else text
     if not raw.strip(): raise HTTPException(400, "No text provided")
     doc = fitz.open()
-    page = doc.new_page(); lines = raw.split('\n'); y = 50; line_h = font_size * 1.4
+    page = doc.new_page(); lines = raw.split('\n'); y: float = 50; line_h = font_size * 1.4
     if title: page.insert_text((40,30), title, fontsize=font_size+4, color=(0,0,0))
     for ln in lines:
         if y + line_h > page.rect.height - 40:
@@ -504,7 +508,7 @@ async def text_to_pdf(file: UploadFile | None=File(None), text: str=Form(""),
 @router.post("/image/compress")
 async def compress_image(file: UploadFile = File(...), quality: int = Form(75), _: dict = Depends(get_current_user)):
     from PIL import Image as PILImage
-    img = PILImage.open(io.BytesIO(await _read(file)))
+    img: PILImage.Image = PILImage.open(io.BytesIO(await _read(file)))
     fmt = img.format or 'JPEG'; buf = io.BytesIO()
     if img.mode in ('RGBA','P') and fmt == 'JPEG': img = img.convert('RGB')
     img.save(buf, format=fmt, quality=max(10,min(quality,95)), optimize=True)
@@ -516,14 +520,14 @@ async def compress_image(file: UploadFile = File(...), quality: int = Form(75), 
 async def resize_image(file: UploadFile = File(...),
     width: int = Form(0), height: int = Form(0), keep_ratio: bool = Form(True), _: dict = Depends(get_current_user)):
     from PIL import Image as PILImage
-    img = PILImage.open(io.BytesIO(await _read(file)))
+    img: PILImage.Image = PILImage.open(io.BytesIO(await _read(file)))
     ow, oh = img.size
     if width and height and not keep_ratio:
-        img = img.resize((width, height), PILImage.LANCZOS)
+        img = img.resize((width, height), PILImage.LANCZOS)  # type: ignore[attr-defined]
     elif width:
-        h = int(oh * width / ow); img = img.resize((width, h), PILImage.LANCZOS)
+        h = int(oh * width / ow); img = img.resize((width, h), PILImage.LANCZOS)  # type: ignore[attr-defined]
     elif height:
-        w = int(ow * height / oh); img = img.resize((w, height), PILImage.LANCZOS)
+        w = int(ow * height / oh); img = img.resize((w, height), PILImage.LANCZOS)  # type: ignore[attr-defined]
     fmt = img.format or 'PNG'; buf = io.BytesIO()
     img.save(buf, format=fmt); buf.seek(0)
     ext = fmt.lower().replace('jpeg','jpg')
@@ -532,7 +536,7 @@ async def resize_image(file: UploadFile = File(...),
 @router.post("/image/convert")
 async def convert_image(file: UploadFile = File(...), to_format: str = Form("png"), _: dict = Depends(get_current_user)):
     from PIL import Image as PILImage
-    img = PILImage.open(io.BytesIO(await _read(file)))
+    img: PILImage.Image = PILImage.open(io.BytesIO(await _read(file)))
     fmt = to_format.upper().replace('JPG','JPEG')
     if fmt == 'JPEG' and img.mode in ('RGBA','P'): img = img.convert('RGB')
     buf = io.BytesIO(); img.save(buf, format=fmt); buf.seek(0)
@@ -542,8 +546,8 @@ async def convert_image(file: UploadFile = File(...), to_format: str = Form("png
 @router.post("/image/flip")
 async def flip_image(file: UploadFile = File(...), direction: str = Form("horizontal"), _: dict = Depends(get_current_user)):
     from PIL import Image as PILImage
-    img = PILImage.open(io.BytesIO(await _read(file)))
-    img = img.transpose(PILImage.FLIP_LEFT_RIGHT if direction=='horizontal' else PILImage.FLIP_TOP_BOTTOM)
+    img: PILImage.Image = PILImage.open(io.BytesIO(await _read(file)))
+    img = img.transpose(PILImage.FLIP_LEFT_RIGHT if direction=='horizontal' else PILImage.FLIP_TOP_BOTTOM)  # type: ignore[attr-defined]
     fmt = img.format or 'PNG'; buf = io.BytesIO(); img.save(buf, format=fmt); buf.seek(0)
     return _bytes_stream(buf.read(), f'image/{fmt.lower()}', f"flipped.{fmt.lower()}")
 
@@ -561,8 +565,9 @@ async def watermark_image(file: UploadFile = File(...), text: str = Form("SAMPLE
     try: rgb = (int(h[:2],16), int(h[2:4],16), int(h[4:6],16), alpha)
     except Exception: rgb = (255,255,255,alpha)
     w, ht = img.size
-    try: font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-    except Exception: font = ImageFont.load_default()
+    font = ImageFont.load_default()
+    try: font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)  # type: ignore[attr-defined]
+    except Exception: pass
     bbox = draw.textbbox((0,0), text, font=font)
     tw, th = bbox[2]-bbox[0], bbox[3]-bbox[1]
     pad = 20
@@ -688,7 +693,8 @@ async def base64_decode(text: str=Form(...), _: dict = Depends(get_current_user)
         try: return {"decoded": dec.decode('utf-8'), "type": "text"}
         except Exception: return {"decoded": base64.b64encode(dec).decode(), "type": "binary", "size": len(dec)}
     except Exception as e:
-        raise HTTPException(400, f"Invalid base64: {e}")
+        log.warning("base64_decode failed: %s", e, exc_info=True)
+        raise HTTPException(400, "Invalid base64")
 
 @router.post("/text/json-format")
 async def json_format(file: UploadFile | None=File(None), text: str=Form(""),
@@ -699,4 +705,5 @@ async def json_format(file: UploadFile | None=File(None), text: str=Form(""),
         out = json.dumps(obj, separators=(',',':')) if minify else json.dumps(obj, indent=indent, ensure_ascii=False)
         return {"formatted": out, "valid": True, "size": len(out)}
     except json.JSONDecodeError as e:
-        return {"valid": False, "error": str(e), "formatted": raw}
+        log.warning("json_format failed: %s", e, exc_info=True)
+        return {"valid": False, "error": "Invalid JSON", "formatted": raw}

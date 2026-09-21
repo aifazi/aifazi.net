@@ -340,7 +340,7 @@ function buildCsp(nonce: string): string {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     `img-src 'self' data: blob: ${cdnHttps} https://*.supabase.co https://res.cloudinary.com https://api.dicebear.com ${siteWildHttps} https://*.imgur.com https://i.imgur.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://*.unsplash.com https://*.googleusercontent.com https://*.githubusercontent.com`,
-    `connect-src 'self' ${isDev ? 'http://localhost:8000 http://127.0.0.1:8000 ' : ''}${apiHttps} ${siteWildHttps} ${siteWildWss} https://*.supabase.co wss://*.supabase.co ${cdnHttps} https://*.ingest.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://ipwho.is https://ipapi.co https://ipwhois.app https://api64.ipify.org https://*.livekit.cloud wss://*.livekit.cloud`,
+    `connect-src 'self' ${isDev ? 'http://localhost:8000 http://127.0.0.1:8000 ' : ''}${apiHttps} ${siteWildHttps} ${siteWildWss} https://*.supabase.co wss://*.supabase.co ${cdnHttps} https://*.ingest.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://ipwho.is https://ipapi.co https://ipwhois.app https://api64.ipify.org`,
     `media-src 'self' ${cdnHttps} ${siteWildHttps} data: blob: https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://res.cloudinary.com`,
     "frame-src 'self' https://www.youtube.com https://player.vimeo.com",
     "worker-src 'self' blob:",

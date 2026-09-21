@@ -102,7 +102,7 @@ def _resolve_safe_ip(host: str) -> str | None:
                 continue
             if is_blocked_ip(ip_obj):
                 return None
-            return info[4][0]
+            return str(info[4][0])
         return None
 
 # Defaults — overridden by admin settings stored in site_config.settings.monitor
@@ -592,15 +592,15 @@ async def _run_all_checks() -> list[dict]:
 
     # Custom, admin-configured monitors
     for m in _get_custom_monitors(enabled_only=True):
-        checker = CUSTOM_CHECKERS.get(m.get("type"))
-        if not checker:
+        custom_checker = CUSTOM_CHECKERS.get(str(m.get("type") or ""))
+        if not custom_checker:
             continue
         service = f"custom:{m.get('id')}"
         label = m.get("name") or m.get("type", "monitor")
         # One malformed monitor (bad port / interval / target) must never take
         # down the whole monitor run — record it as down with the exception.
         try:
-            ok, lat, detail = await checker(m)
+            ok, lat, detail = await custom_checker(m)  # type: ignore[call-arg]
         except Exception as e:
             logger.error("monitor: custom check %s crashed: %s", service, e)
             ok, lat, detail = False, 0, f"checker error: {type(e).__name__}"
@@ -1137,10 +1137,10 @@ async def run_custom_monitor(monitor_id: str, user: dict = Depends(MONITOR_MANAG
     if not res.data:
         raise HTTPException(404, "Monitor not found")
     m = res.data[0]
-    checker = CUSTOM_CHECKERS.get(m.get("type"))
+    checker = CUSTOM_CHECKERS.get(str(m.get("type") or ""))
     if not checker:
         raise HTTPException(400, "Unsupported monitor type")
-    ok, lat, detail = await checker(m)
+    ok, lat, detail = await checker(m)  # type: ignore[call-arg]
     return {"ok": ok, "status": "up" if ok else "down", "latency_ms": lat, "detail": str(detail)[:200]}
 
 

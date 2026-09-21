@@ -111,11 +111,37 @@ def _offset_over_cap(sql: str) -> bool:
     except (TypeError, ValueError):
         return True
 
+def _strip_block_comments(sql: str) -> str:
+    # ReDoS-safe linear-time equivalent of `re.sub(r"/\*.*?\*/", "", sql,
+    # flags=re.DOTALL)`: the lazy dot-star backtracks quadratically on
+    # `/*/*/...` inputs, while this single-pass scan finds each closing `*/`
+    # with str.find (first match == non-greedy semantics). Only closed spans
+    # are removed; an unterminated `/*` is left in place, exactly like the
+    # old regex. Input length is already bounded by MAX_SQL_LENGTH at the
+    # endpoint, so matching is doubly bounded.
+    out: list[str] = []
+    i = 0
+    n = len(sql)
+    while i < n:
+        if sql[i] == "/" and i + 1 < n and sql[i + 1] == "*":
+            end = sql.find("*/", i + 2)
+            if end == -1:
+                out.append(sql[i:])
+                break
+            i = end + 2
+        else:
+            out.append(sql[i])
+            i += 1
+    return "".join(out)
+
+
 def _is_dangerous_sql(sql: str) -> str | None:
     # Strip line comments and block comments first so `DROP /* x */ TABLE` is
     # caught by the bare DROP rule after normalisation.
+    # ReDoS-safe: `--[^\n]*` and `\s+` are linear (negated class / single
+    # quantifier, no nesting); block comments use the linear scanner above.
     normalized = re.sub(r'--[^\n]*', '', sql)
-    normalized = re.sub(r'/\*.*?\*/', '', normalized, flags=re.DOTALL)
+    normalized = _strip_block_comments(normalized)
     normalized = re.sub(r'\s+', ' ', normalized).strip()
     for pattern in _DANGEROUS_COMPILED:
         if pattern.search(normalized):

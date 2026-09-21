@@ -11,7 +11,7 @@ import logging
 import os
 import secrets
 from datetime import datetime, timezone
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse as _Redir
@@ -129,7 +129,7 @@ async def authentik_callback(
         # signed state may wrap connect payload — try normal verify first
         try:
             st = verify_oauth_state_full(state_value, "authentik")
-            dest = st.get("dest") or dest
+            dest = str(st.get("dest") or dest)
             if dest.startswith("connect:"):
                 parts = dest.split(":", 2)
                 mode = "connect"
@@ -140,7 +140,7 @@ async def authentik_callback(
     else:
         try:
             st = verify_oauth_state_full(state_value, "authentik")
-            dest = st.get("dest") or dest
+            dest = str(st.get("dest") or dest)
         except ValueError:
             return _Redir(f"{SITE_URL}/login?authentik_error=state")
 
@@ -248,9 +248,11 @@ async def authentik_callback(
 
     if mode != "connect" and user.get("totp_enabled") and user.get("totp_secret"):
         partial = make_forum_2fa_token(user["id"], user["username"], user.get("role", "user"), "authentik")
-        safe_dest = dest if str(dest).startswith("/") else "/profile"
+        safe_dest = _safe_relative_path(dest if isinstance(dest, str) else "/profile", default="/profile")
         return _Redir(
-            f"{front}{m_login}#twofa=forum&partial_token={partial}&username={user.get('username','')}&next={_safe_relative_path(safe_dest)}"
+            front + m_login + "#twofa=forum&partial_token=" + quote(str(partial), safe='')
+            + "&username=" + quote(str(user.get('username', '')), safe='')
+            + "&next=" + quote(safe_dest, safe='/')
         )
 
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
@@ -282,7 +284,7 @@ async def authentik_callback(
     _set_auth_cookies(response, token, refresh)
 
     if st.get("mobile"):
-        return _Redir(f"{front}?token={token}")
-    safe_dest = dest if str(dest).startswith("/") else "/profile"
+        return _Redir(front + "?token=" + quote(str(token), safe=''))
+    safe_dest = _safe_relative_path(dest if isinstance(dest, str) else "/profile", default="/profile")
     sep = "&" if "?" in safe_dest else "?"
-    return _Redir(f"{SITE_URL}{safe_dest}{sep}authentik=1")
+    return _Redir(SITE_URL + safe_dest + sep + "authentik=1")

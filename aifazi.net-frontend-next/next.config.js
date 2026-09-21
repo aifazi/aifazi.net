@@ -45,7 +45,7 @@ const nextConfig = {
   // Shared @fazi/shared package (symlinked via file:) — transpile its TS source.
   transpilePackages: ['@fazi/shared'],
   experimental: {
-    optimizePackageImports: ['gsap', 'livekit-client', '@livekit/components-react'],
+    optimizePackageImports: ['gsap'],
   },
 
   webpack: (config, { isServer }) => {
