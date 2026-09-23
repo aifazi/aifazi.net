@@ -133,6 +133,12 @@ def decode_token(token: str) -> dict:
     # H4 — refresh tokens are only valid for /refresh, never as access tokens.
     if data.get("token_type") == "refresh":
         raise HTTPException(status_code=401, detail="Invalid auth token")
+    # NOTE: the "impersonated"/"impersonated_by" claims (minted by
+    # routers/auth_staff.py impersonate) are preserved verbatim here and
+    # through _enrich_user below (enrichment only merges directory fields, it
+    # never drops unknown claims). Downstream guards (require_admin,
+    # require_not_impersonated, and the SecurityMiddleware write-guard in
+    # main.py) rely on user.get("impersonated") surviving this path.
     return data
 
 def get_current_user(
@@ -159,7 +165,25 @@ async def get_current_user_async(
     payload = decode_token(creds.credentials)
     return await asyncio.to_thread(_enrich_user, payload)
 
+def require_not_impersonated(user: dict = Depends(get_current_user)) -> dict:
+    """Per-route opt-in guard: impersonated ("view as") sessions are read-only.
+
+    The global enforcement lives in main.py SecurityMiddleware (POST/PUT/PATCH/
+    DELETE with an impersonated bearer → 403, except unimpersonate). Use this
+    dependency on individual routes that need the same guarantee at the
+    dependency layer (e.g. routes mounted outside the middleware path).
+    """
+    if user.get("impersonated"):
+        raise HTTPException(status_code=403, detail="Impersonated sessions are read-only")
+    return user
+
+
 def require_admin(user: dict = Depends(get_current_user)) -> dict:
+    # Impersonated tokens always carry a non-admin victim role, so the role
+    # check below already rejects them — this explicit gate is defense-in-depth
+    # so a future role-mapping change can never promote a view-as session.
+    if user.get("impersonated"):
+        raise HTTPException(status_code=403, detail="Impersonated sessions are read-only")
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     return user

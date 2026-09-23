@@ -379,6 +379,8 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/monitor/run",          5,    60),
     ("/store/track/",         10,   60),
     ("/chat/admin/",          20,   60),
+    ("/actions/abuse-ban",     5,   60),
+    ("/actions/abuse-unban",   5,   60),
 ]
 _RL_DEFAULT = (100, 60)   # 100 requests / 60 s general
 
@@ -551,6 +553,29 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                     return JSONResponse(
                         status_code=403,
                         content={"error": "Direct API access is not permitted."},
+                    )
+
+        # ── 3c. Impersonated ("view as") sessions are read-only ─────────────
+        # An impersonated bearer (payload claim impersonated:true, minted by
+        # POST /api/auth/staff/impersonate) may GET anything the victim could
+        # see, but must never mutate. Enforced here — the shared mutation
+        # surface — so every POST/PUT/PATCH/DELETE is covered without touching
+        # per-route dependencies. ONLY /api/auth/staff/unimpersonate is
+        # exempt (it is audit-only and grants no privilege). The payload is
+        # VERIFIED (paseto_token.decode_token, purpose=auth) — never trusted
+        # unverified. No valid bearer → not an impersonated session → pass.
+        if method in ("POST", "PUT", "PATCH", "DELETE") and path != "/api/auth/staff/unimpersonate":
+            _imp_header = request.headers.get("authorization", "")
+            if _imp_header.lower().startswith("bearer "):
+                try:
+                    from paseto_token import decode_token as _decode_impersonation
+                    _imp_payload = _decode_impersonation(_imp_header[7:].strip(), purpose="auth")
+                except Exception:
+                    _imp_payload = None
+                if isinstance(_imp_payload, dict) and _imp_payload.get("impersonated"):
+                    return JSONResponse(
+                        status_code=403,
+                        content={"error": "Impersonated sessions are read-only"},
                     )
 
         # ── 4. Call next + attach headers ─────────────────────────────────────

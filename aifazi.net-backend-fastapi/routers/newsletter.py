@@ -10,6 +10,7 @@ Frontend NewsletterPanel calls:
 import asyncio
 import hashlib
 import hmac
+import logging
 import os
 import secrets
 
@@ -22,14 +23,30 @@ from utils.email import render_template
 from utils.email_queue import queue_email_bulk
 
 router = APIRouter()
+log = logging.getLogger("newsletter")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
-_SUBSCRIBE_SECRET = os.getenv("NEWSLETTER_SECRET", os.getenv("HMAC_SECRET", "dev-newsletter-secret"))
+# Fail-closed: no dev default. When unset, subscribe/confirm return 503 (see
+# _require_secret) instead of signing confirm tokens with a public constant
+# that anyone could forge into a valid subscription confirmation.
+_SUBSCRIBE_SECRET = os.getenv("NEWSLETTER_SECRET", "") or os.getenv("HMAC_SECRET", "")
+if not _SUBSCRIBE_SECRET:
+    log.warning(
+        "NEWSLETTER_SECRET is not set; /newsletter/subscribe and /newsletter/confirm "
+        "will reject all requests with 503. Set NEWSLETTER_SECRET (or HMAC_SECRET) "
+        "to enable double opt-in confirmations."
+    )
+
+
+def _require_secret() -> str:
+    if not _SUBSCRIBE_SECRET:
+        raise HTTPException(503, "Newsletter subscriptions are temporarily unavailable")
+    return _SUBSCRIBE_SECRET
 
 
 def _make_confirm_token(email: str) -> str:
     """HMAC-signed token so only our server can generate valid confirm links."""
-    return hmac.new(_SUBSCRIBE_SECRET.encode(), email.lower().encode(), hashlib.sha256).hexdigest()
+    return hmac.new(_require_secret().encode(), email.lower().encode(), hashlib.sha256).hexdigest()
 
 
 class SubBody(BaseModel):

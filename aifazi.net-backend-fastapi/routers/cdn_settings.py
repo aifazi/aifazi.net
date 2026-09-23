@@ -8,6 +8,8 @@ Migration (run once in Supabase SQL editor):
         VALUES ('global', '{}')
         ON CONFLICT (key) DO NOTHING;
 """
+import re
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 
@@ -149,13 +151,16 @@ async def test_connection(body: dict, _: dict = Depends(require_staff)):
 # ── Orphan sweeper ────────────────────────────────────────────────────────────
 # Uploads are tracked in the `media` table (see routers/upload.py::_save_media).
 # An upload is "orphaned" when neither its stored `url` nor its `storage_path`
-# string appears anywhere in the latest content/blog rows.
-_ORPHAN_MEDIA_LIMIT = 1000
-_ORPHAN_SCAN_LIMIT = 500
+# EXACT-matches anything referenced by recent content. A bare substring hit
+# (url embedded in a larger HTML blob) is only a weak signal — those rows are
+# reported as `suspicious` (needs-review) and are NEVER auto-deletable.
+_ORPHAN_MEDIA_LIMIT = 5000
+_ORPHAN_SCAN_LIMIT = 2000
 _ORPHAN_SCAN_TABLES = (
     ("posts", "content,cover_image,excerpt"),
     ("content_blocks", "value"),
 )
+_URL_RE = re.compile(r"https?://[^\s\"'<>]+")
 
 
 def _scan_table(table: str, cols: str) -> list[dict]:
@@ -172,7 +177,12 @@ def _scan_table(table: str, cols: str) -> list[dict]:
 
 def _compute_orphans() -> dict:
     """Fresh server-side orphan computation. The delete endpoint re-runs this
-    per call and intersects — a client-supplied key list is never trusted."""
+    per call and intersects — a client-supplied key list is never trusted.
+
+    Matching is EXACT equality (field value or URL token) for auto-delete
+    eligibility. Substring-only hits are listed separately as `suspicious`
+    (needs human review) and can never be deleted via /orphans/delete.
+    """
     cfg = _get_cdn_config()
     _ = cfg  # provider creds stay server-side; only stored URL strings are matched
     media_res = supabase.table("media").select("*") \
@@ -180,6 +190,7 @@ def _compute_orphans() -> dict:
     media_rows = media_res.data or []
 
     corpus_parts: list[str] = []
+    exact_values: set[str] = set()
     scanned = 0
     for table, cols in _ORPHAN_SCAN_TABLES:
         rows = _scan_table(table, cols)
@@ -187,22 +198,36 @@ def _compute_orphans() -> dict:
         for row in rows:
             for val in row.values():
                 if val:
-                    corpus_parts.append(val if isinstance(val, str) else str(val))
+                    s = val if isinstance(val, str) else str(val)
+                    corpus_parts.append(s)
+                    exact_values.add(s)
     corpus = "\n".join(corpus_parts)
+    # Exact URL tokens embedded in larger HTML/markdown blobs also count as
+    # exact references (equality against the extracted token, not substring).
+    exact_urls: set[str] = set()
+    for part in corpus_parts:
+        exact_urls.update(_URL_RE.findall(part))
+    exact = exact_values | exact_urls
 
     orphans = []
+    suspicious = []
     for m in media_rows:
         url = m.get("url") or ""
         sp = m.get("storage_path") or ""
-        if (url and url in corpus) or (sp and sp in corpus):
+        if (url and url in exact) or (sp and sp in exact):
             continue
-        orphans.append({
+        entry = {
             "key": sp or str(m.get("id")),
             "url": url,
             "size": m.get("size") or 0,
             "last_seen": m.get("created_at"),
-        })
-    return {"orphans": orphans, "scanned": scanned, "total_uploads": len(media_rows)}
+        }
+        if (url and url in corpus) or (sp and sp in corpus):
+            suspicious.append({**entry, "reason": "substring-match-needs-review"})
+            continue
+        orphans.append(entry)
+    return {"orphans": orphans, "suspicious": suspicious,
+            "scanned": scanned, "total_uploads": len(media_rows)}
 
 
 @router.get("/orphans")
@@ -224,9 +249,18 @@ async def delete_orphans(body: dict, request: Request, user: dict = Depends(requ
         raise HTTPException(422, "keys must be a non-empty list")
 
     fresh = _compute_orphans()
+    # Exact-match set ONLY: `suspicious` (substring-only) keys are never in
+    # `allowed`, so they are reported under skipped_not_orphan and can never
+    # be deleted through this endpoint.
     allowed = {o["key"] for o in fresh["orphans"]}
     targets = sorted(wanted & allowed)
     skipped = sorted(wanted - allowed)
+
+    if body.get("dry_run"):
+        # Preview only: no provider calls, no row deletes, no audit write.
+        return {"dry_run": True, "targets": targets,
+                "skipped_not_orphan_or_suspicious": skipped,
+                "suspicious": fresh["suspicious"]}
 
     # Same provider-delete path as the upload flows (routers/upload.py).
     # Lazy import: upload.py must never import this module back.
@@ -249,8 +283,15 @@ async def delete_orphans(body: dict, request: Request, user: dict = Depends(requ
             results.append({"key": key, "ok": False, "error": "row not found"})
             continue
         try:
-            await delete_file(mid, user)
-            results.append({"key": key, "ok": True})
+            # delete_file returns {"ok": False, ...} (row KEPT) when the
+            # provider delete fails — surface that per-key error instead of
+            # recording a phantom success.
+            del_res = await delete_file(mid, user)
+            if isinstance(del_res, dict) and del_res.get("ok") is False:
+                results.append({"key": key, "ok": False,
+                                "error": str(del_res.get("error") or "provider delete failed")[:200]})
+            else:
+                results.append({"key": key, "ok": True})
         except HTTPException as exc:
             results.append({"key": key, "ok": False, "error": str(exc.detail)[:200]})
         except Exception as exc:

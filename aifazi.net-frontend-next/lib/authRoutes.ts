@@ -44,6 +44,13 @@ export function safeNextPath(value: unknown): string | null {
 }
 
 /**
+ * Canonical forgot-password path — Login.jsx and ForumAuth.jsx must both use
+ * this. The backend serves POST /auth/forgot-password (plus a POST /auth/forgot
+ * alias); the frontend uses only this one so the alias stays dead code.
+ */
+export const FORGOT_PASSWORD_PATH = '/auth/forgot-password'
+
+/**
  * OAuth login URLs are SAME-ORIGIN relative paths (`/api/...`) so the browser
  * request always passes through the Next.js proxy (proxy.ts stamps
  * X-Internal-Token + forwards cookies). Never build an absolute backend URL

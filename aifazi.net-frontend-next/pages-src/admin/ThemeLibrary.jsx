@@ -1946,16 +1946,18 @@ function ThemeLibrary() {
     if (typeFilter === 'COLOR')  return t.type === 'color'
     if (typeFilter === 'DESIGN') return t.type === 'design'
     if (tagFilter  === 'DARK')   return t.tag === 'DARK'
-    if (tagFilter  === 'LIGHT')  return t.tag === 'LIGHT' || t.tag === 'STYLE' && LIGHT_THEME_IDS.includes(t.id)
+    if (tagFilter  === 'LIGHT')  return t.tag === 'LIGHT' || (t.tag === 'STYLE' && LIGHT_THEME_IDS.includes(t.id))
     if (tagFilter  === 'STYLE')  return t.type === 'design'
     return true
   })
 
-  // Dice button — apply a random theme from the currently filtered list
+  // Dice button — apply a random theme from the currently filtered list.
+  // P1-3 — route through handleApply so global mode sets the site-wide theme
+  // instead of silently previewing locally.
   const randomTheme = () => {
     const pool = filteredThemes.length > 0 ? filteredThemes : THEME_DEFS
     const pick = pool[Math.floor(Math.random() * pool.length)]
-    if (pick) applyTheme(pick.id)
+    if (pick) handleApply(pick.id)
   }
 
   // P2 — sync globalThemeId when siteConfig.globalTheme changes

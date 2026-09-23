@@ -27,7 +27,8 @@ import { loadFontForTheme as loadThemeFont } from '@/core/fonts'
 import { applyThemeCustom, resolveThemeCustom } from '@/core/themeCustom'
 import { VALID_THEMES, LIGHT_THEMES, THEME_PAIRS } from '@/core/themeCatalog'
 import { applyThemeFramework } from '@/core/framework-styles'
-import { isAdmin as checkIsAdmin, getAuthToken } from '@/lib/api'
+import { isAdmin as checkIsAdmin, getAuthToken, getImpersonationUsername } from '@/lib/api'
+import { exitImpersonation } from '@/lib/impersonation'
 import { usePathname } from 'next/navigation'
 
 const LoadingScreen     = lazy(() => import('@/components/LoadingScreen'))
@@ -64,6 +65,43 @@ function loadFontForTheme(themeId: string) {
   // registry in ONE place — this wrapper only guards against SSR.
   if (typeof document === 'undefined') return
   return loadThemeFont(themeId)
+}
+
+// P0 — global impersonation banner. providers.tsx wraps every route (unlike
+// the old Dashboard-local banner, which missed direct-URL entry), so any page
+// shows the banner + EXIT while a view-as session is active. Syncs via the
+// impersonation:changed event fanned out by setImpersonationToken() and owns
+// the impersonation:expired handler (shared exitImpersonation restore).
+function ImpersonationBanner() {
+  const [user, setUser] = useState<string | null>(() => getImpersonationUsername())
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    const sync = () => setUser(getImpersonationUsername())
+    const onExpired = () => { void exitImpersonation({ expired: true }) }
+    // Re-sync on mount (deferred — never setState synchronously in the body).
+    const t = setTimeout(sync, 0)
+    window.addEventListener('impersonation:changed', sync)
+    window.addEventListener('impersonation:expired', onExpired)
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('impersonation:changed', sync)
+      window.removeEventListener('impersonation:expired', onExpired)
+    }
+  }, [])
+
+  if (!user) return null
+  const onExit = () => {
+    if (busy) return
+    setBusy(true)
+    void exitImpersonation().finally(() => setBusy(false))
+  }
+  return (
+    <div style={{ background: '#f59e0b', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '8px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, fontWeight: 700, flexShrink: 0, zIndex: 2000, flexWrap: 'wrap' }}>
+      <span>👁 VIEWING AS {user} — actions are audited · admin session preserved</span>
+      <button onClick={onExit} disabled={busy} style={{ background: '#000', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '5px 14px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1 }}>EXIT IMPERSONATION</button>
+    </div>
+  )
 }
 
 export function Providers({ children, isStoreDomain = false, isFiveMDomain = false, serverMaintenance = false, serverSubdomainMaintenance = {}, initialContent = {}, initialConfig = {}, initialTheme = 'cyber-dark' }: {
@@ -511,6 +549,8 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
         if (!(siteConfig.lockTheme && siteConfig.globalTheme && VALID_THEMES.includes(siteConfig.globalTheme))) {
           loadFontForTheme(e.newValue)
           setThemeState(e.newValue)
+          // P1-2 — cross-tab theme sync must also apply the theme personality
+          applyFrameworkForTheme(e.newValue)
         }
         return
       }
@@ -624,7 +664,11 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     const onChange = (e: MediaQueryListEvent) => {
       if (localStorage.getItem('site-theme-user-set')) return
       const id = e.matches ? 'cyber-dark' : 'cyber-light'
+      // P1-1 — OS-follow switch must load the font + apply the theme
+      // personality, mirroring setTheme() above.
+      loadFontForTheme(id)
       setThemeState(id)
+      applyFrameworkForTheme(id)
       localStorage.setItem('site-theme', id)
       if (id === 'cyber-dark') document.documentElement.removeAttribute('data-theme')
       else document.documentElement.setAttribute('data-theme', id)
@@ -708,6 +752,8 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
             </Suspense>
           )}
           <div style={{ opacity: !hydrated || (loading && !showMaintenance) ? 0 : 1, transition: 'opacity 0.5s ease', pointerEvents: (!hydrated || (loading && !showMaintenance) || showMaintenance) ? 'none' : 'auto' }}>
+            {/* P0 — global: renders on ALL routes (incl. fullscreen /admin) */}
+            <ImpersonationBanner />
             <Cursor />
             <ContextMenu />
             {!isFullScreen && <Navbar />}

@@ -1,9 +1,10 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { useNow } from '../../hooks/useNow'
+import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { Modal, EmptyState } from './ui'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
@@ -207,23 +208,25 @@ function MobileAppTab() {
   const [releases, setReleases] = useState([])
   const [workflows, setWorkflows] = useState(null)   // { ok, workflows: [] }
   const [loading, setLoading] = useState(true)
+  const aliveRef = useRef(false)
 
+  // P1-8 — polling pauses while the tab is hidden (mirrors Dashboard/FiveMPanel).
+  const load = () => {
+    Promise.allSettled([api.get('/admin/mobile/releases'), api.get('/admin/mobile/workflow-runs')]).then(([r, w]) => {
+      if (!aliveRef.current) return
+      if (r.status === 'fulfilled') setReleases(r.value.data?.releases || [])
+      else toast.error('Could not load mobile releases')
+      if (w.status === 'fulfilled') setWorkflows(w.value.data || { ok: true, workflows: [] })
+      else toast.error('Could not load mobile workflow runs')
+      setLoading(false)
+    })
+  }
   useEffect(() => {
-    let alive = true
-    const load = () => {
-      Promise.allSettled([api.get('/admin/mobile/releases'), api.get('/admin/mobile/workflow-runs')]).then(([r, w]) => {
-        if (!alive) return
-        if (r.status === 'fulfilled') setReleases(r.value.data?.releases || [])
-        else toast.error('Could not load mobile releases')
-        if (w.status === 'fulfilled') setWorkflows(w.value.data || { ok: true, workflows: [] })
-        else toast.error('Could not load mobile workflow runs')
-        setLoading(false)
-      })
-    }
-    load()
-    const t = setInterval(load, 30000)
-    return () => { alive = false; clearInterval(t) }
+    aliveRef.current = true
+    const t = setTimeout(load, 0)
+    return () => { aliveRef.current = false; clearTimeout(t) }
   }, [])
+  usePausableInterval(load, 30000)
 
   if (loading) return <div className="loader" />
 

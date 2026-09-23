@@ -639,15 +639,19 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
     path     = row.get("storage_path", "")
     url      = row.get("url", "")
     cfg      = _get_cdn_config()
-    deletion_errors: list[str] = []
 
     # H13 — previously ONLY Supabase files were actually deleted from the CDN;
     # Cloudinary/R2/B2/ImageKit/Bunny URLs kept serving malicious content
     # forever even after the `media` row was removed. Now we best-effort delete
-    # on every provider.
+    # on every provider AND verify the provider confirmed (2xx). On ANY
+    # failure the media row is KEPT (returned ok:false) so the file stays
+    # visible in the library instead of silently serving forever from the CDN.
+    provider_ok = True
+    provider_error = ""
     try:
-        if provider == "supabase" and path:
-            supabase.storage.from_(SUPABASE_BUCKET).remove([path])
+        if provider == "supabase":
+            if path:
+                supabase.storage.from_(SUPABASE_BUCKET).remove([path])
 
         elif provider == "cloudinary":
             # Cloudinary destroy uses the public_id (stored in storage_path) +
@@ -656,69 +660,108 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
             cloud  = cfg.get("cloudinaryCloudName", "").strip()
             key    = cfg.get("cloudinaryApiKey", "").strip()
             secret = cfg.get("cloudinaryApiSecret", "").strip()
-            if cloud and key and secret and path:
+            if not (cloud and key and secret and path):
+                provider_ok = False
+                provider_error = "Cloudinary credentials not configured"
+            else:
                 ts = int(_time.time())
                 to_sign = f"public_id={path}&timestamp={ts}{secret}"
                 # Cloudinary API mandates SHA-1 for request signatures.
                 sig = _vendor_sha1_hex(to_sign.encode())
                 async with httpx.AsyncClient(timeout=15) as c:
-                    await c.post(
+                    r = await c.post(
                         f"https://api.cloudinary.com/v1_1/{cloud}/image/destroy",
                         data={"public_id": path, "timestamp": ts, "api_key": key, "signature": sig},
                     )
+                if r.status_code != 200:
+                    provider_ok = False
+                    provider_error = f"Cloudinary destroy failed (HTTP {r.status_code})"
 
         elif provider == "r2":
-            # boto3 DeleteObject via the S3-compatible R2 endpoint (uses the
-            # same cdn_config bucket key as the upload path).
-            _delete_r2(path, cfg)
+            # _delete_r2 returns False when unconfigured; boto raises on error.
+            if not _delete_r2(path, cfg):
+                provider_ok = False
+                provider_error = "R2 delete failed (credentials not configured)"
 
         elif provider == "b2":
-            # B2 native API: authorize → get_upload_url is per-bucket, but the
-            # delete API endpoint is /b2api/v2/b2_delete_file_version.
+            # B2 native API: authorize → /b2api/v2/b2_delete_file_version.
             app_key_id    = cfg.get("b2KeyId", "").strip()
             app_key_secret = cfg.get("b2AppKey", "").strip()
             file_id       = path  # we store the file_id as storage_path for B2
-            if app_key_id and app_key_secret and file_id:
+            if not (app_key_id and app_key_secret and file_id):
+                provider_ok = False
+                provider_error = "B2 credentials not configured"
+            else:
                 async with httpx.AsyncClient(timeout=15) as c:
                     auth = await c.post(
                         "https://api.backblazeb2.com/b2api/v2/b2_authorize_account",
                         auth=(app_key_id, app_key_secret),
                     )
-                    if auth.status_code == 200:
+                    if auth.status_code != 200:
+                        provider_ok = False
+                        provider_error = f"B2 auth failed (HTTP {auth.status_code})"
+                    else:
                         api_url = auth.json()["apiUrl"] + "/b2api/v2/b2_delete_file_version"
                         tok = auth.json()["authorizationToken"]
-                        await c.post(api_url, json={"fileId": file_id, "fileName": row.get("filename", "")},
-                                     headers={"Authorization": tok})
+                        dr = await c.post(api_url, json={"fileId": file_id, "fileName": row.get("filename", "")},
+                                          headers={"Authorization": tok})
+                        if dr.status_code != 200:
+                            provider_ok = False
+                            provider_error = f"B2 delete failed (HTTP {dr.status_code})"
 
         elif provider == "imagekit":
-            # ImageKit delete: DELETE /v1/files/{fileId} with basic auth.
-            pub_key = cfg.get("imagekitPublicKey", "").strip()
+            # ImageKit delete: DELETE /v1/files/{fileId} with basic auth on
+            # the PRIVATE key (→ 204 on success).
             priv_key = cfg.get("imagekitPrivateKey", "").strip()
             file_id = path  # we store the fileId as storage_path
-            if pub_key and priv_key and file_id:
+            if not (priv_key and file_id):
+                provider_ok = False
+                provider_error = "ImageKit credentials not configured"
+            else:
                 import base64 as _b64
                 basic = _b64.b64encode(f"{priv_key}:".encode()).decode()
                 async with httpx.AsyncClient(timeout=15) as c:
-                    await c.delete(
+                    r = await c.delete(
                         f"https://api.imagekit.io/v1/files/{file_id}",
                         headers={"Authorization": f"Basic {basic}"},
                     )
+                if r.status_code not in (200, 204):
+                    provider_ok = False
+                    provider_error = f"ImageKit delete failed (HTTP {r.status_code})"
 
         elif provider == "bunny":
-            # BunnyCDN storage: DELETE https://storage.bunnycdn.com/{zone}/{path}
-            zone   = cfg.get("bunnyStorageZone", "").strip()
-            api_key = cfg.get("bunnyApiKey", "").strip()
-            if zone and api_key and path:
+            # BunnyCDN storage: DELETE https://{host}/{zone}/{path} with the
+            # storage-zone password (bunnyAccessKey — same credential as the
+            # upload path). NOTE: was bunnyApiKey (account key, never matches
+            # saved settings), so deletes silently skipped while rows dropped.
+            zone       = cfg.get("bunnyStorageZone", "").strip()
+            access_key = cfg.get("bunnyAccessKey", "").strip()
+            region     = cfg.get("bunnyStorageRegion", "").strip()
+            if not (zone and access_key and path):
+                provider_ok = False
+                provider_error = "BunnyCDN credentials not configured"
+            else:
+                host = "storage.bunnycdn.com" if not region else f"{region}.storage.bunnycdn.com"
                 async with httpx.AsyncClient(timeout=15) as c:
-                    await c.delete(
-                        f"https://storage.bunnycdn.com/{zone}/{path}",
-                        headers={"AccessKey": api_key},
+                    r = await c.delete(
+                        f"https://{host}/{zone}/{path}",
+                        headers={"AccessKey": access_key},
                     )
+                if r.status_code not in (200, 201, 204):
+                    provider_ok = False
+                    provider_error = f"BunnyCDN delete failed (HTTP {r.status_code})"
+
+        else:
+            provider_ok = False
+            provider_error = f"Unknown provider: {provider}"
     except Exception as _del_exc:
-        # Best-effort — we still drop the media row so the admin sees the file
-        # gone from the library, but the CDN bytes may persist.
+        provider_ok = False
+        provider_error = f"CDN delete failed: {str(_del_exc)[:150]}"
         log.warning("CDN delete failed for %s: %s", provider, _del_exc, exc_info=True)
-        deletion_errors.append("CDN delete failed")
+
+    if not provider_ok:
+        log.warning("CDN delete failed for %s (%s): %s", provider, media_id, provider_error)
+        return {"ok": False, "error": provider_error, "cdn_delete_errors": [provider_error]}
 
     supabase.table("media").delete().eq("id", media_id).execute()
-    return {"message": "Deleted", "cdn_delete_errors": deletion_errors}
+    return {"ok": True, "message": "Deleted", "cdn_delete_errors": []}
