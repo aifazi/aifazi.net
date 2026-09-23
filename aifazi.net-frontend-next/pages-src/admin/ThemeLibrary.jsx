@@ -1193,8 +1193,6 @@ function ThemeLibrary() {
   // -- Global theme tracking --
   const [globalThemeId, setGlobalThemeId] = useState(() => siteConfig?.globalTheme || '')
   const [savingGlobal, setSavingGlobal] = useState(null) // id of theme being saved
-  // -- Global mode is always ON — every action applies to all visitors --------
-  const globalMode = true
   // -- Global appearance settings (loading screen, animations, layout) ------
   const [gAppearance, setGAppearance] = useState({
     loadingScreenStyle: siteConfig?.loadingScreenStyle || 'terminal',
@@ -1654,10 +1652,6 @@ function ThemeLibrary() {
       try { localStorage.setItem('tl_recent', JSON.stringify(next)) } catch {}
       return next
     })
-    const t = THEME_DEFS.find(x => x.id === id)
-    if (!globalMode) {
-      toast.success(`${t?.name} theme applied to your account`, { title: '🎨 My Theme' })
-    }
   }
 
   // -- Apply theme AND set global for all visitors ------------------------
@@ -1676,18 +1670,22 @@ function ThemeLibrary() {
     await applyGlobalTheme(id)
   }
 
-  // -- Unified apply: global or local depending on mode ------------------
-  const handleApply = (id) => {
-    if (globalMode) return applyThemeGlobally(id)
-    return applyTheme(id)
-  }
+  // -- Unified apply: explicit APPLY surfaces always write the global theme --
+  const handleApply = (id) => applyThemeGlobally(id)
 
   // -- Set theme globally for ALL visitors -----------------------------------
   const applyGlobalTheme = async (id) => {
+    // Clicking the already-global theme is a no-op — clearing requires the
+    // separate "user's choice" action in GLOBAL SETTINGS (danger-confirm).
+    if (id !== '__clear__' && globalThemeId === id) {
+      const already = THEME_DEFS.find(x => x.id === id)?.name || id
+      toast.info(`${already} is already the global theme`, { title: '⭐ Global Theme' })
+      return
+    }
     setSavingGlobal(id)
     try {
       // '__clear__' sentinel means "remove global theme  let users choose"
-      const newVal = id === '__clear__' ? '' : (globalThemeId === id ? '' : id)
+      const newVal = id === '__clear__' ? '' : id
       // Per-theme UI personality — mirror applyThemePackage's framework write
       // path so the global theme carries its menu/dialog/input/surface/notify/
       // button/card/table/badge vibe for all visitors. (Package-apply stays untouched: an explicitly
@@ -2134,7 +2132,7 @@ function ThemeLibrary() {
         </div>
         <div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: currentDef.primary, letterSpacing: 1 }}>{currentDef.name}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2 }}>ACTIVE THEME — click any card to switch instantly</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2 }}>ACTIVE THEME — click any card to preview, then SET GLOBAL to publish</div>
         </div>
         <div style={{ marginLeft: 'auto' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', opacity: 0.6 }}>🌐 Changes apply to all visitors</span>
@@ -2292,7 +2290,7 @@ function ThemeLibrary() {
                 const t = THEME_DEFS.find(x => x.id === id)
                 if (!t) return null
                 return (
-                  <button key={id} onClick={() => applyTheme(id)} title={t.desc}
+                  <button key={id} onClick={() => handleApply(id)} title={t.desc}
                     style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: theme === id ? `${t.primary}15` : 'var(--bg3)', border: `1px solid ${theme === id ? t.primary + '44' : 'var(--border)'}`, borderRadius: 4, cursor: 'pointer', transition: 'all 0.15s' }}>
                     <div style={{ display: 'flex', gap: 2 }}>
                       {[t.bg, t.primary, t.secondary].map((c, i) => <div key={i} style={{ width: 8, height: 8, borderRadius: 2, background: c }} />)}
@@ -2341,7 +2339,7 @@ function ThemeLibrary() {
               const ts = tagStyle(t.tag)
               return (
                 <div key={t.id} className="tl-card"
-                  onClick={() => handleApply(t.id)}
+                  onClick={() => { setPendingTheme(t.id); setPreviewTheme(t.id) }}
                   onMouseEnter={() => { setPreviewTheme(t.id); setFocusedIdx(idx) }}
                   onMouseLeave={() => setPreviewTheme(null)}
                   style={{
@@ -2414,14 +2412,14 @@ function ThemeLibrary() {
                   {/* Footer */}
                   <div style={{ padding: '8px 14px 10px', borderTop: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: isSelected || isActive ? t.primary : t.muted }}>
-                      {isActive ? '✅ Active theme' : isSelected ? '🖱 Click to apply' : '🖱 Click to apply instantly'}
+                      {isActive ? '✅ Active theme' : isSelected ? '⭐ Selected — use SET GLOBAL to publish' : '🖱 Click to preview'}
                     </span>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       {/* Set Global button */}
                       <button
                         onClick={e => { e.stopPropagation(); applyGlobalTheme(t.id) }}
                         disabled={savingGlobal === t.id}
-                        title={globalThemeId === t.id ? 'Click to clear global theme' : 'Set as global default for all visitors'}
+                        title={globalThemeId === t.id ? 'Already the global default' : 'Set as global default for all visitors'}
                         style={{
                           fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1,
                           padding: '3px 8px', borderRadius: 4, cursor: savingGlobal === t.id ? 'wait' : 'pointer',
@@ -2717,7 +2715,7 @@ function ThemeLibrary() {
           <div style={{ marginTop: 16, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             {displayId !== theme ? (
               <>
-                <button onClick={() => applyTheme(displayId)} style={{
+                <button onClick={() => handleApply(displayId)} style={{
                   fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '11px 28px', fontWeight: 800,
                   background: `linear-gradient(135deg, ${displayDef.primary}, ${displayDef.secondary})`,
                   border: 'none', color: '#000', cursor: 'pointer', borderRadius: 6, transition: 'all 0.15s',
@@ -2817,7 +2815,7 @@ function ThemeLibrary() {
                   ))}
                 </div>
                 {/* Apply */}
-                <button onClick={() => applyTheme(def.id)} disabled={theme === def.id}
+                <button onClick={() => handleApply(def.id)} disabled={theme === def.id}
                   style={{ marginTop: 10, width: '100%', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, padding: '8px',
                     background: theme === def.id ? 'color-mix(in srgb, var(--green) 8%, transparent)' : `linear-gradient(135deg, ${def.primary}, ${def.secondary})`,
                     border: `1px solid ${def.primary}44`, color: theme === def.id ? 'var(--green)' : '#000', cursor: theme === def.id ? 'default' : 'pointer', borderRadius: 5, fontWeight: 700 }}>
@@ -3223,7 +3221,7 @@ function ThemeLibrary() {
                   </div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.5 }}>{t.desc}</div>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => applyTheme(t.id)} disabled={isActive}
+                    <button onClick={() => handleApply(t.id)} disabled={isActive}
                       style={{ flex: 1, padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: 1, cursor: isActive ? 'not-allowed' : 'pointer', background: isActive ? 'var(--bg3)' : 'var(--green)', color: isActive ? 'var(--muted)' : '#000', border: 'none', borderRadius: 6 }}>
                       {isActive ? 'ACTIVE' : 'APPLY'}
                     </button>
@@ -3936,7 +3934,11 @@ function ThemeLibrary() {
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
                 <button
-                  onClick={() => { setGlobalThemeId(''); applyGlobalTheme('__clear__') }}
+                  onClick={async () => {
+                    const ok = await dlg.confirm({ title: 'Clear Global Theme', message: 'Remove the global default theme? New visitors will choose their own theme instead.', variant: 'danger', confirmLabel: 'CLEAR GLOBAL' })
+                    if (!ok) return
+                    applyGlobalTheme('__clear__')
+                  }}
                   style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', transition: 'all 0.15s', background: !globalThemeId ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'var(--bg3)', border: `1px solid ${!globalThemeId ? 'var(--green)' : 'var(--border)'}`, color: !globalThemeId ? 'var(--green)' : 'var(--muted)', borderRadius: 4 }}
                 >&gt;user&apos;s choice</button>
                 {THEME_DEFS.map(t => {

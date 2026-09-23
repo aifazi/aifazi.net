@@ -199,7 +199,14 @@ export default function Navbar() {
 
   // Load header style from site settings (user package override wins for this browser)
   useEffect(() => {
-    const pkgOverride = () => {
+    const pkgOverride = (parsed) => {
+      // Locked site design wins — ignore any stale per-user package while
+      // the admin forces the global theme (mirror providers eff merge).
+      if (parsed?.lockTheme) return null
+      try {
+        const cached = JSON.parse(localStorage.getItem('site-config-cache') || 'null')
+        if (cached?.lockTheme) return null
+      } catch {}
       try {
         const raw = localStorage.getItem('user-package')
         if (raw) {
@@ -209,9 +216,9 @@ export default function Navbar() {
       } catch {}
       return null
     }
-    getSiteSettings().then(s => { if (s.headerStyle) setHeaderStyle(pkgOverride() || s.headerStyle) }).catch(() => {})
+    getSiteSettings().then(s => { if (s.headerStyle) setHeaderStyle(pkgOverride(s) || s.headerStyle) }).catch(() => {})
     const onUpdate = (e) => {
-      if (e.detail?.headerStyle) setHeaderStyle(pkgOverride() || e.detail.headerStyle)
+      if (e.detail?.headerStyle) setHeaderStyle(pkgOverride(e.detail) || e.detail.headerStyle)
     }
     const onUserPkg = (e) => {
       // Re-read localStorage so a cleared package (empty settings event)
