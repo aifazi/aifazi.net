@@ -261,7 +261,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
   useEffect(() => {
     if (lockoutUntil <= Date.now()) return
     const tick = () => {
-      const remaining = Math.ceil((lockoutUntil - Date.now()) / 1000)
+      const remaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000))
       if (remaining <= 0) { setCountdown(0); clearInterval(lockoutRef.current); return }
       setCountdown(remaining)
     }
@@ -408,12 +408,16 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
     }
   }
 
+  // Lockout state is derived from lockoutUntil directly (not from the
+  // display countdown, which Math.ceil can hold ~1s past expiry).
+  const locked = Date.now() < lockoutUntil
+
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
       <ErrorBox msg={error} id="si-form-error" />
 
       {/* #3 — lockout countdown banner */}
-      {countdown > 0 && (
+      {locked && (
         <div className="auth-alert auth-alert-warn" role="alert">
           <span className="auth-alert-ico">⏳</span>
           <span>Too many failed attempts. Try again in <strong>{countdown}s</strong>.</span>
@@ -458,11 +462,11 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
         <PassToggle show={showPass} onToggle={() => setShowPass(s => !s)} />
       </FieldWrap>
 
-      <button type="submit" className="auth-submit" disabled={loading || countdown > 0}>
+      <button type="submit" className="auth-submit" disabled={loading || locked}>
         {loading ? (
           <span className="auth-spinner" aria-hidden="true" />
-        ) : countdown > 0 ? `WAIT ${countdown}s` : 'Sign in'}
-        {!loading && countdown <= 0 && <span className="auth-submit-arrow" aria-hidden="true">→</span>}
+        ) : locked ? `WAIT ${countdown}s` : 'Sign in'}
+        {!loading && !locked && <span className="auth-submit-arrow" aria-hidden="true">→</span>}
       </button>
 
       {(loginMethods.authentik || loginMethods.discord || loginMethods.steam || loginMethods.github || loginMethods.lldap) && (
@@ -513,7 +517,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
             {loginMethods.lldap && (
               <button type="button" className="auth-oauth auth-oauth-lldap"
                 onClick={handleLdapLogin}
-                disabled={loading || countdown > 0}
+                disabled={loading || locked}
                 title="Sign in with LLDAP directory">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2C7.58 2 4 3.34 4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5c0-1.66-3.58-3-8-3z" stroke="currentColor" strokeWidth="1.8"/>
@@ -542,7 +546,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
                   setLoading(false)
                 }
               }}
-              disabled={loading || countdown > 0}
+              disabled={loading || locked}
               title="Sign in via WireGuard VPN"
               style={{ color: '#fff', background: 'linear-gradient(135deg, #00b4d8, #0077b6)' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

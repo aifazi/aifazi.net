@@ -84,6 +84,24 @@ export interface Theme {
   /** corner radius for buttons/inputs (web default = angular chamfered, near 0) */
   buttonRadius: number
   colors: ThemeColors
+  /**
+   * Optional shadow slot — explicit per-theme shadow color/opacity.
+   * Optional so all existing entries compile untouched; Card/Button fall back
+   * via themeShadowColor() (dark themes: black, light: soft gray) when absent.
+   * Only glass (soft large), brutalist/minecraft/win95 (hard offset dark) and
+   * paper (warm soft) set explicit values as proof; the rest fall back.
+   */
+  shadowColor?: string
+  shadowOpacity?: number
+}
+
+/**
+ * Shadow fallback — explicit per-theme `shadowColor` wins; otherwise dark
+ * themes get a black shadow and light themes a soft gray so Card/Button never
+ * render a mismatched hard shadow.
+ */
+export function themeShadowColor(t: Theme): string {
+  return t.shadowColor ?? (t.dark ? '#000000' : '#5a6a7a')
 }
 
 export const THEMES: Record<ThemeId, Theme> = {
@@ -152,6 +170,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     mono: false,
     radius: 0,
     buttonRadius: 0,
+    shadowColor: '#000000',
+    shadowOpacity: 0.35,
     colors: {
       bg: '#008080',
       bg2: '#c0c0c0',
@@ -558,6 +578,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     mono: false,
     radius: 16,
     buttonRadius: 8,
+    shadowColor: '#04121f',
+    shadowOpacity: 0.55,
     colors: {
       bg: '#04080f',
       bg2: '#081019',
@@ -674,6 +696,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     mono: false,
     radius: 0,
     buttonRadius: 0,
+    shadowColor: '#000000',
+    shadowOpacity: 0.35,
     colors: {
       bg: '#f2f0ec',
       bg2: '#e8e6e1',
@@ -732,6 +756,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     mono: false,
     radius: 0,
     buttonRadius: 0,
+    shadowColor: '#000000',
+    shadowOpacity: 0.5,
     colors: {
       bg: '#000080',
       bg2: '#1c1c8a',
@@ -1109,6 +1135,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     mono: false,
     radius: 16,
     buttonRadius: 8,
+    shadowColor: '#6a8aaa',
+    shadowOpacity: 0.3,
     colors: {
       bg: '#f8fbff',
       bg2: '#eaf2fc',
@@ -1225,6 +1253,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     mono: false,
     radius: 0,
     buttonRadius: 0,
+    shadowColor: '#000000',
+    shadowOpacity: 0.5,
     colors: {
       bg: '#111111',
       bg2: '#1a1a1a',
@@ -1283,6 +1313,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     mono: false,
     radius: 0,
     buttonRadius: 0,
+    shadowColor: '#8a7f6a',
+    shadowOpacity: 0.28,
     colors: {
       bg: '#f5f0e8',
       bg2: '#ede8df',
@@ -1319,14 +1351,14 @@ export const THEMES: Record<ThemeId, Theme> = {
       text: '#fdf6e3',
       text2: '#cfc6b1',
       muted: '#8a7f66',
-      accent: '#e52521',
+      accent: '#d41f1c',
       accent2: '#ffd700',
       danger: '#f87171',
-      border: 'rgba(229,37,33,0.22)',
+      border: 'rgba(212,31,28,0.22)',
       success: '#34d399',
       warning: '#fbbf24',
       info: '#38bdf8',
-      divider: 'rgba(229,37,33,0.10)',
+      divider: 'rgba(212,31,28,0.10)',
       link: '#ffd700',
       sale: '#f59e0b',
       star: '#ffd700',
@@ -1341,6 +1373,8 @@ export const THEMES: Record<ThemeId, Theme> = {
     mono: true,
     radius: 0,
     buttonRadius: 0,
+    shadowColor: '#000000',
+    shadowOpacity: 0.5,
     colors: {
       bg: '#141210',
       bg2: '#1d1a17',
@@ -1377,14 +1411,14 @@ export const THEMES: Record<ThemeId, Theme> = {
       text: '#e8f0ff',
       text2: '#afbad7',
       muted: '#5a6a9a',
-      accent: '#1e6fd9',
+      accent: '#4d8dff',
       accent2: '#f5d200',
       danger: '#f87171',
-      border: 'rgba(30,111,217,0.22)',
+      border: 'rgba(77,141,255,0.22)',
       success: '#34d399',
       warning: '#fbbf24',
       info: '#38bdf8',
-      divider: 'rgba(30,111,217,0.10)',
+      divider: 'rgba(77,141,255,0.10)',
       link: '#f5d200',
       sale: '#ff6b35',
       star: '#ffd700',
@@ -1435,14 +1469,14 @@ export const THEMES: Record<ThemeId, Theme> = {
       text: '#d6e2ff',
       text2: '#9eacd0',
       muted: '#4a5a8a',
-      accent: '#1e50ff',
+      accent: '#5b8cff',
       accent2: '#00c2ff',
       danger: '#f87171',
-      border: 'rgba(30,80,255,0.22)',
+      border: 'rgba(91,140,255,0.22)',
       success: '#34d399',
       warning: '#fbbf24',
       info: '#38bdf8',
-      divider: 'rgba(30,80,255,0.10)',
+      divider: 'rgba(91,140,255,0.10)',
       link: '#00c2ff',
       sale: '#ffb300',
       star: '#ffd700',
@@ -1522,18 +1556,18 @@ export const THEMES: Record<ThemeId, Theme> = {
       text: '#ede3ff',
       text2: '#b9acd7',
       muted: '#6a5a9a',
-      accent: '#8b5cf6',
+      accent: '#7c3aed',
       accent2: '#c084fc',
       danger: '#f87171',
-      border: 'rgba(139,92,246,0.22)',
+      border: 'rgba(124,58,237,0.22)',
       success: '#34d399',
       warning: '#fbbf24',
       info: '#38bdf8',
-      divider: 'rgba(139,92,246,0.10)',
+      divider: 'rgba(124,58,237,0.10)',
       link: '#c084fc',
       sale: '#f59e0b',
       star: '#ffd700',
-      onAccent: '#100826',
+      onAccent: '#ffffff',
       overlay: 'rgba(12,7,24,0.62)',
     },
   },

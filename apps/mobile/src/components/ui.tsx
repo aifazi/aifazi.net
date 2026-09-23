@@ -2,6 +2,7 @@ import { ReactNode, useRef, useState, type Ref } from 'react'
 import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, ScrollView, DimensionValue, ActivityIndicator, Animated } from 'react-native'
 import { BlurView } from 'expo-blur'
 import { useTheme } from '@/src/theme'
+import { themeShadowColor } from '@/src/themes'
 import { withAlpha, contrastText } from '@/src/lib/color'
 import { webPillSnap } from '@/src/lib/carousel'
 import { CODE_FONT, FONT, SPACE, buttonLabel, frameworkStyles, micro, tagLabel } from '@/src/design'
@@ -74,8 +75,8 @@ export function Btn({
             backgroundColor: filled ? (isPrimary ? c.accent : c.danger) : withAlpha(c.accent, 0.04),
             borderColor: isDanger ? withAlpha(c.danger, 0.9) : isPrimary ? c.accent : withAlpha(c.accent2, 0.35),
             opacity: disabled ? 0.4 : loading ? 0.85 : 1,
-            shadowColor: filled ? (isPrimary ? c.accent : c.danger) : '#000',
-            shadowOpacity: filled ? (fw.glow ? (theme.dark ? 0.5 : 0.35) : theme.dark ? 0.45 : 0.3) : 0.1,
+            shadowColor: filled ? (isPrimary ? c.accent : c.danger) : themeShadowColor(theme),
+            shadowOpacity: theme.shadowOpacity ?? (filled ? (fw.glow ? (theme.dark ? 0.5 : 0.35) : theme.dark ? 0.45 : 0.3) : 0.1),
             shadowRadius: filled ? (fw.glow ? 18 : 14) : 5,
             shadowOffset: { width: fw.hardShadow ? (filled ? 3 : 2) : 0, height: filled ? (fw.hardShadow ? 4 : 4) : 2 },
             elevation: filled ? 5 : 1,
@@ -148,8 +149,8 @@ export function Card({
       borderColor: icy ? withAlpha(c.accent2, 0.18) : withAlpha(c.accent2, 0.4),
       borderWidth: fw.borderWidth,
       borderRadius: fw.radius,
-      shadowColor: '#000',
-      shadowOpacity: fw.hardShadow ? 0.18 : theme.dark ? 0.32 : 0.18,
+      shadowColor: themeShadowColor(theme),
+      shadowOpacity: theme.shadowOpacity ?? (fw.hardShadow ? 0.18 : theme.dark ? 0.32 : 0.18),
       shadowRadius: fw.hardShadow ? 3 : 12,
       shadowOffset: { width: fw.hardShadow ? 4 : 0, height: fw.hardShadow ? 4 : 3 },
       elevation: fw.hardShadow ? 2 : 5,
@@ -513,7 +514,7 @@ export function Badge({
         borderColor: withAlpha(bg, 0.5),
       }}
     >
-      <Text style={[tagLabel(8.5, 1), { color: outline ? bg : color ? contrastText(bg) : c.onAccent }]}>{text}</Text>
+      <Text style={[tagLabel(8.5, 1), { color: outline ? bg : contrastText(bg) }]}>{text}</Text>
     </View>
   )
 }

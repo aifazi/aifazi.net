@@ -104,10 +104,80 @@ FORBIDDEN_FIELDS = frozenset({
     "permissions_json",
     # Ban / verification state — bypasses the moderated ban + verify flows.
     "ban_expires", "is_banned", "is_verified",
-    # NOTE: per-collection column allowlists are the follow-up — FORBIDDEN_FIELDS
-    # is a denylist ratchet, not a full allowlist. Any new sensitive column must
-    # be added here until each collection gets its own explicit allowlist.
+    # Lowered camelCase aliases the collection browser echoes back into PATCH
+    # payloads (stats.py _normalize adds emailVerified/banReason/lastSeen/
+    # threadCount/replyCount next to the snake_case columns, and EditModal
+    # sends every non-readonly key). Without these, "emailverified" etc. would
+    # slip past this case-insensitive denylist. Real columns are snake_case,
+    # so blocking the lowered aliases can never strip a legitimate write.
+    "emailverified", "banreason", "lastseen", "threadcount", "replycount",
+    # NOTE: per-collection column allowlists (COLL_FIELD_ALLOWLISTS below) are
+    # now enforced on top of this denylist: unknown fields 400, and the
+    # denylist still strips anything sensitive that slips through as backstop.
+    # Any new sensitive column must still be added here.
 })
+
+# Per-collection PATCH field allowlists for the generic collection browser.
+# Enumerated from read-only grep of the admin UI
+# (aifazi.net-frontend-next/pages-src/DatabaseGUI.jsx: COLLS + COL_PRIORITY +
+# EditModal payload = every doc key minus the frontend READONLY list) crossed
+# with the columns each dedicated router actually writes (blog.py PostBody,
+# forum.py thread/reply inserts, contact.py, newsletter.py, chat.py message
+# insert/edit, upload.py _save_media). Keys are matched case-insensitively
+# (stored lowercase); unknown field -> 400. Collections without an entry here
+# (users/staff) stay on the legacy admin-only + FORBIDDEN_FIELDS path, and
+# collections with no table mapping at all -> 403. require_staff /
+# require_admin gating above is unchanged.
+# Included-but-stripped keys (id/created_at/updated_at/role/email/...): the
+# browser echoes them back in every save, so they must be *known* (else 400
+# would break all saves) while FORBIDDEN_FIELDS still strips them before the
+# Supabase write — existing behaviour preserved.
+COLL_FIELD_ALLOWLISTS = {
+    "posts": frozenset({
+        "id", "_id",
+        "title", "slug", "excerpt", "content", "cover_image", "video_url",
+        "category", "tags", "published", "publish_at", "author_name",
+        "views", "reactions",
+        "created_at", "createdat", "updated_at", "updatedat",
+    }),
+    "threads": frozenset({
+        "id", "_id",
+        "title", "content", "category_id", "author_id", "author_name",
+        "tags", "attachments", "pinned", "locked", "views",
+        "reply_count", "replycount", "likes",
+        "last_reply_at", "last_reply_by",
+        "created_at", "createdat", "updated_at", "updatedat",
+    }),
+    "replies": frozenset({
+        "id", "_id",
+        "thread_id", "author_id", "author_name", "content", "attachments",
+        "edited", "edited_at",
+        "created_at", "createdat", "updated_at", "updatedat",
+    }),
+    "contacts": frozenset({
+        "id", "_id",
+        "name", "email", "subject", "message", "replied", "replied_at",
+        "created_at", "createdat", "updated_at", "updatedat",
+    }),
+    "messages": frozenset({
+        "id", "_id",
+        "room_id", "sender", "role", "type", "content",
+        "file_name", "file_size", "duration", "reply_to",
+        "edited", "edited_at", "reactions",
+        "created_at", "createdat", "updated_at", "updatedat",
+    }),
+    "media": frozenset({
+        "id", "_id",
+        "filename", "original_name", "mimetype", "size", "url",
+        "storage_path", "provider",
+        "created_at", "createdat", "updated_at", "updatedat",
+    }),
+    "newsletter": frozenset({
+        "id", "_id",
+        "email", "status",
+        "created_at", "createdat", "updated_at", "updatedat",
+    }),
+}
 
 def _normalize(doc):
     if doc and "id" in doc:
@@ -161,7 +231,17 @@ async def collection_update(coll: str, doc_id: str, request: Request, user: dict
     body = _validate_patch_body(body)
     table = COLL_TABLE.get(coll)
     if not table:
-        raise HTTPException(status_code=400, detail=f"Unknown collection: {coll}")
+        raise HTTPException(status_code=403, detail=f"Unknown collection: {coll}")
+    # Per-collection allowlist: unknown field -> 400. Collections without an
+    # entry (admin-only users path) keep the legacy denylist-only behaviour.
+    allowed = COLL_FIELD_ALLOWLISTS.get(coll)
+    if allowed is not None:
+        unknown = sorted({k for k in body if k.lower() not in allowed})
+        if unknown:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown field(s) for collection '{coll}': {', '.join(unknown[:10])}",
+            )
     # H10 — Strip every forbidden field (case-insensitive) before passing the
     # remainder to Supabase. The list covers every escalation / impersonation
     # vector the audit identified when staff could WRITE any column.
@@ -183,7 +263,7 @@ async def collection_delete(coll: str, doc_id: str, request: Request, user: dict
         raise HTTPException(status_code=403, detail="Admin only")
     table = COLL_TABLE.get(coll)
     if not table:
-        raise HTTPException(status_code=400, detail=f"Unknown collection: {coll}")
+        raise HTTPException(status_code=403, detail=f"Unknown collection: {coll}")
     supabase.table(table).delete().eq("id", doc_id).execute()
     _audit(_actor(user), "admin_collection_delete", target=f"{table}:{doc_id}",
            details={"coll": coll}, ip=_ip(request))

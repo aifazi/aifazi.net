@@ -932,6 +932,7 @@ export default function ForumAdmin({ embedded = false }) {
               <div>
                 <label style={S.label}>NAME *</label>
                 <input value={catForm.name} onChange={e => setCatForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. General Discussion" maxLength={100} style={S.input} />
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{catForm.name.length}/100</div>
               </div>
               <div>
                 <label style={S.label}>ICON (emoji)</label>
@@ -940,6 +941,7 @@ export default function ForumAdmin({ embedded = false }) {
               <div style={{ gridColumn: '1/-1' }}>
                 <label style={S.label}>DESCRIPTION</label>
                 <input value={catForm.description} onChange={e => setCatForm(f => ({ ...f, description: e.target.value }))} placeholder="What this category is about..." maxLength={500} style={S.input} />
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{catForm.description.length}/500</div>
               </div>
               <div>
                 <label style={S.label}>ACCENT COLOR</label>

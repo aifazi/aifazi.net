@@ -475,7 +475,7 @@ export function VerifyEmail() {
 
   useEffect(() => {
     if (!token) return
-    api.get(`/auth/verify-email?token=${token}`)
+    api.post('/auth/verify-email', { token })
       .then(res => {
         setStatus('success')
         setMessage(res.data.message || 'Email verified!')

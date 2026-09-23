@@ -28,4 +28,42 @@ async def check():
     except Exception as e:
         print('chat_rooms.e2ee_enabled error:', e)
 
+    try:
+        res = await supabase.table('vpn_peers').select('status').limit(1).execute()
+        data = res.data[0] if res.data else {}
+        print('vpn_peers.status exists:', 'status' in data)
+    except Exception as e:
+        print('vpn_peers error:', e)
+
+    try:
+        res = await supabase.table('store_wishlist').select('*').limit(1).execute()
+        print('store_wishlist exists:', len(res.data) >= 0)
+    except Exception as e:
+        print('store_wishlist error:', e)
+
+    try:
+        res = await supabase.table('blog_comments').select('content').limit(1).execute()
+        data = res.data[0] if res.data else {}
+        print('blog_comments.content exists:', 'content' in data)
+    except Exception as e:
+        print('blog_comments error:', e)
+
+    try:
+        res = await supabase.table('chat_messages').select('*').limit(1).execute()
+        print('chat_messages exists:', len(res.data) >= 0)
+    except Exception as e:
+        print('chat_messages error:', e)
+
+    try:
+        res = await supabase.table('monitor_checks').select('*').limit(1).execute()
+        print('monitor_checks exists:', len(res.data) >= 0)
+    except Exception as e:
+        print('monitor_checks error:', e)
+
+    try:
+        res = await supabase.table('uptime_checks').select('*').limit(1).execute()
+        print('uptime_checks exists:', len(res.data) >= 0)
+    except Exception as e:
+        print('uptime_checks error:', e)
+
 asyncio.run(check())
