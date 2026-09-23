@@ -555,8 +555,8 @@ export const FRAMEWORK_CATEGORIES = [
   { id: 'dialog', label: 'Dialogs',       icon: '💬', color: '#ffd700', styles: DIALOG_STYLES,  configKey: 'dialogStyle' },
   { id: 'input',  label: 'Inputs',        icon: '⌨',  color: '#38bdf8', styles: INPUT_STYLES,   configKey: 'inputStyle'  },
   { id: 'surface', label: 'Surfaces',     icon: '▧',  color: '#34d399', styles: SURFACE_STYLES, configKey: 'surfaceStyle' },
-  { id: 'button', label: 'Buttons',      icon: '🔘', color: '#4ade80', styles: BUTTON_STYLES,  configKey: 'buttonStyle'  },
-  { id: 'card',   label: 'Cards',        icon: '🃏', color: '#f472b6', styles: CARD_STYLES,    configKey: 'cardStyle'    },
+  { id: 'button', label: 'Buttons',      icon: '🔘', color: '#4ade80', styles: BUTTON_STYLES,  configKey: 'buttonStyle', scope: 'admin panels'  },
+  { id: 'card',   label: 'Cards',        icon: '🃏', color: '#f472b6', styles: CARD_STYLES,    configKey: 'cardStyle',   scope: 'admin panels'    },
   { id: 'table',  label: 'Tables',       icon: '▦',  color: '#22d3ee', styles: TABLE_STYLES,   configKey: 'tableStyle'   },
-  { id: 'badge',  label: 'Badges',       icon: '🏷', color: '#facc15', styles: BADGE_STYLES,   configKey: 'badgeStyle'   },
+  { id: 'badge',  label: 'Badges',       icon: '🏷', color: '#facc15', styles: BADGE_STYLES,   configKey: 'badgeStyle',  scope: 'admin panels'  },
 ]
