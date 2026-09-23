@@ -846,6 +846,12 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
             [data-surface-style="holo"] body::after { display:none; }
             [data-surface-style="holo"] body { background: linear-gradient(180deg, rgba(0,229,255,0.03), transparent 40%) !important; }
             [data-surface-style="void"] body { background: #04050a !important; }
+            [data-surface-style="cyber-grid"] body { background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) !important; background-size: 60px 60px !important; }
+            [data-surface-style="glass-dock"] body { background: radial-gradient(1200px 600px at 20% -10%, color-mix(in srgb, var(--cyan) 8%, transparent), transparent 60%), var(--bg) !important; }
+            [data-surface-style="paper-doc"] body { background-color: var(--bg2) !important; background-image: linear-gradient(color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px) !important; background-size: 100% 32px !important; }
+            [data-surface-style="terminal"] body { background-color: var(--bg) !important; background-image: repeating-linear-gradient(0deg, color-mix(in srgb, var(--green) 7%, transparent) 0 1px, transparent 1px 4px) !important; background-size: 100% 4px !important; }
+            [data-surface-style="neon-stage"] body { background: radial-gradient(600px 300px at 15% 0%, color-mix(in srgb, var(--cyan) 10%, transparent), transparent 60%), radial-gradient(600px 300px at 85% 10%, color-mix(in srgb, var(--green) 8%, transparent), transparent 60%), var(--bg) !important; }
+            [data-surface-style="dashboard"] body { background-color: var(--bg) !important; background-image: linear-gradient(color-mix(in srgb, var(--cyan) 6%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--cyan) 4%, transparent) 1px, transparent 1px) !important; background-size: 24px 24px !important; }
           `}</style>
         </ForumProvider>
         </ErrorBoundary>

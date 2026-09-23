@@ -1,7 +1,11 @@
 /**
  * ╔══════════════════════════════════════════════════════════════╗
- * ║  NOTIFY SYSTEM — 5 styles: cyber · terminal · banner ·     ║
- * ║                             float · glitch                  ║
+ * ║  NOTIFY SYSTEM — 12 styles (NOTIFY_STYLES vocab in          ║
+ * ║  core/framework-styles.js): cyber · pill · minimal ·        ║
+ * ║  terminal · glass · banner · float · glitch · inbox ·       ║
+ * ║  hud · holo · chip                                          ║
+ * ║  Each vocab id routes to its renderer in ToastItem below    ║
+ * ║  (inbox → InboxToast, hud → HudToast).                     ║
  * ║  Hook:        const { success } = useNotify()               ║
  * ║  Imperative:  notify.success('Done!')                       ║
  * ╚══════════════════════════════════════════════════════════════╝
@@ -357,6 +361,86 @@ function ChipToast({ toast, v, leaving, dismiss }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// STYLE 11 — INBOX (stacked feed entry: Float card + unread dot + subject)
+// ─────────────────────────────────────────────────────────────────────────────
+function InboxToast({ toast, v, leaving, progress, dismiss }) {
+  const unread = !toast.read
+  return (
+    <div role="alert" style={{
+      position: 'relative', minWidth: 280, maxWidth: 380, overflow: 'hidden',
+      marginBottom: 8, cursor: 'default',
+      background: 'var(--bg2)', border: `var(--border-w, 1px) solid ${v.border}`,
+      borderRadius: 'var(--radius, 8px)', padding: '16px',
+      boxShadow: `0 0 24px ${v.glow.replace('0.3','0.08')}, 0 8px 32px rgba(0,0,0,0.5)`,
+      animation: leaving ? 'ntfy-fadeOut .35s ease forwards' : 'ntfy-floatIn .4s cubic-bezier(.16,1,.3,1) both',
+    }}>
+      {/* top gradient bar */}
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, borderRadius:'calc(var(--radius, 8px)) calc(var(--radius, 8px)) 0 0', background:`linear-gradient(90deg,${v.color},transparent)` }} />
+      {/* header row with unread dot */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+        <div style={{ width:7, height:7, borderRadius:'50%', flexShrink:0, background: unread ? v.color : t.muted, boxShadow: unread ? `0 0 6px ${v.glow}` : 'none' }} />
+        <div style={{
+          width:32, height:32, borderRadius:6, flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'center', fontSize:15,
+          background:`${v.bg}`, border:`1px solid ${v.border}`,
+          animation: toast.type === 'error' ? 'ntfy-shake .4s ease' : 'none',
+        }}>{v.icon}</div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontFamily:t.fontMono, fontSize:10, fontWeight:700, letterSpacing:1, color:v.color }}>{toast.title || v.label}</div>
+          <div style={{ fontFamily:t.fontMono, fontSize:9, color:t.muted, marginTop:1 }}>{ts()} · aifazi.net</div>
+        </div>
+        <button onClick={dismiss} style={{ background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:12, fontFamily:t.fontMono }}>✕</button>
+      </div>
+      {/* subject line slot (optional `subject` opt; falls back to nothing to avoid echoing the header title) */}
+      {toast.subject && (
+        <div style={{ fontFamily:t.fontMono, fontSize:10, fontWeight:700, color:t.text, lineHeight:1.5, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{toast.subject}</div>
+      )}
+      {/* message */}
+      <div style={{ fontFamily:t.fontMono, fontSize:10, color:'rgba(200,216,232,0.75)', lineHeight:1.6 }}>{toast.message}</div>
+      {/* action buttons */}
+      {toast.action && (
+        <div style={{ display:'flex', gap:6, marginTop:10 }}>
+          <button onClick={()=>{ toast.onAction?.(); dismiss() }} style={{ fontFamily:t.fontMono, fontSize:8, letterSpacing:1, padding:'4px 10px', borderRadius:3, cursor:'pointer', border:`1px solid ${v.border}`, color:v.color, background:v.bg }}>{toast.action}</button>
+          <button onClick={dismiss} style={{ fontFamily:t.fontMono, fontSize:8, letterSpacing:1, padding:'4px 10px', borderRadius:3, cursor:'pointer', border:`1px solid var(--border)`, color:t.muted, background:'transparent' }}>DISMISS</button>
+        </div>
+      )}
+      {/* progress */}
+      {!toast.persistent && <div style={{ position:'absolute', bottom:0, left:0, height:'1px', background:v.color, opacity:.4, width:`${progress}%`, transition:'width .05s linear' }} />}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STYLE 12 — HUD (corner telemetry: Minimal card + bracket frame + tracking)
+// ─────────────────────────────────────────────────────────────────────────────
+function HudToast({ toast, v, leaving, progress, dismiss }) {
+  const bracket = `1px solid ${v.color}66`
+  return (
+    <div role="alert" onClick={dismiss} style={{
+      position:'relative', minWidth:280, maxWidth:380, overflow:'hidden',
+      marginBottom:8, cursor:'pointer',
+      background:'var(--bg2)', border:`var(--border-w, 1px) solid ${v.border}`, borderRadius:'var(--radius, 8px)',
+      padding:'13px 36px 13px 16px',
+      boxShadow:'0 4px 20px rgba(0,0,0,0.3)',
+      animation: leaving ? 'ntfy-fadeOut .3s ease forwards' : 'ntfy-floatIn .35s cubic-bezier(.16,1,.3,1) both',
+    }}>
+      {/* corner-bracket frame */}
+      <div aria-hidden style={{ position:'absolute', top:4, left:4, width:8, height:8, borderLeft:bracket, borderTop:bracket }} />
+      <div aria-hidden style={{ position:'absolute', top:4, right:4, width:8, height:8, borderRight:bracket, borderTop:bracket }} />
+      <div aria-hidden style={{ position:'absolute', bottom:4, left:4, width:8, height:8, borderLeft:bracket, borderBottom:bracket }} />
+      <div aria-hidden style={{ position:'absolute', bottom:4, right:4, width:8, height:8, borderRight:bracket, borderBottom:bracket }} />
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+        <span style={{ color:v.color, fontSize:13 }}>{v.icon}</span>
+        <span style={{ fontFamily:t.fontMono, fontSize:9, letterSpacing:3, color:v.color, textTransform:'uppercase' }}>{toast.title || v.label}</span>
+      </div>
+      <div style={{ fontFamily:t.fontMono, fontSize:11, color:t.text, lineHeight:1.5, paddingLeft:21, textTransform:'uppercase', letterSpacing:1 }}>{toast.message}</div>
+      <button onClick={e=>{e.stopPropagation();dismiss()}} style={{ position:'absolute', top:9, right:10, background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:10, fontFamily:t.fontMono }}>✕</button>
+      {!toast.persistent && <div style={{ position:'absolute', bottom:0, left:0, height:'2px', background:v.color, opacity:.35, width:`${progress}%`, transition:'width .05s linear', borderRadius:'0 0 0 8px' }} />}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TERMINAL WINDOW WRAPPER (collects terminal-style toasts)
 // ─────────────────────────────────────────────────────────────────────────────
 function TerminalWindow({ toasts, onRemove }) {
@@ -416,8 +500,8 @@ function ToastItem({ toast, onRemove, notifyStyle }) {
   if (activeStyle === 'terminal') return <TerminalToast {...props} />
   if (activeStyle === 'banner')   return <BannerToast   {...props} />
   if (activeStyle === 'float')    return <FloatToast    {...props} />
-  if (activeStyle === 'inbox')    return <FloatToast    {...props} />
-  if (activeStyle === 'hud')      return <MinimalToast  {...props} />
+  if (activeStyle === 'inbox')    return <InboxToast    {...props} />
+  if (activeStyle === 'hud')      return <HudToast      {...props} />
   if (activeStyle === 'glitch')   return <GlitchToast   {...props} />
   if (activeStyle === 'pill')     return <PillToast     {...props} />
   if (activeStyle === 'minimal')  return <MinimalToast  {...props} />

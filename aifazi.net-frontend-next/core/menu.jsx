@@ -150,7 +150,7 @@ export function MenuProvider({ children, menuStyle = 'cyber' }) {
   }, [ctxMenu, closeContextMenu])
 
   return (
-    <MenuContext.Provider value={{ openContextMenu, closeContextMenu }}>
+    <MenuContext.Provider value={{ openContextMenu, closeContextMenu, menuStyle }}>
       {children}
       {ctxMenu && (
         <div ref={menuRef}>
@@ -170,11 +170,13 @@ export function MenuProvider({ children, menuStyle = 'cyber' }) {
 
 // ── Dropdown — attach a menu panel to a trigger element ──────────────────────
 // Usage: <Dropdown trigger={<button>Options</button>} items={[...]} />
-export function Dropdown({ trigger, items = [], placement = 'bottom-left', header }) {
+export function Dropdown({ trigger, items = [], placement = 'bottom-left', header, menuStyle: menuStyleProp }) {
   const [open, setOpen] = useState(false)
   const [pos,  setPos]  = useState({ x: 0, y: 0 })
   const triggerRef = useRef(null)
   const panelRef   = useRef(null)
+  const menuCtx = useContext(MenuContext)
+  const menuStyle = menuStyleProp || menuCtx?.menuStyle || 'cyber'
 
   const openDropdown = useCallback((e) => {
     e.stopPropagation()
@@ -218,6 +220,7 @@ export function Dropdown({ trigger, items = [], placement = 'bottom-left', heade
             y={pos.y}
             header={header}
             onClose={() => setOpen(false)}
+            menuStyle={menuStyle}
           />
         </div>
       )}

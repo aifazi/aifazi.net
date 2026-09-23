@@ -26,6 +26,34 @@ const normalizeOptions = options =>
     return option
   })
 
+// ── Input-style accent ──────────────────────────────────────────────────────
+// Mirrors the providers.tsx [data-input-style="…"] CSS rules so focus rings,
+// selected options, and toggles follow the active framework input style.
+// Reads the live attribute per call (no subscription needed); unknown or
+// absent styles fall back to the historic cyan look.
+function inputAccent() {
+  const fallback = { color: t.cyan, ring: '0 0 0 2px rgba(0,212,255,0.10)', wash: 'rgba(0,212,255,.12)' }
+  if (typeof document === 'undefined') return fallback
+  const s = document.documentElement.getAttribute('data-input-style') || 'cyber'
+  switch (s) {
+    case 'terminal':
+    case 'crt':
+      return { color: '#33ff33', ring: '0 0 0 2px rgba(51,255,51,0.10)', wash: 'rgba(51,255,51,.12)' }
+    case 'minimal':
+      return { color: t.muted, ring: 'none', wash: 'rgba(255,255,255,0.05)' }
+    case 'brutal':
+      return { color: t.text, ring: 'none', wash: 'rgba(0,0,0,0.06)' }
+    case 'paper':
+      return { color: '#8a6d4b', ring: '0 0 0 2px rgba(138,109,75,0.12)', wash: 'rgba(138,109,75,.12)' }
+    case 'command':
+      return { color: '#38bdf8', ring: '0 0 0 2px rgba(56,189,248,0.10)', wash: 'rgba(56,189,248,.12)' }
+    case 'holo':
+      return { color: '#00e5ff', ring: '0 0 0 2px rgba(0,229,255,0.10)', wash: 'rgba(0,229,255,.12)' }
+    default:
+      return fallback
+  }
+}
+
 export function Input({ value, onChange, placeholder, type = 'text', style = {}, disabled, ...props }) {
   if (type === 'datetime-local') {
     return (
@@ -49,8 +77,9 @@ export function Input({ value, onChange, placeholder, type = 'text', style = {},
       placeholder={placeholder}
       style={{ ...fieldBase, cursor: disabled ? 'not-allowed' : undefined, opacity: disabled ? 0.55 : 1, ...style }}
       onFocus={e => {
-        e.currentTarget.style.borderColor = t.cyan
-        e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0,212,255,0.10)'
+        const a = inputAccent()
+        e.currentTarget.style.borderColor = a.color
+        e.currentTarget.style.boxShadow = a.ring
         props.onFocus?.(e)
       }}
       onBlur={e => {
@@ -74,8 +103,9 @@ export function TextArea({ value, onChange, placeholder, rows = 3, style = {}, d
       rows={rows}
       style={{ ...fieldBase, resize: 'vertical', minHeight: rows * 34, cursor: disabled ? 'not-allowed' : undefined, opacity: disabled ? 0.55 : 1, ...style }}
       onFocus={e => {
-        e.currentTarget.style.borderColor = t.cyan
-        e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0,212,255,0.10)'
+        const a = inputAccent()
+        e.currentTarget.style.borderColor = a.color
+        e.currentTarget.style.boxShadow = a.ring
         props.onFocus?.(e)
       }}
       onBlur={e => {
@@ -102,6 +132,7 @@ export function Select({
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const menuRef = useRef(null)
+  const accent = inputAccent()
 
   useEffect(() => {
     if (!open) return
@@ -137,14 +168,14 @@ export function Select({
           gap: 10,
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.55 : 1,
-          borderColor: open ? t.cyan : t.border,
-          boxShadow: open ? '0 0 0 2px rgba(0,212,255,0.10)' : 'none',
+          borderColor: open ? accent.color : t.border,
+          boxShadow: open ? accent.ring : 'none',
         }}
       >
         <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selected ? t.text : t.muted }}>
           {selected?.icon ? `${selected.icon} ` : ''}{selected?.label || placeholder}
         </span>
-        <span style={{ color: open ? t.cyan : t.muted, fontSize: 11, flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
+        <span style={{ color: open ? accent.color : t.muted, fontSize: 11, flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
         <div
@@ -193,8 +224,8 @@ export function Select({
                   padding: '7px 10px',
                   border: 'none',
                   borderRadius: 5,
-                  background: active ? 'rgba(0,212,255,.12)' : 'transparent',
-                  color: active ? t.cyan : t.text,
+                  background: active ? accent.wash : 'transparent',
+                  color: active ? accent.color : t.text,
                   cursor: option.disabled ? 'not-allowed' : 'pointer',
                   opacity: option.disabled ? 0.45 : 1,
                   textAlign: 'left',
@@ -204,7 +235,7 @@ export function Select({
               >
                 {option.icon && <span style={{ width: 16, textAlign: 'center', flexShrink: 0 }}>{option.icon}</span>}
                 <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{option.label}</span>
-                {active && <span style={{ color: t.green, flexShrink: 0 }}>✓</span>}
+                {active && <span style={{ color: accent.color, flexShrink: 0 }}>✓</span>}
               </button>
             )
           })}
@@ -215,6 +246,12 @@ export function Select({
 }
 
 export function Checkbox({ checked, onChange, disabled, label, style = {} }) {
+  const accent = inputAccent()
+  // Historic look used green for the default (cyan-group) styles — preserve it
+  // exactly there; other input styles drive the checked color from the mapping.
+  const cc = accent.color === t.cyan ? t.green : accent.color
+  const cw = accent.color === t.cyan ? 'rgba(0,255,136,0.20)' : accent.wash
+  const cb = accent.color === t.cyan ? 'rgba(0,255,136,0.55)' : accent.color
   return (
     <button
       type="button"
@@ -227,10 +264,10 @@ export function Checkbox({ checked, onChange, disabled, label, style = {} }) {
         alignItems: 'center',
         gap: 8,
         background: t.bg3,
-        border: `var(--border-w, 1px) solid ${checked ? 'rgba(0,255,136,0.55)' : t.border}`,
+        border: `var(--border-w, 1px) solid ${checked ? cb : t.border}`,
         borderRadius: 'var(--radius, 6px)',
         padding: '8px 12px',
-        color: checked ? t.green : t.text,
+        color: checked ? cc : t.text,
         fontSize: 12,
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
@@ -243,9 +280,9 @@ export function Checkbox({ checked, onChange, disabled, label, style = {} }) {
         width: 14,
         height: 14,
         borderRadius: 3,
-        border: `1px solid ${checked ? t.green : t.border}`,
-        background: checked ? 'rgba(0,255,136,0.20)' : 'transparent',
-        color: checked ? t.green : 'transparent',
+        border: `1px solid ${checked ? cc : t.border}`,
+        background: checked ? cw : 'transparent',
+        color: checked ? cc : 'transparent',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -261,6 +298,11 @@ export function Slider({ value, onChange, min = 0, max = 100, step = 1, disabled
   const ref = useRef(null)
   const num = Number(value ?? min)
   const pct = max === min ? 0 : Math.min(100, Math.max(0, ((num - min) / (max - min)) * 100))
+  const accent = inputAccent()
+  // Historic thumb: cyan border + green glow — preserved exactly for the
+  // default (cyan-group) styles; other input styles tint from the mapping.
+  const thumbBorder = accent.color === t.cyan ? 'rgba(0,212,255,0.55)' : accent.color
+  const thumbGlow = accent.color === t.cyan ? 'rgba(0,255,136,0.65)' : accent.color
 
   const pick = clientX => {
     if (disabled || !ref.current) return
@@ -308,7 +350,7 @@ export function Slider({ value, onChange, min = 0, max = 100, step = 1, disabled
       </div>
       <div style={{ position:'absolute', left:`calc(${pct}% - 6px)`, top:'50%', width:12, height:12,
         transform:'translateY(-50%)', borderRadius:'50%', background:t.text,
-        border:'1px solid rgba(0,212,255,0.55)', boxShadow:'0 0 10px rgba(0,255,136,0.65)' }} />
+        border:`1px solid ${thumbBorder}`, boxShadow:`0 0 10px ${thumbGlow}` }} />
     </div>
   )
 }
