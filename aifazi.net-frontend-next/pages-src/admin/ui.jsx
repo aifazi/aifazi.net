@@ -28,9 +28,8 @@ function fwKey(siteConfig, key, ids, fallback) {
   return typeof v === 'string' && ids.includes(v) ? v : fallback
 }
 function useFwKey(key, ids, fallback) {
-  let siteConfig = null
-  try { siteConfig = useTheme()?.siteConfig || null } catch { siteConfig = null }
-  return fwKey(siteConfig, key, ids, fallback)
+  const theme = useTheme()
+  return fwKey(theme?.siteConfig, key, ids, fallback)
 }
 
 /* ── Button ─────────────────────────────────────────────────────────────── */
