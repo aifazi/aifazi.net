@@ -54,7 +54,7 @@ function BgPattern({ bgStyle, accentColor }) {
   // default: grid
   return (
     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-      backgroundImage: `linear-gradient(${c} 1px,transparent 1px),linear-gradient(90deg,${c} 1px,transparent 1px)`,
+      backgroundImage: `linear-gradient(${mix(8)} 1px,transparent 1px),linear-gradient(90deg,${mix(8)} 1px,transparent 1px)`,
       backgroundSize: '40px 40px' }} />
   )
 }
