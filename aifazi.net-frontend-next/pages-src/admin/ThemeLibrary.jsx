@@ -1030,7 +1030,7 @@ function TabBtn({ id, label, active, onSelect }) {
 }
 
 function ThemeLibrary() {
-  const { theme, setTheme, siteConfig, refreshSiteConfig } = useTheme()
+  const { theme, setTheme, siteConfig, refreshSiteConfig, patchUserPackage } = useTheme()
   const [activeTab, setActiveTab] = useState('packages')
   const [previewTheme, setPreviewTheme] = useState(null)
   const [pendingTheme, setPendingTheme] = useState(null)
@@ -1264,6 +1264,10 @@ function ThemeLibrary() {
       clearSiteSettingsCache()
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { bgAnimation: id } }))
       await refreshSiteConfig()
+      // A stored user-package (all built-ins pin bgAnimation/grid) would keep
+      // vetoing this fresh global choice via the eff merge — strip the bg keys
+      // so what was just saved actually renders. Other package keys are kept.
+      try { patchUserPackage?.({ bgAnimation: null, gridPattern: null, backgroundPattern: null }) } catch {}
       notify.success(`Animation: ${ANIMATION_PATTERNS.find(p => p.id === id)?.name}`, { title: '🎨 Background Animation Set' })
     } catch (err) {
       notify.error(err?.response?.data?.error || 'Failed to save background animation', { title: 'Error' })
@@ -1282,6 +1286,8 @@ function ThemeLibrary() {
       clearSiteSettingsCache()
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { gridPattern: id } }))
       await refreshSiteConfig()
+      // Same stale-package veto as animations (see handleAnimationSelect).
+      try { patchUserPackage?.({ bgAnimation: null, gridPattern: null, backgroundPattern: null }) } catch {}
       notify.success(`Grid: ${GRID_PATTERNS.find(p => p.id === id)?.name}`, { title: '▦ Grid Overlay Set' })
     } catch (err) {
       notify.error(err?.response?.data?.error || 'Failed to save grid overlay', { title: 'Error' })

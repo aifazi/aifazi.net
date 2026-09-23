@@ -47,10 +47,11 @@ export const ThemeContext = createContext<{
   userPackage: { id: string; settings: Record<string, any> } | null
   applyUserPackage: (pkg: { id: string; settings: Record<string, any> }) => void
   clearUserPackage: () => void
+  patchUserPackage: (patch: Record<string, any>) => void
 }>({
   theme: 'cyber-dark', setTheme: () => {}, toggleTheme: () => {},
   siteConfig: {}, refreshSiteConfig: async () => {}, isAdmin: false, siteConfigReady: false,
-  userPackage: null, applyUserPackage: () => {}, clearUserPackage: () => {},
+  userPackage: null, applyUserPackage: () => {}, clearUserPackage: () => {}, patchUserPackage: () => {},
 })
 
 export const useTheme = () => useContext(ThemeContext)
@@ -358,6 +359,26 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     localStorage.removeItem('user-package')
     setUserPackageState(null)
     window.dispatchEvent(new CustomEvent('user-package-updated', { detail: { id: '', settings: {} } }))
+  }
+
+  // Patch keys of the stored user package (null/undefined deletes the key).
+  // Used when the admin explicitly saves a global background choice: a stale
+  // stored package (all built-in packages carry bgAnimation:'none') would
+  // otherwise keep vetoing it via the `eff` merge, making the admin's change
+  // silently not render. Other package keys are left untouched.
+  const patchUserPackage = (patch: Record<string, any>) => {
+    if (typeof window === 'undefined') return
+    const cur = getUserPackage()
+    if (!cur) return
+    const next = { ...cur.settings }
+    for (const k of Object.keys(patch || {})) {
+      if (patch[k] === null || patch[k] === undefined) delete next[k]
+      else next[k] = patch[k]
+    }
+    const updated = { id: cur.id, settings: next }
+    setUserPackage(updated)
+    setUserPackageState(updated)
+    window.dispatchEvent(new CustomEvent('user-package-updated', { detail: { id: cur.id, settings: next } }))
   }
 
   useEffect(() => {
@@ -690,7 +711,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   }, [])
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, siteConfig, refreshSiteConfig, isAdmin: userIsAdmin, siteConfigReady, userPackage, applyUserPackage, clearUserPackage }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, siteConfig, refreshSiteConfig, isAdmin: userIsAdmin, siteConfigReady, userPackage, applyUserPackage, clearUserPackage, patchUserPackage }}>
       <NotifyProvider notifyStyle={eff.notifyStyle || 'cyber'} position={eff.notifyPosition || 'bottom-right'}>
       <DialogProvider dialogStyle={eff.dialogStyle || 'cyber'}>
       <MenuProvider menuStyle={eff.menuStyle || 'cyber'}>
