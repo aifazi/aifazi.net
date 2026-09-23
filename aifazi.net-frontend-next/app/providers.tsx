@@ -313,7 +313,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   }, [])
 
   // Local-only personality write: resolves THEME_FRAMEWORK for the theme id
-  // and merges the 5 framework keys into siteConfig state (no backend write,
+  // and merges the 9 framework keys into siteConfig state (no backend write,
   // no event dispatch — purely this browser's preview). Unmapped ids no-op.
   function applyFrameworkForTheme(id: string) {
     try {
@@ -436,6 +436,10 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     notifyStyle:         pkgSettings.notifyStyle         || siteConfig.notifyStyle,
     notifyPosition:      pkgSettings.notifyPosition      || siteConfig.notifyPosition,
     dialogStyle:         pkgSettings.dialogStyle         || siteConfig.dialogStyle,
+    buttonStyle:         pkgSettings.buttonStyle         || siteConfig.buttonStyle,
+    cardStyle:           pkgSettings.cardStyle           || siteConfig.cardStyle,
+    tableStyle:          pkgSettings.tableStyle          || siteConfig.tableStyle,
+    badgeStyle:          pkgSettings.badgeStyle          || siteConfig.badgeStyle,
     headerStyle:         pkgSettings.headerStyle         || siteConfig.headerStyle,
     footerStyle:         pkgSettings.footerStyle         || siteConfig.footerStyle,
   }
@@ -455,6 +459,15 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     if (surfaceStyle) document.documentElement.setAttribute('data-surface-style', surfaceStyle)
     else document.documentElement.removeAttribute('data-surface-style')
   }, [eff.surfaceStyle])
+
+  // Framework table style — consumed by globals.css [data-table-style="…"]
+  // rules so ad-hoc admin tables follow the active personality. Absent key →
+  // attribute removed → panels keep their current look (cyber default).
+  useEffect(() => {
+    const tableStyle = eff.tableStyle || ''
+    if (tableStyle) document.documentElement.setAttribute('data-table-style', tableStyle)
+    else document.documentElement.removeAttribute('data-table-style')
+  }, [eff.tableStyle])
 
   // Apply background animation (body::before)
   useEffect(() => {

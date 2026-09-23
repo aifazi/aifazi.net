@@ -7,16 +7,24 @@ import { SiteConfig } from './lib/siteConfig'
  * aifazi.net-frontend-next/core/framework-styles.js registry.
  *
  * The web lets the admin pick a per-element "framework style" (menu / notify /
- * dialog / input / surface), each chosen from a registry of style ids stored in
- * siteConfig (menuStyle, notifyStyle, dialogStyle, inputStyle, surfaceStyle,
- * notifyPosition). This module mirrors that registry and folds the admin's
- * choices into the mobile design tokens (corner radius, border weight, shadow,
- * glow). Unknown/absent ids fall back to the theme-derived framework style, so
- * behaviour is unchanged unless an admin actually set a field.
+ * dialog / input / surface / button / card / table / badge), each chosen from
+ * a registry of style ids stored in siteConfig (menuStyle, notifyStyle,
+ * dialogStyle, inputStyle, surfaceStyle, buttonStyle, cardStyle, tableStyle,
+ * badgeStyle, notifyPosition). This module mirrors that registry and folds the
+ * admin's choices into the mobile design tokens (corner radius, border weight,
+ * shadow, glow). Unknown/absent ids fall back to the theme-derived framework
+ * style, so behaviour is unchanged unless an admin actually set a field.
+ *
+ * Mobile-idiomatic notes vs the web:
+ * - Btn reads framework.button (not input) and Card reads framework.card (not
+ *   surface), mirroring the web's separate buttonStyle / cardStyle keys.
+ * - Badge reads framework.badge.
+ * - framework.table is resolved for parity but nothing reads it: mobile has no
+ *   table component (dense rows render as ListItem in ui.tsx instead).
  */
 
-/** Web framework style categories we honour on mobile (subset of the web's). */
-export type ElementKey = 'menu' | 'notify' | 'dialog' | 'input' | 'surface'
+/** Web framework style categories we honour on mobile (mirrors the web's). */
+export type ElementKey = 'menu' | 'notify' | 'dialog' | 'input' | 'surface' | 'button' | 'card' | 'table' | 'badge'
 
 export interface FrameworkSpec {
   /** corner radius for cards/surfaces */
@@ -104,6 +112,11 @@ export interface ResolvedFramework {
   dialog: FrameworkSpec
   input: FrameworkSpec
   surface: FrameworkSpec
+  button: FrameworkSpec
+  card: FrameworkSpec
+  /** Resolved for parity with the web; unread — mobile renders rows, not tables. */
+  table: FrameworkSpec
+  badge: FrameworkSpec
   /** web notifyPosition id (bottom-right, top-center, …) */
   notifyPosition?: string
 }
@@ -133,6 +146,10 @@ export function resolveFramework(theme: Theme, cfg: SiteConfig | null): Resolved
     dialog: pickSpec(f.dialogStyle as string | undefined, fallback),
     input: pickSpec(f.inputStyle as string | undefined, fallback),
     surface: pickSpec(f.surfaceStyle as string | undefined, fallback),
+    button: pickSpec(f.buttonStyle as string | undefined, fallback),
+    card: pickSpec(f.cardStyle as string | undefined, fallback),
+    table: pickSpec(f.tableStyle as string | undefined, fallback),
+    badge: pickSpec(f.badgeStyle as string | undefined, fallback),
     notifyPosition: typeof f.notifyPosition === 'string' ? f.notifyPosition : undefined,
   }
 }

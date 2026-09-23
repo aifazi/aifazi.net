@@ -3,6 +3,7 @@
  */
 import { View, Text, TouchableOpacity } from 'react-native'
 import { useTheme } from '@/src/theme'
+import { withAlpha } from '@/src/lib/color'
 import { formatBytes, type VpnPeer } from '@/src/lib/vpn'
 
 interface Props {
@@ -37,7 +38,7 @@ export function DeviceCard({ peer, onPress, onLongPress }: Props) {
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: peer.connected ? '#00ff8840' : c.border,
+        borderColor: peer.connected ? withAlpha(c.success, 0.25) : c.border,
       }}
     >
       {/* Icon */}
@@ -46,7 +47,7 @@ export function DeviceCard({ peer, onPress, onLongPress }: Props) {
           width: 44,
           height: 44,
           borderRadius: 22,
-          backgroundColor: peer.connected ? '#00ff8815' : c.bg,
+          backgroundColor: peer.connected ? withAlpha(c.success, 0.08) : c.bg,
           justifyContent: 'center',
           alignItems: 'center',
           marginRight: 14,
@@ -64,7 +65,7 @@ export function DeviceCard({ peer, onPress, onLongPress }: Props) {
               width: 6,
               height: 6,
               borderRadius: 3,
-              backgroundColor: peer.connected ? '#00ff88' : c.text2,
+              backgroundColor: peer.connected ? c.success : c.text2,
               marginRight: 6,
             }}
           />
@@ -76,8 +77,8 @@ export function DeviceCard({ peer, onPress, onLongPress }: Props) {
 
       {/* Traffic */}
       <View style={{ alignItems: 'flex-end' }}>
-        <Text style={{ color: '#00ff88', fontSize: 11, fontWeight: '500' }}>↓ {formatBytes(peer.transfer_rx)}</Text>
-        <Text style={{ color: '#a855f7', fontSize: 11, fontWeight: '500' }}>↑ {formatBytes(peer.transfer_tx)}</Text>
+        <Text style={{ color: c.success, fontSize: 11, fontWeight: '500' }}>↓ {formatBytes(peer.transfer_rx)}</Text>
+        <Text style={{ color: c.accent2, fontSize: 11, fontWeight: '500' }}>↑ {formatBytes(peer.transfer_tx)}</Text>
         <Text style={{ color: c.text2, fontSize: 10, marginTop: 4 }}>QR →</Text>
       </View>
     </TouchableOpacity>

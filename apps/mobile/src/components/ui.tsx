@@ -42,7 +42,7 @@ export function Btn({
 }) {
   const { theme, framework } = useTheme()
   const c = theme.colors
-  const fw = framework.input
+  const fw = framework.button
   const isPrimary = variant === 'primary'
   const isDanger = variant === 'danger'
   const filled = isPrimary || isDanger
@@ -135,7 +135,7 @@ export function Card({
 }) {
   const { theme, framework } = useTheme()
   const c = theme.colors
-  const fw = framework.surface
+  const fw = framework.card
   const icy = !theme.mono
   const isGlass = theme.id.includes('glass') || theme.id.includes('macos')
   const scale = useRef(new Animated.Value(1)).current
@@ -321,7 +321,7 @@ export function Field({
           color: c.text,
           borderColor: focused ? withAlpha(c.accent, 0.7) : c.border,
           borderRadius: radius,
-          borderWidth: 1,
+          borderWidth: fw.borderWidth,
           paddingHorizontal: SPACE.xxl,
           paddingVertical: radius === 0 ? 14 : 13,
           fontSize: FONT.card,
@@ -373,9 +373,9 @@ export function Toggle({
   onValueChange: (v: boolean) => void
   disabled?: boolean
 }) {
-  const { theme } = useTheme()
+  const { theme, framework } = useTheme()
   const c = theme.colors
-  const fw = frameworkStyles(theme)
+  const fw = framework.input
   const accent = value ? c.accent : c.border
   const thumb = value ? c.bg : c.muted
   const radius = theme.mono ? 0 : Math.max(9, fw.buttonRadius + 4)
@@ -496,7 +496,7 @@ export function Badge({
   color?: string
   outline?: boolean
 }) {
-  const { theme } = useTheme()
+  const { theme, framework } = useTheme()
   const c = theme.colors
   const bg = color ?? c.accent
   return (
@@ -505,7 +505,7 @@ export function Badge({
         minWidth: 20,
         paddingHorizontal: 7,
         paddingVertical: 3,
-        borderRadius: theme.radius,
+        borderRadius: framework.badge.radius,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: outline ? withAlpha(bg, 0.1) : bg,
@@ -513,7 +513,7 @@ export function Badge({
         borderColor: withAlpha(bg, 0.5),
       }}
     >
-      <Text style={[tagLabel(8.5, 1), { color: outline ? bg : c.onAccent }]}>{text}</Text>
+      <Text style={[tagLabel(8.5, 1), { color: outline ? bg : color ? contrastText(bg) : c.onAccent }]}>{text}</Text>
     </View>
   )
 }

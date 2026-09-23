@@ -7075,3 +7075,41 @@ footer[data-footer-style]:not([data-footer-style="cyber"])::after {
   display: none !important;
 }
 
+/* ── Framework table styles ───────────────────────────────────────────────
+   Driven by siteConfig.tableStyle → data-table-style on <html> (providers).
+   Admin tables are ad-hoc inline-styled markup, so overrides need
+   !important. cyber (default) has no rules — panels keep their current look.
+   Only non-default values restyle tables, and only while set. */
+[data-table-style="minimal"] table th,
+[data-table-style="minimal"] table td {
+  border: none !important;
+}
+[data-table-style="minimal"] table tr,
+[data-table-style="minimal"] table thead tr {
+  border-bottom: none !important;
+  background: transparent !important;
+}
+[data-table-style="brutal"] table {
+  border: 2px solid var(--text) !important;
+}
+[data-table-style="brutal"] table th,
+[data-table-style="brutal"] table td {
+  border: 1px solid var(--text) !important;
+}
+[data-table-style="brutal"] table tbody tr {
+  background: var(--bg2) !important;
+}
+[data-table-style="brutal"] table thead tr {
+  background: var(--bg3) !important;
+}
+[data-table-style="glass"] table tbody tr {
+  background: color-mix(in srgb, var(--bg2) 55%, transparent) !important;
+}
+[data-table-style="glass"] table thead tr {
+  background: color-mix(in srgb, var(--bg3) 60%, transparent) !important;
+  backdrop-filter: blur(10px);
+}
+[data-table-style="striped"] table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--bg3) 55%, var(--bg2)) !important;
+}
+

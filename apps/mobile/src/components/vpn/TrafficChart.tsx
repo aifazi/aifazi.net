@@ -3,6 +3,7 @@
  */
 import { View, Text } from 'react-native'
 import { useTheme } from '@/src/theme'
+import { withAlpha } from '@/src/lib/color'
 import { formatBytes } from '@/src/lib/vpn'
 
 interface Props {
@@ -31,15 +32,15 @@ export function TrafficChart({ rx, tx, label }: Props) {
       <View style={{ marginBottom: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#00ff8830', justifyContent: 'center', alignItems: 'center', marginRight: 8 }}>
-              <Text style={{ color: '#00ff88', fontSize: 12, fontWeight: '700' }}>↓</Text>
+            <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: withAlpha(c.success, 0.19), justifyContent: 'center', alignItems: 'center', marginRight: 8 }}>
+              <Text style={{ color: c.success, fontSize: 12, fontWeight: '700' }}>↓</Text>
             </View>
             <Text style={{ color: c.text, fontSize: 13, fontWeight: '500' }}>Download</Text>
           </View>
-          <Text style={{ color: '#00ff88', fontSize: 14, fontWeight: '700' }}>{formatBytes(rx)}</Text>
+          <Text style={{ color: c.success, fontSize: 14, fontWeight: '700' }}>{formatBytes(rx)}</Text>
         </View>
         <View style={{ height: 6, backgroundColor: c.bg, borderRadius: 3, overflow: 'hidden' }}>
-          <View style={{ height: '100%', width: `${rxPct}%`, backgroundColor: '#00ff88', borderRadius: 3 }} />
+          <View style={{ height: '100%', width: `${rxPct}%`, backgroundColor: c.success, borderRadius: 3 }} />
         </View>
       </View>
 
@@ -47,15 +48,15 @@ export function TrafficChart({ rx, tx, label }: Props) {
       <View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#a855f730', justifyContent: 'center', alignItems: 'center', marginRight: 8 }}>
-              <Text style={{ color: '#a855f7', fontSize: 12, fontWeight: '700' }}>↑</Text>
+            <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: withAlpha(c.accent2, 0.19), justifyContent: 'center', alignItems: 'center', marginRight: 8 }}>
+              <Text style={{ color: c.accent2, fontSize: 12, fontWeight: '700' }}>↑</Text>
             </View>
             <Text style={{ color: c.text, fontSize: 13, fontWeight: '500' }}>Upload</Text>
           </View>
-          <Text style={{ color: '#a855f7', fontSize: 14, fontWeight: '700' }}>{formatBytes(tx)}</Text>
+          <Text style={{ color: c.accent2, fontSize: 14, fontWeight: '700' }}>{formatBytes(tx)}</Text>
         </View>
         <View style={{ height: 6, backgroundColor: c.bg, borderRadius: 3, overflow: 'hidden' }}>
-          <View style={{ height: '100%', width: `${txPct}%`, backgroundColor: '#a855f7', borderRadius: 3 }} />
+          <View style={{ height: '100%', width: `${txPct}%`, backgroundColor: c.accent2, borderRadius: 3 }} />
         </View>
       </View>
     </View>

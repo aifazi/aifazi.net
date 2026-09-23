@@ -1,31 +1,80 @@
 'use client'
 import React, { useEffect, useRef } from 'react'
+import { useTheme } from '@/app/providers'
+import { BUTTON_STYLES, CARD_STYLES, BADGE_STYLES } from '../../core/framework-styles.js'
 
 /**
  * admin/ui.jsx — shared admin design kit.
  * One set of primitives so panels stop redefining Btn/Badge/Stat/Modal/MONO
  * with subtly different styles. Migrate panels to import from here.
+ *
+ * Framework-aware: Btn/Badge/StatCard read siteConfig buttonStyle/badgeStyle/
+ * cardStyle (set via Theme Library → Framework or per-theme personalities).
+ * The framework value only sets the BASE — explicit props (color/danger/
+ * small/variant/ghost/style/...) always win. When the keys are absent the
+ * components render exactly the historic cyber look (cyber/cyber/pill).
  */
 
 export const MONO = 'var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)'
 
+const BUTTON_IDS = BUTTON_STYLES.map(s => s.id)
+const CARD_IDS   = CARD_STYLES.map(s => s.id)
+const BADGE_IDS  = BADGE_STYLES.map(s => s.id)
+
+// Defensive framework read: unknown/empty values fall back to the default so
+// the historic look is preserved when the keys are absent.
+function fwKey(siteConfig, key, ids, fallback) {
+  const v = siteConfig?.[key]
+  return typeof v === 'string' && ids.includes(v) ? v : fallback
+}
+function useFwKey(key, ids, fallback) {
+  let siteConfig = null
+  try { siteConfig = useTheme()?.siteConfig || null } catch { siteConfig = null }
+  return fwKey(siteConfig, key, ids, fallback)
+}
+
 /* ── Button ─────────────────────────────────────────────────────────────── */
+// Framework sets the BASE shape/glow; variant/ghost/danger/color/style props
+// below still override, so every existing call site keeps working.
+const BUTTON_BASE = {
+  cyber:    {},
+  pill:     { borderRadius: 999 },
+  brutal:   { borderRadius: 0, border: '2px solid transparent', boxShadow: '3px 3px 0 rgba(0,0,0,0.55)' },
+  ghost:    { borderRadius: 6 },
+  neon:     null, // needs the live color prop — built per-render below
+  terminal: { borderRadius: 0 },
+  minimal:  { borderRadius: 4 },
+  holo:     null, // needs the live color prop — built per-render below
+}
 export function Btn({ onClick, children, label, textColor, color = 'var(--green)', disabled, danger, small, ghost, full, variant = 'solid', style, type = 'button', ...rest }) {
+  const buttonStyle = useFwKey('buttonStyle', BUTTON_IDS, 'cyber')
+  const glowColor = danger ? '#ff4757' : color
+  const fwBase = buttonStyle === 'neon'
+    ? { borderRadius: 6, boxShadow: `0 0 14px color-mix(in srgb, ${glowColor} 55%, transparent)` }
+    : buttonStyle === 'holo'
+      ? { borderRadius: 8, border: `1px solid color-mix(in srgb, ${glowColor} 65%, transparent)`, boxShadow: `0 0 14px color-mix(in srgb, ${glowColor} 28%, transparent)` }
+      : (BUTTON_BASE[buttonStyle] || {})
   const base = {
     fontFamily: MONO, fontSize: small ? 9 : 10, letterSpacing: 1.5, fontWeight: 700,
     padding: small ? '6px 12px' : '9px 16px', borderRadius: 6, cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.5 : 1, transition: 'all 0.15s', border: '1px solid transparent',
     whiteSpace: 'nowrap', ...(full ? { width: '100%' } : {}),
+    ...fwBase,
     ...(style || {}),
   }
+  const noExplicitBg = !(style || {}).background
   if (variant === 'outline') {
     base.background = disabled ? 'rgba(255,255,255,0.03)' : `color-mix(in srgb, ${color} 18%, transparent)`
     base.borderColor = disabled ? 'var(--border)' : `color-mix(in srgb, ${color} 44%, transparent)`
     base.color = danger ? '#ff4757' : color
-  } else if (ghost) {
+  } else if (ghost || (buttonStyle === 'ghost' && noExplicitBg)) {
     base.background = 'transparent'
     base.borderColor = danger ? 'rgba(255,71,87,0.4)' : 'var(--border)'
     base.color = danger ? '#ff4757' : 'var(--muted)'
+  } else if (buttonStyle === 'minimal' && variant === 'solid' && noExplicitBg) {
+    base.background = 'transparent'
+    base.borderColor = 'transparent'
+    base.color = danger ? '#ff4757' : color
   } else {
     base.background = danger ? '#ff4757' : color
     base.color = '#000'
@@ -38,27 +87,44 @@ export function Btn({ onClick, children, label, textColor, color = 'var(--green)
 
 /* ── Badge / pill ───────────────────────────────────────────────────────── */
 export function Badge({ children, color = 'var(--green)', tone, style }) {
+  const badgeStyle = useFwKey('badgeStyle', BADGE_IDS, 'pill')
   const map = {
     green: 'var(--green)', red: '#ff4757', yellow: '#facc15', cyan: 'var(--cyan)',
     orange: '#ff6b35', purple: '#a855f7', muted: 'var(--muted)',
   }
   const c = map[tone] || color
+  const fwBase = {
+    square:  { borderRadius: 2 },
+    neon:    { boxShadow: `0 0 10px color-mix(in srgb, ${c} 60%, transparent)` },
+    minimal: { background: 'transparent', border: '1px solid transparent', padding: '3px 2px' },
+    brutal:  { borderRadius: 0, border: `2px solid ${c}`, boxShadow: '2px 2px 0 rgba(0,0,0,0.55)' },
+  }[badgeStyle] || {}
   return (
     <span style={{
       fontFamily: MONO, fontSize: 8, letterSpacing: 1.5, padding: '3px 9px', borderRadius: 999,
       background: `color-mix(in srgb, ${c} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${c} 40%, transparent)`,
-      color: c, whiteSpace: 'nowrap', ...(style || {}),
+      color: c, whiteSpace: 'nowrap', ...fwBase, ...(style || {}),
     }}>{children}</span>
   )
 }
 
 /* ── Stat card ──────────────────────────────────────────────────────────── */
 export function StatCard({ label, value, color = 'var(--green)', sub, onClick, style }) {
+  const cardStyle = useFwKey('cardStyle', CARD_IDS, 'cyber')
+  const fwBase = {
+    glass:    { background: 'color-mix(in srgb, var(--bg2) 55%, transparent)', backdropFilter: 'blur(14px)', borderRadius: 14 },
+    brutal:   { borderRadius: 0, border: '2px solid var(--text)', boxShadow: '4px 4px 0 rgba(0,0,0,0.55)' },
+    paper:    { borderRadius: 2 },
+    minimal:  { borderRadius: 8 },
+    neon:     { borderRadius: 10, border: `1px solid color-mix(in srgb, ${color} 55%, transparent)`, boxShadow: `0 0 18px color-mix(in srgb, ${color} 22%, transparent)` },
+    terminal: { borderRadius: 0 },
+  }[cardStyle] || {}
   return (
     <div onClick={onClick} style={{
       background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12,
       padding: '16px 18px', cursor: onClick ? 'pointer' : 'default',
       position: 'relative', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.15s',
+      ...fwBase,
       ...(style || {}),
     }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = color; if (onClick) e.currentTarget.style.transform = 'translateY(-2px)' }}

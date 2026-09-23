@@ -5,6 +5,7 @@
 import { useEffect, useRef } from 'react'
 import { View, Text, TouchableOpacity, Animated, Easing } from 'react-native'
 import { useTheme } from '@/src/theme'
+import { withAlpha } from '@/src/lib/color'
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 
@@ -49,13 +50,13 @@ export function ConnectionRing({ state, onPress, location }: Props) {
   const ringOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] })
   const glowOpacity = glow
 
-  const ringColor = state === 'connected' ? '#00ff88' : state === 'connecting' ? '#a855f7' : c.text2
-  const bgColor = state === 'connected' ? '#00ff8820' : state === 'connecting' ? '#a855f720' : c.bg2
+  const ringColor = state === 'connected' ? c.success : state === 'connecting' ? c.accent2 : c.text2
+  const bgColor = state === 'connected' ? withAlpha(c.success, 0.13) : state === 'connecting' ? withAlpha(c.accent2, 0.13) : c.bg2
 
   return (
     <View style={{ alignItems: 'center', paddingVertical: 32 }}>
       {/* Status text */}
-      <Text style={{ color: state === 'connected' ? '#00ff88' : state === 'connecting' ? '#a855f7' : c.text2, fontSize: 14, fontWeight: '600', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2 }}>
+      <Text style={{ color: state === 'connected' ? c.success : state === 'connecting' ? c.accent2 : c.text2, fontSize: 14, fontWeight: '600', marginBottom: 24, textTransform: 'uppercase', letterSpacing: 2 }}>
         {state === 'connected' ? 'Protected' : state === 'connecting' ? 'Connecting...' : 'Tap for Instructions'}
       </Text>
 
@@ -140,7 +141,7 @@ export function ConnectionRing({ state, onPress, location }: Props) {
       {/* Location */}
       {location && state === 'connected' && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 20, backgroundColor: c.bg2, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#00ff88', marginRight: 8 }} />
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.success, marginRight: 8 }} />
           <Text style={{ color: c.text, fontSize: 13, fontWeight: '500' }}>{location}</Text>
         </View>
       )}

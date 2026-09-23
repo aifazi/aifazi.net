@@ -57,7 +57,7 @@ export function useCommandPalette() {
  * with it enabled the backdrop/panel don't animate.
  */
 export function CommandPaletteProvider({ children }: { children: ReactNode }) {
-  const { theme } = useTheme()
+  const { theme, framework } = useTheme()
   const c = theme.colors
   const router = useRouter()
   const reduced = useReducedMotion()
@@ -132,7 +132,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                 backgroundColor: c.bg2,
                 borderWidth: 1,
                 borderColor: withAlpha(c.accent2, 0.35),
-                borderRadius: theme.radius,
+                borderRadius: framework.menu.radius,
                 maxHeight: '70%',
                 padding: SPACE.xl,
                 shadowColor: '#000',
@@ -168,7 +168,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
                     onPress={() => select(item)}
                     accessibilityRole="button"
                     accessibilityLabel={`Go to ${item.label}`}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xl, paddingVertical: SPACE.lg, paddingHorizontal: SPACE.md, borderRadius: theme.buttonRadius }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.xl, paddingVertical: SPACE.lg, paddingHorizontal: SPACE.md, borderRadius: framework.menu.buttonRadius }}
                     activeOpacity={0.6}
                   >
                     <View style={{ width: 22, alignItems: 'center' }}>

@@ -67,10 +67,10 @@ function TabBarButton({ children, onPress, ...rest }: any) {
 }
 
 function TabNavigator() {
-  const { theme } = useTheme()
+  const { theme, framework } = useTheme()
   const c = theme.colors
   const insets = useSafeAreaInsets()
-  const radius = theme.radius || 18
+  const radius = framework.menu.radius || 18
   const isGlass = theme.id.includes('glass') || theme.id.includes('macos')
   const { isAuthed } = useAuth()
   const [unread, setUnread] = useState(0)
@@ -112,7 +112,7 @@ function TabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.muted,
-        tabBarBackground: isGlass ? () => <BlurView intensity={60} tint={theme.dark ? 'dark' : 'light'} style={{ flex: 1, borderRadius: theme.radius, overflow: 'hidden' }} /> : undefined,
+        tabBarBackground: isGlass ? () => <BlurView intensity={60} tint={theme.dark ? 'dark' : 'light'} style={{ flex: 1, borderRadius: framework.menu.radius, overflow: 'hidden' }} /> : undefined,
         tabBarStyle: {
           backgroundColor: isGlass ? 'transparent' : theme.dark ? withAlpha(c.bg2, 0.92) : c.bg2,
           borderTopColor: withAlpha(c.accent2, 0.2),
@@ -120,7 +120,7 @@ function TabNavigator() {
           left: 12,
           right: 12,
           bottom: insets.bottom > 0 ? insets.bottom + 6 : 10,
-          borderRadius: theme.radius,
+          borderRadius: framework.menu.radius,
           height: 64,
           paddingTop: SPACE.sm,
           paddingBottom: SPACE.sm,
