@@ -146,7 +146,6 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   const [authEpoch, setAuthEpoch] = useState(0)
 
   const [theme, setThemeState] = useState(initTheme)
-  const themeUrlSynced = useRef(false)
 
   function setCrossDomainCookie(name: string, value: string) {
     if (typeof document === 'undefined') return
@@ -160,47 +159,18 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     return m ? decodeURIComponent(m[1]) : null
   }
 
-  // Shareable theme URL — ?theme=xxx sets visitor preview; theme changes update the URL
-  // Priority: if visitor has explicitly chosen a theme (cross-subdomain cookie),
-  // that saved choice wins over a stale ?theme=xxx left in a bookmark/history entry
-  // (e.g. store.aifazi.net/?theme=pacman when user now uses slate). Without this,
-  // aifazi.net -> store.aifazi.net would flash pacman then correct to slate.
+  // Legacy ?theme= URLs are no longer supported — strip the key once on load
+  // (preserve path, other params, and hash) so old bookmarks stay clean.
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
-    const t = params.get('theme')
-    if (t && VALID_THEMES.includes(t)) {
-      const userSet = !!localStorage.getItem('site-theme-user-set') || !!getCrossDomainCookie('site-theme-user-set')
-      const saved = localStorage.getItem('site-theme') || getCrossDomainCookie('site-theme')
-      // If user has a saved choice and URL param differs, keep saved choice and fix URL
-      if (userSet && saved && saved !== t) {
-        themeUrlSynced.current = true
-        try {
-          const url = new URL(window.location.href)
-          url.searchParams.set('theme', saved)
-          window.history.replaceState(null, '', url.toString())
-        } catch {}
-        return
-      }
-      // Respect admin lock: preview still works but not persisted as user choice
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional URL-driven preview on mount
-      setThemeState(t as string)
-      themeUrlSynced.current = true
-    }
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (themeUrlSynced.current) { themeUrlSynced.current = false; return }
     try {
       const url = new URL(window.location.href)
-      const cur = url.searchParams.get('theme')
-      if (cur !== theme) {
-        url.searchParams.set('theme', theme)
+      if (url.searchParams.has('theme')) {
+        url.searchParams.delete('theme')
         window.history.replaceState(null, '', url.toString())
       }
     } catch {}
-  }, [theme])
+  }, [])
 
   // PWA: register /sw.js in production for offline cache (blog/forum reads)
   useEffect(() => {

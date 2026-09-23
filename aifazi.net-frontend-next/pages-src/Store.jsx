@@ -72,7 +72,7 @@ export default function StorePage({ fivem = false }) {
       if (v) { if (cur !== v) { params.set(k, v); changed = true } }
       else if (cur != null) { params.delete(k); changed = true }
     }
-    // keep existing other params (e.g. ?theme=)
+    // keep existing other params (e.g. ?tab=)
     if (changed) window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`)
   }, [tab, activeCategory, searchQuery])
   const [cart, setCart] = useState({ items: [], subtotal: 0, count: 0 })

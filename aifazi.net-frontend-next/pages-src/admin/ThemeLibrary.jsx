@@ -2857,6 +2857,7 @@ function ThemeLibrary() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
                 {THEME_DEFS.filter(t => favorites.includes(t.id)).map(t => {
                   const isActive   = theme === t.id
+                  const isNew      = NEW_THEME_IDS.has(t.id)
                   const ts = tagStyle(t.tag)
                   return (
                     <div key={t.id} className="tl-card"
@@ -2936,11 +2937,12 @@ function ThemeLibrary() {
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-              <button onClick={() => applyTheme(custom.id)} style={{
+              <button disabled title="Preview only — export CSS/JSON to use this theme" style={{
                 flex: 1, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '10px 16px',
                 background: `linear-gradient(135deg, ${custom.primary}, ${custom.secondary})`,
-                border: 'none', color: '#000', cursor: 'pointer', borderRadius: 6, fontWeight: 800,
-              }}>✅ APPLY PREVIEW</button>
+                border: 'none', color: '#000', borderRadius: 6, fontWeight: 800,
+                opacity: 0.6, cursor: 'not-allowed',
+              }}>Preview only — export CSS/JSON</button>
               <button onClick={exportCustom} style={{
                 flex: 1, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '10px 16px',
                 background: exported ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
