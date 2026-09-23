@@ -1079,6 +1079,10 @@ function ThemeLibrary() {
     dialogStyle:    siteConfig?.dialogStyle    || DEFAULT_FRAMEWORK.dialogStyle,
     inputStyle:     siteConfig?.inputStyle     || DEFAULT_FRAMEWORK.inputStyle,
     surfaceStyle:   siteConfig?.surfaceStyle   || DEFAULT_FRAMEWORK.surfaceStyle,
+    buttonStyle:    siteConfig?.buttonStyle    || DEFAULT_FRAMEWORK.buttonStyle,
+    cardStyle:      siteConfig?.cardStyle      || DEFAULT_FRAMEWORK.cardStyle,
+    tableStyle:     siteConfig?.tableStyle     || DEFAULT_FRAMEWORK.tableStyle,
+    badgeStyle:     siteConfig?.badgeStyle     || DEFAULT_FRAMEWORK.badgeStyle,
   }))
   const [fwSaving, setFwSaving]   = useState(false)
   const [savingPackage, setSavingPackage] = useState(null)
@@ -1088,7 +1092,9 @@ function ThemeLibrary() {
   const fwSyncKey = siteConfig ? [
     siteConfig.menuStyle, siteConfig.notifyStyle, siteConfig.notifyPosition,
     siteConfig.dialogStyle, siteConfig.inputStyle, siteConfig.surfaceStyle,
-  ].join('\u0001') : null
+    siteConfig.buttonStyle, siteConfig.cardStyle, siteConfig.tableStyle,
+    siteConfig.badgeStyle,
+  ].join('') : null
   const [prevFwSyncKey, setPrevFwSyncKey] = useState(fwSyncKey)
   if (siteConfig && !fwSaving && !savingPackage && fwSyncKey !== prevFwSyncKey) {
     setPrevFwSyncKey(fwSyncKey)
@@ -1100,6 +1106,10 @@ function ThemeLibrary() {
       dialogStyle:    siteConfig.dialogStyle    || DEFAULT_FRAMEWORK.dialogStyle,
       inputStyle:     siteConfig.inputStyle     || DEFAULT_FRAMEWORK.inputStyle,
       surfaceStyle:   siteConfig.surfaceStyle   || DEFAULT_FRAMEWORK.surfaceStyle,
+      buttonStyle:    siteConfig.buttonStyle    || DEFAULT_FRAMEWORK.buttonStyle,
+      cardStyle:      siteConfig.cardStyle      || DEFAULT_FRAMEWORK.cardStyle,
+      tableStyle:     siteConfig.tableStyle     || DEFAULT_FRAMEWORK.tableStyle,
+      badgeStyle:     siteConfig.badgeStyle     || DEFAULT_FRAMEWORK.badgeStyle,
     }))
   }
 
@@ -1167,10 +1177,10 @@ function ThemeLibrary() {
   }, [fwDraft, siteConfig, refreshSiteConfig, notify])
 
   const handleFwReset = useCallback(async () => {
-    const ok = await dlg.confirm({ title: 'Reset Framework', message: 'Set menu, notify, dialog, input and surface styles back to defaults and save immediately.', variant: 'danger', confirmLabel: 'RESET NOW' })
+    const ok = await dlg.confirm({ title: 'Reset Framework', message: 'Set menu, notify, dialog, input, surface, button, card, table and badge styles back to defaults and save immediately.', variant: 'danger', confirmLabel: 'RESET NOW' })
     if (!ok) return
     const d = { ...DEFAULT_FRAMEWORK }
-    setFwDraft({ menuStyle: d.menuStyle, notifyStyle: d.notifyStyle, notifyPosition: d.notifyPosition, dialogStyle: d.dialogStyle, inputStyle: d.inputStyle, surfaceStyle: d.surfaceStyle })
+    setFwDraft({ menuStyle: d.menuStyle, notifyStyle: d.notifyStyle, notifyPosition: d.notifyPosition, dialogStyle: d.dialogStyle, inputStyle: d.inputStyle, surfaceStyle: d.surfaceStyle, buttonStyle: d.buttonStyle, cardStyle: d.cardStyle, tableStyle: d.tableStyle, badgeStyle: d.badgeStyle })
     try {
       await api.put('/admin/site-settings', { ...siteConfig, ...d })
       clearSiteSettingsCache()
@@ -1632,9 +1642,9 @@ function ThemeLibrary() {
   const pendingDef = THEME_DEFS.find(t => t.id === pendingTheme)
 
   const applyTheme = (id) => {
-    // NOTE: the theme's UI personality (menu/dialog/input/surface/notify from
-    // THEME_FRAMEWORK) follows automatically inside providers setTheme — local
-    // preview only, no backend write here.
+    // NOTE: the theme's UI personality (menu/dialog/input/surface/notify/
+    // button/card/table/badge from THEME_FRAMEWORK) follows automatically
+    // inside providers setTheme — local preview only, no backend write here.
     setTheme(id)
     setPendingTheme(null)
     setPreviewTheme(null)
@@ -1679,8 +1689,8 @@ function ThemeLibrary() {
       // '__clear__' sentinel means "remove global theme  let users choose"
       const newVal = id === '__clear__' ? '' : (globalThemeId === id ? '' : id)
       // Per-theme UI personality — mirror applyThemePackage's framework write
-      // path so the global theme carries its menu/dialog/input/surface/notify
-      // vibe for all visitors. (Package-apply stays untouched: an explicitly
+      // path so the global theme carries its menu/dialog/input/surface/notify/
+      // button/card/table/badge vibe for all visitors. (Package-apply stays untouched: an explicitly
       // applied package's framework still wins.)
       const fwPatch = {}
       if (newVal) applyThemeFramework(newVal, (k, v) => { fwPatch[k] = v })
@@ -1827,7 +1837,14 @@ function ThemeLibrary() {
       dialogStyle: s.dialogStyle,
       inputStyle: s.inputStyle,
       surfaceStyle: s.surfaceStyle,
+      buttonStyle: s.buttonStyle,
+      cardStyle: s.cardStyle,
+      tableStyle: s.tableStyle,
+      badgeStyle: s.badgeStyle,
     }
+    // Older packages may predate the button/card/table/badge keys — never
+    // clobber live config with undefined.
+    Object.keys(stylePayload).forEach(k => stylePayload[k] === undefined && delete stylePayload[k])
     const appearancePayload = {
       loadingScreenStyle: s.loadingScreenStyle,
       animationPreset: s.animationPreset,
@@ -1878,6 +1895,10 @@ function ThemeLibrary() {
         dialogStyle: siteConfig?.dialogStyle || DEFAULT_FRAMEWORK.dialogStyle,
         inputStyle: siteConfig?.inputStyle || DEFAULT_FRAMEWORK.inputStyle,
         surfaceStyle: siteConfig?.surfaceStyle || DEFAULT_FRAMEWORK.surfaceStyle,
+        buttonStyle: siteConfig?.buttonStyle || DEFAULT_FRAMEWORK.buttonStyle,
+        cardStyle: siteConfig?.cardStyle || DEFAULT_FRAMEWORK.cardStyle,
+        tableStyle: siteConfig?.tableStyle || DEFAULT_FRAMEWORK.tableStyle,
+        badgeStyle: siteConfig?.badgeStyle || DEFAULT_FRAMEWORK.badgeStyle,
       })
       setGAppearance(prev => ({
         ...prev,
@@ -1920,6 +1941,10 @@ function ThemeLibrary() {
       dialogStyle: fwDraft.dialogStyle,
       inputStyle: fwDraft.inputStyle,
       surfaceStyle: fwDraft.surfaceStyle,
+      buttonStyle: fwDraft.buttonStyle,
+      cardStyle: fwDraft.cardStyle,
+      tableStyle: fwDraft.tableStyle,
+      badgeStyle: fwDraft.badgeStyle,
       bgAnimation: bgAnimation || 'none',
       gridPattern: gridPattern || 'grid',
       loadingScreenStyle: gAppearance.loadingScreenStyle,
@@ -2198,7 +2223,7 @@ function ThemeLibrary() {
             <div style={{ fontFamily: _FM, fontSize: 9, letterSpacing: 2, color: _MT, marginBottom: 10 }}>INCLUDE IN THIS APPLY</div>
             {[
               { key: 'appearance', label: 'Appearance', desc: 'Theme color, header, footer, loading screen, animations' },
-              { key: 'framework',  label: 'Framework',  desc: 'Menu, notifications, dialogs, inputs, surfaces' },
+              { key: 'framework',  label: 'Framework',  desc: 'Menu, notifications, dialogs, inputs, surfaces, buttons, cards, tables, badges' },
               { key: 'backgrounds',label: 'Backgrounds',desc: 'Background animation + grid pattern' },
             ].map(p => (
               <label key={p.key} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 12px', borderRadius: 8,
@@ -2371,7 +2396,7 @@ function ThemeLibrary() {
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: t.muted, lineHeight: 1.6, margin: '0 0 8px' }}>{t.desc}</p>
                     {(() => { const fw = THEME_FRAMEWORK[t.id]; if (!fw) return null; return (
                       <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', margin: '0 0 8px' }}>
-                        {[['menu', fw.menu], ['dialog', fw.dialog], ['input', fw.input], ['surface', fw.surface], ['notify', fw.notify]].map(([k, v]) => (
+                        {[['menu', fw.menu], ['dialog', fw.dialog], ['input', fw.input], ['surface', fw.surface], ['notify', fw.notify], ['button', fw.button], ['card', fw.card], ['table', fw.table], ['badge', fw.badge]].map(([k, v]) => (
                           <span key={k} title={`${k}: ${v}`}
                             style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 1, padding: '1px 5px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${t.border}`, color: t.muted, borderRadius: 3 }}>
                             {k}:{v}
@@ -3065,7 +3090,7 @@ function ThemeLibrary() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                   <div>
                     <div style={{ fontFamily: _FD, fontSize: 14, fontWeight: 600, color: _TX, marginBottom: 2 }}>Reset to Factory Defaults</div>
-                    <div style={{ fontFamily: _FM, fontSize: 9, color: _MT }}>Restore all framework styles to defaults: cyber menus, cyber dialogs, cyber inputs and cyber-grid surfaces.</div>
+                    <div style={{ fontFamily: _FM, fontSize: 9, color: _MT }}>Restore all framework styles to defaults: cyber menus, cyber dialogs, cyber inputs, cyber-grid surfaces, cyber buttons, cyber cards, cyber tables and pill badges.</div>
                   </div>
                   <button onClick={handleFwReset} style={{ flexShrink: 0, fontFamily: _FM, fontSize: 10, letterSpacing: 1, padding: '8px 18px', background: 'transparent', border: '1px solid rgba(255,71,87,0.4)', color: 'var(--red)', cursor: 'pointer', borderRadius: 6 }}>↺ RESET DEFAULTS</button>
                 </div>

@@ -1598,6 +1598,12 @@ export const THEME_IDS: ThemeId[] = [
  * Map the web's full theme registry (48 themes) down to the curated mobile set
  * so admin-set global/locked themes resolve to a sensible mobile counterpart.
  * Web light/dark variants map to the matching mobile variant (not a catch-all).
+ * The 8 editor-port themes (dracula…one-dark, all dark per the web library)
+ * map to their closest mobile cousin by mood: dracula→midnight (purple/pink),
+ * nord→ocean (frost blue on dark navy), tokyo-night→violet-dark (violet glow),
+ * gruvbox→amber (warm retro dark), solarized-dark→teal-dark (teal on black),
+ * monokai→toxic (lime on charcoal), catppuccin→rose (pastel pink dark),
+ * one-dark→slate-dark (subdued graphite). Truly unknown ids → cyber-dark.
  */
 const WEB_THEME_MAP: Record<string, ThemeId> = {
   'cyber-dark': 'cyber-dark', 'cyber-light': 'light',
@@ -1632,6 +1638,14 @@ const WEB_THEME_MAP: Record<string, ThemeId> = {
   'honey-dark': 'honey-dark', 'honey-light': 'honey-dark',
   'violet-dark': 'violet-dark', 'violet-light': 'violet-dark',
   'teal-dark': 'teal-dark', 'teal-light': 'teal-dark',
+  dracula: 'midnight',
+  nord: 'ocean',
+  'tokyo-night': 'violet-dark',
+  gruvbox: 'amber',
+  'solarized-dark': 'teal-dark',
+  monokai: 'toxic',
+  catppuccin: 'rose',
+  'one-dark': 'slate-dark',
 }
 
 export function webThemeToMobile(id?: string | null): ThemeId {

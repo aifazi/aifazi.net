@@ -36,12 +36,15 @@ import { MenuProvider    } from './menu.jsx'
 // ── Framework context — holds active style for every UI component ─────────────
 const FrameworkContext = createContext({
   menuStyle: 'cyber', notifyStyle: 'cyber', dialogStyle: 'cyber',
+  buttonStyle: 'cyber', cardStyle: 'cyber', tableStyle: 'cyber', badgeStyle: 'pill',
 })
 export const useFramework = () => useContext(FrameworkContext)
 
 /**
- * UIProvider — passes frameworkConfig (menuStyle, notifyStyle, dialogStyle)
- * down to all sub-providers so every component renders with the chosen style.
+ * UIProvider — passes frameworkConfig (menuStyle, notifyStyle, dialogStyle,
+ * buttonStyle, cardStyle, tableStyle, badgeStyle) down to all sub-providers
+ * so every component renders with the chosen style. Missing keys fall back
+ * to the historic cyber defaults.
  *
  * In App.jsx:
  *   <UIProvider frameworkConfig={siteConfig}>
@@ -56,6 +59,10 @@ export function UIProvider({
     menuStyle:   frameworkConfig.menuStyle   || 'cyber',
     notifyStyle: frameworkConfig.notifyStyle || 'cyber',
     dialogStyle: frameworkConfig.dialogStyle || 'cyber',
+    buttonStyle: frameworkConfig.buttonStyle || 'cyber',
+    cardStyle:   frameworkConfig.cardStyle   || 'cyber',
+    tableStyle:  frameworkConfig.tableStyle  || 'cyber',
+    badgeStyle:  frameworkConfig.badgeStyle  || 'pill',
   }
   return (
     <FrameworkContext.Provider value={fw}>

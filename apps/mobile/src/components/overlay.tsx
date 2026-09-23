@@ -178,7 +178,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
               <Text style={[styles.message, { color: c.text2, fontFamily: CODE_FONT, lineHeight: 22 }]}>{alertState.message}</Text>
               <TouchableOpacity
                 onPress={dismissAlert}
-                style={[styles.primaryBtn, { borderColor: c.accent, borderRadius: theme.buttonRadius, backgroundColor: withAlpha(c.accent, 0.08) }]}
+                style={[styles.primaryBtn, { borderColor: c.accent, borderRadius: dialogFw.buttonRadius, backgroundColor: withAlpha(c.accent, 0.08) }]}
               >
                 <Text style={[micro(11, 2, '800'), { color: c.accent }]}>{alertState.okText.toUpperCase()}</Text>
               </TouchableOpacity>
@@ -201,7 +201,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
               <View style={styles.btnRow}>
                 <TouchableOpacity
                   onPress={() => dismissConfirm(false)}
-                  style={[styles.ghostBtn, { borderColor: c.border, borderRadius: theme.buttonRadius }]}
+                  style={[styles.ghostBtn, { borderColor: c.border, borderRadius: dialogFw.buttonRadius }]}
                 >
                   <Text style={[micro(11, 2, '700'), { color: c.muted }]}>{confirm.cancelText.toUpperCase()}</Text>
                 </TouchableOpacity>
@@ -211,7 +211,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
                     styles.primaryBtn,
                     {
                       borderColor: confirm.destructive ? c.danger : c.accent,
-                      borderRadius: theme.buttonRadius,
+                      borderRadius: dialogFw.buttonRadius,
                       backgroundColor: confirm.destructive ? withAlpha(c.danger, 0.08) : withAlpha(c.accent, 0.08),
                     },
                   ]}

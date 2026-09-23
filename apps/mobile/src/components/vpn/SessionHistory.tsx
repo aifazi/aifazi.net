@@ -55,8 +55,8 @@ export function SessionHistory({ sessions }: Props) {
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ color: '#00ff88', fontSize: 11 }}>↓ {formatBytes(session.bytes_rx)}</Text>
-            <Text style={{ color: '#a855f7', fontSize: 11 }}>↑ {formatBytes(session.bytes_tx)}</Text>
+            <Text style={{ color: c.success, fontSize: 11 }}>↓ {formatBytes(session.bytes_rx)}</Text>
+            <Text style={{ color: c.accent2, fontSize: 11 }}>↑ {formatBytes(session.bytes_tx)}</Text>
           </View>
         </View>
       ))}
