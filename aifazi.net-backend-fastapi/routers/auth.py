@@ -2131,6 +2131,20 @@ async def verify_email_query(token: str):
 async def verify_email_alias(token: str):
     return await _verify_email_token(token)
 
+class VerifyEmailBody(BaseModel):
+    token: str
+
+@router.post("/verify-email")
+async def verify_email_post(body: VerifyEmailBody):
+    """POST twin of GET /verify-email/{token} — same shared helper.
+
+    Accepts {"token": "..."} so clients that cannot (or should not) put the
+    token in the URL can verify with a JSON body. Frontend switches in
+    parallel; the GET routes stay for back-compat. Path is already in
+    main.py _OPEN_EXACT (path-based), so no gate change is needed.
+    """
+    return await _verify_email_token(body.token)
+
 @router.get("/activity")
 async def user_activity_log(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     payload = _get_forum_user(creds)

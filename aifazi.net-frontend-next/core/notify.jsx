@@ -25,7 +25,7 @@ function FixedHost({ children, style }) {
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
   if (!mounted) return null
   return createPortal(
-    <div aria-live="polite" aria-label="Notifications" style={style}>{children}</div>,
+    <div role="status" aria-live="polite" aria-label="Notifications" style={style}>{children}</div>,
     document.body,
   )
 }

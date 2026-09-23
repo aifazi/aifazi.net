@@ -605,7 +605,7 @@ export default function SiteBanner() {
       {/* Fixed-position top band for strip / hero / minimal / pill */}
       {stackedBanners.length > 0 && (
         <>
-          <div ref={bannerRef} style={{ position:'fixed', top:64, left:0, right:0, zIndex:99, overflow:'hidden' }}>
+          <div ref={bannerRef} role="status" aria-live="polite" aria-label="Site announcements" style={{ position:'fixed', top:64, left:0, right:0, zIndex:99, overflow:'hidden' }}>
             {stackedBanners.map((b, i) => (
               <BannerBar key={b._id || b.id} banner={b} index={i} onClose={handleClose} />
             ))}

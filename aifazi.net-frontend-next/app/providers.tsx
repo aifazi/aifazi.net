@@ -131,7 +131,13 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   // admin's settings (no default-config flash before the mount effect below).
   function initSiteConfig(): Record<string, any> {
     const cfg = initialConfig && typeof initialConfig === 'object' && !Array.isArray(initialConfig) ? initialConfig : {}
-    return { maintenanceMode: false, animationPreset: 'smooth', loadingScreenStyle: 'terminal', ...cfg }
+    // Seed the 9 framework keys from THEME_FRAMEWORK[initialTheme] so the first
+    // client render already carries the theme's UI personality (no default-style
+    // flash). Server-fetched config wins — it spreads last.
+    const seedTheme = initialTheme && VALID_THEMES.includes(initialTheme) ? initialTheme : 'cyber-dark'
+    const fwSeed: Record<string, any> = {}
+    try { applyThemeFramework(seedTheme, (k: string, v: string) => { fwSeed[k] = v }) } catch {}
+    return { maintenanceMode: false, animationPreset: 'smooth', loadingScreenStyle: 'terminal', ...fwSeed, ...cfg }
   }
 
   function initTheme(): string {

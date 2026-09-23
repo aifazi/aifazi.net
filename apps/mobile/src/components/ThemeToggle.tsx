@@ -58,8 +58,8 @@ export function ThemeToggle() {
           style={[styles.halo, { backgroundColor: c.accent, opacity: haloOpacity, transform: [{ scale: haloScale }] }]}
         />
         <Animated.View style={[styles.track, { backgroundColor: trackBg, borderColor: withAlpha(c.border, 0.7) }]}>
-          <Text style={[styles.icon, { color: '#fbbf24' }]}>☀</Text>
-          <Text style={[styles.icon, { color: '#cfe0f5' }]}>☾</Text>
+          <Text style={[styles.icon, { color: c.star }]}>☀</Text>
+          <Text style={[styles.icon, { color: c.text2 }]}>☾</Text>
           <Animated.View
             style={[
               styles.knob,

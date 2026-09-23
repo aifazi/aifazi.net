@@ -83,17 +83,21 @@ function bytesToBase64Url(bytes: Uint8Array): string {
 // ── H1: per-request internal token (HMAC-SHA256, time+method+path+query bound) ─────
 // The backend gate no longer trusts a static X-Internal-Token value. Each /api/*
 // request gets a short-lived token: base64url(ts).base64url(hmac(secret, `${method}:${pathname}:${query}:${ts}`))
-// where query is the sorted `k=v&…` form (empty when none) — mirroring the
-// backend `_canonical_query`. Even if a token is captured it expires (~5 min)
-// and can only be replayed to the same method+path+query it was minted for,
-// never across `?role=admin`-style parameter swaps. The static secret itself
-// is never sent.
+// where query is the canonical form (empty when none) — mirroring the
+// backend `_canonical_query` EXACTLY: sort decoded (key, value) pairs by
+// code point, then percent-encode with Python quote(safe='') semantics
+// (encodeURIComponent leaves !~*'() raw — escape those too, uppercase hex).
+// Even if a token is captured it expires (~5 min) and can only be replayed
+// to the same method+path+query it was minted for, never across
+// `?role=admin`-style parameter swaps. The static secret itself is never sent.
+const _rfcencode = (s: string) =>
+  encodeURIComponent(s).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase())
 async function makeInternalToken(method: string, pathname: string, searchParams?: URLSearchParams): Promise<string> {
   if (!INTERNAL_API_SECRET) return ''
   const ts = String(Math.floor(Date.now() / 1000))
   const query = [...(searchParams?.entries() ?? [])]
-    .map(([k, v]) => `${k}=${v}`)
-    .sort()
+    .sort(([ak, av], [bk, bv]) => (ak < bk ? -1 : ak > bk ? 1 : av < bv ? -1 : av > bv ? 1 : 0))
+    .map(([k, v]) => `${_rfcencode(k)}=${_rfcencode(v)}`)
     .join('&')
   const msg = `${method}:${pathname}:${query}:${ts}`
   const enc = new TextEncoder()

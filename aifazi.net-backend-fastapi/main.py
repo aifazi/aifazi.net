@@ -109,9 +109,19 @@ _INTERNAL_TOKEN_TTL = 300  # seconds (±150s skew tolerance)
 
 
 def _canonical_query(raw_query: str) -> str:
-    """Sort query pairs into a canonical form both sides agree on."""
+    """Sort query pairs into a canonical form both sides agree on.
+
+    Contract shared with the Next.js proxy (proxy.ts): parse, sort by
+    (key, value), then percent-encode BOTH key and value
+    (encodeURIComponent-equivalent: urllib.parse.quote with safe='') and join
+    with '&'. Encoding after sorting keeps the HMAC binding stable even when
+    values contain '&', '=', spaces or non-ASCII.
+    """
     pairs = urllib.parse.parse_qsl(raw_query or "", keep_blank_values=True)
-    return "&".join(f"{k}={v}" for k, v in sorted(pairs))
+    return "&".join(
+        f"{urllib.parse.quote(str(k), safe='')}={urllib.parse.quote(str(v), safe='')}"
+        for k, v in sorted(pairs)
+    )
 
 
 def _verify_internal_token(submitted: str, method: str, path: str, query: str = "") -> bool:

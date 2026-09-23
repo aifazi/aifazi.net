@@ -17,6 +17,7 @@ import {
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/src/theme'
+import { withAlpha } from '@/src/lib/color'
 import { useAuth } from '@/src/lib/auth'
 import { Screen } from '@/src/components/Screen'
 import { Header } from '@/src/components/Header'
@@ -312,7 +313,7 @@ export default function VpnScreen() {
                   width: 22,
                   height: 22,
                   borderRadius: 11,
-                  backgroundColor: c.accent + '20',
+                  backgroundColor: withAlpha(c.accent, 0.13),
                   justifyContent: 'center',
                   alignItems: 'center',
                   marginRight: 10,

@@ -374,13 +374,46 @@ const THEME_DEFS = [
 ]
 
 // Themes introduced in the latest expansion pack (flagged with a NEW badge).
-const NEW_THEME_IDS = new Set([
-  'ember-dark', 'ember-light', 'cobalt-dark', 'cobalt-light',
-  'slate-dark', 'slate-light', 'honey-dark', 'honey-light',
-  'violet-dark', 'violet-light', 'teal-dark', 'teal-light',
-  'dracula', 'nord', 'tokyo-night', 'gruvbox',
-  'solarized-dark', 'monokai', 'catppuccin', 'one-dark',
-])
+// addedAt drives the 30-day auto-expiry; per-theme dismissal persists in
+// localStorage (tl_new_cleared) via NEW_THEME_IDS.delete().
+const NEW_THEME_ADDED_AT = {
+  'ember-dark': '2026-09-01T00:00:00.000Z', 'ember-light': '2026-09-01T00:00:00.000Z',
+  'cobalt-dark': '2026-09-01T00:00:00.000Z', 'cobalt-light': '2026-09-01T00:00:00.000Z',
+  'slate-dark': '2026-09-01T00:00:00.000Z', 'slate-light': '2026-09-01T00:00:00.000Z',
+  'honey-dark': '2026-09-01T00:00:00.000Z', 'honey-light': '2026-09-01T00:00:00.000Z',
+  'violet-dark': '2026-09-01T00:00:00.000Z', 'violet-light': '2026-09-01T00:00:00.000Z',
+  'teal-dark': '2026-09-01T00:00:00.000Z', 'teal-light': '2026-09-01T00:00:00.000Z',
+  dracula: '2026-09-01T00:00:00.000Z', nord: '2026-09-01T00:00:00.000Z',
+  'tokyo-night': '2026-09-01T00:00:00.000Z', gruvbox: '2026-09-01T00:00:00.000Z',
+  'solarized-dark': '2026-09-01T00:00:00.000Z', monokai: '2026-09-01T00:00:00.000Z',
+  catppuccin: '2026-09-01T00:00:00.000Z', 'one-dark': '2026-09-01T00:00:00.000Z',
+}
+const NEW_THEME_TTL_MS = 30 * 24 * 60 * 60 * 1000
+function newThemeDaysLeft(id) {
+  const at = Date.parse(NEW_THEME_ADDED_AT[id] || '')
+  if (Number.isNaN(at)) return 0
+  return Math.ceil((at + NEW_THEME_TTL_MS - Date.now()) / 86400000)
+}
+function isNewTheme(id) {
+  if (!(id in NEW_THEME_ADDED_AT) || newThemeDaysLeft(id) <= 0) return false
+  try {
+    const cleared = JSON.parse(localStorage.getItem('tl_new_cleared') || '[]') || []
+    if (cleared.includes(id)) return false
+  } catch {}
+  return true
+}
+// Set-compatible shim so existing .has/.delete/.size reads keep working.
+const NEW_THEME_IDS = {
+  has: (id) => isNewTheme(id),
+  delete: (id) => {
+    try {
+      const cleared = JSON.parse(localStorage.getItem('tl_new_cleared') || '[]') || []
+      if (!cleared.includes(id)) localStorage.setItem('tl_new_cleared', JSON.stringify([...cleared, id]))
+    } catch {}
+    return true
+  },
+  get size() { return Object.keys(NEW_THEME_ADDED_AT).filter(isNewTheme).length },
+}
 
 // ── Theme Style Library — built-in full-look templates ───────────────────────
 // Each template is a complete "style" you can load onto any theme: fonts, glow,
@@ -429,6 +462,21 @@ const STYLE_TEMPLATES = [
   { id: 'tpl-paper-clean', name: 'Paper Clean', tag: 'EDITORIAL', desc: 'Crisp light editorial — serif display, flat surfaces, zero glow, no texture.',
     swatch: ['#faf9f6', '#1a1a1a', '#8a6d2f'],
     draft: { fontDisplay: 'Libre Baskerville', fontMono: 'Courier Prime', fontCode: 'Courier Prime', glow: 0, radius: 6, borderWidth: 1, bgPattern: 'none' } },
+  { id: 'tpl-win95-chunky', name: 'Win95 Chunky', tag: 'RETRO', desc: 'Blocky desktop-nostalgia — grotesk headings, thick borders, grid floor, zero glow.',
+    swatch: ['#000080', '#008080', '#c0c0c0'],
+    draft: { fontDisplay: 'Space Grotesk', fontMono: 'DM Mono', fontCode: 'DM Mono', glow: 0, radius: 0, borderWidth: 3, bgPattern: 'grid', colors: { green: '#000080', cyan: '#008080', text: '#000000', muted: '#444444' } } },
+  { id: 'tpl-scanline-ops', name: 'Scanline Ops', tag: 'RETRO', desc: 'Phosphor console ops — amber alerts over green-on-black with a matrix backdrop.',
+    swatch: ['#0a0a0a', '#33ff33', '#ffcc00'],
+    draft: { fontDisplay: 'VT323', fontMono: 'Share Tech Mono', fontCode: 'Share Tech Mono', glow: 0.9, radius: 2, borderWidth: 1, bgPattern: 'matrix', colors: { green: '#33ff33', cyan: '#ffcc00', text: '#33ff33', muted: '#228822' } } },
+  { id: 'tpl-holo-frost', name: 'Holo Frost', tag: 'CALM', desc: 'Glacial holo sheen — cyan/violet accents, soft radius over a dotted frost.',
+    swatch: ['#04080f', '#00e5ff', '#7b61ff'],
+    draft: { fontDisplay: 'Outfit', fontMono: 'JetBrains Mono', fontCode: 'JetBrains Mono', glow: 0.45, radius: 18, borderWidth: 1, bgPattern: 'dots', colors: { green: '#00e5ff', cyan: '#7b61ff', purple: '#00e5ff' } } },
+  { id: 'tpl-ink-ledger', name: 'Ink Ledger', tag: 'EDITORIAL', desc: 'Ledger red and navy ink — heavy display type, square cuts, no glow.',
+    swatch: ['#f5f0e8', '#c41a1a', '#1a3a6c'],
+    draft: { fontDisplay: 'Anton', fontMono: 'Courier Prime', fontCode: 'Courier Prime', glow: 0, radius: 0, borderWidth: 3, bgPattern: 'none', colors: { green: '#c41a1a', cyan: '#1a3a6c', orange: '#c87400' } } },
+  { id: 'tpl-dusk-pastel', name: 'Dusk Terminal Pastel', tag: 'SOFT', desc: 'Pastel neon at dusk — lavender and mint over a violet-to-teal gradient.',
+    swatch: ['#1a1033', '#c084fc', '#5eead4'],
+    draft: { fontDisplay: 'Quicksand', fontMono: 'DM Mono', fontCode: 'DM Mono', glow: 0.3, radius: 20, borderWidth: 1, bgPattern: 'none', bgGradientFrom: '#1a1033', bgGradientTo: '#0d2b3a', bgGradientAngle: 155, colors: { green: '#c084fc', cyan: '#5eead4' } } },
 ]
 
 // Merge a style template into a full customization draft (base keeps its theme
@@ -697,6 +745,38 @@ function ContrastBadge({ fg, bg }) {
       contrast {ratio.toFixed(2)}:1 · {pass ? 'AA ✓' : large ? 'AA (large) ~' : 'FAIL ✗'}
     </span>
   )
+}
+
+// Clipboard write with textarea/execCommand fallback (mirrors VpnPanel
+// copyText). Resolves true on success, false when the user must copy manually.
+async function copyWithFallback(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {}
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    ta.remove()
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Shared preset validation — the paste-JSON import and the .json file upload
+// both funnel through here so files and pasted text accept the same shapes.
+function parsePresetJson(text) {
+  const parsed = JSON.parse(String(text || '').trim())
+  const draft = parsed?.draft || parsed
+  if (!draft || typeof draft !== 'object' || Array.isArray(draft)) throw new Error('bad shape')
+  const name = parsed?.name || 'Imported look'
+  return { name: String(name).slice(0, 60), draft }
 }
 
 // Background patterns mirroring core/themeCustom.js BG_PATTERN_CSS (var(--bg) is the custom bg color in preview).
@@ -1050,6 +1130,9 @@ function ThemeLibrary() {
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('tl_favorites') || '[]') } catch { return [] }
   })
+  // Bumps to re-render after a NEW badge is cleared (isNewTheme reads localStorage).
+  const [, setNewTick] = useState(0)
+  const dismissNew = (id) => { NEW_THEME_IDS.delete(id); setNewTick(n => n + 1) }
   const notify = useNotify()
   const toast  = notify           // alias — all toast.x() calls route to notify
   const dlg    = useDialog()
@@ -1424,6 +1507,7 @@ function ThemeLibrary() {
   const [presetName, setPresetName] = useState('')
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [importText, setImportText] = useState('')
+  const presetFileRef = useRef(null)
 
   const persistSettings = async (patch) => {
     await api.put('/admin/site-settings', patch)
@@ -1478,19 +1562,44 @@ function ThemeLibrary() {
     toast.success('Preset deleted', { title: '🗑 Deleted' })
   }
 
-  const exportPreset = (p) => {
-    navigator.clipboard.writeText(JSON.stringify({ name: p.name, draft: p.draft }, null, 2)).catch(() => {})
-    toast.success('Preset JSON copied to clipboard', { title: '📋 Exported' })
+  const exportPreset = async (p) => {
+    const ok = await copyWithFallback(JSON.stringify({ name: p.name, draft: p.draft }, null, 2))
+    if (ok) toast.success('Preset JSON copied to clipboard', { title: '📋 Exported' })
+    else toast.error('Copy failed — select the text manually', { title: 'Copy Failed' })
+  }
+
+  const downloadPreset = (p) => {
+    const payload = { name: p.name, originTheme: p.originTheme, themeId: p.originTheme, createdAt: p.createdAt, exportedAt: nowISO(), draft: p.draft }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${String(p.name || 'preset').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'preset'}.theme.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    toast.success(`Preset "${p.name}" downloaded as .json`, { title: '⬇ Downloaded' })
+  }
+
+  const importPresetFile = async (file) => {
+    if (!file) return
+    try {
+      const { name, draft } = parsePresetJson(await file.text())
+      const list = [...themePresets]
+      list.push({ id: makeId('p'), name, originTheme: customTarget, createdAt: nowISO(), draft })
+      await persistSettings({ themePresets: list })
+      toast.success(`Preset "${name}" imported from file`, { title: '📥 Imported' })
+    } catch {
+      toast.error('Invalid preset file — upload a preset .json exported from the theme library', { title: 'Import Failed' })
+    }
   }
 
   const importPreset = async () => {
     try {
-      const parsed = JSON.parse(importText.trim())
-      const draft = parsed?.draft || parsed
-      if (!draft || typeof draft !== 'object' || Array.isArray(draft)) throw new Error('bad shape')
-      const name = parsed?.name || `${THEME_DEFS.find(t => t.id === customTarget)?.name} import`
+      const { name, draft } = parsePresetJson(importText)
       const list = [...themePresets]
-      list.push({ id: makeId('p'), name: String(name).slice(0, 60), originTheme: customTarget, createdAt: nowISO(), draft })
+      list.push({ id: makeId('p'), name, originTheme: customTarget, createdAt: nowISO(), draft })
       await persistSettings({ themePresets: list })
       setImportModalOpen(false)
       setImportText('')
@@ -1619,7 +1728,7 @@ function ThemeLibrary() {
 
   const isFav = id => favorites.includes(id)
 
-  const exportCustom = () => {
+  const exportCustom = async () => {
     const css = Object.entries({
       '--bg': custom.bg, '--bg2': custom.bg2, '--bg3': custom.bg3,
       '--green': custom.primary, '--cyan': custom.secondary,
@@ -1627,16 +1736,18 @@ function ThemeLibrary() {
       '--muted': custom.muted, '--border': custom.border,
     }).map(([k, v]) => `  ${k}: ${v};`).join('\n')
     const out = `[data-theme="${custom.id}"] {\n${css}\n}`
-    navigator.clipboard.writeText(out).catch(() => {})
+    const ok = await copyWithFallback(out)
+    if (!ok) { toast.error('Copy failed — select the text manually', { title: 'Copy Failed' }); return }
     setExported(true)
     toast.success('CSS variables copied to clipboard', { title: '✅ Exported' })
     setTimeout(() => setExported(false), 2500)
   }
 
-  const exportCustomJSON = () => {
+  const exportCustomJSON = async () => {
     const json = JSON.stringify(custom, null, 2)
-    navigator.clipboard.writeText(json).catch(() => {})
-    toast.success('Theme JSON copied to clipboard', { title: '📋 JSON Exported' })
+    const ok = await copyWithFallback(json)
+    if (ok) toast.success('Theme JSON copied to clipboard', { title: '📋 JSON Exported' })
+    else toast.error('Copy failed — select the text manually', { title: 'Copy Failed' })
   }
 
   // What we actually render in the live-preview area
@@ -1762,6 +1873,27 @@ function ThemeLibrary() {
   }, [activeTab, customTarget, customDraft, savedCustomForPreview, uploadedFonts])
 
   const saveThemeCustom = async () => {
+    // Contrast guard — text/bg and muted/bg of the draft must hit AA (4.5:1).
+    // Large-text-only (≥3:1) can override via confirm; anything lower blocks.
+    const _defs = themeColorDefaults(customTarget)
+    const _bg = customDraft.colors?.bg || _defs.bg
+    const _tx = customDraft.colors?.text || _defs.text
+    const _mu = customDraft.colors?.muted || _defs.muted
+    const _rT = contrastRatio(_tx, _bg)
+    const _rM = contrastRatio(_mu, _bg)
+    if (_rT !== null && _rM !== null && (_rT < 4.5 || _rM < 4.5)) {
+      if (_rT < 3 || _rM < 3) {
+        toast.error(`Contrast check failed — text ${_rT.toFixed(2)}:1, muted ${_rM.toFixed(2)}:1 (need ≥ 4.5:1). Adjust the colors before saving.`, { title: '⛔ Contrast FAIL' })
+        return
+      }
+      const ok = await dlg.confirm({
+        title: 'Low Contrast — Override?',
+        message: `Text ${_rT.toFixed(2)}:1 / muted ${_rM.toFixed(2)}:1 — below AA 4.5:1 but passable for large text (≥ 3:1). Save anyway?`,
+        variant: 'danger',
+        confirmLabel: 'SAVE ANYWAY',
+      })
+      if (!ok) return
+    }
     setSavingCustom(true)
     try {
       const tc = {
@@ -1959,8 +2091,9 @@ function ThemeLibrary() {
     return { isActive: picked || matches, isCustomized: picked && !matches }
   }, [siteConfig?.themePackage, siteConfig?.globalTheme, globalThemeId, gAppearance, fwDraft, bgAnimation, gridPattern])
 
-  const copyAnimClass = (id) => {
-    navigator.clipboard.writeText(id).catch(() => {})
+  const copyAnimClass = async (id) => {
+    const ok = await copyWithFallback(id)
+    if (!ok) { toast.error('Copy failed — select the text manually', { title: 'Copy Failed' }); return }
     setCopiedAnim(id)
     toast.success(`Class name "${id}" copied to clipboard`, { title: '📋 Copied' })
     setTimeout(() => setCopiedAnim(null), 2000)
@@ -2394,6 +2527,7 @@ function ThemeLibrary() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, letterSpacing: 1, color: isSelected ? t.primary : isActive ? t.primary : t.text }}>{t.name}</span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, padding: '2px 6px', background: ts.bg, border: `1px solid ${ts.border}`, color: ts.color, borderRadius: 3 }}>{t.tag}</span>
+                      {isNew && <span title={`NEW · ${newThemeDaysLeft(t.id)}d left`} style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, padding: '2px 6px', color: t.primary, border: `1px solid ${t.primary}88`, borderRadius: 3 }}>NEW<button onClick={e => { e.stopPropagation(); dismissNew(t.id) }} title="Clear NEW badge" aria-label={`Clear NEW badge for ${t.name}`} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 7, padding: '0 0 0 3px', lineHeight: 1 }}>✕</button></span>}
                       {isActive && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: t.primary, marginLeft: 'auto' }}>✅ ACTIVE</span>}
                       {isSelected && !isActive && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: t.primary, marginLeft: 'auto' }}>⭐ SELECTED</span>}
                     </div>
@@ -2883,7 +3017,7 @@ function ThemeLibrary() {
                         </div>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: t.primary, flex: 1 }}>{t.name}</span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, padding: '2px 6px', background: ts.bg, border: `1px solid ${ts.border}`, color: ts.color, borderRadius: 3 }}>{t.tag}</span>
-                      {isNew && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, fontWeight: 700, letterSpacing: 2, padding: '2px 6px', color: t.primary, border: `1px solid ${t.primary}88`, borderRadius: 3 }}>NEW</span>}
+                      {isNew && <span title={`NEW · ${newThemeDaysLeft(t.id)}d left`} style={{ fontFamily: 'var(--font-mono)', fontSize: 7, fontWeight: 700, letterSpacing: 2, padding: '2px 6px', color: t.primary, border: `1px solid ${t.primary}88`, borderRadius: 3 }}>NEW<button onClick={e => { e.stopPropagation(); dismissNew(t.id) }} title="Clear NEW badge" aria-label={`Clear NEW badge for ${t.name}`} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 7, padding: '0 0 0 3px', lineHeight: 1 }}>✕</button></span>}
                         <button onClick={e => { e.stopPropagation(); toggleFav(t.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 2 }}>⭐</button>
                       </div>
                       <div style={{ padding: '8px 14px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -3222,7 +3356,7 @@ function ThemeLibrary() {
                     </span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)' }}>{t.name}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>{t.tag}</span>
-                    {isNew && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 50%, transparent)', borderRadius: 4, padding: '1px 5px' }}>NEW</span>}
+                    {isNew && <span title={`NEW · ${newThemeDaysLeft(t.id)}d left`} style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 50%, transparent)', borderRadius: 4, padding: '1px 5px' }}>NEW<button onClick={e => { e.stopPropagation(); dismissNew(t.id) }} title="Clear NEW badge" aria-label={`Clear NEW badge for ${t.name}`} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 8, padding: '0 0 0 3px', lineHeight: 1 }}>✕</button></span>}
                     {isActive && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: t.primary }}>● ACTIVE</span>}
                   </div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.5 }}>{t.desc}</div>
@@ -3388,6 +3522,20 @@ function ThemeLibrary() {
               <FontPicker value={customDraft.fontDisplay || ''} options={fontOpts} groups={['Display', 'Uploaded']}
                 onChange={v => { setDraft({ fontDisplay: v }); setCustomizePreviewOpen(true) }} />
               <div style={{ ...T.sub, marginBottom: 14, marginTop: -8 }}>Headings & accent text. Preview: <span style={{ fontFamily: `'${customDraft.fontDisplay}', 'Outfit', sans-serif`, color: 'var(--text)', fontSize: 15, fontWeight: 700 }}>{customDraft.fontDisplay ? `AaBb  ${customDraft.fontDisplay}` : 'AaBb  (theme default)'}</span></div>
+
+              <label style={T.label}>PAIR WITH  (sets display + mono together)</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                {[['Orbitron', 'Share Tech Mono'], ['Libre Baskerville', 'Courier Prime'], ['Syne', 'JetBrains Mono'], ['Bebas Neue', 'Space Mono']].map(([d, m]) => {
+                  const on = customDraft.fontDisplay === d && customDraft.fontMono === m
+                  return (
+                    <button key={d} onClick={() => { setDraft({ fontDisplay: d, fontMono: m, fontCode: m }); setCustomizePreviewOpen(true) }}
+                      title={`${d} + ${m}`}
+                      style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 0, cursor: 'pointer', background: on ? 'color-mix(in srgb, var(--green) 14%, transparent)' : 'var(--bg3)', border: `1px solid ${on ? 'var(--green)' : 'var(--border)'}`, color: on ? 'var(--green)' : 'var(--muted)', borderRadius: 4 }}>
+                      <span style={{ fontFamily: `'${d}', sans-serif`, color: 'var(--text)' }}>Aa</span> {d} + {m}
+                    </button>
+                  )
+                })}
+              </div>
 
               <label style={T.label}>MONO FONT</label>
               <FontPicker value={customDraft.fontMono || ''} options={fontOpts} groups={['Mono', 'Uploaded']}
@@ -3569,6 +3717,11 @@ function ThemeLibrary() {
                           style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, cursor: 'pointer', background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 6 }}>
                           EXPORT
                         </button>
+                        <button onClick={() => downloadPreset(p)}
+                          title="Download preset as a .json file"
+                          style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, cursor: 'pointer', background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 6 }}>
+                          ⬇ FILE
+                        </button>
                         <button onClick={() => deletePreset(p)}
                           style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, cursor: 'pointer', background: 'transparent', color: 'var(--red)', border: '1px solid color-mix(in srgb, var(--red) 50%, transparent)', borderRadius: 6 }}>
                           DEL
@@ -3582,6 +3735,12 @@ function ThemeLibrary() {
                 style={{ marginTop: 12, padding: '7px 14px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', background: 'transparent', color: 'var(--muted)', border: '1px dashed var(--border)', borderRadius: 6 }}>
                 📥 IMPORT PRESET (PASTE JSON)
               </button>
+              <button onClick={() => presetFileRef.current?.click()}
+                style={{ marginTop: 12, marginLeft: 8, padding: '7px 14px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', background: 'transparent', color: 'var(--muted)', border: '1px dashed var(--border)', borderRadius: 6 }}>
+                📤 UPLOAD .JSON
+              </button>
+              <input ref={presetFileRef} type="file" accept="application/json,.json" style={{ display: 'none' }}
+                onChange={e => { importPresetFile(e.target.files?.[0]); e.target.value = '' }} />
             </div>
 
             {/* Targeted rollout */}
@@ -3632,6 +3791,21 @@ function ThemeLibrary() {
                 style={{ width: '100%', minHeight: 150, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', resize: 'vertical', lineHeight: 1.6 }} />
               <div style={{ ...T.sub, marginTop: 8 }}>Advanced: fully arbitrary CSS for this theme. Wrapped in <code style={{ color: 'var(--purple)', fontSize: 9 }}>{themeSelector(customTarget)}</code> when you paste bare declarations.</div>
             </div>
+
+            {/* Contrast guard status — mirrors the save-time check */}
+            {(() => {
+              const defs = themeColorDefaults(customTarget)
+              const bg = customDraft.colors?.bg || defs.bg
+              const rT = contrastRatio(customDraft.colors?.text || defs.text, bg)
+              const rM = contrastRatio(customDraft.colors?.muted || defs.muted, bg)
+              if (rT === null || rM === null) return null
+              const fail = rT < 4.5 || rM < 4.5
+              return (
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, color: fail ? 'var(--red)' : 'var(--green)', marginBottom: 10 }}>
+                  CONTRAST text {rT.toFixed(2)}:1 · muted {rM.toFixed(2)}:1 · {fail ? 'FAIL ✗ (need ≥ 4.5:1 to save)' : 'AA ✓'}
+                </div>
+              )
+            })()}
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>

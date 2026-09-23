@@ -22,6 +22,8 @@ async function ensureChannel() {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'aifazi notifications',
       importance: Notifications.AndroidImportance.MAX,
+      // Native-only LED/tint color — no theme context here (runs outside the
+      // React tree). Intentionally a fixed brand value, not a theme token.
       lightColor: '#00ff88',
       vibrationPattern: [0, 250, 250, 250],
     })

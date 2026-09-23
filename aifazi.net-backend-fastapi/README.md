@@ -651,7 +651,7 @@ daily cron (`/api/cron/cleanup`) stops firing against production.
 | `fastapi` | Web framework |
 | `uvicorn[standard]` | ASGI server |
 | `supabase` | Supabase Python SDK |
-| `python-jose[cryptography]` | JWT encode/decode |
+| `jwt_compat` (PASETO v4 via `PyNaCl`) + `bcrypt` | JWT-compatible encode/decode + password hashing |
 | `bcrypt` | Password hashing |
 | `python-multipart` | Form / file upload parsing |
 | `httpx` | Async HTTP client |
