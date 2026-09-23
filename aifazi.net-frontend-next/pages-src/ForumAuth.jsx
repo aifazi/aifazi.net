@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useParams } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
-import { authProviderLoginRoute } from '@/lib/authRoutes'
+import { authProviderLoginRoute, FORGOT_PASSWORD_PATH } from '@/lib/authRoutes'
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const inputStyle = {
@@ -280,7 +280,9 @@ export function ForumRegister() {
     setUnCheck('checking')
     _timerRef.current = setTimeout(async () => {
       try {
-        const res = await api.get(`/auth/check-username?username=${encodeURIComponent(uname)}`)
+        // P0 — POST twin (no username in GET query strings); backend serves
+        // both GET and POST, frontend uses POST only.
+        const res = await api.post('/auth/check-username', { username: uname })
         if (res.data.available) {
           setUnCheck('available'); setUnSuggest('')
         } else {
@@ -546,7 +548,10 @@ export function ForgotPassword() {
     e.preventDefault()
     setResetLoading(true); setResetError('')
     try {
-      await api.post('/auth/forgot', { identifier })
+      // P0 — unified on FORGOT_PASSWORD_PATH (backend /forgot is an alias of
+      // the same handler). Send both keys: the tab accepts username OR email
+      // and the backend only matches the email branch when it contains '@'.
+      await api.post(FORGOT_PASSWORD_PATH, { username: identifier, email: identifier })
       setResetSent(true)
     } catch (err) {
       setResetError(err.response?.data?.detail || err.response?.data?.error || 'Something went wrong')

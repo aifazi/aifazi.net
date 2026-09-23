@@ -124,12 +124,12 @@ def _ensure_forum_user(ldap_user: LdapUser) -> dict:
         updates = {"last_seen": now}
         if email and not user.get("email"):
             updates["email"] = email
-        if ldap_user.display_name and not user.get("display_name"):
-            updates["display_name"] = ldap_user.display_name
+        # NOTE: users has no display_name column — the LDAP display name is
+        # surfaced only in API responses (see ldap_login), never persisted.
         try:
             supabase.table("users").update(updates).eq("id", user["id"]).execute()
-        except Exception:
-            pass
+        except Exception as exc:
+            log.warning("ldap user touch failed for %s: %s", user.get("id"), exc)
         return {**user, **updates}
 
     uname = _next_username(ldap_user.uid)
@@ -139,7 +139,6 @@ def _ensure_forum_user(ldap_user: LdapUser) -> dict:
         "password_hash": "",
         "email_verified": True,  # LLDAP is the identity source of truth
         "role": "user",
-        "display_name": ldap_user.display_name or ldap_user.uid,
         "created_at": now,
         "last_seen": now,
     }).execute()

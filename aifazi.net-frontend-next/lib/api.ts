@@ -394,6 +394,11 @@ let _impersonateUsername: string | null = null
 export function setImpersonationToken(token: string | null, username?: string | null) {
   _impersonateToken = token
   _impersonateUsername = token ? (username ?? null) : null
+  // P0 — fan out so the global impersonation banner (providers.tsx) stays in
+  // sync no matter which route started/ended the view-as session.
+  if (typeof window !== 'undefined') {
+    try { window.dispatchEvent(new CustomEvent('impersonation:changed')) } catch {}
+  }
 }
 
 /** Get the current impersonation token from memory. */

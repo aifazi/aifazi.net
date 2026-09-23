@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import api, { saveTokens, clearAuthTokens, getRole, ensureAdminGate } from '@/lib/api'
-import { authProviderLoginRoute, safeNextPath } from '@/lib/authRoutes'
+import { authProviderLoginRoute, safeNextPath, FORGOT_PASSWORD_PATH } from '@/lib/authRoutes'
 
 // P2 — gsap is heavy and Login is a first-paint route: lazy-load it like the
 // existing import('gsap') hook pattern (components/Hero.jsx) instead of a
@@ -369,7 +369,14 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
       shake?.(formRef.current)
       return
     }
-    if (Date.now() < lockoutUntil) return
+    // P2-8 — mirror the password-path lockout feedback (countdown + message +
+    // shake) instead of silently returning.
+    if (Date.now() < lockoutUntil) {
+      const s = Math.ceil((lockoutUntil - Date.now()) / 1000)
+      setCountdown(s)
+      setError(`Too many attempts. Try again in ${s}s.`)
+      shake?.(formRef.current); return
+    }
     setLoading(true)
     setError('')
     try {
@@ -579,7 +586,7 @@ function VerifyWaiting({ email, onSwitch }) {
       setResent(true)
       attemptsRef.current = 0
       setExpired_(false)
-      if (!intervalRef.current) intervalRef.current = setInterval(pollRef.current, 3000)
+      if (!intervalRef.current) intervalRef.current = setInterval(() => { if (!document.hidden) pollRef.current() }, 3000)
     } catch {}
     finally { setResending(false) }
   }
@@ -627,9 +634,10 @@ function VerifyWaiting({ email, onSwitch }) {
     }
     pollRef.current = poll
 
-    // Poll immediately then every 3 s
+    // Poll immediately then every 3 s — P2-6: skip ticks while the tab is
+    // hidden (mirrors ForumProfile.jsx heartbeat guard).
     poll()
-    intervalRef.current = setInterval(poll, 3000)
+    intervalRef.current = setInterval(() => { if (!document.hidden) pollRef.current() }, 3000)
 
     return () => {
       stopped = true
@@ -918,7 +926,7 @@ function ForgotPassword({ onSwitch, shake }) {
     }
     setLoading(true); setError('')
     try {
-      await api.post('/auth/forgot-password', { email })
+      await api.post(FORGOT_PASSWORD_PATH, { email })
       setSent(true)
     } catch (err) {
       setError(err?.response?.data?.detail || 'Could not send reset email. Try again.')

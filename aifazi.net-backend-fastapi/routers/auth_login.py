@@ -274,6 +274,20 @@ async def logout(request: Request, response: Response):
         user = _paseto_decode(token_str, purpose="auth") if token_str else {}
     except Exception:
         user = {}
+    if isinstance(user, dict) and user.get("impersonated"):
+        # Impersonated ("view as") sessions hold the VICTIM's users-row id in
+        # the token — revoking users.refresh_token here would log the victim
+        # out of their real session (and the impersonated refresh was never
+        # persisted, so there is nothing server-side to revoke). Clear the
+        # client cookies, audit, and return WITHOUT touching the DB.
+        _audit(str(user.get("impersonated_by") or "admin"), "impersonation_end",
+               target=str(user.get("username") or ""),
+               details={"impersonated": True, "via": "logout"},
+               ip=request.client.host if request.client else "")
+        response.delete_cookie("auth_token", path="/", domain=COOKIE_DOMAIN or None)
+        response.delete_cookie("admin_session", path="/", domain=COOKIE_DOMAIN or None)
+        response.delete_cookie("refresh_token", path="/", domain=COOKIE_DOMAIN or None)
+        return {"message": "Logged out"}
     if isinstance(user, dict) and user.get("id"):
         supabase.table("users").update({
             "refresh_token": None,

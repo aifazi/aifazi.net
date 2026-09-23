@@ -54,8 +54,10 @@ async def discord_callback(request: Request):
     if not code:
         raise HTTPException(400, "Missing authorization code")
 
-    # Validate state
-    if state and stored_state and not hmac.compare_digest(state, stored_state):
+    # Validate state — fail CLOSED: a missing state (or missing stored cookie)
+    # must reject, otherwise an attacker can strip the state param to bypass
+    # the CSRF check entirely (previous code only compared when both present).
+    if not state or not stored_state or not hmac.compare_digest(state, stored_state):
         raise HTTPException(403, "Invalid OAuth state")
 
     # Exchange code for access token

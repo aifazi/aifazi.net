@@ -1626,9 +1626,12 @@ const WEB_THEME_MAP: Record<string, ThemeId> = {
   minecraft: 'minecraft', 'minecraft-light': 'terminal-light',
   sonic: 'sonic', 'sonic-light': 'ice',
   pacman: 'pacman', 'pacman-light': 'pacman-light',
-  'ember-dark': 'ember-dark', 'cobalt-dark': 'cobalt-dark',
-  'slate-dark': 'slate-dark', 'honey-dark': 'honey-dark',
-  'violet-dark': 'violet-dark', 'teal-dark': 'teal-dark',
+  'ember-dark': 'ember-dark', 'ember-light': 'ember-dark',
+  'cobalt-dark': 'cobalt-dark', 'cobalt-light': 'cobalt-dark',
+  'slate-dark': 'slate-dark', 'slate-light': 'slate-dark',
+  'honey-dark': 'honey-dark', 'honey-light': 'honey-dark',
+  'violet-dark': 'violet-dark', 'violet-light': 'violet-dark',
+  'teal-dark': 'teal-dark', 'teal-light': 'teal-dark',
 }
 
 export function webThemeToMobile(id?: string | null): ThemeId {

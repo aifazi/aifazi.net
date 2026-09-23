@@ -458,11 +458,19 @@ def _abuse_primary_identifier(ids: list[str]) -> str | None:
 
 def _find_abuse_audit(undo_token: str) -> dict | None:
     """Find the admin_abuse_ban audit row holding this undo_token."""
-    for col in ("action", "event"):  # full schema first, then legacy alias
+    # (match-col, select-list) per schema: full schema first, then legacy
+    # alias. Legacy rows (username/event, no details JSON) can never hold an
+    # undo_token — the legacy branch is a graceful-degradation probe that
+    # correctly matches nothing instead of crashing on missing columns.
+    _schemas = (
+        ("action", "id,actor,action,target,details,created_at"),
+        ("event", "id,username,event,ip,created_at"),
+    )
+    for col, cols in _schemas:
         try:
             res = (
                 supabase.table("audit_logs")
-                .select("id,actor,action,target,details,created_at")
+                .select(cols)
                 .eq(col, "admin_abuse_ban")
                 .order("created_at", desc=True)
                 .limit(200)
@@ -475,6 +483,61 @@ def _find_abuse_audit(undo_token: str) -> dict | None:
             if isinstance(details, dict) and details.get("undo_token") == undo_token:
                 return row
     return None
+
+
+_ABUSE_UNDO_TTL_HOURS = 72
+
+
+def _find_abuse_unban(undo_token: str) -> dict | None:
+    """Find an admin_abuse_unban row already consuming this undo_token.
+
+    Undo tokens are single-use: a second POST with the same token must be
+    refused (checked in abuse_unban before any restore runs).
+    """
+    for col in ("action", "event"):  # full schema first, then legacy alias
+        try:
+            res = (
+                supabase.table("audit_logs")
+                .select("id,actor,action,target,details,created_at")
+                .eq(col, "admin_abuse_unban")
+                .order("created_at", desc=True)
+                .limit(200)
+                .execute()
+            )
+        except Exception:
+            continue
+        for row in (res.data or []):
+            details = row.get("details") or {}
+            if isinstance(details, dict) and details.get("undo_token") == undo_token:
+                return row
+    return None
+
+
+def _abuse_undo_expired(row: dict) -> bool:
+    """True when the ban row is older than the undo TTL (fail-closed: an
+    unparseable timestamp refuses the undo rather than granting it)."""
+    from datetime import datetime, timedelta, timezone
+    try:
+        created = datetime.fromisoformat(str(row.get("created_at") or "").replace("Z", "+00:00"))
+    except Exception:
+        return True
+    if not created.tzinfo:
+        created = created.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - created) > timedelta(hours=_ABUSE_UNDO_TTL_HOURS)
+
+
+def _stamp_abuse_undone(row: dict, actor: str, now: str) -> None:
+    """Best-effort: stamp undone_at/undone_by into the SAME ban audit row's
+    details JSON. No-ops (warning only) on legacy-schema instances without a
+    details column — the linked admin_abuse_unban row below is the durable
+    single-use record there."""
+    try:
+        details = dict(row.get("details") or {})
+        details["undone_at"] = now
+        details["undone_by"] = actor
+        supabase.table("audit_logs").update({"details": details}).eq("id", row.get("id")).execute()
+    except Exception as exc:
+        log.warning("abuse-unban undone_at stamp failed: %s", exc)
 
 
 @router.post("/actions/abuse-ban")
@@ -652,6 +715,12 @@ async def abuse_unban(body: AbuseUnbanBody, request: Request, user: dict = Depen
     row = _find_abuse_audit((body.undo_token or "").strip())
     if not row:
         raise HTTPException(status_code=404, detail="Undo token not found")
+    # Single-use: refuse a token that already produced an unban.
+    if _find_abuse_unban((body.undo_token or "").strip()):
+        raise HTTPException(status_code=409, detail="This undo token has already been used")
+    # 72h TTL: the undo payload (prior state) goes stale fast.
+    if _abuse_undo_expired(row):
+        raise HTTPException(status_code=410, detail="Undo window expired (72h after ban)")
     details = row.get("details") or {}
     prior = details.get("prior") or {}
     actor = _actor(user)
@@ -734,6 +803,7 @@ async def abuse_unban(body: AbuseUnbanBody, request: Request, user: dict = Depen
     elif "ip" in (details.get("surfaces") or []):
         results["ip"] = {"ok": True, "detail": "nothing to restore"}
 
+    _stamp_abuse_undone(row, actor, now)
     _audit(actor, "admin_abuse_unban", target=row.get("target") or f"users:{target_id} ({target_name})",
            details={"undo_token": body.undo_token.strip(), "restores_audit_id": row.get("id"),
                     "results": results},

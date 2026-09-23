@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import NextImage from 'next/image'
 import { useNavigate } from '@/lib/router-compat'
-import api, { getRole, getUsername, setEffectiveAccess, getAuthToken, setImpersonationToken, getImpersonationUsername } from '@/lib/api'
+import api, { getRole, getUsername, setEffectiveAccess, getAuthToken, setImpersonationToken } from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { Checkbox, Select } from '../../core/ui.jsx'
@@ -127,6 +127,12 @@ function AbuseBanModal({ target, onClose }) {
       if (ip.trim()) payload.ip = ip.trim()
       const r = await api.post('/admin/actions/abuse-ban', payload)
       setResult(r.data)
+      // P1-4 — persist the undo token so the ban stays reversible after the
+      // modal closes (runUndo below keeps working while open; the stored token
+      // lets staff recover it afterwards).
+      if (r.data?.undo_token) {
+        try { sessionStorage.setItem('aifazi_abuse_undo', JSON.stringify({ token: r.data.undo_token, username: target.username, at: new Date().toISOString() })) } catch {}
+      }
       if (r.data?.ok) toast.success(`Banned everywhere: ${target.username}`, { title: 'Abuse Ban' })
       else toast.error('Partial failure — review per-surface results below', { title: 'Abuse Ban' })
     } catch (err) {
@@ -149,6 +155,11 @@ function AbuseBanModal({ target, onClose }) {
 
   const copyReason = async () => {
     try { await navigator.clipboard.writeText(reason.trim()); toast.success('Reason copied', { title: 'Copied' }) }
+    catch { toast.error('Copy failed', { title: 'Error' }) }
+  }
+
+  const copyUndoToken = async () => {
+    try { await navigator.clipboard.writeText(result?.undo_token || ''); toast.success('Undo token copied — keep it to reverse this ban', { title: 'Copied' }) }
     catch { toast.error('Copy failed', { title: 'Error' }) }
   }
 
@@ -190,6 +201,18 @@ function AbuseBanModal({ target, onClose }) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: result.ok ? 'var(--green)' : '#ff4757' }}>{result.ok ? 'BANNED EVERYWHERE' : 'PARTIAL FAILURE — REVIEW BELOW'}</div>
+            {/* P1-4 — copyable undo token (also persisted to sessionStorage);
+                no audit-log link: the modal has no setView route to the audit
+                tab, so the token itself is the recovery path. */}
+            {result.undo_token && (
+              <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>UNDO TOKEN — KEEP TO REVERSE THIS BAN</div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <code style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>{result.undo_token}</code>
+                  <button type="button" onClick={copyUndoToken} style={{ ...S.btn('var(--bg3)', 'var(--cyan)'), border: '1px solid var(--border)', fontSize: 9, padding: '6px 10px', flexShrink: 0 }}>COPY TOKEN</button>
+                </div>
+              </div>
+            )}
             <div>{resultRows(result)}</div>
             {undone && (
               <div>
@@ -284,8 +307,9 @@ function Dashboard({ onLogout }) {
   const [staffUserResults, setStaffUserResults] = useState([])
   const [staffUserLoading, setStaffUserLoading] = useState(false)
   // User impersonation ("view as") — token held in memory by lib/api, admin
-  // HttpOnly cookie session underneath is never touched.
-  const [impersonating, setImpersonating] = useState(() => getImpersonationUsername())
+  // HttpOnly cookie session underneath is never touched. The banner + exit
+  // live globally (app/providers.tsx ImpersonationBanner) so direct-URL entry
+  // is covered; exit restores via the shared lib/impersonation helper.
   const [impersonateBusy, setImpersonateBusy] = useState(false)
   const [selectedPosts, setSelectedPosts] = useState(new Set())
   const [selectedContacts, setSelectedContacts] = useState(new Set())
@@ -524,43 +548,15 @@ function Dashboard({ onLogout }) {
       if (user.role !== 'admin') {
         try { localStorage.removeItem('aifazi_permissions') } catch {}
       }
-      setImpersonating(user.username)
       toast.success(`Viewing as ${user.username} — admin session preserved`, { title: 'Impersonation started' })
     } catch (err) { toast.error(err.response?.data?.detail || 'Impersonation failed', { title: 'Error' }) }
     finally { setImpersonateBusy(false) }
   }
 
-  const exitImpersonation = async () => {
-    // Tell the server first (still holding the impersonated token) so the
-    // exit is audited, then drop the memory token and reload as admin.
-    try { await api.post('/auth/staff/unimpersonate', {}) } catch {}
-    setImpersonationToken(null)
-    try {
-      const raw = sessionStorage.getItem('aifazi_pre_impersonate')
-      if (raw) {
-        const prev = JSON.parse(raw)
-        if (prev.role) localStorage.setItem('aifazi_effective_role', prev.role)
-        if (prev.username) localStorage.setItem('aifazi_username', prev.username)
-        if (prev.permissions) localStorage.setItem('aifazi_permissions', prev.permissions)
-        else localStorage.removeItem('aifazi_permissions')
-      }
-      sessionStorage.removeItem('aifazi_pre_impersonate')
-    } catch {}
-    setImpersonating(null)
-    try { const v = await api.get('/auth/me'); setEffectiveAccess(v.data?.user) } catch {}
-    window.location.reload()
-  }
-
-  // Auto-exit the banner if the short-lived view-as token expires mid-session.
-  useEffect(() => {
-    const onExpired = () => {
-      setImpersonationToken(null)
-      setImpersonating(null)
-      toast.error('View-as session expired — you are back to your admin session', { title: 'Impersonation ended' })
-    }
-    window.addEventListener('impersonation:expired', onExpired)
-    return () => window.removeEventListener('impersonation:expired', onExpired)
-  }, [])
+  // P1-5/1-6 — exit + expiry restore share lib/impersonation exitImpersonation
+  // (audited server exit, snapshot restore, /auth/me re-hydrate, reload).
+  // The global banner (providers.tsx) owns the EXIT button and the
+  // impersonation:expired handler, so nothing Dashboard-local remains here.
 
   const handleUpdateStaff = async e => {
     e.preventDefault(); setStaffSaving(true)
@@ -764,13 +760,7 @@ function Dashboard({ onLogout }) {
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', zIndex: 10 }}>
-      {/* Impersonation banner — fixed top, distinct amber, always visible while viewing as another user */}
-      {impersonating && (
-        <div style={{ background: '#f59e0b', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '8px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, fontWeight: 700, flexShrink: 0, zIndex: 2000, flexWrap: 'wrap' }}>
-          <span>👁 VIEWING AS {impersonating} — actions are audited · admin session preserved</span>
-          <button onClick={exitImpersonation} style={{ background: '#000', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '5px 14px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, fontWeight: 700, cursor: 'pointer' }}>EXIT IMPERSONATION</button>
-        </div>
-      )}
+      {/* P0 — impersonation banner is global now (app/providers.tsx) */}
       {/*  Global Admin Header (desktop)  */}
       {!isMobile && (
         <AdminHeader view={view} setView={goView} navItems={navItems.filter(canViewNavItem)}

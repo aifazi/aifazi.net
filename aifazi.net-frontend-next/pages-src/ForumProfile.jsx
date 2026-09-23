@@ -656,7 +656,9 @@ function ProfileEditTab({ user, onUpdate }) {
   useEffect(() => {
     if (usernameState === 'idle' || usernameState === 'short') return
     const timer = setTimeout(() => {
-      api.get(`/auth/check-username?username=${encodeURIComponent(username)}`)
+      // P0 — POST twin (no username in GET query strings); backend serves
+      // both GET and POST, frontend uses POST only.
+      api.post('/auth/check-username', { username })
         .then(r => {
           setUsernameCheck(r.data?.available
             ? { state: 'ok', msg: 'Username is available.' }

@@ -229,7 +229,8 @@ async def authentik_callback(
                         "password_hash": "",
                         "email_verified": True,
                         "authentik_id": ak_sub,
-                        "display_name": ak_name or uname,
+                        # NOTE: users has no display_name column — ak_name is
+                        # surfaced only in API responses, never persisted.
                         "role": "user",
                         "created_at": now,
                         "last_seen": now,

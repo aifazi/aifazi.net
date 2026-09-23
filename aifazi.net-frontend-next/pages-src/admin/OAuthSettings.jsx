@@ -95,13 +95,15 @@ function OAuthSettings() {
   }, [loadIdUsers])
 
   const toggleIdentity = async (u, enable) => {
+    // P1-7 — confirm before flipping identity state; canonical dialog props
+    // (variant + confirmLabel, mirroring the MailStalwart drop confirm).
     const ok = await dialog.confirm({
       title: `${enable ? 'Enable' : 'Disable'} ${u.username}?`,
       message: enable
         ? 'Re-activate this identity.'
         : 'Deactivate this identity. The user will not be able to sign in.',
-      confirmText: enable ? 'Enable' : 'Disable',
-      danger: !enable,
+      variant: enable ? 'warning' : 'danger',
+      confirmLabel: enable ? 'ENABLE' : 'DISABLE',
     })
     if (!ok) return
     try {

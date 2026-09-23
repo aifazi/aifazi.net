@@ -38,6 +38,16 @@ export default function MailStalwart() {
   }, [load])
 
   const act = async (queueId, action) => {
+    // P2-2 — bulk retry affects the whole visible queue: confirm first.
+    if (action === 'retry' && queue.length > 5) {
+      const ok = await confirm({
+        title: 'Retry queued messages',
+        message: `Re-queue ${queue.length} messages now? They will all be retried immediately.`,
+        variant: 'warning',
+        confirmLabel: 'RETRY ALL',
+      })
+      if (!ok) return
+    }
     if (action === 'drop') {
       const ok = await confirm({
         title: 'Drop queued message',
