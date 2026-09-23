@@ -247,6 +247,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
   // #3 — rate limiting
   const [lockoutUntil, setLockoutUntil] = useState(0)
   const [countdown, setCountdown]       = useState(0)
+  const [locked, setLocked]             = useState(false)
   const lockoutRef = useRef(null)
   // P0-2 — CapsLock warning state for the password field.
   const [capsOn, setCapsOn] = useState(false)
@@ -257,13 +258,15 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
   const siIdRef = useRef(null)
   const siPassRef = useRef(null)
 
-  // Countdown ticker
+  // Countdown ticker (also owns the `locked` flag — derived here, never via
+  // Date.now() during render, which the compiler forbids as impure).
   useEffect(() => {
-    if (lockoutUntil <= Date.now()) return
+    if (lockoutUntil <= Date.now()) { setLocked(false); return }
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000))
-      if (remaining <= 0) { setCountdown(0); clearInterval(lockoutRef.current); return }
+      if (remaining <= 0) { setCountdown(0); setLocked(false); clearInterval(lockoutRef.current); return }
       setCountdown(remaining)
+      setLocked(true)
     }
     tick()
     lockoutRef.current = setInterval(tick, 500)
@@ -407,10 +410,6 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
       setLoading(false)
     }
   }
-
-  // Lockout state is derived from lockoutUntil directly (not from the
-  // display countdown, which Math.ceil can hold ~1s past expiry).
-  const locked = Date.now() < lockoutUntil
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="auth-form" noValidate>
