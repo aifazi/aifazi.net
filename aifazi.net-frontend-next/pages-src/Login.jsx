@@ -261,7 +261,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
   // Countdown ticker (also owns the `locked` flag — derived here, never via
   // Date.now() during render, which the compiler forbids as impure).
   useEffect(() => {
-    if (lockoutUntil <= Date.now()) { setLocked(false); return }
+    if (lockoutUntil <= Date.now()) return
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000))
       if (remaining <= 0) { setCountdown(0); setLocked(false); clearInterval(lockoutRef.current); return }
