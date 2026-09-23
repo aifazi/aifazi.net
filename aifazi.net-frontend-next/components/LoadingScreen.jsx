@@ -606,9 +606,17 @@ function CountdownLoader({ onComplete }) {
 }
 
 // ── Root export ───────────────────────────────────────────────────────────────
+// Defensive style read (mirrors the fwKey allowlist in pages-src/admin/ui.jsx):
+// unknown/empty values fall back to 'terminal' so a bad loadingScreenStyle can
+// never leave a permanent empty veil — every branch below forwards onComplete.
+const LOADING_STYLE_IDS = ['terminal', 'minimal', 'glitch', 'splash', 'pulse', 'cyber', 'bars', 'wave', 'neon', 'orbit', 'typewriter', 'dna', 'countdown', 'holo', 'crt', 'matrix']
+function loadingStyleKey(v, fallback = 'terminal') {
+  return typeof v === 'string' && LOADING_STYLE_IDS.includes(v) ? v : fallback
+}
 export default function LoadingScreen({ onComplete, style }) {
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
-  const s = style || (mounted ? localStorage.getItem('loading-style') : null) || 'terminal'
+  const raw = style || (mounted ? localStorage.getItem('loading-style') : null) || 'terminal'
+  const s = loadingStyleKey(raw, 'terminal')
   return (
     <div style={{ position:'fixed', inset:0, zIndex:9999, background:'transparent', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
       <div className="scanline" />

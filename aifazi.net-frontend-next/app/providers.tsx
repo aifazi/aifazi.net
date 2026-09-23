@@ -392,7 +392,9 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
 
   // Effective framework config = site-wide admin settings, layered with the
   // user's locally-applied package (per-user override wins for this browser).
-  const pkgSettings = userPackage?.settings || {}
+  // A locked site design wins over everything — ignore any stale stored
+  // package while lockTheme is on (applyUserPackage already blocks new ones).
+  const pkgSettings = siteConfig.lockTheme ? {} : (userPackage?.settings || {})
   const eff = {
     ...siteConfig,
     inputStyle:          pkgSettings.inputStyle          || siteConfig.inputStyle,

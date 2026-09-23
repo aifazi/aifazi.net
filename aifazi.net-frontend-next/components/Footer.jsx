@@ -837,7 +837,14 @@ export default function Footer() {
   const isFiveM = location.pathname.startsWith('/fivem') || isFiveMHostState
 
   useEffect(() => {
-    const pkgOverride = () => {
+    const pkgOverride = (parsed) => {
+      // Locked site design wins — ignore any stale per-user package while
+      // the admin forces the global theme (mirror providers eff merge).
+      if (parsed?.lockTheme) return null
+      try {
+        const cached = JSON.parse(localStorage.getItem('site-config-cache') || 'null')
+        if (cached?.lockTheme) return null
+      } catch {}
       try {
         const raw = localStorage.getItem('user-package')
         if (raw) {
@@ -847,9 +854,9 @@ export default function Footer() {
       } catch {}
       return null
     }
-    getSiteSettings().then(s => { if (s.footerStyle) setFooterStyle(pkgOverride() || s.footerStyle) }).catch(() => {})
+    getSiteSettings().then(s => { if (s.footerStyle) setFooterStyle(pkgOverride(s) || s.footerStyle) }).catch(() => {})
     const onUpdate = (e) => {
-      if (e.detail?.footerStyle) setFooterStyle(pkgOverride() || e.detail.footerStyle)
+      if (e.detail?.footerStyle) setFooterStyle(pkgOverride(e.detail) || e.detail.footerStyle)
     }
     const onUserPkg = (e) => {
       // Re-read localStorage so a cleared package (empty settings event)
