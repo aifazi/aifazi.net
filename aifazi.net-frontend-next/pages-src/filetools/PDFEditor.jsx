@@ -5,7 +5,7 @@ import { Checkbox, Slider } from '../../core/ui.jsx'
 const RS = 1.5 // render scale for backend page images
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3]
 const COLORS = ['#000000','#ffffff','#ef4444','#f97316','#eab308',
-  '#22c55e','#3b82f6','#8b5cf6','#ec4899','#FFFF00','#00d4ff','#ff4500']
+  '#22c55e','#3b82f6','#8b5cf6','#ec4899','#FFFF00','var(--cyan)','#ff4500']
 const TOOL_GROUPS = [
   {
     label: 'NAVIGATE', tools: [
@@ -48,7 +48,7 @@ const SHAPE_TOOLS = [
 ]
 const C = { bg:'#0d0d1a', bg2:'#131328', bg3:'#1a1a35',
   border:'rgba(255,255,255,0.08)', text:'#e4e4f0', muted:'#6060a0',
-  green:'#00ff88', cyan:'#22d3ee', accent:'#7c3aed', red:'#f87171',
+  green:'var(--green)', cyan:'#22d3ee', accent:'#7c3aed', red:'#f87171',
   mono:"'JetBrains Mono','Fira Code',monospace" }
 const toRgba = (hex='#000000', a=1) => {
   const h = hex.replace('#','').padEnd(6,'0')
@@ -107,7 +107,7 @@ function UploadPhase({ onFile, loading, error }) {
         }}>
         <input ref={inp} type="file" accept=".pdf" style={{display:'none'}}
           onChange={e=>handle(e.target.files[0])} />
-        <div style={{ fontSize:52, marginBottom:16, filter:over?'drop-shadow(0 0 12px #00ff88)':undefined,
+        <div style={{ fontSize:52, marginBottom:16, filter:over?'drop-shadow(0 0 12px var(--green))':undefined,
           transition:'filter .2s' }}>{loading ? '⏳' : over ? '📂' : '📄'}</div>
         <div style={{ fontFamily:C.mono, fontSize:14, fontWeight:700,
           color:over?C.green:loading?C.cyan:C.text, marginBottom:6, transition:'color .2s' }}>

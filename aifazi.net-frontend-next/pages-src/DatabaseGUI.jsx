@@ -21,9 +21,9 @@ const ago = (d) => {
 const fmt = (n) => (n ?? 0).toLocaleString();
 
 const ROLE_META = {
-  admin:     { color: "var(--green,#00ff88)", bg: "color-mix(in srgb, var(--green) 8%, transparent)", label: "ADMIN" },
-  moderator: { color: "var(--cyan,#00d4ff)", bg: "color-mix(in srgb, var(--cyan) 8%, transparent)", label: "MOD" },
-  editor:    { color: "var(--orange,#ff6b35)", bg: "rgba(255,107,53,0.08)", label: "EDITOR" },
+  admin:     { color: "var(--green,var(--green))", bg: "color-mix(in srgb, var(--green) 8%, transparent)", label: "ADMIN" },
+  moderator: { color: "var(--cyan,var(--cyan))", bg: "color-mix(in srgb, var(--cyan) 8%, transparent)", label: "MOD" },
+  editor:    { color: "var(--orange,var(--orange))", bg: "color-mix(in srgb, var(--orange) 10%, transparent)", label: "EDITOR" },
   chat:      { color: "var(--yellow,#ffd700)", bg: "rgba(255,215,0,0.08)", label: "CHAT" },
   user:      { color: "var(--muted)", bg: "rgba(71,85,105,0.08)", label: "USER" },
 };
@@ -79,8 +79,8 @@ async function adminAction(token, path, body = null) {
 const ap = (p) => p.replace(/^\/api/, '') || '/';
 const authCfg = (token) => ({ headers: { Authorization: `Bearer ${token}` } });
 
-function Btn({ label, color="var(--cyan,#00d4ff)", onClick, disabled, tiny, danger }) {
-  const c = danger ? "var(--red,#ff4757)" : color;
+function Btn({ label, color="var(--cyan,var(--cyan))", onClick, disabled, tiny, danger }) {
+  const c = danger ? "var(--red,var(--red))" : color;
   return (
     <button onClick={onClick} disabled={disabled} style={{
       fontFamily:"var(--font-mono,monospace)", fontSize:tiny?8:9, letterSpacing:tiny?0:1,
@@ -93,7 +93,7 @@ function Btn({ label, color="var(--cyan,#00d4ff)", onClick, disabled, tiny, dang
   );
 }
 
-function StatCard({ label, value, sub, color="var(--green,#00ff88)", icon, trend }) {
+function StatCard({ label, value, sub, color="var(--green,var(--green))", icon, trend }) {
   return (
     <div style={{ background:"var(--bg)", border:`1px solid ${color}1a`, padding:"18px 20px", position:"relative", overflow:"hidden" }}>
       <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${color},transparent)` }} />
@@ -101,7 +101,7 @@ function StatCard({ label, value, sub, color="var(--green,#00ff88)", icon, trend
       <div style={{ fontSize:30, fontWeight:900, color, fontFamily:"var(--font-mono,monospace)", lineHeight:1 }}>{fmt(value)}</div>
       {sub && <div style={{ fontSize:10, fontFamily:"var(--font-mono,monospace)", color:"var(--muted)", marginTop:6, lineHeight:1.5 }}>{sub}</div>}
       {trend !== undefined && (
-        <div style={{ position:"absolute", top:14, right:14, fontFamily:"var(--font-mono,monospace)", fontSize:9, color:trend>0?"var(--green,#00ff88)":trend<0?"var(--red,#ff4757)":"var(--muted)" }}>
+        <div style={{ position:"absolute", top:14, right:14, fontFamily:"var(--font-mono,monospace)", fontSize:9, color:trend>0?"var(--green,var(--green))":trend<0?"var(--red,var(--red))":"var(--muted)" }}>
           {trend>0?`+${trend}`:trend<0?`-${Math.abs(trend)}`:"-"} today
         </div>
       )}
@@ -109,7 +109,7 @@ function StatCard({ label, value, sub, color="var(--green,#00ff88)", icon, trend
   );
 }
 
-function MiniChart({ data=[], color="var(--green,#00ff88)", label="" }) {
+function MiniChart({ data=[], color="var(--green,var(--green))", label="" }) {
   if (!data.length) return <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)", padding:"20px 0", textAlign:"center" }}>NO DATA YET</div>;
   const max = Math.max(...data.map(d => d.count), 1);
   return (
@@ -131,7 +131,7 @@ function MiniChart({ data=[], color="var(--green,#00ff88)", label="" }) {
   );
 }
 
-function FeedRow({ icon, title, sub, time, color="var(--green,#00ff88)" }) {
+function FeedRow({ icon, title, sub, time, color="var(--green,var(--green))" }) {
   return (
     <div style={{ display:"flex", gap:10, padding:"9px 0", borderBottom:"1px solid #0a1016", alignItems:"flex-start" }}>
       <div style={{ width:26, height:26, background:`${color}12`, border:`1px solid ${color}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, flexShrink:0 }}>{icon}</div>
@@ -193,7 +193,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
   return (
     <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
       onClick={e => e.target===e.currentTarget && onClose()}>
-      <div style={{ background:"var(--bg)", border:"1px solid #00d4ff22", width:"100%", maxWidth:600, maxHeight:"92vh", display:"flex", flexDirection:"column", boxShadow:"0 0 80px color-mix(in srgb, var(--cyan) 8%, transparent)" }}>
+      <div style={{ background:"var(--bg)", border:"1px solid var(--cyan)22", width:"100%", maxWidth:600, maxHeight:"92vh", display:"flex", flexDirection:"column", boxShadow:"0 0 80px color-mix(in srgb, var(--cyan) 8%, transparent)" }}>
 
         {/* Header */}
         <div style={{ padding:"20px 24px", background:"var(--bg2)", borderBottom:"1px solid #0f1a26", flexShrink:0 }}>
@@ -203,7 +203,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                 {u.username?.[0]?.toUpperCase()||"?"}
               </div>
               <div>
-                <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:3, color:"var(--cyan,#00d4ff)", marginBottom:4 }}>USER MANAGEMENT</div>
+                <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:3, color:"var(--cyan,var(--cyan))", marginBottom:4 }}>USER MANAGEMENT</div>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:18, fontWeight:700, color:"var(--text)", lineHeight:1 }}>{u.username}</div>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--muted)", marginTop:3 }}>{u.email}</div>
               </div>
@@ -214,10 +214,10 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
             <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, padding:"4px 10px", background:roleBg(u.role), color:roleColor(u.role), border:`1px solid ${roleColor(u.role)}33` }}>
               {(ROLE_META[u.role]?.label||"USER")}
             </span>
-            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, padding:"4px 10px", background:u.emailVerified?"color-mix(in srgb, var(--green) 6%, transparent)":"rgba(255,71,87,0.06)", color:u.emailVerified?"var(--green,#00ff88)":"var(--red,#ff4757)", border:`1px solid ${u.emailVerified?"color-mix(in srgb, var(--green) 19%, transparent)":"rgba(255,71,87,0.25)"}` }}>
+            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, padding:"4px 10px", background:u.emailVerified?"color-mix(in srgb, var(--green) 6%, transparent)":"color-mix(in srgb, var(--red) 8%, transparent)", color:u.emailVerified?"var(--green,var(--green))":"var(--red,var(--red))", border:`1px solid ${u.emailVerified?"color-mix(in srgb, var(--green) 19%, transparent)":"rgba(255,71,87,0.25)"}` }}>
               {u.emailVerified?"YES VERIFIED":"NO UNVERIFIED"}
             </span>
-            {u.banned && <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, padding:"4px 10px", background:"rgba(255,71,87,0.06)", color:"var(--red,#ff4757)", border:"1px solid #ff475730" }}>BAN BANNED</span>}
+            {u.banned && <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, padding:"4px 10px", background:"color-mix(in srgb, var(--red) 8%, transparent)", color:"var(--red,var(--red))", border:"1px solid color-mix(in srgb, var(--red) 25%, transparent)" }}>BAN BANNED</span>}
             {u.createdAt && <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, color:"var(--muted)" }}>Joined {ago(u.createdAt)}</span>}
           </div>
         </div>
@@ -228,8 +228,8 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               flex:1, padding:"11px 6px", fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:1,
               background:tab===t.id?"color-mix(in srgb, var(--cyan) 3%, transparent)":"transparent",
-              borderBottom:tab===t.id?"2px solid #00d4ff":"2px solid transparent",
-              border:"none", color:tab===t.id?"var(--cyan,#00d4ff)":"var(--muted)", cursor:"pointer",
+              borderBottom:tab===t.id?"2px solid var(--cyan)":"2px solid transparent",
+              border:"none", color:tab===t.id?"var(--cyan,var(--cyan))":"var(--muted)", cursor:"pointer",
             }}>{t.label}</button>
           ))}
         </div>
@@ -242,22 +242,22 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
               <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:16 }}>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>EMAIL VERIFICATION</div>
                 <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                  <Btn label={busy==="verify"?"WORKING...":"YES FORCE VERIFY"} color="var(--green,#00ff88)"
+                  <Btn label={busy==="verify"?"WORKING...":"YES FORCE VERIFY"} color="var(--green,var(--green))"
                     disabled={u.emailVerified||!!busy} onClick={() => run("verify",`users/${u._id}/verify`)} />
-                  <Btn label={busy==="send-ver"?"SENDING...":"EMAIL SEND VERIFICATION"} color="var(--cyan,#00d4ff)"
+                  <Btn label={busy==="send-ver"?"SENDING...":"EMAIL SEND VERIFICATION"} color="var(--cyan,var(--cyan))"
                     disabled={u.emailVerified||!!busy} onClick={() => run("send-ver",`users/${u._id}/send-verification`)} />
                 </div>
-                {u.emailVerified && <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--green,#00ff88)", marginTop:8 }}>YES Already verified</div>}
+                {u.emailVerified && <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--green,var(--green))", marginTop:8 }}>YES Already verified</div>}
               </div>
 
               <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:16 }}>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>BAN MANAGEMENT</div>
                 {u.banned ? (
                   <div>
-                    <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--red,#ff4757)", marginBottom:10, padding:"8px 10px", background:"rgba(255,71,87,0.03)", border:"1px solid #ff475720", lineHeight:1.5 }}>
+                    <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--red,var(--red))", marginBottom:10, padding:"8px 10px", background:"rgba(255,71,87,0.03)", border:"1px solid var(--red)20", lineHeight:1.5 }}>
                       BAN Reason: {u.banReason||"No reason given"}
                     </div>
-                    <Btn label={busy==="unban"?"WORKING...":"YES UNBAN USER"} color="var(--green,#00ff88)" disabled={!!busy} onClick={() => run("unban",`users/${u._id}/unban`)} />
+                    <Btn label={busy==="unban"?"WORKING...":"YES UNBAN USER"} color="var(--green,var(--green))" disabled={!!busy} onClick={() => run("unban",`users/${u._id}/unban`)} />
                   </div>
                 ) : (
                   <div>
@@ -269,7 +269,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
 
               <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:16 }}>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>PASSWORD RESET LINK</div>
-                <Btn label={busy==="send-reset"?"SENDING...":"LINK SEND RESET EMAIL"} color="var(--cyan,#00d4ff)" disabled={!!busy} onClick={() => run("send-reset",`users/${u._id}/send-reset`)} />
+                <Btn label={busy==="send-reset"?"SENDING...":"LINK SEND RESET EMAIL"} color="var(--cyan,var(--cyan))" disabled={!!busy} onClick={() => run("send-reset",`users/${u._id}/send-reset`)} />
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--muted)", marginTop:8 }}>1-hour link sent to {u.email}</div>
               </div>
             </div>
@@ -278,7 +278,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
           {tab==="password" && (
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:16 }}>
               <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>SET PASSWORD DIRECTLY</div>
-              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--red,#ff4757)", marginBottom:14, padding:"10px 12px", background:"rgba(255,71,87,0.03)", border:"1px solid #ff475720", lineHeight:1.6 }}>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--red,var(--red))", marginBottom:14, padding:"10px 12px", background:"rgba(255,71,87,0.03)", border:"1px solid var(--red)20", lineHeight:1.6 }}>
                 WARN Immediately changes the password with no notification to the user.
               </div>
               <div style={{ position:"relative", marginBottom:10 }}>
@@ -286,11 +286,11 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                   placeholder="New password (min 8 chars)" aria-label="New password" style={{...inp, paddingRight:40}} />
                 <button onClick={() => setShowPass(p=>!p)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"var(--muted)", cursor:"pointer", fontSize:13 }}>{showPass?"HIDE":"SHOW"}</button>
               </div>
-              {newPass.length>0 && newPass.length<8 && <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--red,#ff4757)", marginBottom:8 }}>Min 8 characters ({newPass.length}/8)</div>}
+              {newPass.length>0 && newPass.length<8 && <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--red,var(--red))", marginBottom:8 }}>Min 8 characters ({newPass.length}/8)</div>}
               <div style={{ display:"flex", gap:8 }}>
-                <Btn label={busy==="set-pass"?"UPDATING...":"KEY SET PASSWORD"} color="var(--orange,#ff6b35)"
+                <Btn label={busy==="set-pass"?"UPDATING...":"KEY SET PASSWORD"} color="var(--orange,var(--orange))"
                   disabled={newPass.length<8||!!busy} onClick={() => run("set-pass",`users/${u._id}/set-password`,{password:newPass})} />
-                <Btn label="SEND RESET LINK" color="var(--cyan,#00d4ff)" disabled={!!busy} onClick={() => run("send-reset",`users/${u._id}/send-reset`)} />
+                <Btn label="SEND RESET LINK" color="var(--cyan,var(--cyan))" disabled={!!busy} onClick={() => run("send-reset",`users/${u._id}/send-reset`)} />
               </div>
             </div>
           )}
@@ -333,7 +333,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
               <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Subject" aria-label="Email subject" style={{...inp, marginBottom:10}} />
               <textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} placeholder="Message body..." rows={6} aria-label="Email body"
                 style={{...inp, resize:"vertical", marginBottom:12, lineHeight:1.6}} />
-              <Btn label={busy==="send-email"?"SENDING...":` EMAIL SEND EMAIL`} color="var(--cyan,#00d4ff)"
+              <Btn label={busy==="send-email"?"SENDING...":` EMAIL SEND EMAIL`} color="var(--cyan,var(--cyan))"
                 disabled={!emailSubject.trim()||!emailBody.trim()||!!busy}
                 onClick={() => run("send-email",`users/${u._id}/send-email`,{subject:emailSubject,message:emailBody})} />
             </div>
@@ -346,7 +346,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                 <div key={k} style={{ display:"grid", gridTemplateColumns:"130px 1fr", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016" }}>
                   <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--muted)", letterSpacing:1 }}>{k.toUpperCase()}</span>
                   <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, wordBreak:"break-all", lineHeight:1.5,
-                    color:k==="role"?roleColor(v):typeof v==="boolean"?(v?"var(--green,#00ff88)":"var(--red,#ff4757)"):(k.includes("At")&&v)?"var(--muted)":"var(--muted)" }}>
+                    color:k==="role"?roleColor(v):typeof v==="boolean"?(v?"var(--green,var(--green))":"var(--red,var(--red))"):(k.includes("At")&&v)?"var(--muted)":"var(--muted)" }}>
                     {v===null||v===undefined?"-":typeof v==="boolean"?(v?"true YES":"false NO"):(k.includes("At")&&v)?`${new Date(v).toLocaleString()} · ${ago(v)}`:typeof v==="object"?JSON.stringify(v).slice(0,120):String(v)}
                   </span>
                 </div>
@@ -389,10 +389,10 @@ function EditModal({ doc, coll, token, onClose, onSaved }) {
   return (
     <div style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
       onClick={e => e.target===e.currentTarget && onClose()}>
-      <div style={{ background:"var(--bg)", border:"1px solid #00ff8822", width:"100%", maxWidth:660, maxHeight:"90vh", display:"flex", flexDirection:"column", boxShadow:"0 0 60px color-mix(in srgb, var(--green) 6%, transparent)" }}>
+      <div style={{ background:"var(--bg)", border:"1px solid var(--green)22", width:"100%", maxWidth:660, maxHeight:"90vh", display:"flex", flexDirection:"column", boxShadow:"0 0 60px color-mix(in srgb, var(--green) 6%, transparent)" }}>
         <div style={{ padding:"14px 20px", background:"var(--bg2)", borderBottom:"1px solid #0f1a26", display:"flex", justifyContent:"space-between", alignItems:"center", flexShrink:0 }}>
           <div>
-            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--green,#00ff88)" }}>EDIT · {coll.toUpperCase()}</span>
+            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--green,var(--green))" }}>EDIT · {coll.toUpperCase()}</span>
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--muted)", marginTop:3 }}>{String(doc._id)}</div>
           </div>
           <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--muted)", cursor:"pointer", fontSize:18 }}>x</button>
@@ -403,7 +403,7 @@ function EditModal({ doc, coll, token, onClose, onSaved }) {
             const isLong = val.length>80||val.includes("\n");
             return (
               <div key={key}>
-                <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, color:isRO?"var(--border)":"var(--cyan,#00d4ff)", marginBottom:5 }}>
+                <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, color:isRO?"var(--border)":"var(--cyan,var(--cyan))", marginBottom:5 }}>
                   {key.toUpperCase()}{isRO&&<span style={{color:"var(--border)"}}> (READ-ONLY)</span>}
                 </div>
                 {isLong
@@ -415,10 +415,10 @@ function EditModal({ doc, coll, token, onClose, onSaved }) {
           })}
         </div>
         <div style={{ padding:"14px 20px", borderTop:"1px solid #0f1a26", display:"flex", gap:10, alignItems:"center", flexShrink:0 }}>
-          {error && <div style={{ flex:1, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--red,#ff4757)" }}>WARN {error}</div>}
+          {error && <div style={{ flex:1, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--red,var(--red))" }}>WARN {error}</div>}
           {!error && <div style={{ flex:1 }} />}
           <button onClick={onClose} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:2, padding:"8px 16px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>CANCEL</button>
-          <button onClick={save} disabled={saving} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:2, padding:"8px 22px", background:"var(--green,#00ff88)", color:"#000", border:"none", cursor:"pointer", fontWeight:700 }}>
+          <button onClick={save} disabled={saving} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:2, padding:"8px 22px", background:"var(--green,var(--green))", color:"#000", border:"none", cursor:"pointer", fontWeight:700 }}>
             {saving?"SAVING...":"SAVE"}
           </button>
         </div>
@@ -512,9 +512,9 @@ function CollectionBrowser({ token, toast }) {
   const cell = (key, val) => {
     if (val===null||val===undefined) return <span style={{color:"var(--border)"}}>-</span>;
     if (key==="role") return <span style={{color:roleColor(val),fontSize:9,letterSpacing:1,fontFamily:"var(--font-mono,monospace)"}}>{(val).toUpperCase()}</span>;
-    if (typeof val==="boolean") return <span style={{color:val?"var(--green,#00ff88)":"var(--red,#ff4757)"}}>{val?"YES":"NO"}</span>;
+    if (typeof val==="boolean") return <span style={{color:val?"var(--green,var(--green))":"var(--red,var(--red))"}}>{val?"YES":"NO"}</span>;
     if ((key.includes("At")||key.includes("date"))&&val) return <span style={{color:"var(--muted)"}} title={new Date(val).toLocaleString()}>{ago(val)}</span>;
-    if (key==="views"||key==="replyCount") return <span style={{color:"var(--cyan,#00d4ff)"}}>{fmt(val)}</span>;
+    if (key==="views"||key==="replyCount") return <span style={{color:"var(--cyan,var(--cyan))"}}>{fmt(val)}</span>;
     const str = typeof val==="object" ? JSON.stringify(val).slice(0,40) : String(val).slice(0,55);
     return <span style={{color:"var(--muted)"}}>{str}{str.length>=55?"...":""}</span>;
   };
@@ -529,11 +529,11 @@ function CollectionBrowser({ token, toast }) {
         {COLLS.map(c => (
           <button key={c} onClick={()=>setColl(c)} style={{
             fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, padding:"5px 12px",
-            background:coll===c?"var(--green,#00ff88)":"var(--bg)", color:coll===c?"#000":"var(--muted)",
-            border:`1px solid ${coll===c?"var(--green,#00ff88)":"var(--border)"}`, cursor:"pointer",
+            background:coll===c?"var(--green,var(--green))":"var(--bg)", color:coll===c?"#000":"var(--muted)",
+            border:`1px solid ${coll===c?"var(--green,var(--green))":"var(--border)"}`, cursor:"pointer",
           }}>{c.toUpperCase()}</button>
         ))}
-        <button onClick={load} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"5px 10px", background:"transparent", color:"var(--cyan,#00d4ff)", border:"1px solid #1e2d45", cursor:"pointer" }}>REFRESH</button>
+        <button onClick={load} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"5px 10px", background:"transparent", color:"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:"pointer" }}>REFRESH</button>
       </div>
 
       {/* Search */}
@@ -541,7 +541,7 @@ function CollectionBrowser({ token, toast }) {
         <input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){setPage(1);setQuery(search);}}}
           placeholder={`Search ${coll}...`} aria-label={`Search ${coll}`}
           style={{ flex:1, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"8px 12px", outline:"none" }} />
-        <button onClick={()=>{setPage(1);setQuery(search);}} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"8px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,#00d4ff)", border:"1px solid #00d4ff33", cursor:"pointer" }}>SEARCH</button>
+        <button onClick={()=>{setPage(1);setQuery(search);}} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"8px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,var(--cyan))", border:"1px solid var(--cyan)33", cursor:"pointer" }}>SEARCH</button>
         {search && <button aria-label="Clear search" onClick={()=>{setSearch("");setPage(1);setQuery("");}} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"8px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
       </div>
 
@@ -561,7 +561,7 @@ function CollectionBrowser({ token, toast }) {
                 Promise.all([...selected].map(id => api.delete(ap(`/api/admin/collection/${coll}/${id}`), authCfg(token))))
                   .then(()=>{toast.add(`Deleted ${selected.size} docs`);load();})
                   .catch(()=>toast.add("Bulk delete failed","error"));
-              }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, padding:"4px 10px", background:"rgba(255,71,87,0.06)", color:"var(--red,#ff4757)", border:"1px solid #ff475730", cursor:"pointer" }}>
+              }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, padding:"4px 10px", background:"color-mix(in srgb, var(--red) 8%, transparent)", color:"var(--red,var(--red))", border:"1px solid color-mix(in srgb, var(--red) 25%, transparent)", cursor:"pointer" }}>
                 DELETE ({selected.size})
               </button>
             )}
@@ -593,12 +593,12 @@ function CollectionBrowser({ token, toast }) {
                     ))}
                     <td style={{ padding:"8px 10px", whiteSpace:"nowrap" }}>
                       <div style={{ display:"flex", gap:4, justifyContent:"flex-end" }}>
-                        <Btn tiny label="EDIT"     color="var(--cyan,#00d4ff)" onClick={()=>setEditDoc(doc)} />
+                        <Btn tiny label="EDIT"     color="var(--cyan,var(--cyan))" onClick={()=>setEditDoc(doc)} />
                         {coll==="users"      && <Btn tiny label="MANAGE"                             color="var(--yellow,#ffd700)"  onClick={()=>setUserDoc(normalizeUserDoc(doc))} />}
-                        {coll==="posts"      && <Btn tiny label={doc.published?"UNPUBLISH":"PUBLISH"} color={doc.published?"var(--orange,#ff6b35)":"var(--green,#00ff88)"} disabled={busy===`p${doc._id}`} onClick={()=>qa(`p${doc._id}`,`posts/${doc._id}/toggle-publish`)} />}
+                        {coll==="posts"      && <Btn tiny label={doc.published?"UNPUBLISH":"PUBLISH"} color={doc.published?"var(--orange,var(--orange))":"var(--green,var(--green))"} disabled={busy===`p${doc._id}`} onClick={()=>qa(`p${doc._id}`,`posts/${doc._id}/toggle-publish`)} />}
                         {coll==="threads"    && <Btn tiny label={doc.pinned?"UNPIN":"PIN"}            color="var(--yellow,#ffd700)"  disabled={busy===`pi${doc._id}`} onClick={()=>qa(`pi${doc._id}`,`threads/${doc._id}/toggle-pin`)} />}
-                        {coll==="threads"    && <Btn tiny label={doc.locked?"UNLOCK":"LOCK"}          color={doc.locked?"var(--green,#00ff88)":"var(--red,#ff4757)"} disabled={busy===`lo${doc._id}`} onClick={()=>qa(`lo${doc._id}`,`threads/${doc._id}/toggle-lock`)} />}
-                        {coll==="newsletter" && <Btn tiny label={doc.active?"DEACTIVATE":"ACTIVATE"}  color={doc.active?"var(--red,#ff4757)":"var(--green,#00ff88)"}  disabled={busy===`n${doc._id}`} onClick={()=>qa(`n${doc._id}`,`newsletter/${doc._id}/toggle-active`)} />}
+                        {coll==="threads"    && <Btn tiny label={doc.locked?"UNLOCK":"LOCK"}          color={doc.locked?"var(--green,var(--green))":"var(--red,var(--red))"} disabled={busy===`lo${doc._id}`} onClick={()=>qa(`lo${doc._id}`,`threads/${doc._id}/toggle-lock`)} />}
+                        {coll==="newsletter" && <Btn tiny label={doc.active?"DEACTIVATE":"ACTIVATE"}  color={doc.active?"var(--red,var(--red))":"var(--green,var(--green))"}  disabled={busy===`n${doc._id}`} onClick={()=>qa(`n${doc._id}`,`newsletter/${doc._id}/toggle-active`)} />}
                         <Btn tiny label={deleting===doc._id?"...":"DEL"} danger disabled={deleting===doc._id} onClick={()=>del(doc._id)} />
                       </div>
                     </td>
@@ -612,11 +612,11 @@ function CollectionBrowser({ token, toast }) {
           <div style={{ display:"flex", gap:8, marginTop:16, alignItems:"center", justifyContent:"space-between" }}>
             <div style={{ display:"flex", gap:6 }}>
               <button disabled={page<=1} onClick={()=>setPage(1)}        style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"5px 10px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--muted)", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>FIRST</button>
-              <button disabled={page<=1} onClick={()=>setPage(p=>p-1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"5px 14px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--cyan,#00d4ff)", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>PREV</button>
+              <button disabled={page<=1} onClick={()=>setPage(p=>p-1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"5px 14px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>PREV</button>
             </div>
             <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--border)" }}>Page {page} / {data.pages} · {fmt(data.total)} total</span>
             <div style={{ display:"flex", gap:6 }}>
-              <button disabled={page>=data.pages} onClick={()=>setPage(p=>p+1)}       style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"5px 14px", background:"var(--bg)", color:page>=data.pages?"var(--border)":"var(--cyan,#00d4ff)", border:"1px solid #1e2d45", cursor:page>=data.pages?"not-allowed":"pointer" }}>NEXT</button>
+              <button disabled={page>=data.pages} onClick={()=>setPage(p=>p+1)}       style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"5px 14px", background:"var(--bg)", color:page>=data.pages?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page>=data.pages?"not-allowed":"pointer" }}>NEXT</button>
               <button disabled={page>=data.pages} onClick={()=>setPage(data.pages)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"5px 10px", background:"var(--bg)", color:page>=data.pages?"var(--border)":"var(--muted)", border:"1px solid #1e2d45", cursor:page>=data.pages?"not-allowed":"pointer" }}>LAST</button>
             </div>
           </div>
@@ -688,7 +688,7 @@ function ExportPanel({ token, toast, stats }) {
           <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, color:"var(--muted)", marginBottom:8 }}>COLLECTION</div>
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
             {COLLS.map(c => (
-              <button key={c} onClick={() => setCollection(c)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, padding:"5px 12px", background:collection===c?"var(--green,#00ff88)":"var(--bg)", color:collection===c?"#000":"var(--muted)", border:`1px solid ${collection===c?"var(--green,#00ff88)":"var(--border)"}`, cursor:"pointer" }}>{c.toUpperCase()}</button>
+              <button key={c} onClick={() => setCollection(c)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, padding:"5px 12px", background:collection===c?"var(--green,var(--green))":"var(--bg)", color:collection===c?"#000":"var(--muted)", border:`1px solid ${collection===c?"var(--green,var(--green))":"var(--border)"}`, cursor:"pointer" }}>{c.toUpperCase()}</button>
             ))}
           </div>
         </div>
@@ -697,7 +697,7 @@ function ExportPanel({ token, toast, stats }) {
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, color:"var(--muted)", marginBottom:8 }}>FORMAT</div>
             <div style={{ display:"flex", gap:8 }}>
               {["json","csv"].map(f => (
-                <button key={f} onClick={() => setFormat(f)} style={{ flex:1, padding:"10px", fontFamily:"var(--font-mono,monospace)", fontSize:10, background:format===f?"var(--cyan,#00d4ff)":"var(--bg)", color:format===f?"#000":"var(--muted)", border:`1px solid ${format===f?"var(--cyan,#00d4ff)":"var(--border)"}`, cursor:"pointer", fontWeight:format===f?700:400 }}>
+                <button key={f} onClick={() => setFormat(f)} style={{ flex:1, padding:"10px", fontFamily:"var(--font-mono,monospace)", fontSize:10, background:format===f?"var(--cyan,var(--cyan))":"var(--bg)", color:format===f?"#000":"var(--muted)", border:`1px solid ${format===f?"var(--cyan,var(--cyan))":"var(--border)"}`, cursor:"pointer", fontWeight:format===f?700:400 }}>
                   {f.toUpperCase()}
                 </button>
               ))}
@@ -708,10 +708,10 @@ function ExportPanel({ token, toast, stats }) {
             <input type="number" value={limit} onChange={e => setLimit(Math.max(1, Math.min(10000, Number(e.target.value))))} style={inp} min={1} max={10000} />
           </div>
         </div>
-        <div style={{ padding:"12px 14px", background:"color-mix(in srgb, var(--green) 3%, transparent)", border:"1px solid #00ff8820", fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)", lineHeight:1.6 }}>
-          Exporting <span style={{color:"var(--green,#00ff88)"}}>{collection}</span> collection as <span style={{color:"var(--cyan,#00d4ff)"}}>{format.toUpperCase()}</span> (up to {limit.toLocaleString()} records)
+        <div style={{ padding:"12px 14px", background:"color-mix(in srgb, var(--green) 3%, transparent)", border:"1px solid var(--green)20", fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)", lineHeight:1.6 }}>
+          Exporting <span style={{color:"var(--green,var(--green))"}}>{collection}</span> collection as <span style={{color:"var(--cyan,var(--cyan))"}}>{format.toUpperCase()}</span> (up to {limit.toLocaleString()} records)
         </div>
-        <button onClick={doExport} disabled={loading} style={{ padding:"13px", background:loading?"var(--border)":"var(--green,#00ff88)", color:loading?"var(--muted)":"#000", fontFamily:"var(--font-mono,monospace)", fontSize:11, letterSpacing:3, fontWeight:700, border:"none", cursor:loading?"not-allowed":"pointer" }}>
+        <button onClick={doExport} disabled={loading} style={{ padding:"13px", background:loading?"var(--border)":"var(--green,var(--green))", color:loading?"var(--muted)":"#000", fontFamily:"var(--font-mono,monospace)", fontSize:11, letterSpacing:3, fontWeight:700, border:"none", cursor:loading?"not-allowed":"pointer" }}>
           {loading ? "⬇ EXPORTING..." : `⬇ EXPORT ${format.toUpperCase()}`}
         </button>
       </div>
@@ -723,7 +723,7 @@ function ExportPanel({ token, toast, stats }) {
             {Object.entries({ users: stats.counts?.users?.total, posts: stats.counts?.posts?.total, threads: stats.counts?.forum?.threads, replies: stats.counts?.forum?.replies, contacts: stats.counts?.contacts, media: stats.counts?.media, staff: stats.counts?.staff, newsletter: stats.counts?.newsletter?.total }).map(([k,v]) => (
               <Clickable key={k} label={`Collection ${k}`} onClick={() => setCollection(k)} style={{ padding:"12px", background:collection===k?"color-mix(in srgb, var(--green) 3%, transparent)":"var(--bg)", border:`1px solid ${collection===k?"color-mix(in srgb, var(--green) 20%, transparent)":"var(--border)"}`, cursor:"pointer" }}>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, color:"var(--muted)", marginBottom:4 }}>{k.toUpperCase()}</div>
-                <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:18, fontWeight:700, color:"var(--green,#00ff88)" }}>{(v||0).toLocaleString()}</div>
+                <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:18, fontWeight:700, color:"var(--green,var(--green))" }}>{(v||0).toLocaleString()}</div>
               </Clickable>
             ))}
           </div>
@@ -781,7 +781,7 @@ function QueryPanel({ token, toast }) {
             <input type="number" value={limit} onChange={e => setLimit(Math.max(1,Math.min(100,Number(e.target.value))))} style={inp} min={1} max={100} />
           </div>
         </div>
-        <button onClick={runQuery} disabled={loading} style={{ padding:"11px 28px", background:"var(--cyan,#00d4ff)", color:"#000", fontFamily:"var(--font-mono,monospace)", fontSize:10, letterSpacing:2, fontWeight:700, border:"none", cursor:"pointer" }}>
+        <button onClick={runQuery} disabled={loading} style={{ padding:"11px 28px", background:"var(--cyan,var(--cyan))", color:"#000", fontFamily:"var(--font-mono,monospace)", fontSize:10, letterSpacing:2, fontWeight:700, border:"none", cursor:"pointer" }}>
           {loading ? "RUNNING..." : "RUN QUERY"}
         </button>
       </div>
@@ -841,25 +841,25 @@ function MaintenancePanel({ token, toast, onRefresh }) {
 
   const actions = [
     { group:"DATABASE", items:[
-      { label:"Clear Old Sessions",    path:"db/clear-sessions",    color:"var(--orange,#ff6b35)", desc:"Remove expired auth sessions from DB" },
-      { label:"Remove Unverified Users", path:"db/purge-unverified", color:"var(--red,#ff4757)", desc:"Delete accounts unverified after 7+ days" },
-      { label:"Compact Collections",   path:"db/compact",           color:"var(--cyan,#00d4ff)", desc:"Optimize storage for all collections" },
+      { label:"Clear Old Sessions",    path:"db/clear-sessions",    color:"var(--orange,var(--orange))", desc:"Remove expired auth sessions from DB" },
+      { label:"Remove Unverified Users", path:"db/purge-unverified", color:"var(--red,var(--red))", desc:"Delete accounts unverified after 7+ days" },
+      { label:"Compact Collections",   path:"db/compact",           color:"var(--cyan,var(--cyan))", desc:"Optimize storage for all collections" },
     ]},
     { group:"CONTENT", items:[
-      { label:"Recalculate View Counts", path:"posts/recalculate-views", color:"var(--green,#00ff88)", desc:"Recount views across all blog posts" },
-      { label:"Clear Chat History",    path:"chat/clear-all",       color:"var(--red,#ff4757)", desc:"WARN Permanently deletes all chat messages" },
+      { label:"Recalculate View Counts", path:"posts/recalculate-views", color:"var(--green,var(--green))", desc:"Recount views across all blog posts" },
+      { label:"Clear Chat History",    path:"chat/clear-all",       color:"var(--red,var(--red))", desc:"WARN Permanently deletes all chat messages" },
       { label:"Rebuild Search Index",  path:"search/rebuild",       color:"var(--purple,#a78bfa)", desc:"Rebuild full-text search indexes" },
     ]},
     { group:"CACHE", items:[
       { label:"Flush API Cache",       path:"cache/flush",          color:"var(--yellow,#ffd700)", desc:"Clear all server-side caches" },
-      { label:"Refresh Stats",         path:"stats/refresh",        color:"var(--green,#00ff88)", desc:"Force refresh of dashboard statistics" },
+      { label:"Refresh Stats",         path:"stats/refresh",        color:"var(--green,var(--green))", desc:"Force refresh of dashboard statistics" },
     ]},
   ];
 
   return (
     <div style={{ maxWidth:700 }}>
       <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:3, color:"var(--border)", marginBottom:20 }}>DATABASE MAINTENANCE</div>
-      <div style={{ background:"rgba(255,71,87,0.06)", border:"1px solid #ff475730", padding:"12px 16px", marginBottom:20, fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--red,#ff4757)", lineHeight:1.6 }}>
+      <div style={{ background:"color-mix(in srgb, var(--red) 8%, transparent)", border:"1px solid color-mix(in srgb, var(--red) 25%, transparent)", padding:"12px 16px", marginBottom:20, fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--red,var(--red))", lineHeight:1.6 }}>
         WARN Maintenance operations may be irreversible. Make sure you have a backup before proceeding.
       </div>
       {actions.map(({group, items}) => (
@@ -943,7 +943,7 @@ function DbHealthTab({ token, toast }) {
     <div style={{ maxWidth:900 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
         <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:3, color:"var(--border)" }}>DATABASE HEALTH &amp; METRICS</div>
-        <button onClick={load} disabled={loading} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"6px 14px", background:"transparent", color:"var(--cyan,#00d4ff)", border:"1px solid #1e2d45", cursor:"pointer" }}>
+        <button onClick={load} disabled={loading} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"6px 14px", background:"transparent", color:"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:"pointer" }}>
           {loading ? "LOADING..." : "REFRESH"}
         </button>
       </div>
@@ -971,7 +971,7 @@ function DbHealthTab({ token, toast }) {
                           <tr key={i} style={{ borderBottom:"1px solid #0a1016" }}>
                             <td style={{ padding:"8px 10px", color:"var(--text)" }}>{t.table}</td>
                             <td style={{ padding:"8px 10px", color:"var(--muted)" }}>{t.schema}</td>
-                            <td style={{ padding:"8px 10px", color:"var(--green,#00ff88)" }}>{bytes(t.size_bytes)}</td>
+                            <td style={{ padding:"8px 10px", color:"var(--green,var(--green))" }}>{bytes(t.size_bytes)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -991,7 +991,7 @@ function DbHealthTab({ token, toast }) {
                   : data.slowQueriesNew.map((q, i) => (
                       <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 90px 80px", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016", fontFamily:"var(--font-mono,monospace)", fontSize:10 }}>
                         <span style={{ color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={q.query}>{q.query}</span>
-                        <span style={{ color:"var(--red,#ff4757)" }}>{q.mean_ms}ms</span>
+                        <span style={{ color:"var(--red,var(--red))" }}>{q.mean_ms}ms</span>
                         <span style={{ color:"var(--muted)" }}>×{q.calls}</span>
                       </div>
                     ))}
@@ -1005,8 +1005,8 @@ function DbHealthTab({ token, toast }) {
               {data.storage ? (
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:12 }}>
                   {[
-                    { label:"DATA SIZE",    value: bytes(data.storage.dataSize),     color:"var(--green,#00ff88)" },
-                    { label:"STORAGE SIZE", value: bytes(data.storage.storageSize),  color:"var(--cyan,#00d4ff)" },
+                    { label:"DATA SIZE",    value: bytes(data.storage.dataSize),     color:"var(--green,var(--green))" },
+                    { label:"STORAGE SIZE", value: bytes(data.storage.storageSize),  color:"var(--cyan,var(--cyan))" },
                     { label:"INDEX SIZE",   value: bytes(data.storage.indexSize),    color:"var(--yellow,#ffd700)" },
                     { label:"TOTAL SIZE",   value: bytes(data.storage.totalSize),    color:"var(--purple,#a78bfa)" },
                   ].map(({ label, value, color }) => (
@@ -1032,7 +1032,7 @@ function DbHealthTab({ token, toast }) {
                     }).map(([k, v]) => (
                       <div key={k} style={{ background:"var(--bg)", border:"1px solid var(--border)", padding:12 }}>
                         <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, color:"var(--muted)", marginBottom:4 }}>{k.toUpperCase()}</div>
-                        <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:20, fontWeight:700, color:"var(--green,#00ff88)" }}>{(v||0).toLocaleString()}</div>
+                        <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:20, fontWeight:700, color:"var(--green,var(--green))" }}>{(v||0).toLocaleString()}</div>
                       </div>
                     ))}
                   </div>
@@ -1056,14 +1056,14 @@ function DbHealthTab({ token, toast }) {
                     {data.indexes.map((idx, i) => (
                       <tr key={i} style={{ borderBottom:"1px solid #0a1016" }}>
                         <td style={{ padding:"8px 10px", color:"var(--text)" }}>{idx.collection}</td>
-                        <td style={{ padding:"8px 10px", color:"var(--cyan,#00d4ff)" }}>{idx.name}</td>
+                        <td style={{ padding:"8px 10px", color:"var(--cyan,var(--cyan))" }}>{idx.name}</td>
                         <td style={{ padding:"8px 10px", color:"var(--muted)" }}>{bytes(idx.size)}</td>
                         <td style={{ padding:"8px 10px" }}>
                           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                             <div style={{ flex:1, height:4, background:"var(--border)", borderRadius:2 }}>
-                              <div style={{ height:"100%", width:`${Math.min(100, idx.usagePct||0)}%`, background:"var(--green,#00ff88)", borderRadius:2 }} />
+                              <div style={{ height:"100%", width:`${Math.min(100, idx.usagePct||0)}%`, background:"var(--green,var(--green))", borderRadius:2 }} />
                             </div>
-                            <span style={{ color:"var(--green,#00ff88)", fontSize:9 }}>{idx.usagePct||0}%</span>
+                            <span style={{ color:"var(--green,var(--green))", fontSize:9 }}>{idx.usagePct||0}%</span>
                           </div>
                         </td>
                       </tr>
@@ -1079,9 +1079,9 @@ function DbHealthTab({ token, toast }) {
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>QUICK MAINTENANCE</div>
             <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
               {[
-                { label:"Compact DB",          path:"db/compact",           color:"var(--cyan,#00d4ff)" },
-                { label:"Clear Old Sessions",  path:"db/clear-sessions",    color:"var(--orange,#ff6b35)" },
-                { label:"Purge Unverified",    path:"db/purge-unverified",  color:"var(--red,#ff4757)" },
+                { label:"Compact DB",          path:"db/compact",           color:"var(--cyan,var(--cyan))" },
+                { label:"Clear Old Sessions",  path:"db/clear-sessions",    color:"var(--orange,var(--orange))" },
+                { label:"Purge Unverified",    path:"db/purge-unverified",  color:"var(--red,var(--red))" },
                 { label:"Rebuild Search Index",path:"search/rebuild",       color:"var(--purple,#a78bfa)" },
               ].map(({ label, path, color }) => (
                 <button key={label} disabled={!!busy} onClick={() => runAction(label, path)} style={{ padding:"9px 18px", background:`${color}12`, color, border:`1px solid ${color}33`, fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, cursor:busy?"not-allowed":"pointer", opacity:busy===label?0.5:1 }}>
@@ -1094,11 +1094,11 @@ function DbHealthTab({ token, toast }) {
           {/* Slow query log placeholder */}
           {data.slowQueries && data.slowQueries.length > 0 && (
             <div style={{ background:"var(--bg2)", border:"1px solid #ff475520", padding:24 }}>
-              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--red,#ff4757)", marginBottom:16 }}>WARN SLOW QUERIES</div>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--red,var(--red))", marginBottom:16 }}>WARN SLOW QUERIES</div>
               {data.slowQueries.map((q, i) => (
                 <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 80px 120px", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016", fontFamily:"var(--font-mono,monospace)", fontSize:10 }}>
                   <span style={{ color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{q.query}</span>
-                  <span style={{ color:"var(--red,#ff4757)" }}>{q.ms}ms</span>
+                  <span style={{ color:"var(--red,var(--red))" }}>{q.ms}ms</span>
                   <span style={{ color:"var(--muted)" }}>{ago(q.ts)}</span>
                 </div>
               ))}
@@ -1173,10 +1173,10 @@ function NewsletterTab({ token, toast }) {
         <div>
           <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:3, color:"var(--border)" }}>NEWSLETTER SUBSCRIBERS</div>
           <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--text)", marginTop:4 }}>
-            <span style={{ color:"var(--green,#00ff88)" }}>{total.toLocaleString()}</span> total · <span style={{ color:"var(--cyan,#00d4ff)" }}>{active}</span> active
+            <span style={{ color:"var(--green,var(--green))" }}>{total.toLocaleString()}</span> total · <span style={{ color:"var(--cyan,var(--cyan))" }}>{active}</span> active
           </div>
         </div>
-        <button onClick={exportCsv} disabled={!subs.length} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"7px 14px", background:"color-mix(in srgb, var(--green) 6%, transparent)", color:"var(--green,#00ff88)", border:"1px solid #00ff8833", cursor:"pointer" }}>
+        <button onClick={exportCsv} disabled={!subs.length} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"7px 14px", background:"color-mix(in srgb, var(--green) 6%, transparent)", color:"var(--green,var(--green))", border:"1px solid var(--green)33", cursor:"pointer" }}>
           ⬇ EXPORT CSV
         </button>
       </div>
@@ -1184,7 +1184,7 @@ function NewsletterTab({ token, toast }) {
       <div style={{ display:"flex", gap:8, marginBottom:16 }}>
         <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key==="Enter" && (setPage(1), load(1, search))}
           placeholder="Search by email..." aria-label="Search newsletter subscribers" style={{ flex:1, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
-        <button onClick={() => { setPage(1); load(1, search); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"9px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,#00d4ff)", border:"1px solid #00d4ff33", cursor:"pointer" }}>SEARCH</button>
+        <button onClick={() => { setPage(1); load(1, search); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"9px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,var(--cyan))", border:"1px solid var(--cyan)33", cursor:"pointer" }}>SEARCH</button>
         {search && <button onClick={() => { setSearch(""); setPage(1); load(1, ""); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
       </div>
 
@@ -1207,14 +1207,14 @@ function NewsletterTab({ token, toast }) {
                     onMouseLeave={e => e.currentTarget.style.background="transparent"}>
                     <td style={{ padding:"9px 12px", color:"var(--text)" }}>{s.email}</td>
                     <td style={{ padding:"9px 12px" }}>
-                      <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"2px 8px", background:s.active?"color-mix(in srgb, var(--green) 7%, transparent)":"rgba(255,71,87,0.07)", color:s.active?"var(--green,#00ff88)":"var(--red,#ff4757)", border:`1px solid ${s.active?"color-mix(in srgb, var(--green) 19%, transparent)":"rgba(255,71,87,0.25)"}` }}>
+                      <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, padding:"2px 8px", background:s.active?"color-mix(in srgb, var(--green) 7%, transparent)":"rgba(255,71,87,0.07)", color:s.active?"var(--green,var(--green))":"var(--red,var(--red))", border:`1px solid ${s.active?"color-mix(in srgb, var(--green) 19%, transparent)":"rgba(255,71,87,0.25)"}` }}>
                         {s.active ? "YES ACTIVE" : "NO UNSUB"}
                       </span>
                     </td>
                     <td style={{ padding:"9px 12px", color:"var(--muted)", fontSize:10 }}>{s.createdAt ? ago(s.createdAt) : "-"}</td>
                     <td style={{ padding:"9px 12px", whiteSpace:"nowrap" }}>
                       <div style={{ display:"flex", gap:4, justifyContent:"flex-end" }}>
-                        <Btn tiny label={busy===s._id?"...":s.active?"DEACTIVATE":"ACTIVATE"} color={s.active?"var(--red,#ff4757)":"var(--green,#00ff88)"} disabled={!!busy} onClick={() => toggle(s)} />
+                        <Btn tiny label={busy===s._id?"...":s.active?"DEACTIVATE":"ACTIVATE"} color={s.active?"var(--red,var(--red))":"var(--green,var(--green))"} disabled={!!busy} onClick={() => toggle(s)} />
                         <Btn tiny danger label={busy===s._id?"...":"DEL"} disabled={!!busy} onClick={() => del(s._id)} />
                       </div>
                     </td>
@@ -1225,9 +1225,9 @@ function NewsletterTab({ token, toast }) {
           </div>
           {pages > 1 && (
             <div style={{ display:"flex", gap:8, marginTop:16, justifyContent:"center", alignItems:"center" }}>
-              <button disabled={page<=1} onClick={() => setPage(p=>p-1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"6px 14px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--cyan,#00d4ff)", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>PREV</button>
+              <button disabled={page<=1} onClick={() => setPage(p=>p-1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"6px 14px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>PREV</button>
               <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--border)" }}>Page {page} / {pages} · {total.toLocaleString()} total</span>
-              <button disabled={page>=pages} onClick={() => setPage(p=>p+1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"6px 14px", background:"var(--bg)", color:page>=pages?"var(--border)":"var(--cyan,#00d4ff)", border:"1px solid #1e2d45", cursor:page>=pages?"not-allowed":"pointer" }}>NEXT</button>
+              <button disabled={page>=pages} onClick={() => setPage(p=>p+1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"6px 14px", background:"var(--bg)", color:page>=pages?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page>=pages?"not-allowed":"pointer" }}>NEXT</button>
             </div>
           )}
         </>
@@ -1284,7 +1284,7 @@ function AuditLogTab({ token, toast }) {
   };
 
   const pages = Math.ceil(total / 30) || 1;
-  const ACTION_COLOR = { login:"var(--green,#00ff88)", logout:"var(--orange,#ff6b35)", create:"var(--cyan,#00d4ff)", delete:"var(--red,#ff4757)", ban:"var(--red,#ff4757)", unban:"var(--green,#00ff88)", role:"var(--yellow,#ffd700)", update:"var(--purple,#a78bfa)", verify:"var(--green,#00ff88)", password:"var(--orange,#ff6b35)", fail:"var(--red,#ff4757)", upload:"var(--cyan,#00d4ff)" };
+  const ACTION_COLOR = { login:"var(--green,var(--green))", logout:"var(--orange,var(--orange))", create:"var(--cyan,var(--cyan))", delete:"var(--red,var(--red))", ban:"var(--red,var(--red))", unban:"var(--green,var(--green))", role:"var(--yellow,#ffd700)", update:"var(--purple,#a78bfa)", verify:"var(--green,var(--green))", password:"var(--orange,var(--orange))", fail:"var(--red,var(--red))", upload:"var(--cyan,var(--cyan))" };
   const getColor = (a = "") => { for (const [k, c] of Object.entries(ACTION_COLOR)) if (a.includes(k)) return c; return "var(--muted)"; };
   const ACTION_ICONS = { login:"[IN]", logout:"[OUT]", create:"[+]", delete:"[X]", ban:"[BAN]", unban:"[OK]", role:"[R]", update:"[E]", verify:"[V]", password:"[PW]", fail:"[FAIL]", upload:"[UP]" };
   const getIcon = (a = "") => { for (const [k, c] of Object.entries(ACTION_ICONS)) if (a.includes(k)) return c; return "[*]"; };
@@ -1328,9 +1328,9 @@ function AuditLogTab({ token, toast }) {
           </div>
           {pages > 1 && (
             <div style={{ display:"flex", gap:8, marginTop:16, justifyContent:"center", alignItems:"center" }}>
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"6px 14px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--cyan,#00d4ff)", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>PREV</button>
+              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"6px 14px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>PREV</button>
               <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--border)" }}>Page {page} / {pages}</span>
-              <button disabled={page >= pages} onClick={() => setPage(p => p + 1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"6px 14px", background:"var(--bg)", color:page>=pages?"var(--border)":"var(--cyan,#00d4ff)", border:"1px solid #1e2d45", cursor:page>=pages?"not-allowed":"pointer" }}>NEXT</button>
+              <button disabled={page >= pages} onClick={() => setPage(p => p + 1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, padding:"6px 14px", background:"var(--bg)", color:page>=pages?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page>=pages?"not-allowed":"pointer" }}>NEXT</button>
             </div>
           )}
         </>
@@ -1404,7 +1404,7 @@ function SessionsTab({ token, toast }) {
     <div>
       <div style={{ display:"flex", gap:0, borderBottom:"1px solid #1e2d45", marginBottom:20 }}>
         {[["sessions","LIVE Sessions"], ["ipbans","BAN IP Bans"]].map(([id, label]) => (
-          <button key={id} onClick={() => setSubTab(id)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:2, padding:"10px 18px", background:"transparent", color:subTab===id?"var(--cyan,#00d4ff)":"var(--muted)", borderBottom:subTab===id?"2px solid #00d4ff":"2px solid transparent", border:"none", cursor:"pointer" }}>{label.toUpperCase()}</button>
+          <button key={id} onClick={() => setSubTab(id)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:2, padding:"10px 18px", background:"transparent", color:subTab===id?"var(--cyan,var(--cyan))":"var(--muted)", borderBottom:subTab===id?"2px solid var(--cyan)":"2px solid transparent", border:"none", cursor:"pointer" }}>{label.toUpperCase()}</button>
         ))}
       </div>
 
@@ -1442,7 +1442,7 @@ function SessionsTab({ token, toast }) {
                   <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, color:"var(--muted)", marginBottom:6 }}>REASON (OPTIONAL)</div>
                   <input value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="Spam, abuse..." style={inp} />
                 </div>
-                <button onClick={addBan} disabled={!newIp.trim() || !!busy} style={{ padding:"10px 18px", background:"rgba(255,71,87,0.06)", color:"var(--red,#ff4757)", border:"1px solid #ff475533", fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, cursor:newIp.trim()?"pointer":"not-allowed" }}>
+                <button onClick={addBan} disabled={!newIp.trim() || !!busy} style={{ padding:"10px 18px", background:"color-mix(in srgb, var(--red) 8%, transparent)", color:"var(--red,var(--red))", border:"1px solid #ff475533", fontFamily:"var(--font-mono,monospace)", fontSize:9, letterSpacing:1, cursor:newIp.trim()?"pointer":"not-allowed" }}>
                   {busy === "add" ? "BANNING..." : "BAN BAN IP"}
                 </button>
               </div>
@@ -1452,7 +1452,7 @@ function SessionsTab({ token, toast }) {
               <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)" }}>No IP bans configured</div>
             ) : ipBans.map((ban, i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto auto", gap:12, padding:"12px 16px", background:"var(--bg2)", border:"1px solid #0a1016", marginBottom:4, alignItems:"center" }}>
-                <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:12, color:"var(--red,#ff4757)" }}>{ban.ip}</span>
+                <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:12, color:"var(--red,var(--red))" }}>{ban.ip}</span>
                 <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--muted)" }}>{ban.reason || "-"}</span>
                 <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--muted)" }}>{ban.createdAt ? ago(ban.createdAt) : "-"}</span>
                 <Btn tiny danger label={busy === (ban._id||ban.id) ? "..." : "REMOVE"} disabled={!!busy} onClick={() => removeBan(ban._id || ban.id)} />
@@ -1548,14 +1548,14 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
   if (!token) return (
     <div style={{ minHeight: _preloadToken ? "auto" : "100vh", background: _preloadToken ? "transparent" : "var(--bg)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--font-mono,monospace)", padding: 24 }}>
       <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:10, padding:"44px 40px", width:"100%", maxWidth:400 }}>
-        <div style={{ fontSize:9, letterSpacing:4, color:"var(--green,#00ff88)", marginBottom:10 }}>{'// AIFAZI.NET'}</div>
+        <div style={{ fontSize:9, letterSpacing:4, color:"var(--green,var(--green))", marginBottom:10 }}>{'// AIFAZI.NET'}</div>
         <div style={{ fontSize:24, fontWeight:700, color:"var(--text)", marginBottom:6 }}>DB Monitor</div>
         <div style={{ fontSize:11, color:"var(--muted)", marginBottom:28, lineHeight:1.7 }}>Paste your admin JWT token to connect. Stored in memory only - clears on refresh.</div>
         <input type="password" value={tokenInput} onChange={e=>setTokenInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&tokenInput&&setToken(tokenInput)}
           placeholder="eyJhbGciOiJIUzI1NiIs..." autoFocus
           style={{ width:"100%", background:"var(--bg)", border:"1px solid var(--border)", borderRadius:5, color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:12, padding:"12px 14px", outline:"none", marginBottom:14, boxSizing:"border-box" }} />
         <button onClick={()=>tokenInput&&setToken(tokenInput)} disabled={!tokenInput}
-          style={{ width:"100%", padding:13, background:tokenInput?"var(--green,#00ff88)":"var(--bg2)", color:tokenInput?"#000":"var(--border)", fontFamily:"var(--font-mono,monospace)", fontSize:11, letterSpacing:3, fontWeight:700, border:"none", cursor:tokenInput?"pointer":"not-allowed" }}>
+          style={{ width:"100%", padding:13, background:tokenInput?"var(--green,var(--green))":"var(--bg2)", color:tokenInput?"#000":"var(--border)", fontFamily:"var(--font-mono,monospace)", fontSize:11, letterSpacing:3, fontWeight:700, border:"none", cursor:tokenInput?"pointer":"not-allowed" }}>
           CONNECT
         </button>
       </div>
@@ -1588,7 +1588,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
           padding: '8px 24px', background: 'color-mix(in srgb, var(--cyan) 7%, transparent)',
           borderBottom: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)',
           display: 'flex', alignItems: 'center', gap: 10,
-          fontFamily: 'monospace', fontSize: 10, color: '#00d4ff', letterSpacing: 2,
+          fontFamily: 'monospace', fontSize: 10, color: 'var(--cyan)', letterSpacing: 2,
         }}>
           <span>LOCK</span>
           <span>READ-ONLY MODE - Query, Maintenance and Export tabs are hidden for your role ({role?.toUpperCase()}). Contact an admin for write access.</span>
@@ -1607,14 +1607,14 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
       <div style={{ background:"var(--bg)", borderBottom:"1px solid #0f1a26", padding:"12px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
         <div style={{ display:"flex", alignItems:"center", gap:18 }}>
           <div>
-            <span style={{ fontSize:8, letterSpacing:4, color:"var(--green,#00ff88)" }}>AIFAZI.NET</span>
+            <span style={{ fontSize:8, letterSpacing:4, color:"var(--green,var(--green))" }}>AIFAZI.NET</span>
             <span style={{ marginLeft:12, fontSize:13, fontWeight:700, color:"var(--text)", letterSpacing:2 }}>DATABASE MONITOR</span>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <div style={{
               width:7, height:7, borderRadius:"50%",
-              background:loading?"var(--orange,#ff6b35)":error?"var(--red,#ff4757)":"var(--green,#00ff88)",
-              boxShadow:`0 0 ${pulse?"10px":"4px"} ${loading?"var(--orange,#ff6b35)":error?"var(--red,#ff4757)":"var(--green,#00ff88)"}`,
+              background:loading?"var(--orange,var(--orange))":error?"var(--red,var(--red))":"var(--green,var(--green))",
+              boxShadow:`0 0 ${pulse?"10px":"4px"} ${loading?"var(--orange,var(--orange))":error?"var(--red,var(--red))":"var(--green,var(--green))"}`,
               transition:"all 0.3s",
             }} />
             <span style={{ fontSize:8, color:"var(--border)" }}>
@@ -1626,9 +1626,9 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
           <Checkbox checked={autoRefresh} onChange={setAutoRefresh} label="AUTO 30s"
             style={{ fontSize:8, color:"var(--border)", padding:"5px 8px" }} />
           <button onClick={()=>fetchStats()} disabled={loading}
-            style={{ padding:"5px 12px", background:"transparent", color:"var(--cyan,#00d4ff)", border:"1px solid #1e2d45", cursor:loading?"not-allowed":"pointer", fontSize:8, letterSpacing:2 }}>REFRESH</button>
+            style={{ padding:"5px 12px", background:"transparent", color:"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:loading?"not-allowed":"pointer", fontSize:8, letterSpacing:2 }}>REFRESH</button>
           <button onClick={()=>{setToken("");setStats(null);}}
-            style={{ padding:"5px 12px", background:"transparent", color:"var(--red,#ff4757)", border:"1px solid #1e2d45", cursor:"pointer", fontSize:8, letterSpacing:2 }}>DISCONNECT</button>
+            style={{ padding:"5px 12px", background:"transparent", color:"var(--red,var(--red))", border:"1px solid #1e2d45", cursor:"pointer", fontSize:8, letterSpacing:2 }}>DISCONNECT</button>
         </div>
       </div>
       )}
@@ -1637,7 +1637,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
       {_preloadToken && (
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 16px", borderBottom:"1px solid #0f1a26", background:"var(--bg)" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:6, height:6, borderRadius:"50%", background:loading?"var(--orange,#ff6b35)":error?"var(--red,#ff4757)":"var(--green,#00ff88)", boxShadow:`0 0 6px ${loading?"var(--orange,#ff6b35)":error?"var(--red,#ff4757)":"var(--green,#00ff88)"}`, transition:"all 0.3s" }} />
+            <div style={{ width:6, height:6, borderRadius:"50%", background:loading?"var(--orange,var(--orange))":error?"var(--red,var(--red))":"var(--green,var(--green))", boxShadow:`0 0 6px ${loading?"var(--orange,var(--orange))":error?"var(--red,var(--red))":"var(--green,var(--green))"}`, transition:"all 0.3s" }} />
             <span style={{ fontSize:9, fontFamily:"var(--font-mono,monospace)", color:"var(--muted)", letterSpacing:2 }}>
               {loading?"SYNCING...":error?"ERROR":lastUpdate?`LAST SYNC ${ago(lastUpdate)}`:"IDLE"}
             </span>
@@ -1645,20 +1645,20 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
           <div style={{ display:"flex", gap:6, alignItems:"center" }}>
             <Checkbox checked={autoRefresh} onChange={setAutoRefresh} label="AUTO"
               style={{ fontSize:8, color:"var(--border)", padding:"4px 7px" }} />
-            <button onClick={()=>fetchStats()} disabled={loading} style={{ padding:"3px 10px", background:"transparent", color:"var(--cyan,#00d4ff)", border:"1px solid #1e2d45", cursor:loading?"not-allowed":"pointer", fontSize:8, letterSpacing:1, fontFamily:"var(--font-mono,monospace)" }}>REFRESH</button>
+            <button onClick={()=>fetchStats()} disabled={loading} style={{ padding:"3px 10px", background:"transparent", color:"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:loading?"not-allowed":"pointer", fontSize:8, letterSpacing:1, fontFamily:"var(--font-mono,monospace)" }}>REFRESH</button>
           </div>
         </div>
       )}
 
-      {error && <div style={{ background:"rgba(255,71,87,0.06)", borderBottom:"1px solid #ff475730", color:"var(--red,#ff4757)", padding:"10px 24px", fontSize:11 }}>WARN {error}</div>}
+      {error && <div style={{ background:"color-mix(in srgb, var(--red) 8%, transparent)", borderBottom:"1px solid color-mix(in srgb, var(--red) 25%, transparent)", color:"var(--red,var(--red))", padding:"10px 24px", fontSize:11 }}>WARN {error}</div>}
 
       {/* Tabs */}
       <div style={{ display:"flex", borderBottom:"1px solid var(--border)", padding:"0 20px", overflowX:"auto" }}>
         {TABS.map(t => (
           <button key={t.id} onClick={()=>setActiveTab(t.id)} style={{
             padding:"11px 16px", background:"transparent",
-            color:activeTab===t.id?"var(--primary,var(--cyan,#00d4ff))":"var(--muted)",
-            borderBottom:activeTab===t.id?"2px solid var(--primary,var(--cyan,#00d4ff))":"2px solid transparent",
+            color:activeTab===t.id?"var(--primary,var(--cyan,var(--cyan)))":"var(--muted)",
+            borderBottom:activeTab===t.id?"2px solid var(--primary,var(--cyan,var(--cyan)))":"2px solid transparent",
             border:"none", cursor:"pointer", fontSize:9, letterSpacing:2, fontFamily:"var(--font-mono,monospace)",
             marginBottom:-1, whiteSpace:"nowrap",
           }}>{t.label.toUpperCase()}</button>
@@ -1671,14 +1671,14 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
         {activeTab==="overview" && s && (
           <div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:10, marginBottom:28 }}>
-              <StatCard icon="[P]" label="POSTS"       value={s.counts?.posts?.total}       sub={`${s.counts?.posts?.published||0} published · ${s.counts?.posts?.drafts||0} drafts`}       color="var(--green,#00ff88)" trend={s.today?.posts} />
-              <StatCard icon="[U]" label="USERS"        value={s.counts?.users?.total}       sub={`${s.counts?.users?.verified||0} verified · ${s.counts?.users?.banned||0} banned`}         color="var(--cyan,#00d4ff)" trend={s.today?.users} />
-              <StatCard icon="[T]" label="THREADS"      value={s.counts?.forum?.threads}     sub={`${fmt(s.counts?.forum?.replies||0)} replies`}                                              color="var(--orange,#ff6b35)" trend={s.today?.threads} />
+              <StatCard icon="[P]" label="POSTS"       value={s.counts?.posts?.total}       sub={`${s.counts?.posts?.published||0} published · ${s.counts?.posts?.drafts||0} drafts`}       color="var(--green,var(--green))" trend={s.today?.posts} />
+              <StatCard icon="[U]" label="USERS"        value={s.counts?.users?.total}       sub={`${s.counts?.users?.verified||0} verified · ${s.counts?.users?.banned||0} banned`}         color="var(--cyan,var(--cyan))" trend={s.today?.users} />
+              <StatCard icon="[T]" label="THREADS"      value={s.counts?.forum?.threads}     sub={`${fmt(s.counts?.forum?.replies||0)} replies`}                                              color="var(--orange,var(--orange))" trend={s.today?.threads} />
               <StatCard icon="[C]" label="CHAT MSGS"    value={s.counts?.chat?.messages}     sub={`${s.counts?.chat?.rooms||0} rooms`}                                                        color="var(--yellow,#ffd700)" trend={s.today?.messages} />
               <StatCard icon="[@]" label="CONTACTS"     value={s.counts?.contacts}           sub="Contact form submissions"                                                                   color="var(--purple,#a78bfa)" trend={s.today?.contacts} />
-              <StatCard icon="[N]" label="NEWSLETTER"   value={s.counts?.newsletter?.total}  sub={`${s.counts?.newsletter?.active||0} active`}                                                color="var(--green,#00ff88)" />
+              <StatCard icon="[N]" label="NEWSLETTER"   value={s.counts?.newsletter?.total}  sub={`${s.counts?.newsletter?.active||0} active`}                                                color="var(--green,var(--green))" />
               <StatCard icon="[M]" label="MEDIA FILES"  value={s.counts?.media}              sub="Uploaded files"                                                                             color="var(--muted)" />
-              <StatCard icon="[S]" label="STAFF"        value={s.counts?.staff}              sub="Team members"                                                                               color="var(--cyan,#00d4ff)" />
+              <StatCard icon="[S]" label="STAFF"        value={s.counts?.staff}              sub="Team members"                                                                               color="var(--cyan,var(--cyan))" />
             </div>
 
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
@@ -1692,7 +1692,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
                         <div style={{ color:"var(--muted)", fontSize:12, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
                         <div style={{ color:"var(--border)", fontSize:9, marginTop:2 }}>{p.category}</div>
                       </div>
-                      <span style={{ color:"var(--green,#00ff88)", fontSize:11, flexShrink:0 }}>{fmt(p.views)}v</span>
+                      <span style={{ color:"var(--green,var(--green))", fontSize:11, flexShrink:0 }}>{fmt(p.views)}v</span>
                     </div>
                   ))
                 }
@@ -1704,7 +1704,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
                   : (s.categories||[]).map((c,i) => (
                     <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"9px 0", borderBottom:"1px solid #0a1016" }}>
                       <span style={{ color:"var(--muted)", fontSize:12 }}>{c.icon} {c.name}</span>
-                      <span style={{ color:"var(--cyan,#00d4ff)", fontSize:11 }}>{fmt(c.threadCount)} threads</span>
+                      <span style={{ color:"var(--cyan,var(--cyan))", fontSize:11 }}>{fmt(c.threadCount)} threads</span>
                     </div>
                   ))
                 }
@@ -1717,18 +1717,18 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
         {activeTab==="activity" && s && (
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:16 }}>
             {[
-              {title:"LATEST POSTS",     key:"posts",      icon:"[P]", color:"var(--green,#00ff88)",
-               render:p=><FeedRow icon="[P]" title={p.title} sub={`${p.published?"YES":"DRAFT"} · ${p.views||0}v · ${p.category||""}`} time={ago(p.createdAt)} color="var(--green,#00ff88)" />},
-              {title:"NEW USERS",        key:"users",      icon:"[U]", color:"var(--cyan,#00d4ff)",
-               render:u=><FeedRow icon="[U]" title={u.username} sub={`${u.email} · ${u.role} · ${u.emailVerified?"YES":"NO"}`} time={ago(u.createdAt)} color="var(--cyan,#00d4ff)" />},
-              {title:"LATEST THREADS",   key:"threads",    icon:"[T]", color:"var(--orange,#ff6b35)",
-               render:t=><FeedRow icon="[T]" title={t.title} sub={`by ${t.author?.username||"?"} · ${t.views||0}v · ${t.replyCount||0} replies`} time={ago(t.createdAt)} color="var(--orange,#ff6b35)" />},
+              {title:"LATEST POSTS",     key:"posts",      icon:"[P]", color:"var(--green,var(--green))",
+               render:p=><FeedRow icon="[P]" title={p.title} sub={`${p.published?"YES":"DRAFT"} · ${p.views||0}v · ${p.category||""}`} time={ago(p.createdAt)} color="var(--green,var(--green))" />},
+              {title:"NEW USERS",        key:"users",      icon:"[U]", color:"var(--cyan,var(--cyan))",
+               render:u=><FeedRow icon="[U]" title={u.username} sub={`${u.email} · ${u.role} · ${u.emailVerified?"YES":"NO"}`} time={ago(u.createdAt)} color="var(--cyan,var(--cyan))" />},
+              {title:"LATEST THREADS",   key:"threads",    icon:"[T]", color:"var(--orange,var(--orange))",
+               render:t=><FeedRow icon="[T]" title={t.title} sub={`by ${t.author?.username||"?"} · ${t.views||0}v · ${t.replyCount||0} replies`} time={ago(t.createdAt)} color="var(--orange,var(--orange))" />},
               {title:"CHAT MESSAGES",    key:"messages",   icon:"[C]", color:"var(--yellow,#ffd700)",
                render:m=><FeedRow icon="[C]" title={`${m.sender}: ${(m.content||"[file]").slice(0,50)}`} sub={`in ${m.room?.name||"?"}`} time={ago(m.createdAt)} color="var(--yellow,#ffd700)" />},
               {title:"CONTACT FORMS",    key:"contacts",   icon:"[@]", color:"var(--purple,#a78bfa)",
                render:c=><FeedRow icon="[@]" title={`${c.name} - ${c.subject||"No subject"}`} sub={c.email} time={ago(c.createdAt)} color="var(--purple,#a78bfa)" />},
-              {title:"NEWSLETTER SUBS",  key:"newsletter", icon:"[N]", color:"var(--green,#00ff88)",
-               render:s=><FeedRow icon="[N]" title={s.email} sub={s.active?"YES Active":"NO Unsubscribed"} time={ago(s.createdAt)} color="var(--green,#00ff88)" />},
+              {title:"NEWSLETTER SUBS",  key:"newsletter", icon:"[N]", color:"var(--green,var(--green))",
+               render:s=><FeedRow icon="[N]" title={s.email} sub={s.active?"YES Active":"NO Unsubscribed"} time={ago(s.createdAt)} color="var(--green,var(--green))" />},
             ].map(({title, key, render}) => (
               <div key={key} style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:"18px 16px" }}>
                 <div style={{ fontSize:8, letterSpacing:3, color:"var(--border)", marginBottom:12 }}>{title}</div>
@@ -1751,18 +1751,18 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
         {activeTab==="charts" && s && (
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
-              <MiniChart data={s.charts?.dailyPosts||[]} color="var(--green,#00ff88)" label="POSTS - LAST 30 DAYS" />
+              <MiniChart data={s.charts?.dailyPosts||[]} color="var(--green,var(--green))" label="POSTS - LAST 30 DAYS" />
             </div>
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
-              <MiniChart data={s.charts?.dailyUsers||[]} color="var(--cyan,#00d4ff)" label="NEW USERS - LAST 30 DAYS" />
+              <MiniChart data={s.charts?.dailyUsers||[]} color="var(--cyan,var(--cyan))" label="NEW USERS - LAST 30 DAYS" />
             </div>
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24, gridColumn:"1/-1" }}>
               <div style={{ fontSize:8, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>THIS WEEK</div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
                 {[
-                  {label:"POSTS",    value:s.week?.posts,    color:"var(--green,#00ff88)"},
-                  {label:"NEW USERS",value:s.week?.users,    color:"var(--cyan,#00d4ff)"},
-                  {label:"THREADS",  value:s.week?.threads,  color:"var(--orange,#ff6b35)"},
+                  {label:"POSTS",    value:s.week?.posts,    color:"var(--green,var(--green))"},
+                  {label:"NEW USERS",value:s.week?.users,    color:"var(--cyan,var(--cyan))"},
+                  {label:"THREADS",  value:s.week?.threads,  color:"var(--orange,var(--orange))"},
                   {label:"CHAT MSG", value:s.week?.messages, color:"var(--yellow,#ffd700)"},
                 ].map(({label,value,color}) => (
                   <div key={label} style={{ textAlign:"center", padding:"20px 12px", background:"var(--bg)", border:`1px solid ${color}18` }}>
@@ -1837,14 +1837,14 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
               }).map(([label,count]) => (
                 <div key={label} style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderBottom:"1px solid #0a1016" }}>
                   <span style={{ fontSize:9, color:"var(--muted)", letterSpacing:1 }}>{label.toUpperCase()}</span>
-                  <span style={{ fontSize:11, color:"var(--green,#00ff88)", fontWeight:700 }}>{fmt(count)}</span>
+                  <span style={{ fontSize:11, color:"var(--green,var(--green))", fontWeight:700 }}>{fmt(count)}</span>
                 </div>
               ))}
             </div>
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24, gridColumn:"1/-1" }}>
               <div style={{ fontSize:8, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>QUICK ACTIONS</div>
               <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-                <Btn label="[R] REFRESH STATS"  color="var(--cyan,#00d4ff)" onClick={()=>fetchStats()} disabled={loading} />
+                <Btn label="[R] REFRESH STATS"  color="var(--cyan,var(--cyan))" onClick={()=>fetchStats()} disabled={loading} />
                 <Btn label={autoRefresh?"LIVE PAUSE AUTO-REFRESH":"[>] ENABLE AUTO-REFRESH"} color="var(--yellow,#ffd700)" onClick={()=>setAutoRefresh(p=>!p)} />
                 <Btn label="[X] DISCONNECT" danger onClick={()=>{setToken("");setStats(null);}} />
               </div>

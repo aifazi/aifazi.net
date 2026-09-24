@@ -261,7 +261,7 @@ export default function Navbar() {
     'neon-band': { bg: 'var(--bg2)',             accent: 'var(--green)', secondary: 'var(--cyan)',  logoColor: 'var(--text)',  linkColor: 'var(--muted)', activeLinkColor: 'var(--green)', borderColor: 'var(--border)', progressGrad: 'linear-gradient(to right, var(--green), var(--cyan))' },
     terminal:    { bg: 'var(--bg)',              accent: 'var(--green)', secondary: 'var(--cyan)',  logoColor: 'var(--green)', linkColor: 'var(--muted)', activeLinkColor: 'var(--green)', borderColor: 'var(--border)', progressGrad: 'linear-gradient(to right, var(--green), var(--cyan))' },
     command:     { bg: '#070b12',                accent: '#38bdf8',      secondary: '#94a3b8',      logoColor: 'var(--text)',  linkColor: '#94a3b8',     activeLinkColor: '#38bdf8',      borderColor: 'rgba(56,189,248,0.24)', progressGrad: 'linear-gradient(to right, #38bdf8, #a78bfa)' },
-    dashboard:   { bg: '#07111a',                accent: '#38bdf8',      secondary: '#00ff88',      logoColor: 'var(--text)',  linkColor: '#6b8296',     activeLinkColor: '#38bdf8',      borderColor: 'rgba(56,189,248,0.16)', progressGrad: 'linear-gradient(to right, #38bdf8, #00ff88)' },
+    dashboard:   { bg: '#07111a',                accent: '#38bdf8',      secondary: 'var(--green)',      logoColor: 'var(--text)',  linkColor: '#6b8296',     activeLinkColor: '#38bdf8',      borderColor: 'rgba(56,189,248,0.16)', progressGrad: 'linear-gradient(to right, #38bdf8, var(--green))' },
     magazine:    { bg: '#f7f1e8',                accent: '#111111',      secondary: '#b91c1c',      logoColor: '#111111',      linkColor: '#4b5563',     activeLinkColor: '#111111',      borderColor: 'rgba(17,17,17,0.28)', progressGrad: 'linear-gradient(to right, #111, #b91c1c)' },
     brutal:      { bg: '#f2f0ec',                accent: '#111111',      secondary: '#111111',      logoColor: '#111111',      linkColor: '#111111',     activeLinkColor: '#111111',      borderColor: '#111111', progressGrad: 'linear-gradient(to right, #111, #111)' },
     'mobile-dock': { bg: 'var(--bg2)',           accent: 'var(--cyan)',  secondary: 'var(--green)', logoColor: 'var(--text)',  linkColor: 'var(--muted)', activeLinkColor: 'var(--cyan)',  borderColor: 'var(--border)', progressGrad: 'linear-gradient(to right, var(--cyan), var(--green))' },
@@ -317,7 +317,7 @@ export default function Navbar() {
   const ADMIN_ROLE_COLORS = {
     admin:     'var(--green)',
     moderator: 'var(--cyan)',
-    editor:    '#ff6b35',
+    editor:    'var(--orange)',
     chat:      '#ffd700',
   }
 
@@ -706,7 +706,7 @@ export default function Navbar() {
                   </div>
                 </Link>
                 <button onClick={handleAdminLogout} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,71,87,0.4)'; e.currentTarget.style.color = '#ff4757' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--red) 40%, transparent)'; e.currentTarget.style.color = 'var(--red)' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
                 >OUT</button>
               </div>
