@@ -494,8 +494,17 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         ip = client_ip(request)
 
         # ── 2b. IP ban enforcement ─────────────────────────────────────────────
+        # Liveness exemption: open paths (notably /api/health, used by the
+        # container orchestrator) must never 403, otherwise a degraded ban
+        # directory (e.g. missing ip_bans table on first boot) would make
+        # every new container look unhealthy and block all deploys. The
+        # ban-deny still applies to every authenticated/protected route.
+        _is_open_route = (
+            path in _OPEN_EXACT or
+            (method == "GET" and any(path.startswith(p) for p in _OPEN_GET_PREFIXES))
+        )
         _refresh_ip_bans()
-        if _ip_is_banned(ip):
+        if _ip_is_banned(ip) and not _is_open_route:
             return JSONResponse(
                 status_code=403,
                 content={"error": "Your IP address is blocked."},
