@@ -19,7 +19,7 @@ boto3==1.43.93
 pyotp==2.9.0
 qrcode==7.4.2
 PyMuPDF==1.28.2
-PyJWT==2.13.0
+PyJWT==2.14.0
 openpyxl==3.1.5
 python-docx==1.2.0
 reportlab==5.0.1
