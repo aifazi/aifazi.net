@@ -107,11 +107,13 @@ async def request(
     if not await _ensure_session():
         return False, {"error": "txAdmin session unavailable"}
 
-    headers = {
-        "Content-Type":        "application/json",
-        "Cookie":              _cookie,
-        "x-txadmin-csrftoken": _csrf,
+    headers: dict[str, str] = {
+        "Content-Type": "application/json",
     }
+    if _cookie:
+        headers["Cookie"] = _cookie
+    if _csrf:
+        headers["x-txadmin-csrftoken"] = _csrf
     async with httpx.AsyncClient(timeout=12, follow_redirects=True) as c:
         try:
             r = await c.request(method, f"{TXADMIN_URL}{path}",

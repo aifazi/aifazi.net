@@ -10,7 +10,7 @@ import Terminal from './Terminal'
 // when the drawer opens, so load it lazily instead of shipping it to every
 // visitor on every page.
 const ThemePicker = dynamic(() => import('./ThemePicker'), { ssr: false })
-import api from '@/lib/api'
+import api, { clearAuthTokens } from '@/lib/api'
 import NotificationBell from './NotificationBell'
 import { getUsername, getRole, getAuthToken } from '@/lib/api'
 import { getSiteSettings } from '@/lib/siteSettings'
@@ -305,10 +305,12 @@ export default function Navbar() {
 
   const handleAdminLogout = async () => {
     try { await api.post('/auth/logout') } catch {}
-    localStorage.removeItem('auth_token'); localStorage.removeItem('admin_token'); localStorage.removeItem('staff_token')
+    // Route through clearAuthTokens so ALL client caches are wiped (theme
+    // preserved), then full-reload to /login — no flash of authenticated UI.
+    clearAuthTokens()
     window.dispatchEvent(new Event('auth-change'))
     setAdminAuth(null)
-    navigate(loginRoute, { state: { signedOut: true } })
+    window.location.replace(loginRoute)
   }
 
   const ADMIN_ROLE_COLORS = {
@@ -719,7 +721,7 @@ export default function Navbar() {
                     imgStyle={{ border: '1px solid var(--green)' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
-                <button onClick={async () => { await forumLogout(); navigate(loginRoute, { state: { signedOut: true } }) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
+                <button onClick={async () => { await forumLogout(); window.location.replace(loginRoute) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
               </div>
             ) : (
               <Link to={loginRoute} style={{
@@ -834,7 +836,7 @@ export default function Navbar() {
                     imgStyle={{ border: '1px solid var(--green)' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
-                <button onClick={async () => { await forumLogout(); navigate(loginRoute, { state: { signedOut: true } }); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>
+                <button onClick={async () => { await forumLogout(); window.location.replace(loginRoute); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 10, margin: '8px 24px 12px' }}>

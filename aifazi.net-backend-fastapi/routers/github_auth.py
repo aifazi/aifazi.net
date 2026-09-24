@@ -35,7 +35,7 @@ log = logging.getLogger("github_auth")
 try:
     import httpx as _httpx
 except ImportError:
-    _httpx = None
+    _httpx = None  # type: ignore[assignment]  # optional dep; guarded at use sites
 
 from database import supabase
 from jwt_compat import JWTError

@@ -122,16 +122,16 @@ function MiniNewsletter() {
         onKeyDown={e => e.key === 'Enter' && submit()}
         placeholder="your@email.com"
         style={{
-          flex: 1, background: 'var(--bg3)', border: `1px solid ${status === 'err' ? 'rgba(255,71,87,0.5)' : 'var(--border)'}`,
+          flex: 1, background: 'var(--comp-input-bg, var(--bg3))', border: `1px solid ${status === 'err' ? 'rgba(255,71,87,0.5)' : 'var(--comp-input-border, var(--border))'}`,
           outline: 'none', padding: '7px 10px',
           fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)',
-          borderRadius: 4, minWidth: 0,
+          borderRadius: 'var(--comp-input-radius, 4px)', minWidth: 0,
         }}
       />
       <button onClick={submit} style={{
         fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px',
-        background: 'var(--green)', color: '#000', border: 'none', cursor: 'pointer',
-        borderRadius: 4, fontWeight: 700, transition: 'opacity 0.2s', flexShrink: 0,
+        background: 'var(--comp-btn-bg, var(--green))', color: 'var(--comp-btn-text, #000)', border: 'var(--comp-btn-border, none)', cursor: 'pointer',
+        borderRadius: 'var(--comp-btn-radius, 4px)', boxShadow: 'var(--comp-btn-shadow, none)', fontWeight: 700, transition: 'opacity 0.2s', flexShrink: 0,
       }}
         onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
         onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -804,7 +804,7 @@ function FooterFiveM({ socialLinks, year }) {
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>PLAYERS</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 1 }}>{players}/{max}</span>
             </div>
-            <Link to={connectRoute} style={{ display: 'block', marginTop: 12, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, fontWeight: 700, padding: '8px 0', color: '#000', background: 'var(--green)', textDecoration: 'none', borderRadius: 5 }}>CONNECT NOW</Link>
+            <Link to={connectRoute} style={{ display: 'block', marginTop: 12, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, fontWeight: 700, padding: '8px 0', color: 'var(--comp-btn-text, #000)', background: 'var(--comp-btn-bg, var(--green))', textDecoration: 'none', borderRadius: 'var(--comp-btn-radius, 5px)', boxShadow: 'var(--comp-btn-shadow, none)' }}>CONNECT NOW</Link>
           </div>
         </div>
       </div>

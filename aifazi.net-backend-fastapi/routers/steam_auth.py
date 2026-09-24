@@ -40,7 +40,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 try:
     import httpx as _httpx
 except ImportError:
-    _httpx = None
+    _httpx = None  # type: ignore[assignment]  # optional dep; guarded at use sites
 
 from database import supabase
 from dependencies import CookieHTTPBearer

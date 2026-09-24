@@ -29,7 +29,25 @@ MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB hard cap
 
 # ── ClamAV malware scanning ────────────────────────────────────────────────────
 _CLAMD_HOST = os.getenv("CLAMD_HOST", "localhost")
-_CLAMD_PORT = int(os.getenv("CLAMD_PORT", "3310"))
+
+log = logging.getLogger("upload")
+
+
+def _parse_clamd_port(raw: str | None, default: int = 3310) -> int:
+    """Safe-parse CLAMD_PORT with default + range check (never crash on
+    malformed env)."""
+    try:
+        value = int((raw or "").strip() or str(default))
+    except (TypeError, ValueError):
+        log.warning("Invalid CLAMD_PORT=%r; using default %d", raw, default)
+        return default
+    if not 1 <= value <= 65535:
+        log.warning("CLAMD_PORT=%r out of range; using default %d", raw, default)
+        return default
+    return value
+
+
+_CLAMD_PORT = _parse_clamd_port(os.getenv("CLAMD_PORT"))
 _MALWARE_SCAN_ENABLED = os.getenv("MALWARE_SCAN_ENABLED", "true").lower() == "true"
 # Fail-closed by default (H3): when true, any scan failure (daemon unreachable,
 # connection error, unexpected exception, pyclamd ERROR status, or pyclamd not
@@ -38,8 +56,6 @@ _MALWARE_SCAN_ENABLED = os.getenv("MALWARE_SCAN_ENABLED", "true").lower() == "tr
 # MALWARE_SCAN_FAIL_CLOSED=false is a second, legacy kill-switch for the same.
 _MALWARE_SCAN_FAIL_CLOSED = os.getenv("MALWARE_SCAN_FAIL_CLOSED", "true").lower() == "true"
 _MALWARE_SCAN_STRICT = os.getenv("MALWARE_SCAN_STRICT", "true").lower() == "true"
-
-log = logging.getLogger("upload")
 
 def _vendor_sha1_hex(data: bytes) -> str:
     """SHA-1 hex digest for vendor APIs that mandate it (Cloudinary request

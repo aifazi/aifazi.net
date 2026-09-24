@@ -94,7 +94,7 @@ async def revoke_session(session_id: str, user: dict = Depends(get_current_user)
     if not row.data or row.data[0].get("username") != username:
         raise HTTPException(404, "Session not found")
     supabase.table("admin_sessions").delete().eq("id", session_id).execute()
-    _audit(username, "session_revoked", target=session_id)
+    _audit(str(username or ""), "session_revoked", target=session_id)
     return {"revoked": True}
 
 
@@ -112,5 +112,5 @@ async def revoke_all_other_sessions(request: Request, user: dict = Depends(get_c
                  if not (s.get("ip") == client_ip and s.get("user_agent") == ua)]
     if to_delete:
         supabase.table("admin_sessions").delete().in_("id", to_delete).execute()
-    _audit(username, "sessions_revoke_all", details={"count": len(to_delete)})
+    _audit(str(username or ""), "sessions_revoke_all", details={"count": len(to_delete)})
     return {"revoked": len(to_delete)}

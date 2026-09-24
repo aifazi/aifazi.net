@@ -18,7 +18,7 @@ function ReceiptTicks({ msg }) {
   if (!seen && !delivered) return null
   return (
     <span title={seen ? 'Seen' : 'Delivered'} aria-label={seen ? 'Seen' : 'Delivered'}
-      style={{ fontSize: 10, color: seen ? T.accentB : T.muted, fontFamily: T.mono, letterSpacing: -1 }}>
+      style={{ fontSize: 10, color: seen ? T.link : T.muted, fontFamily: T.mono, letterSpacing: -1 }}>
       ✓✓
     </span>
   )
@@ -94,7 +94,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
   return (
     <div ref={elRef || elRef2} onScroll={onScroll} style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
       {multiSelect && selectedIds.length > 0 && (
-        <div style={{ position:'sticky', top:0, zIndex:10, display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'color-mix(in srgb, var(--cyan) 8%, transparent)', borderBottom:`1px solid color-mix(in srgb, var(--cyan) 20%, transparent)`, marginBottom:4, fontFamily:T.mono, fontSize:10 }}>
+        <div style={{ position:'sticky', top:0, zIndex:10, display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'color-mix(in srgb, var(--green) 8%, transparent)', borderBottom:`1px solid ${T.border}`, marginBottom:4, fontFamily:T.mono, fontSize:10 }}>
           <span style={{ color:T.muted }}>{selectedIds.length} selected</span>
           <button onClick={()=>setSelectedIds(msgs.map(m=>m.id))} style={{ background:'none', border:'1px solid '+T.border, color:T.muted, cursor:'pointer', padding:'2px 8px', fontSize:9 }}>Select all</button>
           <button onClick={()=>{setSelectedIds([]);setMultiSelect(false)}} style={{ background:'none', border:'1px solid '+T.border, color:T.muted, cursor:'pointer', padding:'2px 8px', fontSize:9 }}>Deselect</button>
@@ -106,7 +106,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                 {REACTIONS.map(e2 => (
                   <button key={e2} onClick={()=>{ selectedIds.forEach(id => onReact(id, e2)); setEmojiPicker(null); setMultiSelect(false); setSelectedIds([]) }}
                     style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, padding:'2px 4px', borderRadius:4 }}
-                    onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.08)'}
+                    onMouseEnter={e => e.currentTarget.style.background='color-mix(in srgb, var(--text) 8%, transparent)'}
                     onMouseLeave={e => e.currentTarget.style.background='none'}>{e2}</button>
                 ))}
               </div>
@@ -117,7 +117,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
       {grouped.map((item, i) => {
         if (item.type === 'date') return (
           <div key={`d-${i}`} style={{ textAlign: 'center', padding: '8px 0', fontFamily: T.mono, fontSize: 10, color: T.muted, letterSpacing: 1 }}>
-            <span title={fmtDtTitle(item.ts)} style={{ background: 'rgba(255,255,255,0.04)', padding: '2px 10px', borderRadius: 10 }}>{item.date}</span>
+            <span title={fmtDtTitle(item.ts)} className="chat-date-pill" style={{ background: T.surface, border: `${T.borderW} solid ${T.border}`, padding: '2px 10px', borderRadius: T.radius }}>{item.date}</span>
           </div>
         )
         const isMe = item.sender === me
@@ -152,19 +152,19 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                 {isMe && <ReceiptTicks msg={item} />}
               </div>
               {group.map((m, gi) => (
-                <div key={m.id || gi} style={{ display:'flex', gap:8, marginBottom:2, alignItems:'flex-start',
-                  background: selectedIds.includes(m.id) ? 'color-mix(in srgb, var(--green) 6%, transparent)' : activeMsg === m.id ? 'color-mix(in srgb, var(--cyan) 4%, transparent)' : 'transparent' }}>
+                <div key={m.id || gi} className={selectedIds.includes(m.id) ? 'chat-msg-row chat-msg-row-selected' : 'chat-msg-row'} style={{ display:'flex', gap:8, marginBottom:2, alignItems:'flex-start',
+                  background: selectedIds.includes(m.id) ? 'color-mix(in srgb, var(--green) 6%, transparent)' : activeMsg === m.id ? 'color-mix(in srgb, var(--green) 4%, transparent)' : 'transparent' }}>
                   {multiSelect && (
                     <div onClick={() => toggleSelect(m.id)} style={{ cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', height:34, justifyContent:'center', width:16 }}>
-                      <div style={{ width:16, height:16, borderRadius:3, border: selectedIds.includes(m.id) ? `1.5px solid ${T.accent}` : `1.5px solid ${T.border}`, background: selectedIds.includes(m.id) ? T.accent : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:'#000' }}>
+                      <div style={{ width:16, height:16, borderRadius:3, border: selectedIds.includes(m.id) ? `1.5px solid ${T.accent}` : `1.5px solid ${T.border}`, background: selectedIds.includes(m.id) ? T.accent : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:'var(--bg)' }}>
                         {selectedIds.includes(m.id) && '✓'}
                       </div>
                     </div>
                   )}
                   <div style={{ flex:1, textAlign: isMe ? 'right' : 'left' }}>
                   {m.reply_to && (
-                    <div style={{ borderLeft: `2px solid ${T.accentB}`, paddingLeft: 8, marginBottom: 4, fontFamily: T.mono, fontSize: 10, color: T.muted, textAlign: 'left' }}>
-                      <span style={{ color: T.accentB }}>↩ {m.reply_to.sender}: </span>{m.reply_to.content?.slice(0, 100)}
+                    <div style={{ borderLeft: `2px solid ${T.link}`, paddingLeft: 8, marginBottom: 4, fontFamily: T.mono, fontSize: 10, color: T.muted, textAlign: 'left' }}>
+                      <span style={{ color: T.link }}>↩ {m.reply_to.sender}: </span>{m.reply_to.content?.slice(0, 100)}
                     </div>
                   )}
                   <div style={{ lineHeight: 1.5, fontSize: 13, color: T.text, wordBreak: 'break-word' }}>
@@ -176,17 +176,17 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                         onClick={() => onMediaClick?.({ url: m.content, type: m.type })} />
                     ) : m.type === 'voice' ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <button onClick={() => togglePlay(m)} style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'color-mix(in srgb, var(--cyan) 20%, transparent)', color: T.accentB, cursor: 'pointer', fontSize: 12, flexShrink: 0 }}>
+                        <button onClick={() => togglePlay(m)} style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'color-mix(in srgb, var(--link) 20%, transparent)', color: T.link, cursor: 'pointer', fontSize: 12, flexShrink: 0 }}>
                           {playingId === m.id ? '⏸' : '▶'}
                         </button>
-                        <div style={{ height: 4, width: 120, borderRadius: 2, background: 'rgba(255,255,255,0.12)', overflow: 'hidden' }}>
-                          <div style={{ width: 0, height: '100%', background: T.accentB }} />
+                        <div style={{ height: 4, width: 120, borderRadius: 2, background: 'var(--border2)', overflow: 'hidden' }}>
+                          <div style={{ width: 0, height: '100%', background: T.link }} />
                         </div>
                         <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>{m.duration ? `${Math.round(m.duration)}s` : '♪'}</span>
                         <audio id={`voice-${m.id}`} src={m.content} preload="none" />
                       </div>
                     ) : m.type === 'file' ? (
-                      <div><a href={/^https?:\/\//i.test(m.content || '') ? m.content : '#'} target='_blank' rel='noopener noreferrer' style={{ color: T.accentB, textDecoration: 'none' }}>📎 {m.file_name || 'file'}</a> <span style={{ fontSize: 10, color: T.muted }}>{fmtSz(m.file_size)}</span></div>
+                      <div><a href={/^https?:\/\//i.test(m.content || '') ? m.content : '#'} target='_blank' rel='noopener noreferrer' style={{ color: T.link, textDecoration: 'none' }}>📎 {m.file_name || 'file'}</a> <span style={{ fontSize: 10, color: T.muted }}>{fmtSz(m.file_size)}</span></div>
                     ) : <Markdown text={m.content} />}
                     {m.type === 'text' && <MediaPreviews text={m.content} onMediaClick={onMediaClick} right={isMe} />}
                   </div>
@@ -195,7 +195,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                       {Object.entries(m.reactions).map(([emoji, users]) => (
                         <button key={emoji} onClick={() => onReact(m.id, emoji)}
                           style={{ padding: '1px 7px', border: `1px solid ${(users || []).includes(me) ? 'color-mix(in srgb, var(--green) 40%, transparent)' : T.border}`, borderRadius: 10,
-                            background: (users || []).includes(me) ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'rgba(255,255,255,0.03)',
+                            background: (users || []).includes(me) ? 'color-mix(in srgb, var(--green) 8%, transparent)' : T.surface,
                             color: T.text, fontFamily: T.mono, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                           {emoji} <span style={{ fontSize: 9, color: T.muted }}>{users?.length || 0}</span>
                         </button>
@@ -217,7 +217,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                         {REACTIONS.map(e2 => (
                           <button key={e2} onClick={()=>{ onReact(m.id, e2); setEmojiPicker(null) }}
                             style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, padding:'2px 4px', borderRadius:4 }}
-                            onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.08)'}
+                            onMouseEnter={e => e.currentTarget.style.background='color-mix(in srgb, var(--text) 8%, transparent)'}
                             onMouseLeave={e => e.currentTarget.style.background='none'}>{e2}</button>
                         ))}
                       </div>

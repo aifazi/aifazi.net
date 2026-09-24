@@ -8,6 +8,7 @@ import hmac
 import logging
 import os
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
@@ -54,7 +55,7 @@ async def cron_cleanup(request: Request):
 
 # Job definitions owned by this module: the single daily Vercel tick plus the
 # sub-jobs run_cleanup records heartbeats for (see run_cleanup below).
-JOBS = [
+JOBS: list[dict[str, Any]] = [
     {"name": "cron-cleanup", "source": "cron.py", "schedule": "daily 03:00 UTC (Vercel cron)", "interval_seconds": 86400},
     {"name": "monitor", "source": "cron.py", "schedule": "daily (inside cleanup tick)", "interval_seconds": 86400},
     {"name": "error-digest", "source": "cron.py", "schedule": "daily (inside cleanup tick)", "interval_seconds": 86400},
@@ -120,14 +121,14 @@ async def admin_jobs(user: dict = Depends(require_admin)):
     out = []
     for d in defs:
         name = d["name"]
-        interval = d.get("interval_seconds")
+        interval_s = d.get("interval_seconds")
         beat = beats.get(name) or {}
         last_run = beat.get("last_run_at") or (backup_last if name == "backup" else None)
         dt = _parse_ts(last_run) if last_run else None
-        next_run = (dt + timedelta(seconds=interval)).isoformat() if (dt and interval) else None
+        next_run = (dt + timedelta(seconds=interval_s)).isoformat() if (dt and interval_s) else None
         late = False
-        if interval:
-            late = True if dt is None else (now - dt).total_seconds() > 2 * interval
+        if interval_s:
+            late = True if dt is None else (now - dt).total_seconds() > 2 * interval_s
         out.append({"name": name, "source": d["source"], "schedule": d.get("schedule"),
                     "last_run": dt.isoformat() if dt else None,
                     "last_status": beat.get("last_status"),

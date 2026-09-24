@@ -18,14 +18,15 @@ export function useSplitTextReveal(opts = {}) {
     const originalHTML = el.innerHTML
     const text = el.textContent || ''
 
-    el.innerHTML = text
-      .split('')
-      .map(ch =>
-        ch === ' '
-          ? '<span aria-hidden="true" style="display:inline-block">&nbsp;</span>'
-          : `<span aria-hidden="true" style="display:inline-block">${ch}</span>`
-      )
-      .join('')
+    el.innerHTML = ''
+    for (const ch of text) {
+      const span = document.createElement('span')
+      span.setAttribute('aria-hidden', 'true')
+      span.style.display = 'inline-block'
+      // textContent (not innerHTML) so &<>"' render literally, never as markup
+      span.textContent = ch === ' ' ? '\u00A0' : ch
+      el.appendChild(span)
+    }
     el.setAttribute('aria-label', text)
 
     const chars = Array.from(el.querySelectorAll('span'))

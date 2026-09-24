@@ -90,16 +90,11 @@ jobs:
         run: ruff check .
 
       - name: Run MyPy (typecheck)
-        # TODO(mypy-debt): 101 pre-existing errors in 27 files (auth,
-        # steam_auth, github_auth, authentik_oidc, store_*, chat_*, monitor,
-        # etc.) — see PR #240 CI. Triage and fix them, then flip this step
-        # back to blocking. Advisory until then (bandit stays blocking).
-        continue-on-error: true
         run: mypy routers/ --ignore-missing-imports
 
       - name: Run Pytest (tests)
         run: |
-          pip install pytest pytest-asyncio httpx
+          pip install -r requirements-dev.txt
           if [ ! -d tests ]; then echo "No tests directory found — add tests/"; exit 1; fi
           pytest tests/ -x --tb=short
 
@@ -186,7 +181,7 @@ jobs:
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && vars.DEPENDENCY_GRAPH_ENABLED == 'true'
+    if: github.event_name == 'pull_request'
     permissions:
       contents: read
       pull-requests: write

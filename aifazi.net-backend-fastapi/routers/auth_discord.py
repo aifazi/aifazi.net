@@ -22,7 +22,29 @@ DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
 DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "")
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net")
+
+
+def _validate_frontend_url(value: str) -> str:
+    """Fail-closed FRONTEND_URL allowlist, mirrored from main.py (kept local to
+    avoid a main<->router import cycle). Production accepts only
+    https://aifazi.net (and www); dev additionally accepts localhost URLs."""
+    raw = (value or "").strip().rstrip("/") or "https://aifazi.net"
+    is_prod = os.getenv("ENV", "production") == "production" or os.getenv("VERCEL", "") == "1"
+    prod_allowed = {"https://aifazi.net", "https://www.aifazi.net"}
+    if is_prod:
+        if raw not in prod_allowed:
+            raise RuntimeError(
+                f"FRONTEND_URL={raw!r} is not allowlisted in production "
+                "(expected https://aifazi.net). Refusing to start."
+            )
+        return raw
+    if raw in prod_allowed or raw.startswith(("http://localhost:", "http://127.0.0.1:")):
+        return raw
+    log.warning("FRONTEND_URL=%r is not on the dev allowlist; continuing (non-production)", raw)
+    return raw
+
+
+FRONTEND_URL = _validate_frontend_url(os.getenv("FRONTEND_URL", "https://aifazi.net"))
 WHITELIST_GUILD_ID = os.getenv("DISCORD_WHITELIST_GUILD_ID", "")
 WHITELIST_ROLE_ID = os.getenv("DISCORD_WHITELIST_ROLE_ID", "")
 
@@ -130,6 +152,8 @@ async def discord_callback(request: Request):
             "role": "user",
         }).execute()
         new_id = ins.data[0]["id"] if ins.data else None
+        if not new_id:
+            raise HTTPException(500, "Failed to create user")
         token = make_forum_token(new_id, new_username, "user")
         refresh = make_refresh_token({"id": new_id, "username": new_username, "role": "user"}, 60 * 24 * 7)
         if new_id:

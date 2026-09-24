@@ -84,6 +84,9 @@ interface CallMessage {
 
 const POLL_MS = 4000
 
+/** Room/thread ids interpolated into router URLs and API paths (see app/_layout.tsx). */
+const ROUTE_ID_RE = /^[A-Za-z0-9_-]{1,128}$/
+
 function fmtTime(iso?: string) {
   if (!iso) return ''
   try {
@@ -149,6 +152,9 @@ export default function CallScreen() {
   const count = participants.length + 1
 
   const baseChatId = isDm ? thread_id ?? '' : (room ?? '')
+  const rawCallId = isDm ? thread_id : room
+  const callIdStr = Array.isArray(rawCallId) ? rawCallId[0] : rawCallId
+  const invalidCallLink = !callIdStr || !ROUTE_ID_RE.test(callIdStr)
 
   // ── Realtime in-call chat (instant, mirrors web) with polling fallback ────
   const { active: rtActive } = useMessagesRealtime<CallMessage>(
@@ -261,6 +267,14 @@ export default function CallScreen() {
     } catch {
       alert({ message: 'Action failed' })
     }
+  }
+
+  if (invalidCallLink) {
+    return (
+      <View style={[styles.center, { backgroundColor: c.bg }]}>
+        <Text style={{ color: c.danger, textAlign: 'center' }}>Invalid link</Text>
+      </View>
+    )
   }
 
   if (status === 'connecting') {

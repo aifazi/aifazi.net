@@ -704,7 +704,7 @@ async def abuse_ban(body: AbuseBanBody, request: Request, user: dict = Depends(r
             peers = res.data or []
             prior["vpn_peers"] = [{"id": p.get("id"), "status": p.get("status"),
                                    "suspended_reason": p.get("suspended_reason")} for p in peers]
-            suspended, already_count, failed = 0, 0, 0
+            suspended, already_count, failed_vpn = 0, 0, 0
             for peer in peers:
                 if peer.get("status") == "suspended":
                     already_count += 1
@@ -715,11 +715,11 @@ async def abuse_ban(body: AbuseBanBody, request: Request, user: dict = Depends(r
                     ).eq("id", peer.get("id")).execute()
                     suspended += 1
                 except Exception as exc:
-                    failed += 1
+                    failed_vpn += 1
                     log.warning("abuse-ban vpn failed peer %s: %s", peer.get("id"), exc)
-            results["vpn"] = {"ok": failed == 0, "detail": f"suspended {suspended} peers ({already_count} already suspended)" + (f"; {failed} failed" if failed else "")}
-            if failed:
-                results["vpn"]["error"] = f"{failed} peers failed"
+            results["vpn"] = {"ok": failed_vpn == 0, "detail": f"suspended {suspended} peers ({already_count} already suspended)" + (f"; {failed_vpn} failed" if failed_vpn else "")}
+            if failed_vpn:
+                results["vpn"]["error"] = f"{failed_vpn} peers failed"
         except Exception as exc:
             log.warning("abuse-ban vpn surface failed: %s", exc, exc_info=True)
             results["vpn"] = {"ok": False, "error": "VPN suspend failed"}

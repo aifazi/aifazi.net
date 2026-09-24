@@ -13,6 +13,12 @@ const CALDAV_URL_KEY = 'aifazi_caldav_url'
 const CALDAV_USER_KEY = 'aifazi_caldav_user'
 const CALDAV_PASS_KEY = 'aifazi_caldav_pass'
 
+// Credentials must not migrate to a new device via backup/restore and must
+// be unavailable until the first unlock after boot (same as api.ts).
+const SECURE_STORE_OPTIONS = {
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+} as const
+
 export interface CalDAVCredentials {
   serverUrl: string
   username: string
@@ -62,9 +68,9 @@ export function davDisplayName(
 // ── Credential Management ──────────────────────────────────────────────────
 
 export async function saveCalDAVCredentials(creds: CalDAVCredentials): Promise<void> {
-  await SecureStore.setItemAsync(CALDAV_URL_KEY, creds.serverUrl)
-  await SecureStore.setItemAsync(CALDAV_USER_KEY, creds.username)
-  await SecureStore.setItemAsync(CALDAV_PASS_KEY, creds.password)
+  await SecureStore.setItemAsync(CALDAV_URL_KEY, creds.serverUrl, SECURE_STORE_OPTIONS)
+  await SecureStore.setItemAsync(CALDAV_USER_KEY, creds.username, SECURE_STORE_OPTIONS)
+  await SecureStore.setItemAsync(CALDAV_PASS_KEY, creds.password, SECURE_STORE_OPTIONS)
 }
 
 export async function getCalDAVCredentials(): Promise<CalDAVCredentials | null> {

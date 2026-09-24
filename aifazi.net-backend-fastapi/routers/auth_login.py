@@ -230,7 +230,7 @@ async def refresh_token(request: Request, response: Response, body: RefreshBody 
         accepted = _hmac.compare_digest(stored, token_str)
         if not accepted and previous:
             accepted = _hmac.compare_digest(previous, token_str)
-            age_s = _REFRESH_ROTATION_GRACE + 1
+            age_s: float = _REFRESH_ROTATION_GRACE + 1
             if rotated_at:
                 try:
                     age_s = (datetime.now(timezone.utc) - datetime.fromisoformat(str(rotated_at))).total_seconds()

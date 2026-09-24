@@ -5,6 +5,8 @@ import { useTheme } from '@/src/theme'
 import { FONT, SPACE } from '@/src/design'
 import { api } from '@/src/lib/api'
 
+const TOKEN_RE = /^[A-Za-z0-9._-]{1,256}$/
+
 export default function VerifyEmailScreen() {
   const { theme } = useTheme()
   const c = theme.colors
@@ -14,8 +16,9 @@ export default function VerifyEmailScreen() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    if (!token) { setStatus('error'); setMessage('No verification token provided.'); return }
-    api.get(`/verify-email/${token}`)
+    const raw = Array.isArray(token) ? token[0] : token
+    if (!raw || !TOKEN_RE.test(raw)) { setStatus('error'); setMessage('Invalid verification link.'); return }
+    api.get(`/verify-email/${encodeURIComponent(raw)}`)
       .then(() => { setStatus('success'); setMessage('Email verified! You can now sign in.') })
       .catch((e: any) => { setStatus('error'); setMessage(e?.response?.data?.detail || 'Verification failed or token expired.') })
   }, [token])

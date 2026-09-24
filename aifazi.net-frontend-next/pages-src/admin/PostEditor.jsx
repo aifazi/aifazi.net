@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import api from '@/lib/api'
+import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import { useToast } from '../../components/Toast'
 import { useDialog, dialog } from '../../components/Dialog'
 import { DateTimePicker, Select } from '../../core/ui.jsx'
@@ -210,7 +211,10 @@ function RichEditor({ value, onChange }) {
 
   const handleInput = () => { onChange(editorRef.current.innerHTML) }
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) editorRef.current.innerHTML = value || ''
+    // Sanitize CMS HTML before injecting into the contentEditable node; the
+    // raw value lives only in React state (form.content) and is re-sanitized
+    // at render time by consumers (e.g. BlogPost).
+    if (editorRef.current && editorRef.current.innerHTML !== value) editorRef.current.innerHTML = sanitizeHtml(value || '')
   }, [])
 
   const handleKeyDown = useCallback(e => {

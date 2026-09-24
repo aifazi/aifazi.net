@@ -75,7 +75,7 @@ function BlockItem({ slug, item }) {
               hrefKey={key(slug, item, 'ctaHref')}
               defaultValue={item.ctaLabel}
               defaultHref={item.ctaHref || '#'}
-              style={{ display: 'inline-block', padding: '0.9rem 2rem', background: 'var(--green)', color: '#0a0a0f', fontWeight: 700, textDecoration: 'none', borderRadius: 8 }}
+              style={{ display: 'inline-block', padding: '0.9rem 2rem', background: 'var(--comp-btn-bg, var(--green))', color: 'var(--comp-btn-text, #0a0a0f)', fontWeight: 700, textDecoration: 'none', borderRadius: 'var(--comp-btn-radius, 8px)', boxShadow: 'var(--comp-btn-shadow, none)' }}
             />
           )}
         </section>
@@ -101,10 +101,11 @@ function BlockItem({ slug, item }) {
             defaultValue={item.label ?? ''}
             defaultHref={item.href || '#'}
             style={{
-              display: 'inline-block', padding: '0.85rem 2rem', borderRadius: 8, fontWeight: 700, textDecoration: 'none',
-              background: item.variant === 'outline' ? 'transparent' : 'var(--green)',
-              color: item.variant === 'outline' ? 'var(--green)' : '#0a0a0f',
-              border: item.variant === 'outline' ? '1px solid var(--green)' : 'none',
+              display: 'inline-block', padding: '0.85rem 2rem', borderRadius: 'var(--comp-btn-radius, 8px)', fontWeight: 700, textDecoration: 'none',
+              background: item.variant === 'outline' ? 'transparent' : 'var(--comp-btn-bg, var(--green))',
+              color: item.variant === 'outline' ? 'var(--green)' : 'var(--comp-btn-text, #0a0a0f)',
+              border: item.variant === 'outline' ? '1px solid var(--green)' : 'var(--comp-btn-border, none)',
+              boxShadow: item.variant === 'outline' ? 'none' : 'var(--comp-btn-shadow, none)',
             }}
           />
         </div>
@@ -119,7 +120,7 @@ function BlockItem({ slug, item }) {
             addLabel="+ Add feature"
             fields={BLOCKS.features.listField.itemFields}
             renderItem={(it, i) => (
-              <div key={i} style={{ padding: '1.25rem', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--bg2)' }}>
+              <div key={i} style={{ padding: '1.25rem', border: 'var(--comp-card-border, 1px solid var(--border))', borderRadius: 'var(--comp-card-radius, 12px)', background: 'var(--comp-card-bg, var(--bg2))', boxShadow: 'var(--comp-card-shadow, none)' }}>
                 <div style={{ fontSize: 26 }}>{it.icon}</div>
                 <div style={{ fontWeight: 700, margin: '0.5rem 0 0.25rem' }}>{it.title}</div>
                 <div style={{ color: 'var(--muted)', fontSize: '0.95rem' }}>{it.desc}</div>
@@ -138,7 +139,7 @@ function BlockItem({ slug, item }) {
             addLabel="+ Add stat"
             fields={BLOCKS.stats.listField.itemFields}
             renderItem={(it, i) => (
-              <div key={i} style={{ textAlign: 'center', padding: '1.5rem', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--bg2)' }}>
+              <div key={i} style={{ textAlign: 'center', padding: '1.5rem', border: 'var(--comp-card-border, 1px solid var(--border))', borderRadius: 'var(--comp-card-radius, 12px)', background: 'var(--comp-card-bg, var(--bg2))', boxShadow: 'var(--comp-card-shadow, none)' }}>
                 <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--green)', fontFamily: 'var(--font-display)' }}>{it.value}</div>
                 <div style={{ color: 'var(--muted)', fontSize: '0.9rem', marginTop: 4 }}>{it.label}</div>
               </div>

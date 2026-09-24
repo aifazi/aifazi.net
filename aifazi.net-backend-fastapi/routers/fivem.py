@@ -2643,6 +2643,8 @@ async def txadmin_live_action(
         raise HTTPException(422, "target is required")
     reason = (body.reason or "").strip() or "Actioned by admin"
     actor = str(user.get("username") or user.get("id") or "admin")
+    ok: bool
+    detail: dict | str | None
 
     if action == "kick":
         netid = _resolve_live_netid(target)

@@ -12,6 +12,7 @@ import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
 import { Icon, type IconName } from '@/src/components/icon'
 import { withAlpha } from '@/src/lib/color'
+import { CALLS_ENABLED } from '@/src/lib/calls'
 import { Reveal, stagger } from '@/src/components/motion'
 
 interface Room {
@@ -153,7 +154,7 @@ export default function ChatScreen() {
   const open = (room: Room) => {
     const params = `room=${room.id}&name=${encodeURIComponent(room.name)}&type=${room.type}`
     if (room.type === 'text') router.push(`/chat-room?${params}` as Href)
-    else router.push(`/call?${params}` as Href)
+    else if (CALLS_ENABLED) router.push(`/call?${params}` as Href)
   }
 
   const openDm = (dm: DMThread) => {
@@ -328,6 +329,7 @@ export default function ChatScreen() {
                     <Btn
                       title={item.type === 'text' ? 'Open' : 'Join'}
                       onPress={() => open(item)}
+                      disabled={!CALLS_ENABLED && item.type !== 'text'}
                       style={{ paddingVertical: SPACE.md, paddingHorizontal: SPACE.xxl }}
                     />
                   </View>

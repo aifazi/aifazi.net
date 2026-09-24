@@ -187,7 +187,7 @@ export default function NotificationBell({ forumUser }) {
         </svg>
         {unreadCount > 0 && (
           <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16,
-            borderRadius: 8, background: 'var(--green)', color: '#000',
+            borderRadius: 'var(--comp-badge-radius, 8px)', background: 'var(--comp-badge-bg, var(--green))', color: 'var(--comp-btn-text, #000)', border: 'var(--comp-badge-border, none)',
             fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>
             {unreadCount > 9 ? '9+' : unreadCount}

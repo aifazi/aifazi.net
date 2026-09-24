@@ -76,24 +76,26 @@ function useIsMobile(bp = 768) {
 const S = {
   mainPad: '24px',
   input: {
-    background: 'var(--bg3)', border: '1px solid var(--border)',
+    background: 'var(--comp-input-bg, var(--bg3))', border: '1px solid var(--comp-input-border, var(--border))',
     color: 'var(--text)', fontFamily: 'var(--font-display)',
     fontSize: 15, padding: '12px 16px', outline: 'none', width: '100%',
-    transition: 'border-color 0.2s, box-shadow 0.2s', borderRadius: 10,
+    transition: 'border-color 0.2s, box-shadow 0.2s', borderRadius: 'var(--comp-input-radius, 10px)',
   },
   label: {
     fontFamily: 'var(--font-mono)', fontSize: 10,
     letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase',
     display: 'block', marginBottom: 6
   },
-  btn: (color = 'var(--green)', textColor = '#000') => ({
+  btn: (color = 'var(--comp-btn-bg, var(--green))', textColor = 'var(--comp-btn-text, #000)') => ({
     fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
     padding: '10px 20px', background: color, color: textColor,
-    border: 'none', cursor: 'pointer', transition: 'opacity 0.2s', borderRadius: 8,
+    border: 'none', cursor: 'pointer', transition: 'opacity 0.2s, box-shadow 0.2s',
+    borderRadius: 'var(--comp-btn-radius, 8px)', boxShadow: 'var(--comp-btn-shadow, none)',
   }),
   card: {
-    background: 'var(--bg2)', border: '1px solid var(--border)',
-    padding: 20, marginBottom: 8, borderRadius: 12,
+    background: 'var(--comp-card-bg, var(--bg2))', border: 'var(--comp-card-border, 1px solid var(--border))',
+    padding: 20, marginBottom: 8, borderRadius: 'var(--comp-card-radius, 12px)',
+    boxShadow: 'var(--comp-card-shadow, none)',
     transition: 'border-color 0.2s, box-shadow 0.2s',
   },
   // -- Reusable page section header --

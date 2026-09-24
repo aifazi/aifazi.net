@@ -45,7 +45,7 @@ from utils.oauth_state import (
 try:
     import httpx as _httpx
 except ImportError:
-    _httpx = None
+    _httpx = None  # type: ignore[assignment]  # optional dep; guarded at use sites
 
 log = logging.getLogger("authentik_oidc")
 router = APIRouter()

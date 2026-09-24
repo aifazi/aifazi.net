@@ -56,15 +56,16 @@ export class ErrorBoundary extends Component {
           <button
             onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload() }}
             style={{
-              background: '#00ff88',
-              color: '#000',
-              border: 'none',
+              background: 'var(--comp-btn-bg, var(--green))',
+              color: 'var(--comp-btn-text, #000)',
+              border: 'var(--comp-btn-border, none)',
               padding: '10px 24px',
               fontSize: 12,
               fontWeight: 700,
               letterSpacing: 2,
               cursor: 'pointer',
-              borderRadius: 4,
+              borderRadius: 'var(--comp-btn-radius, 4px)',
+              boxShadow: 'var(--comp-btn-shadow, none)',
               fontFamily: 'monospace',
             }}
           >

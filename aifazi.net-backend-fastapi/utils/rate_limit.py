@@ -15,6 +15,27 @@ import time
 
 log = logging.getLogger("rate_limit")
 
+
+def _is_production() -> bool:
+    """True when running in production (fail-closed behavior applies)."""
+    return os.getenv("ENV", "production") == "production" or os.getenv("VERCEL", "") == "1"
+
+
+def _require_redis_config() -> None:
+    """Fail closed at startup when Redis is not configured in production.
+
+    Call this from application startup so a production deploy without
+    REDIS_URL / UPSTASH_REDIS_REST_URL+TOKEN refuses to boot instead of
+    silently running per-instance in-memory rate limiting.
+    """
+    if _is_production() and not os.getenv("REDIS_URL") and not (
+        os.getenv("UPSTASH_REDIS_REST_URL") and os.getenv("UPSTASH_REDIS_REST_TOKEN")
+    ):
+        raise RuntimeError(
+            "Redis is not configured (REDIS_URL or UPSTASH_REDIS_REST_URL/TOKEN). "
+            "Refusing to start in production: rate limiting would be per-instance only."
+        )
+
 # In-memory fallback for local dev / when Redis not configured
 _rl_store_local: dict[str, list[float]] = {}
 _rl_last_cleanup: float = 0.0
@@ -22,6 +43,7 @@ _RL_CLEANUP_INTERVAL = 300
 
 # IP ban cache (in-memory with TTL, refreshed from DB)
 _ip_bans_cache: dict = {"networks": [], "fetched_at": 0.0}
+_ip_bans_degraded: bool = False
 _IP_BANS_TTL = 60.0
 
 # 2FA lockout storage (distributed via Redis, in-memory fallback)
@@ -145,10 +167,12 @@ def _get_redis():
     token = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 
     if not url or not token:
-        if os.getenv("ENV", "production") == "production":
-            log.error("Redis not configured — rate limiting is in-memory only (not distributed). Set REDIS_URL or UPSTASH_REDIS_REST_URL/TOKEN.")
-        else:
-            log.info("Redis not configured — using in-memory rate limiting (dev mode)")
+        if _is_production():
+            raise RuntimeError(
+                "Redis is not configured (REDIS_URL or UPSTASH_REDIS_REST_URL/TOKEN). "
+                "Refusing to run in production: rate limiting would be per-instance only."
+            )
+        log.info("Redis not configured — using in-memory rate limiting (dev mode)")
         _redis_available = False
         return None
 
@@ -255,8 +279,12 @@ import ipaddress
 
 
 def _refresh_ip_bans(force: bool = False) -> None:
-    """Refresh IP ban cache from database."""
-    global _ip_bans_cache
+    """Refresh IP ban cache from database.
+
+    Fail-closed: a DB error marks the cache degraded (instead of silently
+    keeping the stale set) so _ip_is_banned denies rather than allows.
+    """
+    global _ip_bans_cache, _ip_bans_degraded
     now = time.monotonic()
     if not force and now - _ip_bans_cache["fetched_at"] < _IP_BANS_TTL:
         return
@@ -277,17 +305,25 @@ def _refresh_ip_bans(force: bool = False) -> None:
                     continue
         _ip_bans_cache["networks"] = nets
         _ip_bans_cache["fetched_at"] = now
-    except Exception:
+        _ip_bans_degraded = False
+    except Exception as e:
+        log.warning("IP bans refresh failed — failing closed (deny): %s", e)
         _ip_bans_cache["fetched_at"] = now
+        _ip_bans_degraded = True
 
 
 def _ip_is_banned(ip: str) -> bool:
-    """Check if an IP is banned."""
+    """Check if an IP is banned. Fail-closed: when the ban directory is
+    degraded (DB unreachable), deny instead of allowing."""
+    if _ip_bans_degraded:
+        return True
     try:
         addr = ipaddress.ip_address(ip.split("%")[0])
     except ValueError:
         return False
     _refresh_ip_bans()
+    if _ip_bans_degraded:
+        return True
     for net in _ip_bans_cache["networks"]:
         try:
             if addr in net:

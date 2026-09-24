@@ -34,6 +34,7 @@ import { openInApp } from '@/src/lib/url'
 import { extractUrl, isImageUrl } from '@/src/lib/links'
 import { withAlpha, contrastText } from '@/src/lib/color'
 import { isOnline, enqueue, flushQueue } from '@/src/lib/offlineQueue'
+import { CALLS_ENABLED } from '@/src/lib/calls'
 import NetInfo from '@react-native-community/netinfo'
 
 interface LinkPreview {
@@ -159,9 +160,10 @@ function MessageRow(props: RowProps) {
                 </Text>
                 <TouchableOpacity
                   onPress={onJoinCall}
+                  disabled={!CALLS_ENABLED}
                   accessibilityRole="button"
                   accessibilityLabel={mine ? 'Join call' : 'Accept call'}
-                  style={{ backgroundColor: c.accent, borderRadius: 999, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.sm, marginTop: SPACE.lg }}
+                  style={{ backgroundColor: c.accent, borderRadius: 999, paddingHorizontal: SPACE.xxl, paddingVertical: SPACE.sm, marginTop: SPACE.lg, opacity: CALLS_ENABLED ? 1 : 0.4 }}
                 >
                   <Text style={{ color: c.onAccent, fontWeight: '800', fontSize: FONT.md }}>{mine ? 'JOIN' : 'ACCEPT'}</Text>
                 </TouchableOpacity>
@@ -735,6 +737,7 @@ export default function DMThreadScreen() {
   // Start a DM call: open the call screen and ring the peer via a `call`
   // message + push so they can accept from either platform.
   const startCall = useCallback(() => {
+    if (!CALLS_ENABLED) return
     if (!thread_id) return
     router.push(`/call?mode=dm&thread_id=${encodeURIComponent(thread_id)}&peer=${encodeURIComponent(peer || '')}` as Href)
     api.post(dmLiveKitInvitePath(thread_id)).catch(() => {})
@@ -742,6 +745,7 @@ export default function DMThreadScreen() {
 
   // Join an incoming/outgoing call from a rendered `call` message card.
   const joinCall = useCallback(() => {
+    if (!CALLS_ENABLED) return
     if (!thread_id) return
     router.push(`/call?mode=dm&thread_id=${encodeURIComponent(thread_id)}&peer=${encodeURIComponent(peer || '')}` as Href)
   }, [thread_id, peer, router])
@@ -760,6 +764,7 @@ export default function DMThreadScreen() {
         <Text style={{ color: c.text, fontSize: FONT.card, fontWeight: '800', flex: 1 }} numberOfLines={1}>
           {peer || 'Direct message'}
         </Text>
+        {CALLS_ENABLED ? (
         <TouchableOpacity
           onPress={startCall}
           hitSlop={10}
@@ -768,6 +773,7 @@ export default function DMThreadScreen() {
         >
           <Icon name="phone" size={FONT.section} color={c.text} />
         </TouchableOpacity>
+        ) : null}
         <TouchableOpacity onPress={() => setShowSearch(s => !s)} hitSlop={10}>
           <Icon name="search" size={FONT.section} color={showSearch ? c.accent : c.muted} />
         </TouchableOpacity>

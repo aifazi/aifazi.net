@@ -27,9 +27,14 @@ if dsn.startswith("https://"):
     sentry_sdk.init(dsn=dsn, traces_sample_rate=0.1,
                     environment=os.getenv("ENV", "production"))
 
-from utils.rate_limit import _ip_is_banned, _refresh_ip_bans, check_rate_limit
+from utils.rate_limit import _ip_is_banned, _refresh_ip_bans, _require_redis_config, check_rate_limit
 from utils.request_ip import client_ip
 from utils.scheduler import scheduler, set_event_loop
+
+# Fail-closed: refuse to boot in production without Redis (distributed rate
+# limiting); otherwise every instance would silently enforce per-instance
+# in-memory limits. Dev (non-production) stays lenient.
+_require_redis_config()
 
 log = logging.getLogger("main")
 
@@ -68,6 +73,31 @@ from starlette.responses import Response
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net")
 CDN_URL = os.getenv("CDN_URL", "https://cdn.aifazi.net").rstrip("/")
+
+
+def _validate_frontend_url(value: str) -> str:
+    """Fail-closed FRONTEND_URL allowlist (open-redirect/CORS trust root).
+
+    Production: only https://aifazi.net (and www) is accepted — anything else
+    raises at startup. Dev: http://localhost:<port> / http://127.0.0.1:<port>
+    are additionally accepted; anything else logs a warning.
+    """
+    raw = (value or "").strip().rstrip("/") or "https://aifazi.net"
+    prod_allowed = {"https://aifazi.net", "https://www.aifazi.net"}
+    if _IS_PRODUCTION:
+        if raw not in prod_allowed:
+            raise RuntimeError(
+                f"FRONTEND_URL={raw!r} is not allowlisted in production "
+                "(expected https://aifazi.net). Refusing to start."
+            )
+        return raw
+    if raw in prod_allowed or raw.startswith(("http://localhost:", "http://127.0.0.1:")):
+        return raw
+    log.warning("FRONTEND_URL=%r is not on the dev allowlist; continuing (non-production)", raw)
+    return raw
+
+
+FRONTEND_URL = _validate_frontend_url(FRONTEND_URL)
 
 _CORS_ALLOW_HEADERS = "Authorization, Content-Type, X-Internal-Token, X-CSRF-Token, Accept, Origin, RSC, Next-Router-State-Tree, Next-Url, Next-Router-Prefetch, Next-Router-Segment-Prefetch"
 

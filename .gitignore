@@ -83,3 +83,12 @@ docker-compose.web.yml
 release.keystore
 google-services.json
 GoogleService-Info.plist
+
+# Test / coverage / tooling artifacts (local only, never commit)
+test-results/
+playwright-report/
+coverage/
+.wrangler/
+.mypy_cache/
+.ruff_cache/
+bandit-report.json
