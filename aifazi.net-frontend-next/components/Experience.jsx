@@ -71,7 +71,7 @@ function ExperienceItem({ job, i }) {
               <EditableText contentKey={`exp.${i}.company`} defaultValue={job.company} />
             </div>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: job.active ? 'var(--green)' : 'var(--muted)', padding: '4px 10px', border: `1px solid ${job.active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, background: job.active ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent', height: 'fit-content' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: job.active ? 'var(--green)' : 'var(--muted)', padding: '4px 10px', border: `1px solid ${job.active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, background: job.active ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent', height: 'fit-content' }}>
             <EditableText contentKey={`exp.${i}.period`} defaultValue={job.period} />
           </div>
         </div>

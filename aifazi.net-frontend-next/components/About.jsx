@@ -49,7 +49,7 @@ function QuickInfo() {
             }}>{icon}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{
-                fontFamily: 'var(--font-mono)', fontSize: 8,
+                fontFamily: 'var(--font-mono)', fontSize: 11,
                 letterSpacing: 2, color: 'var(--muted)',
                 marginBottom: 2,
               }}>{label}</div>

@@ -92,9 +92,9 @@ export default function FiveMGuides() {
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '80px 24px 60px' }}>
         <a href={homeHref} style={{ fontSize: 12, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 1 }}>&#8592; BACK TO FIVEM</a>
         <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <a href={rulesHref} style={{ padding: '8px 10px', border: `1px solid ${R}33`, color: R, textDecoration: 'none', borderRadius: 7, fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>RULES</a>
-          <a href={whitelistHref} style={{ padding: '8px 10px', border: `1px solid ${C}33`, color: C, textDecoration: 'none', borderRadius: 7, fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>WHITELIST</a>
-          <a href={storeHref} style={{ padding: '8px 10px', border: `1px solid ${Y}33`, color: Y, textDecoration: 'none', borderRadius: 7, fontSize: 10, letterSpacing: 2, fontWeight: 800 }}>STORE</a>
+          <a href={rulesHref} style={{ padding: '8px 10px', border: `1px solid ${R}33`, color: R, textDecoration: 'none', borderRadius: 7, fontSize: 11, letterSpacing: 2, fontWeight: 800 }}>RULES</a>
+          <a href={whitelistHref} style={{ padding: '8px 10px', border: `1px solid ${C}33`, color: C, textDecoration: 'none', borderRadius: 7, fontSize: 11, letterSpacing: 2, fontWeight: 800 }}>WHITELIST</a>
+          <a href={storeHref} style={{ padding: '8px 10px', border: `1px solid ${Y}33`, color: Y, textDecoration: 'none', borderRadius: 7, fontSize: 11, letterSpacing: 2, fontWeight: 800 }}>STORE</a>
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 32, marginBottom: 40 }}>
@@ -113,7 +113,7 @@ export default function FiveMGuides() {
                 <div style={{ fontSize: 30 }}>{g.icon}</div>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1, color: 'var(--text)' }}>{g.title}</div>
-                  <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>{g.mins} MIN READ</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>{g.mins} MIN READ</div>
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

@@ -3908,3 +3908,20 @@ footer[data-footer-style]:not([data-footer-style="cyber"])::after {
 
 /* Per-theme design system lives in theme-library.css */
 @import './theme-library.css';
+
+
+/* ══════════════════════════════════════════
+   A11Y — keyboard parity for hover cards
+   ══════════════════════════════════════════ */
+[role="button"]:focus-visible,
+button:focus-visible,
+a:focus-visible,
+.ec-cat-card:focus-visible,
+.clickable-card:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+/* Cards that only change on :hover also show focus state */
+[role="button"]:focus-visible {
+  filter: brightness(1.08);
+}

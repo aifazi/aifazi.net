@@ -37,17 +37,17 @@ function Row({ keyName, value, onEdit, onDelete, onHistory, dirty }) {
       <div style={{ width: 190, flexShrink: 0, minWidth: 150 }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', wordBreak: 'break-all' }}>{keyName}</div>
         <div style={{ display: 'flex', gap: 4, marginTop: 3 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: typeColor, border: `1px solid ${typeColor}40`, borderRadius: 3, padding: '1px 5px' }}>{type.toUpperCase()}</span>
-          {dirty && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: '#ffb74d', border: '1px solid #ffb74d40', borderRadius: 3, padding: '1px 5px' }}>DIRTY</span>}
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: typeColor, border: `1px solid ${typeColor}40`, borderRadius: 3, padding: '1px 5px' }}>{type.toUpperCase()}</span>
+          {dirty && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: '#ffb74d', border: '1px solid #ffb74d40', borderRadius: 3, padding: '1px 5px' }}>DIRTY</span>}
         </div>
       </div>
       <div style={{ flex: 1, minWidth: 0, padding: '0 8px' }}>
         <Preview value={value} />
       </div>
       <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-        <button onClick={onHistory} style={{ ...S.btn('transparent', 'var(--yellow)'), border: '1px solid rgba(255,215,0,0.35)', fontSize: 9, padding: '5px 10px' }}>HISTORY</button>
-        <button onClick={onEdit} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 9, padding: '5px 10px' }}>EDIT</button>
-        <button onClick={onDelete} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.35)', fontSize: 9, padding: '5px 10px' }}>DEL</button>
+        <button onClick={onHistory} style={{ ...S.btn('transparent', 'var(--yellow)'), border: '1px solid rgba(255,215,0,0.35)', fontSize: 11, padding: '5px 10px' }}>HISTORY</button>
+        <button onClick={onEdit} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 11, padding: '5px 10px' }}>EDIT</button>
+        <button onClick={onDelete} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.35)', fontSize: 11, padding: '5px 10px' }}>DEL</button>
       </div>
     </div>
   )
@@ -172,15 +172,15 @@ export default function ContentManager() {
         title="Site Content Manager"
         subtitle="Every EditableText block on every page — search, edit, add or delete. Keys are namespaced page.section.field."
         actions={<>
-          <button onClick={fetchAll} style={{ ...S.btn('var(--bg3)', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '8px 14px' }}> REFRESH</button>
-          <button onClick={() => setAdding(a => !a)} style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', fontSize: 10, padding: '8px 14px' }}>+ ADD BLOCK</button>
+          <button onClick={fetchAll} style={{ ...S.btn('var(--bg3)', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '8px 14px' }}> REFRESH</button>
+          <button onClick={() => setAdding(a => !a)} style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', fontSize: 11, padding: '8px 14px' }}>+ ADD BLOCK</button>
         </>}
       />
 
       {/* Add-block form */}
       {adding && (
         <div style={{ border: '1px solid rgba(0,255,136,0.3)', background: 'rgba(0,255,136,0.04)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--green)', marginBottom: 10 }}>NEW CONTENT BLOCK</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--green)', marginBottom: 10 }}>NEW CONTENT BLOCK</div>
           <NewBlockForm
             onCancel={() => setAdding(false)}
             onAdd={async (k, v) => { if (all[k] !== undefined) { toast.error('Key already exists', { title: 'Error' }); return } await addKey(k, v) }}
@@ -199,13 +199,13 @@ export default function ContentManager() {
         <div style={{ display: 'flex', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden', flexWrap: 'wrap' }}>
           {prefixes.map(p => (
             <button key={p} onClick={() => setPrefix(p)} style={{
-              fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 11px', cursor: 'pointer',
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '7px 11px', cursor: 'pointer',
               background: prefix === p ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
               color: prefix === p ? 'var(--green)' : 'var(--muted)', border: 'none', borderRight: '1px solid var(--border)',
             }}>{p === 'all' ? 'ALL' : p}</button>
           ))}
         </div>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{filtered.length} blocks</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{filtered.length} blocks</span>
       </div>
 
       {/* List */}
@@ -223,9 +223,9 @@ export default function ContentManager() {
 
       {/* History modal */}
       {historyKey && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', padding: 16 }} onClick={() => setHistoryKey(null)}>
-          <div style={{ ...modalStyle, maxWidth: 620 }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--yellow)', marginBottom: 6 }}>VERSION HISTORY</div>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', padding: 16 }} onClick={() => setHistoryKey(null)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div style={{ ...modalStyle, maxWidth: 620 }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--yellow)', marginBottom: 6 }}>VERSION HISTORY</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', wordBreak: 'break-all', marginBottom: 12 }}>{historyKey}</div>
             {historyLoading ? (
               <div style={{ display: 'grid', gap: 8 }}>{[0,1,2].map(i => <div key={i} className="sk-block" style={{ height: 42 }} />)}</div>
@@ -237,18 +237,18 @@ export default function ContentManager() {
                   <div key={rev.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', background: 'var(--bg)' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>{new Date(rev.created_at).toLocaleString()}</span>
-                        {rev.editor && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.3)', borderRadius: 3, padding: '1px 6px' }}>{rev.editor}</span>}
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>{new Date(rev.created_at).toLocaleString()}</span>
+                        {rev.editor && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.3)', borderRadius: 3, padding: '1px 6px' }}>{rev.editor}</span>}
                       </div>
                       <Preview value={rev.value} />
                     </div>
-                    <button onClick={() => restoreRevision(rev)} style={{ ...S.btn('transparent', 'var(--yellow)'), border: '1px solid rgba(255,215,0,0.35)', fontSize: 9, padding: '5px 10px', flexShrink: 0 }}>RESTORE</button>
+                    <button onClick={() => restoreRevision(rev)} style={{ ...S.btn('transparent', 'var(--yellow)'), border: '1px solid rgba(255,215,0,0.35)', fontSize: 11, padding: '5px 10px', flexShrink: 0 }}>RESTORE</button>
                   </div>
                 ))}
               </div>
             )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14 }}>
-              <button onClick={() => setHistoryKey(null)} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '8px 14px' }}>CLOSE</button>
+              <button onClick={() => setHistoryKey(null)} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '8px 14px' }}>CLOSE</button>
             </div>
           </div>
         </div>
@@ -256,9 +256,9 @@ export default function ContentManager() {
 
       {/* Edit modal */}
       {editing && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', padding: 16 }} onClick={() => setEditing(null)}>
-          <div style={modalStyle} onClick={e => e.stopPropagation()}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 6 }}>EDIT BLOCK</div>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', padding: 16 }} onClick={() => setEditing(null)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div style={modalStyle} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 6 }}>EDIT BLOCK</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', wordBreak: 'break-all', marginBottom: 12 }}>{editing.key}</div>
             <textarea
               value={editing.text}
@@ -266,10 +266,10 @@ export default function ContentManager() {
               spellCheck={false}
               style={{ flex: 1, minHeight: 260, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 12, fontFamily: 'var(--font-mono)', padding: 10, borderRadius: 8, resize: 'vertical', lineHeight: 1.6 }}
             />
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>Strings save as-is; JSON parses into structured values.</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>Strings save as-is; JSON parses into structured values.</div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14 }}>
-              <button onClick={() => setEditing(null)} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '8px 14px' }}>CANCEL</button>
-              <button onClick={confirmEdit} disabled={savingKey === editing.key} style={{ ...S.btn('color-mix(in srgb, var(--cyan) 12%, transparent)', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 45%, transparent)', fontSize: 10, padding: '8px 14px' }}>{savingKey === editing.key ? 'SAVING…' : 'SAVE'}</button>
+              <button onClick={() => setEditing(null)} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '8px 14px' }}>CANCEL</button>
+              <button onClick={confirmEdit} disabled={savingKey === editing.key} style={{ ...S.btn('color-mix(in srgb, var(--cyan) 12%, transparent)', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 45%, transparent)', fontSize: 11, padding: '8px 14px' }}>{savingKey === editing.key ? 'SAVING…' : 'SAVE'}</button>
             </div>
           </div>
         </div>
@@ -299,10 +299,10 @@ function NewBlockForm({ onAdd, onCancel, existingKeys }) {
         <input value={key} onChange={e => { setKey(e.target.value); setError('') }} placeholder="page.section.field" spellCheck={false} style={{ ...S.input, fontSize: 12, padding: '9px 12px', fontFamily: 'var(--font-mono)' }} />
       </div>
       <textarea value={value} onChange={e => setValue(e.target.value)} placeholder="Value — plain text, or JSON for structured content" spellCheck={false} style={{ ...S.input, fontSize: 12, padding: '9px 12px', fontFamily: 'var(--font-mono)', minHeight: 90, resize: 'vertical', lineHeight: 1.5 }} />
-      {error && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)' }}>{error}</div>}
+      {error && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)' }}>{error}</div>}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button onClick={onCancel} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '7px 12px' }}>CANCEL</button>
-        <button onClick={submit} style={{ ...S.btn('color-mix(in srgb, var(--green) 12%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 45%, transparent)', fontSize: 10, padding: '7px 12px' }}>CREATE BLOCK</button>
+        <button onClick={onCancel} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '7px 12px' }}>CANCEL</button>
+        <button onClick={submit} style={{ ...S.btn('color-mix(in srgb, var(--green) 12%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 45%, transparent)', fontSize: 11, padding: '7px 12px' }}>CREATE BLOCK</button>
       </div>
     </div>
   )

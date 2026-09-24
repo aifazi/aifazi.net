@@ -175,7 +175,7 @@ function ProjectCard({ project, index }) {
             {project.preview
               ? <span />
               : <span style={{ fontSize: 30, display: 'inline-block', animation: 'float 6s ease-in-out infinite', animationDelay: `${index * 0.5}s` }}>{project.icon}</span>}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{project.num}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{project.num}</span>
           </div>
 
           {/* Title */}
@@ -194,7 +194,7 @@ function ProjectCard({ project, index }) {
               {(project.tags || []).map(t => <span key={t} className="tag" style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t}</span>)}
             </div>
             {project.link && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 2, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 14 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 14 }}>
                 VIEW PROJECT →
               </div>
             )}

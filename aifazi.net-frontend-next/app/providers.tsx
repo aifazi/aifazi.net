@@ -101,7 +101,7 @@ function ImpersonationBanner() {
   return (
     <div style={{ background: '#f59e0b', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '8px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, fontWeight: 700, flexShrink: 0, zIndex: 2000, flexWrap: 'wrap' }}>
       <span>👁 VIEWING AS {user} — actions are audited · admin session preserved</span>
-      <button onClick={onExit} disabled={busy} style={{ background: '#000', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '5px 14px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1 }}>EXIT IMPERSONATION</button>
+      <button onClick={onExit} disabled={busy} style={{ background: '#000', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '5px 14px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1 }}>EXIT IMPERSONATION</button>
     </div>
   )
 }

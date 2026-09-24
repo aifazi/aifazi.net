@@ -181,7 +181,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
           onMouseDown={e => { e.preventDefault(); setShowStyleMenu(v => !v); setShowColorMenu(false); setShowLinkInput(false) }}
         >
           <span>{currentStyle}</span>
-          <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
+          <span style={{ fontSize: 11, opacity: 0.6 }}>▾</span>
         </button>
         {showStyleMenu && (
           <div style={{
@@ -206,7 +206,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
                 onMouseLeave={e => e.currentTarget.style.background = currentStyle === s.label ? 'rgba(0,255,136,0.08)' : 'transparent'}
               >
                 {s.label}
-                {currentStyle === s.label && <span style={{ color: 'var(--green)', fontSize: 10 }}>✓</span>}
+                {currentStyle === s.label && <span style={{ color: 'var(--green)', fontSize: 11 }}>✓</span>}
               </div>
             ))}
           </div>
@@ -444,7 +444,7 @@ export function EditableText({ contentKey, defaultValue, as: Tag = 'span', style
         }
         <span style={{
           position: 'absolute', top: -20, right: 0, zIndex: 10,
-          fontFamily: 'monospace', fontSize: 9, letterSpacing: 1,
+          fontFamily: 'monospace', fontSize: 11, letterSpacing: 1,
           color: 'rgba(0,255,136,0.6)',
           background: 'rgba(0,255,136,0.1)',
           border: '1px solid rgba(0,255,136,0.3)',
@@ -555,7 +555,7 @@ function EmojiPicker({ value, onChange }) {
             transition: 'border-color 0.2s',
           }}
           title="Click to pick emoji"
-        >{value || '❓'}</div>
+         role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>{value || '❓'}</div>
         <input
           value={value || ''}
           onChange={e => onChange(e.target.value)}
@@ -574,7 +574,7 @@ function EmojiPicker({ value, onChange }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, padding: 8, borderBottom: '1px solid rgba(0,212,255,0.1)' }}>
             {Object.keys(EMOJI_CATEGORIES).map(cat => (
               <button key={cat} onClick={() => setActiveTab(cat)} style={{
-                padding: '3px 8px', fontSize: 9, letterSpacing: 1,
+                padding: '3px 8px', fontSize: 11, letterSpacing: 1,
                 background: activeTab === cat ? 'rgba(0,255,136,0.15)' : 'transparent',
                 border: `1px solid ${activeTab === cat ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.08)'}`,
                 color: activeTab === cat ? '#00ff88' : '#4a6070',
@@ -597,7 +597,7 @@ function EmojiPicker({ value, onChange }) {
             ))}
           </div>
           {/* Lordicon tip */}
-          <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(0,212,255,0.1)', fontSize: 10, color: '#4a6070', lineHeight: 1.6, fontFamily: 'monospace' }}>
+          <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(0,212,255,0.1)', fontSize: 11, color: '#4a6070', lineHeight: 1.6, fontFamily: 'monospace' }}>
             💡 <span style={{ color: '#00d4ff' }}>Want animated icons?</span> Get free ones at{' '}
             <a href="https://lordicon.com" target="_blank" rel="noopener" style={{ color: '#00ff88' }}>lordicon.com</a>
             {' '}→ copy the URL → paste it in the icon field above
@@ -623,7 +623,7 @@ function IconField({ value, onChange }) {
           transition: 'border-color 0.2s',
         }}
         title="Click to pick icon"
-      >
+       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <IconDisplay value={value} size={36} />
       </div>
       {open && (
@@ -695,19 +695,19 @@ export function EditableList({ contentKey, defaultValue, renderItem, fields, add
         </div>
       ))}
 
-      <button onClick={() => openEdit(-1)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '8px 16px', marginTop: 12, background: 'rgba(0,255,136,0.08)', border: '1px dashed rgba(0,255,136,0.4)', color: 'var(--green)', cursor: 'pointer', transition: 'all 0.2s' }}
+      <button onClick={() => openEdit(-1)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '8px 16px', marginTop: 12, background: 'rgba(0,255,136,0.08)', border: '1px dashed rgba(0,255,136,0.4)', color: 'var(--green)', cursor: 'pointer', transition: 'all 0.2s' }}
         onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,255,136,0.15)'}
         onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,255,136,0.08)'}
       >{addLabel}</button>
 
       {editIdx !== null && (
         <>
-          <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} />
+          <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px rgba(0,255,136,0.15)', padding: '32px', width: '100%', maxWidth: 520, zIndex: 99996, maxHeight: '80vh', overflowY: 'auto' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD ITEM' : '✎ EDIT ITEM'}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD ITEM' : '✎ EDIT ITEM'}</div>
             {fields.map(field => (
               <div key={field.key} style={{ marginBottom: 16 }}>
-                <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{field.label}</label>
+                <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{field.label}</label>
                 {field.type === 'emoji'
                   ? <IconField value={draft[field.key] ?? ''} onChange={val => setDraft(d => ({ ...d, [field.key]: val }))} />
                   : field.type === 'textarea'
@@ -743,8 +743,8 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
 
   const handleExit = () => { if (pendingCount > 0) setConfirmDiscard(true); else onDiscard() }
 
-  const discardConfirmBtn = { flex: 1, padding: '7px 0', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.5)', color: '#ff4757', fontFamily: "'Share Tech Mono', monospace", fontSize: 9, letterSpacing: 1, cursor: 'pointer', borderRadius: 4 }
-  const keepEditingBtn   = { flex: 1, padding: '7px 0', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#4a6070', fontFamily: "'Share Tech Mono', monospace", fontSize: 9, letterSpacing: 1, cursor: 'pointer', borderRadius: 4 }
+  const discardConfirmBtn = { flex: 1, padding: '7px 0', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.5)', color: '#ff4757', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 1, cursor: 'pointer', borderRadius: 4 }
+  const keepEditingBtn   = { flex: 1, padding: '7px 0', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#4a6070', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 1, cursor: 'pointer', borderRadius: 4 }
 
   return (
     <div style={{ position: 'fixed', bottom: 24, left: 24, zIndex: 999990, minWidth: 280,
@@ -760,15 +760,15 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
           {/* Status */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#00ff88', flexShrink: 0, boxShadow: '0 0 6px #00ff88', animation: 'emBlink 1.8s infinite' }} />
-            <span style={{ fontSize: 9, letterSpacing: 3, color: '#00ff88' }}>PREVIEW EDIT MODE</span>
-            <span style={{ marginLeft: 'auto', fontSize: 9, letterSpacing: 1,
+            <span style={{ fontSize: 11, letterSpacing: 3, color: '#00ff88' }}>PREVIEW EDIT MODE</span>
+            <span style={{ marginLeft: 'auto', fontSize: 11, letterSpacing: 1,
               color: pendingCount > 0 ? '#00d4ff' : '#2a3a48',
               background: pendingCount > 0 ? 'rgba(0,212,255,0.1)' : 'transparent',
               border: pendingCount > 0 ? '1px solid rgba(0,212,255,0.3)' : '1px solid transparent',
               padding: '1px 7px', borderRadius: 10, transition: 'all 0.3s',
             }}>{pendingCount} change{pendingCount !== 1 ? 's' : ''}</span>
           </div>
-          {saveError && <div style={{ fontSize: 9, color: '#ff4757', letterSpacing: 1, background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.3)', padding: '5px 8px', borderRadius: 4 }}>⚠ {saveError}</div>}
+          {saveError && <div style={{ fontSize: 11, color: '#ff4757', letterSpacing: 1, background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.3)', padding: '5px 8px', borderRadius: 4 }}>⚠ {saveError}</div>}
           <button
             type="button"
             onClick={() => setShowDiff(true)}
@@ -779,7 +779,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
               border: `1px solid ${pendingCount > 0 ? 'rgba(255,183,77,0.35)' : 'rgba(255,183,77,0.12)'}`,
               color: pendingCount > 0 ? '#ffb74d' : '#2a3a48',
               fontFamily: "'Share Tech Mono', monospace",
-              fontSize: 9,
+              fontSize: 11,
               letterSpacing: 2,
               cursor: saving || pendingCount === 0 ? 'not-allowed' : 'pointer',
               borderRadius: 5,
@@ -798,7 +798,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
               border: '1px solid rgba(0,212,255,0.28)',
               color: '#00d4ff',
               fontFamily: "'Share Tech Mono', monospace",
-              fontSize: 9,
+              fontSize: 11,
               letterSpacing: 2,
               cursor: saving ? 'not-allowed' : 'pointer',
               borderRadius: 5,
@@ -809,7 +809,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
           >GSAP ANIMATION LIBRARY</button>
           {confirmDiscard ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontSize: 10, color: '#ff4757', letterSpacing: 1 }}>Discard {pendingCount} change{pendingCount !== 1 ? 's' : ''}?</div>
+              <div style={{ fontSize: 11, color: '#ff4757', letterSpacing: 1 }}>Discard {pendingCount} change{pendingCount !== 1 ? 's' : ''}?</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={onDiscard} style={discardConfirmBtn}>YES, DISCARD</button>
                 <button onClick={() => setConfirmDiscard(false)} style={keepEditingBtn}>KEEP EDITING</button>
@@ -818,12 +818,12 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
           ) : (
             <div style={{ display: 'flex', gap: 6 }}>
               <button onClick={onSave} disabled={saving || pendingCount === 0}
-                style={{ flex: 1, padding: '9px 0', background: pendingCount > 0 && !saving ? 'rgba(0,255,136,0.15)' : 'rgba(0,255,136,0.04)', border: `1px solid ${pendingCount > 0 && !saving ? 'rgba(0,255,136,0.5)' : 'rgba(0,255,136,0.12)'}`, color: pendingCount > 0 && !saving ? '#00ff88' : '#2a3a48', fontFamily: "'Share Tech Mono', monospace", fontSize: 10, letterSpacing: 2, cursor: pendingCount > 0 && !saving ? 'pointer' : 'not-allowed', borderRadius: 5, transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '9px 0', background: pendingCount > 0 && !saving ? 'rgba(0,255,136,0.15)' : 'rgba(0,255,136,0.04)', border: `1px solid ${pendingCount > 0 && !saving ? 'rgba(0,255,136,0.5)' : 'rgba(0,255,136,0.12)'}`, color: pendingCount > 0 && !saving ? '#00ff88' : '#2a3a48', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 2, cursor: pendingCount > 0 && !saving ? 'pointer' : 'not-allowed', borderRadius: 5, transition: 'all 0.2s' }}
                 onMouseEnter={e => { if (pendingCount > 0 && !saving) e.currentTarget.style.background = 'rgba(0,255,136,0.25)' }}
                 onMouseLeave={e => { if (pendingCount > 0 && !saving) e.currentTarget.style.background = 'rgba(0,255,136,0.15)' }}
               >{saving ? '⟳ SAVING...' : '💾 SAVE'}</button>
               <button onClick={handleExit} disabled={saving}
-                style={{ flex: 1, padding: '9px 0', background: 'transparent', border: '1px solid rgba(255,71,87,0.35)', color: saving ? '#2a3a48' : '#ff4757', fontFamily: "'Share Tech Mono', monospace", fontSize: 10, letterSpacing: 2, cursor: saving ? 'not-allowed' : 'pointer', borderRadius: 5, transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '9px 0', background: 'transparent', border: '1px solid rgba(255,71,87,0.35)', color: saving ? '#2a3a48' : '#ff4757', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 2, cursor: saving ? 'not-allowed' : 'pointer', borderRadius: 5, transition: 'all 0.2s' }}
                 onMouseEnter={e => { if (!saving) e.currentTarget.style.background = 'rgba(255,71,87,0.1)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
               >✕ EXIT</button>
@@ -836,7 +836,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
       {/* ── Review Changes (diff preview) ─────────────────────────────────── */}
       {showDiff && (
         <>
-          <div onClick={() => setShowDiff(false)} style={{ position: 'fixed', inset: 0, zIndex: 999995, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} />
+          <div onClick={() => setShowDiff(false)} style={{ position: 'fixed', inset: 0, zIndex: 999995, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
           <div style={{
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 999996,
             width: '100%', maxWidth: 640, maxHeight: '80vh', overflowY: 'auto',
@@ -845,7 +845,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
             padding: '24px 28px', fontFamily: "'Share Tech Mono', monospace",
           }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-              <div style={{ fontSize: 10, letterSpacing: 3, color: '#ffb74d' }}>REVIEW CHANGES — {pendingCount} pending</div>
+              <div style={{ fontSize: 11, letterSpacing: 3, color: '#ffb74d' }}>REVIEW CHANGES — {pendingCount} pending</div>
               <button onClick={() => setShowDiff(false)} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#4a6070', cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
@@ -861,13 +861,13 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
                 return (
                   <div key={key} style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '10px 12px', background: 'rgba(255,255,255,0.02)' }}>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 10, color: '#c8d8e8', wordBreak: 'break-all' }}>{key}</span>
-                      <span style={{ fontSize: 8, color: '#ffb74d', border: '1px solid rgba(255,183,77,0.4)', borderRadius: 3, padding: '1px 5px' }}>{typeTag(oldVal)} → {typeTag(newVal)}</span>
+                      <span style={{ fontSize: 11, color: '#c8d8e8', wordBreak: 'break-all' }}>{key}</span>
+                      <span style={{ fontSize: 11, color: '#ffb74d', border: '1px solid rgba(255,183,77,0.4)', borderRadius: 3, padding: '1px 5px' }}>{typeTag(oldVal)} → {typeTag(newVal)}</span>
                     </div>
-                    <div style={{ fontSize: 9, color: '#4a6070', letterSpacing: 2, marginBottom: 2 }}>BEFORE</div>
-                    <div style={{ fontSize: 10, color: '#7a8ea0', maxHeight: 120, overflowY: 'auto', marginBottom: 6 }}>{show(oldVal)}</div>
-                    <div style={{ fontSize: 9, color: '#ffb74d', letterSpacing: 2, marginBottom: 2 }}>AFTER</div>
-                    <div style={{ fontSize: 10, color: '#00ff88', maxHeight: 120, overflowY: 'auto' }}>{show(newVal)}</div>
+                    <div style={{ fontSize: 11, color: '#4a6070', letterSpacing: 2, marginBottom: 2 }}>BEFORE</div>
+                    <div style={{ fontSize: 11, color: '#7a8ea0', maxHeight: 120, overflowY: 'auto', marginBottom: 6 }}>{show(oldVal)}</div>
+                    <div style={{ fontSize: 11, color: '#ffb74d', letterSpacing: 2, marginBottom: 2 }}>AFTER</div>
+                    <div style={{ fontSize: 11, color: '#00ff88', maxHeight: 120, overflowY: 'auto' }}>{show(newVal)}</div>
                   </div>
                 )
               })}
@@ -901,7 +901,7 @@ function SaveDiscardDialog({ pendingCount, onSave, onDiscard, saving }) {
         fontFamily: "'Share Tech Mono', monospace",
       }}>
         {/* Header */}
-        <div style={{ fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 6 }}>
+        <div style={{ fontSize: 11, letterSpacing: 3, color: 'var(--green)', marginBottom: 6 }}>
           {'// UNSAVED CHANGES'}
         </div>
         <div style={{ fontSize: 18, fontWeight: 700, color: '#c8d8e8', marginBottom: 10, letterSpacing: 1 }}>
@@ -955,7 +955,7 @@ function SaveDiscardDialog({ pendingCount, onSave, onDiscard, saving }) {
         </div>
 
         {/* Tip */}
-        <div style={{ marginTop: 18, fontSize: 9, letterSpacing: 1, color: '#2a3a48', textAlign: 'center' }}>
+        <div style={{ marginTop: 18, fontSize: 11, letterSpacing: 1, color: '#2a3a48', textAlign: 'center' }}>
           ESC · click outside to cancel (keep editing)
         </div>
       </div>
@@ -1091,17 +1091,17 @@ function ContentSearchPalette({ open, query, onQuery, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div onClick={e => e.stopPropagation()} style={{
         position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: 560, background: 'var(--bg2)', border: '1px solid var(--border)',
         borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflow: 'hidden',
-      }}>
+      }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
           <span style={{ fontSize: 13, opacity: 0.6 }}>🔍</span>
           <input autoFocus value={query} onChange={e => onQuery(e.target.value)} placeholder="Search content keys on this page…"
             spellCheck={false} style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13 }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>ESC</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>ESC</span>
         </div>
         <div style={{ maxHeight: 300, overflowY: 'auto', padding: 6 }}>
           {filtered.length === 0 ? (
@@ -1115,11 +1115,11 @@ function ContentSearchPalette({ open, query, onQuery, onClose }) {
               transition: 'background 0.15s',
             }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,212,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               <span style={{ color: 'var(--cyan)', wordBreak: 'break-all' }}>{t.key}</span>
-              <span style={{ display: 'block', color: 'var(--muted)', fontSize: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.text || '…'}</span>
+              <span style={{ display: 'block', color: 'var(--muted)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.text || '…'}</span>
             </button>
           ))}
         </div>
-        <div style={{ padding: '6px 14px', borderTop: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>
+        <div style={{ padding: '6px 14px', borderTop: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
           {filtered.length} / {targets.length} EDITABLES
         </div>
       </div>
@@ -1377,12 +1377,12 @@ export function EditableIcon({ contentKey, defaultValue = '❓', size = 36, styl
         }}
         onMouseEnter={e => e.currentTarget.style.outline = '2px solid var(--cyan)'}
         onMouseLeave={e => { if (!open) e.currentTarget.style.outline = '1px dashed rgba(0,212,255,0.3)' }}
-      >
+       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <IconDisplay value={value} size={size} />
         <span style={{
           position: 'absolute', bottom: -6, right: -6,
           background: 'var(--cyan)', color: '#000',
-          fontSize: 8, fontFamily: 'var(--font-mono)',
+          fontSize: 11, fontFamily: 'var(--font-mono)',
           padding: '1px 4px', borderRadius: 2, letterSpacing: 1,
           pointerEvents: 'none',
         }}>ICON</span>
@@ -1462,7 +1462,7 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
         <span style={{
           position: 'absolute', bottom: -8, right: -8,
           background: 'var(--cyan)', color: '#000',
-          fontSize: 8, fontFamily: 'var(--font-mono)',
+          fontSize: 11, fontFamily: 'var(--font-mono)',
           padding: '1px 5px', borderRadius: 2, letterSpacing: 1,
           pointerEvents: 'none',
         }}>IMAGE</span>
@@ -1472,28 +1472,28 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', fontFamily: 'var(--font-mono)', padding: 16,
-        }} onClick={() => setOpen(false)}>
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 12 }}>EDIT IMAGE · {contentKey}</div>
+        }} onClick={() => setOpen(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 12 }}>EDIT IMAGE · {contentKey}</div>
             <img src={safeImageSrc(draftUrl)} alt={draftAlt} style={{ width: '100%', maxHeight: 180, objectFit: 'contain', marginBottom: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }} onError={e => { e.currentTarget.style.opacity = 0.25 }} onLoad={e => { e.currentTarget.style.opacity = 1 }} />
             <div style={{ marginBottom: 10 }}>
-              <label style={{ fontSize: 9, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>IMAGE URL</label>
+              <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>IMAGE URL</label>
               <div style={{ display: 'flex', gap: 6 }}>
                 <input value={draftUrl} onChange={e => setDraftUrl(e.target.value)} spellCheck={false} style={{ flex: 1, minWidth: 0, boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
                 <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} style={{ display: 'none' }} />
                 <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '8px 12px', flexShrink: 0, cursor: uploading ? 'not-allowed' : 'pointer',
+                  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 12px', flexShrink: 0, cursor: uploading ? 'not-allowed' : 'pointer',
                   background: uploading ? 'rgba(0,212,255,0.05)' : 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.4)', color: uploading ? '#2a3a48' : 'var(--cyan)', borderRadius: 6,
                 }}>{uploading ? '⏳…' : '⬆ UPLOAD'}</button>
               </div>
             </div>
             <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 9, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>ALT TEXT</label>
+              <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>ALT TEXT</label>
               <input value={draftAlt} onChange={e => setDraftAlt(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
-              <button onClick={confirm} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'var(--cyan)', border: 'none', color: '#000', cursor: 'pointer', fontWeight: 700, borderRadius: 6 }}>SAVE</button>
+              <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
+              <button onClick={confirm} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'var(--cyan)', border: 'none', color: '#000', cursor: 'pointer', fontWeight: 700, borderRadius: 6 }}>SAVE</button>
             </div>
           </div>
         </div>
@@ -1544,7 +1544,7 @@ export function EditableLink({ contentKey, hrefKey, defaultValue = 'Learn more',
         <span style={{
           position: 'absolute', bottom: -8, right: -8,
           background: '#ffb74d', color: '#000',
-          fontSize: 8, fontFamily: 'var(--font-mono)',
+          fontSize: 11, fontFamily: 'var(--font-mono)',
           padding: '1px 5px', borderRadius: 2, letterSpacing: 1,
           pointerEvents: 'none',
         }}>LINK</span>
@@ -1554,20 +1554,20 @@ export function EditableLink({ contentKey, hrefKey, defaultValue = 'Learn more',
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', fontFamily: 'var(--font-mono)', padding: 16,
-        }} onClick={() => setOpen(false)}>
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: '#ffb74d', marginBottom: 12 }}>EDIT LINK · {contentKey}</div>
+        }} onClick={() => setOpen(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: '#ffb74d', marginBottom: 12 }}>EDIT LINK · {contentKey}</div>
             <div style={{ marginBottom: 10 }}>
-              <label style={{ fontSize: 9, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>LABEL</label>
+              <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>LABEL</label>
               <input value={draftLabel} onChange={e => setDraftLabel(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
             </div>
             <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 9, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>DESTINATION URL</label>
+              <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>DESTINATION URL</label>
               <input value={draftHref} onChange={e => setDraftHref(e.target.value)} spellCheck={false} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
-              <button onClick={confirm} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: '#ffb74d', border: 'none', color: '#000', cursor: 'pointer', fontWeight: 700, borderRadius: 6 }}>SAVE</button>
+              <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
+              <button onClick={confirm} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: '#ffb74d', border: 'none', color: '#000', cursor: 'pointer', fontWeight: 700, borderRadius: 6 }}>SAVE</button>
             </div>
           </div>
         </div>

@@ -150,7 +150,7 @@ const inputStyle = {
 
 const labelStyle = {
   fontFamily: 'var(--font-mono)',
-  fontSize: 9,
+  fontSize: 11,
   letterSpacing: 2,
   color: 'var(--muted)',
   display: 'block',
@@ -706,7 +706,7 @@ const UnStatus = ({ username, check, suggest, onSuggest }) => {
   if (check === 'available') return <span className="auth-field-status auth-field-status-ok">✓ Available</span>
   if (check === 'taken') return (
     <span id="su-user-taken" className="auth-field-status auth-field-status-bad" role="status">
-      ✗ Taken{suggest && <> — try <button type="button" onClick={() => onSuggest()} className="auth-link auth-link-cyan" style={{ fontSize: 10, textDecoration: 'underline' }}>{suggest}</button></>}
+      ✗ Taken{suggest && <> — try <button type="button" onClick={() => onSuggest()} className="auth-link auth-link-cyan" style={{ fontSize: 11, textDecoration: 'underline' }}>{suggest}</button></>}
     </span>
   )
   return null

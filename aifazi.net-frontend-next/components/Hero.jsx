@@ -92,7 +92,7 @@ function MarqueeBadges({ badges }) {
       <div ref={trackRef} style={{ display: 'flex', gap: 12, whiteSpace: 'nowrap', width: 'max-content' }}>
         {doubled.map((badge, i) => (
           <span key={i} style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
             padding: '6px 14px', border: '1px solid color-mix(in srgb, var(--cyan) 15%, transparent)',
             color: 'var(--muted)', background: 'color-mix(in srgb, var(--cyan) 3%, transparent)',
             flexShrink: 0, display: 'inline-block',
@@ -448,7 +448,7 @@ export default function Hero() {
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>
                 <span data-stat-num className="stat-num"><EditableText contentKey={numKey} defaultValue={num} /></span>
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>
                 <EditableText contentKey={labelKey} defaultValue={label} />
               </div>
             </div>

@@ -30,7 +30,7 @@ export default function ThemeHub({ initialTab = 'themes' }) {
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontFamily:"'JetBrains Mono','Fira Code',monospace", fontSize:9, color:C.cyan, letterSpacing:4, marginBottom:6 }}>{head.eyebrow}</div>
+        <div style={{ fontFamily:"'JetBrains Mono','Fira Code',monospace", fontSize: 11, color:C.cyan, letterSpacing:4, marginBottom:6 }}>{head.eyebrow}</div>
         <h2 style={{ fontFamily:"'JetBrains Mono','Fira Code',monospace", fontSize:24, fontWeight:800, margin:0, color:C.text, letterSpacing:1 }}>{head.title}</h2>
         <div style={{ fontFamily:"'Inter','Segoe UI',system-ui,sans-serif", fontSize:12, color:C.muted, marginTop:6 }}>{head.sub}</div>
       </div>
@@ -42,7 +42,7 @@ export default function ThemeHub({ initialTab = 'themes' }) {
           return (
             <button key={t.key} onClick={() => setTab(t.key)} role="tab" aria-selected={active}
               style={{
-                fontFamily:"'JetBrains Mono','Fira Code',monospace", fontSize:10, letterSpacing:1.5,
+                fontFamily:"'JetBrains Mono','Fira Code',monospace", fontSize: 11, letterSpacing:1.5,
                 padding:'9px 16px', flex:1, border:'none', cursor:'pointer', borderRadius:7,
                 background: active ? C.green : 'transparent',
                 color: active ? '#000' : C.muted, fontWeight: active ? 800 : 400,

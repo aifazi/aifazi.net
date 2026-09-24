@@ -5,6 +5,7 @@ import { notify } from '../core/notify.jsx'
 import { useForum } from '../context/ForumContext'
 import { Select } from '../core/ui.jsx'
 import Clickable from '@/core/Clickable.jsx'
+import { SkeletonList } from '@/core/Feedback'
 import { getSupabase } from '@/lib/supabase'
 
 const mono = { fontFamily: 'var(--font-mono)' }
@@ -20,7 +21,7 @@ function StatusBadge({ status }) {
   }
   const s = map[status] || map.open
   return (
-    <span style={{ ...mono, fontSize: 9, letterSpacing: 2, padding: '3px 8px',
+    <span style={{ ...mono, fontSize: 11, letterSpacing: 2, padding: '3px 8px',
       color: s.color, background: s.bg, border: `1px solid ${s.border}`, borderRadius: 4 }}>
       {(status || 'open').toUpperCase().replace('-', ' ')}
     </span>
@@ -40,7 +41,7 @@ function PriorityDot({ priority }) {
 function PriorityBadge({ priority }) {
   const colors = { critical: '#ff4757', high: '#ff6b35', medium: '#ffd700', low: '#00ff88' }
   return (
-    <span style={{ ...mono, fontSize: 8, letterSpacing: 2, padding: '2px 10px',
+    <span style={{ ...mono, fontSize: 11, letterSpacing: 2, padding: '2px 10px',
       color: '#fff', background: colors[priority] || '#888', borderRadius: 4, fontWeight: 700 }}>
       {priority?.toUpperCase()}
     </span>
@@ -52,7 +53,7 @@ const inputStyle = {
   color: 'var(--text)', ...mono, fontSize: 13, padding: '10px 14px',
   outline: 'none', borderRadius: 6, boxSizing: 'border-box', transition: 'border-color 0.2s',
 }
-const labelStyle = { ...mono, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }
+const labelStyle = { ...mono, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }
 
 // ── Message Bubble ─────────────────────────────────────────
 function MessageBubble({ msg }) {
@@ -73,16 +74,16 @@ function MessageBubble({ msg }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <span style={{
-            ...mono, fontSize: 9, letterSpacing: 2,
+            ...mono, fontSize: 11, letterSpacing: 2,
             color: isSystem ? '#a855f7' : isStaff ? 'var(--cyan)' : 'var(--green)',
             fontWeight: 700,
           }}>
             {isSystem ? 'SYSTEM' : isStaff ? 'STAFF' : 'YOU'}
           </span>
-          <span style={{ ...mono, fontSize: 8, color: 'var(--muted)' }}>
+          <span style={{ ...mono, fontSize: 11, color: 'var(--muted)' }}>
             {msg.author_name}
           </span>
-          <span style={{ ...mono, fontSize: 8, color: 'var(--muted)', marginLeft: 'auto' }}>
+          <span style={{ ...mono, fontSize: 11, color: 'var(--muted)', marginLeft: 'auto' }}>
             {msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}
           </span>
         </div>
@@ -185,7 +186,7 @@ const sendReply = async () => {
     } finally { setSending(false) }
   }
 
-  if (loading) return <div style={{ ...card, textAlign: 'center', ...mono, fontSize: 10, color: 'var(--muted)', letterSpacing: 3, padding: 40 }}>LOADING...</div>
+  if (loading) return <div style={{ ...card, textAlign: 'center', ...mono, fontSize: 11, color: 'var(--muted)', letterSpacing: 3, padding: 40 }}>LOADING...</div>
   if (!ticket) return <div style={{ ...card, textAlign: 'center', ...mono, fontSize: 11, color: 'var(--orange)' }}>Ticket not found</div>
 
   const STATUS_CFG = {
@@ -202,7 +203,7 @@ const sendReply = async () => {
   return (
     <div>
       <button onClick={onBack} style={{
-        ...mono, fontSize: 10, letterSpacing: 1, color: 'var(--cyan)',
+        ...mono, fontSize: 11, letterSpacing: 1, color: 'var(--cyan)',
         background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 6,
         padding: '8px 16px', cursor: 'pointer', marginBottom: 16,
       }}>
@@ -213,7 +214,7 @@ const sendReply = async () => {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
           <div>
-            <div style={{ ...mono, fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>
+            <div style={{ ...mono, fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>
               TICKET #{ticket.ticket_id || (ticket.id || '').slice(-6).toUpperCase()}
             </div>
             <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{ticket.subject}</h3>
@@ -225,7 +226,7 @@ const sendReply = async () => {
         </div>
 
         {/* Meta */}
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', ...mono, fontSize: 10, color: 'var(--muted)', marginBottom: 16, padding: '10px 14px', background: 'var(--bg3)', borderRadius: 6 }}>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', ...mono, fontSize: 11, color: 'var(--muted)', marginBottom: 16, padding: '10px 14px', background: 'var(--bg3)', borderRadius: 6 }}>
           <span>Category: <span style={{ color: 'var(--text)' }}>{ticket.category}</span></span>
           <span>Submitted: <span style={{ color: 'var(--text)' }}>{ticket.created_at ? new Date(ticket.created_at).toLocaleString() : ''}</span></span>
           <span>Messages: <span style={{ color: 'var(--text)' }}>{ticket.message_count || messages.length}</span></span>
@@ -234,14 +235,14 @@ const sendReply = async () => {
 
         {/* Messages Thread */}
         <div style={{ marginBottom: canReply ? 16 : 0, position:'relative' }}>
-          <div style={{ ...mono, fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>DISCUSSION</div>
+          <div style={{ ...mono, fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>DISCUSSION</div>
           <div ref={msgListRef} onScroll={() => {
             if (!msgListRef.current) return
             const el = msgListRef.current
             setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 60)
           }} style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 4, userSelect: 'text' }}>
             {messages.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 24, ...mono, fontSize: 10, color: 'var(--muted)' }}>No messages yet</div>
+              <div style={{ textAlign: 'center', padding: 24, ...mono, fontSize: 11, color: 'var(--muted)' }}>No messages yet</div>
             ) : (
               messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)
             )}
@@ -267,7 +268,7 @@ const sendReply = async () => {
               rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7, marginBottom: 10 }}
               onFocus={e => e.target.style.borderColor = 'var(--green)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
             <button onClick={sendReply} disabled={sending || !reply.trim()} style={{
-              ...mono, fontSize: 10, letterSpacing: 2, padding: '10px 20px',
+              ...mono, fontSize: 11, letterSpacing: 2, padding: '10px 20px',
               background: sending || !reply.trim() ? 'var(--bg3)' : 'var(--green)',
               color: sending || !reply.trim() ? 'var(--muted)' : '#000',
               border: 'none', borderRadius: 6, cursor: sending || !reply.trim() ? 'not-allowed' : 'pointer',
@@ -278,7 +279,7 @@ const sendReply = async () => {
           </div>
         )}
         {!canReply && (
-          <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', textAlign: 'center', padding: 12, background: 'var(--bg3)', borderRadius: 6 }}>
+          <div style={{ ...mono, fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: 12, background: 'var(--bg3)', borderRadius: 6 }}>
             This ticket is {ticket.status}. You cannot add more replies.
           </div>
         )}
@@ -333,7 +334,7 @@ function SubmitTicket({ onSuccess }) {
         </div>
       )}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ ...mono, fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>SUBMIT A TICKET</div>
+        <div style={{ ...mono, fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>SUBMIT A TICKET</div>
         <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Report an Issue</h3>
       </div>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -477,17 +478,17 @@ const filtered = ticketList.filter(t => (
   return (
     <div style={card}>
       <div style={{ marginBottom: 20 }}>
-        <div style={{ ...mono, fontSize: 9, letterSpacing: 3, color: 'var(--purple)', marginBottom: 4 }}>TICKET LOOKUP</div>
+        <div style={{ ...mono, fontSize: 11, letterSpacing: 3, color: 'var(--purple)', marginBottom: 4 }}>TICKET LOOKUP</div>
         <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
           {user ? `${user.username}'s Tickets` : 'Sign In to View Tickets'}
         </h3>
         {user && (
-          <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>
+          <div style={{ ...mono, fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
             Showing tickets for <span style={{ color: 'var(--cyan)' }}>{user.email}</span>
           </div>
         )}
         {!user && (
-          <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', marginTop: 4, lineHeight: 1.6 }}>
+          <div style={{ ...mono, fontSize: 11, color: 'var(--muted)', marginTop: 4, lineHeight: 1.6 }}>
             You must be signed in to view your tickets. Sign in to see tickets associated with your account.
           </div>
         )}
@@ -505,7 +506,7 @@ const filtered = ticketList.filter(t => (
       {user && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
           <button onClick={() => setFilterStatus('all')} style={{
-            ...mono, fontSize: 8, letterSpacing: 1, padding: '4px 10px',
+            ...mono, fontSize: 11, letterSpacing: 1, padding: '4px 10px',
             background: filterStatus === 'all' ? 'rgba(255,255,255,0.1)' : 'transparent',
             border: filterStatus === 'all' ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border)',
             color: filterStatus === 'all' ? 'var(--text)' : 'var(--muted)',
@@ -517,7 +518,7 @@ const filtered = ticketList.filter(t => (
             const count = ticketList.filter(t => t.status === s).length
             return (
               <button key={s} onClick={() => setFilterStatus(s)} style={{
-                ...mono, fontSize: 8, letterSpacing: 1, padding: '4px 10px',
+                ...mono, fontSize: 11, letterSpacing: 1, padding: '4px 10px',
                 background: filterStatus === s ? cfg.color + '18' : 'transparent',
                 border: `1px solid ${filterStatus === s ? cfg.color + '44' : 'var(--border)'}`,
                 color: filterStatus === s ? cfg.color : 'var(--muted)',
@@ -533,7 +534,7 @@ const filtered = ticketList.filter(t => (
             const active = filterPriority === value || activePriority === value
             return (
               <button key={value} onClick={() => setFilterPriority(value)} style={{
-                ...mono, fontSize: 8, letterSpacing: 1, padding: '4px 10px',
+                ...mono, fontSize: 11, letterSpacing: 1, padding: '4px 10px',
                 background: active ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent',
                 border: active ? '1px solid color-mix(in srgb, var(--green) 35%, transparent)' : '1px solid var(--border)',
                 color: active ? 'var(--green)' : 'var(--muted)',
@@ -548,7 +549,7 @@ const filtered = ticketList.filter(t => (
             const active = filterCategory === key
             return (
               <button key={key} onClick={() => setFilterCategory(active ? 'all' : key)} style={{
-                ...mono, fontSize: 8, letterSpacing: 1, padding: '4px 10px',
+                ...mono, fontSize: 11, letterSpacing: 1, padding: '4px 10px',
                 background: active ? cfg.color + '18' : 'transparent',
                 border: `1px solid ${active ? cfg.color + '44' : 'var(--border)'}`,
                 color: active ? cfg.color : 'var(--muted)',
@@ -561,7 +562,7 @@ const filtered = ticketList.filter(t => (
         </div>
       )}
 
-      {loading && <div style={{ textAlign: 'center', padding: '24px 0', ...mono, fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADING…</div>}
+      {loading && <SkeletonList rows={4} />}
 
       {!loading && filtered.length > 0 && (
         <div style={{ marginTop: 4 }}>
@@ -580,13 +581,13 @@ const filtered = ticketList.filter(t => (
                     <span style={{ fontSize: 14, fontWeight: 600 }}>{t.subject}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ ...mono, fontSize: 9, color: 'var(--muted)' }}>
+                    <span style={{ ...mono, fontSize: 11, color: 'var(--muted)' }}>
                       {t.message_count || 0} msg
                     </span>
                     <StatusBadge status={t.status} />
                   </div>
                 </div>
-                <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>
+                <div style={{ ...mono, fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
                   #{t.ticket_id || (t.id || '').slice(-6).toUpperCase()} · {t.category || 'general'} · {t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}
                 </div>
               </Clickable>
@@ -619,7 +620,7 @@ function FAQ() {
   const [open, setOpen] = useState(null)
   return (
     <div style={card}>
-      <div style={{ ...mono, fontSize: 9, letterSpacing: 3, color: 'var(--yellow)', marginBottom: 16 }}>FAQ</div>
+      <div style={{ ...mono, fontSize: 11, letterSpacing: 3, color: 'var(--yellow)', marginBottom: 16 }}>FAQ</div>
       {FAQS.map((item, i) => (
         <div key={i} style={{ borderBottom: i < FAQS.length - 1 ? '1px solid var(--border)' : 'none' }}>
           <button onClick={() => setOpen(open === i ? null : i)} style={{
@@ -673,7 +674,7 @@ export default function HelpDesk() {
       {/* Hero */}
       <div className="helpdesk-header" style={{ borderBottom: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -60, right: -60, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, color-mix(in srgb, var(--cyan) 6%, transparent) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ ...mono, fontSize: 9, letterSpacing: 4, color: 'var(--cyan)', marginBottom: 10 }}>SUPPORT / TOOLS</div>
+        <div style={{ ...mono, fontSize: 11, letterSpacing: 4, color: 'var(--cyan)', marginBottom: 10 }}>SUPPORT / TOOLS</div>
         <h1 style={{ fontSize: 40, fontWeight: 800, margin: '0 0 12px', lineHeight: 1.1 }}>
           🎫 Help Desk <span style={{ color: 'var(--cyan)' }}>&amp; Tickets</span>
         </h1>
@@ -683,7 +684,7 @@ export default function HelpDesk() {
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           {STAT_CARDS.map(s => (
             <div key={s.label} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderTop: `2px solid ${s.color}`, borderRadius: 8, padding: '12px 18px', minWidth: 110 }}>
-              <div style={{ ...mono, fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
+              <div style={{ ...mono, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
               <div style={{ ...mono, fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
             </div>
           ))}
@@ -729,7 +730,7 @@ export default function HelpDesk() {
           {tab !== 'faq' && !viewTicketId && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={card}>
-                <div style={{ ...mono, fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>PRIORITY GUIDE</div>
+                <div style={{ ...mono, fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>PRIORITY GUIDE</div>
                 {[
                   { label: 'P1 Critical', color: '#ff4757', desc: 'System down / data loss' },
                   { label: 'P2 High',     color: '#ff6b35', desc: 'Major feature broken'    },
@@ -739,14 +740,14 @@ export default function HelpDesk() {
                   <div key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, boxShadow: `0 0 6px ${p.color}`, flexShrink: 0 }} />
                     <div>
-                      <span style={{ ...mono, fontSize: 10, color: p.color, fontWeight: 700 }}>{p.label}</span>
-                      <span style={{ ...mono, fontSize: 9, color: 'var(--muted)', marginLeft: 8 }}>{p.desc}</span>
+                      <span style={{ ...mono, fontSize: 11, color: p.color, fontWeight: 700 }}>{p.label}</span>
+                      <span style={{ ...mono, fontSize: 11, color: 'var(--muted)', marginLeft: 8 }}>{p.desc}</span>
                     </div>
                   </div>
                 ))}
               </div>
               <div style={card}>
-                <div style={{ ...mono, fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>OTHER CHANNELS</div>
+                <div style={{ ...mono, fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>OTHER CHANNELS</div>
                 {[
                   { icon: '💬', label: 'Live Chat', desc: 'Instant support', to: '/chat' },
                   { icon: '📧', label: 'Email', desc: 'contact@aifazi.net', href: 'mailto:contact@aifazi.net' },
@@ -756,7 +757,7 @@ export default function HelpDesk() {
                       <span style={{ fontSize: 18, flexShrink: 0 }}>{c.icon}</span>
                       <div>
                         <div style={{ ...mono, fontSize: 11, color: 'var(--text)', fontWeight: 600 }}>{c.label}</div>
-                        <div style={{ ...mono, fontSize: 9, color: 'var(--muted)' }}>{c.desc}</div>
+                        <div style={{ ...mono, fontSize: 11, color: 'var(--muted)' }}>{c.desc}</div>
                       </div>
                     </a>
                   ) : null

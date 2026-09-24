@@ -66,7 +66,7 @@ export default function ServerRackAnimation() {
         {/* Admin-only hint badge */}
         <div style={{
           position: 'absolute', top: -9, left: '50%', transform: 'translateX(-50%)',
-          fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2,
+          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
           color: 'var(--green)', background: 'var(--bg2)',
           border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', borderRadius: 10,
           padding: '1px 8px', whiteSpace: 'nowrap', pointerEvents: 'none',
@@ -79,7 +79,7 @@ export default function ServerRackAnimation() {
               onMouseEnter={() => setHovMode(m.id)}
               onMouseLeave={() => setHovMode(null)}
               style={{
-                fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
                 padding: '6px 14px', cursor: 'pointer', borderRadius: 4,
                 border: active ? '1px solid var(--cyan)' : '1px solid transparent',
                 background: active ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : hovMode === m.id ? 'var(--bg3)' : 'transparent',
@@ -1511,7 +1511,7 @@ function AvatarMode({ visibleRef }) {
 
       {/* Title */}
       <div style={{ position: 'absolute', top: 16, left: 20,
-        fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 3, color: 'var(--cyan)', opacity: 0.6 }}>
+        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', opacity: 0.6 }}>
         AVATAR · HOLOGRAPHIC PRESENCE
       </div>
 
@@ -1599,7 +1599,7 @@ function AvatarMode({ visibleRef }) {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}>
                 <div style={{ fontSize: 64, opacity: 0.3 }}>◐</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, textAlign: 'center', whiteSpace: 'pre-line' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, textAlign: 'center', whiteSpace: 'pre-line' }}>
                   {imgErr
                     ? 'IMAGE FAILED TO LOAD\nCHECK URL OR CORS'
                     : isAdmin
@@ -1632,11 +1632,11 @@ function AvatarMode({ visibleRef }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)',
               boxShadow: '0 0 6px var(--green)', display: 'inline-block', animation: 'glow-pulse 2s infinite' }}/>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 2 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2 }}>
                REMOTELY AVAILABLE
             </span>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
             IT SPECIALIST · NETWORK SPECIALIST · AI ENTHUSIAST
           </div>
         </div>
@@ -1644,7 +1644,7 @@ function AvatarMode({ visibleRef }) {
         {/* Filter picker — always visible when image is set */}
         {avatarUrl && avatarUrl.trim() !== '' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', letterSpacing: 2 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>
               IMAGE FILTER
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', maxWidth: 400 }}>
@@ -1653,7 +1653,7 @@ function AvatarMode({ visibleRef }) {
                   setActiveFilter(f.id)
                   if (isAdmin) saveFilter(f.id)
                 }} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1,
+                  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                   padding: '4px 10px', borderRadius: 2, cursor: 'pointer',
                   border: `1px solid ${activeFilter === f.id ? 'var(--cyan)' : 'var(--border)'}`,
                   background: activeFilter === f.id ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'transparent',
@@ -1672,7 +1672,7 @@ function AvatarMode({ visibleRef }) {
           <button
             onClick={() => { setDraftUrl(avatarUrl || ''); setEditMode(true) }}
             style={{
-              fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2,
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
               padding: '6px 14px', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)',
               color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)',
               borderRadius: 2, cursor: 'pointer',
@@ -1684,7 +1684,7 @@ function AvatarMode({ visibleRef }) {
         {/* URL input (edit mode) */}
         {isAdmin && editMode && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', width: '100%', maxWidth: 320 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
               PASTE IMAGE URL (jpg, png, webp, gif)
             </div>
             <input
@@ -1694,7 +1694,7 @@ function AvatarMode({ visibleRef }) {
               placeholder="https://example.com/avatar.jpg"
               autoFocus
               style={{
-                width: '100%', fontFamily: 'var(--font-mono)', fontSize: 10,
+                width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11,
                 padding: '8px 12px', background: 'var(--comp-input-bg, var(--bg3))',
                 border: '1px solid var(--comp-input-focus-border, var(--cyan))', color: 'var(--text)',
                 borderRadius: 'var(--comp-input-radius, 2px)', outline: 'none',
@@ -1702,12 +1702,12 @@ function AvatarMode({ visibleRef }) {
             />
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={handleSave} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
                 padding: '6px 14px', background: 'var(--comp-btn-bg, var(--green))',
                 color: 'var(--comp-btn-text, #000)', border: 'var(--comp-btn-border, none)', borderRadius: 'var(--comp-btn-radius, 2px)', boxShadow: 'var(--comp-btn-shadow, none)', cursor: 'pointer', fontWeight: 700,
               }}>SAVE</button>
               <button onClick={() => setEditMode(false)} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
                 padding: '6px 14px', background: 'transparent',
                 color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 2, cursor: 'pointer',
               }}>CANCEL</button>
@@ -2768,7 +2768,7 @@ function GlobeMode({ visibleRef }) {
       {/* Floating title — top left */}
       <div className="globe-network-title" style={{
         position: 'absolute', top: 10, left: 14, zIndex: 3,
-        fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 3,
+        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3,
         color: 'var(--cyan)', opacity: 0.55, pointerEvents: 'none',
       }}>
         GLOBAL NETWORK · LIVE CONNECTION MAP
@@ -2788,7 +2788,7 @@ function GlobeMode({ visibleRef }) {
         ].map(s => (
           <div key={s.label} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 5.5, color: 'var(--muted)', letterSpacing: 2 }}>{s.label}</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9,   color: s.color,       fontWeight: 700  }}>{s.value}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11,   color: s.color,       fontWeight: 700  }}>{s.value}</span>
           </div>
         ))}
       </div>
@@ -2814,7 +2814,7 @@ function GlobeMode({ visibleRef }) {
             maxWidth: '100%',
           }}>
             <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--green)', letterSpacing: 2 }}>VISITOR TRACE</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2 }}>VISITOR TRACE</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, color: 'var(--muted)', letterSpacing: 1.4 }}>{visitor.updatedAt || 'LIVE'}</span>
             </div>
             {[
@@ -2833,7 +2833,7 @@ function GlobeMode({ visibleRef }) {
             ].filter(([, val]) => val && val !== '—' && val !== '—, —' && val !== '°, °').map(([label, val]) => (
               <div key={label} style={{ display: 'contents' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, color: 'var(--muted)', letterSpacing: 1.4, lineHeight: '1.55' }}>{label}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7.5, color: label === 'APPROX ADDRESS' ? 'var(--green)' : 'var(--cyan)', fontWeight: 700, lineHeight: '1.55', wordBreak: 'break-word' }}>{val}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: label === 'APPROX ADDRESS' ? 'var(--green)' : 'var(--cyan)', fontWeight: 700, lineHeight: '1.55', wordBreak: 'break-word' }}>{val}</span>
               </div>
             ))}
           </div>

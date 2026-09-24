@@ -9,6 +9,7 @@ import { buildThemeCustomCss, resolveThemeCustom, themeCustomFontUrl } from '@/c
 import { sanitizeCssForStyleTag } from '@/lib/css-sanitize'
 import { LIGHT_THEMES as LIGHT_THEME_LIST, VALID_THEMES } from '@/core/themeCatalog'
 import { SITE_URL } from '@/lib/config'
+import { jsonLdScript, organizationJsonLd, websiteJsonLd } from '@/lib/seo'
 import './globals.css'
 
 /** Escape JSON so it can never break out of an inline <script> (`</script>`). */
@@ -38,6 +39,7 @@ export const metadata: Metadata = {
   title: { default: 'Tanvir | aifazi.net', template: '%s | aifazi.net' },
   description: 'Full-stack developer, community platform, blog and tools.',
   metadataBase: new URL(SITE_URL),
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     siteName: 'aifazi.net',
@@ -116,6 +118,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           id="site-config-data"
           type="application/json"
           dangerouslySetInnerHTML={{ __html: escapeJsonForInline(siteConfig) }}
+        />
+        {/* SEO: Organization + WebSite JSON-LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationJsonLd(SITE_URL)) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(websiteJsonLd(SITE_URL)) }}
         />
         {/* FOUC prevention: set data-theme before React hydrates, using the
             admin's global config baked in at render time. The nonce is injected

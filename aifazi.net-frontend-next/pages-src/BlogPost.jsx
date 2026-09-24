@@ -127,7 +127,7 @@ function VideoPlayer({ src, title = '' }) {
 
       {/* Big play button overlay */}
       {!isPlaying && (
-        <div onClick={togglePlay} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(0,0,0,0.35)' }}>
+        <div onClick={togglePlay} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(0,0,0,0.35)' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <div className="blog-video-btn" style={{ width: 72, height: 72, borderRadius: '50%', background: 'color-mix(in srgb, var(--green) 90%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 40px color-mix(in srgb, var(--green) 40%, transparent)' }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="#000" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
           </div>
@@ -144,7 +144,7 @@ function VideoPlayer({ src, title = '' }) {
         pointerEvents: showControls ? 'all' : 'none',
       }}>
         {/* Progress bar */}
-        <div onClick={handleSeek} style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 2, cursor: 'pointer', marginBottom: 10 }}>
+        <div onClick={handleSeek} style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 2, cursor: 'pointer', marginBottom: 10 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <div style={{ position: 'absolute', height: '100%', width: `${buffered}%`, background: 'rgba(255,255,255,0.25)', borderRadius: 2 }} />
           <div style={{ position: 'absolute', height: '100%', width: `${progress}%`, background: 'var(--green)', borderRadius: 2, transition: 'width 0.1s linear' }}>
             <div style={{ position: 'absolute', right: -5, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
@@ -298,7 +298,7 @@ function PostReactions({ slug, postId, initialReactions }) {
   return (
     <div style={{ marginTop: 48, paddingTop: 32, borderTop: '1px solid var(--border)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>
           REACTIONS
         </span>
         {total > 0 && (
@@ -410,7 +410,7 @@ function Comments({ slug, postId }) {
   return (
     <div style={{ marginTop: 56, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>COMMENTS</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>COMMENTS</span>
         {comments && comments.length > 0 && (
           <span className="community-badge community-badge-cyan">{comments.length}</span>
         )}
@@ -444,7 +444,7 @@ function Comments({ slug, postId }) {
             }}
           />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
               {text.length}/4000
             </span>
             <NeonButton type="submit" variant="primary" size="sm" disabled={submitting || !text.trim()}>
@@ -482,14 +482,14 @@ function Comments({ slug, postId }) {
                       </span>
                       {comment.author?.role && <RoleBadge role={comment.author.role} />}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
                       {formatDate(comment.createdAt)}
                     </div>
                   </div>
                   {canDelete && (
                     <button onClick={() => remove(comment)} style={{
                       background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 8,
-                      color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 9,
+                      color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 11,
                       letterSpacing: 1, padding: '6px 10px', cursor: 'pointer'
                     }}>DELETE</button>
                   )}
@@ -519,7 +519,7 @@ function RelatedPosts({ slug, currentId }) {
 
   return (
     <div style={{ marginTop: 64, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 20 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 20 }}>
         CONTINUE READING
       </div>
       <div className="related-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
@@ -528,12 +528,12 @@ function RelatedPosts({ slug, currentId }) {
             <Card hover style={{ height: '100%', padding: 20, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
                 <Badge tone="cyan">{p.category}</Badge>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{formatDate(p.created_at)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{formatDate(p.created_at)}</span>
               </div>
               <div style={{ color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, lineHeight: 1.4, marginBottom: 10 }}>
                 {p.title}
               </div>
-              <div style={{ color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, marginTop: 'auto' }}>
+              <div style={{ color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, marginTop: 'auto' }}>
                 READ →
               </div>
             </Card>
@@ -580,7 +580,7 @@ function ContentMediaPreviews({ html }) {
   if (!files.length) return null
   return (
     <div style={{ marginTop: 48, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 18 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 18 }}>
         FILES &amp; DOWNLOADS
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
@@ -748,7 +748,7 @@ export default function BlogPost({ initialPost }) {
       <div className="blog-post-shell">
         {toc.length > 0 && (
           <aside className="blog-toc">
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>ON THIS PAGE</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>ON THIS PAGE</div>
             {toc.map(item => (
               <a key={item.id} href={`#${item.id}`} className={`toc-link toc-l${item.level}`}>{item.text}</a>
             ))}
@@ -805,7 +805,7 @@ export default function BlogPost({ initialPost }) {
           if (!videoSrc) return null
           return (
             <div style={{ marginBottom: 40 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>VIDEO</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>VIDEO</div>
               <VideoPlayer src={videoSrc} title={post.title} />
             </div>
           )
@@ -823,7 +823,7 @@ export default function BlogPost({ initialPost }) {
         {/* Tags */}
         {tags.length > 0 && (
           <div style={{ marginTop: 60, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 16 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 16 }}>
               TAGS
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

@@ -88,7 +88,7 @@ function Bubble({ msg, dir, color }) {
       left: dir > 0 ? 0 : 'auto', right: dir < 0 ? 0 : 'auto',
       whiteSpace: 'nowrap', background: 'rgba(11,17,24,0.96)',
       border: '1px solid ' + g, color: g,
-      fontFamily: 'var(--font-mono, monospace)', fontSize: 10,
+      fontFamily: 'var(--font-mono, monospace)', fontSize: 11,
       letterSpacing: 1, padding: '5px 10px', borderRadius: 6,
       boxShadow: '0 0 12px ' + g + '44',
       animation: 'rbBubble 0.25s cubic-bezier(0.34,1.56,0.64,1)', zIndex: 1,
@@ -234,7 +234,7 @@ export default function RoamingRobot() {
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div ref={wrapperRef} className="roaming-robot" style={{ position: 'fixed', left: INITIAL_POS.x, top: INITIAL_POS.y, width: 48, height: 64, zIndex: 9990, pointerEvents: 'none', userSelect: 'none', willChange: 'left, top' }}>
         {msg && <Bubble msg={msg} dir={dir} color={accent} />}
-        <div style={{ cursor: 'pointer', pointerEvents: 'auto' }} title="Click to hide" onClick={() => setVisible(false)}>
+        <div style={{ cursor: 'pointer', pointerEvents: 'auto' }} title="Click to hide" onClick={() => setVisible(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <RobotSVG state={state} dir={dir} color={accent} />
         </div>
       </div>

@@ -89,13 +89,13 @@ export function PageContentPanel() {
           </div>
         </div>
         <div style={{ padding:16, display:'grid', gap:12 }}>
-          <label style={{ fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:2, color:'var(--muted)' }}>TITLE</label>
+          <label style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, color:'var(--muted)' }}>TITLE</label>
           <input value={current.title || ''} onChange={e => set('title', e.target.value)}
             style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:6, padding:'12px 13px', fontFamily:'var(--font-mono)' }} />
-          <label style={{ fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:2, color:'var(--muted)' }}>SUBTITLE</label>
+          <label style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, color:'var(--muted)' }}>SUBTITLE</label>
           <input value={current.subtitle || ''} onChange={e => set('subtitle', e.target.value)}
             style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:6, padding:'12px 13px', fontFamily:'var(--font-mono)' }} />
-          <label style={{ fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:2, color:'var(--muted)' }}>BODY / HELPER CONTENT</label>
+          <label style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, color:'var(--muted)' }}>BODY / HELPER CONTENT</label>
           <textarea rows={6} value={current.body || ''} onChange={e => set('body', e.target.value)}
             style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:6, padding:'12px 13px', fontFamily:'var(--font-mono)', resize:'vertical' }} />
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:10 }}>
@@ -191,27 +191,27 @@ function ActiveSessionsPanel() {
     <div style={{ background: 'var(--bg2)', border: `1px solid ${conflict ? 'rgba(248,113,113,0.5)' : 'var(--border)'}`, padding: 24, marginTop: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: conflict ? 12 : 16, flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: conflict ? '#f87171' : 'var(--muted)' }}>ACTIVE SESSIONS</div>
-          {conflict && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, padding: '2px 8px', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.4)', color: '#f87171', borderRadius: 4, letterSpacing: 1 }}>⚠️ CONFLICT</span>}
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: conflict ? '#f87171' : 'var(--muted)' }}>ACTIVE SESSIONS</div>
+          {conflict && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '2px 8px', background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.4)', color: '#f87171', borderRadius: 4, letterSpacing: 1 }}>⚠️ CONFLICT</span>}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => load()} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}>↻ REFRESH</button>
-          {sessions.length > 1 && <button onClick={() => revoke(null, true)} disabled={revoking === 'all'} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 10px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', cursor: 'pointer' }}>{revoking === 'all' ? 'REVOKING…' : 'REVOKE ALL OTHERS'}</button>}
+          <button onClick={() => load()} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '4px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}>↻ REFRESH</button>
+          {sessions.length > 1 && <button onClick={() => revoke(null, true)} disabled={revoking === 'all'} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '4px 10px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', cursor: 'pointer' }}>{revoking === 'all' ? 'REVOKING…' : 'REVOKE ALL OTHERS'}</button>}
         </div>
       </div>
 
       {/* Conflict warning banner */}
       {conflict && (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#f87171', lineHeight: 1.7, padding: '10px 14px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 4, marginBottom: 14 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f87171', lineHeight: 1.7, padding: '10px 14px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)', borderRadius: 4, marginBottom: 14 }}>
           ⚠️ <strong>{conflictInfo.length} other active session{conflictInfo.length > 1 ? 's' : ''} detected.</strong> Another device is currently logged in with the same account. If this wasn&apos;t you, revoke all other sessions immediately.
           {conflictInfo.map((s, i) => <div key={i} style={{ marginTop: 4, opacity: 0.8 }}>→ IP: {s.ip} · Last active: {ago(s.last_active)}</div>)}
         </div>
       )}
 
-      {loading && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: '8px 0' }}>Loading sessions…</div>}
+      {loading && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '8px 0' }}>Loading sessions…</div>}
 
       {!loading && sessions.length === 0 && (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
           No session history yet. Sessions are recorded on login and updated every 30 seconds.
         </div>
       )}
@@ -222,15 +222,15 @@ function ActiveSessionsPanel() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 3 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>{s.ip || 'Unknown IP'}</span>
-              {s.current && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '1px 6px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)' }}>THIS SESSION</span>}
+              {s.current && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '1px 6px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)' }}>THIS SESSION</span>}
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>{s.user_agent || 'Unknown browser'}</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 360 }}>{s.user_agent || 'Unknown browser'}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
               Login: {s.created_at ? new Date(s.created_at).toLocaleString() : '—'} · Last active: {ago(s.last_active)}
             </div>
           </div>
           {!s.current && (
-            <button onClick={() => revoke(s.id)} disabled={revoking === s.id} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 10px', background: 'transparent', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', cursor: 'pointer', flexShrink: 0, letterSpacing: 1 }}>
+            <button onClick={() => revoke(s.id)} disabled={revoking === s.id} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 10px', background: 'transparent', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171', cursor: 'pointer', flexShrink: 0, letterSpacing: 1 }}>
               {revoking === s.id ? '…' : 'REVOKE'}
             </button>
           )}
@@ -363,7 +363,7 @@ function AdminProfilePanel() {
     finally { setSaving(false) }
   }
 
-  const T = { label: { display: 'block', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }, inp: { width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box' } }
+  const T = { label: { display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }, inp: { width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box' } }
 
   return (
     <div style={{ maxWidth: 520, padding: isMobile ? 16 : 32 }}>
@@ -371,11 +371,11 @@ function AdminProfilePanel() {
 
       {/* Account info */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: 24, marginBottom: 20 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>ACCOUNT INFO</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>ACCOUNT INFO</div>
         <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
           {[['USERNAME', username], ['ROLE', getRole()?.toUpperCase()], ['ACCESS', 'Admin Panel']].map(([label, value]) => (
             <Fragment key={label}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>{label}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>{label}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>{value}</span>
             </Fragment>
           ))}
@@ -384,34 +384,34 @@ function AdminProfilePanel() {
 
       {/* Change username */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: 24, marginBottom: 20 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>CHANGE USERNAME</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>CHANGE USERNAME</div>
         {/* Vercel env notice */}
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--yellow)', lineHeight: 1.7, padding: '8px 12px', background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 4, marginBottom: 16 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--yellow)', lineHeight: 1.7, padding: '8px 12px', background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 4, marginBottom: 16 }}>
           ⚠️ Your <strong>login username</strong> is controlled by the <code>ADMIN_USERNAME</code> environment variable in Vercel.<br />
           Changing it here updates your display name only. To change the login username, update <code>ADMIN_USERNAME</code> in Vercel → Settings → Environment Variables and redeploy.
         </div>
         {unameMsg && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: unameMsg.type === 'warn' ? 'var(--yellow)' : 'var(--green)', lineHeight: 1.8, padding: '8px 12px', background: unameMsg.type === 'warn' ? 'rgba(251,191,36,0.06)' : 'color-mix(in srgb, var(--green) 6%, transparent)', border: `1px solid ${unameMsg.type === 'warn' ? 'rgba(251,191,36,0.3)' : 'color-mix(in srgb, var(--green) 30%, transparent)'}`, borderRadius: 4, marginBottom: 14 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: unameMsg.type === 'warn' ? 'var(--yellow)' : 'var(--green)', lineHeight: 1.8, padding: '8px 12px', background: unameMsg.type === 'warn' ? 'rgba(251,191,36,0.06)' : 'color-mix(in srgb, var(--green) 6%, transparent)', border: `1px solid ${unameMsg.type === 'warn' ? 'rgba(251,191,36,0.3)' : 'color-mix(in srgb, var(--green) 30%, transparent)'}`, borderRadius: 4, marginBottom: 14 }}>
             {unameMsg.text}<br />{unameMsg.envNote}
           </div>
         )}
-        <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>NEW USERNAME</label>
+        <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>NEW USERNAME</label>
         <input value={unameForm.newUsername} onChange={e => setUnameForm(p => ({ ...p, newUsername: e.target.value }))}
           placeholder="Enter new display name"
           style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 12 }} />
-        <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>CURRENT PASSWORD (to confirm)</label>
+        <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>CURRENT PASSWORD (to confirm)</label>
         <input type="password" value={unameForm.currentPassword} onChange={e => setUnameForm(p => ({ ...p, currentPassword: e.target.value }))}
           placeholder="Your current password"
           style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 14 }} />
         <button onClick={handleUsernameChange} disabled={unameSaving}
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '11px 22px', background: unameSaving ? 'var(--bg3)' : 'var(--cyan)', color: unameSaving ? 'var(--muted)' : '#000', border: 'none', cursor: unameSaving ? 'not-allowed' : 'pointer', fontWeight: 700 }}>
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '11px 22px', background: unameSaving ? 'var(--bg3)' : 'var(--cyan)', color: unameSaving ? 'var(--muted)' : '#000', border: 'none', cursor: unameSaving ? 'not-allowed' : 'pointer', fontWeight: 700 }}>
           {unameSaving ? 'UPDATING...' : 'UPDATE USERNAME'}
         </button>
       </div>
 
       {/* Change password */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: 24, marginBottom: 20 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>CHANGE PASSWORD</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>CHANGE PASSWORD</div>
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div><label style={T.label}>Current Password</label><input type="password" value={form.currentPassword} onChange={e => set('currentPassword', e.target.value)} placeholder="" style={T.inp} required /></div>
           <div><label style={T.label}>New Password</label><input type="password" value={form.newPassword} onChange={e => set('newPassword', e.target.value)} placeholder="" style={T.inp} required minLength={8} /></div>
@@ -420,9 +420,9 @@ function AdminProfilePanel() {
             <div><label style={T.label}>2FA Code</label><input type="text" value={form.currentCode} onChange={e => set('currentCode', e.target.value.replace(/[^A-Za-z0-9 \-]/g, ''))} placeholder="6-digit code or recovery code" style={T.inp} autoComplete="one-time-code" /></div>
           )}
           {form.newPassword && form.confirmPassword && form.newPassword !== form.confirmPassword && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff4757' }}>❌ Passwords do not match</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff4757' }}>❌ Passwords do not match</div>
           )}
-          <button type="submit" disabled={saving} style={{ padding: '12px 24px', background: saving ? 'var(--bg3)' : 'var(--green)', color: saving ? 'var(--muted)' : '#000', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', alignSelf: 'flex-start' }}>
+          <button type="submit" disabled={saving} style={{ padding: '12px 24px', background: saving ? 'var(--bg3)' : 'var(--green)', color: saving ? 'var(--muted)' : '#000', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', alignSelf: 'flex-start' }}>
             {saving ? 'UPDATING...' : 'UPDATE PASSWORD'}
           </button>
         </form>
@@ -431,16 +431,16 @@ function AdminProfilePanel() {
       {/* ── 2FA Panel ─────────────────────────────────────────────────────────── */}
       <div style={{ background: 'var(--bg2)', border: `1px solid ${twoFA.enabled ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, padding: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>TWO-FACTOR AUTHENTICATION</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>TWO-FACTOR AUTHENTICATION</div>
           {!twoFA.loading && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '2px 10px', borderRadius: 12, background: twoFA.enabled ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'rgba(255,71,87,0.1)', border: `1px solid ${twoFA.enabled ? 'color-mix(in srgb, var(--green) 35%, transparent)' : 'rgba(255,71,87,0.3)'}`, color: twoFA.enabled ? 'var(--green)' : '#ff4757' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '2px 10px', borderRadius: 12, background: twoFA.enabled ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'rgba(255,71,87,0.1)', border: `1px solid ${twoFA.enabled ? 'color-mix(in srgb, var(--green) 35%, transparent)' : 'rgba(255,71,87,0.3)'}`, color: twoFA.enabled ? 'var(--green)' : '#ff4757' }}>
               {twoFA.enabled ? '● ACTIVE' : '○ DISABLED'}
             </span>
           )}
         </div>
 
         {twoFA.loading && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: '12px 0' }}>Loading 2FA status…</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '12px 0' }}>Loading 2FA status…</div>
         )}
 
         {/* Error */}
@@ -451,10 +451,10 @@ function AdminProfilePanel() {
         {/* ── Idle: not enabled, no active step ── */}
         {!twoFA.loading && !twoFA.enabled && !twoFA.step && (
           <>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 16 }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 16 }}>
               Add an extra layer of security. Each login will require a time-based code from your authenticator app (Google Authenticator, Authy, 1Password, etc.).
             </p>
-            <button onClick={handleSetupStart} style={{ padding: '10px 20px', background: 'var(--green)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: 'pointer', borderRadius: 2 }}>
+            <button onClick={handleSetupStart} style={{ padding: '10px 20px', background: 'var(--green)', color: '#000', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: 'pointer', borderRadius: 2 }}>
               ENABLE 2FA →
             </button>
           </>
@@ -463,17 +463,17 @@ function AdminProfilePanel() {
         {/* ── Setup step: show QR code ── */}
         {!twoFA.loading && twoFA.step === 'setup' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {twoFA.working && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Generating QR code…</div>}
+            {twoFA.working && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Generating QR code…</div>}
             {twoFA.qr && (
               <>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
                   Scan this QR code with your authenticator app, then enter the 6-digit code below to confirm.
                 </p>
                 <div style={{ background: '#fff', padding: 12, borderRadius: 6, display: 'inline-block', alignSelf: 'flex-start' }}>
                   <img src={twoFA.qr} alt="2FA QR Code" style={{ display: 'block', width: 160, height: 160 }} />
                 </div>
                 {twoFA.secret && (
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
                     Manual entry: <span style={{ color: 'var(--cyan)', letterSpacing: 2, userSelect: 'all' }}>{twoFA.secret}</span>
                   </div>
                 )}
@@ -488,10 +488,10 @@ function AdminProfilePanel() {
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={handleConfirm} disabled={twoFA.working} style={{ padding: '10px 20px', background: twoFA.working ? 'var(--bg3)' : 'var(--green)', color: twoFA.working ? 'var(--muted)' : '#000', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: twoFA.working ? 'not-allowed' : 'pointer', borderRadius: 2 }}>
+                  <button onClick={handleConfirm} disabled={twoFA.working} style={{ padding: '10px 20px', background: twoFA.working ? 'var(--bg3)' : 'var(--green)', color: twoFA.working ? 'var(--muted)' : '#000', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: twoFA.working ? 'not-allowed' : 'pointer', borderRadius: 2 }}>
                     {twoFA.working ? 'VERIFYING…' : 'CONFIRM & ACTIVATE'}
                   </button>
-                  <button onClick={() => setTF({ step: null, qr: null, secret: null, code: '', error: '' })} style={{ padding: '10px 16px', background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 2 }}>
+                  <button onClick={() => setTF({ step: null, qr: null, secret: null, code: '', error: '' })} style={{ padding: '10px 16px', background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 2 }}>
                     CANCEL
                   </button>
                 </div>
@@ -503,14 +503,14 @@ function AdminProfilePanel() {
         {/* ── Enabled: show disable option ── */}
         {!twoFA.loading && twoFA.enabled && twoFA.step !== 'disable' && twoFA.step !== 'regen' && (
           <>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 16 }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 16 }}>
               2FA is active on your account. Every login requires a code from your authenticator app.
             </p>
 
             {twoFA.recoveryCodes && (
               <div style={{ border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', padding: 16, marginBottom: 16 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 8 }}>BACKUP RECOVERY CODES — SAVE THESE NOW</div>
-                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, margin: '0 0 10px' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 8 }}>BACKUP RECOVERY CODES — SAVE THESE NOW</div>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: '0 0 10px' }}>
                   Each code can be used once to sign in if you lose your authenticator. Store them somewhere safe — they won&apos;t be shown again.
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 6 }}>
@@ -518,17 +518,17 @@ function AdminProfilePanel() {
                     <div key={c} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5, background: 'var(--bg2)', border: '1px solid var(--border)', padding: '8px 10px', borderRadius: 4, color: 'var(--text)', userSelect: 'all' }}>{c}</div>
                   ))}
                 </div>
-                <button onClick={() => setTF({ recoveryCodes: null })} style={{ marginTop: 12, padding: '8px 14px', background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 2 }}>
+                <button onClick={() => setTF({ recoveryCodes: null })} style={{ marginTop: 12, padding: '8px 14px', background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 2 }}>
                   I&apos;VE SAVED THESE
                 </button>
               </div>
             )}
 
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button onClick={() => setTF({ step: 'disable', error: '' })} style={{ padding: '10px 20px', background: 'transparent', color: '#ff4757', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: '1px solid rgba(255,71,87,0.4)', cursor: 'pointer', borderRadius: 2 }}>
+              <button onClick={() => setTF({ step: 'disable', error: '' })} style={{ padding: '10px 20px', background: 'transparent', color: '#ff4757', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, border: '1px solid rgba(255,71,87,0.4)', cursor: 'pointer', borderRadius: 2 }}>
                 DISABLE 2FA
               </button>
-              <button onClick={() => setTF({ step: 'regen', error: '', code: '' })} style={{ padding: '10px 20px', background: 'transparent', color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: '1px solid color-mix(in srgb, var(--cyan) 45%, transparent)', cursor: 'pointer', borderRadius: 2 }}>
+              <button onClick={() => setTF({ step: 'regen', error: '', code: '' })} style={{ padding: '10px 20px', background: 'transparent', color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, border: '1px solid color-mix(in srgb, var(--cyan) 45%, transparent)', cursor: 'pointer', borderRadius: 2 }}>
                 REGENERATE RECOVERY CODES
               </button>
             </div>
@@ -538,7 +538,7 @@ function AdminProfilePanel() {
         {/* ── Regenerate recovery codes confirmation ── */}
         {!twoFA.loading && twoFA.step === 'regen' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
               Generate a new set of recovery codes? Your current codes will be invalidated. Enter your password and an authenticator (or recovery) code to confirm.
             </p>
             <div>
@@ -556,10 +556,10 @@ function AdminProfilePanel() {
               />
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={handleRegenCodes} disabled={twoFA.working} style={{ padding: '10px 20px', background: twoFA.working ? 'var(--bg3)' : 'var(--cyan)', color: twoFA.working ? 'var(--muted)' : '#000', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: twoFA.working ? 'not-allowed' : 'pointer', borderRadius: 2 }}>
+              <button onClick={handleRegenCodes} disabled={twoFA.working} style={{ padding: '10px 20px', background: twoFA.working ? 'var(--bg3)' : 'var(--cyan)', color: twoFA.working ? 'var(--muted)' : '#000', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: twoFA.working ? 'not-allowed' : 'pointer', borderRadius: 2 }}>
                 {twoFA.working ? 'GENERATING…' : 'GENERATE NEW CODES'}
               </button>
-              <button onClick={() => setTF({ step: null, regenPw: '', code: '', error: '' })} style={{ padding: '10px 16px', background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 2 }}>
+              <button onClick={() => setTF({ step: null, regenPw: '', code: '', error: '' })} style={{ padding: '10px 16px', background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 2 }}>
                 CANCEL
               </button>
             </div>
@@ -569,7 +569,7 @@ function AdminProfilePanel() {
         {/* ── Disable confirmation ── */}
         {!twoFA.loading && twoFA.step === 'disable' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
               Enter your current password and authenticator code to confirm removal of 2FA from your account.
             </p>
             <div>
@@ -587,10 +587,10 @@ function AdminProfilePanel() {
               />
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={handleDisable} disabled={twoFA.working} style={{ padding: '10px 20px', background: twoFA.working ? 'var(--bg3)' : '#ff4757', color: twoFA.working ? 'var(--muted)' : '#fff', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: twoFA.working ? 'not-allowed' : 'pointer', borderRadius: 2 }}>
+              <button onClick={handleDisable} disabled={twoFA.working} style={{ padding: '10px 20px', background: twoFA.working ? 'var(--bg3)' : '#ff4757', color: twoFA.working ? 'var(--muted)' : '#fff', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, border: 'none', cursor: twoFA.working ? 'not-allowed' : 'pointer', borderRadius: 2 }}>
                 {twoFA.working ? 'DISABLING…' : 'CONFIRM DISABLE'}
               </button>
-              <button onClick={() => setTF({ step: null, disablePw: '', code: '', error: '' })} style={{ padding: '10px 16px', background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 2 }}>
+              <button onClick={() => setTF({ step: null, disablePw: '', code: '', error: '' })} style={{ padding: '10px 16px', background: 'transparent', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 2 }}>
                 CANCEL
               </button>
             </div>
@@ -669,7 +669,7 @@ function BannerRow({ b, TYPES, onToggle, onRemove, onEdit, isEditing }) {
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>
           {b.message}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', fontFamily: 'var(--font-mono)', fontSize: 7 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
           <span style={{ color: tc.color, background: tc.color + '18', border: '1px solid ' + tc.color + '44', padding: '1px 6px', borderRadius: 3, letterSpacing: 1 }}>
             {tc.icon} {tc.label.toUpperCase()}
           </span>
@@ -705,14 +705,14 @@ function BannerRow({ b, TYPES, onToggle, onRemove, onEdit, isEditing }) {
             border: '1px solid ' + (isEditing ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'var(--border)'),
             cursor: 'pointer' }}>&#9998;</button>
         <button onClick={() => onToggle(id, b.active)}
-          style={{ padding: '5px 9px', borderRadius: 5, fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 0.5,
+          style={{ padding: '5px 9px', borderRadius: 5, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 0.5,
             background: isLive ? 'color-mix(in srgb, var(--green) 10%, transparent)' : isExpired ? 'rgba(255,71,87,0.08)' : 'transparent',
             color: isLive ? 'var(--green)' : isExpired ? '#ff4757' : 'var(--muted)',
             border: '1px solid ' + (isLive ? 'color-mix(in srgb, var(--green) 35%, transparent)' : isExpired ? 'rgba(255,71,87,0.3)' : 'var(--border)'),
             cursor: 'pointer' }}>{isLive ? 'LIVE' : isExpired ? 'EXPIRED' : 'OFF'}</button>
         {b.pinned ? (
           <button title="Unpin to enable delete" disabled
-            style={{ padding: '5px 9px', borderRadius: 5, fontFamily: 'var(--font-mono)', fontSize: 10,
+            style={{ padding: '5px 9px', borderRadius: 5, fontFamily: 'var(--font-mono)', fontSize: 11,
               background: 'rgba(245,158,11,0.08)', color: '#f59e0b',
               border: '1px solid rgba(245,158,11,0.25)', cursor: 'not-allowed', opacity: 0.7 }}>📌</button>
         ) : (
@@ -854,7 +854,7 @@ function AnnouncementsPanel() {
     boxSizing: 'border-box', transition: 'border-color 0.15s',
   }
   const lbl = {
-    display: 'block', fontFamily: 'var(--font-mono)', fontSize: 8,
+    display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11,
     letterSpacing: 2.5, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase',
   }
 
@@ -871,14 +871,14 @@ function AnnouncementsPanel() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3,
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3,
             color: 'var(--muted)', marginBottom: 4 }}>ADMIN &rarr; SITE</div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 20 : 26,
             fontWeight: 700, margin: 0 }}>Announcements</h2>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 12px', borderRadius: 99,
+            fontFamily: 'var(--font-mono)', fontSize: 11, padding: '5px 12px', borderRadius: 99,
             background: activeLive.length ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'var(--bg2)',
             border: '1px solid ' + (activeLive.length ? 'color-mix(in srgb, var(--green) 35%, transparent)' : 'var(--border)'),
             color: activeLive.length ? 'var(--green)' : 'var(--muted)',
@@ -890,7 +890,7 @@ function AnnouncementsPanel() {
             )}
             {activeLive.length} LIVE
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 12px',
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '5px 12px',
             borderRadius: 99, background: 'var(--bg2)', border: '1px solid var(--border)',
             color: 'var(--muted)' }}>
             {banners.length} TOTAL
@@ -918,14 +918,14 @@ function AnnouncementsPanel() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 3, height: 18, borderRadius: 2,
                 background: editId ? activeType.color : 'var(--muted)' }} />
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2.5,
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2.5,
                 color: editId ? activeType.color : 'var(--muted)' }}>
                 {editId ? 'EDIT BANNER' : 'NEW BANNER'}
               </span>
             </div>
             {editId && (
               <button onClick={reset}
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1,
+                style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                   padding: '4px 10px', borderRadius: 4, background: 'transparent',
                   border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}>
                 CANCEL
@@ -942,7 +942,7 @@ function AnnouncementsPanel() {
                 {TYPES.map(t => (
                   <button key={t.id} type="button" onClick={() => set('type', t.id)} style={{
                     display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
-                    borderRadius: 99, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 0.5,
+                    borderRadius: 99, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 0.5,
                     background: form.type === t.id ? t.color + '1a' : 'var(--bg3)',
                     color: form.type === t.id ? t.color : 'var(--muted)',
                     border: '1px solid ' + (form.type === t.id ? t.color + '55' : 'var(--border)'),
@@ -1001,7 +1001,7 @@ function AnnouncementsPanel() {
                       boxShadow: on ? '0 0 12px ' + activeType.glow : 'none',
                     }}>
                       <span style={{ fontSize: 17, lineHeight: 1 }}>{s.icon}</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 1, fontWeight: on ? 700 : 400 }}>{s.label.toUpperCase()}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, fontWeight: on ? 700 : 400 }}>{s.label.toUpperCase()}</span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, color: on ? activeType.color + 'bb' : 'var(--border)', textAlign: 'center', lineHeight: 1.3 }}>{s.desc}</span>
                     </button>
                   )
@@ -1019,7 +1019,7 @@ function AnnouncementsPanel() {
                     onChange={v => set('scheduledAt', v)}
                     placeholder="Publish immediately…"
                   />
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', marginTop: 4 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                     Blank = publish immediately
                   </div>
                 </div>
@@ -1031,18 +1031,18 @@ function AnnouncementsPanel() {
                     placeholder="Keep active forever…"
                     dropdownAlign={isMobile ? 'left' : 'right'}
                   />
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', marginTop: 4 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                     Blank = keep active forever
                   </div>
                 </div>
               </div>
               {/* Quick-expire shortcuts */}
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', letterSpacing: 1, marginRight: 2 }}>QUICK EXPIRE:</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, marginRight: 2 }}>QUICK EXPIRE:</span>
                 {[['1h',1],['6h',6],['12h',12],['24h',24],['3d',72],['7d',168]].map(([label, hrs]) => (
                   <button key={label} type="button"
                     onClick={() => set('expiresAt', toLocalDateTimeInput(new Date(Date.now() + hrs * 3600000)))}
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: 7, padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
                       background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--cyan)', letterSpacing: 1,
                       transition: 'all 0.12s' }}>
                     {label}
@@ -1050,7 +1050,7 @@ function AnnouncementsPanel() {
                 ))}
                 {form.expiresAt && (
                   <button type="button" onClick={() => set('expiresAt', '')}
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: 7, padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
                       background: 'transparent', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757' }}>
                     ✕ clear
                   </button>
@@ -1072,11 +1072,11 @@ function AnnouncementsPanel() {
                     transition: 'left 0.2s' }} />
                 </div>
                 <div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                     color: form.pinned ? '#f59e0b' : 'var(--text)' }}>
                     📌 PINNED — Cannot be dismissed
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', marginTop: 2 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
                     Hides the close button · Delete button locked until unpinned
                   </div>
                 </div>
@@ -1151,7 +1151,7 @@ function AnnouncementsPanel() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, ...(isHero ? {} : { margin: '0 10px', padding: isGlass || isOutline ? 0 : '9px 0', flexShrink: 0 }), ...(isPill ? { margin: 0, padding: 0 } : {}) }}>
                     <span style={{ padding: '3px 8px', borderRadius: isPill ? 99 : 4,
                       background: activeType.color + '18', border: '1px solid ' + activeType.color + '44',
-                      color: activeType.color, fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1.5, fontWeight: 700 }}>
+                      color: activeType.color, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5, fontWeight: 700 }}>
                       {activeType.icon} {activeType.label.toUpperCase()}
                     </span>
                     {form.style !== 'banner' && (
@@ -1159,14 +1159,14 @@ function AnnouncementsPanel() {
                         {styleObj.icon} {styleObj.label.toUpperCase()}
                       </span>
                     )}
-                    {form.pinned && <span style={{ fontSize: 10 }}>📌</span>}
+                    {form.pinned && <span style={{ fontSize: 11 }}>📌</span>}
                     {!isHero && !isPill && (
                       <span style={{ width: 5, height: 5, borderRadius: '50%', background: activeType.color, animation: 'bnrAnnPulse 2s infinite', display: 'inline-block' }} />
                     )}
                   </div>
                   <div style={{ flex: 1, overflow: 'hidden' }}>
                     {isHero && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: activeType.color, marginBottom: 4, opacity: 0.8 }}>ANNOUNCEMENT</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: activeType.color, marginBottom: 4, opacity: 0.8 }}>ANNOUNCEMENT</div>
                     )}
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: isHero ? 13 : 11, color: 'var(--text)', lineHeight: 1.55,
                       ...(!isHero ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', padding: isMinimal || isPill ? 0 : '9px 0' } : {}) }}>
@@ -1174,7 +1174,7 @@ function AnnouncementsPanel() {
                     </span>
                   </div>
                   {form.link && form.linkLabel && (
-                    <a href={form.link} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, fontFamily: 'var(--font-mono)', fontSize: 9, color: activeType.color, margin: '0 10px', textDecoration: 'none', borderBottom: '1px solid ' + activeType.color + '55' }}>
+                    <a href={form.link} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, fontFamily: 'var(--font-mono)', fontSize: 11, color: activeType.color, margin: '0 10px', textDecoration: 'none', borderBottom: '1px solid ' + activeType.color + '55' }}>
                       {form.linkLabel} &rarr;
                     </a>
                   )}
@@ -1195,7 +1195,7 @@ function AnnouncementsPanel() {
                 padding: '10px 22px', borderRadius: 7, border: 'none',
                 background: saving ? 'var(--bg3)' : (editId ? activeType.color : 'var(--green)'),
                 color: saving ? 'var(--muted)' : '#000',
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
                 cursor: saving ? 'not-allowed' : 'pointer',
                 opacity: (!form.message.trim() && !saving) ? 0.4 : 1,
                 transition: 'all 0.15s',
@@ -1213,15 +1213,15 @@ function AnnouncementsPanel() {
         <div>
           {loading ? (
             <div style={{ padding: 48, textAlign: 'center', fontFamily: 'var(--font-mono)',
-              fontSize: 9, color: 'var(--muted)', letterSpacing: 2 }}>LOADING...</div>
+              fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>LOADING...</div>
           ) : banners.length === 0 ? (
             <div style={{ padding: '52px 20px', textAlign: 'center',
               background: 'var(--bg2)', borderRadius: 10,
               border: '1px dashed var(--border)' }}>
               <div style={{ fontSize: 30, marginBottom: 10 }}>\ud83d\udce2</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9,
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
                 color: 'var(--muted)', letterSpacing: 2 }}>NO BANNERS YET</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8,
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
                 color: 'var(--border)', marginTop: 6 }}>
                 Publish one to show a site-wide announcement
               </div>
@@ -1230,7 +1230,7 @@ function AnnouncementsPanel() {
             <>
               {activeLive.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3,
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3,
                     color: 'var(--green)', marginBottom: 8,
                     display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ width: 5, height: 5, borderRadius: '50%',
@@ -1247,7 +1247,7 @@ function AnnouncementsPanel() {
               )}
               {activeHid.length > 0 && (
                 <div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3,
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3,
                     color: 'var(--muted)', marginBottom: 8 }}>
                     HIDDEN ({activeHid.length})
                   </div>
@@ -1329,30 +1329,30 @@ function NewsletterPanel() {
     <div>
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>COMMUNITY</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>COMMUNITY</div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, margin: 0 }}>Newsletter</h2>
           <p style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6 }}>{subs.length} total · {activeSubs.length} active</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setBroadcast(true)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 16px', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', cursor: 'pointer' }}>📢 BROADCAST</button>
-          <button onClick={exportCSV} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 16px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer' }}>⬇️ EXPORT CSV</button>
+          <button onClick={() => setBroadcast(true)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 16px', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', cursor: 'pointer' }}>📢 BROADCAST</button>
+          <button onClick={exportCSV} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 16px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer' }}>⬇️ EXPORT CSV</button>
         </div>
       </div>
 
       {/* Broadcast Modal */}
       {broadcastOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          onClick={e => e.target === e.currentTarget && setBroadcast(false)}>
+          onClick={e => e.target === e.currentTarget && setBroadcast(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <div style={{ background: 'var(--bg)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)', width: '100%', maxWidth: 620, boxShadow: '0 0 60px color-mix(in srgb, var(--cyan) 8%, transparent)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Header */}
             <div style={{ padding: '16px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
               <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>NEWSLETTER BROADCAST</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>NEWSLETTER BROADCAST</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>Sending to <span style={{ color: 'var(--green)' }}>{activeSubs.length} active subscribers</span></div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <button onClick={() => setBPreview(p => !p)}
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '5px 12px', cursor: 'pointer', background: bPreview ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'var(--bg3)', border: `1px solid ${bPreview ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'var(--border)'}`, color: bPreview ? 'var(--cyan)' : 'var(--muted)', borderRadius: 4 }}>
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '5px 12px', cursor: 'pointer', background: bPreview ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'var(--bg3)', border: `1px solid ${bPreview ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'var(--border)'}`, color: bPreview ? 'var(--cyan)' : 'var(--muted)', borderRadius: 4 }}>
                   {bPreview ? '✏️ EDIT' : '👁 PREVIEW'}
                 </button>
                 <button onClick={() => setBroadcast(false)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>✕</button>
@@ -1363,35 +1363,35 @@ function NewsletterPanel() {
               {!bPreview ? (
                 <>
                   <div>
-                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>SUBJECT *</label>
+                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>SUBJECT *</label>
                     <input value={bSubject} onChange={e => setBSubject(e.target.value)} placeholder="Monthly Update — April 2026"
                       style={{ ...T.inp, width: '100%', boxSizing: 'border-box', padding: '10px 12px' }} />
                   </div>
                   <div>
-                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>BODY *</label>
+                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>BODY *</label>
                     <textarea value={bBody} onChange={e => setBBody(e.target.value)} rows={12} placeholder={'Hi there,\n\nHere is this month\'s update from aifazi.net...\n\nBest regards,\nTanvir'}
                       style={{ ...T.inp, width: '100%', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.7, padding: '10px 12px' }} />
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', marginTop: 4 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                       {bBody.trim().split(/\s+/).filter(Boolean).length} words · Plain text, line breaks preserved
                     </div>
                   </div>
                 </>
               ) : (
                 <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: 24, fontFamily: 'var(--font-mono)', lineHeight: 1.8 }}>
-                  <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>EMAIL PREVIEW</div>
+                  <div style={{ fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>EMAIL PREVIEW</div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
                     {bSubject || <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>(no subject)</span>}
                   </div>
                   <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13, color: 'var(--text)', margin: 0, fontFamily: 'var(--font-mono)' }}>{bBody || <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>(no body)</span>}</pre>
-                  <div style={{ marginTop: 20, paddingTop: 12, borderTop: '1px solid var(--border)', fontSize: 9, color: 'var(--muted)' }}>— Sent from aifazi.net</div>
+                  <div style={{ marginTop: 20, paddingTop: 12, borderTop: '1px solid var(--border)', fontSize: 11, color: 'var(--muted)' }}>— Sent from aifazi.net</div>
                 </div>
               )}
             </div>
             {/* Footer */}
             <div style={{ padding: '14px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 10, flexShrink: 0 }}>
-              <button onClick={() => setBroadcast(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '9px 18px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}>CANCEL</button>
+              <button onClick={() => setBroadcast(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '9px 18px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}>CANCEL</button>
               <button onClick={handleBroadcast} disabled={bSending || !bSubject.trim() || !bBody.trim()}
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, padding: '9px 22px',
+                style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, padding: '9px 22px',
                   background: bSending ? 'var(--bg3)' : 'color-mix(in srgb, var(--cyan) 12%, transparent)', border: `1px solid ${bSending ? 'var(--border)' : 'color-mix(in srgb, var(--cyan) 40%, transparent)'}`,
                   color: bSending ? 'var(--muted)' : 'var(--cyan)', cursor: bSending ? 'not-allowed' : 'pointer',
                   opacity: (!bSubject.trim() || !bBody.trim()) ? 0.4 : 1 }}>
@@ -1417,11 +1417,11 @@ function NewsletterPanel() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.email}</div>
-                  {s.createdAt && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>Joined {new Date(s.createdAt).toLocaleDateString()}</div>}
+                  {s.createdAt && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Joined {new Date(s.createdAt).toLocaleDateString()}</div>}
                 </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, padding: '3px 8px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 20%, transparent)', color: 'var(--green)', flexShrink: 0 }}>{(s.status || 'ACTIVE').toUpperCase()}</span>
-                <a href={`mailto:${s.email}`} title={`Email ${s.email}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', textDecoration: 'none', flexShrink: 0 }}>✉️</a>
-                <button onClick={() => handleDelete(s.email)} aria-label={`Delete ${s.email}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', cursor: 'pointer', flexShrink: 0 }}>🗑️</button>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '3px 8px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 20%, transparent)', color: 'var(--green)', flexShrink: 0 }}>{(s.status || 'ACTIVE').toUpperCase()}</span>
+                <a href={`mailto:${s.email}`} title={`Email ${s.email}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', textDecoration: 'none', flexShrink: 0 }}>✉️</a>
+                <button onClick={() => handleDelete(s.email)} aria-label={`Delete ${s.email}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', cursor: 'pointer', flexShrink: 0 }}>🗑️</button>
               </div>
             ))}
           </div>
@@ -1463,10 +1463,10 @@ function StatsPanel() {
     <div style={{ padding: isMobile ? 16 : 32 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>ANALYTICS</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>ANALYTICS</div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 22 : 28, fontWeight: 700, margin: 0 }}>Site Statistics</h2>
         </div>
-        <button onClick={load} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 16px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer' }}>🔄 REFRESH</button>
+        <button onClick={load} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 16px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer' }}>🔄 REFRESH</button>
       </div>
 
       {loading && <div className="loader" />}
@@ -1487,9 +1487,9 @@ function StatsPanel() {
           ].map(c => (
             <div key={c.label} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '16px 18px', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${c.color}, transparent)` }} />
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>{c.label.toUpperCase()}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>{c.label.toUpperCase()}</div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 22 : 28, fontWeight: 800, color: c.color, lineHeight: 1 }}>{c.value}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>{c.sub}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{c.sub}</div>
             </div>
           ))}
         </div>
@@ -1501,7 +1501,7 @@ function StatsPanel() {
             { title: 'THIS WEEK', d: data.week, color: '#00d4ff' },
           ].map(({ title, d, color }) => (
             <div key={title} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>{title}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>{title}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {[['Posts', d?.posts], ['Users', d?.users], ['Threads', d?.threads], ['Messages', d?.messages]].map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -1517,26 +1517,26 @@ function StatsPanel() {
         {/* Top Posts + Recent Users */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 24 }}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>TOP POSTS BY VIEWS</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>TOP POSTS BY VIEWS</div>
             {(data.topPosts || []).length === 0
               ? <EmptyState icon="📝" title="No posts yet" hint="Publish your first post to see it here." />
               : (data.topPosts || []).map((p, i) => (
               <div key={p._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', width: 16, textAlign: 'center', flexShrink: 0 }}>#{i+1}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', width: 16, textAlign: 'center', flexShrink: 0 }}>#{i+1}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', flexShrink: 0 }}>{fmt(p.views)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', flexShrink: 0 }}>{fmt(p.views)}</span>
               </div>
             ))}
           </div>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>RECENT USERS</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>RECENT USERS</div>
             {(data.recent?.users || []).length === 0
               ? <EmptyState icon="👤" title="No users yet" hint="New registrations will appear here." />
               : (data.recent?.users || []).map(u => (
               <div key={u._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', flexShrink: 0 }}>{u.username?.[0]?.toUpperCase()}</div>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', flexShrink: 0 }}>{u.username?.[0]?.toUpperCase()}</div>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', flex: 1 }}>{u.username}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>{ago(u.createdAt)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{ago(u.createdAt)}</span>
               </div>
             ))}
           </div>
@@ -1544,16 +1544,16 @@ function StatsPanel() {
 
         {/* Recent contacts */}
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>RECENT CONTACT MESSAGES</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>RECENT CONTACT MESSAGES</div>
           {(data.recent?.contacts || []).length === 0
             ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>No messages yet.</div>
             : (data.recent?.contacts || []).map(c => (
               <div key={c._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', gap: 12 }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}  {c.subject || '(no subject)'}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)' }}>{c.email}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)' }}>{c.email}</div>
                 </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', flexShrink: 0 }}>{ago(c.createdAt)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>{ago(c.createdAt)}</span>
               </div>
             ))
           }
@@ -1631,12 +1631,12 @@ function AuditPanel() {
     <div style={{ padding: isMobile ? 16 : 32 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>SYSTEM</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>SYSTEM</div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 22 : 28, fontWeight: 700, margin: 0 }}>Audit Log</h2>
           <p style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6 }}>{total} total entries</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => load(page)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer' }}>🔄 REFRESH</button>
+          <button onClick={() => load(page)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer' }}>🔄 REFRESH</button>
           <button onClick={async () => {
             setMigrating(true); setMigrationSql('')
             try {
@@ -1652,8 +1652,8 @@ function AuditPanel() {
               load(); loadAuthLog()
             } catch { toast.error('Migration request failed') }
             finally { setMigrating(false) }
-          }} disabled={migrating} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', cursor: 'pointer', opacity: migrating ? 0.5 : 1 }}>{migrating ? '⏳ MIGRATING' : '🛠 MIGRATE DB'}</button>
-          <button onClick={purge} disabled={purging} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', cursor: 'pointer', opacity: purging ? 0.5 : 1 }}>{purging ? 'PURGING' : '🗑️ PURGE OLD'}</button>
+          }} disabled={migrating} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', cursor: 'pointer', opacity: migrating ? 0.5 : 1 }}>{migrating ? '⏳ MIGRATING' : '🛠 MIGRATE DB'}</button>
+          <button onClick={purge} disabled={purging} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', cursor: 'pointer', opacity: purging ? 0.5 : 1 }}>{purging ? 'PURGING' : '🗑️ PURGE OLD'}</button>
         </div>
       </div>
 
@@ -1661,18 +1661,18 @@ function AuditPanel() {
       {migrationSql && (
         <div style={{ margin: '16px 0', background: 'rgba(255,200,0,0.05)', border: '1px solid rgba(255,200,0,0.3)', borderRadius: 4, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: '#ffc800' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: '#ffc800' }}>
               ⚠️ RUN THIS SQL IN SUPABASE → SQL EDITOR
             </span>
             <button
               onClick={() => { navigator.clipboard.writeText(migrationSql); toast.success('SQL copied!') }}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', cursor: 'pointer' }}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', cursor: 'pointer' }}
             >📋 COPY SQL</button>
           </div>
-          <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 3, overflow: 'auto', margin: 0, lineHeight: 1.6, maxHeight: 300 }}>
+          <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 3, overflow: 'auto', margin: 0, lineHeight: 1.6, maxHeight: 300 }}>
             {migrationSql}
           </pre>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 8 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
             Go to <span style={{ color: 'var(--cyan)' }}>supabase.com → your project → SQL Editor</span> → paste and run. Then click 🛠 MIGRATE DB again to verify.
           </div>
         </div>
@@ -1688,7 +1688,7 @@ function AuditPanel() {
             key={t.key}
             onClick={() => setAuditTab(t.key)}
             style={{
-              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '12px 20px',
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '12px 20px',
               background: auditTab === t.key ? 'color-mix(in srgb, var(--green) 5%, transparent)' : 'transparent',
               color: auditTab === t.key ? 'var(--green)' : 'var(--muted)',
               border: 'none',
@@ -1717,17 +1717,17 @@ function AuditPanel() {
                     <span>{(log.action || '').replace(/_/g, ' ')}</span>
                     {log.target && <span style={{ color: 'var(--muted)' }}> › {log.target}</span>}
                   </div>
-                  {log.details && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}</div>}
+                  {log.details && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}</div>}
                 </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', flexShrink: 0, whiteSpace: 'nowrap' }}>{ago(log.createdAt)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0, whiteSpace: 'nowrap' }}>{ago(log.createdAt)}</span>
               </div>
             ))}
           </div>
           {total > 50 && (
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-              <button onClick={() => load(page - 1)} disabled={page <= 1} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent', border: '1px solid var(--border)', color: page <= 1 ? 'var(--muted)' : 'var(--text)', cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>← PREV</button>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: '7px 14px' }}>Page {page} of {Math.ceil(total/50)}</span>
-              <button onClick={() => load(page + 1)} disabled={page >= Math.ceil(total/50)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent', border: '1px solid var(--border)', color: page >= Math.ceil(total/50) ? 'var(--muted)' : 'var(--text)', cursor: page >= Math.ceil(total/50) ? 'not-allowed' : 'pointer' }}>NEXT →</button>
+              <button onClick={() => load(page - 1)} disabled={page <= 1} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '7px 14px', background: 'transparent', border: '1px solid var(--border)', color: page <= 1 ? 'var(--muted)' : 'var(--text)', cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>← PREV</button>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '7px 14px' }}>Page {page} of {Math.ceil(total/50)}</span>
+              <button onClick={() => load(page + 1)} disabled={page >= Math.ceil(total/50)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '7px 14px', background: 'transparent', border: '1px solid var(--border)', color: page >= Math.ceil(total/50) ? 'var(--muted)' : 'var(--text)', cursor: page >= Math.ceil(total/50) ? 'not-allowed' : 'pointer' }}>NEXT →</button>
             </div>
           )}
         </>
@@ -1742,7 +1742,7 @@ function AuditPanel() {
             ) : authLogs.length === 0 ? (
               <div style={{ padding: 40, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.8 }}>
                 No auth log entries found yet.<br />
-                <span style={{ fontSize: 9, opacity: 0.6 }}>
+                <span style={{ fontSize: 11, opacity: 0.6 }}>
                   Entries appear here after the first login attempt. If tables are missing, visit{' '}
                   <code style={{ color: 'var(--cyan)' }}>/api/admin/audit/migrate</code>.
                 </span>
@@ -1769,7 +1769,7 @@ function AuditPanel() {
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', fontWeight: 700 }}>
                         {entry.username || '—'}
                       </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '1px 7px',
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '1px 7px',
                         background: success ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'rgba(255,71,87,0.1)',
                         border: `1px solid ${success ? 'color-mix(in srgb, var(--green) 35%, transparent)' : 'rgba(255,71,87,0.35)'}`,
                         color: success ? 'var(--green)' : '#ff4757',
@@ -1778,35 +1778,35 @@ function AuditPanel() {
                         {evtLabel} · {success ? 'OK' : 'FAIL'}
                       </span>
                       {entry.role && (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '1px 7px', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 3 }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '1px 7px', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 3 }}>
                           {entry.role.toUpperCase()}
                         </span>
                       )}
                       {entry.ip && (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)' }}>{entry.ip}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)' }}>{entry.ip}</span>
                       )}
                     </div>
                     {entry.userAgent && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {entry.userAgent}
                       </div>
                     )}
                     {entry.reason && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', marginTop: 2 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff4757', marginTop: 2 }}>
                         {entry.reason}
                       </div>
                     )}
                   </div>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', flexShrink: 0, whiteSpace: 'nowrap' }}>{ago(entry.createdAt)}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0, whiteSpace: 'nowrap' }}>{ago(entry.createdAt)}</span>
                 </div>
               )
             })}
           </div>
           {authTotal > 50 && (
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>
-              <button onClick={() => loadAuthLog(authPage - 1)} disabled={authPage <= 1} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent', border: '1px solid var(--border)', color: authPage <= 1 ? 'var(--muted)' : 'var(--text)', cursor: authPage <= 1 ? 'not-allowed' : 'pointer' }}>← PREV</button>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: '7px 14px' }}>Page {authPage} of {Math.ceil(authTotal/50)}</span>
-              <button onClick={() => loadAuthLog(authPage + 1)} disabled={authPage >= Math.ceil(authTotal/50)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent', border: '1px solid var(--border)', color: authPage >= Math.ceil(authTotal/50) ? 'var(--muted)' : 'var(--text)', cursor: authPage >= Math.ceil(authTotal/50) ? 'not-allowed' : 'pointer' }}>NEXT →</button>
+              <button onClick={() => loadAuthLog(authPage - 1)} disabled={authPage <= 1} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '7px 14px', background: 'transparent', border: '1px solid var(--border)', color: authPage <= 1 ? 'var(--muted)' : 'var(--text)', cursor: authPage <= 1 ? 'not-allowed' : 'pointer' }}>← PREV</button>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '7px 14px' }}>Page {authPage} of {Math.ceil(authTotal/50)}</span>
+              <button onClick={() => loadAuthLog(authPage + 1)} disabled={authPage >= Math.ceil(authTotal/50)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '7px 14px', background: 'transparent', border: '1px solid var(--border)', color: authPage >= Math.ceil(authTotal/50) ? 'var(--muted)' : 'var(--text)', cursor: authPage >= Math.ceil(authTotal/50) ? 'not-allowed' : 'pointer' }}>NEXT →</button>
             </div>
           )}
         </>
@@ -1844,14 +1844,14 @@ function BackupPanel() {
   return (
     <div style={{ padding: isMobile ? 16 : 32, maxWidth: 640 }}>
       <div style={{ marginBottom: 28 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>SYSTEM</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>SYSTEM</div>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 22 : 28, fontWeight: 700, margin: 0 }}>Backup</h2>
         <p style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6, lineHeight: 1.7 }}>Export a full JSON backup of all database collections. The file can be used to restore data or migrate to another server.</p>
       </div>
 
       {/* Collection stats */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '20px 24px', marginBottom: 20 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DATABASE SNAPSHOT</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DATABASE SNAPSHOT</div>
         {loading ? <div className="loader" /> : stats ? (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
@@ -1884,7 +1884,7 @@ function BackupPanel() {
         {downloading ? 'GENERATING BACKUP' : 'DOWNLOAD FULL BACKUP (.json)'}
       </button>
 
-      <div style={{ marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.8, padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.8, padding: '12px 16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
         ✅ Backup includes: Posts  Forum Users  Threads  Replies  Contact Messages<br/>
         🔒 Passwords are excluded from the user export for security.<br/>
         🚨 Store your backup file securely  it contains sensitive data.

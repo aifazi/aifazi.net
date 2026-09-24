@@ -82,7 +82,7 @@ export default function ContactPage() {
             >
               <div style={{ width: 40, height: 40, background: 'color-mix(in srgb, var(--green) 8%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{item.icon}</div>
               <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>{item.label}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>{item.label}</div>
                 <div style={{ fontSize: 15, color: 'var(--text)' }}>
                   <EditableText contentKey={item.key} defaultValue={item.def} />
                 </div>
@@ -90,7 +90,7 @@ export default function ContactPage() {
             </div>
           ))}
 
-          <button onClick={() => navigate(from)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', padding: '10px 20px', cursor: 'pointer', marginTop: 8, transition: 'all 0.2s' }}
+          <button onClick={() => navigate(from)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', padding: '10px 20px', cursor: 'pointer', marginTop: 8, transition: 'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
           >← Back</button>
