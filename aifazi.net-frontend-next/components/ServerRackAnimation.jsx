@@ -1884,7 +1884,11 @@ function VisitorHud({ visitor }) {
       className="globe-visitor-shell"
       data-anchored={hasCoords ? 'true' : undefined}
       style={{
-        position: 'absolute', bottom: 12, left: 14, zIndex: 4,
+        position: 'absolute',
+        // Default corner placement; CSS anchor rules override via [data-anchored]
+        bottom: 12,
+        left: 14,
+        zIndex: 4,
         maxWidth: 'calc(100% - 28px)',
       }}
     >
@@ -2011,17 +2015,20 @@ function VisitorHud({ visitor }) {
           outline-offset: 2px;
         }
         /* CSS Anchor Positioning — lock the HUD to the COBE visitor marker when
-           the browser supports it; otherwise the shell stays bottom-left. */
-        @supports (position-anchor: --cobe-visitor) {
+           the browser supports it; otherwise the shell stays bottom-left.
+           !important beats the inline corner placement on the shell. */
+        @supports (anchor-name: --cobe-visitor) {
           .globe-visitor-shell[data-anchored='true'] {
-            position: absolute;
+            position: absolute !important;
             position-anchor: --cobe-visitor;
-            bottom: calc(anchor(top) + 10px);
-            left: anchor(center);
+            bottom: calc(anchor(top) + 10px) !important;
+            left: anchor(center) !important;
+            right: auto !important;
+            top: auto !important;
             translate: -50% 0;
             opacity: var(--cobe-visible-visitor, 1);
             transition: opacity 0.3s ease;
-            max-width: min(320px, calc(100% - 28px));
+            max-width: min(320px, calc(100% - 28px)) !important;
           }
         }
         @media (prefers-reduced-motion: reduce) {
@@ -2158,9 +2165,10 @@ function GlobeMode({ visibleRef }) {
     const theme = themeRef.current
     const v = visitorRef.current
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    // COBE multiplies width/height by devicePixelRatio internally — pass CSS pixels.
     const rect = canvas.getBoundingClientRect()
-    const width = Math.max(200, Math.floor(rect.width * dpr))
-    const height = Math.max(200, Math.floor(rect.height * dpr))
+    const width = Math.max(240, Math.floor(rect.width || wrapRef.current?.clientWidth || 480))
+    const height = Math.max(240, Math.floor(rect.height || wrapRef.current?.clientHeight || 360))
 
     const cyan  = rgbToArr(theme.cyanRgb,  '0,212,255')
     const green = rgbToArr(theme.greenRgb, '0,255,136')
@@ -2220,19 +2228,24 @@ function GlobeMode({ visibleRef }) {
       arcWidth: 0.4,
       arcHeight: 0.35,
       markerElevation: 0.02,
-      onRender: (state) => {
-        const s = stateRef.current
-        if (!s.drag) {
-          s.phi += s.velPhi
-        }
-        state.phi = s.phi
-        state.theta = s.theta
-        state.scale = s.zoom
-      },
     })
 
     globeRef.current = globe
+
+    // COBE v2 has no onRender — drive phi/theta/scale via globe.update() each frame.
+    let raf = 0
+    const frame = () => {
+      const s = stateRef.current
+      if (!s.drag) s.phi += s.velPhi
+      try {
+        globe.update({ phi: s.phi, theta: s.theta, scale: s.zoom })
+      } catch { /* globe destroyed */ }
+      raf = requestAnimationFrame(frame)
+    }
+    raf = requestAnimationFrame(frame)
+
     return () => {
+      cancelAnimationFrame(raf)
       try { globe.destroy() } catch { /* already torn down */ }
       globeRef.current = null
     }
