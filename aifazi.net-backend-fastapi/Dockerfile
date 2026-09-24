@@ -3,7 +3,7 @@
 # Assumes the build context is the backend directory (aifazi.net-backend-fastapi).
 # Deployed via Coolify on VPS. Scheduler starts in lifespan when VERCEL is unset.
 # WireGuard full-tunnel VPN runs inside this container (requires NET_ADMIN cap).
-FROM python:3.12.9-slim
+FROM python:3.14.6-slim
 
 WORKDIR /app
 
