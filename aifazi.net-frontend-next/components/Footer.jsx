@@ -36,11 +36,11 @@ function SystemStatus() {
         ◈ SYSTEM STATUS
       </div>
       {services === null ? (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Checking…</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Checking…</div>
       ) : rows ? (
         rows.map(s => (
           <div key={s.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{s.label}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{s.label}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{
                 width: 6, height: 6, borderRadius: '50%',
@@ -55,7 +55,7 @@ function SystemStatus() {
           </div>
         ))
       ) : (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
           Status unavailable — <Link to="/status" style={{ color: 'var(--cyan)', textDecoration: 'none' }}>view live status →</Link>
         </div>
       )}
@@ -110,7 +110,7 @@ function MiniNewsletter() {
   }
 
   if (status === 'ok') return (
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1, padding: '8px 0' }}>
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1, padding: '8px 0' }}>
       ✓ Subscribed — thank you!
     </div>
   )
@@ -124,7 +124,7 @@ function MiniNewsletter() {
         style={{
           flex: 1, background: 'var(--comp-input-bg, var(--bg3))', border: `1px solid ${status === 'err' ? 'rgba(255,71,87,0.5)' : 'var(--comp-input-border, var(--border))'}`,
           outline: 'none', padding: '7px 10px',
-          fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)',
+          fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)',
           borderRadius: 'var(--comp-input-radius, 4px)', minWidth: 0,
         }}
       />
@@ -183,7 +183,7 @@ function FooterMinimal({ siteConfig, sectionLinks, platformLinks, socialLinks, h
             >{icon}</a>
           ))}
           <div style={{ width: 1, height: 14, background: 'var(--border)' }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>© {year} tanvir@aifazi.net</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>© {year} tanvir@aifazi.net</span>
         </div>
       </div>
       <style>{`@media(max-width:768px){footer>div{flex-direction:column;text-align:center;padding:20px 24px!important;}}`}</style>
@@ -396,13 +396,13 @@ function FooterDarkCompact({ siteConfig, sectionLinks, platformLinks, socialLink
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
           {allLinks.map((l, i) => l.isHash ? (
             <a key={i} href={l.href} onClick={e => handleHashLink(e, l.hash)}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 1, transition: 'color 0.2s' }}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 1, transition: 'color 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--green)'}
               onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
             >{l.label}</a>
           ) : (
             <Link key={i} to={l.href}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 1, transition: 'color 0.2s' }}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 1, transition: 'color 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--green)'}
               onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
             >{l.label}</Link>
@@ -469,7 +469,7 @@ function FooterCommand({ sectionLinks, platformLinks, socialLinks, hasAdminAcces
             <span style={head}>SERVICES</span>
             {services.map(([label, c]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: P.muted }}>{label}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted }}>{label}</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: c, boxShadow: `0 0 6px ${c}` }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: c, letterSpacing: 1 }}>UP</span>
@@ -534,7 +534,7 @@ function FooterDashboard({ sectionLinks, platformLinks, hasAdminAccess, handleHa
             <span style={head}>SYSTEM STATUS</span>
             {[['API Server', true], ['Database', true], ['CDN / Media', true], ['Mail Service', true]].map(([label, ok]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: P.muted }}>{label}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted }}>{label}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: ok ? P.sub : '#ff4757', letterSpacing: 1 }}>{ok ? 'UP' : 'DOWN'}</span>
               </div>
             ))}
@@ -602,7 +602,7 @@ function FooterBrutal({ sectionLinks, platformLinks, handleHashLink, year }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {blocks.map(b => (
             <div key={b.no} style={{ border: `3px solid ${P.text}` }}>
-              <div style={{ background: P.text, color: P.bg, fontFamily: 'monospace', fontSize: 10, fontWeight: 700, letterSpacing: 3, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ background: P.text, color: P.bg, fontFamily: 'monospace', fontSize: 11, fontWeight: 700, letterSpacing: 3, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span>{b.label}</span><span>{b.no}</span>
               </div>
               <div style={{ padding: '12px 14px' }}>
@@ -619,8 +619,8 @@ function FooterBrutal({ sectionLinks, platformLinks, handleHashLink, year }) {
         </div>
       </div>
       <div style={{ padding: '14px clamp(16px,5vw,60px)', borderTop: `3px solid ${P.text}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-        <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: P.text, letterSpacing: 1 }}>© {year} TANVIR@AIFAZI.NET</span>
-        <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: P.text, letterSpacing: 1 }}>ALL RIGHTS RESERVED</span>
+        <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: P.text, letterSpacing: 1 }}>© {year} TANVIR@AIFAZI.NET</span>
+        <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: P.text, letterSpacing: 1 }}>ALL RIGHTS RESERVED</span>
       </div>
     </footer>
   )
@@ -676,7 +676,7 @@ function FooterTerminal({ sectionLinks, platformLinks, hasAdminAccess, year }) {
   return (
     <footer data-footer-style="terminal" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
       <div style={{ padding: 'clamp(28px,4vw,44px) clamp(16px,5vw,60px) 30px', fontFamily: 'monospace' }}>
-        <div style={{ fontSize: 10, color: P.muted, letterSpacing: 1, marginBottom: 14 }}>~$ tail -f /var/log/aifazi/footer.log</div>
+        <div style={{ fontSize: 11, color: P.muted, letterSpacing: 1, marginBottom: 14 }}>~$ tail -f /var/log/aifazi/footer.log</div>
         {lines.map((l, i) => (
           <div key={i} style={{ fontSize: 11, color: l.startsWith('[  OK  ]') ? P.accent : l.startsWith('[ RUN ]') ? P.sub : P.muted, lineHeight: 1.9 }}>{l}</div>
         ))}
@@ -685,15 +685,15 @@ function FooterTerminal({ sectionLinks, platformLinks, hasAdminAccess, year }) {
           <span style={{ fontSize: 11, color: P.accent }}>help —</span>
           <span style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
             {quickLinks.map(l => l.hash ? (
-              <a key={l.hash} href={`/#${l.hash}`} style={{ fontSize: 10, color: P.muted, textDecoration: 'none', letterSpacing: 1 }}>{l.label.toLowerCase()}</a>
+              <a key={l.hash} href={`/#${l.hash}`} style={{ fontSize: 11, color: P.muted, textDecoration: 'none', letterSpacing: 1 }}>{l.label.toLowerCase()}</a>
             ) : (
-              <Link key={l.to} to={l.to} style={{ fontSize: 10, color: P.muted, textDecoration: 'none', letterSpacing: 1 }}>{l.label.toLowerCase()}</Link>
+              <Link key={l.to} to={l.to} style={{ fontSize: 11, color: P.muted, textDecoration: 'none', letterSpacing: 1 }}>{l.label.toLowerCase()}</Link>
             ))}
           </span>
           <span style={{ width: 7, height: 12, background: P.accent, animation: 'ftBlink 1s steps(2) infinite' }} />
         </div>
         {hasAdminAccess && (
-          <div style={{ fontSize: 10, color: P.sub, marginTop: 8 }}>admin — <Link to="/admin" style={{ color: P.sub }}>open dashboard</Link></div>
+          <div style={{ fontSize: 11, color: P.sub, marginTop: 8 }}>admin — <Link to="/admin" style={{ color: P.sub }}>open dashboard</Link></div>
         )}
       </div>
       <div style={{ padding: '10px clamp(16px,5vw,60px)', borderTop: '1px solid rgba(51,255,51,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
@@ -794,14 +794,14 @@ function FooterFiveM({ socialLinks, year }) {
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)', display: 'block' }}>SERVER</span>
           <div style={{ background: 'color-mix(in srgb, var(--green) 3%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 10%, transparent)', borderRadius: 8, padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>STATUS</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>STATUS</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: online ? 'var(--green)' : '#ff4757', boxShadow: online ? '0 0 6px var(--green)' : '0 0 6px #ff4757', animation: 'ftPulse 2s ease-in-out infinite', display: 'inline-block' }} />
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: online ? 'var(--green)' : '#ff4757', letterSpacing: 1 }}>{online ? 'ONLINE' : 'OFFLINE'}</span>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>PLAYERS</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>PLAYERS</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 1 }}>{players}/{max}</span>
             </div>
             <Link to={connectRoute} style={{ display: 'block', marginTop: 12, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, padding: '8px 0', color: 'var(--comp-btn-text, #000)', background: 'var(--comp-btn-bg, var(--green))', textDecoration: 'none', borderRadius: 'var(--comp-btn-radius, 5px)', boxShadow: 'var(--comp-btn-shadow, none)' }}>CONNECT NOW</Link>
@@ -1091,7 +1091,7 @@ export default function Footer() {
                   { label: '🎨 Themes',    to: '/admin' },
                 ].map(({ label, to }) => (
                   <Link key={label} to={to} className="ft-link"
-                    style={{ ...monoLink, fontSize: 10, transition: 'color 0.2s, padding-left 0.2s' }}
+                    style={{ ...monoLink, fontSize: 11, transition: 'color 0.2s, padding-left 0.2s' }}
                   >{label}</Link>
                 ))}
               </div>
@@ -1120,7 +1120,7 @@ export default function Footer() {
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: fs.accent, animation: 'ftPulse 2s ease-in-out infinite', boxShadow: `0 0 8px ${fs.accent}` }} />
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: fs.muted, letterSpacing: 1 }}>ALL SYSTEMS OPERATIONAL</span>
           </div>
-          <span style={{ color: fs.border, fontSize: 10 }}>·</span>
+          <span style={{ color: fs.border, fontSize: 11 }}>·</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: fs.muted, letterSpacing: 1 }}>UAE / GMT+4</span>
         </div>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: fs.muted, letterSpacing: 1 }}>

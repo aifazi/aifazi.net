@@ -83,7 +83,7 @@ export default function CustomersTab() {
           <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.5 }}>🔍</span>
         </div>
         <button onClick={load} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>↻ REFRESH</button>
-        <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{customers.length} customers</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{customers.length} customers</span>
       </div>
 
       {loading ? <div className="loader" /> : customers.length === 0 ? (
@@ -100,7 +100,7 @@ export default function CustomersTab() {
                   {c.banned && <span style={{ fontFamily: MONO, fontSize: 11, padding: '1px 6px', borderRadius: 4, background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.3)', color: R }}>BANNED</span>}
                   {c.role && c.role !== 'user' && <span style={{ fontFamily: MONO, fontSize: 11, padding: '1px 6px', borderRadius: 4, background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C }}>{c.role.toUpperCase()}</span>}
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{c.email || 'no email'} · joined {fmt(c.created_at)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{c.email || 'no email'} · joined {fmt(c.created_at)}</div>
               </div>
               <Stat label="ORDERS" value={c.orders_count} color="var(--text)" />
               <Stat label="SPENT" value={money(c.spent_cents)} color={G} />
@@ -123,7 +123,7 @@ export default function CustomersTab() {
                       <div key={o.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                         <span style={{ fontFamily: MONO, fontSize: 11, color: C }}>{o.order_number}</span>
                         <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: G }}>{o.status}</span>
-                        <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{fmt(o.created_at)}</span>
+                        <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{fmt(o.created_at)}</span>
                         {o.coupon_code && <span style={{ fontFamily: MONO, fontSize: 11, color: Y }}>🎟 {o.coupon_code}</span>}
                         <div style={{ flex: 1 }} />
                         <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700 }}>{money(o.total_cents)}</span>
@@ -136,7 +136,7 @@ export default function CustomersTab() {
                   <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>NOTES</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <input value={note} onChange={e => setNote(e.target.value)} placeholder="Add an internal note…" style={{ ...INP, flex: 1 }} />
-                    <button onClick={addNote} disabled={noteBusy || !note.trim()} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 16px', background: noteBusy || !note.trim() ? 'var(--bg3)' : 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: noteBusy || !note.trim() ? 'var(--muted)' : G, borderRadius: 6, cursor: noteBusy ? 'not-allowed' : 'pointer' }}>
+                    <button onClick={addNote} disabled={noteBusy || !note.trim()} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 16px', background: noteBusy || !note.trim() ? 'var(--bg3)' : 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: noteBusy || !note.trim() ? 'var(--muted)' : G, borderRadius: 6, cursor: noteBusy ? 'not-allowed' : 'pointer' }}>
                       {noteBusy ? '…' : '+ NOTE'}
                     </button>
                   </div>
@@ -148,7 +148,7 @@ export default function CustomersTab() {
                       </div>
                       <button onClick={() => delNote(c.id, n.id)} style={{ background: 'none', border: 'none', color: R, cursor: 'pointer', fontSize: 13 }}>✕</button>
                     </div>
-                  )) : <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>No notes yet.</div>}
+                  )) : <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>No notes yet.</div>}
                 </div>
               </div>
             )}

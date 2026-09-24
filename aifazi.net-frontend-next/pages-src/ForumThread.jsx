@@ -251,7 +251,7 @@ export default function ForumThread() {
       <div className="community-shell">
 
         {/* Breadcrumb */}
-        <nav aria-label="Breadcrumb" className="forum-breadcrumb" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
+        <nav aria-label="Breadcrumb" className="forum-breadcrumb" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
           <Link to="/forum" style={{ color: 'var(--muted)', textDecoration: 'none' }}>FORUM</Link>
           {category?.slug && (
             <>
@@ -280,7 +280,7 @@ export default function ForumThread() {
               </div>
             </div>
             <div style={{ flex: 1 }} />
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <span className="forum-thread-stats-chip">👁 {viewTotal}</span>
               <span className="forum-thread-stats-chip">💬 {replyTotal}</span>
               <span className="forum-thread-stats-chip">♥ {likeTotal}</span>
@@ -347,7 +347,7 @@ export default function ForumThread() {
         {/* Replies */}
         {replies.length > 0 && (
           <div className="forum-replies-section" style={{ marginTop: 26 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 14 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 14 }}>
               {replies.length} REPL{replies.length !== 1 ? 'IES' : 'Y'}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -407,7 +407,7 @@ export default function ForumThread() {
         {/* Reply box */}
         {!thread.locked && user ? (
           <Card style={{ padding: 'clamp(20px, 3vw, 30px)', marginTop: 34 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 2, marginBottom: 16 }}>POST A REPLY</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2, marginBottom: 16 }}>POST A REPLY</div>
             <textarea ref={replyRef} value={replyText} onChange={e => setReplyText(e.target.value)}
               placeholder="Write your reply..."
               rows={5} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 15, padding: '12px 16px', outline: 'none', resize: 'vertical' }}

@@ -23,7 +23,7 @@ function isValidIp(ip) {
 // ── Small presentational components ───────────────────────────────────────────
 const Row = ({ label, value, mono = true, color }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', flexShrink: 0 }}>{label}</span>
+    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', flexShrink: 0 }}>{label}</span>
     <span style={{ fontFamily: mono ? 'var(--font-mono)' : 'var(--font-display)', fontSize: 13, color: color || 'var(--green)', letterSpacing: mono ? 1 : 0, wordBreak: 'break-all', textAlign: 'right' }}>{value}</span>
   </div>
 )
@@ -332,7 +332,7 @@ function IpInfo() {
           {loading ? '…' : 'LOOKUP'}
         </button>
       </div>
-      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 20 }}>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 20 }}>
         Leave blank to auto-detect your public IP address
       </p>
 
@@ -568,7 +568,7 @@ export default function NetworkTools() {
         <div className="nt-tabs">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
-              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
               padding: '10px 14px', whiteSpace: 'nowrap',
               background: tab === t.id ? 'var(--green)' : 'var(--bg2)',
               color: tab === t.id ? '#000' : 'var(--muted)',

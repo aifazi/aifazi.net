@@ -185,7 +185,7 @@ const sendReply = async () => {
     } finally { setSending(false) }
   }
 
-  if (loading) return <div style={{ ...card, textAlign: 'center', ...mono, fontSize: 10, color: 'var(--muted)', letterSpacing: 3, padding: 40 }}>LOADING...</div>
+  if (loading) return <div style={{ ...card, textAlign: 'center', ...mono, fontSize: 11, color: 'var(--muted)', letterSpacing: 3, padding: 40 }}>LOADING...</div>
   if (!ticket) return <div style={{ ...card, textAlign: 'center', ...mono, fontSize: 11, color: 'var(--orange)' }}>Ticket not found</div>
 
   const STATUS_CFG = {
@@ -202,7 +202,7 @@ const sendReply = async () => {
   return (
     <div>
       <button onClick={onBack} style={{
-        ...mono, fontSize: 10, letterSpacing: 1, color: 'var(--cyan)',
+        ...mono, fontSize: 11, letterSpacing: 1, color: 'var(--cyan)',
         background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 6,
         padding: '8px 16px', cursor: 'pointer', marginBottom: 16,
       }}>
@@ -225,7 +225,7 @@ const sendReply = async () => {
         </div>
 
         {/* Meta */}
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', ...mono, fontSize: 10, color: 'var(--muted)', marginBottom: 16, padding: '10px 14px', background: 'var(--bg3)', borderRadius: 6 }}>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', ...mono, fontSize: 11, color: 'var(--muted)', marginBottom: 16, padding: '10px 14px', background: 'var(--bg3)', borderRadius: 6 }}>
           <span>Category: <span style={{ color: 'var(--text)' }}>{ticket.category}</span></span>
           <span>Submitted: <span style={{ color: 'var(--text)' }}>{ticket.created_at ? new Date(ticket.created_at).toLocaleString() : ''}</span></span>
           <span>Messages: <span style={{ color: 'var(--text)' }}>{ticket.message_count || messages.length}</span></span>
@@ -241,7 +241,7 @@ const sendReply = async () => {
             setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 60)
           }} style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 4, userSelect: 'text' }}>
             {messages.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 24, ...mono, fontSize: 10, color: 'var(--muted)' }}>No messages yet</div>
+              <div style={{ textAlign: 'center', padding: 24, ...mono, fontSize: 11, color: 'var(--muted)' }}>No messages yet</div>
             ) : (
               messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)
             )}
@@ -267,7 +267,7 @@ const sendReply = async () => {
               rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7, marginBottom: 10 }}
               onFocus={e => e.target.style.borderColor = 'var(--green)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
             <button onClick={sendReply} disabled={sending || !reply.trim()} style={{
-              ...mono, fontSize: 10, letterSpacing: 2, padding: '10px 20px',
+              ...mono, fontSize: 11, letterSpacing: 2, padding: '10px 20px',
               background: sending || !reply.trim() ? 'var(--bg3)' : 'var(--green)',
               color: sending || !reply.trim() ? 'var(--muted)' : '#000',
               border: 'none', borderRadius: 6, cursor: sending || !reply.trim() ? 'not-allowed' : 'pointer',
@@ -278,7 +278,7 @@ const sendReply = async () => {
           </div>
         )}
         {!canReply && (
-          <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', textAlign: 'center', padding: 12, background: 'var(--bg3)', borderRadius: 6 }}>
+          <div style={{ ...mono, fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: 12, background: 'var(--bg3)', borderRadius: 6 }}>
             This ticket is {ticket.status}. You cannot add more replies.
           </div>
         )}
@@ -482,12 +482,12 @@ const filtered = ticketList.filter(t => (
           {user ? `${user.username}'s Tickets` : 'Sign In to View Tickets'}
         </h3>
         {user && (
-          <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>
+          <div style={{ ...mono, fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
             Showing tickets for <span style={{ color: 'var(--cyan)' }}>{user.email}</span>
           </div>
         )}
         {!user && (
-          <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', marginTop: 4, lineHeight: 1.6 }}>
+          <div style={{ ...mono, fontSize: 11, color: 'var(--muted)', marginTop: 4, lineHeight: 1.6 }}>
             You must be signed in to view your tickets. Sign in to see tickets associated with your account.
           </div>
         )}
@@ -561,7 +561,7 @@ const filtered = ticketList.filter(t => (
         </div>
       )}
 
-      {loading && <div style={{ textAlign: 'center', padding: '24px 0', ...mono, fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADING…</div>}
+      {loading && <div style={{ textAlign: 'center', padding: '24px 0', ...mono, fontSize: 11, color: 'var(--muted)', letterSpacing: 3 }}>LOADING…</div>}
 
       {!loading && filtered.length > 0 && (
         <div style={{ marginTop: 4 }}>
@@ -586,7 +586,7 @@ const filtered = ticketList.filter(t => (
                     <StatusBadge status={t.status} />
                   </div>
                 </div>
-                <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>
+                <div style={{ ...mono, fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
                   #{t.ticket_id || (t.id || '').slice(-6).toUpperCase()} · {t.category || 'general'} · {t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}
                 </div>
               </Clickable>
@@ -739,7 +739,7 @@ export default function HelpDesk() {
                   <div key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, boxShadow: `0 0 6px ${p.color}`, flexShrink: 0 }} />
                     <div>
-                      <span style={{ ...mono, fontSize: 10, color: p.color, fontWeight: 700 }}>{p.label}</span>
+                      <span style={{ ...mono, fontSize: 11, color: p.color, fontWeight: 700 }}>{p.label}</span>
                       <span style={{ ...mono, fontSize: 11, color: 'var(--muted)', marginLeft: 8 }}>{p.desc}</span>
                     </div>
                   </div>

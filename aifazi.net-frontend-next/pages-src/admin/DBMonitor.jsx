@@ -50,8 +50,8 @@ function AuthLogTab() {
         <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:2 }}>{total.toLocaleString()} AUTH EVENTS</span>
         <button onClick={() => load(page)} disabled={loading} style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'5px 12px', background:'transparent', color:'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:loading?'not-allowed':'pointer' }}>{loading ? '..' : 'REFRESH'}</button>
       </div>
-      {loading && !logs.length ? <div style={{ textAlign:'center', padding:40, fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
-      : !logs.length ? <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--border)' }}>No auth log entries yet</div>
+      {loading && !logs.length ? <div style={{ textAlign:'center', padding:40, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
+      : !logs.length ? <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No auth log entries yet</div>
       : <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
           {logs.map((entry, i) => {
             const reason = (entry.reason || '').toLowerCase()
@@ -108,11 +108,11 @@ function SqlConsoleTab() {
     finally { setLoading(false) }
   }
 
-  if (available === null) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--border)', letterSpacing:3 }}>CHECKING CONSOLE STATUS..</div>
+  if (available === null) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:3 }}>CHECKING CONSOLE STATUS..</div>
   if (available === false) return (
     <div style={{ maxWidth:700 }}>
       <div style={{ background:'rgba(255,200,0,0.05)', border:'1px solid rgba(255,200,0,0.3)', padding:20 }}>
-        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, letterSpacing:2, color:'#ffc800', marginBottom:12 }}>SQL CONSOLE NOT AVAILABLE</div>
+        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:2, color:'#ffc800', marginBottom:12 }}>SQL CONSOLE NOT AVAILABLE</div>
         <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--muted)', lineHeight:1.8, marginBottom:16 }}>
           Run the <code style={{color:'var(--cyan)'}}>migration_db_console.sql</code> in Supabase SQL Editor first to create the <code style={{color:'var(--cyan)'}}>exec_sql</code> function.
         </div>
@@ -141,15 +141,15 @@ function SqlConsoleTab() {
           </button>
           <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>{'>'}</span>
         </div>
-        {error && <div style={{ padding:'10px 14px', background:'rgba(255,71,87,0.06)', borderTop:'1px solid #ff475730', fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--red,#ff4757)', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{error}</div>}
+        {error && <div style={{ padding:'10px 14px', background:'rgba(255,71,87,0.06)', borderTop:'1px solid #ff475730', fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--red,#ff4757)', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{error}</div>}
         {results !== null && (
           <div style={{ borderTop:'1px solid #0f1a26', padding:14, maxHeight:500, overflow:'auto' }}>
-            {Array.isArray(results) && results.length === 0 ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--border)', textAlign:'center', padding:20 }}>0 rows returned</div>
+            {Array.isArray(results) && results.length === 0 ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', textAlign:'center', padding:20 }}>0 rows returned</div>
             : Array.isArray(results) ? (
               <div>
                 <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', marginBottom:10, letterSpacing:1 }}>{results.length.toLocaleString()} row{results.length !== 1 ? 's' : ''} returned</div>
                 <div className="dbmon-scroll" style={{ overflowX:'auto' }}>
-                  <table className="dbmon-table" style={{ width:'100%', borderCollapse:'collapse', fontFamily:'var(--font-mono,monospace)', fontSize:10 }}>
+                  <table className="dbmon-table" style={{ width:'100%', borderCollapse:'collapse', fontFamily:'var(--font-mono,monospace)', fontSize: 11 }}>
                     <thead>
                       <tr style={{ borderBottom:'1px solid #1e2d45' }}>
                         {Object.keys(results[0] || {}).slice(0, 12).map(k => <th key={k} style={{ padding:'5px 8px', textAlign:'left', color:'var(--muted)', fontSize: 11, letterSpacing:2, whiteSpace:'nowrap' }}>{k.toUpperCase()}</th>)}
@@ -204,8 +204,8 @@ function DbOverview() {
     api.get('/admin/stats').then(r => setStats(r.data)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
-  if (!stats) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--border)' }}>No data available</div>
+  if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
+  if (!stats) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No data available</div>
 
   const cards = [
     { label:'USERS', value:stats.counts?.users?.total, sub:`${stats.counts?.users?.verified||0} verified`, color:'var(--cyan,#00d4ff)' },
@@ -331,7 +331,7 @@ function BackupTab() {
         {loading ? <div style={{ textAlign:'center', padding:20, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:2 }}>LOADING..</div>
         : stats ? (
           <>
-            <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14, fontFamily:'var(--font-mono,monospace)', fontSize:10 }}>
+            <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14, fontFamily:'var(--font-mono,monospace)', fontSize: 11 }}>
               <span style={{ color:'var(--cyan,#00d4ff)' }}>{fmt(stats.tableCount || Object.keys(stats.collections || {}).length)} tables covered</span>
               <span style={{ color:Object.keys(stats.errors || {}).length ? 'var(--red,#ff4757)' : 'var(--green,#00ff88)' }}>
                 {Object.keys(stats.errors || {}).length ? `${Object.keys(stats.errors || {}).length} table errors` : 'all counts readable'}
@@ -339,7 +339,7 @@ function BackupTab() {
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))', gap:8, marginBottom:14 }}>
               {Object.entries(stats.collections || {}).map(([k, v]) => (
-                <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontFamily:'var(--font-mono,monospace)', fontSize:10, padding:'7px 10px', background:'var(--bg3)', border:'1px solid var(--border)' }}>
+                <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'7px 10px', background:'var(--bg3)', border:'1px solid var(--border)' }}>
                   <span style={{ color:'var(--muted)', textTransform:'capitalize' }}>{k}</span>
                   <span style={{ color:'var(--green,#00ff88)', fontWeight:700 }}>{(v || 0).toLocaleString()}</span>
                 </div>
@@ -358,7 +358,7 @@ function BackupTab() {
           {statsError ? (
             <>
               <div style={{ color:'var(--red,#ff4757)', marginBottom:12 }}>Could not load stats{statsError ? ` — ${statsError}` : ''}.</div>
-              <button onClick={loadStats} style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, letterSpacing:1, padding:'8px 18px', background:'var(--green)', color:'#000', border:'none', cursor:'pointer', fontWeight:700 }}>
+              <button onClick={loadStats} style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:1, padding:'8px 18px', background:'var(--green)', color:'#000', border:'none', cursor:'pointer', fontWeight:700 }}>
                 ↻ RETRY
               </button>
             </>
@@ -369,7 +369,7 @@ function BackupTab() {
       {/* SQL Export checklist */}
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', padding:'20px 24px', marginBottom:24 }}>
         <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:16 }}>SQL EXPORT</div>
-        <p style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--muted)', lineHeight:1.8, marginBottom:18 }}>
+        <p style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', lineHeight:1.8, marginBottom:18 }}>
           Download an SQL file with the options selected below. Schema-only gives you an empty database template for source control.
         </p>
 
@@ -391,7 +391,7 @@ function BackupTab() {
             <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer', padding:'6px 12px 6px 38px', userSelect:'none' }}
               onClick={() => toggle('ifNotExists')}>
               <input type="checkbox" checked={options.ifNotExists} onChange={() => {}} style={{ accentColor:'var(--cyan,#00d4ff)', width:14, height:14, cursor:'pointer' }} />
-              <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--muted)' }}>
+              <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>
                 Use <span style={{ color:'var(--cyan,#00d4ff)' }}>IF NOT EXISTS</span> (safer for migrations)
               </div>
             </label>
@@ -432,7 +432,7 @@ function BackupTab() {
       {/* JSON Backup */}
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', padding:'20px 24px' }}>
         <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:12 }}>JSON BACKUP</div>
-        <p style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--muted)', lineHeight:1.8, marginBottom:16 }}>
+        <p style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', lineHeight:1.8, marginBottom:16 }}>
           Full JSON export of all database collections. Useful for data migration or manual restoration.
         </p>
         <button onClick={downloadJson} disabled={downloadingJson}
@@ -455,7 +455,7 @@ function BackupTab() {
       {/* Restore drill */}
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', padding:'20px 24px', marginTop:24 }}>
         <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:12 }}>RESTORE DRILL</div>
-        <p style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--muted)', lineHeight:1.8, marginBottom:16 }}>
+        <p style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', lineHeight:1.8, marginBottom:16 }}>
           Replays the live export and validates every table&apos;s generated SQL plus row counts vs the snapshot. Read-only — no prod data is touched.
         </p>
         <button onClick={testRestore} disabled={rtLoading}
@@ -470,10 +470,10 @@ function BackupTab() {
           <span style={{ fontSize:11, marginRight:8 }}>[DRILL]</span>
           {rtLoading ? 'TESTING RESTORE...' : 'TEST RESTORE'}
         </button>
-        {rtError && <div style={{ marginTop:12, fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--red,#ff4757)', lineHeight:1.6 }}>{rtError}</div>}
+        {rtError && <div style={{ marginTop:12, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--red,#ff4757)', lineHeight:1.6 }}>{rtError}</div>}
         {rtResult && (
           <div style={{ marginTop:16 }}>
-            <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14, fontFamily:'var(--font-mono,monospace)', fontSize:10 }}>
+            <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14, fontFamily:'var(--font-mono,monospace)', fontSize: 11 }}>
               <span style={{
                 padding:'2px 10px', borderRadius:99, fontWeight:700, letterSpacing:1,
                 background: rtResult.ok ? 'rgba(0,255,136,0.1)' : 'rgba(255,71,87,0.1)',
@@ -487,7 +487,7 @@ function BackupTab() {
                 const good = p.match && p.sql_ok
                 return (
                   <div key={p.table} title={`${p.table}: ${p.rows ?? '?'} rows (expected ${p.expected ?? '?'})`}
-                    style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, fontFamily:'var(--font-mono,monospace)', fontSize:10, padding:'7px 10px', background:'var(--bg3)', border:'1px solid var(--border)' }}>
+                    style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'7px 10px', background:'var(--bg3)', border:'1px solid var(--border)' }}>
                     <span style={{ color: good ? 'var(--green,#00ff88)' : 'var(--red,#ff4757)', fontWeight:700 }}>{good ? '✓' : '✗'}</span>
                     <span style={{ color:'var(--muted)', textTransform:'capitalize', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.table}</span>
                     <span style={{ color:'var(--text)', fontWeight:700 }}>{(p.rows ?? 0).toLocaleString()}</span>

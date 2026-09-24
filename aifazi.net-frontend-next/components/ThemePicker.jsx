@@ -827,14 +827,14 @@ function HeaderPreview({ t }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <div style={{ width: 18, height: 18, background: t.primary,
                 boxShadow: 'inset -1px -1px 0 rgba(0,0,0,0.3), inset 1px 1px 0 rgba(255,255,255,0.5)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>T</div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#000' }}>TANVIR</span>
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>T</div>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#000' }}>TANVIR</span>
             </div>
           ) : f.isBrut ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <div style={{ width: 18, height: 18, background: t.primary, border: '2px solid #000',
                 display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 10, fontWeight: 900, color: '#fff' }}>T</span>
+                <span style={{ fontSize: 11, fontWeight: 900, color: '#fff' }}>T</span>
               </div>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 900, color: t.text, letterSpacing: 2 }}>TANVIR</span>
             </div>
@@ -1213,7 +1213,7 @@ function ThemeCard({ t, isActive, isSelected, onSelect }) {
       </div>
       {/* Name + tags */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2, flexWrap: 'wrap' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1,
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1,
           color: isSelected ? t.primary : 'rgba(255,255,255,0.82)',
         }}>{t.name}</span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '1px 5px',
@@ -1430,7 +1430,7 @@ export default function ThemePicker({ open, onClose }) {
             <button className="tp-close" onClick={onClose}
               style={{ background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)',
                 cursor: 'pointer', width: 28, height: 28, borderRadius: 6,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, transition: 'all 0.15s' }}>✕</button>
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, transition: 'all 0.15s' }} aria-label="Close">✕</button>
           </div>
         </div>
 
@@ -1533,7 +1533,7 @@ export default function ThemePicker({ open, onClose }) {
           ))}
           {filteredThemes.length === 0 && (
             <div style={{ gridColumn: '1/-1', padding: 24, textAlign: 'center',
-              fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>
+              fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>
               NO THEMES IN THIS FILTER
             </div>
           )}
@@ -1600,7 +1600,7 @@ export default function ThemePicker({ open, onClose }) {
                   : 'var(--bg3)',
                 border: (pending && !isThemeLocked) ? 'none' : '1px solid var(--border)',
                 borderRadius: 7, cursor: (pending && !isThemeLocked) ? 'pointer' : 'default',
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3,
                 color: (pending && !isThemeLocked) ? '#000' : 'var(--muted)', fontWeight: 800,
                 transition: 'all 0.2s',
                 boxShadow: (pending && !isThemeLocked) ? `0 0 24px ${pendingTheme?.primary || 'var(--green)'}55` : 'none',
@@ -1634,7 +1634,7 @@ export default function ThemePicker({ open, onClose }) {
             <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
               <span style={{ fontSize: 16 }}>⚙</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 3, color: '#f59e0b' }}>GLOBAL SETTINGS</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 3, color: '#f59e0b' }}>GLOBAL SETTINGS</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>APPLIED TO ALL SITE VISITORS</div>
               </div>
               <button onClick={() => setShowAdminPanel(false)} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>✕</button>
@@ -1678,7 +1678,7 @@ export default function ThemePicker({ open, onClose }) {
                           {s.id === 'minimal'  && <div style={{ width: 22, height: 22, border: '3px solid #0a1118', borderTopColor: '#00ff88', borderRadius: '50%', animation: 'tpSpin 0.8s linear infinite' }} />}
                           {s.id === 'glitch'   && <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 15, color: '#fff', textShadow: '2px 0 #ff003c, -2px 0 #00eaff', animation: 'miniGlitch 2.5s infinite' }}>AI</span>}
                           {s.id === 'splash'   && <div style={{ textAlign: 'center' }}><div style={{ fontSize: 14, animation: 'miniZoomIn 1.8s ease-out infinite alternate' }}>⬡</div><div style={{ fontFamily: 'monospace', fontSize: 11, letterSpacing: 3, color: '#00ff88', marginTop: 1 }}>AIFAZI</div></div>}
-                          {s.id === 'matrix'   && <div style={{ display: 'flex', gap: 3, fontFamily: 'monospace', fontSize: 10, color: '#00ff88' }}>{['1','0','1','0','1'].map((c,i) => <span key={i} style={{ animation: `miniDotBounce 1.2s ${i*0.15}s ease-in-out infinite`, display: 'inline-block' }}>{c}</span>)}</div>}
+                          {s.id === 'matrix'   && <div style={{ display: 'flex', gap: 3, fontFamily: 'monospace', fontSize: 11, color: '#00ff88' }}>{['1','0','1','0','1'].map((c,i) => <span key={i} style={{ animation: `miniDotBounce 1.2s ${i*0.15}s ease-in-out infinite`, display: 'inline-block' }}>{c}</span>)}</div>}
                           {s.id === 'pulse'    && <div style={{ position: 'relative', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid #00ff88', animation: 'lsPulse 1.4s ease-in-out infinite' }} /><div style={{ position: 'absolute', inset: 7, borderRadius: '50%', border: '1px solid #00d4ff', animation: 'lsPulse 1.4s 0.3s ease-in-out infinite' }} /><div style={{ width: 5, height: 5, borderRadius: '50%', background: '#00ff88' }} /></div>}
                           {s.id === 'cyber'    && <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: 40, justifyContent: 'center' }}>{[...Array(9)].map((_,i) => <div key={i} style={{ width: 10, height: 10, border: '1px solid #00d4ff', borderRadius: 2, animation: `lsCyberHex 1.8s ${i*0.12}s ease-in-out infinite` }} />)}</div>}
                           {s.id === 'bars'     && <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 26 }}>{[0,0.15,0.3,0.45,0.6].map((d,i) => <div key={i} style={{ width: 4, borderRadius: 2, background: i%2===0?'#00ff88':'#00d4ff', animation: `lsBars 1.1s ${d}s ease-in-out infinite` }} />)}</div>}
@@ -1935,7 +1935,7 @@ export default function ThemePicker({ open, onClose }) {
             {/* Save button */}
             <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
               <button onClick={saveGlobalSettings} disabled={savingGlobal}
-                style={{ width: '100%', padding: '12px', background: savedGlobal ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(245,158,11,0.15)', border: `1px solid ${savedGlobal ? 'var(--green)' : 'rgba(245,158,11,0.5)'}`, color: savedGlobal ? 'var(--green)' : '#f59e0b', borderRadius: 8, cursor: savingGlobal ? 'default' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700, transition: 'all .2s' }}>
+                style={{ width: '100%', padding: '12px', background: savedGlobal ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(245,158,11,0.15)', border: `1px solid ${savedGlobal ? 'var(--green)' : 'rgba(245,158,11,0.5)'}`, color: savedGlobal ? 'var(--green)' : '#f59e0b', borderRadius: 8, cursor: savingGlobal ? 'default' : 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, transition: 'all .2s' }}>
                 {savingGlobal ? '⏳ SAVING...' : savedGlobal ? '✓ SAVED GLOBALLY' : '💾 SAVE FOR ALL USERS'}
               </button>
             </div>
@@ -2031,7 +2031,7 @@ function AdminThemeBtn({ id, label, active, onClick, color, bg }) {
     <button onClick={onClick} style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 6, background: active ? `${color}15` : 'var(--bg3)', border: `1px solid ${active ? color : 'var(--border)'}`, borderRadius: 6, cursor: 'pointer', transition: 'all .15s', textAlign: 'left' }}>
       {bg && <div style={{ width: 12, height: 12, borderRadius: 3, background: bg, border: `2px solid ${color}`, flexShrink: 0 }} />}
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: active ? color : 'var(--muted)', fontWeight: active ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
-      {active && <span style={{ marginLeft: 'auto', color, fontSize: 10 }}>✓</span>}
+      {active && <span style={{ marginLeft: 'auto', color, fontSize: 11 }}>✓</span>}
     </button>
   )
 }

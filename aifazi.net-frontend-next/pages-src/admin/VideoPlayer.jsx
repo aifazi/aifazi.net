@@ -173,14 +173,14 @@ function VideoPlayer({ url }) {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'} style={{ ...btnStyle, width: 32, height: 32, fontSize: 13 }}>{playing ? '⏸' : '▶'}</button>
-            <button onClick={() => skip(-10)} aria-label="Rewind 10 seconds" style={{ ...btnStyle, width: 28, height: 28, fontSize: 10 }} title="-10s">⏪</button>
-            <button onClick={() => skip(10)} aria-label="Forward 10 seconds" style={{ ...btnStyle, width: 28, height: 28, fontSize: 10 }} title="+10s">⏩</button>
+            <button onClick={() => skip(-10)} aria-label="Rewind 10 seconds" style={{ ...btnStyle, width: 28, height: 28, fontSize: 11 }} title="-10s">⏪</button>
+            <button onClick={() => skip(10)} aria-label="Forward 10 seconds" style={{ ...btnStyle, width: 28, height: 28, fontSize: 11 }} title="+10s">⏩</button>
             <button onClick={toggleMute} aria-label={muted || volume === 0 ? 'Unmute' : 'Mute'} style={{ ...btnStyle, width: 28, height: 28, fontSize: 13 }}>
               {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
             </button>
             <Slider min={0} max={1} step={0.05} value={muted ? 0 : volume} onChange={onVolumeChange}
               style={{ width: 60 }} />
-            <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>{fmt(currentTime)} / {fmt(duration)}</span>
+            <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>{fmt(currentTime)} / {fmt(duration)}</span>
             <div style={{ flex: 1 }} />
             <div style={{ width: 82 }}>
               <Select value={playbackRate}

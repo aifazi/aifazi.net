@@ -19,7 +19,7 @@ const S = {
     color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 6,
   },
   btn: (bg = 'var(--green)', color = '#000') => ({
-    fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+    fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
     padding: '8px 16px', background: bg, color, border: 'none', cursor: 'pointer',
     borderRadius: 10,
     boxShadow: bg === 'var(--green)' ? '0 0 14px color-mix(in srgb, var(--green) 18%, transparent)' : undefined,
@@ -188,14 +188,14 @@ function UserEditModal({ userId, onClose, onSaved }) {
                 fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${u?.username}`}
               />
               <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 3, marginBottom: 4 }}>EDIT USER</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 3, marginBottom: 4 }}>EDIT USER</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700 }}>{u?.username}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
                   {u?.email} · joined {timeAgo(u?.createdAt)} · {u?.threadCount}T / {u?.replyCount}R
                 </div>
               </div>
             </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>✕</button>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }} aria-label="Close">✕</button>
           </div>
 
           {/* Sub-tabs */}
@@ -273,7 +273,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
           {/* Activity tab */}
           {tab === 'activity' && (
             <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 12 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 12 }}>
                 RECENT THREADS ({data?.recentThreads?.length || 0})
               </div>
               {(data?.recentThreads?.length === 0) && (
@@ -291,7 +291,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                 </div>
               ))}
 
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, margin: '20px 0 12px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, margin: '20px 0 12px' }}>
                 RECENT REPLIES ({data?.recentReplies?.length || 0})
               </div>
               {(data?.recentReplies?.length === 0) && (
@@ -330,7 +330,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: form.banned ? 14 : 0 }}>
                   <div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: form.banned ? 'var(--red)' : 'var(--muted)' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: form.banned ? 'var(--red)' : 'var(--muted)' }}>
                       {form.banned ? '🔴 USER IS BANNED' : '🟢 USER IS ACTIVE'}
                     </div>
                     {u?.lastSeen && (
@@ -425,8 +425,8 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
     <div style={S.modal} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div style={S.modalBox('var(--cyan)')} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: 3 }}>✏️ EDIT THREAD</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20 }}>✕</button>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 3 }}>✏️ EDIT THREAD</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20 }} aria-label="Close">✕</button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -443,7 +443,7 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
             <label style={S.label}>Attachments</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
               {attachments.map((f, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>
                   <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {f.mimetype?.startsWith('image/') ? '🖼' : f.mimetype?.startsWith('video/') ? '🎬' : '📎'} {f.original_name}
                     <span style={{ color: 'var(--muted)', marginLeft: 8 }}>({((f.size || 0)/1024).toFixed(0)}KB)</span>
@@ -453,7 +453,7 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
               ))}
             </div>
             <button type="button" onClick={() => fileInputRef.current.click()} disabled={uploading}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '6px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}>
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '6px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer' }}>
               {uploading ? '⏳ Uploading...' : '📎 Add Attachments'}
             </button>
             <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleUpload} />
@@ -471,9 +471,9 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
           </div>
           <div style={{ display: 'flex', gap: 20 }}>
             <Checkbox checked={form.pinned} onChange={v => set('pinned', v)} label="📌 PINNED"
-              style={{ fontSize: 10, color: form.pinned ? 'var(--green)' : 'var(--muted)', letterSpacing: 1 }} />
+              style={{ fontSize: 11, color: form.pinned ? 'var(--green)' : 'var(--muted)', letterSpacing: 1 }} />
             <Checkbox checked={form.locked} onChange={v => set('locked', v)} label="🔒 LOCKED"
-              style={{ fontSize: 10, color: form.locked ? 'var(--red)' : 'var(--muted)', letterSpacing: 1 }} />
+              style={{ fontSize: 11, color: form.locked ? 'var(--red)' : 'var(--muted)', letterSpacing: 1 }} />
           </div>
           <div style={{ display: 'flex', gap: 10, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
             <button onClick={handleSave} disabled={saving}
@@ -511,12 +511,12 @@ function ReplyEditModal({ reply, onClose, onSaved }) {
       <div style={S.modalBox('var(--orange)')} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange)', letterSpacing: 3, marginBottom: 6 }}>✏️ EDIT REPLY</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--orange)', letterSpacing: 3, marginBottom: 6 }}>✏️ EDIT REPLY</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
               by {reply.author?.username} · {timeAgo(reply.createdAt)}
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20 }} aria-label="Close">✕</button>
         </div>
 
         <label style={S.label}>Content</label>
@@ -555,7 +555,7 @@ function BanModal({ user, onClose, onSaved }) {
   return (
     <div style={S.modal} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div style={{ ...S.modalBox('var(--red)'), maxWidth: 420 }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', letterSpacing: 3, marginBottom: 16 }}>🚫 BAN USER</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', letterSpacing: 3, marginBottom: 16 }}>🚫 BAN USER</div>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, marginBottom: 20 }}>Ban {user.username}?</div>
         <label style={S.label}>Ban Reason (shown to user on login)</label>
         <input value={reason} onChange={e => setReason(e.target.value)}
@@ -580,7 +580,7 @@ function Pagination({ page, total, pageSize = 20, onPage }) {
   const pages = Math.ceil(total / pageSize)
   if (pages <= 1) return null
   return (
-    <div style={{ display: 'flex', gap: 4, marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 10, alignItems: 'center' }}>
+    <div style={{ display: 'flex', gap: 4, marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 11, alignItems: 'center' }}>
       <button disabled={page === 1} onClick={() => onPage(page - 1)}
         style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '6px 12px', opacity: page === 1 ? 0.3 : 1 }}>←</button>
       <span style={{ padding: '6px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--muted)' }}>
@@ -855,12 +855,12 @@ export default function ForumAdmin({ embedded = false }) {
       {/* Page header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 3, marginBottom: 6 }}>ADMIN PANEL</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 3, marginBottom: 6 }}>ADMIN PANEL</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700 }}>Forum Management</h1>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Link to="/admin" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 10 }}>← SITE ADMIN</Link>
-          <Link to="/forum" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 10 }}>VIEW FORUM →</Link>
+          <Link to="/admin" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 10 }}>← SITE ADMIN</Link>
+          <Link to="/forum" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2, border: '1px solid var(--border)', padding: '8px 16px', borderRadius: 10 }}>VIEW FORUM →</Link>
         </div>
       </div>
 
@@ -868,7 +868,7 @@ export default function ForumAdmin({ embedded = false }) {
       <div style={{ display: 'flex', gap: 6, marginBottom: 32, flexWrap: 'wrap' }}>
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: tab === t.key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'var(--bg2)', border: `1px solid ${tab === t.key ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}`, color: tab === t.key ? 'var(--green)' : 'var(--muted)', cursor: 'pointer', borderRadius: 999 }}>
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '10px 18px', background: tab === t.key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'var(--bg2)', border: `1px solid ${tab === t.key ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}`, color: tab === t.key ? 'var(--green)' : 'var(--muted)', cursor: 'pointer', borderRadius: 999 }}>
             {t.label}
           </button>
         ))}
@@ -885,7 +885,7 @@ export default function ForumAdmin({ embedded = false }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
             <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 12 }}>RECENT USERS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 12 }}>RECENT USERS</div>
               {stats.recentUsers.map(u => (
                 <div key={u._id} style={S.card}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -911,7 +911,7 @@ export default function ForumAdmin({ embedded = false }) {
               ))}
             </div>
             <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 12 }}>RECENT THREADS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 12 }}>RECENT THREADS</div>
               {stats.recentThreads.map(t => (
                 <div key={t._id} style={S.card}>
                   <Link to={`/forum/thread/${t._id}`} style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: 'var(--text)', textDecoration: 'none', display: 'block', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</Link>
@@ -927,7 +927,7 @@ export default function ForumAdmin({ embedded = false }) {
       {tab === 'categories' && (
         <div>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: 24, marginBottom: 24 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 2, marginBottom: 20 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2, marginBottom: 20 }}>
               {editingCat ? '✏️ EDIT CATEGORY' : '+ NEW CATEGORY'}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>

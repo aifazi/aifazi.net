@@ -42,7 +42,7 @@ export default function ThemeHub({ initialTab = 'themes' }) {
           return (
             <button key={t.key} onClick={() => setTab(t.key)} role="tab" aria-selected={active}
               style={{
-                fontFamily:"'JetBrains Mono','Fira Code',monospace", fontSize:10, letterSpacing:1.5,
+                fontFamily:"'JetBrains Mono','Fira Code',monospace", fontSize: 11, letterSpacing:1.5,
                 padding:'9px 16px', flex:1, border:'none', cursor:'pointer', borderRadius:7,
                 background: active ? C.green : 'transparent',
                 color: active ? '#000' : C.muted, fontWeight: active ? 800 : 400,

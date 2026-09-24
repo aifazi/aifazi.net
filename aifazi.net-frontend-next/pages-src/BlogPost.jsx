@@ -298,7 +298,7 @@ function PostReactions({ slug, postId, initialReactions }) {
   return (
     <div style={{ marginTop: 48, paddingTop: 32, borderTop: '1px solid var(--border)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>
           REACTIONS
         </span>
         {total > 0 && (
@@ -410,7 +410,7 @@ function Comments({ slug, postId }) {
   return (
     <div style={{ marginTop: 56, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>COMMENTS</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>COMMENTS</span>
         {comments && comments.length > 0 && (
           <span className="community-badge community-badge-cyan">{comments.length}</span>
         )}
@@ -444,7 +444,7 @@ function Comments({ slug, postId }) {
             }}
           />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
               {text.length}/4000
             </span>
             <NeonButton type="submit" variant="primary" size="sm" disabled={submitting || !text.trim()}>
@@ -519,7 +519,7 @@ function RelatedPosts({ slug, currentId }) {
 
   return (
     <div style={{ marginTop: 64, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 20 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 20 }}>
         CONTINUE READING
       </div>
       <div className="related-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
@@ -533,7 +533,7 @@ function RelatedPosts({ slug, currentId }) {
               <div style={{ color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, lineHeight: 1.4, marginBottom: 10 }}>
                 {p.title}
               </div>
-              <div style={{ color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, marginTop: 'auto' }}>
+              <div style={{ color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, marginTop: 'auto' }}>
                 READ →
               </div>
             </Card>
@@ -580,7 +580,7 @@ function ContentMediaPreviews({ html }) {
   if (!files.length) return null
   return (
     <div style={{ marginTop: 48, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 18 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 18 }}>
         FILES &amp; DOWNLOADS
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
@@ -823,7 +823,7 @@ export default function BlogPost({ initialPost }) {
         {/* Tags */}
         {tags.length > 0 && (
           <div style={{ marginTop: 60, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 16 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 16 }}>
               TAGS
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

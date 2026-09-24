@@ -636,7 +636,7 @@ function SiteSettings() {
           ].map(([key, label]) => (
             <button key={key} onClick={() => setMaintScope(key)}
               style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, fontWeight: 700,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5, fontWeight: 700,
                 padding: '8px 14px', borderRadius: 999, cursor: 'pointer',
                 border: `1px solid ${maintScope === key ? 'var(--green)' : 'var(--border)'}`,
                 background: maintScope === key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent',
@@ -706,11 +706,11 @@ function SiteSettings() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <Toggle on={!!sget('maintenanceShowSocial')} onChange={() => sset('maintenanceShowSocial', !sget('maintenanceShowSocial'))} />
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>Show social links</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>Show social links</span>
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <Toggle on={!!sget('maintenanceShowProgress')} onChange={() => sset('maintenanceShowProgress', !sget('maintenanceShowProgress'))} />
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>Show progress bar</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>Show progress bar</span>
                 </label>
               </div>
             </div>
@@ -734,7 +734,7 @@ function SiteSettings() {
             <span style={{ fontSize: 18 }}>{sget('maintenanceIcon') || '○'}</span>
             <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: accentColor }}>{sget('maintenanceStatus') || 'MAINTENANCE'}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', marginTop: 2 }}>{(sget('maintenanceMessage') || 'No message set').slice(0, 60)}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', marginTop: 2 }}>{(sget('maintenanceMessage') || 'No message set').slice(0, 60)}</div>
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>
               <div>Style: <span style={{ color: 'var(--cyan)' }}>{sget('maintenanceStyle') || 'terminal'}</span></div>
@@ -762,7 +762,7 @@ function SiteSettings() {
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           padding: '9px 18px', borderRadius: 6,
-          fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
           transition: 'all 0.2s',
           background: saveStatus === 'saved'  ? 'color-mix(in srgb, var(--green) 8%, transparent)'
                     : saveStatus === 'error'  ? 'rgba(248,113,113,0.08)'

@@ -168,12 +168,12 @@ export default function DateTimePicker({
             {/* Month nav */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
               <button type="button" onClick={prevMonth}
-                style={{ background:'none', border:'none', color:'var(--cyan)', cursor:'pointer', fontSize:18, padding:'2px 8px', lineHeight:1 }}>‹</button>
-              <span style={{ ...mono, fontSize:10, letterSpacing:1.5, color:'var(--text)' }}>
+                style={{ background:'none', border:'none', color:'var(--cyan)', cursor:'pointer', fontSize:18, padding:'2px 8px', lineHeight:1 }} aria-label="Previous">‹</button>
+              <span style={{ ...mono, fontSize: 11, letterSpacing:1.5, color:'var(--text)' }}>
                 {MONTHS[month]} {year}
               </span>
               <button type="button" onClick={nextMonth}
-                style={{ background:'none', border:'none', color:'var(--cyan)', cursor:'pointer', fontSize:18, padding:'2px 8px', lineHeight:1 }}>›</button>
+                style={{ background:'none', border:'none', color:'var(--cyan)', cursor:'pointer', fontSize:18, padding:'2px 8px', lineHeight:1 }} aria-label="Next">›</button>
             </div>
 
             {/* Day headers */}

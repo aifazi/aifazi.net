@@ -115,7 +115,7 @@ export default function TrackOrderWidget() {
               <div style={{ fontSize: 13, color: 'var(--text)' }}>
                 {order.carrier || 'Carrier'}: {order.tracking_number}
                 {order.tracking_url && (
-                  <a href={order.tracking_url} target="_blank" rel="noreferrer" style={{ color: C, marginLeft: 8, fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+                  <a href={order.tracking_url} target="_blank" rel="noreferrer" style={{ color: C, marginLeft: 8, fontFamily: 'var(--font-mono)', fontSize: 11 }}>
                     TRACK ↗
                   </a>
                 )}

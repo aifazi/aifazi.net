@@ -70,7 +70,7 @@ export default function AnalyticsTab() {
         {/* Top products */}
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}>
           <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 10 }}>TOP PRODUCTS</div>
-          {d.top_products?.length === 0 ? <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>No sales yet.</div> : (
+          {d.top_products?.length === 0 ? <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>No sales yet.</div> : (
             <div style={{ display: 'grid', gap: 6 }}>
               {d.top_products.map((p, i) => {
                 const w = d.top_products[0]?.units ? Math.round((p.units / d.top_products[0].units) * 100) : 0
@@ -78,7 +78,7 @@ export default function AnalyticsTab() {
                   <div key={p.name} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 5 }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{i + 1}. {p.name}</span>
-                      <span style={{ fontFamily: MONO, fontSize: 10, color: G, whiteSpace: 'nowrap' }}>{money(p.revenue_cents)}</span>
+                      <span style={{ fontFamily: MONO, fontSize: 11, color: G, whiteSpace: 'nowrap' }}>{money(p.revenue_cents)}</span>
                     </div>
                     <div style={{ height: 4, background: 'rgba(255,255,255,.06)', borderRadius: 2, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${w}%`, background: C, borderRadius: 2 }} />
@@ -94,11 +94,11 @@ export default function AnalyticsTab() {
         {/* Recent orders */}
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}>
           <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 10 }}>RECENT ORDERS</div>
-          {d.recent_orders?.length === 0 ? <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>No orders yet.</div> : (
+          {d.recent_orders?.length === 0 ? <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>No orders yet.</div> : (
             <div style={{ display: 'grid', gap: 6 }}>
               {d.recent_orders.map(o => (
                 <div key={o.order_number} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontFamily: MONO, fontSize: 10, color: C }}>{o.order_number}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 11, color: C }}>{o.order_number}</span>
                   <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '1px 7px', borderRadius: 10, background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: G }}>{o.status}</span>
                   <div style={{ flex: 1 }} />
                   <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{fmt(o.created_at)}</span>
@@ -116,7 +116,7 @@ export default function AnalyticsTab() {
           <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: Y, marginBottom: 8 }}>⚠ LOW STOCK</div>
           <div style={{ display: 'grid', gap: 6 }}>
             {d.low_stock.map(p => (
-              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 10, color: 'var(--text)' }}>
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>
                 <span style={{ flex: 1 }}>{p.name}</span>
                 <span style={{ color: R, fontWeight: 700 }}>{p.stock_qty || 0} left</span>
                 <span style={{ color: 'var(--muted)' }}>thr {p.low_stock_threshold || 0}</span>

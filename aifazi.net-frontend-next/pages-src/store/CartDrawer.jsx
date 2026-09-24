@@ -15,7 +15,7 @@ export default function CartDrawer({ open, onClose, cart, user, loginHref, isLoa
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)' }}>
             YOUR CART {cart.count > 0 && `(${cart.count})`}
           </span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20, padding: 4 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20, padding: 4 }} aria-label="Close">✕</button>
         </div>
 
         {/* Body */}
@@ -33,7 +33,7 @@ export default function CartDrawer({ open, onClose, cart, user, loginHref, isLoa
               <div style={{ fontSize: 32, marginBottom: 12 }}>🛒</div>
               Your cart is empty.
               <div style={{ marginTop: 12 }}>
-                <Link to="/?tab=shop" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--green)', textDecoration: 'none' }}>BROWSE PRODUCTS →</Link>
+                <Link to="/?tab=shop" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--green)', textDecoration: 'none' }}>BROWSE PRODUCTS →</Link>
               </div>
             </div>
           ) : (

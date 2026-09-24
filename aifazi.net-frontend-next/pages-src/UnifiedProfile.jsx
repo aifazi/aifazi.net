@@ -193,7 +193,7 @@ function VpnSection({ user }) {
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{selectedPeer.device_name}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{selectedPeer.allocated_ip}</div>
               </div>
-              <button onClick={handleCloseConfig} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 20, cursor: 'pointer' }}>×</button>
+              <button onClick={handleCloseConfig} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 20, cursor: 'pointer' }} aria-label="Close">×</button>
             </div>
 
             {qrCode ? (

@@ -398,7 +398,7 @@ function VpnPanelInner() {
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
                     {['Device', 'IP', 'OS', 'Status', 'Traffic', 'Last Seen', 'Actions'].map(h => (
                       <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: 'var(--muted)',
-                        fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+                        fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600,
                         letterSpacing: 0.8, textTransform: 'uppercase' }}>{h}</th>
                     ))}
                   </tr>
@@ -451,7 +451,7 @@ function VpnPanelInner() {
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
                     {['Device', 'User ID', 'Client IP', 'Connected', 'Ended', 'Actions'].map(h => (
                       <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: 'var(--muted)',
-                        fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+                        fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600,
                         letterSpacing: 0.8, textTransform: 'uppercase' }}>{h}</th>
                     ))}
                   </tr>
@@ -505,7 +505,7 @@ function VpnPanelInner() {
           )}
 
           {/* Live now — connected devices only, one row per peer */}
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, letterSpacing: 0.8,
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: 0.8,
             textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
             Live now ({connectedPeers})
           </div>
@@ -547,7 +547,7 @@ function VpnPanelInner() {
           </div>
 
           {/* 7-day activity */}
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, letterSpacing: 0.8,
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: 0.8,
             textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
             Sessions per day (7d)
           </div>
@@ -564,7 +564,7 @@ function VpnPanelInner() {
                     <div title={`${d.date}: ${d.sessions} sessions, ↓ ${formatBytes(d.rx)} / ↑ ${formatBytes(d.tx)}`}
                       style={{ width: '100%', height: h, borderRadius: '6px 6px 2px 2px',
                         background: 'linear-gradient(180deg, var(--green), var(--cyan))', opacity: 0.85 }} />
-                    <div style={{ color: 'var(--muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>
+                    <div style={{ color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
                       {String(d.date).slice(5)}
                     </div>
                   </div>
@@ -574,7 +574,7 @@ function VpnPanelInner() {
           )}
 
           {/* Live peer freshness */}
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, letterSpacing: 0.8,
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: 0.8,
             textTransform: 'uppercase', color: 'var(--muted)', margin: '20px 0 12px' }}>
             Peer freshness (live)
           </div>
@@ -711,7 +711,7 @@ function VpnPanelInner() {
                   <CopyBtn text={reissuedQr} label="QR payload" onCopy={copyText} />
                 </div>
                 {reissuedConf ? (
-                  <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#333', background: '#f1f1f1',
+                  <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#333', background: '#f1f1f1',
                     borderRadius: 6, padding: 8, marginTop: 8, textAlign: 'left', overflow: 'auto',
                     maxHeight: 160, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{reissuedConf}</pre>
                 ) : null}
@@ -726,7 +726,7 @@ function VpnPanelInner() {
                     const h = Math.max(4, Math.round((d.sessions / max) * 70))
                     return (
                       <div key={d.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                        <div style={{ color: 'var(--text)', fontSize: 10, fontWeight: 600 }}>{d.sessions}</div>
+                        <div style={{ color: 'var(--text)', fontSize: 11, fontWeight: 600 }}>{d.sessions}</div>
                         <div title={`${d.date}: ${d.sessions} sessions, ↓ ${formatBytes(d.rx)} / ↑ ${formatBytes(d.tx)}`}
                           style={{ width: '100%', height: h, borderRadius: '4px 4px 2px 2px',
                             background: 'linear-gradient(180deg, var(--cyan), var(--green))', opacity: 0.85 }} />
@@ -750,7 +750,7 @@ function VpnPanelInner() {
 }
 
 const tdStyle = { padding: '10px 12px', color: 'var(--text)' }
-const labelStyle = { fontSize: 10, fontWeight: 600, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }
+const labelStyle = { fontSize: 11, fontWeight: 600, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }
 const valueStyle = { fontSize: 14, color: 'var(--text)', fontWeight: 500 }
 
 export default function VpnPanel() {

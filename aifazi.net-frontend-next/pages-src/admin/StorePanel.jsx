@@ -111,7 +111,7 @@ export function SalesTab({ data, onRefresh }) {
         {(data?.recent_orders || []).map(o => (
           <div key={o.order_number} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', flexWrap: 'wrap' }}>
             <span style={{ fontFamily: MONO, fontSize: 11, color: C }}>{o.order_number}</span>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', flex: 1, textAlign: 'center' }}><RelTime iso={o.created_at} /></span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', flex: 1, textAlign: 'center' }}><RelTime iso={o.created_at} /></span>
             <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>{money(o.total_cents)}</span>
             <StatusBadge status={o.status} />
           </div>
@@ -335,13 +335,13 @@ export function ProductsTab({ categories, onOpenVariants }) {
                 {!p.active && <Badge color="var(--muted)">hidden</Badge>}
                 {p.low_stock && <Badge color={O}>low stock</Badge>}
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
                 {p.slug} · {p.type} · {p.category || 'uncategorized'}
               </div>
             </div>
             <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 700, color: p.on_sale ? R : 'var(--text)', textAlign: 'right' }}>
               {money(p.price_cents)}
-              {p.compare_at_cents > 0 && <div style={{ fontSize: 10, color: 'var(--muted)', textDecoration: 'line-through' }}>{money(p.compare_at_cents)}</div>}
+              {p.compare_at_cents > 0 && <div style={{ fontSize: 11, color: 'var(--muted)', textDecoration: 'line-through' }}>{money(p.compare_at_cents)}</div>}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: MONO, fontSize: 12 }}>
               {p.track_inventory ? (
@@ -536,7 +536,7 @@ export function OrdersTab() {
         <div key={o.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpanded(e => ({ ...e, [o.id]: !e[o.id] }))} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <span style={{ fontFamily: MONO, fontSize: 12, color: C, fontWeight: 700 }}>{o.order_number}</span>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}><RelTime iso={o.created_at} /></span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}><RelTime iso={o.created_at} /></span>
             <span style={{ flex: 1 }} />
             <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{o.customer_name || o.customer_email || '—'}</span>
             <span style={{ fontFamily: MONO, fontSize: 13, color: 'var(--text)', fontWeight: 700 }}>{money(o.total_cents)}</span>
@@ -553,7 +553,7 @@ export function OrdersTab() {
                   </div>
                 ))}
               </div>
-              {o.notes && <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginBottom: 10 }}>Notes: {o.notes}</div>}
+              {o.notes && <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>Notes: {o.notes}</div>}
               <Tracking o={o} />
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                 {['processing', 'shipped', 'delivered', 'cancelled', 'refunded'].map(s => (
@@ -584,7 +584,7 @@ export function OrdersTab() {
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: MONO, fontSize: 11 }}>
                   <Badge color={STATUS_COLORS[ev.status] || 'var(--muted)'}>{ev.status}</Badge>
                   <span style={{ color: 'var(--muted)' }}>{ev.note}</span>
-                  <span style={{ color: 'var(--muted)', fontSize: 10 }}><RelTime iso={ev.created_at} /></span>
+                  <span style={{ color: 'var(--muted)', fontSize: 11 }}><RelTime iso={ev.created_at} /></span>
                 </div>
               ))}
             </div>
@@ -636,7 +636,7 @@ export function InvoicesTab() {
       ) : invoices.map(inv => (
         <div key={inv.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: MONO, fontSize: 12, color: C, fontWeight: 700 }}>{inv.invoice_number}</span>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{inv.customer_name || inv.customer_email || '—'}</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{inv.customer_name || inv.customer_email || '—'}</span>
           <span style={{ flex: 1 }} />
           <span style={{ fontFamily: MONO, fontSize: 13, color: 'var(--text)' }}>{money(inv.total_cents)}</span>
           <StatusBadge status={inv.status} />
@@ -675,7 +675,7 @@ export function QuotesTab() {
         <div key={q.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpanded(e => ({ ...e, [q.id]: !e[q.id] }))} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <span style={{ fontFamily: MONO, fontSize: 12, color: C, fontWeight: 700 }}>{q.quote_number}</span>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}><RelTime iso={q.created_at} /></span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}><RelTime iso={q.created_at} /></span>
             <span style={{ flex: 1 }} />
             <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{q.customer_name || q.customer_email || '—'}</span>
             <span style={{ fontFamily: MONO, fontSize: 13, color: 'var(--text)' }}>{money(q.total_cents)}</span>
@@ -692,7 +692,7 @@ export function QuotesTab() {
                   </div>
                 ))}
               </div>
-              {q.notes && <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginBottom: 10 }}>Notes: {q.notes}</div>}
+              {q.notes && <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>Notes: {q.notes}</div>}
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {['approved', 'converted', 'declined', 'expired'].map(s => (
                   <Btn key={s} onClick={() => setStatus(q, s)} small color={STATUS_COLORS[s]} disabled={q.status === s}>{s.toUpperCase()}</Btn>
@@ -853,9 +853,9 @@ export function PlansTab({ categories }) {
               {!p.active && <Badge color="var(--muted)">hidden</Badge>}
               {p.level > 0 && <Badge color={C}>LVL {p.level}</Badge>}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>{p.slug} · {p.interval}ly · {p.category || 'uncategorized'}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>{p.slug} · {p.interval}ly · {p.category || 'uncategorized'}</div>
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 700, color: 'var(--text)', textAlign: 'right' }}>{money(p.price_cents)}<span style={{ fontSize: 10, color: 'var(--muted)' }}>/{p.interval}</span></div>
+          <div style={{ fontFamily: MONO, fontSize: 15, fontWeight: 700, color: 'var(--text)', textAlign: 'right' }}>{money(p.price_cents)}<span style={{ fontSize: 11, color: 'var(--muted)' }}>/{p.interval}</span></div>
           <div style={{ display: 'flex', gap: 6 }}>
             <Btn onClick={() => startEdit(p)} small color={C}>EDIT</Btn>
             <Btn onClick={() => remove(p)} small danger>DEL</Btn>
@@ -897,7 +897,7 @@ export function SubscriptionsTab() {
         <div key={s.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 160 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{s.username || s.user_id}</div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{s.plan_name || s.plan_slug || '—'} · LVL {s.plan_level} · ends {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString() : '—'}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{s.plan_name || s.plan_slug || '—'} · LVL {s.plan_level} · ends {s.current_period_end ? new Date(s.current_period_end).toLocaleDateString() : '—'}</div>
           </div>
           <StatusBadge status={s.status} />
           <Badge color={s.sync_status === 'synced' ? G : s.sync_status === 'failed' ? R : Y}>{s.sync_status}</Badge>
@@ -954,7 +954,7 @@ export default function StorePanel() {
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
-            fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, padding: '8px 14px', borderRadius: 8, cursor: 'pointer',
+            fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, padding: '8px 14px', borderRadius: 8, cursor: 'pointer',
             background: tab === t.key ? `${G}14` : 'transparent', color: tab === t.key ? G : 'var(--muted)',
             border: `1px solid ${tab === t.key ? `${G}50` : 'var(--border)'}`, transition: 'all 0.14s',
           }}>{t.icon} {t.label}</button>

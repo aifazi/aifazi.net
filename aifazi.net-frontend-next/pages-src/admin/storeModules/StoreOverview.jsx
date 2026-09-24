@@ -88,7 +88,7 @@ export default function StoreOverview({ onNavigate }) {
                 <div style={{ fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{p.sku || p.slug}</div>
               </div>
-              <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontFamily: MONO, background: 'color-mix(in srgb, var(--orange) 9%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 25%, transparent)', color: O, letterSpacing: 0.5, whiteSpace: 'nowrap' }}>{p.stock_qty} left</span>
+              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, fontFamily: MONO, background: 'color-mix(in srgb, var(--orange) 9%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 25%, transparent)', color: O, letterSpacing: 0.5, whiteSpace: 'nowrap' }}>{p.stock_qty} left</span>
             </div>
           ))}
         </div>
@@ -105,7 +105,7 @@ export default function StoreOverview({ onNavigate }) {
           return (
             <div key={o.order_number} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', flexWrap: 'wrap' }}>
               <span style={{ fontFamily: MONO, fontSize: 11, color: C }}>{o.order_number}</span>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', flex: 1, textAlign: 'center' }}>{fmt(o.created_at)}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', flex: 1, textAlign: 'center' }}>{fmt(o.created_at)}</span>
               <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>{money(o.total_cents)}</span>
               <span style={{ fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, border: `1px solid ${stColor}55`, color: stColor, fontWeight: 800 }}>{(o.status || '').toUpperCase()}</span>
             </div>

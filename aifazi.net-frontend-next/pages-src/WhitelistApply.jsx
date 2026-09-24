@@ -232,7 +232,7 @@ function ExistingApplicationGate({ application }) {
           background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 10, padding: '12px 18px', minWidth: 260,
         }}>
-          <div style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 2, marginBottom: 6 }}>CHARACTER</div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: 2, marginBottom: 6 }}>CHARACTER</div>
           <div style={{ fontSize: 15, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{application.character_name}</div>
         </div>
       )}
@@ -584,7 +584,7 @@ export default function WhitelistApply() {
             ['04', 'First Join', 'Your first successful server connection marks the profile ACTIVE.'],
           ].map(([num, title, text]) => (
             <div key={num} style={{ background:'color-mix(in srgb, var(--cyan) 4.5%, transparent)', border:'1px solid color-mix(in srgb, var(--cyan) 18%, transparent)', borderRadius:10, padding:'13px 14px' }}>
-              <div style={{ color:C, fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:2, marginBottom:6 }}>{num}</div>
+              <div style={{ color:C, fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, marginBottom:6 }}>{num}</div>
               <div style={{ color:'var(--text)', fontFamily:'var(--font-mono)', fontSize:12, marginBottom:5 }}>{title}</div>
               <div style={{ color:'var(--muted)', fontSize:12, lineHeight:1.55 }}>{text}</div>
             </div>
@@ -596,7 +596,7 @@ export default function WhitelistApply() {
           <div id="applications" style={{ background:'color-mix(in srgb, var(--cyan) 3.5%, transparent)', border:'1px solid color-mix(in srgb, var(--cyan) 18%, transparent)', borderRadius:12, padding:18, display:'flex', flexDirection:'column', gap:12 }}>
             <div style={{ display:'flex', justifyContent:'space-between', gap:12, alignItems:'center', flexWrap:'wrap' }}>
               <div>
-                <div style={{ color:C, fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:3, marginBottom:5 }}>OTHER APPLICATIONS</div>
+                <div style={{ color:C, fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:3, marginBottom:5 }}>OTHER APPLICATIONS</div>
                 <div style={{ color:'var(--text)', fontFamily:'var(--font-mono)', fontSize:15 }}>Departments and staff forms</div>
               </div>
               <a href="/forms" style={{ color:G, fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:1.5, textDecoration:'none' }}>VIEW ALL →</a>

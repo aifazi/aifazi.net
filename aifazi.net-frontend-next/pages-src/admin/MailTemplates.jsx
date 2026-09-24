@@ -408,13 +408,13 @@ const [saveError, setSaveError] = useState('')
       {/* Save bar */}
       <div style={{ display:'flex', gap:10, alignItems:'center', paddingTop:8, borderTop:`1px solid ${C.border}` }}>
         <button onClick={save} disabled={saving} style={{
-          fontFamily:C.mono, fontSize:10, letterSpacing:2, padding:'10px 22px',
+          fontFamily:C.mono, fontSize: 11, letterSpacing:2, padding:'10px 22px',
           background: saving ? 'rgba(34,211,238,0.1)' : C.cyan, color: saving ? C.cyan : '#000',
           border:`1px solid ${C.cyan}`, cursor: saving ? 'not-allowed' : 'pointer', borderRadius:4,
           transition:'all 0.15s',
         }}>{saving ? 'SAVING…' : '💾 SAVE TEMPLATE'}</button>
         <button onClick={() => { onReset(); setDirty(false) }} style={{
-          fontFamily:C.mono, fontSize:10, letterSpacing:2, padding:'10px 20px',
+          fontFamily:C.mono, fontSize: 11, letterSpacing:2, padding:'10px 20px',
           background:'transparent', color:C.muted, border:`1px solid ${C.border}`,
           cursor:'pointer', borderRadius:4,
         }}>↺ RESET DEFAULT</button>
@@ -501,7 +501,7 @@ export default function MailTemplates() {
             </div>
           </div>
           {loading ? (
-            <div style={{ padding:'32px 0', textAlign:'center', fontFamily:C.mono, fontSize:10, color:C.muted }}>LOADING…</div>
+            <div style={{ padding:'32px 0', textAlign:'center', fontFamily:C.mono, fontSize: 11, color:C.muted }}>LOADING…</div>
           ) : filteredPurposes.map(p => {
             const isCustomised = !!templates[p.id]
             const isActive     = selected === p.id
@@ -515,7 +515,7 @@ export default function MailTemplates() {
               }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                 <span style={{ fontSize:16, flexShrink:0 }}>{p.icon}</span>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontFamily:C.mono, fontSize:10, color: isActive ? C.cyan : C.text,
+                  <div style={{ fontFamily:C.mono, fontSize: 11, color: isActive ? C.cyan : C.text,
                     overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.label}</div>
                   <div style={{ fontFamily:C.mono, fontSize: 11, color:C.muted, marginTop:2 }}>{p.group}</div>
                 </div>

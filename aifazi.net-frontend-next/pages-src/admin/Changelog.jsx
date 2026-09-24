@@ -921,7 +921,7 @@ function VersionBlock({ entry, isLatest }) {
             color: C.cyan, borderRadius: 4,
           }}>LATEST</span>
         )}
-        <span style={{ fontFamily: C.fontMono, fontSize: 10, color: C.muted, marginLeft: 4 }}>{entry.date}</span>
+        <span style={{ fontFamily: C.fontMono, fontSize: 11, color: C.muted, marginLeft: 4 }}>{entry.date}</span>
         <span style={{ fontFamily: C.fontUi, fontSize: 13, fontWeight: 600, color: C.text, flex: 1, minWidth: 200 }}>{entry.title}</span>
       </div>
       {/* Summary */}
@@ -966,7 +966,7 @@ function RoadmapPhase({ phase }) {
 
 const TabBtn = ({ id, label, active, onSelect }) => (
   <button onClick={onSelect} style={{
-    fontFamily: C.fontMono, fontSize: 10, letterSpacing: 2, padding: '9px 18px',
+    fontFamily: C.fontMono, fontSize: 11, letterSpacing: 2, padding: '9px 18px',
     background: active ? C.purple : 'transparent',
     color: active ? '#000' : C.muted,
     border: 'none', cursor: 'pointer',

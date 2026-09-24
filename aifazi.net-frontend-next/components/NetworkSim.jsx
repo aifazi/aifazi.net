@@ -696,7 +696,7 @@ export default function NetworkSim({ embedded }) {
         {['#ff5f57','#ffbd2e','#28c840'].map((c, i) => (
           <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
         ))}
-        <span style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginLeft: 8 }}>
+        <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginLeft: 8 }}>
           {hostname} — Cisco IOS Simulator
         </span>
       </div>

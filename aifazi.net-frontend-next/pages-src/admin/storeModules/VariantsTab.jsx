@@ -148,20 +148,20 @@ export default function VariantsTab({ focusProductId }) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE VARIANT'}</button>
-            <button onClick={cancel} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>
+            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 20px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE VARIANT'}</button>
+            <button onClick={cancel} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>
           </div>
         </div>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-        <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 18px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>+ NEW VARIANT</button>
+        <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 18px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>+ NEW VARIANT</button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <select value={fProduct} onChange={e => setFProduct(e.target.value)} style={{ ...input, maxWidth: 260 }}>
             <option value="">All products</option>
             {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{variants.length} variant{variants.length !== 1 ? 's' : ''}{fProduct ? ' shown' : ` across ${products.length} products`}</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{variants.length} variant{variants.length !== 1 ? 's' : ''}{fProduct ? ' shown' : ` across ${products.length} products`}</span>
         </div>
       </div>
 

@@ -144,7 +144,7 @@ export function EmptyState({ icon = '📭', title = 'Nothing here yet', hint }) 
     <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--muted)', fontFamily: MONO }}>
       <div style={{ fontSize: 34, marginBottom: 12 }}>{icon}</div>
       <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{title}</div>
-      {hint && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 8, opacity: 0.8 }}>{hint}</div>}
+      {hint && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, opacity: 0.8 }}>{hint}</div>}
     </div>
   )
 }
@@ -195,9 +195,9 @@ export function Pagination({ page, total, pageSize = 50, onChange, label }) {
   if (pages <= 1 && shown <= 1) return null
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', padding: '10px 4px', flexWrap: 'wrap' }}>
-      {label && <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginRight: 'auto' }}>{label}</span>}
+      {label && <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginRight: 'auto' }}>{label}</span>}
       <Btn variant="outline" small disabled={shown <= 1} onClick={() => onChange(shown - 1)}>← PREV</Btn>
-      <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{shown} / {pages}</span>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{shown} / {pages}</span>
       <Btn variant="outline" small disabled={shown >= pages} onClick={() => onChange(shown + 1)}>NEXT →</Btn>
     </div>
   )

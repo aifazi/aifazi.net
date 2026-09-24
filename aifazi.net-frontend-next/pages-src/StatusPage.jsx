@@ -120,7 +120,7 @@ function ServiceRow({ s, mounted }) {
       </div>
 
       {s.detail && s.status !== 'up' && (
-        <div style={{ fontFamily: MONO, fontSize: 10, color: R, marginTop: 12, padding: '10px 12px', background: `${R}0a`, border: `1px solid ${R}2e`, borderRadius: 8, wordBreak: 'break-word' }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: R, marginTop: 12, padding: '10px 12px', background: `${R}0a`, border: `1px solid ${R}2e`, borderRadius: 8, wordBreak: 'break-word' }}>
           {s.detail}
         </div>
       )}
@@ -133,7 +133,7 @@ function IncidentTimeline({ incidents, mounted }) {
   return (
     <div style={{ marginTop: 40 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: O }}>INCIDENT HISTORY</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: O }}>INCIDENT HISTORY</span>
         <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>LAST 30 DAYS</span>
         <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
       </div>
@@ -154,7 +154,7 @@ function IncidentTimeline({ incidents, mounted }) {
                   {mounted && inc.end && inc.end !== inc.start ? ` → ${new Date(inc.end).toLocaleTimeString()}` : ''}
                 </div>
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: inc.ongoing ? R : 'var(--muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: inc.ongoing ? R : 'var(--muted)', fontWeight: 700, whiteSpace: 'nowrap' }}>
                 {inc.ongoing ? '◌ ONGOING' : `${fmtDur(inc.duration_s)} DOWN`}
               </div>
             </div>
@@ -238,7 +238,7 @@ export default function StatusPage({ initialData = null }) {
             : 'var(--bg2)',
           position: 'relative', overflow: 'hidden',
         }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 4, color: C, marginBottom: 12 }}>LIVE SYSTEM STATUS</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 4, color: C, marginBottom: 12 }}>LIVE SYSTEM STATUS</div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
             {meta && <span style={{ fontSize: 34, lineHeight: 1 }}>{meta.icon}</span>}
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 800, margin: 0, color: meta?.color || 'var(--text)', textShadow: meta ? `0 0 24px ${meta.color}44` : 'none' }}>
@@ -246,7 +246,7 @@ export default function StatusPage({ initialData = null }) {
             </h1>
           </div>
           {meta && <p style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', margin: '10px 0 0' }}>{meta.sub}</p>}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px 26px', marginTop: 22, flexWrap: 'wrap', fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px 26px', marginTop: 22, flexWrap: 'wrap', fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>
             <span><strong style={{ color: G, fontSize: 13 }}>{upCount}</strong> operational</span>
             {downCount > 0 && <span><strong style={{ color: R, fontSize: 13 }}>{downCount}</strong> down</span>}
             {unknownCount > 0 && <span><strong style={{ color: 'var(--muted)', fontSize: 13 }}>{unknownCount}</strong> no data</span>}
@@ -272,13 +272,13 @@ export default function StatusPage({ initialData = null }) {
           <div style={{ marginTop: 32, textAlign: 'center', padding: 44, color: R, fontFamily: MONO, fontSize: 12, border: `1px dashed ${R}55`, borderRadius: 14 }}>
             {error}
             <div style={{ marginTop: 14 }}>
-              <button onClick={refreshNow} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 18px', cursor: 'pointer', background: 'transparent', color: C, border: `1px solid ${C}45`, borderRadius: 8 }}>↻ TRY AGAIN</button>
+              <button onClick={refreshNow} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 18px', cursor: 'pointer', background: 'transparent', color: C, border: `1px solid ${C}45`, borderRadius: 8 }}>↻ TRY AGAIN</button>
             </div>
           </div>
         ) : (
           <div style={{ marginTop: 32 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: 'var(--text)' }}>MONITORED SERVICES</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: 'var(--text)' }}>MONITORED SERVICES</span>
               <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
               <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{svcs.length} TOTAL</span>
             </div>
@@ -287,7 +287,7 @@ export default function StatusPage({ initialData = null }) {
             {custom.length > 0 && (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '30px 0 16px' }}>
-                  <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C }}>CUSTOM CHECKS</span>
+                  <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C }}>CUSTOM CHECKS</span>
                   <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
                 </div>
                 {custom.map((s, i) => <ServiceRow key={s.name || i} s={s} mounted={mounted} />)}
@@ -298,7 +298,7 @@ export default function StatusPage({ initialData = null }) {
 
             {/* About block */}
             <div style={{ marginTop: 40, border: '1px solid var(--border)', borderRadius: 14, padding: '22px 24px', background: 'var(--bg2)' }}>
-              <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C, marginBottom: 10 }}>ABOUT THIS PAGE</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C, marginBottom: 10 }}>ABOUT THIS PAGE</div>
               <p style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
                 This page reflects the health of the core aifazi.net platform — the website, API, database,
                 email delivery, game servers and scheduled jobs. Checks run continuously around the clock and
@@ -308,7 +308,7 @@ export default function StatusPage({ initialData = null }) {
               </p>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 22, marginTop: 30, flexWrap: 'wrap', fontFamily: MONO, fontSize: 10, letterSpacing: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 22, marginTop: 30, flexWrap: 'wrap', fontFamily: MONO, fontSize: 11, letterSpacing: 1 }}>
               <Link to="/" style={{ color: C, textDecoration: 'none' }}>← BACK TO SITE</Link>
               <Link to={STORE_URL} style={{ color: Y, textDecoration: 'none' }}>STORE</Link>
               <Link to={FIVEM_URL} style={{ color: G, textDecoration: 'none' }}>FIVEM</Link>

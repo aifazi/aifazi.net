@@ -160,7 +160,7 @@ function BannerToast({ toast, v, leaving, dismiss }) {
       {/* action link */}
       {toast.action && <a href={toast.actionHref||'#'} onClick={e=>{if(!toast.actionHref)e.preventDefault(); toast.onAction?.()}} style={{ fontFamily:t.fontMono, fontSize: 11, letterSpacing:1, color:v.color, textDecoration:'none', whiteSpace:'nowrap', flexShrink:0 }}>{toast.action} →</a>}
       {/* close */}
-      <button onClick={dismiss} style={{ background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:14, marginLeft:4, flexShrink:0, fontFamily:t.fontMono }}>✕</button>
+      <button onClick={dismiss} style={{ background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:14, marginLeft:4, flexShrink:0, fontFamily:t.fontMono }} aria-label="Close">✕</button>
       {/* scan line sweep */}
       <div style={{ position:'absolute', top:0, left:'-100%', width:'100%', height:'100%', background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent)', animation:'ntfy-scan 2.5s ease-in-out infinite', pointerEvents:'none' }} />
     </div>
@@ -191,13 +191,13 @@ function FloatToast({ toast, v, leaving, progress, dismiss }) {
           animation: toast.type === 'error' ? 'ntfy-shake .4s ease' : 'none',
         }}>{v.icon}</div>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontFamily:t.fontMono, fontSize:10, fontWeight:700, letterSpacing:1, color:v.color }}>{toast.title || v.label}</div>
+          <div style={{ fontFamily:t.fontMono, fontSize: 11, fontWeight:700, letterSpacing:1, color:v.color }}>{toast.title || v.label}</div>
           <div style={{ fontFamily:t.fontMono, fontSize: 11, color:t.muted, marginTop:1 }}>{ts()} · aifazi.net</div>
         </div>
-        <button onClick={dismiss} style={{ background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:12, fontFamily:t.fontMono }}>✕</button>
+        <button onClick={dismiss} style={{ background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:12, fontFamily:t.fontMono }} aria-label="Close">✕</button>
       </div>
       {/* message */}
-      <div style={{ fontFamily:t.fontMono, fontSize:10, color:'rgba(200,216,232,0.75)', lineHeight:1.6 }}>{toast.message}</div>
+      <div style={{ fontFamily:t.fontMono, fontSize: 11, color:'rgba(200,216,232,0.75)', lineHeight:1.6 }}>{toast.message}</div>
       {/* action buttons */}
       {toast.action && (
         <div style={{ display:'flex', gap:6, marginTop:10 }}>
@@ -275,7 +275,7 @@ function MinimalToast({ toast, v, leaving, progress, dismiss }) {
         <span style={{ fontFamily:t.fontMono, fontSize: 11, letterSpacing:2, color:v.color }}>{toast.title || v.label}</span>
       </div>
       <div style={{ fontFamily:t.fontMono, fontSize:11, color:t.text, lineHeight:1.5, paddingLeft:21 }}>{toast.message}</div>
-      <button onClick={e=>{e.stopPropagation();dismiss()}} style={{ position:'absolute', top:9, right:10, background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:10, fontFamily:t.fontMono }}>✕</button>
+      <button onClick={e=>{e.stopPropagation();dismiss()}} style={{ position:'absolute', top:9, right:10, background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize: 11, fontFamily:t.fontMono }}>✕</button>
       {!toast.persistent && <div style={{ position:'absolute', bottom:0, left:0, height:'2px', background:v.color, opacity:.35, width:`${progress}%`, transition:'width .05s linear', borderRadius:'0 0 0 8px' }} />}
     </div>
   )
@@ -326,7 +326,7 @@ function HoloToast({ toast, v, leaving, progress, dismiss }) {
       <div aria-hidden style={{ position:'absolute', top:5, right:5, width:8, height:8, borderRight:`1px solid rgba(0,229,255,0.5)`, borderTop:`1px solid rgba(0,229,255,0.5)` }} />
       <div aria-hidden style={{ position:'absolute', bottom:5, left:5, width:8, height:8, borderLeft:`1px solid rgba(0,229,255,0.5)`, borderBottom:`1px solid rgba(0,229,255,0.5)` }} />
       <div aria-hidden style={{ position:'absolute', bottom:5, right:5, width:8, height:8, borderRight:`1px solid rgba(0,229,255,0.5)`, borderBottom:`1px solid rgba(0,229,255,0.5)` }} />
-      <div style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', width:20, height:20, borderRadius:'50%', border:`1px solid ${v.color}88`, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:t.fontMono, fontSize:10, color:v.color, boxShadow:`0 0 10px ${v.glow}` }}>{v.icon}</div>
+      <div style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', width:20, height:20, borderRadius:'50%', border:`1px solid ${v.color}88`, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:t.fontMono, fontSize: 11, color:v.color, boxShadow:`0 0 10px ${v.glow}` }}>{v.icon}</div>
       <div style={{ fontFamily:t.fontMono, fontSize: 11, letterSpacing:3, color:v.color, marginBottom:3 }}>{v.label}</div>
       <div style={{ fontFamily:t.fontMono, fontSize:11, color:'rgba(200,216,232,0.9)', lineHeight:1.5 }}>
         {toast.title && <strong style={{color:v.color}}>{toast.title} — </strong>}{toast.message}
@@ -351,7 +351,7 @@ function ChipToast({ toast, v, leaving, dismiss }) {
     }}>
       <span style={{ width:8, height:8, borderRadius:'50%', flexShrink:0, background:v.color, boxShadow:`0 0 6px ${v.glow}` }} />
       <span style={{ fontFamily:t.fontMono, fontSize: 11, letterSpacing:2, color:t.muted, flexShrink:0 }}>{ts()}</span>
-      <span style={{ fontFamily:t.fontMono, fontSize:10, color:t.text, flex:1, lineHeight:1.4, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+      <span style={{ fontFamily:t.fontMono, fontSize: 11, color:t.text, flex:1, lineHeight:1.4, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
         {toast.title && <strong style={{color:v.color, marginRight:4}}>{toast.title}:</strong>}
         {toast.message}
       </span>
@@ -386,17 +386,17 @@ function InboxToast({ toast, v, leaving, progress, dismiss }) {
           animation: toast.type === 'error' ? 'ntfy-shake .4s ease' : 'none',
         }}>{v.icon}</div>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontFamily:t.fontMono, fontSize:10, fontWeight:700, letterSpacing:1, color:v.color }}>{toast.title || v.label}</div>
+          <div style={{ fontFamily:t.fontMono, fontSize: 11, fontWeight:700, letterSpacing:1, color:v.color }}>{toast.title || v.label}</div>
           <div style={{ fontFamily:t.fontMono, fontSize: 11, color:t.muted, marginTop:1 }}>{ts()} · aifazi.net</div>
         </div>
-        <button onClick={dismiss} style={{ background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:12, fontFamily:t.fontMono }}>✕</button>
+        <button onClick={dismiss} style={{ background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:12, fontFamily:t.fontMono }} aria-label="Close">✕</button>
       </div>
       {/* subject line slot (optional `subject` opt; falls back to nothing to avoid echoing the header title) */}
       {toast.subject && (
-        <div style={{ fontFamily:t.fontMono, fontSize:10, fontWeight:700, color:t.text, lineHeight:1.5, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{toast.subject}</div>
+        <div style={{ fontFamily:t.fontMono, fontSize: 11, fontWeight:700, color:t.text, lineHeight:1.5, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{toast.subject}</div>
       )}
       {/* message */}
-      <div style={{ fontFamily:t.fontMono, fontSize:10, color:'rgba(200,216,232,0.75)', lineHeight:1.6 }}>{toast.message}</div>
+      <div style={{ fontFamily:t.fontMono, fontSize: 11, color:'rgba(200,216,232,0.75)', lineHeight:1.6 }}>{toast.message}</div>
       {/* action buttons */}
       {toast.action && (
         <div style={{ display:'flex', gap:6, marginTop:10 }}>
@@ -434,7 +434,7 @@ function HudToast({ toast, v, leaving, progress, dismiss }) {
         <span style={{ fontFamily:t.fontMono, fontSize: 11, letterSpacing:3, color:v.color, textTransform:'uppercase' }}>{toast.title || v.label}</span>
       </div>
       <div style={{ fontFamily:t.fontMono, fontSize:11, color:t.text, lineHeight:1.5, paddingLeft:21, textTransform:'uppercase', letterSpacing:1 }}>{toast.message}</div>
-      <button onClick={e=>{e.stopPropagation();dismiss()}} style={{ position:'absolute', top:9, right:10, background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize:10, fontFamily:t.fontMono }}>✕</button>
+      <button onClick={e=>{e.stopPropagation();dismiss()}} style={{ position:'absolute', top:9, right:10, background:'none', border:'none', color:t.muted, cursor:'pointer', fontSize: 11, fontFamily:t.fontMono }}>✕</button>
       {!toast.persistent && <div style={{ position:'absolute', bottom:0, left:0, height:'2px', background:v.color, opacity:.35, width:`${progress}%`, transition:'width .05s linear', borderRadius:'0 0 0 8px' }} />}
     </div>
   )

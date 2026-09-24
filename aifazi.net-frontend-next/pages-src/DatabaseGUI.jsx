@@ -99,7 +99,7 @@ function StatCard({ label, value, sub, color="var(--green,var(--green))", icon, 
       <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${color},transparent)` }} />
       <div style={{ fontSize: 11, fontFamily:"var(--font-mono,monospace)", letterSpacing:3, color:"var(--muted)", marginBottom:10 }}>{icon} {label}</div>
       <div style={{ fontSize:30, fontWeight:900, color, fontFamily:"var(--font-mono,monospace)", lineHeight:1 }}>{fmt(value)}</div>
-      {sub && <div style={{ fontSize:10, fontFamily:"var(--font-mono,monospace)", color:"var(--muted)", marginTop:6, lineHeight:1.5 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 11, fontFamily:"var(--font-mono,monospace)", color:"var(--muted)", marginTop:6, lineHeight:1.5 }}>{sub}</div>}
       {trend !== undefined && (
         <div style={{ position:"absolute", top:14, right:14, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:trend>0?"var(--green,var(--green))":trend<0?"var(--red,var(--red))":"var(--muted)" }}>
           {trend>0?`+${trend}`:trend<0?`-${Math.abs(trend)}`:"-"} today
@@ -110,7 +110,7 @@ function StatCard({ label, value, sub, color="var(--green,var(--green))", icon, 
 }
 
 function MiniChart({ data=[], color="var(--green,var(--green))", label="" }) {
-  if (!data.length) return <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)", padding:"20px 0", textAlign:"center" }}>NO DATA YET</div>;
+  if (!data.length) return <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", padding:"20px 0", textAlign:"center" }}>NO DATA YET</div>;
   const max = Math.max(...data.map(d => d.count), 1);
   return (
     <div>
@@ -205,10 +205,10 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
               <div>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--cyan,var(--cyan))", marginBottom:4 }}>USER MANAGEMENT</div>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:18, fontWeight:700, color:"var(--text)", lineHeight:1 }}>{u.username}</div>
-                <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--muted)", marginTop:3 }}>{u.email}</div>
+                <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", marginTop:3 }}>{u.email}</div>
               </div>
             </div>
-            <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--muted)", cursor:"pointer", fontSize:20, padding:4, lineHeight:1 }}>x</button>
+            <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--muted)", cursor:"pointer", fontSize:20, padding:4, lineHeight:1 }} aria-label="Close">x</button>
           </div>
           <div style={{ display:"flex", gap:6, marginTop:14, flexWrap:"wrap", alignItems:"center" }}>
             <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, padding:"4px 10px", background:roleBg(u.role), color:roleColor(u.role), border:`1px solid ${roleColor(u.role)}33` }}>
@@ -254,7 +254,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>BAN MANAGEMENT</div>
                 {u.banned ? (
                   <div>
-                    <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--red,var(--red))", marginBottom:10, padding:"8px 10px", background:"rgba(255,71,87,0.03)", border:"1px solid var(--red)20", lineHeight:1.5 }}>
+                    <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))", marginBottom:10, padding:"8px 10px", background:"rgba(255,71,87,0.03)", border:"1px solid var(--red)20", lineHeight:1.5 }}>
                       BAN Reason: {u.banReason||"No reason given"}
                     </div>
                     <Btn label={busy==="unban"?"WORKING...":"YES UNBAN USER"} color="var(--green,var(--green))" disabled={!!busy} onClick={() => run("unban",`users/${u._id}/unban`)} />
@@ -278,7 +278,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
           {tab==="password" && (
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:16 }}>
               <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>SET PASSWORD DIRECTLY</div>
-              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--red,var(--red))", marginBottom:14, padding:"10px 12px", background:"rgba(255,71,87,0.03)", border:"1px solid var(--red)20", lineHeight:1.6 }}>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))", marginBottom:14, padding:"10px 12px", background:"rgba(255,71,87,0.03)", border:"1px solid var(--red)20", lineHeight:1.6 }}>
                 WARN Immediately changes the password with no notification to the user.
               </div>
               <div style={{ position:"relative", marginBottom:10 }}>
@@ -311,7 +311,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                     background:newRole===r?roleBg(r):"var(--bg)",
                     border:`1px solid ${newRole===r?roleColor(r)+"55":"var(--border)"}`,
                   }}>
-                    <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:roleColor(r), fontWeight:700, marginBottom:4, letterSpacing:1 }}>
+                    <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:roleColor(r), fontWeight:700, marginBottom:4, letterSpacing:1 }}>
                       {newRole===r?"* ":"o "}{r.toUpperCase()}
                     </div>
                     <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", lineHeight:1.4 }}>{desc}</div>
@@ -345,7 +345,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
               {Object.entries(u).filter(([k]) => !["__v","password","verifyToken","resetToken","chatToken"].includes(k)).map(([k, v]) => (
                 <div key={k} style={{ display:"grid", gridTemplateColumns:"130px 1fr", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016" }}>
                   <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", letterSpacing:1 }}>{k.toUpperCase()}</span>
-                  <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, wordBreak:"break-all", lineHeight:1.5,
+                  <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, wordBreak:"break-all", lineHeight:1.5,
                     color:k==="role"?roleColor(v):typeof v==="boolean"?(v?"var(--green,var(--green))":"var(--red,var(--red))"):(k.includes("At")&&v)?"var(--muted)":"var(--muted)" }}>
                     {v===null||v===undefined?"-":typeof v==="boolean"?(v?"true YES":"false NO"):(k.includes("At")&&v)?`${new Date(v).toLocaleString()} · ${ago(v)}`:typeof v==="object"?JSON.stringify(v).slice(0,120):String(v)}
                   </span>
@@ -395,7 +395,7 @@ function EditModal({ doc, coll, token, onClose, onSaved }) {
             <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--green,var(--green))" }}>EDIT · {coll.toUpperCase()}</span>
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", marginTop:3 }}>{String(doc._id)}</div>
           </div>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--muted)", cursor:"pointer", fontSize:18 }}>x</button>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--muted)", cursor:"pointer", fontSize:18 }} aria-label="Close">x</button>
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"18px 20px", display:"flex", flexDirection:"column", gap:12 }}>
           {Object.entries(fields).filter(([k]) => k!=="__v").map(([key, val]) => {
@@ -415,7 +415,7 @@ function EditModal({ doc, coll, token, onClose, onSaved }) {
           })}
         </div>
         <div style={{ padding:"14px 20px", borderTop:"1px solid #0f1a26", display:"flex", gap:10, alignItems:"center", flexShrink:0 }}>
-          {error && <div style={{ flex:1, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--red,var(--red))" }}>WARN {error}</div>}
+          {error && <div style={{ flex:1, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))" }}>WARN {error}</div>}
           {!error && <div style={{ flex:1 }} />}
           <button onClick={onClose} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, padding:"8px 16px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>CANCEL</button>
           <button onClick={save} disabled={saving} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, padding:"8px 22px", background:"var(--green,var(--green))", color:"#000", border:"none", cursor:"pointer", fontWeight:700 }}>
@@ -545,7 +545,7 @@ function CollectionBrowser({ token, toast }) {
         {search && <button aria-label="Clear search" onClick={()=>{setSearch("");setPage(1);setQuery("");}} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"8px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
       </div>
 
-      {loading && <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)", letterSpacing:3 }}>LOADING...</div>}
+      {loading && <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", letterSpacing:3 }}>LOADING...</div>}
 
       {data && !loading && (
         <>
@@ -697,7 +697,7 @@ function ExportPanel({ token, toast, stats }) {
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, color:"var(--muted)", marginBottom:8 }}>FORMAT</div>
             <div style={{ display:"flex", gap:8 }}>
               {["json","csv"].map(f => (
-                <button key={f} onClick={() => setFormat(f)} style={{ flex:1, padding:"10px", fontFamily:"var(--font-mono,monospace)", fontSize:10, background:format===f?"var(--cyan,var(--cyan))":"var(--bg)", color:format===f?"#000":"var(--muted)", border:`1px solid ${format===f?"var(--cyan,var(--cyan))":"var(--border)"}`, cursor:"pointer", fontWeight:format===f?700:400 }}>
+                <button key={f} onClick={() => setFormat(f)} style={{ flex:1, padding:"10px", fontFamily:"var(--font-mono,monospace)", fontSize: 11, background:format===f?"var(--cyan,var(--cyan))":"var(--bg)", color:format===f?"#000":"var(--muted)", border:`1px solid ${format===f?"var(--cyan,var(--cyan))":"var(--border)"}`, cursor:"pointer", fontWeight:format===f?700:400 }}>
                   {f.toUpperCase()}
                 </button>
               ))}
@@ -781,7 +781,7 @@ function QueryPanel({ token, toast }) {
             <input type="number" value={limit} onChange={e => setLimit(Math.max(1,Math.min(100,Number(e.target.value))))} style={inp} min={1} max={100} />
           </div>
         </div>
-        <button onClick={runQuery} disabled={loading} style={{ padding:"11px 28px", background:"var(--cyan,var(--cyan))", color:"#000", fontFamily:"var(--font-mono,monospace)", fontSize:10, letterSpacing:2, fontWeight:700, border:"none", cursor:"pointer" }}>
+        <button onClick={runQuery} disabled={loading} style={{ padding:"11px 28px", background:"var(--cyan,var(--cyan))", color:"#000", fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, fontWeight:700, border:"none", cursor:"pointer" }}>
           {loading ? "RUNNING..." : "RUN QUERY"}
         </button>
       </div>
@@ -948,7 +948,7 @@ function DbHealthTab({ token, toast }) {
         </button>
       </div>
 
-      {loading && !data && <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)", letterSpacing:3 }}>FETCHING METRICS...</div>}
+      {loading && !data && <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", letterSpacing:3 }}>FETCHING METRICS...</div>}
 
       {data && (
         <div style={{ display:"grid", gap:16 }}>
@@ -989,7 +989,7 @@ function DbHealthTab({ token, toast }) {
                 : !data.slowQueriesNew || data.slowQueriesNew.length === 0
                   ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)" }}>No slow-query data.</div>
                   : data.slowQueriesNew.map((q, i) => (
-                      <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 90px 80px", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016", fontFamily:"var(--font-mono,monospace)", fontSize:10 }}>
+                      <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 90px 80px", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016", fontFamily:"var(--font-mono,monospace)", fontSize: 11 }}>
                         <span style={{ color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={q.query}>{q.query}</span>
                         <span style={{ color:"var(--red,var(--red))" }}>{q.mean_ms}ms</span>
                         <span style={{ color:"var(--muted)" }}>×{q.calls}</span>
@@ -1096,7 +1096,7 @@ function DbHealthTab({ token, toast }) {
             <div style={{ background:"var(--bg2)", border:"1px solid #ff475520", padding:24 }}>
               <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--red,var(--red))", marginBottom:16 }}>WARN SLOW QUERIES</div>
               {data.slowQueries.map((q, i) => (
-                <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 80px 120px", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016", fontFamily:"var(--font-mono,monospace)", fontSize:10 }}>
+                <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 80px 120px", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016", fontFamily:"var(--font-mono,monospace)", fontSize: 11 }}>
                   <span style={{ color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{q.query}</span>
                   <span style={{ color:"var(--red,var(--red))" }}>{q.ms}ms</span>
                   <span style={{ color:"var(--muted)" }}>{ago(q.ts)}</span>
@@ -1188,7 +1188,7 @@ function NewsletterTab({ token, toast }) {
         {search && <button onClick={() => { setSearch(""); setPage(1); load(1, ""); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
       </div>
 
-      {loading ? <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)", letterSpacing:3 }}>LOADING...</div> : (
+      {loading ? <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", letterSpacing:3 }}>LOADING...</div> : (
         <>
           <div style={{ overflowX:"auto" }}>
             <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"var(--font-mono,monospace)", fontSize:11 }}>
@@ -1211,7 +1211,7 @@ function NewsletterTab({ token, toast }) {
                         {s.active ? "YES ACTIVE" : "NO UNSUB"}
                       </span>
                     </td>
-                    <td style={{ padding:"9px 12px", color:"var(--muted)", fontSize:10 }}>{s.createdAt ? ago(s.createdAt) : "-"}</td>
+                    <td style={{ padding:"9px 12px", color:"var(--muted)", fontSize: 11 }}>{s.createdAt ? ago(s.createdAt) : "-"}</td>
                     <td style={{ padding:"9px 12px", whiteSpace:"nowrap" }}>
                       <div style={{ display:"flex", gap:4, justifyContent:"flex-end" }}>
                         <Btn tiny label={busy===s._id?"...":s.active?"DEACTIVATE":"ACTIVATE"} color={s.active?"var(--red,var(--red))":"var(--green,var(--green))"} disabled={!!busy} onClick={() => toggle(s)} />
@@ -1302,7 +1302,7 @@ function AuditLogTab({ token, toast }) {
         </button>
       </div>
       {loading ? (
-        <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)", letterSpacing:3 }}>LOADING...</div>
+        <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", letterSpacing:3 }}>LOADING...</div>
       ) : (
         <>
           <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", marginBottom:10, letterSpacing:2 }}>
@@ -1310,13 +1310,13 @@ function AuditLogTab({ token, toast }) {
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
             {logs.length === 0 ? (
-              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)" }}>No audit events found</div>
+              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>No audit events found</div>
             ) : logs.map((log, i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"22px 160px 130px 1fr auto", gap:12, padding:"10px 14px", background:"var(--bg2)", border:"1px solid #0a1016", alignItems:"center" }}>
                 <span style={{ fontSize:13 }}>{getIcon(log.event)}</span>
                 <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:getColor(log.event), letterSpacing:1 }}>{(log.event || "").replace(/_/g," ").toUpperCase()}</span>
-                <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{log.username || "system"}</span>
-                <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{log.username || "system"}</span>
+                <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                   {log.role && <span style={{ color:roleColor(log.role), marginRight:8, fontSize: 11 }}>{log.role.toUpperCase()}</span>}
                   {log.meta?.target ? `-> ${log.meta.target}` : ""}
                   {log.meta?.oldRole ? ` (${log.meta.oldRole} -> ${log.meta.newRole})` : ""}
@@ -1408,13 +1408,13 @@ function SessionsTab({ token, toast }) {
         ))}
       </div>
 
-      {loading ? <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)" }}>LOADING...</div> : (
+      {loading ? <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>LOADING...</div> : (
 
         subTab === "sessions" ? (
           <div>
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", marginBottom:14, letterSpacing:2 }}>{sessions.length} ACTIVE SESSION{sessions.length !== 1 ? "S" : ""}</div>
             {sessions.length === 0 ? (
-              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)" }}>No active sessions data available</div>
+              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>No active sessions data available</div>
             ) : sessions.map((s, i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr auto auto auto", gap:12, padding:"12px 16px", background:"var(--bg2)", border:"1px solid #0a1016", marginBottom:4, alignItems:"center" }}>
                 <div>
@@ -1449,11 +1449,11 @@ function SessionsTab({ token, toast }) {
             </div>
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", marginBottom:10, letterSpacing:2 }}>{ipBans.length} BANNED IP{ipBans.length !== 1 ? "S" : ""}</div>
             {ipBans.length === 0 ? (
-              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)" }}>No IP bans configured</div>
+              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>No IP bans configured</div>
             ) : ipBans.map((ban, i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto auto", gap:12, padding:"12px 16px", background:"var(--bg2)", border:"1px solid #0a1016", marginBottom:4, alignItems:"center" }}>
                 <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:12, color:"var(--red,var(--red))" }}>{ban.ip}</span>
-                <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--muted)" }}>{ban.reason || "-"}</span>
+                <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>{ban.reason || "-"}</span>
                 <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>{ban.createdAt ? ago(ban.createdAt) : "-"}</span>
                 <Btn tiny danger label={busy === (ban._id||ban.id) ? "..." : "REMOVE"} disabled={!!busy} onClick={() => removeBan(ban._id || ban.id)} />
               </div>
@@ -1588,7 +1588,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
           padding: '8px 24px', background: 'color-mix(in srgb, var(--cyan) 7%, transparent)',
           borderBottom: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)',
           display: 'flex', alignItems: 'center', gap: 10,
-          fontFamily: 'monospace', fontSize: 10, color: 'var(--cyan)', letterSpacing: 2,
+          fontFamily: 'monospace', fontSize: 11, color: 'var(--cyan)', letterSpacing: 2,
         }}>
           <span>LOCK</span>
           <span>READ-ONLY MODE - Query, Maintenance and Export tabs are hidden for your role ({role?.toUpperCase()}). Contact an admin for write access.</span>
@@ -1597,7 +1597,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
 
       {/* Role still resolving — skeleton instead of role-gated UI */}
       {roleReady === null && (
-        <div style={{ padding: '8px 24px', borderBottom: '1px solid var(--border)', fontFamily: 'monospace', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>
+        <div style={{ padding: '8px 24px', borderBottom: '1px solid var(--border)', fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>
           RESOLVING ACCESS…
         </div>
       )}
@@ -1685,7 +1685,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
               <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:20 }}>
                 <div style={{ fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:14 }}>TOP POSTS BY VIEWS</div>
                 {(s.topPosts||[]).length===0
-                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)" }}>No posts yet</div>
+                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>No posts yet</div>
                   : (s.topPosts||[]).map((p,i) => (
                     <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"9px 0", borderBottom:"1px solid #0a1016", gap:12 }}>
                       <div style={{ flex:1, overflow:"hidden" }}>
@@ -1700,7 +1700,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
               <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:20 }}>
                 <div style={{ fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:14 }}>FORUM CATEGORIES</div>
                 {(s.categories||[]).length===0
-                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:10, color:"var(--border)" }}>No categories yet</div>
+                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>No categories yet</div>
                   : (s.categories||[]).map((c,i) => (
                     <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"9px 0", borderBottom:"1px solid #0a1016" }}>
                       <span style={{ color:"var(--muted)", fontSize:12 }}>{c.icon} {c.name}</span>
@@ -1818,7 +1818,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
               ].map(([label,val]) => (
                 <div key={label} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:"1px solid #0a1016" }}>
                   <span style={{ fontSize: 11, color:"var(--muted)", letterSpacing:1 }}>{label.toUpperCase()}</span>
-                  <span style={{ fontSize:10, color:"var(--muted)" }}>{val}</span>
+                  <span style={{ fontSize: 11, color:"var(--muted)" }}>{val}</span>
                 </div>
               ))}
             </div>

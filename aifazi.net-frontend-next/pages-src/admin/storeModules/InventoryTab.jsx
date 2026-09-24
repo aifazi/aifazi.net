@@ -139,7 +139,7 @@ export default function InventoryTab() {
             <div style={{ background: 'var(--bg2)', border: `1px solid ${G}44`, borderRadius: 10, padding: 12, marginTop: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: `${G}14`, border: `1px solid ${G}44`, color: G }}>{picked.kind.toUpperCase()}</span>
-                <button onClick={resetPicked} style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                <button onClick={resetPicked} style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Close">✕</button>
               </div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, marginTop: 6 }}>{picked.name}</div>
               <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{picked.sku || 'no sku'} · in stock {picked.stock} units</div>
@@ -156,17 +156,17 @@ export default function InventoryTab() {
             <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
               <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: OP[op].color, marginBottom: 10 }}>{OP[op].hint}</div>
               {op !== 'transfer' ? (
-                <select value={opLoc} onChange={e => setOpLoc(e.target.value)} style={{ width: '100%', fontFamily: MONO, fontSize: 10, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 10px', marginBottom: 8 }}>
+                <select value={opLoc} onChange={e => setOpLoc(e.target.value)} style={{ width: '100%', fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 10px', marginBottom: 8 }}>
                   <option value="">Location…</option>
                   {locations.map(l => <option key={l.id} value={l.id}>{l.name}{l.is_default ? ' (default)' : ''}</option>)}
                 </select>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                  <select value={opLoc} onChange={e => setOpLoc(e.target.value)} style={{ fontFamily: MONO, fontSize: 10, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 10px' }}>
+                  <select value={opLoc} onChange={e => setOpLoc(e.target.value)} style={{ fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 10px' }}>
                     <option value="">From…</option>
                     {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
-                  <select value={opTo} onChange={e => setOpTo(e.target.value)} style={{ fontFamily: MONO, fontSize: 10, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 10px' }}>
+                  <select value={opTo} onChange={e => setOpTo(e.target.value)} style={{ fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 10px' }}>
                     <option value="">To…</option>
                     {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
@@ -174,9 +174,9 @@ export default function InventoryTab() {
               )}
               <div style={{ display: 'flex', gap: 8 }}>
                 <input value={opQty} onChange={e => setOpQty(e.target.value)} type="number" min="1" placeholder="Qty" style={{ width: 90, fontFamily: MONO, fontSize: 12, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
-                <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note (optional)" style={{ flex: 1, fontFamily: MONO, fontSize: 10, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
+                <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note (optional)" style={{ flex: 1, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
               </div>
-              <button onClick={runOp} disabled={busy} style={{ width: '100%', marginTop: 10, fontFamily: MONO, fontSize: 10, letterSpacing: 1.5, padding: '10px', background: `${OP[op].color}1a`, border: `1px solid ${OP[op].color}55`, color: OP[op].color, borderRadius: 6, cursor: busy ? 'wait' : 'pointer' }}>
+              <button onClick={runOp} disabled={busy} style={{ width: '100%', marginTop: 10, fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, padding: '10px', background: `${OP[op].color}1a`, border: `1px solid ${OP[op].color}55`, color: OP[op].color, borderRadius: 6, cursor: busy ? 'wait' : 'pointer' }}>
                 {busy ? '…' : `${OP[op].label} ${picked ? picked.name : 'ITEM'}`}
               </button>
             </div>
@@ -187,7 +187,7 @@ export default function InventoryTab() {
         <div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter name / sku / barcode…" style={{ flex: 1, minWidth: 180, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 12px' }} />
-            <select value={locFilter} onChange={e => setLocFilter(e.target.value)} style={{ fontFamily: MONO, fontSize: 10, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }}>
+            <select value={locFilter} onChange={e => setLocFilter(e.target.value)} style={{ fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }}>
               <option value="">All locations</option>
               {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
@@ -234,11 +234,11 @@ export default function InventoryTab() {
       {/* Movements */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}>
         <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 10 }}>RECENT MOVEMENTS (LEDGER)</div>
-        {movements.length === 0 ? <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>No movements yet.</div> : (
+        {movements.length === 0 ? <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>No movements yet.</div> : (
           movements.map(m => (
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: m.change_qty < 0 ? R : G, fontWeight: 700, minWidth: 54 }}>{m.change_qty > 0 ? '+' : ''}{m.change_qty}</span>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--text)' }}>{m.product_name}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: m.change_qty < 0 ? R : G, fontWeight: 700, minWidth: 54 }}>{m.change_qty > 0 ? '+' : ''}{m.change_qty}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>{m.product_name}</span>
               <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '1px 6px', borderRadius: 10, background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C }}>{m.reason}</span>
               {m.from_location && <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{m.from_location} → {m.to_location || '—'}</span>}
               <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{fmt(m.created_at)}</span>

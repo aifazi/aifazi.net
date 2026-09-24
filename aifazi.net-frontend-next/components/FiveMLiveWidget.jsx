@@ -36,7 +36,7 @@ export default function FiveMLiveWidget({ compact = false }) {
     return (
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: isUp ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'color-mix(in srgb, var(--red) 10%, transparent)', border: `1px solid ${isUp ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'color-mix(in srgb, var(--red) 30%, transparent)'}` }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: isUp ? 'var(--green)' : 'var(--red)', boxShadow: `0 0 6px ${isUp ? 'var(--green)' : 'var(--red)'}`, animation: 'pulse 2s infinite' }} />
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: isUp ? 'var(--green)' : 'var(--red)' }}>{isUp ? 'LIVE' : 'OFFLINE'}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: isUp ? 'var(--green)' : 'var(--red)' }}>{isUp ? 'LIVE' : 'OFFLINE'}</span>
         {playersOnline != null && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{playersOnline} players</span>}
         {playersOnline == null && ping?.latency_ms && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{ping.latency_ms}ms</span>}
       </div>

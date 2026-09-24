@@ -185,7 +185,7 @@ function SlashMenu({ pos, query, onSelect, onClose }) {
                 }}>{item.icon}</div>
                 <div>
                   <div style={{ fontSize: 13, color: isActive ? '#fff' : '#c8d8e8' }}>{item.label}</div>
-                  <div style={{ fontSize: 10, color: '#4a6070', marginTop: 1 }}>{item.desc}</div>
+                  <div style={{ fontSize: 11, color: '#4a6070', marginTop: 1 }}>{item.desc}</div>
                 </div>
               </div>
             )
@@ -363,7 +363,7 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '12px 16px' : '20px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg2)', gap: 8 }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 10 : 12, letterSpacing: 3, color: 'var(--green)' }}>MEDIA LIBRARY</div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => fileInputRef.current.click()} disabled={uploading} style={{ ...S.btn(), fontSize: 10, padding: '8px 14px' }}>
+          <button onClick={() => fileInputRef.current.click()} disabled={uploading} style={{ ...S.btn(), fontSize: 11, padding: '8px 14px' }}>
             {uploading ? 'UPLOADING...' : '+ UPLOAD'}
           </button>
           {/* Only show ✕ close button in modal mode */}
@@ -674,7 +674,7 @@ function PostEditor({ post, onSave, onCancel }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
             <label style={{ ...S.label, marginBottom: 0 }}>Content *</label>
             <button type="button" onClick={() => { setMediaTarget('content'); setMediaOpen(true) }}
-              style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 10, padding: '5px 12px' }}>
+              style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 11, padding: '5px 12px' }}>
               Insert Media
             </button>
           </div>

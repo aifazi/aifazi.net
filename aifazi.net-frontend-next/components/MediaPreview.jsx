@@ -173,7 +173,7 @@ function OfficePreview({ file }) {
       <div className="media-office-bar">
         <span className="media-file-icon" style={{ fontSize: 16 }}>{isSheet ? '📊' : '📝'}</span>
         <span className="media-file-name" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>{name}</span>
-        <a href={url} target="_blank" rel="noopener noreferrer" className="media-file-download" style={{ color: 'var(--green)', fontSize: 10 }}>OPEN ↗</a>
+        <a href={url} target="_blank" rel="noopener noreferrer" className="media-file-download" style={{ color: 'var(--green)', fontSize: 11 }}>OPEN ↗</a>
       </div>
       <iframe src={viewerSrc} className="media-office-iframe" title={name} />
     </div>
@@ -266,7 +266,7 @@ export function MediaUploader({ onUploaded, defaultKind = 'all', buttonLabel }) 
       {attachments.length > 0 && (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           {attachments.map((f, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 999, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 999, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>
               {f.mimetype?.startsWith('image/') ? '🖼' : f.mimetype?.startsWith('video/') ? '🎬' : f.mimetype === 'application/pdf' ? '📄' : '📎'} {f.original_name}
               <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>✕</button>
             </div>

@@ -122,11 +122,11 @@ export default function AccountDashboard({ loginHref }) {
               <Badge tone={user.role === 'admin' ? 'orange' : 'cyan'}>{user.role.toUpperCase()}</Badge>
             )}
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
             {user?.email || ''}
             {activeSub && <span style={{ marginLeft: 12, color: G, fontWeight: 700 }}>🎖 {activeSub.plan_name} — Level {activeSub.plan_level}</span>}
           </div>
-          <div style={{ display: 'flex', gap: 16, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 16, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexWrap: 'wrap' }}>
             <span>🛒 {orders.length} order{orders.length !== 1 ? 's' : ''}</span>
             <span>⬇ {downloads.length} download{downloads.length !== 1 ? 's' : ''}</span>
             <span style={{ color: Y }}>💰 ${totalSpent.toFixed(2)} spent</span>
@@ -175,7 +175,7 @@ export default function AccountDashboard({ loginHref }) {
           {/* Recent Orders */}
           <div style={{ marginBottom: 32 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: C }}>RECENT ORDERS</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: C }}>RECENT ORDERS</span>
               {orders.length > 6 && <button onClick={() => setSection('orders')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: G, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL →</button>}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -189,7 +189,7 @@ export default function AccountDashboard({ loginHref }) {
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: C }}>#{o.order_number}</span>
                           <Badge tone={statusBadge(o.status)}>{(o.status || '').toUpperCase()}</Badge>
                         </div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
                           <span title={o.created_at ? formatDateTime(o.created_at) : ''}>{o.created_at ? new Date(o.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}</span>
                           {(o.items || []).length > 0 && <> · {o.items.length} item{o.items.length !== 1 ? 's' : ''}</>}
                         </div>
@@ -206,7 +206,7 @@ export default function AccountDashboard({ loginHref }) {
           {/* Downloads */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: C }}>DIGITAL DOWNLOADS</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: C }}>DIGITAL DOWNLOADS</span>
               {downloads.length > 6 && <button onClick={() => setSection('downloads')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: G, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL →</button>}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -216,7 +216,7 @@ export default function AccountDashboard({ loginHref }) {
                     <div style={{ fontSize: 22 }}>⬇</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{d.filename || d.product_name}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
                         {d.downloads_used || 0} / {d.downloads_allowed || 5} downloads
                       </div>
                     </div>
@@ -245,7 +245,7 @@ export default function AccountDashboard({ loginHref }) {
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: C }}>#{o.order_number}</span>
                       <Badge tone={statusBadge(o.status)}>{(o.status || '').toUpperCase()}</Badge>
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
                       {new Date(o.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                       {(o.items || []).length > 0 && <> · {o.items.length} item{o.items.length !== 1 ? 's' : ''}</>}
                       {o.tracking_number && <> · 📦 Trackable</>}
@@ -268,7 +268,7 @@ export default function AccountDashboard({ loginHref }) {
                   <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {o.downloads.map(d => (
                       <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 10, color: G, textDecoration: 'none', padding: '4px 10px', border: `1px solid ${mix(G, 22)}`, borderRadius: 6, fontFamily: 'var(--font-mono)' }}>
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: G, textDecoration: 'none', padding: '4px 10px', border: `1px solid ${mix(G, 22)}`, borderRadius: 6, fontFamily: 'var(--font-mono)' }}>
                         ⬇ {d.filename || d.product_name}
                       </a>
                     ))}
@@ -290,7 +290,7 @@ export default function AccountDashboard({ loginHref }) {
                 <div style={{ fontSize: 24 }}>⬇</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{d.filename || d.product_name || 'Download'}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
                     {d.downloads_used || 0} / {d.downloads_allowed || 5} downloads used
                     {d.last_downloaded_at && <> · Last: {new Date(d.last_downloaded_at).toLocaleDateString()}</>}
                   </div>
@@ -323,7 +323,7 @@ export default function AccountDashboard({ loginHref }) {
           </div>
           {activeSub && (
             <>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>
                 {activeSub.current_period_end && <div>Renews: {new Date(activeSub.current_period_end).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>}
                 {activeSub.cancel_at_period_end && <div style={{ color: R }}>⚠ Cancels at end of billing period</div>}
               </div>

@@ -73,7 +73,7 @@ function DetailDrawer({ entry, onClose }) {
       }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
           <div style={{ fontFamily:C.mono, fontSize:11, color:C.cyan, letterSpacing:2 }}>EMAIL DETAILS</div>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, cursor:'pointer', fontSize:18 }}>✕</button>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, cursor:'pointer', fontSize:18 }} aria-label="Close">✕</button>
         </div>
         <div style={{ display:'grid', gap:10 }}>
           {[
@@ -89,7 +89,7 @@ function DetailDrawer({ entry, onClose }) {
             ['Attempts', entry.attempts ?? 1],
           ].map(([k,v]) => (
             <div key={k} style={{ display:'flex', gap:12 }}>
-              <span style={{ fontFamily:C.mono, fontSize:10, color:C.muted, minWidth:72, letterSpacing:1 }}>{k.toUpperCase()}</span>
+              <span style={{ fontFamily:C.mono, fontSize: 11, color:C.muted, minWidth:72, letterSpacing:1 }}>{k.toUpperCase()}</span>
               <span style={{ fontFamily:C.mono, fontSize:11, color:C.text }}>{v}</span>
             </div>
           ))}
@@ -330,7 +330,7 @@ export default function MailQueue() {
         {loading ? (
           <div>{Array.from({length:6}, (_,i) => <SkeletonRow key={i} />)}</div>
         ) : safeEmails.length === 0 ? (
-          <div style={{ padding:'48px 0', textAlign:'center', fontFamily:C.mono, fontSize:10, color:C.muted, letterSpacing:3 }}>
+          <div style={{ padding:'48px 0', textAlign:'center', fontFamily:C.mono, fontSize: 11, color:C.muted, letterSpacing:3 }}>
             NO EMAILS MATCH YOUR FILTER
           </div>
         ) : safeEmails.map((em, i) => {
@@ -387,7 +387,7 @@ export default function MailQueue() {
                   </div>
                   {em.error && (
                     <div style={{ padding:'8px 10px', background:'rgba(248,113,113,0.06)', border:'1px solid rgba(248,113,113,0.2)', borderRadius:4 }}>
-                      <pre style={{ fontFamily:C.mono, fontSize:10, color:'#fca5a5', margin:0, whiteSpace:'pre-wrap', lineHeight:1.5 }}>{em.error}</pre>
+                      <pre style={{ fontFamily:C.mono, fontSize: 11, color:'#fca5a5', margin:0, whiteSpace:'pre-wrap', lineHeight:1.5 }}>{em.error}</pre>
                     </div>
                   )}
                   {em.html && (
@@ -410,7 +410,7 @@ export default function MailQueue() {
           <Btn label="← PREV" color={C.muted} small onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1} />
           {Array.from({length:Math.min(totalPages,20)}, (_,i) => i+1).map(p => (
             <button key={p} onClick={() => setPage(p)} style={{
-              fontFamily:C.mono, fontSize:10, padding:'5px 10px',
+              fontFamily:C.mono, fontSize: 11, padding:'5px 10px',
               background: p===page ? C.cyan : 'transparent',
               color: p===page ? '#000' : C.muted,
               border:`1px solid ${p===page ? C.cyan : C.border}`,

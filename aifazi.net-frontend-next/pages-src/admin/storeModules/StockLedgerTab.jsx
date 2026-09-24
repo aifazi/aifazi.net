@@ -33,7 +33,7 @@ export default function StockLedgerTab() {
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginBottom: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
           <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>⚠ LOW-STOCK ALERTS</div>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: low.length ? Y : G }}>{low.length} item{low.length === 1 ? '' : 's'} low</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: low.length ? Y : G }}>{low.length} item{low.length === 1 ? '' : 's'} low</span>
         </div>
         {low.length === 0 ? (
           <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', padding: '8px 0' }}>All stocked items above threshold. ✓</div>

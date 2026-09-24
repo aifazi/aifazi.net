@@ -85,7 +85,7 @@ export default function ScanCam({ onScan, label = 'SCAN BARCODE', placeholder = 
           autoComplete="off"
           style={{ flex: 1, fontFamily: MONO, fontSize: 12, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 12px', letterSpacing: 1 }}
         />
-        <button type="submit" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 16px', background: `${G}14`, border: `1px solid ${G}44`, color: G, borderRadius: 6, cursor: 'pointer' }}>LOOKUP</button>
+        <button type="submit" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 16px', background: `${G}14`, border: `1px solid ${G}44`, color: G, borderRadius: 6, cursor: 'pointer' }}>LOOKUP</button>
       </form>
     </div>
   )

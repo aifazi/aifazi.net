@@ -119,11 +119,11 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
 
         {/* ── HEADER + TABS (pinned top, never scrolls) ── */}
         <div style={{ flexShrink: 0, padding: '20px 24px 0', borderBottom: '1px solid color-mix(in srgb, var(--cyan) 10%, transparent)', position: 'relative', zIndex: 2 }}>
-          <div style={{ fontSize: 10, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14 }}>EDIT ICON</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14 }}>EDIT ICON</div>
           <div style={{ display: 'flex', gap: 0 }}>
             {tabs.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)} style={{
-                flex: 1, padding: '8px 4px', fontSize: 10, letterSpacing: 1,
+                flex: 1, padding: '8px 4px', fontSize: 11, letterSpacing: 1,
                 background: tab === t.key ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
                 border: 'none', borderBottom: `2px solid ${tab === t.key ? 'var(--cyan)' : 'transparent'}`,
                 color: tab === t.key ? 'var(--cyan)' : '#4a6070',

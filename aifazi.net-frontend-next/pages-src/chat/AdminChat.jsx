@@ -918,12 +918,12 @@ export default function AdminChat({ embedded=false }) {
                     )
                   )}
                     </div>
-                    {room.description && <div style={{ fontSize:10, color:T.muted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{room.description}</div>}
+                    {room.description && <div style={{ fontSize: 11, color:T.muted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{room.description}</div>}
                   </div>
                   <div style={{ display:'flex', gap:6, alignItems:'center', flexShrink:0 }}>
                     {(room.type==='voice'||room.type==='video') && (
                       <button onClick={()=>joinCall(room)}
-                        style={{ padding:'4px 12px', border:`1px solid ${T.accent}`, borderRadius:7, background:'color-mix(in srgb, var(--green) 10%, transparent)', color:T.accent, fontFamily:T.mono, fontSize:10, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+                        style={{ padding:'4px 12px', border:`1px solid ${T.accent}`, borderRadius:7, background:'color-mix(in srgb, var(--green) 10%, transparent)', color:T.accent, fontFamily:T.mono, fontSize: 11, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
                         {room.type==='video'?'📹':'🔊'} JOIN
                       </button>
                     )}
@@ -1028,12 +1028,12 @@ export default function AdminChat({ embedded=false }) {
                     </div>
                   )}
                   {searchResults !== null && (
-                    <div style={{ padding:'4px 14px', fontFamily:T.mono, fontSize:10, color:T.accentB, background:'color-mix(in srgb, var(--cyan) 6%, transparent)', flexShrink:0, display:'flex', alignItems:'center', gap:6 }}>
+                    <div style={{ padding:'4px 14px', fontFamily:T.mono, fontSize: 11, color:T.accentB, background:'color-mix(in srgb, var(--cyan) 6%, transparent)', flexShrink:0, display:'flex', alignItems:'center', gap:6 }}>
                       <span>{searchResults.length} match{searchResults.length===1?'':'es'} for “{searchQ}”</span>
-                      <button onClick={clearSearch} style={{ background:'none', border:'none', color:T.accent, cursor:'pointer', fontFamily:T.mono, fontSize:10, textDecoration:'underline' }}>back to channel</button>
+                      <button onClick={clearSearch} style={{ background:'none', border:'none', color:T.accent, cursor:'pointer', fontFamily:T.mono, fontSize: 11, textDecoration:'underline' }}>back to channel</button>
                     </div>
                   )}
-                  {loadingMore && <div style={{ textAlign:'center', padding:'4px', fontFamily:T.mono, fontSize:10, color:T.muted, flexShrink:0 }}>Loading older messages…</div>}
+                  {loadingMore && <div style={{ textAlign:'center', padding:'4px', fontFamily:T.mono, fontSize: 11, color:T.muted, flexShrink:0 }}>Loading older messages…</div>}
                   <ChatMessageList msgs={searchResults !== null ? searchResults : msgs} me={me} isAdmin={isAdmin} onDel={delMsg} onReply={setReplyTo} onEdit={setEditing} onReact={react} onMediaClick={setMediaViewer} elRef={listRef} onScroll={searchResults !== null ? undefined : onScroll} onMention={handleMention} muteUser={muteUser} unmuteUser={unmuteUser} kickUser={kickUser} banUser={banUser} unbanUser={unbanUser} roomMutes={roomMutes} roomBans={roomBans} onBatchDel={batchDelMsgs}/>
                   {/* P1-3 — appears when scrolled up and new messages arrive */}
                   {!nearBottom && newCount > 0 && (
@@ -1046,18 +1046,18 @@ export default function AdminChat({ embedded=false }) {
                       ↓ {newCount} new message{newCount === 1 ? '' : 's'}
                     </button>
                   )}
-                  {typLabel && <div style={{ padding:'2px 18px 4px', fontFamily:T.mono, fontSize:10, color:T.muted, flexShrink:0, fontStyle:'italic' }}>{typLabel}</div>}
+                  {typLabel && <div style={{ padding:'2px 18px 4px', fontFamily:T.mono, fontSize: 11, color:T.muted, flexShrink:0, fontStyle:'italic' }}>{typLabel}</div>}
                   {editing && <EditBar msg={editing} onSave={saveEdit} onCancel={()=>setEditing(null)}/>}
                   {replyTo && (
                     <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'color-mix(in srgb, var(--cyan) 6%, transparent)', borderTop:`1px solid color-mix(in srgb, var(--cyan) 15%, transparent)`, flexShrink:0 }}>
-                      <div style={{ flex:1, fontFamily:T.mono, fontSize:10, color:T.muted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      <div style={{ flex:1, fontFamily:T.mono, fontSize: 11, color:T.muted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         <span style={{ color:T.accentB }}>{replyTo.sender}: </span>{replyTo.content}
                       </div>
                       <button onClick={()=>setReplyTo(null)} style={{ padding:'2px 7px', border:`1px solid ${T.border}`, borderRadius:6, background:'transparent', color:T.muted, cursor:'pointer', fontSize:12 }}>✕</button>
                     </div>
                   )}
                   {isMutedByStaff && (
-                    <div style={{ padding:'6px 14px', background:'rgba(255,215,0,0.08)', borderTop:`1px solid rgba(255,215,0,0.2)`, fontFamily:T.mono, fontSize:10, color:T.warn, textAlign:'center', flexShrink:0 }}>
+                    <div style={{ padding:'6px 14px', background:'rgba(255,215,0,0.08)', borderTop:`1px solid rgba(255,215,0,0.2)`, fontFamily:T.mono, fontSize: 11, color:T.warn, textAlign:'center', flexShrink:0 }}>
                       You are muted in this channel by a moderator
                     </div>
                   )}
@@ -1073,7 +1073,7 @@ export default function AdminChat({ embedded=false }) {
                         <span style={{ fontSize:24, flexShrink:0 }} aria-hidden="true">📎</span>
                       )}
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontFamily:T.mono, fontSize:10, color:T.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        <div style={{ fontFamily:T.mono, fontSize: 11, color:T.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                           {pendingFile.name}
                         </div>
                         <div role="progressbar" aria-valuenow={uploadPct} aria-valuemin={0} aria-valuemax={100} aria-label={`Uploading ${pendingFile.name}`}
@@ -1082,10 +1082,10 @@ export default function AdminChat({ embedded=false }) {
                             background:'linear-gradient(90deg, var(--green), var(--cyan))', transition:'width 0.15s' }} />
                         </div>
                       </div>
-                      <span style={{ fontFamily:T.mono, fontSize:10, color:T.muted, flexShrink:0 }}>{uploadPct}%</span>
+                      <span style={{ fontFamily:T.mono, fontSize: 11, color:T.muted, flexShrink:0 }}>{uploadPct}%</span>
                       <button onClick={cancelUpload}
                         style={{ padding:'5px 12px', border:`1px solid ${T.border}`, borderRadius:7, background:'transparent',
-                          color:T.muted, fontFamily:T.mono, fontSize:10, cursor:'pointer', flexShrink:0 }}>
+                          color:T.muted, fontFamily:T.mono, fontSize: 11, cursor:'pointer', flexShrink:0 }}>
                         ✕ Cancel
                       </button>
                     </div>

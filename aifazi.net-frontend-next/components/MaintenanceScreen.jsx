@@ -95,7 +95,7 @@ function StyleTerminal({ message, status, icon, returnTime, showProgress, progre
       </div>
       {showProgress && <ProgressBar label="PROGRESS" value={progress} color={accentColor} />}
       {returnTime && (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginTop: 12 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginTop: 12 }}>
           ETA: <span style={{ color: accentColor }}>{returnTime}</span>
         </div>
       )}
@@ -107,7 +107,7 @@ function StyleMinimal({ message, status, icon, returnTime, showProgress, progres
   return (
     <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '40px 24px', maxWidth: 480, width: '100%' }}>
       <div style={{ fontSize: 64, marginBottom: 24 }}>{icon}</div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 6, color: accentColor, marginBottom: 16 }}>{status}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 6, color: accentColor, marginBottom: 16 }}>{status}</div>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px,6vw,56px)', fontWeight: 900, color: 'var(--text)', marginBottom: 16, letterSpacing: -2 }}>
         We&apos;ll be<br />back soon
       </h1>
@@ -146,7 +146,7 @@ function StyleCyber({ message, status, icon, returnTime, showProgress, progress,
           </div>
         </div>
       )}
-      {returnTime && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: accentColor, letterSpacing: 3 }}>ETA // {returnTime}</div>}
+      {returnTime && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: accentColor, letterSpacing: 3 }}>ETA // {returnTime}</div>}
     </div>
   )
 }
@@ -170,7 +170,7 @@ function StyleGlitch({ message, status, icon, returnTime, showProgress, progress
         </div>
       )}
       {returnTime && (
-        <div style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 10, color: accentColor, letterSpacing: 3, padding: '6px 18px', border: `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)`, animation: 'maint-blink 2s infinite' }}>
+        <div style={{ display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 11, color: accentColor, letterSpacing: 3, padding: '6px 18px', border: `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)`, animation: 'maint-blink 2s infinite' }}>
           ETA: {returnTime} MIN
         </div>
       )}
@@ -185,11 +185,11 @@ function StyleComingSoon({ message, status, icon, returnTime, showProgress, prog
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px,6vw,64px)', fontWeight: 900, color: 'var(--text)', marginBottom: 12, lineHeight: 1.1 }}>
         {siteConfig?.siteName || 'Coming Soon'}
       </h1>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 4, color: accentColor, marginBottom: 20 }}>{status}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: accentColor, marginBottom: 20 }}>{status}</div>
       <p style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--muted)', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>{message}</p>
       {showProgress && (
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>PROGRESS — {progress}%</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>PROGRESS — {progress}%</div>
           <div style={{ height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
             <div style={{ height: '100%', borderRadius: 3, background: `linear-gradient(90deg, ${accentColor}, color-mix(in srgb, ${accentColor} 53%, transparent))`, width: `${progress}%`, transition: 'width 1s ease', boxShadow: `0 0 12px ${accentColor}` }} />
           </div>
@@ -214,11 +214,11 @@ function StyleRetro({ message, status, icon, returnTime, showProgress, progress,
       </h1>
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: 1.8, color: 'var(--muted)', marginBottom: 20 }}>{message}</p>
       {showProgress && (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, textAlign: 'left' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 16, textAlign: 'left' }}>
           <span style={{ color: accentColor }}>[{'█'.repeat(Math.floor(progress / 5))}{'░'.repeat(20 - Math.floor(progress / 5))}]</span> {progress}%
         </div>
       )}
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: accentColor, letterSpacing: 2 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: accentColor, letterSpacing: 2 }}>
         UPTIME: {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}{returnTime ? ` | ETA: ${returnTime}` : ''}
       </div>
     </div>
@@ -248,7 +248,7 @@ function StyleHolo({ message, status, icon, returnTime, showProgress, progress, 
         <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--muted)', maxWidth: 440, margin: '0 auto 24px' }}>{message}</p>
         {showProgress && <div style={{ maxWidth: 320, margin: '0 auto 20px' }}><ProgressBar label="PROGRESS" value={progress} color={accentColor} /></div>}
         {returnTime && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>
             EXPECTED RETURN <span style={{ color: accentColor }}>{returnTime}</span>
           </div>
         )}
@@ -275,7 +275,7 @@ function StyleGridPulse({ message, status, icon, returnTime, showProgress, progr
         </h1>
         <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--muted)', maxWidth: 420, margin: 0 }}>{message}</p>
         {showProgress && <div style={{ width: '100%', maxWidth: 320 }}><ProgressBar label="PROGRESS" value={progress} color={accentColor} /></div>}
-        {returnTime && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)' }}>ETA <span style={{ color: accentColor }}>{returnTime}</span></div>}
+        {returnTime && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>ETA <span style={{ color: accentColor }}>{returnTime}</span></div>}
       </div>
     </div>
   )
@@ -300,7 +300,7 @@ function StyleOrbit({ message, status, icon, returnTime, showProgress, progress,
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,5vw,46px)', fontWeight: 800, margin: '0 0 12px', color: 'var(--text)', lineHeight: 1.1 }}>Offline</h1>
       <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--muted)', maxWidth: 440, margin: '0 auto 22px' }}>{message}</p>
       {showProgress && <div style={{ maxWidth: 320, margin: '0 auto 18px' }}><ProgressBar label="PROGRESS" value={progress} color={accentColor} /></div>}
-      {returnTime && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)' }}>RETURNING <span style={{ color: accentColor }}>{returnTime}</span></div>}
+      {returnTime && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>RETURNING <span style={{ color: accentColor }}>{returnTime}</span></div>}
     </div>
   )
 }

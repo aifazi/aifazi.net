@@ -161,7 +161,7 @@ export default function StoreCenter() {
                 const active = tab === m.key
                 return (
                   <button key={m.key} onClick={() => setTab(m.key)} style={{
-                    fontFamily: MONO, fontSize: 10, letterSpacing: 1.2, padding: '7px 12px', borderRadius: 8, cursor: 'pointer',
+                    fontFamily: MONO, fontSize: 11, letterSpacing: 1.2, padding: '7px 12px', borderRadius: 8, cursor: 'pointer',
                     background: active ? `color-mix(in srgb, var(--green) 12%, transparent)` : 'transparent',
                     color: active ? G : 'var(--muted)',
                     border: `1px solid ${active ? `color-mix(in srgb, var(--green) 31%, transparent)` : 'var(--border)'}`, transition: 'all 0.14s',

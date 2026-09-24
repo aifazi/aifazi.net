@@ -206,7 +206,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
                 onMouseLeave={e => e.currentTarget.style.background = currentStyle === s.label ? 'rgba(0,255,136,0.08)' : 'transparent'}
               >
                 {s.label}
-                {currentStyle === s.label && <span style={{ color: 'var(--green)', fontSize: 10 }}>✓</span>}
+                {currentStyle === s.label && <span style={{ color: 'var(--green)', fontSize: 11 }}>✓</span>}
               </div>
             ))}
           </div>
@@ -597,7 +597,7 @@ function EmojiPicker({ value, onChange }) {
             ))}
           </div>
           {/* Lordicon tip */}
-          <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(0,212,255,0.1)', fontSize: 10, color: '#4a6070', lineHeight: 1.6, fontFamily: 'monospace' }}>
+          <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(0,212,255,0.1)', fontSize: 11, color: '#4a6070', lineHeight: 1.6, fontFamily: 'monospace' }}>
             💡 <span style={{ color: '#00d4ff' }}>Want animated icons?</span> Get free ones at{' '}
             <a href="https://lordicon.com" target="_blank" rel="noopener" style={{ color: '#00ff88' }}>lordicon.com</a>
             {' '}→ copy the URL → paste it in the icon field above
@@ -695,7 +695,7 @@ export function EditableList({ contentKey, defaultValue, renderItem, fields, add
         </div>
       ))}
 
-      <button onClick={() => openEdit(-1)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '8px 16px', marginTop: 12, background: 'rgba(0,255,136,0.08)', border: '1px dashed rgba(0,255,136,0.4)', color: 'var(--green)', cursor: 'pointer', transition: 'all 0.2s' }}
+      <button onClick={() => openEdit(-1)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '8px 16px', marginTop: 12, background: 'rgba(0,255,136,0.08)', border: '1px dashed rgba(0,255,136,0.4)', color: 'var(--green)', cursor: 'pointer', transition: 'all 0.2s' }}
         onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,255,136,0.15)'}
         onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,255,136,0.08)'}
       >{addLabel}</button>
@@ -704,10 +704,10 @@ export function EditableList({ contentKey, defaultValue, renderItem, fields, add
         <>
           <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px rgba(0,255,136,0.15)', padding: '32px', width: '100%', maxWidth: 520, zIndex: 99996, maxHeight: '80vh', overflowY: 'auto' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD ITEM' : '✎ EDIT ITEM'}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD ITEM' : '✎ EDIT ITEM'}</div>
             {fields.map(field => (
               <div key={field.key} style={{ marginBottom: 16 }}>
-                <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{field.label}</label>
+                <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{field.label}</label>
                 {field.type === 'emoji'
                   ? <IconField value={draft[field.key] ?? ''} onChange={val => setDraft(d => ({ ...d, [field.key]: val }))} />
                   : field.type === 'textarea'
@@ -809,7 +809,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
           >GSAP ANIMATION LIBRARY</button>
           {confirmDiscard ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontSize: 10, color: '#ff4757', letterSpacing: 1 }}>Discard {pendingCount} change{pendingCount !== 1 ? 's' : ''}?</div>
+              <div style={{ fontSize: 11, color: '#ff4757', letterSpacing: 1 }}>Discard {pendingCount} change{pendingCount !== 1 ? 's' : ''}?</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={onDiscard} style={discardConfirmBtn}>YES, DISCARD</button>
                 <button onClick={() => setConfirmDiscard(false)} style={keepEditingBtn}>KEEP EDITING</button>
@@ -818,12 +818,12 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
           ) : (
             <div style={{ display: 'flex', gap: 6 }}>
               <button onClick={onSave} disabled={saving || pendingCount === 0}
-                style={{ flex: 1, padding: '9px 0', background: pendingCount > 0 && !saving ? 'rgba(0,255,136,0.15)' : 'rgba(0,255,136,0.04)', border: `1px solid ${pendingCount > 0 && !saving ? 'rgba(0,255,136,0.5)' : 'rgba(0,255,136,0.12)'}`, color: pendingCount > 0 && !saving ? '#00ff88' : '#2a3a48', fontFamily: "'Share Tech Mono', monospace", fontSize: 10, letterSpacing: 2, cursor: pendingCount > 0 && !saving ? 'pointer' : 'not-allowed', borderRadius: 5, transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '9px 0', background: pendingCount > 0 && !saving ? 'rgba(0,255,136,0.15)' : 'rgba(0,255,136,0.04)', border: `1px solid ${pendingCount > 0 && !saving ? 'rgba(0,255,136,0.5)' : 'rgba(0,255,136,0.12)'}`, color: pendingCount > 0 && !saving ? '#00ff88' : '#2a3a48', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 2, cursor: pendingCount > 0 && !saving ? 'pointer' : 'not-allowed', borderRadius: 5, transition: 'all 0.2s' }}
                 onMouseEnter={e => { if (pendingCount > 0 && !saving) e.currentTarget.style.background = 'rgba(0,255,136,0.25)' }}
                 onMouseLeave={e => { if (pendingCount > 0 && !saving) e.currentTarget.style.background = 'rgba(0,255,136,0.15)' }}
               >{saving ? '⟳ SAVING...' : '💾 SAVE'}</button>
               <button onClick={handleExit} disabled={saving}
-                style={{ flex: 1, padding: '9px 0', background: 'transparent', border: '1px solid rgba(255,71,87,0.35)', color: saving ? '#2a3a48' : '#ff4757', fontFamily: "'Share Tech Mono', monospace", fontSize: 10, letterSpacing: 2, cursor: saving ? 'not-allowed' : 'pointer', borderRadius: 5, transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '9px 0', background: 'transparent', border: '1px solid rgba(255,71,87,0.35)', color: saving ? '#2a3a48' : '#ff4757', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 2, cursor: saving ? 'not-allowed' : 'pointer', borderRadius: 5, transition: 'all 0.2s' }}
                 onMouseEnter={e => { if (!saving) e.currentTarget.style.background = 'rgba(255,71,87,0.1)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
               >✕ EXIT</button>
@@ -845,7 +845,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
             padding: '24px 28px', fontFamily: "'Share Tech Mono', monospace",
           }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-              <div style={{ fontSize: 10, letterSpacing: 3, color: '#ffb74d' }}>REVIEW CHANGES — {pendingCount} pending</div>
+              <div style={{ fontSize: 11, letterSpacing: 3, color: '#ffb74d' }}>REVIEW CHANGES — {pendingCount} pending</div>
               <button onClick={() => setShowDiff(false)} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#4a6070', cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
@@ -861,13 +861,13 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
                 return (
                   <div key={key} style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '10px 12px', background: 'rgba(255,255,255,0.02)' }}>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 10, color: '#c8d8e8', wordBreak: 'break-all' }}>{key}</span>
+                      <span style={{ fontSize: 11, color: '#c8d8e8', wordBreak: 'break-all' }}>{key}</span>
                       <span style={{ fontSize: 11, color: '#ffb74d', border: '1px solid rgba(255,183,77,0.4)', borderRadius: 3, padding: '1px 5px' }}>{typeTag(oldVal)} → {typeTag(newVal)}</span>
                     </div>
                     <div style={{ fontSize: 11, color: '#4a6070', letterSpacing: 2, marginBottom: 2 }}>BEFORE</div>
-                    <div style={{ fontSize: 10, color: '#7a8ea0', maxHeight: 120, overflowY: 'auto', marginBottom: 6 }}>{show(oldVal)}</div>
+                    <div style={{ fontSize: 11, color: '#7a8ea0', maxHeight: 120, overflowY: 'auto', marginBottom: 6 }}>{show(oldVal)}</div>
                     <div style={{ fontSize: 11, color: '#ffb74d', letterSpacing: 2, marginBottom: 2 }}>AFTER</div>
-                    <div style={{ fontSize: 10, color: '#00ff88', maxHeight: 120, overflowY: 'auto' }}>{show(newVal)}</div>
+                    <div style={{ fontSize: 11, color: '#00ff88', maxHeight: 120, overflowY: 'auto' }}>{show(newVal)}</div>
                   </div>
                 )
               })}
@@ -901,7 +901,7 @@ function SaveDiscardDialog({ pendingCount, onSave, onDiscard, saving }) {
         fontFamily: "'Share Tech Mono', monospace",
       }}>
         {/* Header */}
-        <div style={{ fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 6 }}>
+        <div style={{ fontSize: 11, letterSpacing: 3, color: 'var(--green)', marginBottom: 6 }}>
           {'// UNSAVED CHANGES'}
         </div>
         <div style={{ fontSize: 18, fontWeight: 700, color: '#c8d8e8', marginBottom: 10, letterSpacing: 1 }}>
@@ -1115,7 +1115,7 @@ function ContentSearchPalette({ open, query, onQuery, onClose }) {
               transition: 'background 0.15s',
             }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,212,255,0.08)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               <span style={{ color: 'var(--cyan)', wordBreak: 'break-all' }}>{t.key}</span>
-              <span style={{ display: 'block', color: 'var(--muted)', fontSize: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.text || '…'}</span>
+              <span style={{ display: 'block', color: 'var(--muted)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.text || '…'}</span>
             </button>
           ))}
         </div>
@@ -1492,8 +1492,8 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
               <input value={draftAlt} onChange={e => setDraftAlt(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
-              <button onClick={confirm} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'var(--cyan)', border: 'none', color: '#000', cursor: 'pointer', fontWeight: 700, borderRadius: 6 }}>SAVE</button>
+              <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
+              <button onClick={confirm} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'var(--cyan)', border: 'none', color: '#000', cursor: 'pointer', fontWeight: 700, borderRadius: 6 }}>SAVE</button>
             </div>
           </div>
         </div>
@@ -1566,8 +1566,8 @@ export function EditableLink({ contentKey, hrefKey, defaultValue = 'Learn more',
               <input value={draftHref} onChange={e => setDraftHref(e.target.value)} spellCheck={false} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
-              <button onClick={confirm} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', background: '#ffb74d', border: 'none', color: '#000', cursor: 'pointer', fontWeight: 700, borderRadius: 6 }}>SAVE</button>
+              <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
+              <button onClick={confirm} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: '#ffb74d', border: 'none', color: '#000', cursor: 'pointer', fontWeight: 700, borderRadius: 6 }}>SAVE</button>
             </div>
           </div>
         </div>

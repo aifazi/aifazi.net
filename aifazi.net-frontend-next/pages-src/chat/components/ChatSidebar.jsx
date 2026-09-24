@@ -39,7 +39,7 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
       <div style={{ padding: '14px 14px 10px', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontFamily: T.mono, fontSize: 11, letterSpacing: 3, color: T.muted }}>CHANNELS</span>
-          {isAdmin && <button onClick={onCreate} style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, color: T.muted, fontSize: 16, cursor: 'pointer', padding: '0 6px', lineHeight: 1 }}>+</button>}
+          {isAdmin && <button onClick={onCreate} style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, color: T.muted, fontSize: 16, cursor: 'pointer', padding: '0 6px', lineHeight: 1 }} aria-label="Add">+</button>}
         </div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
@@ -59,7 +59,7 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
                       fontFamily: T.display, fontSize: 13 }}>
                     <span style={{ fontSize: 14 }}>{r.type === 'video' ? '📹' : '🔊'}</span>
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-                    {accessIcon(r) && <span style={{ fontSize: 10, flexShrink: 0 }}>{accessIcon(r)}</span>}
+                    {accessIcon(r) && <span style={{ fontSize: 11, flexShrink: 0 }}>{accessIcon(r)}</span>}
                     {people.length > 0 && <span style={{ fontFamily: T.mono, fontSize: 11, color: T.accent }}>{people.length}</span>}
                     {callRoom?.id === r.id && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#23d160', flexShrink: 0 }} />}
                   </button>
@@ -93,7 +93,7 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
               fontFamily: T.display, fontSize: 13 }}>
             <span style={{ fontSize: 12 }}>{r.emoji || '#'}</span>
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-            {accessIcon(r) && <span style={{ fontSize: 10, flexShrink: 0 }}>{accessIcon(r)}</span>}
+            {accessIcon(r) && <span style={{ fontSize: 11, flexShrink: 0 }}>{accessIcon(r)}</span>}
             {unread[r.id] > 0 && <span style={{ background: T.accent, color: '#000', fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 10, fontFamily: T.mono }}>{unread[r.id]}</span>}
           </button>
         ))}

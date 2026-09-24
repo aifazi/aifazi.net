@@ -49,7 +49,7 @@ function DropZone({ onFiles, accept = '*', multiple = false, files = [] }) {
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10,
               background: 'var(--bg3)', border: '1px solid var(--border)',
               padding: '8px 14px', marginBottom: 4 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10,
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
                 color: 'var(--cyan)', flex: 1, overflow: 'hidden',
                 textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
@@ -467,7 +467,7 @@ export function PDFInfoB() {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>PDF METADATA</div>
           {Object.entries(info).filter(([, v]) => v).map(([k, v]) => (
             <div key={k} style={S.row}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>{k.toUpperCase()}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>{k.toUpperCase()}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)' }}>{String(v)}</span>
             </div>
           ))}
@@ -528,7 +528,7 @@ export function FlattenPDFB() {
   return (
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
-      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, margin: '12px 0 0' }}>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: '12px 0 0' }}>
         Flattening bakes form fields, annotations and overlays into static page content so they can&apos;t be edited.
       </p>
       <StatusBox error={error} success={success} />
@@ -629,7 +629,7 @@ export function PDFToWordB() {
   return (
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
-      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, margin: '12px 0 0' }}>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: '12px 0 0' }}>
         Extracts the text from each page into a structured Word document. Images are not transferred.
       </p>
       <StatusBox error={error} success={success} />
@@ -839,7 +839,7 @@ export function ResizeImageB() {
         <Field label="Height (px)"><input type="number" min="1" value={height} onChange={e => setHeight(e.target.value)} style={S.input} placeholder="e.g. 1080" /></Field>
       </div>
       <Checkbox checked={keepAspect} onChange={setKeepAspect} label="Keep aspect ratio"
-        style={{ fontSize: 10, color: 'var(--muted)', marginTop: 8 }} />
+        style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }} />
       <StatusBox error={error} success={success} />
       <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="RESIZE →" />
     </div>
@@ -1097,7 +1097,7 @@ export function TextStatsB() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>TOP WORDS</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {stats.top_words.map(([word, count]) => (
-                  <span key={word} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '3px 10px',
+                  <span key={word} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '3px 10px',
                     background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)', color: 'var(--cyan)' }}>
                     {word} <span style={{ opacity: 0.6 }}>×{count}</span>
                   </span>

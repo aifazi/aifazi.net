@@ -72,7 +72,7 @@ function ServiceCard({ svc, i }) {
               <IconDisplay value={svc.icon} size={30} />
               <span style={{ position: 'absolute', bottom: -1, right: -1, width: 8, height: 8, background: accent, boxShadow: `0 0 10px ${accent}`, borderRadius: '50%' }} />
             </div>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{String(i + 1).padStart(2, '0')}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{String(i + 1).padStart(2, '0')}</span>
           </div>
 
           {/* Title — admin-editable inline */}
@@ -88,7 +88,7 @@ function ServiceCard({ svc, i }) {
           {/* Feature terminal list */}
           <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 16, position: 'relative', zIndex: 1 }}>
             {(svc.features || []).map((f, fi) => (
-              <div key={fi} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text)', lineHeight: 1.9 }}>
+              <div key={fi} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text)', lineHeight: 1.9 }}>
                 <span style={{ color: accent, fontSize: 12, flexShrink: 0 }}>›</span>
                 <EditableText contentKey={`service.${i}.feature.${fi}`} defaultValue={f} />
               </div>

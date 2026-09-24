@@ -135,7 +135,7 @@ export default function Blog({ initialPosts }) {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {CATEGORIES.map(cat => (
                 <button key={cat} onClick={() => setCategory(cat)} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+                  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
                   padding: '8px 16px', border: '1px solid',
                   borderRadius: 999,
                   borderColor: category === cat ? 'var(--green)' : 'var(--border)',
@@ -208,7 +208,7 @@ export default function Blog({ initialPosts }) {
                     </div>
                     <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 3vw, 34px)', fontWeight: 700, lineHeight: 1.2, color: 'var(--text)', margin: '0 0 14px' }}>{featured.title}</h2>
                     <p style={{ color: 'var(--muted)', fontSize: 15, lineHeight: 1.7, margin: '0 0 20px' }}>{featured.excerpt || 'Read more...'}</p>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                       <span>{formatDate(featured.created_at)}</span>
                       <span>⏱ {readingTime(featured.excerpt + ' ' + (featured.content || ''))}</span>
                       {featured.views > 0 && <span>👁 {featured.views}</span>}
@@ -227,9 +227,9 @@ export default function Blog({ initialPosts }) {
                     <div style={{ padding: 26, flex: 1, display: 'flex', flexDirection: 'column' }}>
                       <div style={{ display: 'flex', gap: 12, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
                         <Badge tone="cyan">{post.category}</Badge>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{formatDate(post.created_at)}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>⏱ {readingTime(post.excerpt + ' ' + (post.content || ''))}</span>
-                        {post.views > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>👁 {post.views}</span>}
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{formatDate(post.created_at)}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>⏱ {readingTime(post.excerpt + ' ' + (post.content || ''))}</span>
+                        {post.views > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>👁 {post.views}</span>}
                       </div>
                       <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, marginBottom: 12, lineHeight: 1.3, color: 'var(--text)' }}>
                         {post.title}

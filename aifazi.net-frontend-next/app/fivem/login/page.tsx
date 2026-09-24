@@ -71,13 +71,13 @@ export default function FiveMLogin() {
             )}
 
             <div>
-              <label style={{ fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>EMAIL</label>
+              <label style={{ fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>EMAIL</label>
               <input type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required
                 style={{ width: '100%', padding: '12px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 14, outline: 'none', borderRadius: 8, boxSizing: 'border-box' }} />
             </div>
 
             <div>
-              <label style={{ fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>PASSWORD</label>
+              <label style={{ fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>PASSWORD</label>
               <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required
                 style={{ width: '100%', padding: '12px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 14, outline: 'none', borderRadius: 8, boxSizing: 'border-box' }} />
             </div>
@@ -90,7 +90,7 @@ export default function FiveMLogin() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
             <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>OR</span>
+            <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>OR</span>
             <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           </div>
 

@@ -18,7 +18,7 @@ function ReceiptTicks({ msg }) {
   if (!seen && !delivered) return null
   return (
     <span title={seen ? 'Seen' : 'Delivered'} aria-label={seen ? 'Seen' : 'Delivered'}
-      style={{ fontSize: 10, color: seen ? T.link : T.muted, fontFamily: T.mono, letterSpacing: -1 }}>
+      style={{ fontSize: 11, color: seen ? T.link : T.muted, fontFamily: T.mono, letterSpacing: -1 }}>
       ✓✓
     </span>
   )
@@ -94,7 +94,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
   return (
     <div ref={elRef || elRef2} onScroll={onScroll} style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
       {multiSelect && selectedIds.length > 0 && (
-        <div style={{ position:'sticky', top:0, zIndex:10, display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'color-mix(in srgb, var(--green) 8%, transparent)', borderBottom:`1px solid ${T.border}`, marginBottom:4, fontFamily:T.mono, fontSize:10 }}>
+        <div style={{ position:'sticky', top:0, zIndex:10, display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'color-mix(in srgb, var(--green) 8%, transparent)', borderBottom:`1px solid ${T.border}`, marginBottom:4, fontFamily:T.mono, fontSize: 11 }}>
           <span style={{ color:T.muted }}>{selectedIds.length} selected</span>
           <button onClick={()=>setSelectedIds(msgs.map(m=>m.id))} style={{ background:'none', border:'1px solid '+T.border, color:T.muted, cursor:'pointer', padding:'2px 8px', fontSize: 11 }}>Select all</button>
           <button onClick={()=>{setSelectedIds([]);setMultiSelect(false)}} style={{ background:'none', border:'1px solid '+T.border, color:T.muted, cursor:'pointer', padding:'2px 8px', fontSize: 11 }}>Deselect</button>
@@ -116,7 +116,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
       )}
       {grouped.map((item, i) => {
         if (item.type === 'date') return (
-          <div key={`d-${i}`} style={{ textAlign: 'center', padding: '8px 0', fontFamily: T.mono, fontSize: 10, color: T.muted, letterSpacing: 1 }}>
+          <div key={`d-${i}`} style={{ textAlign: 'center', padding: '8px 0', fontFamily: T.mono, fontSize: 11, color: T.muted, letterSpacing: 1 }}>
             <span title={fmtDtTitle(item.ts)} className="chat-date-pill" style={{ background: T.surface, border: `${T.borderW} solid ${T.border}`, padding: '2px 10px', borderRadius: T.radius }}>{item.date}</span>
           </div>
         )
@@ -146,7 +146,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                     ] : []),
                   ], { header: item.sender }) }}
                   style={{ fontWeight:700, fontSize:13, color:aCol(item.sender), fontFamily:T.display, cursor:'pointer' }}>{item.sender}</span>
-                <span title={fmtDtTitle(item.created_at)} style={{ fontSize: 10, color: T.muted, fontFamily: T.mono }}>{fmt(item.created_at)}</span>
+                <span title={fmtDtTitle(item.created_at)} style={{ fontSize: 11, color: T.muted, fontFamily: T.mono }}>{fmt(item.created_at)}</span>
                 {item.edited && <span style={{ fontSize: 11, color: T.muted, fontStyle: 'italic' }}>(edited)</span>}
                 {isPinned(item.id) && <span style={{ fontSize: 11, color:T.accent }}>📌</span>}
                 {isMe && <ReceiptTicks msg={item} />}
@@ -156,14 +156,14 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                   background: selectedIds.includes(m.id) ? 'color-mix(in srgb, var(--green) 6%, transparent)' : activeMsg === m.id ? 'color-mix(in srgb, var(--green) 4%, transparent)' : 'transparent' }}>
                   {multiSelect && (
                     <div onClick={() => toggleSelect(m.id)} style={{ cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', height:34, justifyContent:'center', width:16 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
-                      <div style={{ width:16, height:16, borderRadius:3, border: selectedIds.includes(m.id) ? `1.5px solid ${T.accent}` : `1.5px solid ${T.border}`, background: selectedIds.includes(m.id) ? T.accent : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:'var(--bg)' }}>
+                      <div style={{ width:16, height:16, borderRadius:3, border: selectedIds.includes(m.id) ? `1.5px solid ${T.accent}` : `1.5px solid ${T.border}`, background: selectedIds.includes(m.id) ? T.accent : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize: 11, color:'var(--bg)' }}>
                         {selectedIds.includes(m.id) && '✓'}
                       </div>
                     </div>
                   )}
                   <div style={{ flex:1, textAlign: isMe ? 'right' : 'left' }}>
                   {m.reply_to && (
-                    <div style={{ borderLeft: `2px solid ${T.link}`, paddingLeft: 8, marginBottom: 4, fontFamily: T.mono, fontSize: 10, color: T.muted, textAlign: 'left' }}>
+                    <div style={{ borderLeft: `2px solid ${T.link}`, paddingLeft: 8, marginBottom: 4, fontFamily: T.mono, fontSize: 11, color: T.muted, textAlign: 'left' }}>
                       <span style={{ color: T.link }}>↩ {m.reply_to.sender}: </span>{m.reply_to.content?.slice(0, 100)}
                     </div>
                   )}
@@ -182,11 +182,11 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                         <div style={{ height: 4, width: 120, borderRadius: 2, background: 'var(--border2)', overflow: 'hidden' }}>
                           <div style={{ width: 0, height: '100%', background: T.link }} />
                         </div>
-                        <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>{m.duration ? `${Math.round(m.duration)}s` : '♪'}</span>
+                        <span style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>{m.duration ? `${Math.round(m.duration)}s` : '♪'}</span>
                         <audio id={`voice-${m.id}`} src={m.content} preload="none" />
                       </div>
                     ) : m.type === 'file' ? (
-                      <div><a href={/^https?:\/\//i.test(m.content || '') ? m.content : '#'} target='_blank' rel='noopener noreferrer' style={{ color: T.link, textDecoration: 'none' }}>📎 {m.file_name || 'file'}</a> <span style={{ fontSize: 10, color: T.muted }}>{fmtSz(m.file_size)}</span></div>
+                      <div><a href={/^https?:\/\//i.test(m.content || '') ? m.content : '#'} target='_blank' rel='noopener noreferrer' style={{ color: T.link, textDecoration: 'none' }}>📎 {m.file_name || 'file'}</a> <span style={{ fontSize: 11, color: T.muted }}>{fmtSz(m.file_size)}</span></div>
                     ) : <Markdown text={m.content} />}
                     {m.type === 'text' && <MediaPreviews text={m.content} onMediaClick={onMediaClick} right={isMe} />}
                   </div>
@@ -206,11 +206,11 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                     <div style={{ display:'flex', gap:4, marginTop:3, opacity:0, transition:'opacity 0.15s', justifyContent: isMe ? 'flex-end' : 'flex-start', alignItems:'center' }}
                       onMouseEnter={e => { e.currentTarget.style.opacity = 1 }}
                       onMouseLeave={e => { e.currentTarget.style.opacity = 0 }}>
-                      <button onClick={()=>onReply(m)} title="Reply" style={{ background:'none', border:'none', color:T.muted, cursor:'pointer', fontSize:10 }}>↩</button>
-                      <button onClick={()=>{ setEmojiPicker(emojiPicker === m.id ? null : m.id) }} title="React" style={{ background:'none', border:'none', color:T.muted, cursor:'pointer', fontSize:10 }}>😊</button>
-                      {isMe && <button onClick={()=>onEdit(m)} title="Edit" style={{ background:'none', border:'none', color:T.muted, cursor:'pointer', fontSize:10 }}>✏</button>}
-                      <button onClick={()=>navigator.clipboard?.writeText(m.content||'')} title="Copy" style={{ background:'none', border:'none', color:T.muted, cursor:'pointer', fontSize:10 }}>📋</button>
-                      {(isMe||isAdmin) && <button onClick={()=>onDel(m.id)} title="Delete" style={{ background:'none', border:'none', color:'#ff4757', cursor:'pointer', fontSize:10 }}>🗑</button>}
+                      <button onClick={()=>onReply(m)} title="Reply" style={{ background:'none', border:'none', color:T.muted, cursor:'pointer', fontSize: 11 }}>↩</button>
+                      <button onClick={()=>{ setEmojiPicker(emojiPicker === m.id ? null : m.id) }} title="React" style={{ background:'none', border:'none', color:T.muted, cursor:'pointer', fontSize: 11 }}>😊</button>
+                      {isMe && <button onClick={()=>onEdit(m)} title="Edit" style={{ background:'none', border:'none', color:T.muted, cursor:'pointer', fontSize: 11 }}>✏</button>}
+                      <button onClick={()=>navigator.clipboard?.writeText(m.content||'')} title="Copy" style={{ background:'none', border:'none', color:T.muted, cursor:'pointer', fontSize: 11 }}>📋</button>
+                      {(isMe||isAdmin) && <button onClick={()=>onDel(m.id)} title="Delete" style={{ background:'none', border:'none', color:'#ff4757', cursor:'pointer', fontSize: 11 }}>🗑</button>}
                     </div>
                     {emojiPicker === m.id && (
                       <div style={{ position:'absolute', bottom:'100%', left:0, background:T.bg2, border:`1px solid ${T.border}`, borderRadius:8, padding:'4px 6px', display:'flex', gap:3, zIndex:10, boxShadow:'0 4px 16px rgba(0,0,0,0.4)' }}>

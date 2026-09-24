@@ -87,7 +87,7 @@ export default function Newsletter() {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {['✓  No spam. Ever.', '✓  One-click unsubscribe in every email.', '✓  New post → email goes out automatically.'].map((l, i) => (
-              <div key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>{l}</div>
+              <div key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>{l}</div>
             ))}
           </div>
         </div>
@@ -156,13 +156,13 @@ export default function Newsletter() {
                   <span className="terminal-cursor" style={{ display: 'inline-block', width: 8, height: 14, background: 'var(--green)', marginLeft: 4, animation: 'blink 1s step-end infinite' }} />
                 </div>
                 <button type="submit" disabled={status === 'loading'}
-                  style={{ width: '100%', padding: '11px', background: 'transparent', border: '1px solid var(--green)', color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, cursor: 'pointer', transition: 'all 0.2s' }}
+                  style={{ width: '100%', padding: '11px', background: 'transparent', border: '1px solid var(--green)', color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, cursor: 'pointer', transition: 'all 0.2s' }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--green)'; e.currentTarget.style.color = '#000' }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--green)' }}
                 >
                   {status === 'loading' ? 'SUBSCRIBING...' : '[ EXECUTE SUBSCRIBE ]'}
                 </button>
-                {status === 'error' && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 8 }}>{'>'} ERROR: {msg}</div>}
+                {status === 'error' && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', marginTop: 8 }}>{'>'} ERROR: {msg}</div>}
               </form>
             )}
           </div>

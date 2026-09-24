@@ -113,7 +113,7 @@ function UploadPhase({ onFile, loading, error }) {
           color:over?C.green:loading?C.cyan:C.text, marginBottom:6, transition:'color .2s' }}>
           {loading ? 'Opening PDF…' : over ? 'Release to open' : 'Drop PDF here'}
         </div>
-        <div style={{ fontFamily:C.mono, fontSize:10, color:C.muted }}>
+        <div style={{ fontFamily:C.mono, fontSize: 11, color:C.muted }}>
           {loading ? 'Rendering pages…' : 'or click to browse · .pdf files only'}
         </div>
         {loading && (
@@ -219,7 +219,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
                           <button key={s.id} onClick={()=>{setTool(s.id);setShapeMenuOpen(false)}}
                             style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'8px 12px',
                               border:'none', background: tool===s.id?C.accent+'22':'transparent',
-                              color: tool===s.id?C.accent:C.text, cursor:'pointer', fontFamily:C.mono, fontSize:10,
+                              color: tool===s.id?C.accent:C.text, cursor:'pointer', fontFamily:C.mono, fontSize: 11,
                               textAlign:'left' }}>
                             <span style={{fontSize:13}}>{s.icon}</span>{s.label}
                           </button>
@@ -327,7 +327,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
             {exporting ? '⏳ SAVING…' : `📤 EXPORT PDF${opsCount?' ('+opsCount+')':''}`}
           </button>
           <button onClick={onClose} title="Close"
-            style={{ padding:'6px 10px', fontFamily:C.mono, fontSize:10, background:'transparent',
+            style={{ padding:'6px 10px', fontFamily:C.mono, fontSize: 11, background:'transparent',
               border:`1px solid ${C.border}`, color:C.muted, cursor:'pointer', borderRadius:6 }}>✕</button>
         </div>
       </div>
@@ -358,7 +358,7 @@ function PageSidebar({ session, currentPage, setCurrentPage, onDelete, onRotate 
             <div style={{ position:'absolute', top:3, right:3, display:'flex', flexDirection:'column', gap:2 }}>
               <button onClick={e=>{e.stopPropagation();onRotate(i)}} title="Rotate 90°"
                 style={{ width:20, height:20, border:'none', borderRadius:3, background:'rgba(34,211,238,0.8)',
-                  color:'#000', cursor:'pointer', fontSize:10, display:'flex', alignItems:'center', justifyContent:'center' }}>↻</button>
+                  color:'#000', cursor:'pointer', fontSize: 11, display:'flex', alignItems:'center', justifyContent:'center' }}>↻</button>
               {session.page_count > 1 && (
                 <button onClick={e=>{e.stopPropagation();onDelete(i)}} title="Delete page"
                   style={{ width:20, height:20, border:'none', borderRadius:3, background:'rgba(248,113,113,0.8)',
@@ -384,7 +384,7 @@ function SearchPanel({ onClose, onSearch, onReplace, onReplaceAll, results, curr
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
         padding:'10px 14px', borderBottom:`1px solid ${C.border}`, background:C.bg3 }}>
         <span style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:3, color:C.cyan }}>SEARCH & REPLACE</span>
-        <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, cursor:'pointer', fontSize:14 }}>✕</button>
+        <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, cursor:'pointer', fontSize:14 }} aria-label="Close">✕</button>
       </div>
       <div style={{ padding:14, display:'flex', flexDirection:'column', gap:10 }}>
         <div>

@@ -1694,7 +1694,7 @@ function AvatarMode({ visibleRef }) {
               placeholder="https://example.com/avatar.jpg"
               autoFocus
               style={{
-                width: '100%', fontFamily: 'var(--font-mono)', fontSize: 10,
+                width: '100%', fontFamily: 'var(--font-mono)', fontSize: 11,
                 padding: '8px 12px', background: 'var(--comp-input-bg, var(--bg3))',
                 border: '1px solid var(--comp-input-focus-border, var(--cyan))', color: 'var(--text)',
                 borderRadius: 'var(--comp-input-radius, 2px)', outline: 'none',

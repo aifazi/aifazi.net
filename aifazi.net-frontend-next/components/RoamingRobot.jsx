@@ -88,7 +88,7 @@ function Bubble({ msg, dir, color }) {
       left: dir > 0 ? 0 : 'auto', right: dir < 0 ? 0 : 'auto',
       whiteSpace: 'nowrap', background: 'rgba(11,17,24,0.96)',
       border: '1px solid ' + g, color: g,
-      fontFamily: 'var(--font-mono, monospace)', fontSize: 10,
+      fontFamily: 'var(--font-mono, monospace)', fontSize: 11,
       letterSpacing: 1, padding: '5px 10px', borderRadius: 6,
       boxShadow: '0 0 12px ' + g + '44',
       animation: 'rbBubble 0.25s cubic-bezier(0.34,1.56,0.64,1)', zIndex: 1,

@@ -106,7 +106,7 @@ function LinkBtn({ banner, cfg }) {
     <a href={banner.link} target="_blank" rel="noopener noreferrer"
       style={{
         flexShrink:0, display:'flex', alignItems:'center', gap:5,
-        fontFamily:'var(--font-mono)', fontSize:10, fontWeight:700, letterSpacing:1.2,
+        fontFamily:'var(--font-mono)', fontSize: 11, fontWeight:700, letterSpacing:1.2,
         color: cfg.accent, textDecoration:'none', padding:'6px 14px', borderRadius:5,
         border:`1px solid ${cfg.accent}50`, background:`${cfg.accent}12`,
         marginRight:10, whiteSpace:'nowrap', transition:'all 0.18s',

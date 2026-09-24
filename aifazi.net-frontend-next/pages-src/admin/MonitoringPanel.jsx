@@ -85,7 +85,7 @@ function MonitorsTab() {
           <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C, marginBottom: 4 }}>CUSTOM MONITORS</div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>Website, keyword, ping, port, cron job and DNS checks — run on each monitor tick, alerts on consecutive failures.</div>
         </div>
-        <button onClick={openNew} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: G, color: '#000', border: 'none', cursor: 'pointer', borderRadius: 8, fontWeight: 700 }}>+ ADD MONITOR</button>
+        <button onClick={openNew} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '10px 18px', background: G, color: '#000', border: 'none', cursor: 'pointer', borderRadius: 8, fontWeight: 700 }}>+ ADD MONITOR</button>
       </div>
 
       {loading ? <div className="loader" />
@@ -103,13 +103,13 @@ function MonitorsTab() {
                   <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 7px', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)', color: C, borderRadius: 99 }}>{meta.label.toUpperCase()}</span>
                   {!m.enabled && <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 99 }}>PAUSED</span>}
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {m.type === 'port' ? `${m.target}:${m.port}` : m.type === 'keyword' ? `${m.target} → "${m.expected}"` : m.type === 'dns' ? `${m.target}${m.expected ? ` → ${m.expected}` : ''}` : m.target}
                   {m.type === 'cron' && ` · every ${m.interval_seconds}s`}
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontFamily: MONO, fontSize: 10, color, fontWeight: 700 }}>{STATUS_LABEL[st]}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color, fontWeight: 700 }}>{STATUS_LABEL[st]}</div>
                 {m.latest && <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{m.latest.latency_ms}ms · {m.latest.checked_at ? new Date(m.latest.checked_at).toLocaleTimeString() : ''}</div>}
                 {m.latest?.detail && m.latest.status !== 'up' && <div style={{ fontFamily: MONO, fontSize: 11, color: R, marginTop: 2, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.latest.detail}</div>}
               </div>
@@ -130,7 +130,7 @@ function MonitorsTab() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
               {TYPES.map(t => (
                 <button key={t.id} onClick={() => set('type')(t.id)} style={{
-                  fontFamily: MONO, fontSize: 10, textAlign: 'left', padding: '10px 12px', cursor: 'pointer', borderRadius: 8,
+                  fontFamily: MONO, fontSize: 11, textAlign: 'left', padding: '10px 12px', cursor: 'pointer', borderRadius: 8,
                   background: form.type === t.id ? `${C}18` : 'transparent', color: form.type === t.id ? C : 'var(--muted)',
                   border: `1px solid ${form.type === t.id ? `${C}55` : 'var(--border)'}`,
                 }}>
@@ -166,12 +166,12 @@ function MonitorsTab() {
           {form.type === 'cron' && (
             <div><label style={lbl}>EXPECTED MAX GAP (seconds)</label><input type="number" min={5} value={form.interval_seconds} onChange={e => set('interval_seconds')(e.target.value)} style={inp} /></div>
           )}
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontFamily: MONO, fontSize: 10, color: 'var(--muted)', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontFamily: MONO, fontSize: 11, color: 'var(--muted)', cursor: 'pointer' }}>
             <input type="checkbox" checked={form.enabled} onChange={e => set('enabled')(e.target.checked)} /> Enabled
           </label>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => setEditing(null)} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 8, flex: 1 }}>CANCEL</button>
-            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: G, color: '#000', border: 'none', cursor: 'pointer', borderRadius: 8, flex: 1, fontWeight: 800 }}>{saving ? 'SAVING…' : '✓ SAVE MONITOR'}</button>
+            <button onClick={() => setEditing(null)} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '10px 18px', background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 8, flex: 1 }}>CANCEL</button>
+            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '10px 18px', background: G, color: '#000', border: 'none', cursor: 'pointer', borderRadius: 8, flex: 1, fontWeight: 800 }}>{saving ? 'SAVING…' : '✓ SAVE MONITOR'}</button>
           </div>
         </div>
       </Modal>
@@ -234,12 +234,12 @@ function MobileAppTab() {
 
   return (
     <div>
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C, marginBottom: 16 }}>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C, marginBottom: 16 }}>
         MOBILE APP · DELIVERY PIPELINE
       </div>
 
       {workflows?.ok === false && (
-        <div style={{ border: `1px solid ${O}55`, background: `${O}0d`, borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontFamily: MONO, fontSize: 10, color: O, lineHeight: 1.6 }}>
+        <div style={{ border: `1px solid ${O}55`, background: `${O}0d`, borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontFamily: MONO, fontSize: 11, color: O, lineHeight: 1.6 }}>
           ⚠ GitHub Actions read access missing — workflow status unavailable. Give your <strong>GITHUB_TOKEN</strong> the Actions:Read permission on aifazi/aifazi.net. Releases still load fine.
         </div>
       )}
@@ -372,14 +372,14 @@ function StatusTab() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C }}>SERVICE MONITOR</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C }}>SERVICE MONITOR</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--muted)', marginTop: 4 }}>
             Uptime (24h): <strong style={{ color: uptime24 >= 99 ? G : O }}>{uptime24}%</strong> · {last24h.length} checks
             {lastRun?.checked_at && <span style={{ color: 'var(--muted)', fontSize: 11 }}> · auto-refreshes every 30s</span>}
           </div>
         </div>
         <button onClick={runNow} disabled={running} style={{
-          fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '9px 18px', cursor: 'pointer',
+          fontFamily: MONO, fontSize: 11, letterSpacing: 2, padding: '9px 18px', cursor: 'pointer',
           background: running ? 'var(--bg3)' : 'var(--green)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700,
         }}>{running ? 'RUNNING…' : '↻ RUN CHECK NOW'}</button>
       </div>
@@ -422,7 +422,7 @@ function StatusTab() {
               return (
                 <div key={service} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '14px 18px', background: 'var(--bg2)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 10, color }}>●</span>
+                    <span style={{ fontSize: 11, color }}>●</span>
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--text)', flex: 1 }}>{c.label || service}</span>
                     <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{c.latency_ms != null ? `${c.latency_ms}ms` : '—'}</span>
                     {aggRow?.uptime_30d != null && (
@@ -438,7 +438,7 @@ function StatusTab() {
                     </div>
                     <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{pct}% · {rows.length} checks</span>
                   </div>
-                  {c.detail && c.status !== 'up' && <div style={{ fontFamily: MONO, fontSize: 10, color: R, marginTop: 8 }}>{c.detail}</div>}
+                  {c.detail && c.status !== 'up' && <div style={{ fontFamily: MONO, fontSize: 11, color: R, marginTop: 8 }}>{c.detail}</div>}
                   {c.checked_at && <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>Last: {new Date(c.checked_at).toLocaleString()}</div>}
                 </div>
               )
@@ -516,7 +516,7 @@ function SettingsTab() {
 
   return (
     <div>
-      <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C, marginBottom: 16 }}>MONITOR SETTINGS</div>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C, marginBottom: 16 }}>MONITOR SETTINGS</div>
 
       {/* Alert emails */}
       <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 16, background: 'var(--bg2)', marginBottom: 12 }}>
@@ -550,7 +550,7 @@ function SettingsTab() {
       </div>
 
       <button onClick={save} disabled={saving} style={{
-        fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '10px 24px', cursor: 'pointer',
+        fontFamily: MONO, fontSize: 11, letterSpacing: 2, padding: '10px 24px', cursor: 'pointer',
         background: saving ? 'var(--bg3)' : 'var(--green)', color: '#000', border: 'none', borderRadius: 8, fontWeight: 700,
       }}>{saving ? 'SAVING…' : 'SAVE SETTINGS'}</button>
     </div>
@@ -577,7 +577,7 @@ function ErrorsTab() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C }}>RECENT ERRORS</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C }}>RECENT ERRORS</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--muted)', marginTop: 3 }}>
             {errors.length} signatures · {total} occurrences
           </div>
@@ -585,7 +585,7 @@ function ErrorsTab() {
         <div style={{ display: 'flex', gap: 8 }}>
           {sources.length > 0 && (
             <select value={src} onChange={e => setSrc(e.target.value)} style={{
-              fontFamily: MONO, fontSize: 10, padding: '7px 10px', background: 'var(--bg3)', color: 'var(--text)',
+              fontFamily: MONO, fontSize: 11, padding: '7px 10px', background: 'var(--bg3)', color: 'var(--text)',
               border: '1px solid var(--border)', borderRadius: 8, outline: 'none', cursor: 'pointer',
             }}>
               <option value="">ALL SOURCES</option>
@@ -646,7 +646,7 @@ function JobsTab() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C }}>SCHEDULED JOBS</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C }}>SCHEDULED JOBS</div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>Cron definitions, cron-type monitors and backup freshness — late means no run within 2× its interval.</div>
         </div>
         <button onClick={load} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 14px', cursor: 'pointer', background: 'transparent', color: C, border: `1px solid ${C}45`, borderRadius: 8, fontWeight: 700 }}>↻ REFRESH</button>
@@ -719,7 +719,7 @@ function ReleasesTab() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C }}>RELEASES</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C }}>RELEASES</div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>Latest Coolify deployments per service — newest first. Rollback happens in the Coolify UI via the deployment link.</div>
         </div>
         <button onClick={load} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 14px', cursor: 'pointer', background: 'transparent', color: C, border: `1px solid ${C}45`, borderRadius: 8, fontWeight: 700 }}>↻ REFRESH</button>
@@ -735,13 +735,13 @@ function ReleasesTab() {
                   <div style={{ width: 34, height: 34, borderRadius: 8, background: `${color}14`, border: `1px solid ${color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🚀</div>
                   <div style={{ flex: 1, minWidth: 160 }}>
                     <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{name}</div>
-                    <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
+                    <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
                       {(e.commit || '—').slice(0, 12)} · {fmtTs(e.at)}
                     </div>
                   </div>
                   <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '3px 10px', background: `${color}1a`, border: `1px solid ${color}55`, color, borderRadius: 99, fontWeight: 700 }}>{(e.status || 'UNKNOWN').toUpperCase()}</span>
-                  {e.url ? <a href={e.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: MONO, fontSize: 10, color: C }}>Coolify ↗</a>
-                    : <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>no link</span>}
+                  {e.url ? <a href={e.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: MONO, fontSize: 11, color: C }}>Coolify ↗</a>
+                    : <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>no link</span>}
                 </div>
               )
             })}
@@ -763,7 +763,7 @@ export default function MonitoringPanel() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10, flexWrap: 'wrap' }}>
         {[['status', '📊 Status'], ['monitors', '🛰️ Monitors'], ['releases', '🚀 Releases'], ['jobs', '⏰ Jobs'], ['settings', '⚙️ Settings'], ['errors', '🚨 Errors'], ['mobile', '📱 Mobile']].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} style={{
-            fontFamily: MONO, fontSize: 10, letterSpacing: 2, padding: '8px 16px', cursor: 'pointer',
+            fontFamily: MONO, fontSize: 11, letterSpacing: 2, padding: '8px 16px', cursor: 'pointer',
             background: tab === k ? 'var(--green)' : 'transparent', color: tab === k ? '#000' : 'var(--muted)',
             border: `1px solid ${tab === k ? 'var(--green)' : 'var(--border)'}`, borderRadius: 8, fontWeight: 700,
           }}>{l}</button>

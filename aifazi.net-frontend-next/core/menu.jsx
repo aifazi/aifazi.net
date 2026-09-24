@@ -8,7 +8,7 @@
  * ║    onContextMenu={(e) => openContextMenu(e, items)}         ║
  * ║                                                              ║
  * ║  Usage — Dropdown:                                          ║
- * ║    <Dropdown trigger={<button>...</button>} items={[...]} />║
+ * ║    <Dropdown trigger={<button aria-label="Action">...</button>} items={[...]} />║
  * ║                                                              ║
  * ║  Item shape:                                                 ║
  * ║    { label, icon?, sublabel?, action?, variant?, shortcut? } ║
@@ -100,7 +100,7 @@ export function MenuPanel({ items = [], x, y, header, onClose, style = {}, menuS
                 {item.sublabel && <div style={{ fontFamily: t.fontMono, fontSize: 11, color: t.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.sublabel}</div>}
               </div>
               {item.shortcut && <span style={{ fontFamily: t.fontMono, fontSize: 11, color: t.muted, flexShrink: 0 }}>{item.shortcut}</span>}
-              <span style={{ fontSize: 10, color: itemColor, flexShrink: 0, opacity: isActive ? 0.5 : 0, transition: 'opacity 0.1s' }}>›</span>
+              <span style={{ fontSize: 11, color: itemColor, flexShrink: 0, opacity: isActive ? 0.5 : 0, transition: 'opacity 0.1s' }}>›</span>
             </div>
           )
         })}

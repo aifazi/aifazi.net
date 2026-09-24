@@ -178,7 +178,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>DISCUSSION THREAD</div>
         {messages.length === 0 ? (
-          <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: 20 }}>No messages yet</div>
+          <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: 20 }}>No messages yet</div>
         ) : (
           messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)
         )}
@@ -298,7 +298,7 @@ function HelpDeskSettings() {
           subtitle="Customize categories, priorities, auto-reply, and more"
           actions={
             <button onClick={handleSave} disabled={saving}
-              style={{ ...S.btn(), fontSize: 10, padding: '9px 20px', opacity: saving ? 0.6 : 1 }}>
+              style={{ ...S.btn(), fontSize: 11, padding: '9px 20px', opacity: saving ? 0.6 : 1 }}>
               {saving ? 'SAVING...' : '✓ SAVE ALL SETTINGS'}
             </button>
           }
@@ -335,7 +335,7 @@ function HelpDeskSettings() {
                 cats[i] = e.target.value
                 set('categories', cats)
               }} style={{ ...inp, flex: 1 }} />
-              <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
             </div>
           ))}
         </div>
@@ -380,7 +380,7 @@ function HelpDeskSettings() {
                   set('priorities', ps)
                 }} />
               <span style={{ width: 16, height: 16, borderRadius: '50%', background: p.color, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }} />
-              <button onClick={() => removePriority(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => removePriority(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
             </div>
           ))}
         </div>
@@ -606,7 +606,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
   if (tab === 'settings') return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <button onClick={() => setTab('tickets')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--cyan)', background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}>
+        <button onClick={() => setTab('tickets')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--cyan)', background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}>
           ← BACK TO TICKETS
         </button>
       </div>
@@ -707,7 +707,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{t.subject}</span>
                   <StatusBadge status={t.status} />
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
                   <span>👤 {t.name}</span>
                   <span style={{ color: 'var(--cyan)' }}>{t.email}</span>
                   <span style={{ textTransform: 'capitalize' }}>📂 {t.category}</span>
@@ -716,7 +716,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
                   <span style={{ color: 'var(--muted)' }}>💬 {t.message_count || 0}</span>
                 </div>
                 {t.internal_note && (
-                  <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ffd700',
+                  <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ffd700',
                     background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)',
                     padding: '3px 10px', borderRadius: 4, display: 'inline-block' }}>
                     📝 {t.internal_note}
@@ -749,14 +749,14 @@ export default function HelpDeskPanel({ initialTicketId }) {
         {pages > 1 && (
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
             <button onClick={() => load(page - 1)} disabled={page <= 1}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent',
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '7px 14px', background: 'transparent',
                 border: '1px solid var(--border)', color: page <= 1 ? 'var(--muted)' : 'var(--text)',
                 cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>← PREV</button>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: '7px 14px' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '7px 14px' }}>
               Page {page} of {pages}
             </span>
             <button onClick={() => load(page + 1)} disabled={page >= pages}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent',
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '7px 14px', background: 'transparent',
                 border: '1px solid var(--border)', color: page >= pages ? 'var(--muted)' : 'var(--text)',
                 cursor: page >= pages ? 'not-allowed' : 'pointer' }}>NEXT →</button>
           </div>

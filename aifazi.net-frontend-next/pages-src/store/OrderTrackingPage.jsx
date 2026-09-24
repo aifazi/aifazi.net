@@ -66,7 +66,7 @@ export default function OrderTrackingPage() {
           {/* Header */}
           <Card accent style={{ padding: 'clamp(24px, 4vw, 40px)', marginBottom: 24, textAlign: 'center' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>
               ORDER #{order.order_number}
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 3vw, 32px)', fontWeight: 700, color: 'var(--text)', margin: '0 0 14px' }}>
@@ -76,7 +76,7 @@ export default function OrderTrackingPage() {
               <Badge tone={st === 'delivered' ? 'green' : st === 'cancelled' ? 'red' : 'cyan'} glow>
                 {st.toUpperCase()}
               </Badge>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }} title={order.created_at ? formatDateTime(order.created_at) : ''}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }} title={order.created_at ? formatDateTime(order.created_at) : ''}>
                 Placed {order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
               </span>
             </div>
@@ -124,7 +124,7 @@ export default function OrderTrackingPage() {
                 {order.carrier || 'Standard Shipping'}
                 {order.tracking_url && (
                   <a href={order.tracking_url} target="_blank" rel="noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 12, color: C, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1 }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 12, color: C, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1 }}>
                     TRACK WITH CARRIER ↗
                   </a>
                 )}
@@ -142,7 +142,7 @@ export default function OrderTrackingPage() {
                 </div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{delivery.agent.display_name}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
                     {delivery.agent.vehicle && <span>{delivery.agent.vehicle} · </span>}
                     <Badge tone={delivery.agent.status === 'available' ? 'green' : delivery.agent.status === 'busy' ? 'orange' : 'red'}>
                       {delivery.agent.status.toUpperCase()}
@@ -173,7 +173,7 @@ export default function OrderTrackingPage() {
                     <div style={{ paddingBottom: 16 }}>
                       <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: 13 }}>{(ev.status || '').toUpperCase()}</div>
                       {ev.note && <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 3 }}>{ev.note}</div>}
-                      <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)', fontSize: 10, marginTop: 4 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)', fontSize: 11, marginTop: 4 }}>
                         <span title={ev.created_at ? formatDateTime(ev.created_at) : ''}>{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</span>
                       </div>
                     </div>

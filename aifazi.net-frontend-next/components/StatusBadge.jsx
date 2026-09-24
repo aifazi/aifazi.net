@@ -103,7 +103,7 @@ export default function StatusBadge({ size = 'sm' }) {
         animation: status.pulse ? 'statusPulse 1.5s infinite' : 'none',
         flexShrink: 0,
       }} />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: status.color, letterSpacing: 2, textTransform: 'uppercase' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: status.color, letterSpacing: 2, textTransform: 'uppercase' }}>
         <StatusLabel status={status} />
       </span>
       <style>{`@keyframes statusPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }`}</style>

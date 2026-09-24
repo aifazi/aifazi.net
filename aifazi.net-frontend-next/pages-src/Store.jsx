@@ -241,7 +241,7 @@ export default function StorePage({ fivem = false }) {
       {/* P2 — breadcrumb trail (the admin Breadcrumb is admin-view-bound,
           so a simple Back + trail is used here instead) */}
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '18px 24px 0' }}>
-        <nav aria-label="Breadcrumb" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--muted)' }}>
+        <nav aria-label="Breadcrumb" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--muted)' }}>
           <Link to="/" style={{ color: 'var(--muted)', textDecoration: 'none' }}>HOME</Link>
           <span style={{ margin: '0 8px' }}>/</span>
           {tab === 'home' ? (
@@ -308,7 +308,7 @@ export default function StorePage({ fivem = false }) {
             <div style={{ marginBottom: 48 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <div><div className="ec-section-eyebrow">Browse</div><h2 className="ec-section-title">Shop by Category</h2></div>
-                <button onClick={() => setTabAndUrl('shop')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: C, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>VIEW ALL →</button>
+                <button onClick={() => setTabAndUrl('shop')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: C, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>VIEW ALL →</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(categories.length, isMobile ? 3 : 6)}, 1fr)`, gap: 12 }}>
                 {categories.map(c => (
@@ -327,7 +327,7 @@ export default function StorePage({ fivem = false }) {
             <div style={{ marginBottom: 48 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <div><div className="ec-section-eyebrow">Featured</div><h2 className="ec-section-title">Featured Products</h2></div>
-                <button onClick={() => setTabAndUrl('shop')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: C, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>VIEW ALL →</button>
+                <button onClick={() => setTabAndUrl('shop')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: C, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>VIEW ALL →</button>
               </div>
               <div className="ec-grid">
                 {featuredProducts.slice(0, isMobile ? 4 : 8).map(p => (
@@ -358,13 +358,13 @@ export default function StorePage({ fivem = false }) {
               <div style={{ fontSize: 36 }}>👑</div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>VIP Subscriptions</div>
               <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>Unlock in-game perks, priority access, and exclusive content. Auto-applied on join.</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: G, marginTop: 8, fontWeight: 700 }}>VIEW PLANS →</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: G, marginTop: 8, fontWeight: 700 }}>VIEW PLANS →</div>
             </Clickable>
             <Clickable className="ec-cat-card" label="Track Your Order" style={{ textAlign: 'left', padding: 28, alignItems: 'flex-start', cursor: 'pointer', borderColor: mix(C, 20) }} onClick={() => setTabAndUrl('orders')}>
               <div style={{ fontSize: 36 }}>📋</div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Track Your Order</div>
               <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>Check status, download digital goods, and manage your account in one place.</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: C, marginTop: 8, fontWeight: 700 }}>MY ACCOUNT →</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: C, marginTop: 8, fontWeight: 700 }}>MY ACCOUNT →</div>
             </Clickable>
           </div>
         </div>
@@ -418,7 +418,7 @@ export default function StorePage({ fivem = false }) {
                   <button key={c.id} onClick={() => setActiveCategory(c.slug || c.name)} className={`store-filter-pill ${(activeCategory || '').toLowerCase() === (c.slug || c.name || '').toLowerCase() ? 'active' : ''}`}>{c.icon} {c.name}</button>
                 ))}
               </div>
-              <button onClick={() => setCartOpen(true)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: G, background: 'none', border: `1px solid ${mix(G, 25)}`, borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button onClick={() => setCartOpen(true)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: G, background: 'none', border: `1px solid ${mix(G, 25)}`, borderRadius: 10, padding: '8px 16px', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
                 🛒 Cart {cart.count > 0 && <Badge tone="green">{cart.count}</Badge>}
               </button>
             </div>

@@ -131,7 +131,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
       title="Search — Ctrl+K / ⌘K"
       aria-label="Open command palette"
       style={{
-        fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
         padding: '6px 12px', background: 'var(--bg3)',
         border: '1px solid var(--border)', color: 'var(--muted)',
         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,

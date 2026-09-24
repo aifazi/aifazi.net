@@ -79,8 +79,8 @@ export default function ReviewsTab() {
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setTab('reviews')} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', background: tab === 'reviews' ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent', color: tab === 'reviews' ? G : 'var(--muted)', border: `1px solid ${tab === 'reviews' ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}` }}>PRODUCT REVIEWS ({reviews.length})</button>
-        <button onClick={() => setTab('testimonials')} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', background: tab === 'testimonials' ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'transparent', color: tab === 'testimonials' ? C : 'var(--muted)', border: `1px solid ${tab === 'testimonials' ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'var(--border)'}` }}>TESTIMONIALS ({testimonials.length})</button>
+        <button onClick={() => setTab('reviews')} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', background: tab === 'reviews' ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent', color: tab === 'reviews' ? G : 'var(--muted)', border: `1px solid ${tab === 'reviews' ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}` }}>PRODUCT REVIEWS ({reviews.length})</button>
+        <button onClick={() => setTab('testimonials')} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 16px', borderRadius: 20, cursor: 'pointer', background: tab === 'testimonials' ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'transparent', color: tab === 'testimonials' ? C : 'var(--muted)', border: `1px solid ${tab === 'testimonials' ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'var(--border)'}` }}>TESTIMONIALS ({testimonials.length})</button>
       </div>
 
       {tab === 'reviews' && (
@@ -157,8 +157,8 @@ export default function ReviewsTab() {
               <textarea value={testiForm.content} onChange={e => setTestiForm({ ...testiForm, content: e.target.value })} placeholder="Amazing quality and lightning-fast delivery…" rows={3} style={{ ...input, width: '100%', resize: 'vertical' }} />
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button onClick={saveTestimonial} disabled={savingT} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'color-mix(in srgb, var(--cyan) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: savingT ? 'not-allowed' : 'pointer' }}>{savingT ? '…' : editingT ? 'UPDATE' : '+ CREATE'}</button>
-              {editingT && <button onClick={() => { setEditingT(null); setTestiForm({ author_name: '', role: '', content: '', rating: 5, status: 'pending', display_order: 0 }) }} style={{ fontFamily: MONO, fontSize: 10, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>}
+              <button onClick={saveTestimonial} disabled={savingT} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 20px', background: 'color-mix(in srgb, var(--cyan) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: savingT ? 'not-allowed' : 'pointer' }}>{savingT ? '…' : editingT ? 'UPDATE' : '+ CREATE'}</button>
+              {editingT && <button onClick={() => { setEditingT(null); setTestiForm({ author_name: '', role: '', content: '', rating: 5, status: 'pending', display_order: 0 }) }} style={{ fontFamily: MONO, fontSize: 11, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>}
             </div>
           </div>
 

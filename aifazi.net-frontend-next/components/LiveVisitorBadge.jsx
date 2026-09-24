@@ -32,7 +32,7 @@ export default function LiveVisitorBadge({ style = {} }) {
 
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
-      fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
       padding: '4px 10px', borderRadius: 99,
       background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)',
       color: 'var(--green)', ...style }}>

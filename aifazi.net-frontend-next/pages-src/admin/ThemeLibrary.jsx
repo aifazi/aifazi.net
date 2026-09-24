@@ -51,9 +51,9 @@ function FwMenuPreview({ id }) {
   </div>
 }
 function FwNotifyPreview({ id }) {
-  const p = { cyber:<div style={{ background:'color-mix(in srgb, var(--green) 7%, transparent)', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)', padding:'9px 10px 9px 34px', position:'relative', overflow:'hidden', width:'100%' }}><div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:_G }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontFamily:_FM, fontSize:11, color:_G }}>✓</div><div style={{ fontFamily:_FM, fontSize: 11, color:_G, marginBottom:1 }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, pill:<div style={{ background:'color-mix(in srgb, var(--green) 8%, transparent)', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)', borderRadius:999, padding:'7px 14px 7px 10px', display:'flex', alignItems:'center', gap:7 }}><span style={{ fontSize:12, color:_G }}>✓</span><span style={{ fontFamily:_FM, fontSize:10, color:_TX }}>Changes saved!</span></div>, minimal:<div style={{ background:_BG2, border:`1px solid ${_BD}`, borderRadius:7, padding:'9px 12px', width:'100%' }}><div style={{ fontFamily:_FM, fontSize: 11, color:_G, letterSpacing:1, marginBottom:2 }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, terminal:<div style={{ background:'#0a0f0a', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', padding:'7px 10px', width:'100%' }}><span style={{ fontFamily:_FM, fontSize:10, color:_G, fontWeight:700, marginRight:6 }}>[SUCCESS]</span><span style={{ fontFamily:_FM, fontSize:10, color:'#a0d0a0' }}>Saved!</span></div>, glass:<div style={{ background:'rgba(10,20,30,0.7)', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', borderRadius:9, padding:'9px 10px 9px 34px', backdropFilter:'blur(16px)', position:'relative', width:'100%' }}><div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:_G, borderRadius:'9px 0 0 9px' }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontSize:12, color:_G }}>✓</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, banner:<div style={{ background:'color-mix(in srgb, var(--green) 7%, transparent)', borderLeft:'3px solid '+_G, padding:'8px 12px', display:'flex', alignItems:'center', gap:7, width:'100%' }}><span style={{ fontSize:10, color:_G }}>✓</span><span style={{ fontFamily:_FM, fontSize:10, color:_TX }}>Site updated.</span></div> }
-  p.float = <div style={{ background:_BG2, border:`1px solid ${_BD}`, borderRadius:8, padding:9, width:'100%', boxShadow:'0 10px 22px rgba(0,0,0,.35)' }}><div style={{ display:'flex', gap:7, alignItems:'center' }}><span style={{ width:18, height:18, borderRadius:5, background:'color-mix(in srgb, var(--green) 12%, transparent)', color:_G, display:'grid', placeItems:'center', fontSize:10 }}>✓</span><div><div style={{ fontFamily:_FM, fontSize: 11, color:_G }}>Saved</div><div style={{ fontFamily:_FM, fontSize: 11, color:_MT }}>12:04 · aifazi.net</div></div></div></div>
-  p.glitch = <div style={{ background:'rgba(255,71,87,.08)', border:'1px solid var(--red)', padding:'9px 10px', width:'100%', position:'relative', overflow:'hidden' }}><div style={{ fontFamily:_FM, fontSize: 11, color:'var(--red)', letterSpacing:2 }}>[ALERT]</div><div style={{ fontFamily:_FM, fontSize:10, color:'var(--red)', textShadow:`2px 0 ${_CY}` }}>SYNC COMPLETE</div></div>
+  const p = { cyber:<div style={{ background:'color-mix(in srgb, var(--green) 7%, transparent)', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)', padding:'9px 10px 9px 34px', position:'relative', overflow:'hidden', width:'100%' }}><div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:_G }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontFamily:_FM, fontSize:11, color:_G }}>✓</div><div style={{ fontFamily:_FM, fontSize: 11, color:_G, marginBottom:1 }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, pill:<div style={{ background:'color-mix(in srgb, var(--green) 8%, transparent)', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)', borderRadius:999, padding:'7px 14px 7px 10px', display:'flex', alignItems:'center', gap:7 }}><span style={{ fontSize:12, color:_G }}>✓</span><span style={{ fontFamily:_FM, fontSize: 11, color:_TX }}>Changes saved!</span></div>, minimal:<div style={{ background:_BG2, border:`1px solid ${_BD}`, borderRadius:7, padding:'9px 12px', width:'100%' }}><div style={{ fontFamily:_FM, fontSize: 11, color:_G, letterSpacing:1, marginBottom:2 }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, terminal:<div style={{ background:'#0a0f0a', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', padding:'7px 10px', width:'100%' }}><span style={{ fontFamily:_FM, fontSize: 11, color:_G, fontWeight:700, marginRight:6 }}>[SUCCESS]</span><span style={{ fontFamily:_FM, fontSize: 11, color:'#a0d0a0' }}>Saved!</span></div>, glass:<div style={{ background:'rgba(10,20,30,0.7)', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', borderRadius:9, padding:'9px 10px 9px 34px', backdropFilter:'blur(16px)', position:'relative', width:'100%' }}><div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:_G, borderRadius:'9px 0 0 9px' }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontSize:12, color:_G }}>✓</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, banner:<div style={{ background:'color-mix(in srgb, var(--green) 7%, transparent)', borderLeft:'3px solid '+_G, padding:'8px 12px', display:'flex', alignItems:'center', gap:7, width:'100%' }}><span style={{ fontSize: 11, color:_G }}>✓</span><span style={{ fontFamily:_FM, fontSize: 11, color:_TX }}>Site updated.</span></div> }
+  p.float = <div style={{ background:_BG2, border:`1px solid ${_BD}`, borderRadius:8, padding:9, width:'100%', boxShadow:'0 10px 22px rgba(0,0,0,.35)' }}><div style={{ display:'flex', gap:7, alignItems:'center' }}><span style={{ width:18, height:18, borderRadius:5, background:'color-mix(in srgb, var(--green) 12%, transparent)', color:_G, display:'grid', placeItems:'center', fontSize: 11 }}>✓</span><div><div style={{ fontFamily:_FM, fontSize: 11, color:_G }}>Saved</div><div style={{ fontFamily:_FM, fontSize: 11, color:_MT }}>12:04 · aifazi.net</div></div></div></div>
+  p.glitch = <div style={{ background:'rgba(255,71,87,.08)', border:'1px solid var(--red)', padding:'9px 10px', width:'100%', position:'relative', overflow:'hidden' }}><div style={{ fontFamily:_FM, fontSize: 11, color:'var(--red)', letterSpacing:2 }}>[ALERT]</div><div style={{ fontFamily:_FM, fontSize: 11, color:'var(--red)', textShadow:`2px 0 ${_CY}` }}>SYNC COMPLETE</div></div>
   p.inbox = <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:3 }}>{[0,1,2].map(i=><div key={i} style={{ display:'flex', gap:5, alignItems:'center', background:i===0?'color-mix(in srgb, var(--green) 8%, transparent)':_BG2, border:`1px solid ${_BD}`, borderRadius:5, padding:'4px 6px' }}><span style={{ width:5, height:5, borderRadius:'50%', background:i===0?_G:_MT }}/><span style={{ fontFamily:_FM, fontSize: 11, color:i===0?_TX:_MT }}>Message {i+1}</span></div>)}</div>
   p.hud = <div style={{ marginLeft:'auto', width:92, background:'color-mix(in srgb, var(--cyan) 6%, transparent)', border:`1px solid ${_CY}55`, padding:'6px 7px', clipPath:'polygon(0 0,100% 0,100% 75%,88% 100%,0 100%)' }}><div style={{ fontFamily:_FM, fontSize: 11, color:_CY, letterSpacing:2 }}>HUD</div><div style={{ fontFamily:_FM, fontSize: 11, color:_TX }}>ONLINE</div></div>
   p.holo = <div style={{ background:'rgba(8,20,32,0.85)', border:'1px solid rgba(0,229,255,0.45)', borderRadius:14, padding:'9px 10px 9px 34px', position:'relative', boxShadow:'0 0 16px rgba(0,229,255,0.15)', width:'100%' }}><div style={{ position:'absolute', left:5, top:5, width:7, height:7, borderLeft:'1px solid rgba(0,229,255,0.5)', borderTop:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', right:5, bottom:5, width:7, height:7, borderRight:'1px solid rgba(0,229,255,0.5)', borderBottom:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', width:14, height:14, borderRadius:'50%', border:`1px solid ${_CY}88`, display:'flex', alignItems:'center', justifyContent:'center', fontSize: 11, color:_CY }}>✓</div><div style={{ fontFamily:_FM, fontSize: 11, color:_CY }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>
@@ -178,7 +178,7 @@ function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
           </div>
           {isActive && <span style={{ ..._tag(pkg.accent), whiteSpace: 'nowrap' }}>{isCustomized ? 'CUSTOMIZED' : 'ACTIVE'}</span>}
         </div>
-        <div style={{ fontFamily: _FM, fontSize: 10, color: muted, lineHeight: 1.6, minHeight: 34 }}>{pkg.desc}</div>
+        <div style={{ fontFamily: _FM, fontSize: 11, color: muted, lineHeight: 1.6, minHeight: 34 }}>{pkg.desc}</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 12 }}>
           {[s.globalTheme, s.headerStyle, s.menuStyle, s.dialogStyle, s.inputStyle, s.loadingScreenStyle].map((x, i) => (
             <span key={`${x}-${i}`} style={{ fontFamily: _FM, fontSize: 11, color: text, background: isLight ? '#f3f4f6' : 'rgba(255,255,255,.06)', border: `1px solid ${border}`, borderRadius: 999, padding: '3px 7px' }}>{x}</span>
@@ -186,7 +186,7 @@ function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
         </div>
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <span style={{ fontFamily: _FM, fontSize: 11, color: muted }}>{isSaving ? 'Applying package...' : 'Apply as starting point'}</span>
-          <span style={{ fontFamily: _FM, fontSize: 10, color: isActive ? pkg.accent : '#000', background: isActive ? `${pkg.accent}18` : pkg.accent, border: `1px solid ${pkg.accent}`, borderRadius: 5, padding: '7px 11px', fontWeight: 800 }}>{isActive ? 'SELECTED' : 'APPLY'}</span>
+          <span style={{ fontFamily: _FM, fontSize: 11, color: isActive ? pkg.accent : '#000', background: isActive ? `${pkg.accent}18` : pkg.accent, border: `1px solid ${pkg.accent}`, borderRadius: 5, padding: '7px 11px', fontWeight: 800 }}>{isActive ? 'SELECTED' : 'APPLY'}</span>
         </div>
       </div>
     </button>
@@ -219,7 +219,7 @@ function FwNavRail({ active, onNav, draft, siteConfig }) {
     <div style={{ fontFamily:_FM, fontSize: 11, letterSpacing:3, color:_MT, paddingBottom:8, marginBottom:4, borderBottom:`1px solid ${_BD}` }}>CATEGORIES</div>
     {FRAMEWORK_CATEGORIES.map(cat=>{
       const isActive=active===cat.id, changed=draft[cat.configKey]!==(siteConfig?.[cat.configKey]||DEFAULT_FRAMEWORK[cat.configKey])
-      return <button key={cat.id} onClick={()=>onNav(cat.id)} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'10px', borderRadius:6, border:'none', background:isActive?`${cat.color}18`:'transparent', color:isActive?cat.color:_MT, cursor:'pointer', fontFamily:_FM, fontSize:10, letterSpacing:0.5, transition:'all 0.12s', position:'relative', marginBottom:2, boxShadow:isActive?`inset 0 0 0 1px ${cat.color}40`:'none' }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.color=_TX}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background='transparent';e.currentTarget.style.color=_MT}}}>
+      return <button key={cat.id} onClick={()=>onNav(cat.id)} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'10px', borderRadius:6, border:'none', background:isActive?`${cat.color}18`:'transparent', color:isActive?cat.color:_MT, cursor:'pointer', fontFamily:_FM, fontSize: 11, letterSpacing:0.5, transition:'all 0.12s', position:'relative', marginBottom:2, boxShadow:isActive?`inset 0 0 0 1px ${cat.color}40`:'none' }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.color=_TX}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background='transparent';e.currentTarget.style.color=_MT}}}>
         {isActive&&<span style={{ position:'absolute', left:0, top:'15%', bottom:'15%', width:2, borderRadius:'0 2px 2px 0', background:cat.color }}/>}
         <span style={{ fontSize:15, width:20, textAlign:'center' }}>{cat.icon}</span>
         <span style={{ flex:1, textAlign:'left' }}>{cat.label}</span>
@@ -245,9 +245,9 @@ function ColorRow({ label, value, onChange }) {
       <input type="color" value={value.startsWith('rgba') ? '#888888' : value}
         onChange={e => onChange(e.target.value)}
         style={{ width: 28, height: 28, padding: 2, border: '1px solid var(--border)', background: 'none', cursor: 'pointer', borderRadius: 4 }} />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', flex: '0 0 70px' }}>{label}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flex: '0 0 70px' }}>{label}</span>
       <input value={value} onChange={e => onChange(e.target.value)}
-        style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', outline: 'none', padding: '4px 8px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', borderRadius: 4 }} />
+        style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', outline: 'none', padding: '4px 8px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', borderRadius: 4 }} />
     </div>
   )
 }
@@ -279,7 +279,7 @@ function FontPicker({ value, options, groups, placeholder = '↺ Theme default',
   return (
     <div ref={ref} style={{ position: 'relative', marginBottom: bare ? 0 : 14 }}>
       <button type="button" onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: 'var(--bg3)', border: `1px solid ${open ? 'var(--green)' : 'var(--border)'}`, color: 'var(--text)', padding: '8px 10px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer', transition: 'border-color 0.15s' }}>
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: 'var(--bg3)', border: `1px solid ${open ? 'var(--green)' : 'var(--border)'}`, color: 'var(--text)', padding: '8px 10px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer', transition: 'border-color 0.15s' }}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: value ? `'${value}', sans-serif` : 'var(--font-mono)', fontSize: value ? 13 : 10, color: value ? 'var(--text)' : 'var(--muted)' }}>
           {value || placeholder}
         </span>
@@ -288,7 +288,7 @@ function FontPicker({ value, options, groups, placeholder = '↺ Theme default',
       {open && (
         <div style={{ position: 'absolute', zIndex: 60, left: 0, right: 0, ...(dir === 'up' ? { bottom: 'calc(100% + 6px)' } : { top: 'calc(100% + 6px)' }), background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 8, boxShadow: '0 18px 40px rgba(0,0,0,0.5), 0 0 18px color-mix(in srgb, var(--green) 12%, transparent)', overflow: 'hidden' }}>
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="🔍 Search fonts…"
-            style={{ width: '100%', background: 'var(--bg)', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
+            style={{ width: '100%', background: 'var(--bg)', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
           <div style={{ maxHeight: 250, overflowY: 'auto' }}>
             {sections.length === 0 && (
               <div style={{ padding: '14px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>No fonts match &quot;{query}&quot;.</div>
@@ -305,8 +305,8 @@ function FontPicker({ value, options, groups, placeholder = '↺ Theme default',
                       onClick={() => { onChange(o.id); setOpen(false); setQuery('') }}
                       style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '7px 12px', background: active ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.03)', color: 'var(--text)', cursor: 'pointer' }}>
                       <span style={{ fontFamily: `'${o.label}', sans-serif`, fontSize: 14, width: 36, flexShrink: 0, color: active ? 'var(--green)' : 'var(--text)' }}>Aa</span>
-                      <span style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.label}</span>
-                      {active && <span style={{ color: 'var(--green)', fontSize: 10, flexShrink: 0 }}>✓</span>}
+                      <span style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.label}</span>
+                      {active && <span style={{ color: 'var(--green)', fontSize: 11, flexShrink: 0 }}>✓</span>}
                     </button>
                   )
                 })}
@@ -334,7 +334,7 @@ function ColorEdit({ token, label, value, defaultValue, onColor }) {
       <div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--muted)' }}>{label.toUpperCase()}</div>
         <input value={value || ''} onChange={e => onColor(token, e.target.value)}
-          style={{ width: 128, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', borderRadius: 4 }} />
+          style={{ width: 128, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', borderRadius: 4 }} />
       </div>
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', maxWidth: 200 }}>
         {NEON_SWATCHES.map(s => (
@@ -600,7 +600,7 @@ function CustomizePreviewModal({ open, onClose, draft, options, colorDefaults, o
                     </div>
                   </PreviewTarget>
                   <PreviewTarget token="fontMono" label="Code block · mono font" edit={edit} hover={hover} onHover={setHover} onEdit={setEdit} style={{ display: 'block', width: '100%' }}>
-                    <div style={{ fontFamily: fM, fontSize: 10, lineHeight: 1.7, color: 'var(--text)', background: 'var(--bg)', border: 'var(--border-w) solid var(--border)', borderRadius: 'var(--radius)', padding: 12 }}>
+                    <div style={{ fontFamily: fM, fontSize: 11, lineHeight: 1.7, color: 'var(--text)', background: 'var(--bg)', border: 'var(--border-w) solid var(--border)', borderRadius: 'var(--radius)', padding: 12 }}>
                       <span style={{ color: 'var(--muted)' }}>$</span> deploy --prod&nbsp;&nbsp;<span style={{ color: 'var(--muted)' }}># mono font</span>
                       <br />const <span style={{ color: 'var(--green)' }}>glow</span> = <span style={{ color: 'var(--orange)' }}>true</span><span style={{ color: 'var(--muted)' }}>;</span>
                     </div>
@@ -749,7 +749,7 @@ function customHistReducer(state, action) {
 function TabBtn({ id, label, active, onSelect }) {
   return (
     <button onClick={onSelect} style={{
-      fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '9px 16px',
+      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '9px 16px',
       background: active ? 'var(--green)' : 'transparent',
       color: active ? '#000' : 'var(--muted)',
       border: 'none', cursor: 'pointer', borderRadius: 8,
@@ -1958,7 +1958,7 @@ function ThemeLibrary() {
               })()}
             </div>
             <div style={{ fontFamily: _FD, fontSize: 24, fontWeight: 800, color: _TX, marginBottom: 6 }}>One click changes the whole UI system</div>
-            <div style={{ fontFamily: _FM, fontSize: 10, color: _MT, lineHeight: 1.7, maxWidth: 920 }}>
+            <div style={{ fontFamily: _FM, fontSize: 11, color: _MT, lineHeight: 1.7, maxWidth: 920 }}>
               Each package applies a coordinated set of theme, header, footer, menu, dialog, notification, input, surface, background, loading, and animation settings. After applying one, all manual controls below stay available for fine tuning.
             </div>
           </div>
@@ -2022,13 +2022,13 @@ function ThemeLibrary() {
               </label>
             ))}
             {!applyParts.appearance && !applyParts.framework && !applyParts.backgrounds && (
-              <div style={{ fontFamily: _FM, fontSize: 10, color: '#ff4757', marginTop: 6 }}>Select at least one part to apply.</div>
+              <div style={{ fontFamily: _FM, fontSize: 11, color: '#ff4757', marginTop: 6 }}>Select at least one part to apply.</div>
             )}
             <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-              <button onClick={() => setApplyTarget(null)} style={{ fontFamily: _FM, fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: 'transparent', color: _MT, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 6, flex: 1 }}>CANCEL</button>
+              <button onClick={() => setApplyTarget(null)} style={{ fontFamily: _FM, fontSize: 11, letterSpacing: 1, padding: '10px 18px', background: 'transparent', color: _MT, border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 6, flex: 1 }}>CANCEL</button>
               <button disabled={savingPackage === applyTarget.id || (!applyParts.appearance && !applyParts.framework && !applyParts.backgrounds)}
                 onClick={() => applyThemePackage(applyTarget, applyParts)}
-                style={{ fontFamily: _FM, fontSize: 10, letterSpacing: 1, padding: '10px 18px', background: applyTarget.accent, color: '#000', border: 'none', cursor: savingPackage === applyTarget.id ? 'wait' : 'pointer', borderRadius: 6, flex: 1, fontWeight: 800, opacity: (!applyParts.appearance && !applyParts.framework && !applyParts.backgrounds) ? 0.4 : 1 }}>
+                style={{ fontFamily: _FM, fontSize: 11, letterSpacing: 1, padding: '10px 18px', background: applyTarget.accent, color: '#000', border: 'none', cursor: savingPackage === applyTarget.id ? 'wait' : 'pointer', borderRadius: 6, flex: 1, fontWeight: 800, opacity: (!applyParts.appearance && !applyParts.framework && !applyParts.backgrounds) ? 0.4 : 1 }}>
                 {savingPackage === applyTarget.id ? 'APPLYING…' : '✓ APPLY SELECTED'}
               </button>
             </div>
@@ -2263,7 +2263,7 @@ function ThemeLibrary() {
       {activeTab === 'animations' && (
         <div>
           {/* Info bar */}
-          <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ marginBottom: 14, padding: '12px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <span>All animations live in <code style={{ color: 'var(--green)', background: 'color-mix(in srgb, var(--green) 8%, transparent)', padding: '1px 6px' }}>index.css</code> and inherit active theme colors. Click any card to select, then copy the class name.</span>
             {selectedAnim && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -2416,7 +2416,7 @@ function ThemeLibrary() {
 
                   {/* Labels */}
                   <div style={{ width: '100%' }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: isSelected ? currentDef.primary : 'var(--text)', letterSpacing: 1, marginBottom: 2 }}>{anim.name}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: isSelected ? currentDef.primary : 'var(--text)', letterSpacing: 1, marginBottom: 2 }}>{anim.name}</div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 4 }}>{anim.desc}</div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: catColor, opacity: 0.8, lineHeight: 1.4 }}>Use: {anim.use}</div>
                   </div>
@@ -2437,7 +2437,7 @@ function ThemeLibrary() {
       {/* -- LIVE PREVIEW TAB -- */}
       {activeTab === 'preview' && (
         <div>
-          <div style={{ marginBottom: 14, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+          <div style={{ marginBottom: 14, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
             Select a theme to render a full admin UI mockup. Click <strong style={{ color: 'var(--green)' }}>APPLY</strong> to activate site-wide.
           </div>
           {/* Theme strip */}
@@ -2464,7 +2464,7 @@ function ThemeLibrary() {
             <div style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', background: displayDef.bg2, borderBottom: `1px solid ${displayDef.border}`, gap: 16 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: displayDef.primary, letterSpacing: 2 }}>AIFAZI</div>
               <div style={{ flex: 1, display: 'flex', gap: 16 }}>
-                {['Home','Blog','Tools','Forum'].map(n => <span key={n} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: displayDef.muted }}>{n}</span>)}
+                {['Home','Blog','Tools','Forum'].map(n => <span key={n} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: displayDef.muted }}>{n}</span>)}
               </div>
               <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${displayDef.primary}22`, border: `1px solid ${displayDef.primary}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>⭐</div>
             </div>
@@ -2472,11 +2472,11 @@ function ThemeLibrary() {
               <div style={{ width: 150, background: displayDef.bg2, borderRight: `1px solid ${displayDef.border}`, padding: '14px 0', flexShrink: 0 }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: displayDef.muted, padding: '0 12px 8px' }}>OVERVIEW</div>
                 {['Dashboard','Posts','Media'].map((item, i) => (
-                  <div key={item} style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 10, color: i === 0 ? displayDef.primary : displayDef.muted, background: i === 0 ? `${displayDef.primary}0d` : 'transparent', borderLeft: `2px solid ${i === 0 ? displayDef.primary : 'transparent'}` }}>{item}</div>
+                  <div key={item} style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, color: i === 0 ? displayDef.primary : displayDef.muted, background: i === 0 ? `${displayDef.primary}0d` : 'transparent', borderLeft: `2px solid ${i === 0 ? displayDef.primary : 'transparent'}` }}>{item}</div>
                 ))}
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: displayDef.muted, padding: '12px 12px 8px' }}>SYSTEM</div>
                 {['DB Monitor','Mail','🎨 Themes'].map(item => (
-                  <div key={item} style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 10, color: item.includes('Themes') ? displayDef.primary : displayDef.muted }}>{item}</div>
+                  <div key={item} style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, color: item.includes('Themes') ? displayDef.primary : displayDef.muted }}>{item}</div>
                 ))}
               </div>
               <div style={{ flex: 1, padding: '18px 22px', overflow: 'hidden' }}>
@@ -2529,7 +2529,7 @@ function ThemeLibrary() {
                 }}>CANCEL PREVIEW</button>
               </>
             ) : (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: '10px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 6 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '10px 16px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 6 }}>
                 ? <span style={{ color: currentDef.primary }}>{currentDef.name}</span> is already the active theme
               </div>
             )}
@@ -2539,7 +2539,7 @@ function ThemeLibrary() {
       {/* -- COMPARE TAB -- */}
       {activeTab === 'compare' && (
         <div>
-          <div style={{ marginBottom: 16, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.8 }}>
+          <div style={{ marginBottom: 16, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.8 }}>
             Pick two themes to compare side-by-side. Click <strong style={{ color: 'var(--green)' }}>A</strong> or <strong style={{ color: 'var(--cyan)' }}>B</strong> to assign a slot, then see them rendered together.
           </div>
           {/* Selector row */}
@@ -2646,7 +2646,7 @@ function ThemeLibrary() {
           ) : (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>
                   {favorites.length} SAVED THEME{favorites.length > 1 ? 'S' : ''}
                 </span>
                 <button onClick={() => { setFavorites([]); try { localStorage.removeItem('tl_favorites') } catch {} }}
@@ -2705,7 +2705,7 @@ function ThemeLibrary() {
           <div>
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 3, marginBottom: 6 }}>CUSTOM THEME BUILDER</div>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7, margin: 0 }}>
                 Craft your own theme. Copy the exported CSS variables into your <code style={{ color: 'var(--green)' }}>index.css</code>.
               </p>
             </div>
@@ -2738,23 +2738,23 @@ function ThemeLibrary() {
             {/* Actions */}
             <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
               <button disabled title="Preview only — export CSS/JSON to use this theme" style={{
-                flex: 1, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '10px 16px',
+                flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '10px 16px',
                 background: `linear-gradient(135deg, ${custom.primary}, ${custom.secondary})`,
                 border: 'none', color: '#000', borderRadius: 6, fontWeight: 800,
                 opacity: 0.6, cursor: 'not-allowed',
               }}>Preview only — export CSS/JSON</button>
               <button onClick={exportCustom} style={{
-                flex: 1, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '10px 16px',
+                flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '10px 16px',
                 background: exported ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
                 border: `1px solid ${exported ? 'var(--green)' : 'var(--border)'}`,
                 color: exported ? 'var(--green)' : 'var(--muted)', cursor: 'pointer', borderRadius: 6,
               }}>{exported ? '✅ COPIED' : '⬇️ EXPORT CSS'}</button>
               <button onClick={exportCustomJSON} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '10px 14px',
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '10px 14px',
                 background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6,
               }}>{ '{}'} JSON</button>
               <button onClick={() => setCustom(DEFAULT_CUSTOM)} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '10px 14px',
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '10px 14px',
                 background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6,
               }}>?</button>
             </div>
@@ -2766,7 +2766,7 @@ function ThemeLibrary() {
             <div style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', background: custom.bg2, borderBottom: `1px solid ${custom.border}`, gap: 16 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: custom.primary, letterSpacing: 2 }}>AIFAZI</div>
               <div style={{ flex: 1, display: 'flex', gap: 16 }}>
-                {['Home', 'Blog', 'Tools', 'Forum'].map(n => <span key={n} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: custom.muted }}>{n}</span>)}
+                {['Home', 'Blog', 'Tools', 'Forum'].map(n => <span key={n} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: custom.muted }}>{n}</span>)}
               </div>
               <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${custom.primary}22`, border: `1px solid ${custom.primary}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>⭐</div>
             </div>
@@ -2774,7 +2774,7 @@ function ThemeLibrary() {
             <div style={{ display: 'flex', minHeight: 280 }}>
               <div style={{ width: 140, background: custom.bg2, borderRight: `1px solid ${custom.border}`, padding: '12px 0' }}>
                 {['Dashboard', 'Posts', 'Media', 'Settings'].map((item, i) => (
-                  <div key={item} style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 10, color: i === 0 ? custom.primary : custom.muted, background: i === 0 ? `${custom.primary}10` : 'transparent', borderLeft: `2px solid ${i === 0 ? custom.primary : 'transparent'}` }}>{item}</div>
+                  <div key={item} style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, color: i === 0 ? custom.primary : custom.muted, background: i === 0 ? `${custom.primary}10` : 'transparent', borderLeft: `2px solid ${i === 0 ? custom.primary : 'transparent'}` }}>{item}</div>
                 ))}
               </div>
               <div style={{ flex: 1, padding: '18px 20px' }}>
@@ -2821,7 +2821,7 @@ function ThemeLibrary() {
                 <button key={cat.id} onClick={() => handleFwNav(cat.id)} style={{ fontFamily: _FM, fontSize: 11, letterSpacing: 1, padding: '5px 12px', borderRadius: 99, cursor: 'pointer', background: fwActive === cat.id ? `${cat.color}18` : 'transparent', border: `1px solid ${fwActive === cat.id ? cat.color + '66' : _BD}`, color: fwActive === cat.id ? cat.color : _MT, display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s' }}>
                   <span style={{ fontSize: 12 }}>{cat.icon}</span>
                   <span>{val}</span>
-                  {fwSaving && <span style={{ fontSize: 10 }}>⏳</span>}
+                  {fwSaving && <span style={{ fontSize: 11 }}>⏳</span>}
                 </button>
               )
             })}
@@ -2874,7 +2874,7 @@ function ThemeLibrary() {
                             }}>
                               <span style={{ fontSize:16 }}>{pos.icon}</span>
                               <div style={{ textAlign:'left' }}>
-                                <div style={{ fontFamily:_FM, fontSize:10, fontWeight:700, color: isActive ? 'rgba(255,107,53,0.9)' : _TX, letterSpacing:0.5 }}>{pos.label}</div>
+                                <div style={{ fontFamily:_FM, fontSize: 11, fontWeight:700, color: isActive ? 'rgba(255,107,53,0.9)' : _TX, letterSpacing:0.5 }}>{pos.label}</div>
                               </div>
                               {isActive && <span style={{ marginLeft:4, fontFamily:_FM, fontSize: 11, color:'rgba(255,107,53,0.9)' }}>✓</span>}
                             </button>
@@ -2894,7 +2894,7 @@ function ThemeLibrary() {
                     <div style={{ fontFamily: _FD, fontSize: 14, fontWeight: 600, color: _TX, marginBottom: 2 }}>Reset to Factory Defaults</div>
                     <div style={{ fontFamily: _FM, fontSize: 11, color: _MT }}>Restore all framework styles to defaults: cyber menus, cyber dialogs, cyber inputs, cyber-grid surfaces, cyber buttons, cyber cards, cyber tables and pill badges.</div>
                   </div>
-                  <button onClick={handleFwReset} style={{ flexShrink: 0, fontFamily: _FM, fontSize: 10, letterSpacing: 1, padding: '8px 18px', background: 'transparent', border: '1px solid rgba(255,71,87,0.4)', color: 'var(--red)', cursor: 'pointer', borderRadius: 6 }}>↺ RESET DEFAULTS</button>
+                  <button onClick={handleFwReset} style={{ flexShrink: 0, fontFamily: _FM, fontSize: 11, letterSpacing: 1, padding: '8px 18px', background: 'transparent', border: '1px solid rgba(255,71,87,0.4)', color: 'var(--red)', cursor: 'pointer', borderRadius: 6 }}>↺ RESET DEFAULTS</button>
                 </div>
               </div>
             </div>
@@ -2903,7 +2903,7 @@ function ThemeLibrary() {
           {/* Saving indicator replaces old sticky save bar */}
           {fwSaving && (
             <div style={{ position: 'sticky', bottom: 0, zIndex: 50, padding: '10px 0 4px', background: `linear-gradient(0deg, ${_BG} 60%, transparent)`, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: _FM, fontSize: 10, color: _G }}>● Saving…</span>
+              <span style={{ fontFamily: _FM, fontSize: 11, color: _G }}>● Saving…</span>
             </div>
           )}
 
@@ -2973,7 +2973,7 @@ function ThemeLibrary() {
 
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
               {savingBg
-                ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)' }}>⏳ Applying…</div>
+                ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)' }}>⏳ Applying…</div>
                 : <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>✅ Changes are saved and applied automatically when selected.</div>
               }
             </div>
@@ -2987,7 +2987,7 @@ function ThemeLibrary() {
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
             <input value={moreSearch} onChange={e => setMoreSearch(e.target.value)}
               placeholder="🔍 Search themes…"
-              style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
+              style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {['ALL', 'NEW', 'DARK', 'LIGHT', 'STYLE', 'GAME'].map(tag => {
                 const on = moreTag === tag
@@ -3016,7 +3016,7 @@ function ThemeLibrary() {
                     <span style={{ display: 'flex', gap: 3 }}>
                       {[t.bg, t.primary, t.secondary].map((c, i) => <span key={i} style={{ width: 12, height: 12, borderRadius: 3, background: c, border: '1px solid rgba(255,255,255,0.12)' }} />)}
                     </span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)' }}>{t.name}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{t.name}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{t.tag}</span>
                     {isNew && <span title={`NEW · ${newThemeDaysLeft(t.id)}d left`} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 50%, transparent)', borderRadius: 4, padding: '1px 5px' }}>NEW<button onClick={e => { e.stopPropagation(); dismissNew(t.id) }} title="Clear NEW badge" aria-label={`Clear NEW badge for ${t.name}`} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 11, padding: '0 0 0 3px', lineHeight: 1 }}>✕</button></span>}
                     {isActive && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: t.primary }}>● ACTIVE</span>}
@@ -3050,7 +3050,7 @@ function ThemeLibrary() {
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
             <input value={styleQuery} onChange={e => setStyleQuery(e.target.value)}
               placeholder="🔍 Search templates…"
-              style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
+              style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {styleLibTags.map(tag => {
                 const on = styleTag === tag
@@ -3079,7 +3079,7 @@ function ThemeLibrary() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)' }}>{tpl.name}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{tpl.name}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{tpl.tag}</span>
                   </div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.5 }}>{tpl.desc}</div>
@@ -3157,19 +3157,19 @@ function ThemeLibrary() {
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
                 <input value={fontSearch} onChange={e => setFontSearch(e.target.value)}
                   placeholder="🔍 Search fonts… (Google CDN + your uploads)"
-                  style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none' }} />
+                  style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
                 <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" style={{ display: 'none' }}
                   onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadFont(f) }} />
                 <button onClick={() => fontInputRef.current?.click()} disabled={uploadingFont}
-                  style={{ flexShrink: 0, padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: uploadingFont ? 'wait' : 'pointer', background: uploadingFont ? 'var(--bg3)' : 'color-mix(in srgb, var(--purple) 18%, transparent)', color: uploadingFont ? 'var(--muted)' : 'var(--purple)', border: '1px solid color-mix(in srgb, var(--purple) 40%, transparent)', borderRadius: 8 }}>
+                  style={{ flexShrink: 0, padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: uploadingFont ? 'wait' : 'pointer', background: uploadingFont ? 'var(--bg3)' : 'color-mix(in srgb, var(--purple) 18%, transparent)', color: uploadingFont ? 'var(--muted)' : 'var(--purple)', border: '1px solid color-mix(in srgb, var(--purple) 40%, transparent)', borderRadius: 8 }}>
                   {uploadingFont ? 'UPLOADING…' : '⬆ UPLOAD FONT'}
                 </button>
                 <button onClick={() => setUrlModalOpen(true)}
-                  style={{ flexShrink: 0, padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--cyan) 14%, transparent)', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', borderRadius: 8 }}>
+                  style={{ flexShrink: 0, padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--cyan) 14%, transparent)', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', borderRadius: 8 }}>
                   🔗 ADD FROM URL
                 </button>
                 <button onClick={() => setCustomizePreviewOpen(true)}
-                  style={{ flexShrink: 0, padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--green) 12%, transparent)', color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 8 }}>
+                  style={{ flexShrink: 0, padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--green) 12%, transparent)', color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 8 }}>
                   👁 PREVIEW
                 </button>
               </div>
@@ -3364,7 +3364,7 @@ function ThemeLibrary() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 10 }}>
                   {themePresets.map(p => (
                     <div key={p.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)' }}>{p.name}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{p.name}</div>
                       <div style={{ ...T.sub, margin: 0 }}>from {THEME_DEFS.find(t => t.id === p.originTheme)?.name || p.originTheme} · {new Date(p.createdAt).toLocaleDateString()}</div>
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button onClick={() => applyPreset(p)}
@@ -3422,7 +3422,7 @@ function ThemeLibrary() {
                 const inWindow = (!t.start || new Date(t.start).getTime() <= now) && (!t.end || new Date(t.end).getTime() >= now)
                 return (
                   <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 12px', marginBottom: 8, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'var(--text)' }}>{t.name}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{t.name}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{the?.name || t.themeId} · {t.audience}</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: t.active && inWindow ? 'var(--green)' : 'var(--orange)' }}>
                       {t.active && inWindow ? '● LIVE' : t.active ? '○ SCHEDULED' : '● PAUSED'}
@@ -3450,7 +3450,7 @@ function ThemeLibrary() {
               <textarea value={customDraft.css || ''} onChange={e => setDraft({ css: e.target.value })}
                 spellCheck={false}
                 placeholder={`/* Drop any CSS rules here. Bare declarations are auto-scoped\nto [data-theme="${customTarget}"] — you can also write full rules. */\n\n/* e.g. */\n--radius: 16px;   /* corner radius of cards, inputs, buttons, toasts */\n.footer { opacity: 0.8; }`}
-                style={{ width: '100%', minHeight: 150, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', resize: 'vertical', lineHeight: 1.6 }} />
+                style={{ width: '100%', minHeight: 150, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', resize: 'vertical', lineHeight: 1.6 }} />
               <div style={{ ...T.sub, marginTop: 8 }}>Advanced: fully arbitrary CSS for this theme. Wrapped in <code style={{ color: 'var(--purple)', fontSize: 11 }}>{themeSelector(customTarget)}</code> when you paste bare declarations.</div>
             </div>
 
@@ -3472,25 +3472,25 @@ function ThemeLibrary() {
             {/* Actions */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <button onClick={saveThemeCustom} disabled={savingCustom}
-                style={{ padding: '10px 22px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 2, cursor: savingCustom ? 'wait' : 'pointer', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 8, transition: 'all 0.15s' }}>
+                style={{ padding: '10px 22px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 2, cursor: savingCustom ? 'wait' : 'pointer', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 8, transition: 'all 0.15s' }}>
                 {savingCustom ? 'SAVING…' : `💾 SAVE CUSTOM ${THEME_DEFS.find(t => t.id === customTarget)?.name?.toUpperCase() || customTarget.toUpperCase()}`}
               </button>
               <button onClick={resetThemeCustom}
-                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', background: 'transparent', color: 'var(--red)', border: '1px solid color-mix(in srgb, var(--red) 50%, transparent)', borderRadius: 8, transition: 'all 0.15s' }}>
+                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer', background: 'transparent', color: 'var(--red)', border: '1px solid color-mix(in srgb, var(--red) 50%, transparent)', borderRadius: 8, transition: 'all 0.15s' }}>
                 ↺ RESET THEME
               </button>
               <button onClick={undoCustom} disabled={undoCount === 0}
                 title="Undo (Ctrl+Z)"
-                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, cursor: undoCount === 0 ? 'not-allowed' : 'pointer', background: 'transparent', color: undoCount === 0 ? 'var(--border)' : 'var(--muted)', border: '1px solid var(--border)', borderRadius: 8, transition: 'all 0.15s' }}>
+                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, cursor: undoCount === 0 ? 'not-allowed' : 'pointer', background: 'transparent', color: undoCount === 0 ? 'var(--border)' : 'var(--muted)', border: '1px solid var(--border)', borderRadius: 8, transition: 'all 0.15s' }}>
                 ↶ UNDO
               </button>
               <button onClick={redoCustom} disabled={redoCount === 0}
                 title="Redo (Ctrl+Y / Ctrl+Shift+Z)"
-                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, cursor: redoCount === 0 ? 'not-allowed' : 'pointer', background: 'transparent', color: redoCount === 0 ? 'var(--border)' : 'var(--muted)', border: '1px solid var(--border)', borderRadius: 8, transition: 'all 0.15s' }}>
+                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, cursor: redoCount === 0 ? 'not-allowed' : 'pointer', background: 'transparent', color: redoCount === 0 ? 'var(--border)' : 'var(--muted)', border: '1px solid var(--border)', borderRadius: 8, transition: 'all 0.15s' }}>
                 ↷ REDO
               </button>
               <button onClick={() => setDiffOpen(true)}
-                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, cursor: 'pointer', background: 'transparent', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 50%, transparent)', borderRadius: 8, transition: 'all 0.15s' }}>
+                style={{ padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer', background: 'transparent', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 50%, transparent)', borderRadius: 8, transition: 'all 0.15s' }}>
                 ⤓ VIEW DIFF
               </button>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginLeft: 'auto' }}>
@@ -3524,23 +3524,23 @@ function ThemeLibrary() {
                 <input value={fontUrlInput} onChange={e => setFontUrlInput(e.target.value)}
                   placeholder="https://fonts.gstatic.com/…/font.woff2"
                   onKeyDown={e => { if (e.key === 'Enter' && !savingUrlFont) importFontFromUrl() }}
-                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 14 }} />
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 14 }} />
                 <label style={T.label}>FAMILY NAME (optional — auto-detected from the file)</label>
                 <input value={fontUrlFamily} onChange={e => setFontUrlFamily(e.target.value)}
                   placeholder="e.g. My Custom Font"
-                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 14 }} />
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 14 }} />
                 <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>WEIGHT</label>
                     <select value={fontUrlWeight} onChange={e => setFontUrlWeight(e.target.value)}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
                       {['100', '200', '300', '400', '500', '600', '700', '800', '900'].map(w => <option key={w} value={w}>{w}</option>)}
                     </select>
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>STYLE</label>
                     <select value={fontUrlStyle} onChange={e => setFontUrlStyle(e.target.value)}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
                       <option value="normal">normal</option>
                       <option value="italic">italic</option>
                     </select>
@@ -3548,11 +3548,11 @@ function ThemeLibrary() {
                 </div>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   <button onClick={() => setUrlModalOpen(false)}
-                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
                     CANCEL
                   </button>
                   <button onClick={importFontFromUrl} disabled={savingUrlFont}
-                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: savingUrlFont ? 'wait' : 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
+                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: savingUrlFont ? 'wait' : 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
                     {savingUrlFont ? 'IMPORTING…' : '⬇ IMPORT FONT'}
                   </button>
                 </div>
@@ -3570,14 +3570,14 @@ function ThemeLibrary() {
                 <input value={presetName} onChange={e => setPresetName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') savePreset() }}
                   placeholder="e.g. Midnight Lab"
-                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 20 }} />
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 20 }} />
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   <button onClick={() => setPresetModalOpen(false)}
-                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
                     CANCEL
                   </button>
                   <button onClick={savePreset}
-                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
+                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
                     💾 SAVE PRESET
                   </button>
                 </div>
@@ -3594,14 +3594,14 @@ function ThemeLibrary() {
                 <textarea value={importText} onChange={e => setImportText(e.target.value)} spellCheck={false}
                   rows={7}
                   placeholder={`{\n  "name": "My Look",\n  "draft": { "fontDisplay": "…", "colors": { … }, "glow": 0.5, "css": "" }\n}`}
-                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 20, resize: 'vertical' }} />
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 20, resize: 'vertical' }} />
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   <button onClick={() => setImportModalOpen(false)}
-                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
                     CANCEL
                   </button>
                   <button onClick={importPreset}
-                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
+                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
                     📥 IMPORT
                   </button>
                 </div>
@@ -3614,19 +3614,19 @@ function ThemeLibrary() {
                 <label style={T.label}>TARGET NAME</label>
                 <input value={targetForm.name} onChange={e => setTargetForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. Logged-in users beta"
-                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 14 }} />
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 14 }} />
                 <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>THEME</label>
                     <select value={targetForm.themeId} onChange={e => setTargetForm(f => ({ ...f, themeId: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
                       {THEME_DEFS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>AUDIENCE</label>
                     <select value={targetForm.audience} onChange={e => setTargetForm(f => ({ ...f, audience: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
                       <option value="everyone">everyone</option>
                       <option value="logged-in">logged-in only</option>
                       <option value="anonymous">anonymous only</option>
@@ -3640,12 +3640,12 @@ function ThemeLibrary() {
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>START (optional)</label>
                     <input type="date" value={targetForm.start} onChange={e => setTargetForm(f => ({ ...f, start: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', colorScheme: 'dark' }} />
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', colorScheme: 'dark' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>END (optional)</label>
                     <input type="date" value={targetForm.end} onChange={e => setTargetForm(f => ({ ...f, end: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', colorScheme: 'dark' }} />
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', colorScheme: 'dark' }} />
                   </div>
                 </div>
                 <div style={{ ...T.row, marginBottom: 20 }}>
@@ -3657,11 +3657,11 @@ function ThemeLibrary() {
                 </div>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   <button onClick={() => setTargetModalOpen(false)}
-                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
                     CANCEL
                   </button>
                   <button onClick={saveTarget}
-                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 8 }}>
+                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 8 }}>
                     💾 SAVE TARGET
                   </button>
                 </div>
@@ -3674,19 +3674,19 @@ function ThemeLibrary() {
                 <label style={T.label}>FAMILY NAME</label>
                 <input value={editFontForm.family} onChange={e => setEditFontForm(f => ({ ...f, family: e.target.value }))}
                   placeholder="e.g. Orbitron"
-                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', marginBottom: 14 }} />
+                  style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 14 }} />
                 <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>WEIGHT</label>
                     <select value={editFontForm.weight} onChange={e => setEditFontForm(f => ({ ...f, weight: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
                       {['100', '200', '300', '400', '500', '600', '700', '800', '900'].map(w => <option key={w} value={w}>{w}</option>)}
                     </select>
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>STYLE</label>
                     <select value={editFontForm.style} onChange={e => setEditFontForm(f => ({ ...f, style: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 10, outline: 'none', cursor: 'pointer' }}>
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
                       <option value="normal">normal</option>
                       <option value="italic">italic</option>
                     </select>
@@ -3695,11 +3695,11 @@ function ThemeLibrary() {
                 <div style={{ ...T.sub, marginBottom: 20 }}>Weight and style are used for the @font-face descriptor (font-weight / font-style) so browsers pick the right file.</div>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                   <button onClick={() => setFontMetaOpen(false)}
-                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                    style={{ padding: '9px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
                     CANCEL
                   </button>
                   <button onClick={saveFontMeta}
-                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
+                    style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
                     💾 SAVE FONT
                   </button>
                 </div>
@@ -3715,7 +3715,7 @@ function ThemeLibrary() {
                 {diffRows.length === 0 && <div style={{ ...T.sub, color: 'var(--green)' }}>No differences from the built-in look yet — everything is at default.</div>}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {diffRows.map(r => (
-                    <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 10 }}>
+                    <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11 }}>
                       <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)', flex: 1 }}>{r.label}</span>
                       {r.kind === 'color' && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -3878,7 +3878,7 @@ function ThemeLibrary() {
                           </div>
                         )}
                         {s.id === 'matrix' && (
-                          <div style={{ display: 'flex', gap: 3, fontFamily: 'monospace', fontSize: 10, color: '#00ff88' }}>
+                          <div style={{ display: 'flex', gap: 3, fontFamily: 'monospace', fontSize: 11, color: '#00ff88' }}>
                             {['1','0','1','0','1'].map((c, i) => (
                               <span key={i} style={{ animation: `miniDotBounce 1.2s ${i * 0.15}s ease-in-out infinite`, display: 'inline-block' }}>{c}</span>
                             ))}
@@ -4041,7 +4041,7 @@ function ThemeLibrary() {
             {/* Auto-save indicator */}
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               {savingAppearance
-                ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)' }}>⏳ Saving…</div>
+                ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)' }}>⏳ Saving…</div>
                 : <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>✅ Changes are saved automatically when you select an option above.</div>
               }
             </div>

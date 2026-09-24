@@ -85,7 +85,7 @@ function BlockEditor({ block, onClose, onSave }) {
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
         {cfg.icon} {cfg.name} · <span style={{ color: 'var(--green)' }}>{block.id}</span>
       </div>
 
@@ -134,8 +134,8 @@ function BlockEditor({ block, onClose, onSave }) {
       )}
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-        <button onClick={onClose} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '8px 14px' }}>CANCEL</button>
-        <button onClick={() => onSave(draft)} style={{ ...S.btn('color-mix(in srgb, var(--green) 12%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 45%, transparent)', fontSize: 10, padding: '8px 14px' }}>APPLY</button>
+        <button onClick={onClose} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '8px 14px' }}>CANCEL</button>
+        <button onClick={() => onSave(draft)} style={{ ...S.btn('color-mix(in srgb, var(--green) 12%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 45%, transparent)', fontSize: 11, padding: '8px 14px' }}>APPLY</button>
       </div>
     </div>
   )
@@ -404,17 +404,17 @@ export default function PageBuilder() {
         title="Drag-and-drop page builder"
         subtitle="Pick pre-made blocks from the palette and drag them onto the page, reorder them, edit props, and publish. Row blocks let you place blocks side by side in 2–4 column grids. Pages render at /pages/<slug>."
         actions={<>
-          <button onClick={() => { setShowHistory(v => !v); if (!showHistory) loadRevisions() }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 10, padding: '8px 14px' }}>{showHistory ? '✕ HISTORY' : '◷ HISTORY'}</button>
-          <button onClick={clearPage} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.35)', fontSize: 10, padding: '8px 14px' }}>CLEAR</button>
-          <button onClick={save} disabled={!dirty || saving} style={{ ...S.btn('color-mix(in srgb, var(--green) 12%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 45%, transparent)', fontSize: 10, padding: '8px 14px' }}>{saving ? 'SAVING…' : (dirty ? '● PUBLISH' : 'PUBLISHED ✓')}</button>
+          <button onClick={() => { setShowHistory(v => !v); if (!showHistory) loadRevisions() }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 11, padding: '8px 14px' }}>{showHistory ? '✕ HISTORY' : '◷ HISTORY'}</button>
+          <button onClick={clearPage} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.35)', fontSize: 11, padding: '8px 14px' }}>CLEAR</button>
+          <button onClick={save} disabled={!dirty || saving} style={{ ...S.btn('color-mix(in srgb, var(--green) 12%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 45%, transparent)', fontSize: 11, padding: '8px 14px' }}>{saving ? 'SAVING…' : (dirty ? '● PUBLISH' : 'PUBLISHED ✓')}</button>
         </>}
       />
 
       {/* Slug + page selector */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
         <input value={slug} onChange={e => { setSlug(e.target.value.replace(/[^a-z0-9-_]/gi, '')); setDirty(false) }} placeholder="page slug" spellCheck={false} style={{ ...S.input, fontSize: 12, padding: '9px 12px', fontFamily: 'var(--font-mono)', width: 160 }} />
-        <button onClick={() => loadPage(slug)} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 10, padding: '8px 14px' }}>LOAD</button>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>→ /pages/{slug || '…'}</span>
+        <button onClick={() => loadPage(slug)} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 11, padding: '8px 14px' }}>LOAD</button>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>→ /pages/{slug || '…'}</span>
         <div style={{ flex: 1 }} />
         {pageSlugs.length > 0 && (
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -437,7 +437,7 @@ export default function PageBuilder() {
           ) : revisions.map(rev => (
             <div key={rev.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
               <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>{new Date(rev.created_at).toLocaleString()} — {rev.editor || 'unknown'}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>{new Date(rev.created_at).toLocaleString()} — {rev.editor || 'unknown'}</div>
                 <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{Array.isArray(rev.value) ? `${rev.value.length} blocks` : typeof rev.value === 'object' ? 'snapshot' : ''}</div>
               </div>
               <button onClick={() => restoreRevision(rev)} style={{ ...S.btn('transparent', 'var(--orange)'), border: '1px solid rgba(255,107,53,0.35)', fontSize: 11, padding: '5px 10px', flexShrink: 0 }}>RESTORE</button>
@@ -500,7 +500,7 @@ export default function PageBuilder() {
             ))
           )}
           {layout.length > 0 && insert && insert.path.length === 0 && insert.index >= layout.length && (
-            <div style={{ border: '2px dashed rgba(0,255,136,0.6)', borderRadius: 8, padding: 16, textAlign: 'center', color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>DROP TO ADD AT END</div>
+            <div style={{ border: '2px dashed rgba(0,255,136,0.6)', borderRadius: 8, padding: 16, textAlign: 'center', color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>DROP TO ADD AT END</div>
           )}
         </div>
       </div>

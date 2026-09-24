@@ -434,7 +434,7 @@ export default function AnimationPicker() {
                 flex: 1, padding: '10px 0',
                 background: selected ? 'var(--green)' : 'var(--bg3)',
                 border: `1px solid ${selected ? 'var(--green)' : 'var(--border)'}`,
-                borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+                borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
                 color: selected ? '#000' : 'var(--muted)', fontWeight: 700, cursor: selected ? 'pointer' : 'default',
                 transition: 'all 0.2s', boxShadow: selected ? '0 0 16px color-mix(in srgb, var(--green) 30%, transparent)' : 'none',
               }}

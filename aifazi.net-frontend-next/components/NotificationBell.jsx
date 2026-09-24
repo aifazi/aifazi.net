@@ -53,7 +53,7 @@ const PushCTA = ({ pushState, onEnable, onDisable }) => {
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
           gap: 7, padding: '8px 14px', borderRadius: 5, cursor: 'pointer', transition: 'all 0.18s',
           background: 'color-mix(in srgb, var(--green) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)',
-          color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 10,
+          color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 11,
           letterSpacing: 1.5, fontWeight: 700 }}
         onMouseEnter={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 14%, transparent)'; e.currentTarget.style.boxShadow = '0 0 12px color-mix(in srgb, var(--green) 15%, transparent)' }}
         onMouseLeave={e => { e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 7%, transparent)'; e.currentTarget.style.boxShadow = 'none' }}>
@@ -248,7 +248,7 @@ export default function NotificationBell({ forumUser }) {
                       <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--text)', lineHeight: 1.4, marginBottom: 4 }}>
                         {notif.message}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
                         {formatTime(notif.createdAt)}
                       </div>
                     </div>

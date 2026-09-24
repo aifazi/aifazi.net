@@ -148,7 +148,7 @@ function SearchModal({ onClose, setView, navItems }) {
             placeholder="Search pages and actions…"
             style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:14,
               color:C.text, fontFamily:C.fontUi }} />
-          <kbd style={{ fontFamily:C.fontMono, fontSize:10, color:C.muted, padding:'2px 6px',
+          <kbd style={{ fontFamily:C.fontMono, fontSize: 11, color:C.muted, padding:'2px 6px',
             background:C.bg3, border:`1px solid ${C.border}`, borderRadius:5 }}>ESC</kbd>
         </div>
         {/* Results */}
@@ -157,7 +157,7 @@ function SearchModal({ onClose, setView, navItems }) {
             ? <div style={{ padding:32, textAlign:'center', color:C.muted, fontSize:13, fontFamily:C.fontUi }}>No results</div>
             : Object.entries(grouped).map(([group, items]) => (
               <div key={group}>
-                <div style={{ padding:'6px 16px 3px', fontSize:10, fontWeight:600, letterSpacing:1,
+                <div style={{ padding:'6px 16px 3px', fontSize: 11, fontWeight:600, letterSpacing:1,
                   color:'rgba(255,255,255,0.25)', textTransform:'uppercase', fontFamily:C.fontMono }}>{group}</div>
                 {items.map(item => {
                   const idx = results.indexOf(item); const isCur = idx === cursor
@@ -170,7 +170,7 @@ function SearchModal({ onClose, setView, navItems }) {
                         transition:'background 0.1s', fontFamily:C.fontUi }}>
                       <Icon name={item.icon} size={16} style={{ flexShrink:0, width:20 }} />
                       <span style={{ fontSize:13 }}>{item.label}</span>
-                      {isCur && <span style={{ marginLeft:'auto', fontSize:10, color:'#a78bfa',
+                      {isCur && <span style={{ marginLeft:'auto', fontSize: 11, color:'#a78bfa',
                         padding:'1px 6px', background:'rgba(167,139,250,0.12)', borderRadius:4,
                         fontFamily:C.fontMono }}>↵ open</span>}
                     </button>
@@ -449,7 +449,7 @@ export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed,
               textTransform:'uppercase', fontFamily:C.fontMono, lineHeight:1.2 }}>
               {role === 'moderator' ? 'Mod Panel' : 'Admin Panel'}
             </div>
-            <div style={{ fontSize:10, color:C.muted, fontFamily:C.fontMono, letterSpacing:0.5 }}>
+            <div style={{ fontSize: 11, color:C.muted, fontFamily:C.fontMono, letterSpacing:0.5 }}>
               {username}
             </div>
           </div>
@@ -501,7 +501,7 @@ export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed,
             onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color=C.muted }}>
             <Icon name="search" size={15} strokeWidth={1.8} />
             <span>Search</span>
-            <kbd style={{ fontSize:10, fontFamily:C.fontMono, color:C.muted, padding:'1px 6px',
+            <kbd style={{ fontSize: 11, fontFamily:C.fontMono, color:C.muted, padding:'1px 6px',
               background:'rgba(255,255,255,0.06)', border:`1px solid ${C.border}`, borderRadius:5 }}>⌘K</kbd>
           </button>
           {/* Alerts */}

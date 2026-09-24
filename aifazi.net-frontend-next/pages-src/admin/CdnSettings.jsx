@@ -17,7 +17,7 @@ const SecretField = ({ label, placeholder, help, value, onChange, T }) => {
       {isMaskedVal ? (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <div style={{ ...T.inp, flex: 1, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: '#00ff88', fontSize: 10 }}>✓</span>
+            <span style={{ color: '#00ff88', fontSize: 11 }}>✓</span>
             <span style={{ letterSpacing: 2 }}>{val}</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', marginLeft: 4 }}>SAVED</span>
           </div>
@@ -108,7 +108,7 @@ function OrphanSweeper({ T, flash }) {
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--text)', fontWeight: 700 }}>
           🧹 ORPHANED UPLOADS
         </div>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
           {orphans.length} orphan(s) · {formatBytes(totalBytes)} reclaimable · scanned {data?.scanned ?? 0} rows across {data?.total_uploads ?? 0} uploads
         </span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
@@ -124,7 +124,7 @@ function OrphanSweeper({ T, flash }) {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
-              <tr style={{ textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+              <tr style={{ textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
                 <th style={{ padding: '8px' }}>
                   <input type="checkbox" checked={allChecked}
                     onChange={e => {
@@ -214,18 +214,18 @@ function CdnSettings() {
   if (loading) return (
     <div style={{ padding: '60px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
       <div style={{ width: 32, height: 32, border: '2px solid var(--border)', borderTopColor: 'var(--green)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADING CDN CONFIG...</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3 }}>LOADING CDN CONFIG...</div>
     </div>
   )
   if (!cfg) return null
 
   // -- Style tokens (mirrors MailSettings) ------------------------------------
   const T = {
-    label: { display: 'block', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' },
+    label: { display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' },
     inp:   { width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box', borderRadius: 10, transition: 'border-color 0.15s, box-shadow 0.15s' },
     card:  { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '22px' },
     btn: (variant = 'primary') => ({
-      padding: '11px 22px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+      padding: '11px 22px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
       cursor: testing || saving ? 'not-allowed' : 'pointer', border: 'none', borderRadius: 8,
       background: variant === 'primary' ? 'var(--green)' : variant === 'danger' ? '#ff4757' : variant === 'ghost' ? 'transparent' : '#1e2d45',
       color: variant === 'ghost' ? 'var(--muted)' : variant === 'secondary' ? 'var(--text)' : '#000',
@@ -233,7 +233,7 @@ function CdnSettings() {
       opacity: testing || saving ? 0.6 : 1, transition: 'opacity 0.15s', whiteSpace: 'nowrap',
     }),
     tabBtn: (active) => ({
-      padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+      padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
       cursor: 'pointer', border: 'none', borderRadius: 8,
       background: active ? 'var(--green)' : 'transparent',
       color: active ? '#000' : 'var(--muted)',
@@ -298,7 +298,7 @@ function CdnSettings() {
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {testStatus && (
-              <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: testStatus === 'ok' ? '#00ff88' : '#ff4757' }}>
+              <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: testStatus === 'ok' ? '#00ff88' : '#ff4757' }}>
                 <span style={T.statusDot(testStatus)} />{testStatus === 'ok' ? 'CONNECTED' : 'FAILED'}
               </div>
             )}
@@ -320,7 +320,7 @@ function CdnSettings() {
                 <span style={T.statusDot(e.status)} />
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', minWidth: 60 }}>{e.time}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', minWidth: 44, letterSpacing: 1 }}>{e.type.toUpperCase()}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: e.status === 'ok' ? '#64748b' : '#ff4757aa', flex: 1, lineHeight: 1.5 }}>{e.msg}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: e.status === 'ok' ? '#64748b' : '#ff4757aa', flex: 1, lineHeight: 1.5 }}>{e.msg}</span>
               </div>
             ))
           }
@@ -386,7 +386,7 @@ function CdnSettings() {
             <span style={{ fontSize: 24 }}>{activeProvider.icon}</span>
             <div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: activeProvider.color, letterSpacing: 2, marginBottom: 2 }}>ACTIVE PROVIDER: {activeProvider.name.toUpperCase()}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#475569' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569' }}>
                 Custom domain: <span style={{ color: cfg.customDomain ? '#00ff88' : '#ff4757' }}>{cfg.customDomain || 'not set'}</span>
               </div>
             </div>
@@ -413,7 +413,7 @@ function CdnSettings() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#3448c5', letterSpacing: 3, marginBottom: 16 }}>🏞️ CLOUDINARY CREDENTIALS</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#3448c511', border: '1px solid #3448c522' }}>
                 Find these in Cloudinary Dashboard ? Settings ? Access Keys. The <strong style={{ color: '#94a3b8' }}>Cloud Name</strong> is shown on the Dashboard home.
-                <a href="https://console.cloudinary.com/settings/api-keys" target="_blank" rel="noreferrer" style={{ color: '#3448c5', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Open API Keys ?</a>
+                <a href="https://console.cloudinary.com/settings/api-keys" target="_blank" rel="noreferrer" style={{ color: '#3448c5', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 11 }}>Open API Keys ?</a>
               </div>
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
@@ -442,7 +442,7 @@ function CdnSettings() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f6821f', letterSpacing: 3, marginBottom: 16 }}>⚡ CLOUDFLARE R2 CREDENTIALS</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#f6821f11', border: '1px solid #f6821f22' }}>
                 Cloudflare Dashboard ? R2 ? Manage R2 API Tokens. Create a token with <strong style={{ color: '#94a3b8' }}>Object Read & Write</strong> permission.
-                <a href="https://dash.cloudflare.com/?to=/:account/r2/api-tokens" target="_blank" rel="noreferrer" style={{ color: '#f6821f', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Open R2 Tokens ?</a>
+                <a href="https://dash.cloudflare.com/?to=/:account/r2/api-tokens" target="_blank" rel="noreferrer" style={{ color: '#f6821f', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 11 }}>Open R2 Tokens ?</a>
               </div>
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
@@ -478,7 +478,7 @@ function CdnSettings() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#e05c2c', letterSpacing: 3, marginBottom: 16 }}>💾 BACKBLAZE B2 CREDENTIALS</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#e05c2c11', border: '1px solid #e05c2c22' }}>
                 Backblaze Dashboard ? App Keys ? Add a New Application Key. Select your bucket and allow <strong style={{ color: '#94a3b8' }}>Read &amp; Write</strong>.
-                <a href="https://secure.backblaze.com/app_keys.htm" target="_blank" rel="noreferrer" style={{ color: '#e05c2c', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Open App Keys ?</a>
+                <a href="https://secure.backblaze.com/app_keys.htm" target="_blank" rel="noreferrer" style={{ color: '#e05c2c', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 11 }}>Open App Keys ?</a>
               </div>
               <div style={{ display: 'grid', gap: 16 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -521,7 +521,7 @@ function CdnSettings() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#009ef7', letterSpacing: 3, marginBottom: 16 }}>🖼️ IMAGEKIT CREDENTIALS</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#009ef711', border: '1px solid #009ef722' }}>
                 ImageKit Dashboard ? Developer Options ? API Keys.
-                <a href="https://imagekit.io/dashboard/developer/api-keys" target="_blank" rel="noreferrer" style={{ color: '#009ef7', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Open API Keys ?</a>
+                <a href="https://imagekit.io/dashboard/developer/api-keys" target="_blank" rel="noreferrer" style={{ color: '#009ef7', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 11 }}>Open API Keys ?</a>
               </div>
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
@@ -550,7 +550,7 @@ function CdnSettings() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#fac517', letterSpacing: 3, marginBottom: 16 }}>🐰 BUNNYCDN CREDENTIALS</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#fac51711', border: '1px solid #fac51722' }}>
                 Bunny Dashboard ? Storage ? your zone ? FTP &amp; API Access. The Access Key is at the top of that page.
-                <a href="https://dash.bunny.net/storage" target="_blank" rel="noreferrer" style={{ color: '#fac517', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Open Storage ?</a>
+                <a href="https://dash.bunny.net/storage" target="_blank" rel="noreferrer" style={{ color: '#fac517', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 11 }}>Open Storage ?</a>
               </div>
               <div style={{ display: 'grid', gap: 16 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -650,7 +650,7 @@ function CdnSettings() {
                 display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
                 background: cfg.provider === key ? `${info.color}15` : 'var(--bg3)',
                 border: `1px solid ${cfg.provider === key ? info.color : 'var(--border)'}`,
-                textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10, color: info.color, transition: 'all 0.15s',
+                textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 11, color: info.color, transition: 'all 0.15s',
               }}>
                 {info.icon} {info.name} ?
               </a>
@@ -729,7 +729,7 @@ function CdnSettings() {
                 { provider: 'BunnyCDN',       type: 'CNAME',            target: '<yourzone>.b-cdn.net' },
                 { provider: 'Cloudinary',     type: 'Worker/Proxy',     target: 'res.cloudinary.com/<cloud>/' },
               ].map((row, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '130px 80px 1fr', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '130px 80px 1fr', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
                   <span style={{ color: 'var(--text)' }}>{row.provider}</span>
                   <span style={{ color: '#ffd700', fontSize: 11 }}>{row.type}</span>
                   <span style={{ color: '#475569' }}>{row.target}</span>
@@ -750,7 +750,7 @@ function CdnSettings() {
             {testing ? '⚡ TESTING...' : '⚡ TEST CONNECTION'}
           </button>
           {testStatus && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: testStatus === 'ok' ? '#00ff88' : '#ff4757', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: testStatus === 'ok' ? '#00ff88' : '#ff4757', display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={T.statusDot(testStatus)} />{testStatus === 'ok' ? 'Connected' : 'Failed'}
             </span>
           )}

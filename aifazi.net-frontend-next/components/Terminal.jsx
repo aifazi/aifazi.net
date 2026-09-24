@@ -330,10 +330,10 @@ export default function Terminal({ onClose }) {
                 style={{ width: 12, height: 12, borderRadius: '50%', background: c, cursor: i === 2 ? 'pointer' : 'default' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
             ))}
           </div>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>
             visitor@t.tanvir — bash
           </span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 12 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 12 }} aria-label="Close">✕</button>
         </div>
 
         {/* Output */}

@@ -70,8 +70,8 @@ function BarcodeScanner({ onScan, onClose }) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, padding: 28, width: '100%', maxWidth: 480 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: G }}>SCAN BARCODE</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18 }}>✕</button>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: G }}>SCAN BARCODE</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18 }} aria-label="Close">✕</button>
         </div>
 
         {!manual ? (
@@ -218,7 +218,7 @@ export default function DeliveryAgentPortal() {
         <div style={{ fontSize: 32 }}>🚚</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{agent?.display_name || 'Agent'}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
             {agent?.current_area && <span>{agent?.current_area} · </span>}
             {agent?.vehicle && <span>{agent?.vehicle} · </span>}
             {activeCount} active · {completedCount} completed today
@@ -263,7 +263,7 @@ export default function DeliveryAgentPortal() {
       </div>
 
       {/* Assignments */}
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: C, marginBottom: 16 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: C, marginBottom: 16 }}>
         {assignments.length > 0 ? 'MY DELIVERIES' : 'NO DELIVERIES'}
       </div>
 
@@ -325,7 +325,7 @@ export default function DeliveryAgentPortal() {
               )}
 
               {a.notes && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
                   📝 {a.notes}
                 </div>
               )}

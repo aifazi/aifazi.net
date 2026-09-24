@@ -274,8 +274,8 @@ export default function ChatPanel() {
         subtitle="Channels, members, roles, moderation and direct messages across the whole chat."
         actions={
           <>
-            <button onClick={refresh} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '8px 14px' }}>⟳ REFRESH</button>
-            <button onClick={() => setChannelModal('create')} style={{ ...S.btn('color-mix(in srgb, var(--green) 8%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', fontSize: 10, padding: '8px 14px' }}>+ NEW CHANNEL</button>
+            <button onClick={refresh} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '8px 14px' }}>⟳ REFRESH</button>
+            <button onClick={() => setChannelModal('create')} style={{ ...S.btn('color-mix(in srgb, var(--green) 8%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', fontSize: 11, padding: '8px 14px' }}>+ NEW CHANNEL</button>
           </>
         }
       />
@@ -283,7 +283,7 @@ export default function ChatPanel() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
         {TABS.map(([key, icon, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, padding: '8px 14px', borderRadius: 8, cursor: 'pointer',
+            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', borderRadius: 8, cursor: 'pointer',
             background: tab === key ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'var(--bg2)',
             border: `1px solid ${tab === key ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}`,
             color: tab === key ? 'var(--green)' : 'var(--muted)',
@@ -312,7 +312,7 @@ export default function ChatPanel() {
                   <input value={roomSearch} onChange={e => setRoomSearch(e.target.value)} placeholder="Search channels…" style={{ ...S.input, fontSize: 12, padding: '9px 12px 9px 32px' }} />
                   <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.5 }}>🔍</span>
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{filteredRooms.length} channels</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{filteredRooms.length} channels</div>
               </div>
               {loading ? <div className="loader" style={{ margin: '40px auto' }} /> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -352,14 +352,14 @@ export default function ChatPanel() {
       {/* MEMBERS */}
       {tab === 'members' && (
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 10 }}>{members.length} memberships across all channels</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>{members.length} memberships across all channels</div>
           {loading ? <div className="loader" style={{ margin: '40px auto' }} /> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {members.map(m => (
                 <div key={m.id} style={{ ...S.card, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
                   <span style={{ fontSize: 14 }}>{m.room_emoji || '#'}</span>
                   <div style={{ flex: '1 1 120px', fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--text)' }}>{m.username || m.user_id}</div>
-                  <div style={{ flex: '1 1 120px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{m.room_name || m.room_id}</div>
+                  <div style={{ flex: '1 1 120px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{m.room_name || m.room_id}</div>
                   <button onClick={() => changeMemberRole(m)} title="Change role" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', background: 'transparent', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>{m.role || 'member'}</button>
                   <button onClick={() => removeMember(m)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'transparent', border: '1px solid rgba(255,71,87,0.35)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>REMOVE</button>
                 </div>
@@ -379,7 +379,7 @@ export default function ChatPanel() {
                 <div key={m.id} style={{ ...S.card, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
                   <span style={{ fontSize: 14 }}>🔇</span>
                   <div style={{ flex: 1, fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--text)' }}>{m.username}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>in {m.room_emoji} {m.room_name || m.room_id}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>in {m.room_emoji} {m.room_name || m.room_id}</div>
                   <Pill color={m.expires_at ? '#ffd700' : 'var(--red)'}>{m.expires_at ? 'temporary' : 'permanent'}</Pill>
                   <button onClick={() => unmute(m)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', background: 'transparent', border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>UNMUTE</button>
                 </div>
@@ -399,7 +399,7 @@ export default function ChatPanel() {
                 <div key={b.id} style={{ ...S.card, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
                   <span style={{ fontSize: 14 }}>🚫</span>
                   <div style={{ flex: 1, fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--text)' }}>{b.username}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>in {b.room_emoji} {b.room_name || b.room_id}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>in {b.room_emoji} {b.room_name || b.room_id}</div>
                   {b.reason ? <Pill color="var(--muted)">{b.reason}</Pill> : null}
                   <button onClick={() => unban(b)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', background: 'transparent', border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>UNBAN</button>
                 </div>
@@ -593,14 +593,14 @@ function RoomDetail({ room, data, onBack, onEdit, onChange }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-        <button onClick={onBack} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '7px 12px' }}>← ALL CHANNELS</button>
+        <button onClick={onBack} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '7px 12px' }}>← ALL CHANNELS</button>
         <div style={{ flex: 1 }}>
           <span style={{ fontSize: 18 }}>{room.emoji || '#'}</span>{' '}
           <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{room.name}</span>
           <span style={{ marginLeft: 8 }}><Pill>{room.type}</Pill></span>
           <span style={{ marginLeft: 8 }}><AccessLabel room={room} /></span>
         </div>
-        <button onClick={onEdit} style={{ ...S.btn('transparent', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', fontSize: 10, padding: '7px 14px' }}>✏️ EDIT CHANNEL</button>
+        <button onClick={onEdit} style={{ ...S.btn('transparent', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', fontSize: 11, padding: '7px 14px' }}>✏️ EDIT CHANNEL</button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16, alignItems: 'start' }}>
@@ -626,7 +626,7 @@ function RoomDetail({ room, data, onBack, onEdit, onChange }) {
                   <button onClick={() => kick(m)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'transparent', border: '1px solid rgba(255,71,87,0.35)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer' }}>REMOVE</button>
                 </div>
               ))}
-              {mem.length === 0 && <div style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10, padding: 8 }}>No members yet.</div>}
+              {mem.length === 0 && <div style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: 8 }}>No members yet.</div>}
             </div>
           </div>
 
@@ -634,7 +634,7 @@ function RoomDetail({ room, data, onBack, onEdit, onChange }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div style={{ ...S.card, padding: 16 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: '#ffd700', marginBottom: 12 }}>MUTES</div>
-              {mutes.length === 0 ? <div style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>No mutes.</div> : mutes.map(m => (
+              {mutes.length === 0 ? <div style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>No mutes.</div> : mutes.map(m => (
                 <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontSize: 12 }}>{m.username}</span>
                   <Pill color={m.expires_at ? '#ffd700' : 'var(--red)'}>{m.expires_at ? 'temp' : 'perm'}</Pill>
@@ -644,7 +644,7 @@ function RoomDetail({ room, data, onBack, onEdit, onChange }) {
             </div>
             <div style={{ ...S.card, padding: 16 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--red)', marginBottom: 12 }}>BANS</div>
-              {bans.length === 0 ? <div style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>No bans.</div> : bans.map(b => (
+              {bans.length === 0 ? <div style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>No bans.</div> : bans.map(b => (
                 <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                   <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontSize: 12 }}>{b.username}</span>
                   <button onClick={() => unbanRoom(b)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', background: 'none', border: 'none', cursor: 'pointer' }}>UNBAN</button>
@@ -670,7 +670,7 @@ function RoomDetail({ room, data, onBack, onEdit, onChange }) {
                 <button onClick={() => deleteRole(r)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
               </div>
             ))}
-            {roles.length === 0 && <div style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>No custom roles.</div>}
+            {roles.length === 0 && <div style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>No custom roles.</div>}
           </div>
           <div style={{ marginTop: 12, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.8 }}>
             Assign a role to a member above to grant read/send, message moderation, member management or voice permissions.
@@ -700,8 +700,8 @@ function RoomDetail({ room, data, onBack, onEdit, onChange }) {
             </div>
           </div>
           <div style={{ padding: '14px 20px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button onClick={() => setRoleModal(null)} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '9px 16px' }}>CANCEL</button>
-            <button onClick={saveRole} style={{ ...S.btn('var(--green)', '#000'), fontSize: 10, padding: '9px 18px' }}>SAVE ROLE</button>
+            <button onClick={() => setRoleModal(null)} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '9px 16px' }}>CANCEL</button>
+            <button onClick={saveRole} style={{ ...S.btn('var(--green)', '#000'), fontSize: 11, padding: '9px 18px' }}>SAVE ROLE</button>
           </div>
         </Modal>
       )}
@@ -727,7 +727,7 @@ function RecentMessages({ roomId }) {
       {rows.map(m => (
         <div key={m.id} style={{ ...S.card, display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px' }}>
           <Pill color="var(--cyan)">{m.room_emoji} {m.room_name}</Pill>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', flexShrink: 0 }}>{m.sender}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', flexShrink: 0 }}>{m.sender}</span>
           <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {m.type === 'image' ? '🖼 [image]' : m.type === 'file' ? `📎 ${m.file_name || 'file'}` : m.content}
           </span>

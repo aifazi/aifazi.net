@@ -101,13 +101,13 @@ function PlayerIdentifiers({ app }) {
   return (
     <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:5}}>
       {ids.map(([label, value])=>(
-        <span key={`${label}-${value}`} style={{fontSize:10,color:MUTED,fontFamily:MONO,
+        <span key={`${label}-${value}`} style={{fontSize: 11,color:MUTED,fontFamily:MONO,
           background:BG3,border:`1px solid ${BD}`,borderRadius:5,padding:'3px 6px',
           maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',
           display:'inline-flex',alignItems:'center',gap:4}}>
           {label}:{value}
           <button onClick={e => copy(e, value)} title={`Copy ${label} identifier`}
-            style={{background:'none',border:'none',color:C,cursor:'pointer',fontSize:10,
+            style={{background:'none',border:'none',color:C,cursor:'pointer',fontSize: 11,
               padding:'0 2px',lineHeight:1}}>⧉</button>
         </span>
       ))}
@@ -245,7 +245,7 @@ function ServerStatusPanel() {
           ].map(s=>(
             <div key={s.label} style={{background:BG2,border:`1px solid ${BD}`,borderRadius:10,
               padding:'12px 16px',borderTop:`2px solid ${s.color}`}}>
-              <div style={{fontSize:10,color:MUTED,fontFamily:MONO,letterSpacing:1,textTransform:'uppercase',marginBottom:4}}>
+              <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,letterSpacing:1,textTransform:'uppercase',marginBottom:4}}>
                 {s.icon} {s.label}
               </div>
               <div style={{fontSize:26,fontWeight:700,fontFamily:MONO,color:s.color}}>{s.value}</div>
@@ -493,7 +493,7 @@ function WhitelistPanel() {
               ['FiveM License','fivem_license'],['FiveM ID','fivem_id'],['Note','reviewer_note']
             ].map(([lbl,k])=>(
               <div key={k}>
-                <div style={{fontSize:10,color:MUTED,fontFamily:MONO,marginBottom:4}}>{lbl.toUpperCase()}</div>
+                <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,marginBottom:4}}>{lbl.toUpperCase()}</div>
                 <Input value={manualForm[k]} onChange={setM(k)} placeholder={lbl}/>
               </div>
             ))}
@@ -540,13 +540,13 @@ function WhitelistPanel() {
             <div style={{marginTop:16,display:'flex',flexDirection:'column',gap:10}}>
               {app.character_backstory&&app.character_backstory!=='Manually added by admin.'&&(
                 <div style={{background:BG3,borderRadius:6,padding:'8px 12px'}}>
-                  <div style={{fontSize:10,color:MUTED,fontFamily:MONO,textTransform:'uppercase',marginBottom:4}}>Backstory</div>
+                  <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,textTransform:'uppercase',marginBottom:4}}>Backstory</div>
                   <div style={{fontSize:13,color:TEXT,lineHeight:1.6}}>{app.character_backstory}</div>
                 </div>
               )}
               {app.why_join&&app.why_join!=='Manually added by admin.'&&(
                 <div style={{background:BG3,borderRadius:6,padding:'8px 12px'}}>
-                  <div style={{fontSize:10,color:MUTED,fontFamily:MONO,textTransform:'uppercase',marginBottom:4}}>Why Join</div>
+                  <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,textTransform:'uppercase',marginBottom:4}}>Why Join</div>
                   <div style={{fontSize:13,color:TEXT,lineHeight:1.6}}>{app.why_join}</div>
                 </div>
               )}
@@ -554,7 +554,7 @@ function WhitelistPanel() {
                 <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:8}}>
                   {Object.entries(app.extra_answers).filter(([,v]) => v).map(([key,value]) => (
                     <div key={key} style={{background:BG3,borderRadius:6,padding:'8px 12px'}}>
-                      <div style={{fontSize:10,color:MUTED,fontFamily:MONO,textTransform:'uppercase',marginBottom:4}}>
+                      <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,textTransform:'uppercase',marginBottom:4}}>
                         {key.replace(/_/g,' ')}
                       </div>
                       <div style={{fontSize:13,color:TEXT,lineHeight:1.6}}>{String(value)}</div>
@@ -565,7 +565,7 @@ function WhitelistPanel() {
               <div onClick={e=>e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto auto',gap:8,alignItems:'end',marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:10,color:MUTED,fontFamily:MONO,marginBottom:4}}>PRIORITY TIER</div>
+                    <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,marginBottom:4}}>PRIORITY TIER</div>
                     <Select
                       value={priorityForm.level}
                       onChange={value => {
@@ -576,11 +576,11 @@ function WhitelistPanel() {
                     />
                   </div>
                   <div>
-                    <div style={{fontSize:10,color:MUTED,fontFamily:MONO,marginBottom:4}}>CUSTOM NAME</div>
+                    <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,marginBottom:4}}>CUSTOM NAME</div>
                     <Input value={priorityForm.tier} onChange={v=>setPriorityForm(f=>({...f,tier:v}))} placeholder="VIP"/>
                   </div>
                   <div>
-                    <div style={{fontSize:10,color:MUTED,fontFamily:MONO,marginBottom:4}}>EXPIRES AT</div>
+                    <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,marginBottom:4}}>EXPIRES AT</div>
                     <DateTimePicker
                       value={priorityForm.expires_at}
                       onChange={v=>setPriorityForm(f=>({...f,expires_at:v,permanent:false}))}
@@ -1111,7 +1111,7 @@ function BansPanel() {
             <div>
               <div style={{display:'flex',gap:10,alignItems:'end',marginBottom:8,flexWrap:'wrap'}}>
                 <div style={{flex:'1 1 320px'}}>
-                  <div style={{fontSize:10,color:MUTED,fontFamily:MONO,letterSpacing:1,marginBottom:5}}>
+                  <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,letterSpacing:1,marginBottom:5}}>
                     WHITELISTED PLAYERS
                   </div>
                   <Input value={whitelistQuery} onChange={setWhitelistQuery} placeholder="Search name, Discord, FiveM, license, Steam..."/>
@@ -1158,11 +1158,11 @@ function BansPanel() {
           {mode==='manual' && (
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <div>
-                <div style={{fontSize:10,color:MUTED,fontFamily:MONO,marginBottom:4}}>IDENTIFIER *</div>
+                <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,marginBottom:4}}>IDENTIFIER *</div>
                 <Input value={manualId} onChange={setManualId} placeholder="license:... / steam:... / fivem:... / discord:..."/>
               </div>
               <div>
-                <div style={{fontSize:10,color:MUTED,fontFamily:MONO,marginBottom:4}}>PLAYER NAME *</div>
+                <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,marginBottom:4}}>PLAYER NAME *</div>
                 <Input value={playerName} onChange={setPlayerName} placeholder="Player display name"/>
               </div>
             </div>
@@ -1170,17 +1170,17 @@ function BansPanel() {
 
           {/* Reason + Duration */}
           <div>
-            <div style={{fontSize:10,color:MUTED,fontFamily:MONO,marginBottom:4}}>BAN REASON *</div>
+            <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,marginBottom:4}}>BAN REASON *</div>
             <TextArea value={reason} onChange={setReason}
               placeholder="The reason for the ban, rule violated, etc." rows={2}/>
           </div>
           <div>
-            <div style={{fontSize:10,color:MUTED,fontFamily:MONO,marginBottom:4}}>DURATION</div>
+            <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,marginBottom:4}}>DURATION</div>
             <DurationPicker value={duration} onChange={setDuration}/>
           </div>
           {duration === 'custom' && (
             <div>
-              <div style={{fontSize:10,color:MUTED,fontFamily:MONO,marginBottom:4}}>EXPIRES</div>
+              <div style={{fontSize: 11,color:MUTED,fontFamily:MONO,marginBottom:4}}>EXPIRES</div>
               <DateTimePicker value={expiresAt} onChange={setExpiresAt} placeholder="Pick ban expiry..."/>
             </div>
           )}

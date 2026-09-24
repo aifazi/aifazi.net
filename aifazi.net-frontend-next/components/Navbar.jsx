@@ -546,14 +546,14 @@ export default function Navbar() {
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700,
                     letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>AIFAZI</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 4,
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4,
                     color: hs.accent, marginTop: 3, opacity: 0.75 }}>NEON OPS</span>
                 </div>
               </>
             ) : headerStyle === 'editorial' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 18, height: 18, background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--bg)' }}>T</span>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--bg)' }}>T</span>
                 </div>
                 <span style={{ fontFamily: 'Georgia, serif', fontSize: 18, fontWeight: 900, color: 'var(--text)', letterSpacing: -0.5 }}>AIFAZI</span>
               </div>
@@ -572,7 +572,7 @@ export default function Navbar() {
                 <div style={{ padding: '4px 12px', borderRadius: 20, background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--green)', letterSpacing: 2 }}>AF</span>
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--muted)' }}>AIFAZI.NET</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>AIFAZI.NET</div>
               </div>
             ) : headerStyle === 'retro' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -599,7 +599,7 @@ export default function Navbar() {
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700,
                     letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>TANVIR</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 4,
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4,
                     color: hs.accent, marginTop: 3, opacity: 0.75 }}>.DEV</span>
                 </div>
               </>
@@ -701,7 +701,7 @@ export default function Navbar() {
                     {adminAuth.role === 'admin' ? '⚡' : adminAuth.role === 'moderator' ? '🛡️' : adminAuth.role === 'chat' ? '💬' : '✏️'}
                   </div>
                   <div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: ADMIN_ROLE_COLORS[adminAuth.role] || 'var(--green)', letterSpacing: 1, lineHeight: 1 }}>{adminAuth.username}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: ADMIN_ROLE_COLORS[adminAuth.role] || 'var(--green)', letterSpacing: 1, lineHeight: 1 }}>{adminAuth.username}</div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, lineHeight: 1.5 }}>{adminAuth.role.toUpperCase()}</div>
                   </div>
                 </Link>
@@ -720,13 +720,13 @@ export default function Navbar() {
                   <UserAvatar avatar={forumUser.avatar} name={forumUser.username} size={28}
                     fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${forumUser.username}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`}
                     imgStyle={{ border: '1px solid var(--green)' }} />
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
                 <button onClick={async () => { await forumLogout(); window.location.replace(loginRoute) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
               </div>
             ) : (
               <Link to={loginRoute} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
                 padding: '6px 14px', color: hs.accent,
                 border: `1px solid ${hs.accent}55`, textDecoration: 'none',
                 background: 'transparent', transition: 'all 0.2s',
@@ -824,7 +824,7 @@ export default function Navbar() {
                   </div>
                   <div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: ADMIN_ROLE_COLORS[adminAuth.role], letterSpacing: 1 }}>{adminAuth.username}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>{adminAuth.role.toUpperCase()}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>{adminAuth.role.toUpperCase()}</div>
                   </div>
                 </Link>
                 <button onClick={() => { handleAdminLogout(); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>

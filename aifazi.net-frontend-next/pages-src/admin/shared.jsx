@@ -28,7 +28,7 @@ class PanelErrorBoundary extends Component {
         }}>
           <div style={{ fontSize: 40 }}>⚠️</div>
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
             color: '#f87171', padding: '3px 12px',
             background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)',
             borderRadius: 4,
@@ -37,7 +37,7 @@ class PanelErrorBoundary extends Component {
             {label} failed to render
           </div>
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)',
+            fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
             maxWidth: 420, lineHeight: 1.7,
             background: 'var(--bg2)', border: '1px solid var(--border)',
             padding: '10px 16px', borderRadius: 6, textAlign: 'left',
@@ -47,7 +47,7 @@ class PanelErrorBoundary extends Component {
           <button
             onClick={() => this.setState({ crashed: false, error: null })}
             style={{
-              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
               padding: '10px 22px', background: 'var(--green)', color: '#000',
               border: 'none', cursor: 'pointer', borderRadius: 4, fontWeight: 700,
             }}
@@ -82,7 +82,7 @@ const S = {
     transition: 'border-color 0.2s, box-shadow 0.2s', borderRadius: 'var(--comp-input-radius, 10px)',
   },
   label: {
-    fontFamily: 'var(--font-mono)', fontSize: 10,
+    fontFamily: 'var(--font-mono)', fontSize: 11,
     letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase',
     display: 'block', marginBottom: 6
   },
@@ -105,7 +105,7 @@ const S = {
   // -- Inline stat row for cards --
   statRow: (label, value, color = 'var(--green)') => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{label}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{label}</span>
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color, fontWeight: 700 }}>{value}</span>
     </div>
   ),

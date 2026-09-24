@@ -113,14 +113,14 @@ export default function DealsTab() {
             <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} /> Active
           </label>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 20px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE DEAL'}</button>
-            <button onClick={cancel} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>
+            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 20px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE DEAL'}</button>
+            <button onClick={cancel} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>
           </div>
         </div>
       )}
 
       <div style={{ marginBottom: 14 }}>
-        <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '9px 18px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: 'pointer' }}>⚡ + NEW DEAL</button>
+        <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 18px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: 'pointer' }}>⚡ + NEW DEAL</button>
       </div>
 
       {loading ? <div className="loader" /> : deals.length === 0 ? (
