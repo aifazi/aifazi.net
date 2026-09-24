@@ -58,7 +58,9 @@ export default function Admin({ serverUser: serverUserProp }) {
       }
       catch {
         clearAuthTokens()
-        navigate('/login?next=/admin', { replace: true })
+        // Full reload so no authenticated UI flashes and the stored theme is
+        // applied before first paint.
+        window.location.replace('/login?next=/admin')
       } finally { setChecking(false) }
     }
     verify()
@@ -67,7 +69,10 @@ export default function Admin({ serverUser: serverUserProp }) {
   const handleLogout = async () => {
     try { await api.post('/auth/logout') } catch {}
     clearAuthTokens()
-    navigate('/login', { replace: true, state: { signedOut: true } })
+    // Full reload (not client-side navigate): no flash of authenticated UI,
+    // stale caches already wiped by clearAuthTokens, stored theme re-applied
+    // before first paint by the layout FOUC script.
+    window.location.replace('/login')
   }
 
   if (checking) return <div className="page-container"><div className="loader" /></div>

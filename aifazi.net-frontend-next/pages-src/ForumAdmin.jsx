@@ -691,7 +691,9 @@ export default function ForumAdmin({ embedded = false }) {
         loadCats()
       } catch {
         clearAuthTokens()
-        navigate('/login?next=/forum/admin', { replace: true })
+        // Full reload so no authenticated UI flashes; stored theme is
+        // re-applied before first paint.
+        window.location.replace('/login?next=/forum/admin')
         setChecking(false)
       }
     }

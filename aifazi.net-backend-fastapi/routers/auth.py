@@ -57,7 +57,7 @@ from utils.email_queue import queue_email
 try:
     import httpx as _httpx
 except ImportError:
-    _httpx = None
+    _httpx = None  # type: ignore[assignment]  # optional dep; guarded at use sites
 
 log = logging.getLogger("auth")
 router = APIRouter()
@@ -113,7 +113,25 @@ _REFRESH_ROTATION_GRACE = 30
 # (which would let any internal service forge admin gate tokens).
 ADMIN_GATE_SECRET = os.getenv("ADMIN_GATE_SECRET") or ""
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+_IS_PRODUCTION_AUTH = os.getenv("ENV") == "production" or os.getenv("VERCEL", "") == "1"
+if _IS_PRODUCTION_AUTH:
+    if not ADMIN_PASSWORD_HASH:
+        raise RuntimeError(
+            "ADMIN_PASSWORD_HASH (bcrypt) is required in production. "
+            "Set it instead of plaintext ADMIN_PASSWORD and redeploy."
+        )
+    if not ADMIN_PASSWORD_HASH.startswith(("$2b$", "$2a$", "$2y$")):
+        raise RuntimeError("ADMIN_PASSWORD_HASH must be a bcrypt hash in production. Refusing to start.")
+    ADMIN_PASSWORD = ADMIN_PASSWORD_HASH
+elif ADMIN_PASSWORD_HASH:
+    ADMIN_PASSWORD = ADMIN_PASSWORD_HASH
+elif ADMIN_PASSWORD and not ADMIN_PASSWORD.startswith(("$2b$", "$2a$", "$2y$")):
+    log.warning(
+        "ADMIN_PASSWORD is plaintext (dev only): set ADMIN_PASSWORD_HASH to a bcrypt hash. "
+        "Plaintext admin passwords are refused in production and will fail authentication."
+    )
 SITE_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 # Deep-link base the OAuth callbacks redirect to when the flow was started from
 # the mobile app (`mobile=1`). Server-controlled; the app only accepts URLs under

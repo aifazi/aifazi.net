@@ -1180,6 +1180,14 @@ const FEATURES = [
 export default function Login() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  // Mounted gate (second layer behind the layout FOUC script): render nothing
+  // theme-dependent until after mount so the login page never flashes the
+  // default theme before the stored theme is confirmed.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mounted gate on first paint
+    setMounted(true)
+  }, [])
   const rawTab = searchParams?.get('tab') || 'signin'
   const validTab = ['signin','register','forgot'].includes(rawTab) ? rawTab : 'signin'
   const [tab, setTab] = useState(searchParams?.get('discord_error') ? 'signin' : validTab)
@@ -1503,6 +1511,11 @@ export default function Login() {
         ], ease: 'power2.out' })
     })
   }
+
+  // Render nothing theme-dependent until mount is confirmed (mounted gate) —
+  // the layout FOUC script already stamped the stored theme before first
+  // paint; this avoids a default-theme flash from React's first render.
+  if (!mounted) return null
 
   return (
     <>

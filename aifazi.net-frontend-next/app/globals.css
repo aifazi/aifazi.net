@@ -529,18 +529,20 @@ p, li, blockquote { text-wrap: pretty; }
 
 .btn-primary {
   font-family:var(--font-code); font-size:12px; letter-spacing:3px; text-transform:uppercase;
-  padding:16px 36px; background:var(--green); color:#000; border:none; font-weight:700;
-  clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
+  padding:16px 36px; background:var(--comp-btn-bg,var(--green)); color:var(--comp-btn-text,#000); border:var(--comp-btn-border,none); font-weight:700;
+  border-radius:var(--comp-btn-radius,0);
+  clip-path:var(--comp-btn-clip,polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px)));
   transition:box-shadow 0.3s,transform 0.2s; display:inline-block; position:relative; overflow:hidden;
 }
 .btn-primary::after { content:''; position:absolute; inset:0; background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,0.3) 50%,transparent 70%); transform:translateX(-100%); transition:transform 0.5s; }
 .btn-primary:hover::after { transform:translateX(100%); }
-.btn-primary:hover { box-shadow:var(--glow),0 0 60px rgba(0,255,136,0.2); transform:translateY(-3px); }
+.btn-primary:hover { box-shadow:var(--comp-btn-shadow,var(--glow)),0 0 60px rgba(0,255,136,0.2); transform:translateY(-3px); }
 .btn-primary:active { transform:translateY(-1px); }
 
 .btn-outline {
   font-family:var(--font-code); font-size:12px; letter-spacing:3px; text-transform:uppercase;
   padding:15px 36px; background:transparent; color:var(--cyan); border:1px solid var(--cyan);
+  border-radius:var(--comp-btn-radius,0);
   display:inline-block; clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
   transition:background 0.3s,box-shadow 0.3s,transform 0.2s; position:relative; overflow:hidden;
 }
@@ -548,23 +550,23 @@ p, li, blockquote { text-wrap: pretty; }
 .btn-outline:hover::before { transform:scaleX(1); }
 .btn-outline:hover { color:#000; box-shadow:var(--glow-cyan); transform:translateY(-3px); }
 
-.tag { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; padding:4px 10px; border:1px solid rgba(0,212,255,0.2); color:var(--cyan); background:rgba(0,212,255,0.05); transition:all 0.2s; }
+.tag { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; padding:4px 10px; border:var(--comp-badge-border,1px solid rgba(0,212,255,0.2)); color:var(--comp-badge-text,var(--cyan)); background:var(--comp-badge-bg,rgba(0,212,255,0.05)); border-radius:var(--comp-badge-radius,0); transition:all 0.2s; }
 .tag:hover { border-color:var(--cyan); background:rgba(0,212,255,0.12); transform:translateY(-1px); }
 
 .form-group { display:flex; flex-direction:column; gap:8px; }
 .form-group label { font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
-.form-group input,.form-group textarea,.form-group select { background:var(--bg2); border:1px solid var(--border); color:var(--text); font-family:var(--font-display); font-size:16px; padding:14px 16px; outline:none; transition:border-color 0.3s,box-shadow 0.3s,background 0.3s; width:100%; }
-.form-group input:focus,.form-group textarea:focus,.form-group select:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(0,255,136,0.08),inset 0 0 20px rgba(0,255,136,0.02); background:rgba(0,255,136,0.02); }
+.form-group input,.form-group textarea,.form-group select { background:var(--comp-input-bg,var(--bg2)); border:1px solid var(--comp-input-border,var(--border)); border-radius:var(--comp-input-radius,0); color:var(--text); font-family:var(--font-display); font-size:16px; padding:14px 16px; outline:none; transition:border-color 0.3s,box-shadow 0.3s,background 0.3s; width:100%; }
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus { border-color:var(--comp-input-focus-border,var(--green)); box-shadow:var(--comp-input-focus,0 0 0 3px rgba(0,255,136,0.08)),inset 0 0 20px rgba(0,255,136,0.02); background:rgba(0,255,136,0.02); }
 .form-group input::placeholder,.form-group textarea::placeholder { color:var(--muted); }
 .form-group select { appearance:none; }
 .form-group select option { background:var(--bg); }
 .form-group textarea { resize:vertical; }
 
 .terminal-panel {
-  background:color-mix(in srgb,var(--bg3) 92%,transparent);
-  border:1px solid var(--border);
-  border-radius:8px;
-  box-shadow:var(--shadow-sm);
+  background:var(--comp-card-bg,color-mix(in srgb,var(--bg3) 92%,transparent));
+  border:var(--comp-card-border,1px solid var(--border));
+  border-radius:var(--comp-card-radius,8px);
+  box-shadow:var(--comp-card-shadow,var(--shadow-sm));
 }
 .terminal-panel-header {
   background:linear-gradient(180deg,color-mix(in srgb,var(--bg4) 88%,transparent),color-mix(in srgb,var(--bg3) 94%,transparent));
@@ -7111,5 +7113,753 @@ footer[data-footer-style]:not([data-footer-style="cyber"])::after {
 }
 [data-table-style="striped"] table tbody tr:nth-child(even) {
   background: color-mix(in srgb, var(--bg3) 55%, var(--bg2)) !important;
+}
+/* ══════════════════════════════════════════
+   CHAT PER-THEME FAMILY STYLING
+   Chat bubbles, link chips, call bars and voice panels follow the active
+   theme via CSS vars above; the blocks below give each theme family its
+   distinctive voice (brutalist = square + hard borders, glass = translucent,
+   neon/synthwave = glow accents, terminal = monospace + green tint).
+   Base geometry comes from --radius / --shadow-sm / --glow so admin
+   CUSTOMIZE sliders keep working; families only override what makes them
+   distinct.
+   ══════════════════════════════════════════ */
+
+/* Base: chat surfaces track theme radius + shadow tokens */
+.chat-dm-bubble,
+.chat-link-chip,
+.chat-date-pill {
+  border-radius: var(--comp-bubble-radius, var(--radius));
+}
+.chat-dm-bubble {
+  box-shadow: var(--shadow-sm);
+}
+.chat-dm-bubble-own {
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Brutalist family: square bubbles + hard offset borders ── */
+[data-theme="brutalist"] .chat-dm-bubble,
+[data-theme="brutalist-dark"] .chat-dm-bubble,
+[data-theme="brutalist"] .chat-link-chip,
+[data-theme="brutalist-dark"] .chat-link-chip,
+[data-theme="brutalist"] .chat-date-pill,
+[data-theme="brutalist-dark"] .chat-date-pill {
+  border-radius: 0 !important;
+  border-width: 2px !important;
+  box-shadow: 3px 3px 0 #000 !important;
+}
+[data-theme="brutalist"] .chat-dm-send,
+[data-theme="brutalist-dark"] .chat-dm-send,
+[data-theme="brutalist"] .chat-voice-cta,
+[data-theme="brutalist-dark"] .chat-voice-cta,
+[data-theme="brutalist"] .chat-call-bar a,
+[data-theme="brutalist-dark"] .chat-call-bar a {
+  border-radius: 0 !important;
+  box-shadow: 3px 3px 0 #000 !important;
+}
+
+/* ── Glass family: translucent bubbles + blur ── */
+[data-theme="glass-dark"] .chat-dm-bubble,
+[data-theme="glass-light"] .chat-dm-bubble,
+[data-theme="glass-dark"] .chat-link-chip,
+[data-theme="glass-light"] .chat-link-chip {
+  border-radius: 16px !important;
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  background: color-mix(in srgb, var(--bg3) 55%, transparent) !important;
+}
+[data-theme="glass-dark"] .chat-dm-bubble-own,
+[data-theme="glass-light"] .chat-dm-bubble-own {
+  background: color-mix(in srgb, var(--green) 14%, transparent) !important;
+}
+
+/* ── Neon-noir / synthwave families: glow accents ── */
+[data-theme="neon-noir"] .chat-dm-bubble-own,
+[data-theme="neon-noir-light"] .chat-dm-bubble-own,
+[data-theme="synthwave"] .chat-dm-bubble-own,
+[data-theme="synthwave-light"] .chat-dm-bubble-own {
+  box-shadow: var(--glow) !important;
+  border-color: color-mix(in srgb, var(--green) 45%, transparent) !important;
+}
+[data-theme="neon-noir"] .chat-dm-send,
+[data-theme="neon-noir-light"] .chat-dm-send,
+[data-theme="synthwave"] .chat-dm-send,
+[data-theme="synthwave-light"] .chat-dm-send,
+[data-theme="neon-noir"] .chat-voice-cta,
+[data-theme="neon-noir-light"] .chat-voice-cta,
+[data-theme="synthwave"] .chat-voice-cta,
+[data-theme="synthwave-light"] .chat-voice-cta {
+  box-shadow: var(--glow), var(--glow-cyan) !important;
+}
+[data-theme="neon-noir"] .chat-link-chip,
+[data-theme="neon-noir-light"] .chat-link-chip,
+[data-theme="synthwave"] .chat-link-chip,
+[data-theme="synthwave-light"] .chat-link-chip {
+  border-radius: 2px !important;
+}
+
+/* ── Terminal family: monospace bubbles + green tint ── */
+[data-theme="terminal"] .chat-dm-bubble,
+[data-theme="terminal-light"] .chat-dm-bubble,
+[data-theme="terminal"] .chat-link-chip,
+[data-theme="terminal-light"] .chat-link-chip,
+[data-theme="terminal"] .chat-msg-row,
+[data-theme="terminal-light"] .chat-msg-row {
+  font-family: var(--font-mono) !important;
+  border-radius: 0 !important;
+}
+[data-theme="terminal"] .chat-dm-bubble-own,
+[data-theme="terminal-light"] .chat-dm-bubble-own {
+  background: color-mix(in srgb, var(--green) 10%, transparent) !important;
+  box-shadow: var(--glow) !important;
+}
+[data-theme="terminal"] .chat-dm-send,
+[data-theme="terminal-light"] .chat-dm-send,
+[data-theme="terminal"] .chat-voice-cta,
+[data-theme="terminal-light"] .chat-voice-cta {
+  border-radius: 0 !important;
+  text-transform: uppercase;
+}
+/* ══════════════════════════════════════════
+   COMPONENT TOKENS PER THEME FAMILY
+   Every theme family defines its OWN button / card / input / badge look
+   (geometry + color) via --comp-* variables instead of components falling
+   back to one generic default. Values mirror core/componentTokens.js
+   (FAMILY_TOKENS) so the SSR / first-paint fallback matches what
+   providers.tsx writes live via applyComponentTokens() on every theme
+   change — the inline vars always win when JS is running.
+   Families with full bespoke rules further above (macos, brutalist,
+   terminal, neumorph, pastel, win95, paper, neon-noir, synthwave, mario)
+   intentionally have no block here; their sections stay authoritative.
+   Base fallbacks live on .btn-primary / .btn-outline / .tag /
+   .form-group inputs / .terminal-panel above.
+   ══════════════════════════════════════════ */
+
+/* ── Midnight family: soft rounded violet glow ── */
+[data-theme="midnight"], [data-theme="midnight-light"] {
+  --comp-btn-radius: 10px;
+  --comp-btn-shadow: 0 0 18px rgba(168,85,247,0.45);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(168,85,247,0.35);
+  --comp-card-radius: 10px;
+  --comp-card-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 18px rgba(168,85,247,0.12);
+  --comp-input-focus-border: #a855f7;
+  --comp-input-focus: 0 0 0 3px rgba(168,85,247,0.15);
+  --comp-input-radius: 10px;
+  --comp-badge-bg: rgba(168,85,247,0.08);
+  --comp-badge-text: #a855f7;
+  --comp-badge-border: 1px solid rgba(168,85,247,0.35);
+  --comp-badge-radius: 6px;
+  --comp-bubble-radius: 14px;
+}
+
+/* ── Crimson family: sharp red tactical ── */
+[data-theme="crimson"], [data-theme="crimson-light"] {
+  --comp-btn-radius: 4px;
+  --comp-btn-shadow: 0 0 16px rgba(239,68,68,0.5);
+  --comp-btn-clip: none;
+  --comp-card-border: 2px solid rgba(239,68,68,0.35);
+  --comp-card-radius: 4px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.55), 0 0 16px rgba(239,68,68,0.12);
+  --comp-input-focus-border: #ef4444;
+  --comp-input-focus: 0 0 0 3px rgba(239,68,68,0.14);
+  --comp-input-radius: 4px;
+  --comp-badge-bg: rgba(239,68,68,0.08);
+  --comp-badge-text: #ef4444;
+  --comp-badge-border: 1px solid rgba(239,68,68,0.4);
+  --comp-badge-radius: 2px;
+  --comp-bubble-radius: 8px;
+}
+
+/* ── Ocean family: rounded electric blue ── */
+[data-theme="ocean"], [data-theme="ocean-light"] {
+  --comp-btn-radius: 8px;
+  --comp-btn-shadow: 0 0 18px rgba(59,130,246,0.5);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(59,130,246,0.35);
+  --comp-card-radius: 8px;
+  --comp-card-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 18px rgba(59,130,246,0.12);
+  --comp-input-focus-border: #3b82f6;
+  --comp-input-focus: 0 0 0 3px rgba(59,130,246,0.15);
+  --comp-input-radius: 8px;
+  --comp-badge-bg: rgba(59,130,246,0.08);
+  --comp-badge-text: #3b82f6;
+  --comp-badge-border: 1px solid rgba(59,130,246,0.35);
+  --comp-badge-radius: 999px;
+  --comp-bubble-radius: 16px;
+}
+
+/* ── Amber family: fully-round warm gold pills ── */
+[data-theme="amber"], [data-theme="amber-light"] {
+  --comp-btn-radius: 999px;
+  --comp-btn-shadow: 0 0 18px rgba(245,158,11,0.45);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(245,158,11,0.35);
+  --comp-card-radius: 14px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 16px rgba(245,158,11,0.1);
+  --comp-input-focus-border: #f59e0b;
+  --comp-input-focus: 0 0 0 3px rgba(245,158,11,0.15);
+  --comp-input-radius: 12px;
+  --comp-badge-bg: rgba(245,158,11,0.1);
+  --comp-badge-text: #f59e0b;
+  --comp-badge-border: 1px solid rgba(245,158,11,0.4);
+  --comp-badge-radius: 999px;
+  --comp-bubble-radius: 16px;
+}
+
+/* ── Rose family: extra-soft pink rounds ── */
+[data-theme="rose"], [data-theme="rose-light"] {
+  --comp-btn-radius: 18px;
+  --comp-btn-shadow: 0 4px 20px rgba(244,114,182,0.4);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(244,114,182,0.35);
+  --comp-card-radius: 18px;
+  --comp-card-shadow: 0 8px 30px rgba(0,0,0,0.45), 0 0 18px rgba(244,114,182,0.12);
+  --comp-input-focus-border: #f472b6;
+  --comp-input-focus: 0 0 0 3px rgba(244,114,182,0.15);
+  --comp-input-radius: 12px;
+  --comp-badge-bg: rgba(244,114,182,0.08);
+  --comp-badge-text: #f472b6;
+  --comp-badge-border: 1px solid rgba(244,114,182,0.4);
+  --comp-badge-radius: 999px;
+  --comp-bubble-radius: 18px;
+}
+
+/* ── Forest family: jungle green blocks ── */
+[data-theme="forest"], [data-theme="forest-light"] {
+  --comp-btn-radius: 8px;
+  --comp-btn-shadow: 0 0 16px rgba(74,222,128,0.4);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(74,222,128,0.3);
+  --comp-card-radius: 8px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 16px rgba(74,222,128,0.1);
+  --comp-input-focus-border: #4ade80;
+  --comp-input-focus: 0 0 0 3px rgba(74,222,128,0.14);
+  --comp-input-radius: 8px;
+  --comp-badge-bg: rgba(74,222,128,0.08);
+  --comp-badge-text: #4ade80;
+  --comp-badge-border: 1px solid rgba(74,222,128,0.35);
+  --comp-badge-radius: 6px;
+  --comp-bubble-radius: 12px;
+}
+
+/* ── Lava family: molten orange-red heat ── */
+[data-theme="lava"], [data-theme="lava-light"] {
+  --comp-btn-radius: 6px;
+  --comp-btn-shadow: 0 0 20px rgba(255,61,0,0.55);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(255,61,0,0.4);
+  --comp-card-radius: 6px;
+  --comp-card-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(255,61,0,0.15);
+  --comp-input-focus-border: #ff3d00;
+  --comp-input-focus: 0 0 0 3px rgba(255,61,0,0.16);
+  --comp-input-radius: 6px;
+  --comp-badge-bg: rgba(255,61,0,0.1);
+  --comp-badge-text: #ff3d00;
+  --comp-badge-border: 1px solid rgba(255,61,0,0.4);
+  --comp-badge-radius: 2px;
+  --comp-bubble-own: color-mix(in srgb, var(--green) 14%, transparent);
+  --comp-bubble-radius: 10px;
+}
+
+/* ── Toxic family: hard-edged acid squares ── */
+[data-theme="toxic"], [data-theme="toxic-light"] {
+  --comp-btn-text: #0a0a0a;
+  --comp-btn-radius: 0;
+  --comp-btn-shadow: 0 0 18px rgba(163,230,53,0.5);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(163,230,53,0.4);
+  --comp-card-radius: 0;
+  --comp-card-shadow: 0 0 24px rgba(163,230,53,0.12), 0 8px 28px rgba(0,0,0,0.6);
+  --comp-input-focus-border: #a3e635;
+  --comp-input-focus: 0 0 0 3px rgba(163,230,53,0.16);
+  --comp-input-radius: 0;
+  --comp-badge-bg: rgba(163,230,53,0.1);
+  --comp-badge-text: #a3e635;
+  --comp-badge-border: 1px solid rgba(163,230,53,0.4);
+  --comp-badge-radius: 0;
+  --comp-bubble-radius: 4px;
+}
+[data-theme="toxic-light"] {
+  --comp-btn-text: #1c2a06;
+}
+
+/* ── Ice family: frosty blue soft rounds (light-only) ── */
+[data-theme="ice"] {
+  --comp-btn-bg: #0284c7;
+  --comp-btn-text: #ffffff;
+  --comp-btn-radius: 18px;
+  --comp-btn-shadow: 0 4px 20px rgba(2,132,199,0.35);
+  --comp-btn-clip: none;
+  --comp-card-bg: #e3edf7;
+  --comp-card-border: 1px solid rgba(2,132,199,0.3);
+  --comp-card-radius: 18px;
+  --comp-card-shadow: 0 8px 28px rgba(2,132,199,0.14);
+  --comp-input-bg: #ffffff;
+  --comp-input-border: 1px solid rgba(2,132,199,0.35);
+  --comp-input-focus-border: #0284c7;
+  --comp-input-focus: 0 0 0 3px rgba(2,132,199,0.16);
+  --comp-input-radius: 18px;
+  --comp-badge-bg: rgba(2,132,199,0.08);
+  --comp-badge-text: #0284c7;
+  --comp-badge-border: 1px solid rgba(2,132,199,0.35);
+  --comp-badge-radius: 999px;
+  --comp-bubble-own: rgba(2,132,199,0.12);
+  --comp-bubble-own-text: #0b1a2a;
+  --comp-bubble-other: #d8e6f2;
+  --comp-bubble-radius: 18px;
+}
+
+/* ── Glass family: frosted translucent blur ── */
+[data-theme="glass-dark"], [data-theme="glass-light"] {
+  --comp-btn-bg: rgba(0,229,255,0.16);
+  --comp-btn-text: #d0e8ff;
+  --comp-btn-border: 1px solid rgba(0,229,255,0.45);
+  --comp-btn-radius: 16px;
+  --comp-btn-shadow: 0 0 18px rgba(0,229,255,0.25);
+  --comp-btn-clip: none;
+  --comp-card-bg: rgba(10,20,40,0.45);
+  --comp-card-border: 1px solid rgba(0,229,255,0.3);
+  --comp-card-radius: 16px;
+  --comp-card-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  --comp-input-bg: rgba(255,255,255,0.06);
+  --comp-input-border: 1px solid rgba(255,255,255,0.18);
+  --comp-input-focus-border: #00e5ff;
+  --comp-input-focus: 0 0 0 3px rgba(0,229,255,0.18);
+  --comp-input-radius: 12px;
+  --comp-badge-bg: rgba(0,229,255,0.08);
+  --comp-badge-text: #00e5ff;
+  --comp-badge-border: 1px solid rgba(0,229,255,0.3);
+  --comp-badge-radius: 12px;
+  --comp-bubble-own: color-mix(in srgb, var(--green) 14%, transparent);
+  --comp-bubble-other: color-mix(in srgb, var(--bg3) 55%, transparent);
+  --comp-bubble-radius: 16px;
+}
+[data-theme="glass-light"] {
+  --comp-btn-text: #0e7490;
+}
+
+/* ── Aurora family: holographic mint glow ── */
+[data-theme="aurora"], [data-theme="aurora-light"] {
+  --comp-btn-radius: 12px;
+  --comp-btn-shadow: 0 0 18px rgba(100,255,218,0.4);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(100,255,218,0.3);
+  --comp-card-radius: 12px;
+  --comp-card-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 20px rgba(100,255,218,0.08);
+  --comp-input-focus-border: #64ffda;
+  --comp-input-focus: 0 0 0 3px rgba(100,255,218,0.16);
+  --comp-input-radius: 12px;
+  --comp-badge-bg: rgba(100,255,218,0.07);
+  --comp-badge-text: #64ffda;
+  --comp-badge-border: 1px solid rgba(100,255,218,0.3);
+  --comp-badge-radius: 12px;
+  --comp-bubble-radius: 14px;
+}
+
+/* ── Ember family: burnt-orange ember glow ── */
+[data-theme="ember-dark"], [data-theme="ember-light"] {
+  --comp-btn-radius: 4px;
+  --comp-btn-shadow: 0 0 18px rgba(255,87,34,0.5);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(255,87,34,0.35);
+  --comp-card-radius: 4px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.55), 0 0 18px rgba(255,87,34,0.12);
+  --comp-input-focus-border: #ff5722;
+  --comp-input-focus: 0 0 0 3px rgba(255,87,34,0.16);
+  --comp-input-radius: 4px;
+  --comp-badge-bg: rgba(255,87,34,0.09);
+  --comp-badge-text: #ff5722;
+  --comp-badge-border: 1px solid rgba(255,87,34,0.4);
+  --comp-badge-radius: 4px;
+  --comp-bubble-radius: 10px;
+}
+
+/* ── Cobalt family: deep-blue electric panels ── */
+[data-theme="cobalt-dark"], [data-theme="cobalt-light"] {
+  --comp-btn-radius: 8px;
+  --comp-btn-shadow: 0 0 18px rgba(30,80,255,0.5);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(30,80,255,0.35);
+  --comp-card-radius: 8px;
+  --comp-card-shadow: 0 8px 30px rgba(0,0,0,0.55), 0 0 18px rgba(30,80,255,0.12);
+  --comp-input-focus-border: #1e50ff;
+  --comp-input-focus: 0 0 0 3px rgba(30,80,255,0.16);
+  --comp-input-radius: 8px;
+  --comp-badge-bg: rgba(30,80,255,0.09);
+  --comp-badge-text: #1e50ff;
+  --comp-badge-border: 1px solid rgba(30,80,255,0.4);
+  --comp-badge-radius: 8px;
+  --comp-bubble-radius: 12px;
+}
+
+/* ── Slate family: quiet monochrome minimal ── */
+[data-theme="slate-dark"], [data-theme="slate-light"] {
+  --comp-btn-text: #0b0e12;
+  --comp-btn-radius: 6px;
+  --comp-btn-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(148,163,184,0.3);
+  --comp-card-radius: 6px;
+  --comp-card-shadow: 0 4px 18px rgba(0,0,0,0.35);
+  --comp-input-focus-border: #94a3b8;
+  --comp-input-focus: 0 0 0 3px rgba(148,163,184,0.18);
+  --comp-input-radius: 6px;
+  --comp-badge-bg: rgba(148,163,184,0.1);
+  --comp-badge-text: #94a3b8;
+  --comp-badge-border: 1px solid rgba(148,163,184,0.35);
+  --comp-badge-radius: 4px;
+  --comp-bubble-radius: 8px;
+}
+
+/* ── Honey family: warm golden rounds ── */
+[data-theme="honey-dark"], [data-theme="honey-light"] {
+  --comp-btn-radius: 12px;
+  --comp-btn-shadow: 0 0 18px rgba(255,179,0,0.45);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(255,179,0,0.35);
+  --comp-card-radius: 12px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 16px rgba(255,179,0,0.1);
+  --comp-input-focus-border: #ffb300;
+  --comp-input-focus: 0 0 0 3px rgba(255,179,0,0.16);
+  --comp-input-radius: 12px;
+  --comp-badge-bg: rgba(255,179,0,0.1);
+  --comp-badge-text: #ffb300;
+  --comp-badge-border: 1px solid rgba(255,179,0,0.4);
+  --comp-badge-radius: 999px;
+  --comp-bubble-radius: 14px;
+}
+
+/* ── Violet family: periwinkle soft glow ── */
+[data-theme="violet-dark"], [data-theme="violet-light"] {
+  --comp-btn-radius: 14px;
+  --comp-btn-shadow: 0 0 18px rgba(139,92,246,0.5);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(139,92,246,0.35);
+  --comp-card-radius: 14px;
+  --comp-card-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 18px rgba(139,92,246,0.12);
+  --comp-input-focus-border: #8b5cf6;
+  --comp-input-focus: 0 0 0 3px rgba(139,92,246,0.16);
+  --comp-input-radius: 14px;
+  --comp-badge-bg: rgba(139,92,246,0.09);
+  --comp-badge-text: #8b5cf6;
+  --comp-badge-border: 1px solid rgba(139,92,246,0.4);
+  --comp-badge-radius: 999px;
+  --comp-bubble-radius: 16px;
+}
+
+/* ── Teal family: mint frosted rounds ── */
+[data-theme="teal-dark"], [data-theme="teal-light"] {
+  --comp-btn-radius: 10px;
+  --comp-btn-shadow: 0 0 18px rgba(45,212,191,0.45);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(45,212,191,0.35);
+  --comp-card-radius: 10px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 16px rgba(45,212,191,0.1);
+  --comp-input-focus-border: #2dd4bf;
+  --comp-input-focus: 0 0 0 3px rgba(45,212,191,0.16);
+  --comp-input-radius: 10px;
+  --comp-badge-bg: rgba(45,212,191,0.08);
+  --comp-badge-text: #2dd4bf;
+  --comp-badge-border: 1px solid rgba(45,212,191,0.35);
+  --comp-badge-radius: 10px;
+  --comp-bubble-radius: 12px;
+}
+
+/* ── Minecraft family: chunky voxel blocks ── */
+[data-theme="minecraft"], [data-theme="minecraft-light"] {
+  --comp-btn-bg: #5ad427;
+  --comp-btn-text: #141210;
+  --comp-btn-border: 2px solid #000000;
+  --comp-btn-radius: 0;
+  --comp-btn-shadow: 4px 4px 0 #000000;
+  --comp-btn-clip: none;
+  --comp-card-border: 2px solid #000000;
+  --comp-card-radius: 0;
+  --comp-card-shadow: 6px 6px 0 rgba(0,0,0,0.5);
+  --comp-input-focus-border: #5ad427;
+  --comp-input-focus: 3px 3px 0 rgba(0,0,0,0.2);
+  --comp-input-radius: 0;
+  --comp-badge-bg: #5ad427;
+  --comp-badge-text: #141210;
+  --comp-badge-border: 1px solid #000000;
+  --comp-badge-radius: 0;
+  --comp-bubble-own: rgba(90,212,39,0.14);
+  --comp-bubble-radius: 0;
+}
+
+/* ── Sonic family: angular cobalt speed ── */
+[data-theme="sonic"], [data-theme="sonic-light"] {
+  --comp-btn-bg: #1e6fd9;
+  --comp-btn-text: #ffffff;
+  --comp-btn-border: 1px solid #f5d200;
+  --comp-btn-radius: 0;
+  --comp-btn-shadow: 0 0 16px rgba(30,111,217,0.6);
+  --comp-btn-clip: polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));
+  --comp-card-border: 1px solid rgba(30,111,217,0.45);
+  --comp-card-radius: 0;
+  --comp-card-shadow: 0 8px 30px rgba(0,0,0,0.55), 0 0 18px rgba(30,111,217,0.15);
+  --comp-input-focus-border: #f5d200;
+  --comp-input-focus: 0 0 0 3px rgba(245,210,0,0.18);
+  --comp-input-radius: 0;
+  --comp-badge-bg: rgba(245,210,0,0.1);
+  --comp-badge-text: #f5d200;
+  --comp-badge-border: 1px solid rgba(245,210,0,0.45);
+  --comp-badge-radius: 0;
+  --comp-bubble-radius: 6px;
+}
+
+/* ── Pacman family: maze-yellow arcade glow ── */
+[data-theme="pacman"], [data-theme="pacman-light"] {
+  --comp-btn-bg: #ffe000;
+  --comp-btn-text: #1a0b00;
+  --comp-btn-radius: 0;
+  --comp-btn-shadow: 0 0 18px rgba(255,224,0,0.5);
+  --comp-btn-clip: none;
+  --comp-card-border: 1px solid rgba(255,224,0,0.4);
+  --comp-card-radius: 0;
+  --comp-card-shadow: 0 0 24px rgba(255,224,0,0.1), 0 8px 28px rgba(0,0,0,0.6);
+  --comp-input-focus-border: #ffe000;
+  --comp-input-focus: 0 0 0 3px rgba(255,224,0,0.18);
+  --comp-input-radius: 0;
+  --comp-badge-bg: rgba(255,224,0,0.1);
+  --comp-badge-text: #ffe000;
+  --comp-badge-border: 1px solid rgba(255,224,0,0.4);
+  --comp-badge-radius: 0;
+  --comp-bubble-radius: 8px;
+}
+
+/* ── Dracula palette: vampire purple soft ── */
+[data-theme="dracula"] {
+  --comp-btn-bg: #bd93f9;
+  --comp-btn-text: #282a36;
+  --comp-btn-radius: 8px;
+  --comp-btn-shadow: 0 0 18px rgba(189,147,249,0.45);
+  --comp-btn-clip: none;
+  --comp-card-bg: #2f3242;
+  --comp-card-border: 1px solid rgba(189,147,249,0.35);
+  --comp-card-radius: 8px;
+  --comp-card-shadow: 0 8px 30px rgba(0,0,0,0.55);
+  --comp-input-bg: #2f3242;
+  --comp-input-border: 1px solid rgba(189,147,249,0.3);
+  --comp-input-focus-border: #bd93f9;
+  --comp-input-focus: 0 0 0 3px rgba(189,147,249,0.18);
+  --comp-input-radius: 8px;
+  --comp-badge-bg: rgba(189,147,249,0.1);
+  --comp-badge-text: #bd93f9;
+  --comp-badge-border: 1px solid rgba(189,147,249,0.4);
+  --comp-badge-radius: 8px;
+  --comp-bubble-own: rgba(189,147,249,0.14);
+  --comp-bubble-own-text: #f8f8f2;
+  --comp-bubble-other: #383c4e;
+  --comp-bubble-radius: 12px;
+}
+
+/* ── Nord palette: arctic frost minimal ── */
+[data-theme="nord"] {
+  --comp-btn-bg: #88c0d0;
+  --comp-btn-text: #2e3440;
+  --comp-btn-radius: 8px;
+  --comp-btn-shadow: 0 2px 12px rgba(136,192,208,0.35);
+  --comp-btn-clip: none;
+  --comp-card-bg: #3b4252;
+  --comp-card-border: 1px solid rgba(136,192,208,0.3);
+  --comp-card-radius: 8px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.45);
+  --comp-input-bg: #3b4252;
+  --comp-input-border: 1px solid rgba(136,192,208,0.3);
+  --comp-input-focus-border: #88c0d0;
+  --comp-input-focus: 0 0 0 3px rgba(136,192,208,0.18);
+  --comp-input-radius: 8px;
+  --comp-badge-bg: rgba(136,192,208,0.1);
+  --comp-badge-text: #88c0d0;
+  --comp-badge-border: 1px solid rgba(136,192,208,0.35);
+  --comp-badge-radius: 8px;
+  --comp-bubble-own: rgba(136,192,208,0.14);
+  --comp-bubble-own-text: #eceff4;
+  --comp-bubble-other: #434c5e;
+  --comp-bubble-radius: 12px;
+}
+
+/* ── Tokyo Night palette: neon indigo glow ── */
+[data-theme="tokyo-night"] {
+  --comp-btn-bg: #7aa2f7;
+  --comp-btn-text: #1a1b26;
+  --comp-btn-radius: 6px;
+  --comp-btn-shadow: 0 0 18px rgba(122,162,247,0.5);
+  --comp-btn-clip: none;
+  --comp-card-bg: #232433;
+  --comp-card-border: 1px solid rgba(122,162,247,0.35);
+  --comp-card-radius: 6px;
+  --comp-card-shadow: 0 8px 30px rgba(0,0,0,0.55);
+  --comp-input-bg: #232433;
+  --comp-input-border: 1px solid rgba(122,162,247,0.3);
+  --comp-input-focus-border: #7aa2f7;
+  --comp-input-focus: 0 0 0 3px rgba(122,162,247,0.18);
+  --comp-input-radius: 6px;
+  --comp-badge-bg: rgba(122,162,247,0.1);
+  --comp-badge-text: #7aa2f7;
+  --comp-badge-border: 1px solid rgba(122,162,247,0.4);
+  --comp-badge-radius: 6px;
+  --comp-bubble-own: rgba(122,162,247,0.14);
+  --comp-bubble-own-text: #c0caf5;
+  --comp-bubble-other: #2a2d3f;
+  --comp-bubble-radius: 10px;
+}
+
+/* ── Gruvbox palette: retro umber warmth ── */
+[data-theme="gruvbox"] {
+  --comp-btn-bg: #fabd2f;
+  --comp-btn-text: #282828;
+  --comp-btn-radius: 4px;
+  --comp-btn-shadow: 0 0 14px rgba(250,189,47,0.4);
+  --comp-btn-clip: none;
+  --comp-card-bg: #32302f;
+  --comp-card-border: 1px solid rgba(250,189,47,0.3);
+  --comp-card-radius: 4px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  --comp-input-bg: #32302f;
+  --comp-input-border: 1px solid rgba(250,189,47,0.3);
+  --comp-input-focus-border: #fabd2f;
+  --comp-input-focus: 0 0 0 3px rgba(250,189,47,0.16);
+  --comp-input-radius: 4px;
+  --comp-badge-bg: rgba(250,189,47,0.1);
+  --comp-badge-text: #fabd2f;
+  --comp-badge-border: 1px solid rgba(250,189,47,0.4);
+  --comp-badge-radius: 4px;
+  --comp-bubble-own: rgba(250,189,47,0.12);
+  --comp-bubble-own-text: #ebdbb2;
+  --comp-bubble-other: #3c3836;
+  --comp-bubble-radius: 8px;
+}
+
+/* ── Solarized Dark palette: precision teal ── */
+[data-theme="solarized-dark"] {
+  --comp-btn-bg: #268bd2;
+  --comp-btn-text: #ffffff;
+  --comp-btn-radius: 4px;
+  --comp-btn-shadow: 0 0 14px rgba(38,139,210,0.45);
+  --comp-btn-clip: none;
+  --comp-card-bg: #073642;
+  --comp-card-border: 1px solid rgba(38,139,210,0.35);
+  --comp-card-radius: 4px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  --comp-input-bg: #073642;
+  --comp-input-border: 1px solid rgba(38,139,210,0.3);
+  --comp-input-focus-border: #268bd2;
+  --comp-input-focus: 0 0 0 3px rgba(38,139,210,0.18);
+  --comp-input-radius: 4px;
+  --comp-badge-bg: rgba(38,139,210,0.1);
+  --comp-badge-text: #268bd2;
+  --comp-badge-border: 1px solid rgba(38,139,210,0.4);
+  --comp-badge-radius: 4px;
+  --comp-bubble-own: rgba(38,139,210,0.14);
+  --comp-bubble-own-text: #93a1a1;
+  --comp-bubble-other: #0d3c47;
+  --comp-bubble-radius: 8px;
+}
+
+/* ── Monokai palette: lime on warm charcoal ── */
+[data-theme="monokai"] {
+  --comp-btn-bg: #a6e22e;
+  --comp-btn-text: #272822;
+  --comp-btn-radius: 4px;
+  --comp-btn-shadow: 0 0 16px rgba(166,226,46,0.45);
+  --comp-btn-clip: none;
+  --comp-card-bg: #32332d;
+  --comp-card-border: 1px solid rgba(166,226,46,0.3);
+  --comp-card-radius: 4px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  --comp-input-bg: #32332d;
+  --comp-input-border: 1px solid rgba(166,226,46,0.3);
+  --comp-input-focus-border: #a6e22e;
+  --comp-input-focus: 0 0 0 3px rgba(166,226,46,0.16);
+  --comp-input-radius: 4px;
+  --comp-badge-bg: rgba(166,226,46,0.1);
+  --comp-badge-text: #a6e22e;
+  --comp-badge-border: 1px solid rgba(166,226,46,0.4);
+  --comp-badge-radius: 4px;
+  --comp-bubble-own: rgba(166,226,46,0.12);
+  --comp-bubble-own-text: #f8f8f2;
+  --comp-bubble-other: #3b3d35;
+  --comp-bubble-radius: 8px;
+}
+
+/* ── Catppuccin palette: pastel mauve rounds ── */
+[data-theme="catppuccin"] {
+  --comp-btn-bg: #cba6f7;
+  --comp-btn-text: #11111b;
+  --comp-btn-radius: 12px;
+  --comp-btn-shadow: 0 0 16px rgba(203,166,247,0.4);
+  --comp-btn-clip: none;
+  --comp-card-bg: #181825;
+  --comp-card-border: 1px solid rgba(203,166,247,0.3);
+  --comp-card-radius: 12px;
+  --comp-card-shadow: 0 8px 30px rgba(0,0,0,0.55);
+  --comp-input-bg: #181825;
+  --comp-input-border: 1px solid rgba(203,166,247,0.3);
+  --comp-input-focus-border: #cba6f7;
+  --comp-input-focus: 0 0 0 3px rgba(203,166,247,0.18);
+  --comp-input-radius: 12px;
+  --comp-badge-bg: rgba(203,166,247,0.1);
+  --comp-badge-text: #cba6f7;
+  --comp-badge-border: 1px solid rgba(203,166,247,0.4);
+  --comp-badge-radius: 999px;
+  --comp-bubble-own: rgba(203,166,247,0.14);
+  --comp-bubble-own-text: #cdd6f4;
+  --comp-bubble-other: #1e1e2e;
+  --comp-bubble-radius: 14px;
+}
+
+/* ── One Dark palette: atom blue graphite ── */
+[data-theme="one-dark"] {
+  --comp-btn-bg: #61afef;
+  --comp-btn-text: #282c34;
+  --comp-btn-radius: 6px;
+  --comp-btn-shadow: 0 0 14px rgba(97,175,239,0.4);
+  --comp-btn-clip: none;
+  --comp-card-bg: #21252b;
+  --comp-card-border: 1px solid rgba(97,175,239,0.3);
+  --comp-card-radius: 6px;
+  --comp-card-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  --comp-input-bg: #21252b;
+  --comp-input-border: 1px solid rgba(97,175,239,0.3);
+  --comp-input-focus-border: #61afef;
+  --comp-input-focus: 0 0 0 3px rgba(97,175,239,0.16);
+  --comp-input-radius: 6px;
+  --comp-badge-bg: rgba(97,175,239,0.1);
+  --comp-badge-text: #61afef;
+  --comp-badge-border: 1px solid rgba(97,175,239,0.4);
+  --comp-badge-radius: 6px;
+  --comp-bubble-own: rgba(97,175,239,0.14);
+  --comp-bubble-own-text: #abb2bf;
+  --comp-bubble-other: #2c313c;
+  --comp-bubble-radius: 10px;
+}
+
+/* ── Light variants keep readable button text on accent fills ──
+   Mirrors getComponentTokens(): accent-var backgrounds pair with white
+   text on light themes unless the family declares its own textLight. */
+[data-theme="midnight-light"], [data-theme="crimson-light"],
+[data-theme="ocean-light"], [data-theme="amber-light"],
+[data-theme="rose-light"], [data-theme="forest-light"],
+[data-theme="lava-light"], [data-theme="aurora-light"],
+[data-theme="ember-light"], [data-theme="cobalt-light"],
+[data-theme="honey-light"], [data-theme="violet-light"],
+[data-theme="teal-light"] {
+  --comp-btn-text: #ffffff;
+}
+
+/* ── terminal-light: daylight phosphor variant (mirrors THEME_OVERRIDES) ── */
+[data-theme="terminal-light"] {
+  --comp-btn-border: 1px solid #15803d;
+  --comp-btn-text: #15803d;
+  --comp-input-border: 1px solid rgba(21,128,61,0.45);
+  --comp-input-focus-border: #15803d;
+  --comp-input-focus: 0 0 12px rgba(21,128,61,0.25);
+  --comp-badge-text: #15803d;
+  --comp-badge-border: 1px solid rgba(21,128,61,0.5);
+  --comp-bubble-own-text: #15803d;
 }
 

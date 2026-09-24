@@ -20,7 +20,23 @@ LLDAP_BASE_DN = os.getenv("LLDAP_BASE_DN", "dc=aifazi,dc=net")
 LLDAP_USERS_OU = os.getenv("LLDAP_USERS_OU", f"ou=people,{LLDAP_BASE_DN}")
 LLDAP_BIND_DN = os.getenv("LLDAP_BIND_DN", f"uid=admin,ou=people,{LLDAP_BASE_DN}")
 LLDAP_BIND_PASSWORD = os.getenv("LLDAP_BIND_PASSWORD", "")
-LLDAP_TIMEOUT = float(os.getenv("LLDAP_TIMEOUT", "5"))
+
+
+def _parse_lldap_timeout(raw: str | None, default: float = 5.0) -> float:
+    """Safe-parse LLDAP_TIMEOUT with default + range check (never crash on
+    malformed env). Clamped to 0.5s..60s."""
+    try:
+        value = float((raw or "").strip() or str(default))
+    except (TypeError, ValueError):
+        log.warning("Invalid LLDAP_TIMEOUT=%r; using default %.1fs", raw, default)
+        return default
+    if not 0.5 <= value <= 60.0:
+        log.warning("LLDAP_TIMEOUT=%r out of range; using default %.1fs", raw, default)
+        return default
+    return value
+
+
+LLDAP_TIMEOUT = _parse_lldap_timeout(os.getenv("LLDAP_TIMEOUT"))
 
 
 def _runtime_config() -> tuple[str, str, str, str, str]:

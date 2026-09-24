@@ -25,6 +25,7 @@ import { NotifyProvider } from '@/core/notify'
 import { DialogProvider } from '@/core/dialog'
 import { loadFontForTheme as loadThemeFont } from '@/core/fonts'
 import { applyThemeCustom, resolveThemeCustom } from '@/core/themeCustom'
+import { applyComponentTokens } from '@/core/componentTokens'
 import { VALID_THEMES, LIGHT_THEMES, THEME_PAIRS } from '@/core/themeCatalog'
 import { applyThemeFramework } from '@/core/framework-styles'
 import { isAdmin as checkIsAdmin, getAuthToken, getImpersonationUsername } from '@/lib/api'
@@ -416,6 +417,13 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     const uploadedFonts = Array.isArray(siteConfig.uploadedFonts) ? siteConfig.uploadedFonts : []
     applyThemeCustom(theme, tc, 'theme-custom-css', uploadedFonts)
   }, [theme, siteConfig.themeCustom, siteConfig.themeCustomTargets, siteConfig.uploadedFonts, authEpoch])
+
+  // Per-family component tokens (buttons/cards/inputs/badges/bubbles) — writes
+  // the active theme's --comp-* variables so shared primitives follow the
+  // theme family instead of one generic default look.
+  useEffect(() => {
+    applyComponentTokens(theme)
+  }, [theme])
 
   // Effective framework config = site-wide admin settings, layered with the
   // user's locally-applied package (per-user override wins for this browser).

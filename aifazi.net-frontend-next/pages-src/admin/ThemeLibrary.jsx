@@ -24,6 +24,7 @@ import {
   combineFontOptions, filterFontOptions, stripModeNeutralColors,
 } from '@/core/themeCustom'
 import { THEME_FAMILY_SIBLINGS } from '@/core/themeCatalog'
+import { getComponentTokens, resolveComponentTokens } from '@/core/componentTokens'
 
 // ── Framework preview tokens ──────────────────────────────────────────────────
 const _G   = 'var(--green)', _CY = 'var(--cyan)'
@@ -2476,6 +2477,11 @@ function ThemeLibrary() {
               const isFocused  = focusedIdx === idx
               const isNew      = NEW_THEME_IDS.has(t.id)
               const ts = tagStyle(t.tag)
+              // Per-component tokens baked against this theme's own palette so
+              // the preview shows the family's button / card / input / badge
+              // look (not the viewer's active theme).
+              const ct = resolveComponentTokens(getComponentTokens(t.id), t)
+              const ctClip = ct.button.clip && ct.button.clip !== 'none' ? ct.button.clip : undefined
               return (
                 <div key={t.id} className="tl-card"
                   onClick={() => { setPendingTheme(t.id); setPreviewTheme(t.id) }}
@@ -2488,8 +2494,8 @@ function ThemeLibrary() {
                     boxShadow: isActive ? `0 0 22px ${t.primary}44` : isFocused ? `0 0 16px ${t.primary}33` : '0 2px 12px rgba(0,0,0,0.3)',
                   }}
                 >
-                  {/* Mini UI mockup */}
-                  <div style={{ padding: 12, background: t.bg, borderBottom: `1px solid ${t.border}`, position: 'relative', height: 130, overflow: 'hidden' }}>
+                  {/* Mini UI mockup — card boxes + button/input/badge samples use the theme's component tokens */}
+                  <div style={{ padding: 12, background: t.bg, borderBottom: `1px solid ${t.border}`, position: 'relative', height: 158, overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 36, background: t.bg2, borderRight: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', gap: 5, padding: '8px 4px', alignItems: 'center' }}>
                       {[t.primary, t.secondary, t.orange, t.muted, t.muted].map((c, i) => (
                         <div key={i} style={{ width: 22, height: 5, borderRadius: 2, background: i === 0 ? c : `${c}44` }} />
@@ -2502,15 +2508,23 @@ function ThemeLibrary() {
                       </div>
                       <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
                         {[t.primary, t.secondary, t.orange].map((c, i) => (
-                          <div key={i} style={{ flex: 1, height: 36, borderRadius: 4, background: t.bg3, border: `1px solid ${t.border}`, padding: 5 }}>
+                          <div key={i} style={{ flex: 1, height: 36, background: ct.card.bg, border: ct.card.border, borderRadius: ct.card.radius, boxShadow: ct.card.shadow, padding: 5 }}>
                             <div style={{ height: 4, width: '60%', borderRadius: 2, background: `${c}88`, marginBottom: 3 }} />
                             <div style={{ height: 3, width: '80%', borderRadius: 2, background: `${t.text}22` }} />
                           </div>
                         ))}
                       </div>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <div style={{ height: 14, width: 50, borderRadius: 3, background: t.primary }} />
-                        <div style={{ height: 14, width: 40, borderRadius: 3, border: `1px solid ${t.secondary}66` }} />
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <div style={{ height: 18, padding: '0 10px', display: 'flex', alignItems: 'center', background: ct.button.bg, color: ct.button.text, border: ct.button.border, borderRadius: ct.button.radius, boxShadow: ct.button.shadow, clipPath: ctClip }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, fontWeight: 800, letterSpacing: 1 }}>BUTTON</span>
+                        </div>
+                        <div style={{ flex: 1, height: 18, display: 'flex', alignItems: 'center', gap: 4, padding: '0 6px', background: ct.input.bg, border: ct.input.border, borderRadius: ct.input.radius }}>
+                          <div style={{ height: 8, width: 2, background: t.primary }} />
+                          <div style={{ height: 4, flex: 1, borderRadius: 2, background: `${t.muted}55` }} />
+                        </div>
+                        <div style={{ padding: '3px 8px', background: ct.badge.bg, color: ct.badge.text, border: ct.badge.border, borderRadius: ct.badge.radius }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 1 }}>TAG</span>
+                        </div>
                       </div>
                     </div>
                     {/* Status badge */}

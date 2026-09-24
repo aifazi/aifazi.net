@@ -260,14 +260,14 @@ export default function DMPanel({ me, onClose }) {
             const act = t.id === threadId
             const on = online(t.peer_last_seen)
             return (
-              <button key={t.id} onClick={() => openThread(t)}
+              <button key={t.id} onClick={() => openThread(t)} className={act ? 'chat-dm-thread chat-dm-thread-active' : 'chat-dm-thread'}
                 style={{ display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '8px 9px', marginBottom: 2,
-                  borderRadius: 9, border: 'none', cursor: 'pointer', textAlign: 'left',
-                  background: act ? 'rgba(255,255,255,0.08)' : 'transparent',
+                  borderRadius: T.radius, border: `${T.borderW} solid ${act ? T.border : 'transparent'}`, cursor: 'pointer', textAlign: 'left',
+                  background: act ? T.bubble : 'transparent',
                   color: act ? T.text : T.muted }}>
                 <div style={{ position: 'relative' }}>
                   <Avatar name={t.peer} size={30} />
-                  <span style={{ position: 'absolute', bottom: -1, right: -1, width: 9, height: 9, borderRadius: '50%', background: on ? '#23d160' : 'rgba(255,255,255,0.2)', border: '2px solid ' + (act ? 'rgba(255,255,255,0.08)' : T.sidebar) }} />
+                  <span style={{ position: 'absolute', bottom: -1, right: -1, width: 9, height: 9, borderRadius: '50%', background: on ? 'var(--green)' : 'var(--muted)', border: '2px solid ' + (act ? 'var(--bg3)' : T.sidebar) }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -278,7 +278,7 @@ export default function DMPanel({ me, onClose }) {
                     {t.last_message || ''}
                   </div>
                 </div>
-                {t.unread > 0 && <span style={{ background: T.accent, color: '#000', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, fontFamily: T.mono, flexShrink: 0 }}>{t.unread}</span>}
+                {t.unread > 0 && <span style={{ background: T.accent, color: 'var(--bg)', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, fontFamily: T.mono, flexShrink: 0 }}>{t.unread}</span>}
               </button>
             )
           })}
@@ -303,7 +303,7 @@ export default function DMPanel({ me, onClose }) {
                   {thread?.peer_role && thread.peer_role !== 'member' && <RolePill role={thread.peer_role} />}
                   {key && <span title="Messages encrypted at rest" style={{ color: T.accent, fontSize: 11 }}>🔒</span>}
                 </div>
-                <div style={{ fontSize: 10, color: online(thread?.peer_last_seen) ? '#23d160' : T.muted }}>
+                <div style={{ fontSize: 10, color: online(thread?.peer_last_seen) ? 'var(--green)' : T.muted }}>
                   {online(thread?.peer_last_seen) ? 'Online' : 'Offline'}
                 </div>
               </div>
@@ -329,10 +329,11 @@ export default function DMPanel({ me, onClose }) {
                     <div style={{ display: 'flex', flexDirection: isMine ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-start' }}>
                       <Avatar name={m.sender} size={26} />
                       <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
-                        <div style={{
+                        <div className={isMine ? 'chat-dm-bubble chat-dm-bubble-own' : 'chat-dm-bubble chat-dm-bubble-peer'} style={{
                           background: isMine ? T.bubbleOwn : T.bubble,
-                          border: `1px solid ${isMine ? 'rgba(255,255,255,0.06)' : T.border}`,
-                          borderRadius: 12, borderBottomRightRadius: isMine ? 3 : 12, borderBottomLeftRadius: isMine ? 12 : 3,
+                          border: `${T.borderW} solid ${T.border}`,
+                          boxShadow: T.shadowSm,
+                          borderRadius: T.radius, borderBottomRightRadius: isMine ? 3 : T.radius, borderBottomLeftRadius: isMine ? T.radius : 3,
                           padding: '7px 11px', fontSize: 13, color: T.text, wordBreak: 'break-word', minWidth: 60,
                         }}>
                           {replyTo && m.reply_to && (
@@ -341,14 +342,14 @@ export default function DMPanel({ me, onClose }) {
                             </div>
                           )}
                           {m.type === 'image' && <MediaPreviews text={m.content} onMediaClick={setMediaViewer} right={isMine} />}
-                          {m.type === 'file' && <div>📎 <a href={m.content} target="_blank" rel="noreferrer" style={{ color: T.accentB }}>{m.file_name}</a></div>}
+                          {m.type === 'file' && <div>📎 <a href={m.content} target="_blank" rel="noreferrer" style={{ color: T.link }}>{m.file_name}</a></div>}
                           {m.type === 'voice' && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <button onClick={() => togglePlay(m)} style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'color-mix(in srgb, var(--cyan) 20%, transparent)', color: T.accentB, cursor: 'pointer', fontSize: 12, flexShrink: 0 }}>
+                              <button onClick={() => togglePlay(m)} style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'color-mix(in srgb, var(--link) 20%, transparent)', color: T.link, cursor: 'pointer', fontSize: 12, flexShrink: 0 }}>
                                 {playingId === m.id ? '⏸' : '▶'}
                               </button>
-                              <div style={{ height: 4, width: 120, borderRadius: 2, background: 'rgba(255,255,255,0.12)', overflow: 'hidden' }}>
-                                <div style={{ width: 0, height: '100%', background: T.accentB }} />
+                              <div style={{ height: 4, width: 120, borderRadius: 2, background: 'var(--border2)', overflow: 'hidden' }}>
+                                <div style={{ width: 0, height: '100%', background: T.link }} />
                               </div>
                               <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>{m.duration ? `${Math.round(m.duration)}s` : '♪'}</span>
                               <audio id={`voice-${m.id}`} src={m.content} preload="none" />
@@ -362,15 +363,15 @@ export default function DMPanel({ me, onClose }) {
                               </div>
                               {!isMine && (
                                 <button onClick={() => setInCall(true)}
-                                  style={{ marginTop: 4, padding: '5px 16px', border: 'none', borderRadius: 999,
-                                    background: 'linear-gradient(135deg,color-mix(in srgb, var(--green) 85%, transparent),color-mix(in srgb, var(--cyan) 85%, transparent))',
-                                    color: '#000', fontSize: 11, fontWeight: 700, fontFamily: T.mono, cursor: 'pointer' }}>
+                                  style={{ marginTop: 4, padding: '5px 16px', border: 'none', borderRadius: T.radius,
+                                    background: 'var(--green)', boxShadow: T.glow,
+                                    color: 'var(--bg)', fontSize: 11, fontWeight: 700, fontFamily: T.mono, cursor: 'pointer' }}>
                                   ACCEPT
                                 </button>
                               )}
                               {isMine && (
                                 <button onClick={startCall}
-                                  style={{ marginTop: 4, padding: '5px 16px', border: `1px solid ${T.border}`, borderRadius: 999,
+                                  style={{ marginTop: 4, padding: '5px 16px', border: `${T.borderW} solid ${T.border}`, borderRadius: T.radius,
                                     background: 'transparent', color: T.text, fontSize: 11, fontWeight: 700, fontFamily: T.mono, cursor: 'pointer' }}>
                                   JOIN
                                 </button>
@@ -399,9 +400,9 @@ export default function DMPanel({ me, onClose }) {
 
             {typLabel && <div style={{ padding: '2px 18px 4px', fontFamily: T.mono, fontSize: 10, color: T.muted, flexShrink: 0, fontStyle: 'italic' }}>{typLabel}</div>}
             {replyTo && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'color-mix(in srgb, var(--cyan) 6%, transparent)', borderTop: `1px solid color-mix(in srgb, var(--cyan) 15%, transparent)`, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
                 <div style={{ flex: 1, fontFamily: T.mono, fontSize: 10, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  <span style={{ color: T.accentB }}>@{replyTo.sender}</span> {replyTo.content}
+                  <span style={{ color: T.link }}>@{replyTo.sender}</span> {replyTo.content}
                 </div>
                 <button onClick={() => setReplyTo(null)} style={{ padding: '2px 7px', border: `1px solid ${T.border}`, borderRadius: 6, background: 'transparent', color: T.muted, cursor: 'pointer', fontSize: 12 }}>✕</button>
               </div>
@@ -411,29 +412,32 @@ export default function DMPanel({ me, onClose }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px 12px', borderTop: `1px solid ${T.border}`, background: T.sidebar, flexShrink: 0 }}>
               <input type="file" ref={fileRef} onChange={e => { const f = e.target.files?.[0]; if (f) uploadMsg(f, f.type?.startsWith('image/') ? 'image' : 'file') }} style={{ display: 'none' }} />
               <button onClick={() => fileRef.current?.click()} disabled={sending} title="Attach file"
-                style={{ width: 36, height: 36, border: `1px solid ${T.border}`, borderRadius: 9, background: 'transparent', color: T.text, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                style={{ width: 36, height: 36, border: `${T.borderW} solid ${T.border}`, borderRadius: T.radius, background: 'transparent', color: T.text, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {sending ? '⏳' : '📎'}
               </button>
               <button onClick={recording ? stopRec : startRec} disabled={sending}
-                style={{ width: 36, height: 36, border: `1px solid ${recording ? T.danger : T.border}`, borderRadius: 9, background: recording ? 'rgba(255,71,87,0.15)' : 'transparent', color: recording ? T.danger : T.text, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                style={{ width: 36, height: 36, border: `${T.borderW} solid ${recording ? T.danger : T.border}`, borderRadius: T.radius, background: recording ? 'color-mix(in srgb, var(--red) 15%, transparent)' : 'transparent', color: recording ? T.danger : T.text, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {recording ? '⏹' : '🎙'}
               </button>
               {recording && <span style={{ fontFamily: T.mono, fontSize: 11, color: T.danger, flexShrink: 0 }}>0:{String(recSecs).padStart(2, '0')}</span>}
               {editing ? (
                 <input value={editing?.content || ''} onChange={e => setEditing({ ...editing, content: e.target.value })}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) saveEdit(editing.id, editing.content) }}
-                  style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.border}`, color: T.text, fontFamily: T.display, fontSize: 13, padding: '9px 14px', borderRadius: 10, outline: 'none', minWidth: 0 }} />
+                  style={{ flex: 1, background: T.input, border: `${T.borderW} solid ${T.border}`, color: T.text, fontFamily: T.display, fontSize: 13, padding: '9px 14px', borderRadius: T.radius, outline: 'none', minWidth: 0 }} />
               ) : (
                 <input value={input} onChange={onInput} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) send(e) }}
                   placeholder={`Message ${peer}…`}
-                  style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: `1px solid rgba(255,255,255,0.1)`, color: T.text, fontFamily: T.display, fontSize: 13, padding: '9px 14px', borderRadius: 10, outline: 'none', minWidth: 0 }}
-                  onFocus={e => e.target.style.borderColor = 'color-mix(in srgb, var(--green) 40%, transparent)'}
-                  onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'} />
+                  className="chat-dm-input"
+                  style={{ flex: 1, background: T.input, border: `${T.borderW} solid ${T.border}`, color: T.text, fontFamily: T.display, fontSize: 13, padding: '9px 14px', borderRadius: T.radius, outline: 'none', minWidth: 0 }}
+                  onFocus={e => e.target.style.borderColor = 'var(--green)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--border)'} />
               )}
               <button onClick={() => editing ? saveEdit(editing.id, editing.content) : send()} disabled={sending || !(editing ? editing.content : input).trim()}
-                style={{ height: 36, padding: '0 16px', border: 'none', borderRadius: 9, flexShrink: 0,
-                  background: (editing ? editing.content : input).trim() && !sending ? 'linear-gradient(135deg,color-mix(in srgb, var(--green) 85%, transparent),color-mix(in srgb, var(--cyan) 85%, transparent))' : 'rgba(255,255,255,0.06)',
-                  color: (editing ? editing.content : input).trim() && !sending ? '#000' : T.muted, fontFamily: T.mono, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                className="chat-dm-send"
+                style={{ height: 36, padding: '0 16px', border: 'none', borderRadius: T.radius, flexShrink: 0,
+                  background: (editing ? editing.content : input).trim() && !sending ? 'var(--green)' : 'var(--bg3)',
+                  boxShadow: (editing ? editing.content : input).trim() && !sending ? T.glow : 'none',
+                  color: (editing ? editing.content : input).trim() && !sending ? 'var(--bg)' : T.muted, fontFamily: T.mono, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
                 {sending ? '…' : editing ? 'Save' : 'Send ➤'}
               </button>
             </div>

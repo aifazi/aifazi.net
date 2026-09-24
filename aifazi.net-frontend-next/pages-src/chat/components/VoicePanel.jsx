@@ -4,7 +4,7 @@ const TALK_URL = process.env.NEXT_PUBLIC_TALK_URL || 'https://nextcloud.aifazi.n
 
 export function VoicePanel({ room, onLeave }) {
   return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 32 }}>
+    <div className="chat-voice-panel" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16, padding: 32 }}>
       <div style={{ fontSize: 48 }}>📞</div>
       <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 700, color: T.text, textAlign: 'center' }}>
         Voice &amp; Video Calls Have Moved
@@ -16,15 +16,16 @@ export function VoicePanel({ room, onLeave }) {
         href={TALK_URL}
         target="_blank"
         rel="noopener noreferrer"
+        className="chat-voice-cta"
         style={{
-          padding: '10px 24px', borderRadius: 8, border: 'none',
-          background: 'linear-gradient(135deg, color-mix(in srgb, var(--green) 85%, transparent), color-mix(in srgb, var(--cyan) 85%, transparent))',
-          color: '#000', fontFamily: T.mono, fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'none',
+          padding: '10px 24px', borderRadius: T.radius, border: 'none',
+          background: 'var(--green)', boxShadow: T.glow,
+          color: 'var(--bg)', fontFamily: T.mono, fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'none',
         }}
       >
         OPEN NEXTCLOUD TALK
       </a>
-      <button onClick={onLeave} style={{ padding: '8px 16px', border: `1px solid ${T.border}`, borderRadius: 8, background: 'transparent', color: T.muted, fontFamily: T.mono, fontSize: 10, cursor: 'pointer' }}>
+      <button onClick={onLeave} style={{ padding: '8px 16px', border: `${T.borderW} solid ${T.border}`, borderRadius: T.radius, background: 'transparent', color: T.muted, fontFamily: T.mono, fontSize: 10, cursor: 'pointer' }}>
         BACK TO CHAT
       </button>
     </div>

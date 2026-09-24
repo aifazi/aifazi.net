@@ -10,14 +10,16 @@ import { useNow } from '../hooks/useNow'
 import FiveMStatus from '@/components/FiveMStatus'
 import { getSupabase } from '@/lib/supabase'
 
-const TRUSTED_OAUTH_HOSTS = ['steamcommunity.com', 'steamlogin.com', 'discord.com', 'discordapp.com']
+const TRUSTED_OAUTH_HOSTS = ['steamcommunity.com', 'steamlogin.com', 'discord.com', 'discordapp.com', 'github.com']
 function safeOAuthRedirect(url) {
   try {
-    const u = new URL(url)
-    if (TRUSTED_OAUTH_HOSTS.some(h => u.hostname === h || u.hostname.endsWith('.' + h))) {
+    const u = new URL(url, window.location.origin)
+    if ((u.protocol === 'https:' || u.protocol === 'http:') && TRUSTED_OAUTH_HOSTS.some(h => u.hostname === h || u.hostname.endsWith('.' + h))) {
       window.location.href = url
+      return true
     }
   } catch {}
+  return false
 }
 
 /* ─── Design tokens ──────────────────────────────────────────────────────── */
@@ -1052,7 +1054,9 @@ function SecurityTab({ user }) {
     setOauthStatus(null)
     try {
       const r = await api.get(`${oauthApiBase(provider)}/connect-url?dest=${encodeURIComponent('/profile?tab=security')}`)
-      window.location.assign(r.data.url)
+      // r.data.url is an absolute provider URL, so safeNextPath (same-origin
+      // relative paths only) cannot guard it — use the host allowlist above.
+      if (!safeOAuthRedirect(r.data.url)) navigate('/')
     } catch (err) {
       setOauthStatus({ type: 'error', msg: err?.response?.data?.detail || `Could not start ${provider} connect.` })
       setOauthLoading('')
@@ -1189,7 +1193,7 @@ function SecurityTab({ user }) {
               <div style={{ ...M, fontSize: 11, color: 'var(--text)', fontWeight: 700 }}>Sign Out</div>
               <div style={{ ...M, fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>Sign out of your account on this device</div>
             </div>
-            <Btn color={CLRS.orange} ghost onClick={async () => { await logout?.(); navigate('/login') }} small>SIGN OUT</Btn>
+            <Btn color={CLRS.orange} ghost onClick={async () => { await logout?.(); window.location.replace('/login') }} small>SIGN OUT</Btn>
           </div>
         </div>
       </SectionCard>

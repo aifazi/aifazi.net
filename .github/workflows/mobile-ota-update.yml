@@ -56,14 +56,16 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
 
       - name: Setup EAS
         uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385
         with:
-          eas-version: latest
+          # Pinned: do NOT use `latest` (unpinned action version = supply-chain drift).
+          # eas-cli 24.7.0 — latest verified 2026-09-23 via npm registry.
+          eas-version: 24.7.0
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Install dependencies

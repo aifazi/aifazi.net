@@ -1,0 +1,6 @@
+# Dev/test-only dependencies for CI (backend-lint job).
+# Pinned for reproducible builds. Main deps live in requirements.txt
+# (installed first); these pins take precedence for the test run.
+pytest==9.1.1
+pytest-asyncio==1.4.0
+httpx==0.28.1

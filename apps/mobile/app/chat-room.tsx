@@ -35,6 +35,7 @@ import { VoiceRecorder, VoiceNotePlay } from '@/src/components/VoiceNote'
 import { MediaViewer } from '@/src/components/MediaViewer'
 import { extractUrl, isImageUrl } from '@/src/lib/links'
 import { isOnline, enqueue, flushQueue } from '@/src/lib/offlineQueue'
+import { CALLS_ENABLED } from '@/src/lib/calls'
 import NetInfo from '@react-native-community/netinfo'
 
 interface ChatMessage {
@@ -602,6 +603,7 @@ export default function ChatRoomScreen() {
         </Text>
         {!searchOpen ? (
           <>
+            {CALLS_ENABLED ? (
             <TouchableOpacity
               onPress={() => router.push(`/call?room=${encodeURIComponent(room)}&name=${encodeURIComponent(roomName)}&type=voice` as Href)}
               hitSlop={10}
@@ -611,6 +613,7 @@ export default function ChatRoomScreen() {
             >
               <Icon name="phone" size={FONT.section} color={c.accent2} />
             </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
               onPress={() => setSearchOpen(true)}
               hitSlop={10}

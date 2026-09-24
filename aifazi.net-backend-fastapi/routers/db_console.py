@@ -53,9 +53,23 @@ DANGEROUS_PATTERNS = [
     r'\blo_export\b',
     r'\bdblink\b',
     r'\bsecurity\s+definer\b',
+    r'\bEXPLAIN\b',
 ]
 
 _DANGEROUS_COMPILED = [re.compile(p, re.IGNORECASE | re.DOTALL) for p in DANGEROUS_PATTERNS]
+
+# Fail-closed hardening: block comment syntax outright (--, /*, */), WITH
+# clauses, and pg_*/current_* function/prefix probing. Comments are rejected
+# before normalisation (instead of being stripped and then allowed) so
+# `--`/`/* */` cannot smuggle keywords past the blocklist; WITH is denied
+# because CTEs can wrap blocked-table/function access; pg_*/current_* covers
+# pg_sleep/pg_terminate plus the wider catalog/version probing family
+# (current_user, current_database, current_setting, ...) beyond the small
+# explicit _BLOCKED_SQL_FUNCS list below.
+_UNSAFE_SQL_FUNC_PREFIXES = ("pg_", "current_")
+_UNSAFE_SQL_FUNC_COMPILED = [
+    re.compile(rf"\b{re.escape(p)}\w*", re.IGNORECASE) for p in _UNSAFE_SQL_FUNC_PREFIXES
+]
 
 # P1-10 — tables that are never readable via the console (credentials, tokens,
 # sessions, bans, billing + subscription + mail internals). Matched
@@ -85,6 +99,26 @@ def _blocked_table(sql: str) -> str | None:
 
 def _blocked_func(sql: str) -> str | None:
     for rx in _BLOCKED_SQL_FUNCS_COMPILED:
+        if rx.search(sql):
+            return rx.pattern
+    return None
+
+
+def _has_sql_comment(sql: str) -> bool:
+    """True when the raw SQL contains line or block comment markers.
+
+    Checked against the raw input (before comment-stripping) so commented-out
+    payloads are denied outright instead of being normalised into clean SQL.
+    May false-positive on `--`/`/*` inside string literals; acceptable for a
+    fail-closed admin console.
+    """
+    return "--" in sql or "/*" in sql or "*/" in sql
+
+
+def _blocked_prefix_func(sql: str) -> str | None:
+    """Match pg_*/current_* probing (pg_sleep, current_user, ...) not in the
+    explicit _BLOCKED_SQL_FUNCS list."""
+    for rx in _UNSAFE_SQL_FUNC_COMPILED:
         if rx.search(sql):
             return rx.pattern
     return None
@@ -156,6 +190,14 @@ async def execute_sql(req: SqlRequest, request: Request, user: dict = Depends(re
     if len(req.sql) > MAX_SQL_LENGTH:
         raise HTTPException(400, f"SQL too long. Maximum {MAX_SQL_LENGTH} characters.")
 
+    # Fail-closed: comments (--, /*, */) are denied outright, before the
+    # normaliser strips them.
+    if _has_sql_comment(req.sql):
+        raise HTTPException(
+            status_code=403,
+            detail="SQL comments are not allowed."
+        )
+
     dangerous_pattern = _is_dangerous_sql(req.sql)
     if dangerous_pattern:
         raise HTTPException(
@@ -163,14 +205,13 @@ async def execute_sql(req: SqlRequest, request: Request, user: dict = Depends(re
             detail="Dangerous SQL pattern detected. This operation is blocked for security."
         )
 
-    # C8 — Stronger separator strip. Bare SELECT / WITH only; multi-statement is
-    # blocked by `;` in DANGEROUS_PATTERNS above but we ratchet further by refusing
-    # anything that doesn't start with `select` / `with`.
+    # Fail-closed: bare SELECT only. WITH/CTE wrappers, EXPLAIN, and anything
+    # else are refused (multi-statement is already blocked by `;` above).
     sql_lower_stripped = req.sql.lstrip().lower()
-    if not (sql_lower_stripped.startswith("select") or sql_lower_stripped.startswith("with")):
+    if not sql_lower_stripped.startswith("select"):
         raise HTTPException(
             status_code=403,
-            detail="Only single SELECT queries and read-only WITH clauses are allowed."
+            detail="Only single SELECT queries are allowed."
         )
 
     blocked_table = _blocked_table(req.sql)
@@ -180,10 +221,10 @@ async def execute_sql(req: SqlRequest, request: Request, user: dict = Depends(re
             detail="Query touches a restricted table and is blocked."
         )
 
-    blocked_func = _blocked_func(req.sql)
+    blocked_func = _blocked_func(req.sql) or _blocked_prefix_func(req.sql)
     if blocked_func:
         raise HTTPException(
-            status_code=400,
+            status_code=403,
             detail="Query uses a blocked function or schema and is rejected."
         )
 
@@ -193,13 +234,12 @@ async def execute_sql(req: SqlRequest, request: Request, user: dict = Depends(re
 
     sql_to_run = req.sql.strip().rstrip(';')
     # LIMIT cap: clamp any client-supplied LIMIT to MAX_RESULT_LIMIT and add a
-    # bounded LIMIT when none is present. Applies to WITH-queries too — a
-    # `WITH ... SELECT` wrapper must not bypass the cap — and OFFSET > 1000
-    # is rejected outright for both shapes.
+    # bounded LIMIT when none is present. WITH-queries are denied above, so
+    # only bare SELECT reaches this point — OFFSET > 1000 is rejected outright.
     if _offset_over_cap(sql_to_run):
         raise HTTPException(status_code=400, detail="OFFSET over 1000 is not allowed.")
     sql_lower = req.sql.lower()
-    if sql_lower_stripped.startswith("select") or sql_lower_stripped.startswith("with"):
+    if sql_lower_stripped.startswith("select"):
         if "limit" not in sql_lower:
             sql_to_run = f"{sql_to_run} LIMIT {MAX_RESULT_LIMIT}"
         else:

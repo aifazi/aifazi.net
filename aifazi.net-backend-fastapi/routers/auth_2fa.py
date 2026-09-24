@@ -108,7 +108,7 @@ async def twofa_enable(body: TwoFAEnableBody, user: dict = Depends(get_current_u
             raise HTTPException(400, "Invalid code")
         supabase.table("users").update({"totp_enabled": True}).eq("id", user["id"]).execute()
         recovery = _rotate_recovery_codes("user", user["id"])
-    _audit(user.get("username"), "2fa_enabled")
+    _audit(str(user.get("username") or ""), "2fa_enabled")
     return {"enabled": True, "recovery_codes": recovery}
 
 
@@ -151,7 +151,7 @@ async def twofa_disable(body: TwoFADisableBody, user: dict = Depends(get_current
         supabase.table("users").update(
             {"totp_enabled": False, "totp_secret": None, "recovery_codes": None}
         ).eq("id", user["id"]).execute()
-    _audit(user.get("username"), "2fa_disabled")
+    _audit(str(user.get("username") or ""), "2fa_disabled")
     return {"enabled": False}
 
 
@@ -187,7 +187,7 @@ async def twofa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get
                 raise HTTPException(400, "Invalid 2FA code")
     codes = _rotate_recovery_codes("admin" if _is_env_admin(user) else "user",
                                    "" if _is_env_admin(user) else user["id"])
-    _audit(user.get("username"), "2fa_recovery_codes_rotated")
+    _audit(str(user.get("username") or ""), "2fa_recovery_codes_rotated")
     return {"recovery_codes": codes}
 
 
@@ -243,6 +243,8 @@ async def twofa_verify(body: TwoFAVerifyBody, request: Request, response: Respon
             _send_new_device_alert(username, (row or {}).get("email") or "", ip, request.headers.get("user-agent", ""))
         _set_auth_cookies(response, token, refresh)
         return {"token": token, "refreshToken": refresh, "user": {"username": username, "role": role}}
+    if not user_id:
+        raise HTTPException(400, "Not a 2FA challenge token")
     res = supabase.table("users").select("*").eq("id", user_id).execute()
     if not res.data:
         raise HTTPException(404, "User not found")

@@ -8,15 +8,25 @@ const baseFont = { fontFamily: t.fontMono }
 const fieldBase = {
   width: '100%',
   boxSizing: 'border-box',
-  background: t.bg3,
-  border: `var(--border-w, 1px) solid ${t.border}`,
-  borderRadius: 'var(--radius, 6px)',
+  background: 'var(--comp-input-bg, var(--bg3))',
+  border: 'var(--border-w, 1px) solid var(--comp-input-border, var(--border))',
+  borderRadius: 'var(--comp-input-radius, var(--radius, 6px))',
   color: t.text,
   padding: '8px 12px',
   fontSize: 13,
   outline: 'none',
   transition: 'border-color .14s ease, box-shadow .14s ease, background .14s ease',
   ...baseFont,
+}
+
+const focusField = e => {
+  e.currentTarget.style.borderColor = 'var(--comp-input-focus-border, var(--cyan))'
+  e.currentTarget.style.boxShadow = 'var(--comp-input-focus, 0 0 0 2px rgba(0,212,255,0.10))'
+}
+
+const blurField = e => {
+  e.currentTarget.style.borderColor = 'var(--comp-input-border, var(--border))'
+  e.currentTarget.style.boxShadow = 'none'
 }
 
 const normalizeOptions = options =>
@@ -83,8 +93,7 @@ export function Input({ value, onChange, placeholder, type = 'text', style = {},
         props.onFocus?.(e)
       }}
       onBlur={e => {
-        e.currentTarget.style.borderColor = 'var(--border)'
-        e.currentTarget.style.boxShadow = 'none'
+        blurField(e)
         props.onBlur?.(e)
       }}
     />
@@ -109,8 +118,7 @@ export function TextArea({ value, onChange, placeholder, rows = 3, style = {}, d
         props.onFocus?.(e)
       }}
       onBlur={e => {
-        e.currentTarget.style.borderColor = 'var(--border)'
-        e.currentTarget.style.boxShadow = 'none'
+        blurField(e)
         props.onBlur?.(e)
       }}
     />
@@ -192,11 +200,11 @@ export function Select({
             maxWidth: 'min(420px, calc(100vw - 20px))',
             maxHeight: 320,
             overflowY: 'auto',
-            background: 'rgba(8,16,28,0.96)',
-            border: `var(--border-w, 1px) solid ${t.border}`,
-            borderRadius: 'var(--radius, 8px)',
+            background: 'var(--comp-card-bg, rgba(8,16,28,0.96))',
+            border: 'var(--border-w, 1px) solid var(--comp-input-border, var(--border))',
+            borderRadius: 'var(--comp-card-radius, var(--radius, 8px))',
             padding: 5,
-            boxShadow: '0 18px 48px rgba(0,0,0,.58), 0 0 0 1px rgba(0,212,255,.06)',
+            boxShadow: 'var(--comp-card-shadow, 0 18px 48px rgba(0,0,0,.58), 0 0 0 1px rgba(0,212,255,.06))',
             backdropFilter: 'blur(14px)',
             ...menuStyle,
           }}
@@ -272,6 +280,7 @@ export function Checkbox({ checked, onChange, disabled, label, style = {} }) {
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         whiteSpace: 'nowrap',
+        ...(checked ? { borderColor: 'rgba(0,255,136,0.55)' } : {}),
         ...baseFont,
         ...style,
       }}

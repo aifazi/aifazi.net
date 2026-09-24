@@ -6,9 +6,9 @@ const TALK_URL = process.env.NEXT_PUBLIC_TALK_URL || 'https://nextcloud.aifazi.n
 
 export function DMCallBar({ peer, onEnd }) {
   return (
-    <div style={{
+    <div className="chat-call-bar" style={{
       flexShrink: 0, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 10,
-      borderBottom: `1px solid ${T.border}`, background: 'color-mix(in srgb, var(--cyan) 7%, transparent)',
+      borderBottom: `${T.borderW} solid ${T.border}`, background: 'color-mix(in srgb, var(--green) 8%, transparent)',
     }}>
       <div style={{ fontSize: 16 }}>📞</div>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -24,15 +24,15 @@ export function DMCallBar({ peer, onEnd }) {
         target="_blank"
         rel="noopener noreferrer"
         style={{
-          padding: '5px 14px', border: 'none', borderRadius: 8, cursor: 'pointer',
-          background: 'linear-gradient(135deg, color-mix(in srgb, var(--green) 85%, transparent), color-mix(in srgb, var(--cyan) 85%, transparent))',
-          color: '#000', fontSize: 11, fontWeight: 700, fontFamily: T.mono, textDecoration: 'none',
+          padding: '5px 14px', border: 'none', borderRadius: T.radius, cursor: 'pointer',
+          background: 'var(--green)', boxShadow: T.glow,
+          color: 'var(--bg)', fontSize: 11, fontWeight: 700, fontFamily: T.mono, textDecoration: 'none',
         }}
       >
         OPEN TALK
       </a>
       <button onClick={onEnd}
-        style={{ padding: '5px 14px', border: 'none', borderRadius: 8, cursor: 'pointer', background: T.danger, color: '#fff', fontSize: 12, fontWeight: 700, fontFamily: T.mono }}>
+        style={{ padding: '5px 14px', border: 'none', borderRadius: T.radius, cursor: 'pointer', background: T.danger, color: '#fff', fontSize: 12, fontWeight: 700, fontFamily: T.mono }}>
         DISMISS
       </button>
     </div>

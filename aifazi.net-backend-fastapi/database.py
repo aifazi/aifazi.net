@@ -18,6 +18,15 @@ logger = logging.getLogger("database")
 SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
+if not SUPABASE_URL or not SUPABASE_KEY:
+    _msg = (
+        "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required. "
+        "Refusing to start: the backend would fail at the first query."
+    )
+    if os.getenv("ENV", "production") == "production" or os.getenv("VERCEL", "") == "1":
+        raise RuntimeError(_msg)
+    logger.warning("%s (dev mode: continuing without Supabase)", _msg)
+
 # httpx errors raised when the underlying keep-alive connection was closed by
 # the peer (Supabase / Cloudflare) between warm serverless invocations.
 RETRYABLE_CONN_ERRORS = (
@@ -105,15 +114,16 @@ def safe_search_term(term: str | None, max_len: int = 200) -> str:
 
     Strips PostgREST filter-grammar characters (`,`, `(`, `)`, `"`, `\\`) and
     control characters so a user-controlled search term cannot inject extra
-    predicates into an `or_`/`ilike` filter built as a raw string. The `%` and
-    `_` SQL wildcards are intentionally preserved (they are what make the
-    surrounding `%...%` substring match work).
+    predicates into an `or_`/`ilike` filter built as a raw string. SQL LIKE
+    wildcards (`%`, `_`) are backslash-escaped so they match literally —
+    callers still add their own surrounding `%...%` for substring matching.
     """
     if not term:
         return ""
     t = str(term).strip()
     t = _PG_CONTROL_CHARS.sub(" ", t)
     t = _PG_FILTER_GRAMMAR_CHARS.sub("", t)
+    t = t.replace("%", "\\%").replace("_", "\\_")
     t = re.sub(r"\s+", " ", t).strip()
     return t[:max_len]
 

@@ -96,7 +96,7 @@ def _validate_resolved_host(hostname: str) -> str:
     return safe_ip
 
 
-def _pinned_get(client: httpx.AsyncClient, url: str, *, hostname: str, pinned_ip: str) -> httpx.Response:
+async def _pinned_get(client: httpx.AsyncClient, url: str, *, hostname: str, pinned_ip: str) -> httpx.Response:
     """H20 — GET the URL but connect to the PINNED IP instead of re-resolving.
     We substitute the IP into the URL's netloc and rewrite the Host header to
     the original hostname so SNI + virtual host routing still work."""
@@ -104,7 +104,7 @@ def _pinned_get(client: httpx.AsyncClient, url: str, *, hostname: str, pinned_ip
     port = parsed.port
     netloc = pinned_ip if not port else f"{pinned_ip}:{port}"
     pinned_url = parsed._replace(netloc=netloc).geturl()
-    return client.get(
+    return await client.get(
         pinned_url,
         headers={
             "User-Agent": "aifazi.net SEO Proxy/1.0",

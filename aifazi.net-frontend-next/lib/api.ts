@@ -136,7 +136,10 @@ api.interceptors.response.use(
               }))
             } catch {}
             try { sessionStorage.setItem('post_login_notice', 'Session expired, please sign in') } catch {}
-            window.location.assign(`/login?next=${encodeURIComponent(path + window.location.search)}`)
+            // Full reload (not client-side navigate): guarantees no flash of
+            // authenticated UI and the FOUC script applies the stored theme
+            // before first paint. replace() keeps the dead session out of history.
+            window.location.replace(`/login?next=${encodeURIComponent(path + window.location.search)}`)
           }
         }
       }
@@ -334,10 +337,81 @@ export async function ensureAdminGate(): Promise<boolean> {
   }
 }
 
+/** Theme keys that must survive logout/session-expiry so logged-out pages
+ * (e.g. /login) still render in the user's theme with no flash. Mirrors the
+ * keys written by setTheme()/toggleTheme() in app/providers.tsx and read by
+ * the FOUC script in app/layout.tsx. */
+const PRESERVED_THEME_KEYS = ['site-theme', 'site-theme-user-set', 'last-light-theme', 'last-dark-theme']
+
+/** Known auth/user localStorage keys (explicit list — belt-and-braces on top
+ * of the blanket localStorage.clear() below in case clear() throws mid-way). */
+const AUTH_STORAGE_KEYS = [
+  'auth_token', 'forum_token', 'admin_token', 'staff_token', 'refresh_token',
+  'aifazi_effective_role', 'aifazi_permissions', 'aifazi_username',
+  'user-package', 'site-config-cache',
+]
+
+/** Wipe all client caches while preserving the stored theme choice.
+ *
+ * Called from clearAuthTokens() so it runs on BOTH explicit logout and the
+ * 401 session-expiry path. Best-effort throughout (every step guarded) so a
+ * storage/cache failure can never break logout.
+ *
+ * NOTE: no IndexedDB databases are named anywhere in src (no indexedDB.open
+ * call sites), so there is nothing to delete there — skipped deliberately.
+ */
+export function clearClientCachesPreservingTheme() {
+  if (typeof window === 'undefined') return
+  try {
+    const themeSnapshot: Record<string, string | null> = {}
+    for (const k of PRESERVED_THEME_KEYS) {
+      try { themeSnapshot[k] = localStorage.getItem(k) } catch { themeSnapshot[k] = null }
+    }
+    try { localStorage.clear() } catch {}
+    for (const k of AUTH_STORAGE_KEYS) {
+      try { localStorage.removeItem(k) } catch {}
+    }
+    for (const k of PRESERVED_THEME_KEYS) {
+      try {
+        if (themeSnapshot[k] != null) localStorage.setItem(k, themeSnapshot[k] as string)
+      } catch {}
+    }
+  } catch {}
+  try {
+    // Preserve a pending session-expiry notice across the wipe so the message
+    // survives regardless of whether it was written before or after this call
+    // (the 401 handler writes it after clearAuthTokens; other callers may not).
+    let notice: string | null = null
+    try { notice = sessionStorage.getItem('post_login_notice') } catch { notice = null }
+    try { sessionStorage.clear() } catch {}
+    if (notice != null) {
+      try { sessionStorage.setItem('post_login_notice', notice) } catch {}
+    }
+  } catch {}
+  try {
+    const cs = (window as unknown as { caches?: CacheStorage }).caches
+    if (cs && typeof cs.keys === 'function') {
+      cs.keys()
+        .then((keys) => {
+          for (const k of keys) {
+            try {
+              const p = cs.delete(k)
+              if (p && typeof (p as Promise<boolean>).catch === 'function') (p as Promise<boolean>).catch(() => {})
+            } catch {}
+          }
+        })
+        .catch(() => {})
+    }
+  } catch {}
+}
+
 export function clearAuthTokens(opts?: { revoke?: boolean }) {
   if (typeof window === 'undefined') return
   _memToken = null
   clearStaffVerified()
+  // Logout + session-expiry: wipe every client cache (stale user/auth data
+  // must never survive), keeping only the stored theme choice.
+  clearClientCachesPreservingTheme()
   localStorage.removeItem('aifazi_effective_role')
   localStorage.removeItem('aifazi_permissions')
   localStorage.removeItem('aifazi_username')

@@ -2,6 +2,9 @@
   "name": "mobile",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "@fazi/shared": "file:../../packages/shared",
     "@livekit/react-native": "^2.12.0",

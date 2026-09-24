@@ -10,6 +10,7 @@ import { Btn, Muted } from '@/src/components/ui'
 import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { isSafeHttpUrl } from '@/src/lib/url'
 import { useOverlay } from '@/src/components/overlay'
 import { Loader } from '@/src/components/Loader'
 
@@ -98,7 +99,7 @@ export default function StoreCartScreen() {
         cancel_url: 'aifazi:///store-cart',
       })
       const url = r.data?.url
-      if (!url) {
+      if (typeof url !== 'string' || !isSafeHttpUrl(url)) {
         setErr('Checkout could not be started.')
         return
       }

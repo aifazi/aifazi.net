@@ -58,7 +58,36 @@ function encodeSourceUrl(sourceUrl: string): string {
   return base64UrlEncode(new TextEncoder().encode(plain))
 }
 
+// ── Param validation ─────────────────────────────────────────────────────────
+// Every value below is interpolated into the imgproxy path / upstream URL, so
+// it is validated here (400 on violation) before any string interpolation.
+// Buckets that exist in Supabase Storage: 'media' (upload/blog routers) and
+// 'store-files' (backend STORE_FILES_BUCKET default in store_ecommerce.py).
+const DIM_RE = /^\d{1,4}$/
+const OPT_RE = /^[A-Za-z-]{1,16}$/
+const CDN_BUCKETS: ReadonlySet<string> = new Set(['media', 'store-files'])
+
+function validateCdnParams(params: URLSearchParams): string | null {
+  for (const key of ['w', 'width', 'h', 'height']) {
+    const v = params.get(key)
+    if (v !== null && !DIM_RE.test(v)) return `Invalid ${key} param`
+  }
+  for (const key of ['q', 'quality']) {
+    const v = params.get(key)
+    if (v === null) continue
+    if (!/^\d{1,3}$/.test(v)) return `Invalid ${key} param`
+    const n = Number(v)
+    if (!Number.isInteger(n) || n < 1 || n > 100) return `Invalid ${key} param`
+  }
+  for (const key of ['rs', 'resize', 'g', 'gravity', 'f', 'format']) {
+    const v = params.get(key)
+    if (v !== null && !OPT_RE.test(v)) return `Invalid ${key} param`
+  }
+  return null
+}
+
 // ── Build imgproxy processing path ──────────────────────────────────────────
+// NB: callers must run validateCdnParams() first — values are interpolated raw.
 function buildImgproxyPath(sourceUrl: string, params: URLSearchParams): string {
   const parts: string[] = []
 
@@ -125,11 +154,23 @@ export async function GET(
   const assetPath = '/' + path.join('/')
   const searchParams = new URL(request.url).searchParams
 
+  // Reject out-of-spec transform params before they reach the imgproxy path/URL
+  const paramError = validateCdnParams(searchParams)
+  if (paramError) {
+    return NextResponse.json({ error: paramError }, { status: 400 })
+  }
+
   // ── imgproxy path (primary) ──────────────────────────────────────────────
   if (IMGPROXY_URL && SUPABASE_URL) {
     // Build Supabase Storage source URL
-    const bucket = path[0] === 'media' ? 'media' : path[0]
+    const bucket = path[0]
+    if (!CDN_BUCKETS.has(bucket)) {
+      return NextResponse.json({ error: 'Unknown CDN bucket' }, { status: 400 })
+    }
     const storagePath = path.slice(1).join('/')
+    if (!storagePath) {
+      return NextResponse.json({ error: 'Missing CDN asset path' }, { status: 400 })
+    }
     const sourceUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${storagePath}`
 
     const imgproxyPath = buildImgproxyPath(sourceUrl, searchParams)

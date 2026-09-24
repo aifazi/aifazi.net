@@ -12,5 +12,6 @@ export default function VideoStream({
   mirror?: boolean
   style?: StyleProp<ViewStyle>
 }) {
-  return <RTCView streamURL={streamURL ?? ''} objectFit={objectFit} mirror={mirror} style={style} />
+  if (!streamURL) return null
+  return <RTCView streamURL={streamURL} objectFit={objectFit} mirror={mirror} style={style} />
 }

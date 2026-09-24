@@ -55,8 +55,9 @@ export function Btn({ onClick, children, label, textColor, color = 'var(--green)
       : (BUTTON_BASE[buttonStyle] || {})
   const base = {
     fontFamily: MONO, fontSize: small ? 9 : 10, letterSpacing: 1.5, fontWeight: 700,
-    padding: small ? '6px 12px' : '9px 16px', borderRadius: 6, cursor: disabled ? 'not-allowed' : 'pointer',
+    padding: small ? '6px 12px' : '9px 16px', borderRadius: 'var(--comp-btn-radius, 6px)', cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.5 : 1, transition: 'all 0.15s', border: '1px solid transparent',
+    boxShadow: 'var(--comp-btn-shadow, none)',
     whiteSpace: 'nowrap', ...(full ? { width: '100%' } : {}),
     ...fwBase,
     ...(style || {}),
@@ -64,11 +65,11 @@ export function Btn({ onClick, children, label, textColor, color = 'var(--green)
   const noExplicitBg = !(style || {}).background
   if (variant === 'outline') {
     base.background = disabled ? 'rgba(255,255,255,0.03)' : `color-mix(in srgb, ${color} 18%, transparent)`
-    base.borderColor = disabled ? 'var(--border)' : `color-mix(in srgb, ${color} 44%, transparent)`
+    base.borderColor = disabled ? 'var(--comp-input-border, var(--border))' : `color-mix(in srgb, ${color} 44%, transparent)`
     base.color = danger ? '#ff4757' : color
   } else if (ghost || (buttonStyle === 'ghost' && noExplicitBg)) {
     base.background = 'transparent'
-    base.borderColor = danger ? 'rgba(255,71,87,0.4)' : 'var(--border)'
+    base.borderColor = danger ? 'rgba(255,71,87,0.4)' : 'var(--comp-input-border, var(--border))'
     base.color = danger ? '#ff4757' : 'var(--muted)'
   } else if (buttonStyle === 'minimal' && variant === 'solid' && noExplicitBg) {
     base.background = 'transparent'
@@ -76,7 +77,7 @@ export function Btn({ onClick, children, label, textColor, color = 'var(--green)
     base.color = danger ? '#ff4757' : color
   } else {
     base.background = danger ? '#ff4757' : color
-    base.color = '#000'
+    base.color = 'var(--comp-btn-text, #000)'
   }
   if (textColor) base.color = textColor
   return (
@@ -88,7 +89,7 @@ export function Btn({ onClick, children, label, textColor, color = 'var(--green)
 export function Badge({ children, color = 'var(--green)', tone, style }) {
   const badgeStyle = useFwKey('badgeStyle', BADGE_IDS, 'pill')
   const map = {
-    green: 'var(--green)', red: '#ff4757', yellow: '#facc15', cyan: 'var(--cyan)',
+    green: 'var(--comp-badge-text, var(--green))', red: '#ff4757', yellow: '#facc15', cyan: 'var(--cyan)',
     orange: '#ff6b35', purple: '#a855f7', muted: 'var(--muted)',
   }
   const c = map[tone] || color
@@ -100,7 +101,7 @@ export function Badge({ children, color = 'var(--green)', tone, style }) {
   }[badgeStyle] || {}
   return (
     <span style={{
-      fontFamily: MONO, fontSize: 8, letterSpacing: 1.5, padding: '3px 9px', borderRadius: 999,
+      fontFamily: MONO, fontSize: 8, letterSpacing: 1.5, padding: '3px 9px', borderRadius: 'var(--comp-badge-radius, 999px)',
       background: `color-mix(in srgb, ${c} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${c} 40%, transparent)`,
       color: c, whiteSpace: 'nowrap', ...fwBase, ...(style || {}),
     }}>{children}</span>
@@ -120,7 +121,8 @@ export function StatCard({ label, value, color = 'var(--green)', sub, onClick, s
   }[cardStyle] || {}
   return (
     <div onClick={onClick} style={{
-      background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12,
+      background: 'var(--comp-card-bg, var(--bg2))', border: 'var(--comp-card-border, 1px solid var(--border))', borderRadius: 'var(--comp-card-radius, 12px)',
+      boxShadow: 'var(--comp-card-shadow, none)',
       padding: '16px 18px', cursor: onClick ? 'pointer' : 'default',
       position: 'relative', overflow: 'hidden', transition: 'border-color 0.2s, transform 0.15s',
       ...fwBase,
@@ -282,8 +284,8 @@ export function Modal({ open, onClose, title, width = 560, noBackdropClose, chil
         style={{ position: 'absolute', inset: 0, background: 'rgba(3,8,14,0.72)', backdropFilter: 'blur(3px)' }} />
       <div ref={panelRef} tabIndex={-1} style={{
         position: 'relative', width: '100%', maxWidth: width, maxHeight: '88vh', overflowY: 'auto',
-        background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14,
-        boxShadow: '0 24px 60px rgba(0,0,0,0.55)', outline: 'none',
+        background: 'var(--comp-card-bg, var(--bg2))', border: 'var(--comp-card-border, 1px solid var(--border))', borderRadius: 'var(--comp-card-radius, 14px)',
+        boxShadow: 'var(--comp-card-shadow, 0 24px 60px rgba(0,0,0,0.55))', outline: 'none',
       }}>
         {(typeof title === 'string' && title) && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>

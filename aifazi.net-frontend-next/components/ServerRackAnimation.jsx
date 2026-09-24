@@ -1691,16 +1691,16 @@ function AvatarMode({ visibleRef }) {
               autoFocus
               style={{
                 width: '100%', fontFamily: 'var(--font-mono)', fontSize: 10,
-                padding: '8px 12px', background: 'var(--bg3)',
-                border: '1px solid var(--cyan)', color: 'var(--text)',
-                borderRadius: 2, outline: 'none',
+                padding: '8px 12px', background: 'var(--comp-input-bg, var(--bg3))',
+                border: '1px solid var(--comp-input-focus-border, var(--cyan))', color: 'var(--text)',
+                borderRadius: 'var(--comp-input-radius, 2px)', outline: 'none',
               }}
             />
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={handleSave} style={{
                 fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2,
-                padding: '6px 14px', background: 'var(--green)',
-                color: '#000', border: 'none', borderRadius: 2, cursor: 'pointer', fontWeight: 700,
+                padding: '6px 14px', background: 'var(--comp-btn-bg, var(--green))',
+                color: 'var(--comp-btn-text, #000)', border: 'var(--comp-btn-border, none)', borderRadius: 'var(--comp-btn-radius, 2px)', boxShadow: 'var(--comp-btn-shadow, none)', cursor: 'pointer', fontWeight: 700,
               }}>SAVE</button>
               <button onClick={() => setEditMode(false)} style={{
                 fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2,

@@ -42,9 +42,8 @@ let pending: Pending | null = null
  * One-time OAuth `state` for deep-link verification. Generated fresh per
  * loginWithOAuth call (expo-crypto CSPRNG), appended to the provider URL, and
  * consumed/cleared on the first parseOAuthRedirect — never reused, never
- * logged. NOTE: full CSRF enforcement requires the backend to echo `state`
- * back in the redirect; when the redirect carries no state (legacy backend)
- * the prefix check still applies but mismatch enforcement is skipped.
+ * logged. Fail closed: whenever a state was issued, the redirect must carry
+ * the exact same state or the flow is rejected.
  */
 let oauthState: string | null = null
 
@@ -85,9 +84,10 @@ export function parseOAuthRedirect(rawUrl: string, provider: OAuthProvider): OAu
   const params = { ...parseQuery(qs), ...parseQuery(frag) } // fragment wins
 
   // One-time state: consume immediately so it can never be replayed.
+  // Fail closed — if we issued a state, the redirect must echo it exactly.
   const expected = oauthState
   clearOAuthState()
-  if (expected && params.state && params.state !== expected) {
+  if (expected && params.state !== expected) {
     return { ok: false, cancelled: false, error: 'state' }
   }
 

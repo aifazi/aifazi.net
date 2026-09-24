@@ -1,4 +1,5 @@
 const path = require('path')
+const { withSentryConfig } = require('@sentry/nextjs')
 
 // Deployment hosts are driven by NEXT_PUBLIC_* env (see lib/config.ts) so a
 // fresh clone on its own domain gets matching image hostnames + CDN exclusion
@@ -137,4 +138,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = withSentryConfig(nextConfig, { silent: true })
