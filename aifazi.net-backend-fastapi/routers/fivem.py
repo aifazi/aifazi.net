@@ -1,4 +1,4 @@
-﻿"""routers/fivem.py  v5.1 â€” Bidirectional txAdmin sync, full history, real-time.
+"""routers/fivem.py  v5.1 â€” Bidirectional txAdmin sync, full history, real-time.
 
 Fixes in v5.1:
   â€¢ pending-sync returns a LIST (not dict) â€” Lua expects an array
@@ -32,6 +32,19 @@ import hmac
 import logging
 import os
 import secrets
+
+from utils.fivem_ids import (
+    _player_identifiers, _submission_identifiers, _identifier_update_fields,
+    _normalize_identifier_list, _first_identifier, _primary_ban_identifier,
+    _find_whitelist_by_identifiers, _answer_identifiers, _player_ids_from_fields,
+)
+
+
+from utils.fivem_bans import (
+    _parse_datetime, _duration_seconds, _ban_expires_at, _ban_expire_epoch,
+    _ban_duration_txadmin, _resolve_net_id,
+)
+
 
 # H19 â€” escape helper. The f-string email templates below previously inlined
 # raw `reason`, `note`, `name`, and `char` straight into HTML email bodies. A
@@ -94,74 +107,8 @@ def _effective_whitelist_status(app: dict | None) -> dict | None:
     return app
 
 
-def _player_identifiers(player: dict) -> dict[str, Any]:
-    raw_ids = player.get("identifiers")
-    identifiers = list(raw_ids) if isinstance(raw_ids, list) else []
-    out: dict[str, Any] = {"all": []}
-
-    for raw in identifiers:
-        ident = str(raw or "").strip()
-        if not ident:
-            continue
-        out["all"].append(ident)
-        low = ident.lower()
-        if low.startswith("discord:"):
-            out["discord_id"] = ident.split(":", 1)[1]
-        elif low.startswith("steam:"):
-            out["steam_hex"] = ident
-        elif low.startswith("fivem:"):
-            out["fivem_id"] = ident
-        elif low.startswith("license2:"):
-            out["license2"] = ident
-            out.setdefault("fivem_license", ident)
-        elif low.startswith("license:"):
-            out["license"] = ident
-            out.setdefault("fivem_license", ident)
-
-    for key, aliases in {
-        "license": ("license",),
-        "license2": ("license2",),
-        "fivem_license": ("fivem_license", "license"),
-        "discord_id": ("discord", "discord_id"),
-        "steam_hex": ("steam", "steam_hex"),
-        "fivem_id": ("fivem", "fivem_id"),
-    }.items():
-        for alias in aliases:
-            val = str(player.get(alias) or "").strip()
-            if val:
-                if key == "discord_id" and val.startswith("discord:"):
-                    val = val.split(":", 1)[1]
-                out[key] = val
-                prefixed = val
-                if key == "discord_id" and not prefixed.startswith("discord:"):
-                    prefixed = f"discord:{prefixed}"
-                elif key == "fivem_id" and not prefixed.startswith("fivem:"):
-                    prefixed = f"fivem:{prefixed}"
-                if prefixed not in out["all"]:
-                    out["all"].append(prefixed)
-                break
-
-    return out
 
 
-def _submission_identifiers(answers: dict) -> set[str]:
-    ids: set[str] = set()
-    for key in ("license", "fivem_license", "license2", "steam_hex", "steam", "fivem_id", "discord_id"):
-        val = str((answers or {}).get(key) or "").strip()
-        if not val:
-            continue
-        low = val.lower()
-        if key == "discord_id":
-            ids.add(val[8:] if low.startswith("discord:") else val)
-            ids.add(val if low.startswith("discord:") else f"discord:{val}")
-        elif key == "fivem_id":
-            ids.add(val)
-            ids.add(val if low.startswith("fivem:") else f"fivem:{val}")
-        elif key in ("steam_hex", "steam") and not low.startswith("steam:") and low.startswith("110000"):
-            ids.add(f"steam:{val}")
-        else:
-            ids.add(val)
-    return {i.lower() for i in ids if i}
 
 
 def _stamp_application_activity(player_ids: dict[str, Any], player_name: str, now_iso: str) -> None:
@@ -234,209 +181,12 @@ def _stamp_whitelist_activity(players: list[Any] | None, now_iso: str) -> None:
             log.warning("Could not stamp whitelist activity for player %s: %s", player_name or license_id or discord_id, exc)
 
 # â”€â”€â”€ Email templates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-def _email_approved(name: str, char: str, note: str | None) -> tuple[str, str]:
-    subject = "ðŸŽ® Your AIFAZI RP Whitelist Application â€” APPROVED"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:linear-gradient(135deg,#00FF88,#00D4FF);padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#00FF88;font-size:24px;margin:0 0 8px">âœ… Whitelist Approved!</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Your application to AIFAZI RP has been reviewed.</p>
-    <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:24px">
-      <div style="font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Character</div>
-      <div style="font-size:18px;font-weight:700;color:#00FF88">{_e(char)}</div>
-      <div style="font-size:13px;color:#8b949e;margin-top:4px">Applied by {_e(name)}</div>
-    </div>
-    {f'<div style="background:#161b22;border-left:3px solid #00D4FF;padding:12px 16px;border-radius:4px;margin-bottom:24px"><div style="font-size:11px;color:#8b949e;margin-bottom:4px">NOTE FROM ADMIN</div><div style="color:#e6edf3">{_e(note)}</div></div>' if note else ''}
-    <p style="color:#e6edf3;line-height:1.7">You can now join the server. Connect to <strong style="color:#00FF88">aifazi.net</strong> via FiveM and start your roleplay journey!</p>
-    <div style="background:#0d1117;border:1px solid #00FF8830;border-radius:8px;padding:16px;margin-top:24px;text-align:center">
-      <div style="font-size:11px;color:#8b949e;margin-bottom:8px;font-family:monospace;letter-spacing:2px">CONNECT NOW</div>
-      <div style="font-size:18px;font-weight:700;color:#00FF88;font-family:monospace">connect fivem://connect/127.0.0.1:30120</div>
-    </div>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">
-    AIFAZI RP Â· aifazi.net Â· This email was sent because you applied for whitelist.
-  </div>
-</div>"""
-    return subject, html
+from utils.fivem_emails import (
+    _email_approved, _email_denied, _email_reset, _email_applied,
+    _email_priority, _email_banned, _email_unbanned, _send_whitelist_email,
+)
 
-def _email_denied(name: str, char: str, note: str | None) -> tuple[str, str]:
-    subject = "Your AIFAZI RP Whitelist Application â€” Decision"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:linear-gradient(135deg,#ff4757,#ff6b81);padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#ff4757;font-size:24px;margin:0 0 8px">âŒ Application Not Approved</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Thank you for applying to AIFAZI RP, {_e(name)}.</p>
-    <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:24px">
-      <div style="font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Character</div>
-      <div style="font-size:18px;font-weight:700;color:#ff4757">{_e(char)}</div>
-    </div>
-    {f'<div style="background:#161b22;border-left:3px solid #ff4757;padding:12px 16px;border-radius:4px;margin-bottom:24px"><div style="font-size:11px;color:#8b949e;margin-bottom:4px">REASON</div><div style="color:#e6edf3">{_e(note)}</div></div>' if note else '<div style="background:#161b22;border-left:3px solid #ff4757;padding:12px 16px;border-radius:4px;margin-bottom:24px"><div style="color:#e6edf3">No specific reason provided.</div></div>'}
-    <p style="color:#e6edf3;line-height:1.7">You are welcome to reapply after improving your character backstory. Visit <a href="{FRONTEND_URL}/whitelist" style="color:#00D4FF">{FRONTEND_HOST}/whitelist</a> to submit a new application.</p>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">
-    AIFAZI RP Â· aifazi.net
-  </div>
-</div>"""
-    return subject, html
-
-def _email_reset(name: str, char: str) -> tuple[str, str]:
-    subject = "Your AIFAZI RP Application â€” Reset to Pending"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:#facc15;padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#facc15;font-size:24px;margin:0 0 8px">â³ Application Reset</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Hi {_e(name)}, your application for <strong style="color:#facc15">{_e(char)}</strong> has been reset to pending for re-review. No action is needed â€” our team will review it shortly.</p>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">AIFAZI RP Â· aifazi.net</div>
-</div>"""
-    return subject, html
-
-def _email_applied(name: str, char: str) -> tuple[str, str]:
-    subject = "Your AIFAZI RP Whitelist Application Was Received"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:#00D4FF;padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#00D4FF;font-size:24px;margin:0 0 8px">Application Received</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Hi {_e(name)}, your whitelist application is now waiting for staff review.</p>
-    <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px">
-      <div style="font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Character</div>
-      <div style="font-size:18px;font-weight:700;color:#00D4FF">{_e(char)}</div>
-    </div>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">AIFAZI RP Â· aifazi.net</div>
-</div>"""
-    return subject, html
-
-def _email_priority(name: str, char: str, tier: str, level: int, expires_at: str | None) -> tuple[str, str]:
-    expiry = expires_at or "Permanent"
-    subject = "Your AIFAZI RP Queue Priority Was Updated"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:#facc15;padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#facc15;font-size:24px;margin:0 0 8px">Queue Priority Updated</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Hi {_e(name)}, your queue priority for <strong style="color:#e6edf3">{_e(char)}</strong> has been updated.</p>
-    <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px">
-      <div style="font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Priority</div>
-      <div style="font-size:18px;font-weight:700;color:#facc15">{_e(tier)} Â· {_e(level)}</div>
-      <div style="font-size:13px;color:#8b949e;margin-top:6px">Expires: {_e(expiry)}</div>
-    </div>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">AIFAZI RP Â· aifazi.net</div>
-</div>"""
-    return subject, html
-
-def _email_banned(name: str, char: str, reason: str | None, expires_at: str | None) -> tuple[str, str]:
-    expiry = expires_at or "Permanent"
-    subject = "AIFAZI RP Server Ban Notice"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:#ff4757;padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#ff4757;font-size:24px;margin:0 0 8px">Server Ban Applied</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Hi {_e(name)}, a ban has been applied to your AIFAZI RP access.</p>
-    <div style="background:#161b22;border-left:3px solid #ff4757;padding:12px 16px;border-radius:4px;margin-bottom:18px">
-      <div style="font-size:11px;color:#8b949e;margin-bottom:4px">CHARACTER</div>
-      <div style="color:#e6edf3">{_e(char)}</div>
-    </div>
-    <div style="background:#161b22;border-left:3px solid #ff4757;padding:12px 16px;border-radius:4px">
-      <div style="font-size:11px;color:#8b949e;margin-bottom:4px">REASON</div>
-      <div style="color:#e6edf3">{_e(reason or 'No reason provided.')}</div>
-      <div style="font-size:12px;color:#8b949e;margin-top:10px">Expires: {_e(expiry)}</div>
-    </div>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">AIFAZI RP Â· aifazi.net</div>
-</div>"""
-    return subject, html
-
-def _email_unbanned(name: str, char: str) -> tuple[str, str]:
-    subject = "AIFAZI RP Server Ban Lifted"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:#00FF88;padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#00FF88;font-size:24px;margin:0 0 8px">Ban Lifted</h1>
-    <p style="color:#8b949e;margin:0">Hi {_e(name)}, the server ban for <strong style="color:#e6edf3">{_e(char)}</strong> has been lifted and is queued for server sync.</p>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">AIFAZI RP Â· aifazi.net</div>
-</div>"""
-    return subject, html
-
-async def _send_whitelist_email(app: dict, status: str, note: str | None = None, extra: dict | None = None) -> None:
-    """
-    Send email to the player.
-    Priority: email stored on the application row > discord_users > forum_users.
-    """
-    extra = extra or {}
-    discord_id = app.get("discord_id", "")
-
-    # 1. Use email stored directly on the application (added in v5.2)
-    to_email = (app.get("email") or "").strip()
-
-    # 2. Fall back to discord_users table
-    if not to_email or "@" not in to_email:
-        try:
-            eu = supabase.table("discord_users").select("email").eq("discord_id", discord_id).execute()
-            to_email = ((eu.data or [{}])[0].get("email") or "").strip()
-        except Exception:
-            to_email = ""
-
-    # 3. Fall back to forum_users table
-    if not to_email or "@" not in to_email:
-        try:
-            fu = supabase.table("users").select("email").eq("discord_id", discord_id).execute()
-            to_email = ((fu.data or [{}])[0].get("email") or "").strip()
-        except Exception:
-            to_email = ""
-
-    if not to_email or "@" not in to_email:
-        log.info("No email found for discord_id=%s â€” skipping notification", discord_id)
-        return
-
-    name = app.get("discord_name", "Player")
-    char = app.get("character_name", "your character")
-    purpose = f"fivem_{status}"
-    if status == "applied":
-        fallback_subject, fallback_html = _email_applied(name, char)
-    elif status == "approved":
-        fallback_subject, fallback_html = _email_approved(name, char, note)
-    elif status == "denied":
-        fallback_subject, fallback_html = _email_denied(name, char, note)
-    elif status == "priority":
-        fallback_subject, fallback_html = _email_priority(
-            name,
-            char,
-            extra.get("tier") or "None",
-            int(extra.get("level") or 0),
-            extra.get("expires_at"),
-        )
-    elif status == "banned":
-        fallback_subject, fallback_html = _email_banned(name, char, note, extra.get("expires_at"))
-    elif status == "unbanned":
-        fallback_subject, fallback_html = _email_unbanned(name, char)
-    else:
-        purpose = "fivem_reset"
-        fallback_subject, fallback_html = _email_reset(name, char)
-
-    subject, html = render_template(purpose, {
-        "site_name": "aifazi.net",
-        "name": name,
-        "character_name": char,
-        "note": note or "",
-        "tier": extra.get("tier") or "None",
-        "level": int(extra.get("level") or 0),
-        "expires_at": extra.get("expires_at") or "",
-        "status_url": f"{FRONTEND_URL}/profile?tab=fivem",
-    })
-
-    await queue_email(to_email, subject or fallback_subject, html or fallback_html, "", purpose)
-    log.info("Whitelist email queued to %s status=%s", to_email, status)
-
-# â”€â”€â”€ Discord Bot Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Discord Bot Config (role sync)
 _DISCORD_TOKEN    = os.getenv("DISCORD_BOT_TOKEN", "")
 _DISCORD_GUILD    = os.getenv("DISCORD_GUILD_ID", "")
 _DISCORD_WL_ROLE  = os.getenv("DISCORD_WHITELIST_ROLE_ID", "")
@@ -609,142 +359,14 @@ def _priority_update_fields(priority_tier: str | None, priority_level: int | Non
         "priority_expires_at": priority_expires_at or None if level > 0 else None,
     }
 
-def _identifier_update_fields(identifier: str | None, existing: dict | None = None) -> dict:
-    ident = (identifier or "").strip()
-    if not ident:
-        return {}
 
-    existing = existing or {}
-    updates: dict = {}
-    if ident.startswith("license:"):
-        if not existing.get("fivem_license"):
-            updates["fivem_license"] = ident
-    elif ident.startswith("steam:"):
-        if not existing.get("steam_hex"):
-            updates["steam_hex"] = ident
-    elif ident.startswith("fivem:"):
-        if not existing.get("fivem_id"):
-            updates["fivem_id"] = ident
-    return updates
 
-def _normalize_identifier_list(values: Any) -> list[str]:
-    if not values:
-        return []
-    if isinstance(values, str):
-        value = values.strip()
-        return [value] if value else []
-    if not isinstance(values, list):
-        return []
-    out: list[str] = []
-    for value in values:
-        if value is None:
-            continue
-        text = str(value).strip()
-        if text and text not in out:
-            out.append(text)
-    return out
 
-def _first_identifier(ids: list[str], prefixes: tuple[str, ...]) -> str | None:
-    for ident in ids:
-        low = ident.lower()
-        if any(low.startswith(prefix) for prefix in prefixes):
-            return ident
-    return None
 
-def _primary_ban_identifier(ids: list[str]) -> str | None:
-    return (
-        _first_identifier(ids, ("license:", "license2:"))
-        or _first_identifier(ids, ("steam:",))
-        or _first_identifier(ids, ("discord:",))
-        or _first_identifier(ids, ("fivem:",))
-        or (ids[0] if ids else None)
-    )
 
-def _find_whitelist_by_identifiers(ids: list[str]) -> dict | None:
-    filters: list[str] = []
-    for ident in ids:
-        value = (ident or "").strip()
-        if not value:
-            continue
-        low = value.lower()
-        if low.startswith(("license:", "license2:")):
-            filters.append(f"fivem_license.eq.{value}")
-        elif low.startswith("steam:"):
-            filters.append(f"steam_hex.eq.{value}")
-        elif low.startswith("fivem:"):
-            filters.append(f"fivem_id.eq.{value}")
-            filters.append(f"fivem_id.eq.{value.split(':', 1)[1]}")
-        elif low.startswith("discord:"):
-            filters.append(f"discord_id.eq.{value.split(':', 1)[1]}")
-        else:
-            filters.append(f"discord_id.eq.{value}")
-            filters.append(f"fivem_id.eq.{value}")
 
-    if not filters:
-        return None
 
-    try:
-        res = (
-            supabase.table("fivem_whitelist")
-            .select("*")
-            .eq("status", "approved")
-            .or_(",".join(filters))
-            .order("approved_at", desc=True)
-            .limit(1)
-            .execute()
-        )
-        return (res.data or [None])[0]
-    except Exception as exc:
-        log.warning("Could not match whitelist app for ban identifiers: %s", exc)
-        return None
 
-def _parse_datetime(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    text = value.strip()
-    if not text:
-        return None
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    parsed = datetime.fromisoformat(text)
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
-
-def _duration_seconds(duration: str | None) -> int | None:
-    text = (duration or "permanent").strip().lower()
-    if text in {"", "permanent", "perm", "never", "custom"}:
-        return None
-    mapping = {
-        "2 hours": 2 * 60 * 60,
-        "12 hours": 12 * 60 * 60,
-        "1 day": 24 * 60 * 60,
-        "2 days": 2 * 24 * 60 * 60,
-        "1 week": 7 * 24 * 60 * 60,
-        "2 weeks": 14 * 24 * 60 * 60,
-        "1 month": 30 * 24 * 60 * 60,
-    }
-    return mapping.get(text)
-
-def _ban_expires_at(duration: str | None, expires_at: str | None) -> str | None:
-    parsed = _parse_datetime(expires_at)
-    if parsed:
-        return parsed.isoformat()
-    seconds = _duration_seconds(duration)
-    if seconds is None:
-        return None
-    return (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat()
-
-def _ban_expire_epoch(expires_at: str | None) -> int:
-    try:
-        parsed = _parse_datetime(expires_at)
-    except ValueError:
-        parsed = None
-    if not parsed:
-        return 2147483647
-    return max(int(parsed.timestamp()), int(datetime.now(timezone.utc).timestamp()) + 60)
-
-# â”€â”€â”€ Internal: push one approval to txAdmin + update DB row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async def _sync_to_txadmin(app: dict, approved_by: str, source: str) -> dict:
     """
     Push a whitelist approval to txAdmin (direct HTTPS via txadmin_service).
@@ -1373,21 +995,6 @@ async def mark_synced(body: MarkSynced, request: Request):
 
 
 
-def _answer_identifiers(answers: dict) -> list[str]:
-    ids: list[str] = []
-    for key in ("license", "fivem_license", "license2", "steam_hex", "steam", "fivem_id", "discord_id"):
-        val = str((answers or {}).get(key) or "").strip()
-        if not val:
-            continue
-        low = val.lower()
-        if key == "discord_id" and not low.startswith("discord:"):
-            val = f"discord:{val}"
-        elif key == "fivem_id" and not low.startswith("fivem:"):
-            val = f"fivem:{val}"
-        elif key in ("steam_hex", "steam") and low.startswith("110000"):
-            val = f"steam:{val}"
-        ids.append(val)
-    return list(dict.fromkeys(ids))
 
 @router.get("/application-actions/pending")
 async def pending_application_actions(request: Request):
@@ -1726,28 +1333,8 @@ async def mark_ban_synced(body: BanSyncAck, request: Request):
 
 
 # ── Ban application via txAdmin (website → game server) ───────────────────────
-def _ban_duration_txadmin(ban: dict) -> str:
-    dur = (ban.get("duration") or "").strip().lower()
-    return dur if dur in {"permanent", "2 hours", "12 hours", "1 day", "2 days", "1 week", "2 weeks", "1 month"} else "permanent"
 
 
-def _resolve_net_id(ids: list[str]) -> int | None:
-    """Find the current netId of an online player from the latest fivem_players snapshot."""
-    try:
-        res = supabase.table("fivem_players").select("players").eq("id", "main").execute()
-        if not res.data:
-            return None
-        for p in res.data[0].get("players") or []:
-            if not isinstance(p, dict):
-                continue
-            pids = _player_identifiers(p)
-            known = {str(x).lower() for x in pids.get("all", [])}
-            for ident in ids:
-                if str(ident or "").lower() in known:
-                    return p.get("server_id")
-    except Exception as exc:
-        log.warning("Could not resolve netId for ban: %s", exc)
-    return None
 
 
 async def _push_ban_to_txadmin(ban_id: str) -> dict:
@@ -2327,21 +1914,6 @@ class WhitelistIdentifiersBody(BaseModel):
     identifiers: list[str] = []
 
 
-def _player_ids_from_fields(
-    license_: str | None, license2: str | None, steam_hex: str | None,
-    fivem_id: str | None, discord_id: str | None, identifiers: list[str],
-) -> dict:
-    raw = [str(x or "").strip() for x in (identifiers or []) if str(x or "").strip()]
-    ids = _player_identifiers({
-        "identifiers": raw,
-        "license": license_,
-        "license2": license2,
-        "steam_hex": steam_hex,
-        "fivem_id": fivem_id,
-        "discord": discord_id,
-    })
-    ids["license_key"] = (ids.get("license") or ids.get("license2") or ids.get("fivem_license") or "").strip() or None
-    return ids
 
 
 def _build_player_record_row(ids: dict, player_name: str, server_id: Any, now_iso: str) -> dict | None:

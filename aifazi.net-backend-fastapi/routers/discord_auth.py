@@ -52,7 +52,9 @@ FRONTEND_URL          = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("
 API_URL               = os.getenv("API_URL", "https://api.aifazi.net").rstrip("/")
 REDIRECT_URI          = f"{API_URL}/api/discord/callback"
 
-JWT_SECRET  = os.getenv("PASETO_SECRET", "")
+# Signing key for short-lived Discord mobile deep-link JWTs. Historically named
+# JWT_SECRET locally but always read from PASETO_SECRET — keep that mapping.
+PASETO_SIGNING_KEY = os.getenv("PASETO_SECRET", "")
 JWT_ALGO    = "HS256"
 JWT_EXPIRE  = 60 * 24 * 7   # 7 days in minutes
 
@@ -70,11 +72,11 @@ def _make_player_token(user: dict) -> str:
         "role":         "player",
         "exp":          datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE),
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
+    return jwt.encode(payload, PASETO_SIGNING_KEY, algorithm=JWT_ALGO)
 
 def _decode_player_token(token: str) -> dict:
     try:
-        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+        return jwt.decode(token, PASETO_SIGNING_KEY, algorithms=[JWT_ALGO])
     except JWTError:
         raise HTTPException(401, "Invalid or expired Discord session")
 

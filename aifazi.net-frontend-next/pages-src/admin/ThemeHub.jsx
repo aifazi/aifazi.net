@@ -1,6 +1,8 @@
 'use client'
 import React, { useState } from 'react'
-import ThemeLibrary from './ThemeLibrary'
+import dynamic from 'next/dynamic'
+
+const ThemeLibrary = dynamic(() => import('./ThemeLibrary'), { ssr: false })
 import { AnnouncementsPanel } from './AdminPanels'
 import { SiteSettings } from './SiteSettings'
 

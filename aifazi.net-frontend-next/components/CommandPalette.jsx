@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from '@/lib/router-compat'
 import api from '@/lib/api'
+import { useFocusTrap } from '@/core/useFocusTrap'
 
 const COMMANDS = [
   // Navigation
@@ -36,6 +37,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
   const inputRef  = useRef(null)
   const navigate  = useNavigate()
   const searchRef = useRef(null)
+  const panelRef  = useFocusTrap(open)
 
   // Debounced search
   useEffect(() => {
@@ -150,6 +152,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
   return (
     <div
       onClick={() => { setOpen(false); setQuery('') }}
+      role="presentation"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
@@ -158,6 +161,10 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
       }}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 560, background: 'var(--bg2)',
@@ -181,7 +188,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
               color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 16,
             }}
           />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>ESC</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>ESC</span>
         </div>
 
         {/* Results */}
@@ -189,7 +196,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
           {Object.entries(grouped).map(([group, cmds]) => (
             <div key={group}>
               <div style={{
-                fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3,
                 color: 'var(--muted)', padding: '8px 18px 4px', textTransform: 'uppercase',
               }}>{group}</div>
               {cmds.map(cmd => {
@@ -211,7 +218,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
                     <span style={{ fontSize: 14, width: 20, textAlign: 'center', flexShrink: 0 }}>{cmd.icon}</span>
                     <span style={{ fontSize: 14, color: isSelected ? 'var(--text)' : 'var(--text2)' }}>{cmd.label}</span>
                     {isSelected && (
-                      <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>ENTER ↵</span>
+                      <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>ENTER ↵</span>
                     )}
                   </div>
                 )
@@ -229,8 +236,8 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
         <div style={{ padding: '8px 18px', borderTop: '1px solid var(--border)', display: 'flex', gap: 16 }}>
           {[['↑↓', 'Navigate'], ['↵', 'Select'], ['ESC', 'Close']].map(([key, label]) => (
             <span key={key} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <kbd style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '2px 6px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)' }}>{key}</kbd>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{label}</span>
+              <kbd style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '2px 6px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)' }}>{key}</kbd>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{label}</span>
             </span>
           ))}
         </div>

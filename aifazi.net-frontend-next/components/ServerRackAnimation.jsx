@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { useInlineEdit } from '../context/EditContext'
+import { prefersReducedMotion } from '../core/useFocusTrap'
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ServerRackAnimation  —  multi-mode animated dashboard
@@ -45,7 +46,10 @@ export default function ServerRackAnimation() {
   }, [])
 
   useEffect(() => {
-    const id = setInterval(() => { if (visibleRef.current) setTick(t => t + 1) }, 350)
+    const id = setInterval(() => {
+      if (prefersReducedMotion()) return
+      if (visibleRef.current) setTick(t => t + 1)
+    }, 350)
     return () => clearInterval(id)
   }, [])
 

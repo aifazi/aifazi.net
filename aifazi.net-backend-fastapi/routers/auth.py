@@ -62,6 +62,12 @@ except ImportError:
 log = logging.getLogger("auth")
 router = APIRouter()
 
+from utils.auth_tokens import (
+    make_token, make_refresh_token, make_admin_gate_token,
+    make_forum_token, make_forum_2fa_token, _set_auth_cookies, _set_admin_gate_cookie,
+)
+
+
 # ── Sub-router imports ─────────────────────────────────────────────────────────
 # These modules were extracted from auth.py for maintainability.
 # They add their endpoints to the main auth router via inclusion.
@@ -165,43 +171,10 @@ from utils.oauth_state import (
     verify_oauth_state_full,
 )
 
-def make_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
-    """Mint an ACCESS token (PASETO v4 local). Carries `token_type: "access"`."""
-    if not SECRET:
-        raise HTTPException(503, "PASETO_SECRET is not configured")
-    data = payload.copy()
-    data["token_type"] = "access"
-    return _paseto_create_token(data, expires_in=expires_minutes * 60, purpose="auth")
 
 
-def make_refresh_token(payload: dict, expires_minutes: int = 60 * 24 * 7) -> str:
-    """Mint a REFRESH token (PASETO v4 local). Distinguished by `token_type: "refresh"`."""
-    if not SECRET:
-        raise HTTPException(503, "PASETO_SECRET is not configured")
-    data = payload.copy()
-    data["token_type"] = "refresh"
-    return _paseto_create_token(data, expires_in=expires_minutes * 60, purpose="auth")
 
 
-def make_admin_gate_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
-    if not ADMIN_GATE_SECRET:
-        raise HTTPException(503, "Admin gate secret is not configured")
-    data = {
-        "username": payload.get("username"),
-        "role": payload.get("role"),
-        "purpose": "admin_gate",
-    }
-    if payload.get("id"):
-        data["id"] = payload.get("id")
-    if payload.get("staff_id"):
-        data["staff_id"] = payload.get("staff_id")
-    # Use PASETO for admin gate token too (proxy.ts expects PASETO).
-    # H4 — pass ADMIN_GATE_SECRET explicitly instead of mutating the
-    # process-global os.environ["PASETO_SECRET"]. The old env-var swap raced
-    # concurrent make_token() calls: a login happening during the swap window
-    # could mint an access token with the admin-gate secret (or an admin-gate
-    # token with the access secret), a subtle cross-role trust break.
-    return _paseto_create_token(data, expires_in=expires_minutes * 60, purpose="admin_gate", secret=ADMIN_GATE_SECRET)
 
 def _check_admin_password(submitted: str) -> bool:
     """Admin password verification. Requires a bcrypt hash (starting with $2b$, $2a$,
@@ -493,11 +466,7 @@ def _make_qr_b64(uri: str) -> str:
 
 bearer = CookieHTTPBearer(auto_error=False)
 
-def make_forum_token(user_id: str, username: str, role: str) -> str:
-    return _paseto_create_token({"id": user_id, "username": username, "role": role, "token_type": "access"}, expires_in=7 * 86400, purpose="auth")
 
-def make_forum_2fa_token(user_id: str, username: str, role: str, provider: str = "password") -> str:
-    return _paseto_create_token({"id": user_id, "username": username, "role": role, "tfa_pending": True, "provider": provider}, expires_in=5 * 60, purpose="auth")
 
 def _staff_profile_from_payload(payload: dict) -> dict:
     role = payload.get("role", "")
@@ -785,47 +754,7 @@ class ChangePasswordBody(BaseModel):
 #       ADD COLUMN IF NOT EXISTS totp_secret TEXT,
 #       ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN DEFAULT FALSE;
 
-def _set_auth_cookies(response: Response, access: str, refresh: str):
-    """Set auth cookies via Set-Cookie headers.
-    auth_token: HttpOnly Secure cookie containing the PASETO access token.
-    refresh_token: HttpOnly Secure cookie for token refresh.
-    admin_session: HttpOnly signed gate token for Next.js Edge middleware.
-      It carries purpose=admin_gate and is rejected by backend bearer auth.
-    """
-    is_prod = (os.getenv("ENVIRONMENT") or os.getenv("ENV") or "production").lower() == "production"
-    response.set_cookie(
-        key="auth_token", value=access,
-        httponly=True, secure=is_prod, samesite="lax",
-        domain=COOKIE_DOMAIN or None,
-        max_age=60 * 60 * 24, path="/",
-    )
-    response.set_cookie(
-        key="refresh_token", value=refresh,
-        httponly=True, secure=is_prod, samesite="lax",
-        domain=COOKIE_DOMAIN or None,
-        max_age=60 * 60 * 24 * 7, path="/",
-    )
-    # Decode PASETO access token for admin gate
-    access_payload = _paseto_decode_token(access, purpose="auth") or {}
-    response.set_cookie(
-        key="admin_session", value=make_admin_gate_token(access_payload, 60 * 24 * 7),
-        httponly=True,
-        secure=is_prod, samesite="lax",
-        domain=COOKIE_DOMAIN or None,
-        max_age=60 * 60 * 24 * 7, path="/",
-    )
 
-def _set_admin_gate_cookie(response: Response, gate_token: str):
-    is_prod = (os.getenv("ENVIRONMENT") or os.getenv("ENV") or "production").lower() == "production"
-    response.set_cookie(
-        key="admin_session", value=gate_token,
-        httponly=True,
-        secure=is_prod, samesite="lax",
-        domain=COOKIE_DOMAIN or None,
-        max_age=60 * 60 * 24 * 7, path="/",
-    )
-
-# ── Admin login ─────────────────────────────────────────────────────────────────
 @router.post("/login")
 async def login(body: LoginBody, request: Request, response: Response):
     client_ip = request.client.host if request.client else ""

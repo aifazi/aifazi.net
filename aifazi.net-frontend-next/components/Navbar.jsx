@@ -4,8 +4,9 @@ import dynamic from 'next/dynamic'
 import { Link, useLocation, useNavigate } from '@/lib/router-compat'
 import { useForum } from '../context/ForumContext'
 import { useTheme } from '@/app/providers'
-import CommandPalette from './CommandPalette'
+const CommandPalette = dynamic(() => import('./CommandPalette'), { ssr: false })
 import Terminal from './Terminal'
+
 // ThemePicker is ~113KB (theme catalog + admin global panel). It only matters
 // when the drawer opens, so load it lazily instead of shipping it to every
 // visitor on every page.

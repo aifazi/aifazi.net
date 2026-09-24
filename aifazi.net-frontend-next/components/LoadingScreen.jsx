@@ -110,6 +110,8 @@ function GlitchLoader({ onComplete }) {
 }
 
 function MatrixLoader({ onComplete }) {
+  // Skip rAF char-rain when the user asked for reduced motion.
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   const canvasRef = useRef(null)
   const [exiting, setExiting] = useState(false)
   useEffect(() => {
@@ -126,7 +128,7 @@ function MatrixLoader({ onComplete }) {
         ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*16, y*16)
         if (y*16 > canvas.height && Math.random() > 0.975) drops[i] = 0
         drops[i]++
-      }); raf = requestAnimationFrame(draw)
+      }); if (!reduced) raf = requestAnimationFrame(draw)
     }
     draw()
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1200)

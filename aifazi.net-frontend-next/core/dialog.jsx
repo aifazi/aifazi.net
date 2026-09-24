@@ -145,14 +145,14 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
           {isTerminal && (
             <div style={{ background: 'rgba(0,255,136,0.08)', borderBottom: `1px solid ${v.color}44`, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 7 }}>
               {['#ff5f56','#ffbd2e','#27c93f'].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />)}
-              <span style={{ fontFamily: t.fontMono, fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginLeft: 8 }}>DIALOG.SH</span>
+              <span style={{ fontFamily: t.fontMono, fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginLeft: 8 }}>DIALOG.SH</span>
             </div>
           )}
           {/* CRT: scanline overlay + green status bar */}
           {isCrt && (
             <>
               <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.25) 2px,rgba(0,0,0,0.25) 4px)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: `1px solid ${v.color}33`, fontFamily: t.fontMono, fontSize: 9, color: v.color, letterSpacing: 2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderBottom: `1px solid ${v.color}33`, fontFamily: t.fontMono, fontSize: 11, color: v.color, letterSpacing: 2 }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: v.color, boxShadow: `0 0 6px ${v.color}`, animation: 'dlg-crt-blink 1.2s steps(2) infinite' }} />
                 <span>PHOSPHOR.DIALOG</span>
               </div>
@@ -182,7 +182,7 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
           )}
           {/* Content */}
           <div style={{ padding: isSheet ? '16px 28px 32px' : '28px 32px 24px' }}>
-            <div style={{ fontFamily: t.fontMono, fontSize: 9, letterSpacing: 3, color: v.color, marginBottom: 14, textTransform: 'uppercase' }}>{v.icon} {v.label}</div>
+            <div style={{ fontFamily: t.fontMono, fontSize: 11, letterSpacing: 3, color: v.color, marginBottom: 14, textTransform: 'uppercase' }}>{v.icon} {v.label}</div>
             <h2 id={titleId} style={{ fontFamily: t.fontDisplay, fontSize: isBrutal ? 26 : 22, fontWeight: isBrutal ? 900 : 700, color: isCrt ? '#33ff33' : t.text, marginBottom: entry.message || isPrompt ? 10 : 0, lineHeight: 1.2, textTransform: isBrutal ? 'uppercase' : 'none' }}>
               {entry.title || (isPrompt ? 'Enter a value' : 'Are you sure?')}
             </h2>

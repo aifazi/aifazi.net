@@ -1058,6 +1058,9 @@ export default function ForumAdmin({ embedded = false }) {
                   <UserAvatar
                     avatar={u.avatar} name={u.username} size={44}
                     onClick={() => setEditingUser(u._id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditingUser(u._id) } }}
                     imgStyle={{ border: `2px solid ${u.banned ? 'var(--red)' : 'var(--border)'}`, cursor: 'pointer' }}
                     fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${u.username}`}
                   />
