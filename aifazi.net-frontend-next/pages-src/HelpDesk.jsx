@@ -5,6 +5,7 @@ import { notify } from '../core/notify.jsx'
 import { useForum } from '../context/ForumContext'
 import { Select } from '../core/ui.jsx'
 import Clickable from '@/core/Clickable.jsx'
+import { SkeletonList } from '@/core/Feedback'
 import { getSupabase } from '@/lib/supabase'
 
 const mono = { fontFamily: 'var(--font-mono)' }
@@ -561,7 +562,7 @@ const filtered = ticketList.filter(t => (
         </div>
       )}
 
-      {loading && <div style={{ textAlign: 'center', padding: '24px 0', ...mono, fontSize: 11, color: 'var(--muted)', letterSpacing: 3 }}>LOADING…</div>}
+      {loading && <SkeletonList rows={4} />}
 
       {!loading && filtered.length > 0 && (
         <div style={{ marginTop: 4 }}>

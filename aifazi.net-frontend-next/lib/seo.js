@@ -59,3 +59,33 @@ export function breadcrumbJsonLd(siteUrl, items) {
 export function jsonLdScript(data) {
   return JSON.stringify(data).replace(/</g, '\\u003c')
 }
+
+export function productJsonLd(opts) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: opts.name,
+    description: opts.description || '',
+    image: opts.image ? [opts.image] : undefined,
+    url: opts.url,
+    brand: { '@type': 'Brand', name: opts.brand || 'AIFAZI RP' },
+    offers: opts.price != null ? {
+      '@type': 'Offer',
+      price: opts.price,
+      priceCurrency: opts.currency || 'USD',
+      availability: 'https://schema.org/InStock',
+      url: opts.url,
+    } : undefined,
+  }
+}
+
+export function serviceJsonLd(opts) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name: opts.name,
+    description: opts.description || '',
+    url: opts.url,
+    provider: { '@type': 'Organization', name: 'AIFAZI RP', url: opts.siteUrl },
+  }
+}
