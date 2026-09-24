@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useInlineEdit } from '../context/EditContext'
 import { prefersReducedMotion } from '../core/useFocusTrap'
+import createGlobe from 'cobe'
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ServerRackAnimation  —  multi-mode animated dashboard
@@ -1876,11 +1877,17 @@ function VisitorHud({ visitor }) {
     ['NETWORK',   visitor.network],
   ].filter(([, v]) => v && v !== '—')
 
+  const hasCoords = Number.isFinite(+visitor.lat) && Number.isFinite(+visitor.lon) && visitor.lat !== '—'
+
   return (
-    <div className="globe-visitor-shell" style={{
-      position: 'absolute', bottom: 12, left: 14, zIndex: 4,
-      maxWidth: 'calc(100% - 28px)',
-    }}>
+    <div
+      className="globe-visitor-shell"
+      data-anchored={hasCoords ? 'true' : undefined}
+      style={{
+        position: 'absolute', bottom: 12, left: 14, zIndex: 4,
+        maxWidth: 'calc(100% - 28px)',
+      }}
+    >
       <div
         className="globe-visitor-card"
         onMouseEnter={() => setOpen(true)}
@@ -2003,6 +2010,20 @@ function VisitorHud({ visitor }) {
           outline: 2px solid var(--green);
           outline-offset: 2px;
         }
+        /* CSS Anchor Positioning — lock the HUD to the COBE visitor marker when
+           the browser supports it; otherwise the shell stays bottom-left. */
+        @supports (position-anchor: --cobe-visitor) {
+          .globe-visitor-shell[data-anchored='true'] {
+            position: absolute;
+            position-anchor: --cobe-visitor;
+            bottom: calc(anchor(top) + 10px);
+            left: anchor(center);
+            translate: -50% 0;
+            opacity: var(--cobe-visible-visitor, 1);
+            transition: opacity 0.3s ease;
+            max-width: min(320px, calc(100% - 28px));
+          }
+        }
         @media (prefers-reduced-motion: reduce) {
           .globe-visitor-card span[style*="hudPulse"] { animation: none !important; }
         }
@@ -2011,26 +2032,29 @@ function VisitorHud({ visitor }) {
   )
 }
 
+// ── COBE-based globe (replaces the canvas-2D renderer) ───────────────────────
+function rgbToArr(rgbStr, fallback = '0,212,255') {
+  const p = String(rgbStr || fallback).split(',').map(Number)
+  const n = p.length >= 3 ? p : fallback.split(',').map(Number)
+  return [n[0] / 255, n[1] / 255, n[2] / 255]
+}
+
 function GlobeMode({ visibleRef }) {
   const canvasRef = useRef()
   const wrapRef   = useRef()
-  const animRef   = useRef()
+  const globeRef  = useRef(null)
   const [visitor, setVisitor] = useState(null)
   const visitorRef = useRef(null)
   const [themeKey, setThemeKey] = useState(0)
   const themeRef = useRef(null)
   const stateRef  = useRef({
-    rotY:     0.3,          // Y-axis (longitude) angle
-    rotX:     0.12,         // X-axis (latitude tilt) angle — fixed gentle tilt
-    velY:     0.0018,       // auto-spin velocity (slows on drag, resumes after)
-    velYDamp: 0,            // drag-contributed velocity for momentum
-    drag:     null,         // { startX, startY, lastRotY, lastVelY }
-    hovered:  -1,           // index of hovered city (-1 = none)
-    mouseX:   0,
-    mouseY:   0,
-    zoom:     1.0,          // scroll-to-zoom / pinch-zoom multiplier, capped to keep edges visible
-    pinch:    null,         // { dist0, zoom0 } for two-finger pinch
-    packets:  GLOBE_PACKETS,
+    phi: 0.55,          // COBE longitude
+    theta: 0.18,        // COBE latitude tilt
+    velPhi: 0.0022,     // auto-spin velocity
+    velPhiDamp: 0,      // drag momentum
+    drag: null,         // { startX, lastX, lastPhi }
+    zoom: 1.0,
+    pinch: null,
   })
 
   useEffect(() => { visitorRef.current = visitor }, [visitor])
@@ -2121,36 +2145,100 @@ function GlobeMode({ visibleRef }) {
       themeRef.current = readGlobeTheme()
       setThemeKey(k => k + 1)
     })
-    obs.observe(el, { attributes: true, attributeFilter: ['data-theme'] })
-    const init = setTimeout(() => setThemeKey(k => k + 1), 0)
-    return () => { clearTimeout(init); obs.disconnect() }
+    obs.observe(el, { attributes: true, attributeFilter: ['data-theme', 'style'] })
+    return () => obs.disconnect()
   }, [])
 
-  // ── Resize (DPR-aware) ────────────────────────────────────────────────────
+  // ── COBE globe instance (recreated on theme / visitor change) ──
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
-    let lastW = 0, lastH = 0
-    const fit = () => {
-      const p = canvas.parentElement
-      if (!p) return
-      const dpr = window.devicePixelRatio || 1
-      const w   = p.clientWidth
-      const h   = p.clientHeight || 600
-      if (w === lastW && h === lastH) return
-      lastW = w; lastH = h
-      canvas.width  = w * dpr
-      canvas.height = h * dpr
-      canvas.style.width  = `${w}px`
-      canvas.style.height = `${h}px`
-    }
-    fit()
-    const ro = new ResizeObserver(fit)
-    if (canvas.parentElement) ro.observe(canvas.parentElement)
-    return () => ro.disconnect()
-  }, [])
+    if (!canvas || typeof createGlobe !== 'function') return
+    if (!themeRef.current) themeRef.current = readGlobeTheme()
 
-  // ── Pointer events (drag-to-rotate + hover) ───────────────────────────────
+    const theme = themeRef.current
+    const v = visitorRef.current
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const rect = canvas.getBoundingClientRect()
+    const width = Math.max(200, Math.floor(rect.width * dpr))
+    const height = Math.max(200, Math.floor(rect.height * dpr))
+
+    const cyan  = rgbToArr(theme.cyanRgb,  '0,212,255')
+    const green = rgbToArr(theme.greenRgb, '0,255,136')
+    const orange = rgbToArr(theme.orangeRgb, '255,107,53')
+    const bg    = rgbToArr(theme.bgRgb, '0,12,28')
+
+    const markers = GLOBE_CITIES.map(c => ({
+      location: [c.lat, c.lng],
+      size: c.hub ? 0.09 : 0.05,
+      color: c.hub ? green : cyan,
+    }))
+
+    const arcs = GLOBE_CONNECTIONS.map(([a, b]) => ({
+      from: [GLOBE_CITIES[a].lat, GLOBE_CITIES[a].lng],
+      to:   [GLOBE_CITIES[b].lat, GLOBE_CITIES[b].lng],
+    }))
+
+    // Visitor marker + arc from the Riyadh hub (bindable via CSS anchors)
+    const hasVisitor = v && Number.isFinite(+v.lat) && Number.isFinite(+v.lon) && v.lat !== '—'
+    if (hasVisitor) {
+      markers.push({
+        location: [+v.lat, +v.lon],
+        size: 0.12,
+        color: orange,
+        id: 'visitor',
+      })
+      const hub = GLOBE_CITIES.find(c => c.hub) || GLOBE_CITIES[9]
+      arcs.push({
+        from: [hub.lat, hub.lng],
+        to:   [+v.lat, +v.lon],
+        color: green,
+      })
+    }
+
+    const globe = createGlobe(canvas, {
+      devicePixelRatio: dpr,
+      width,
+      height,
+      phi: stateRef.current.phi,
+      theta: stateRef.current.theta,
+      dark: theme.isLight ? 0 : 1,
+      diffuse: 1.2,
+      scale: stateRef.current.zoom,
+      mapSamples: 16000,
+      mapBrightness: theme.isLight ? 3.5 : 5.5,
+      baseColor: [
+        bg[0] * 0.35 + 0.04,
+        bg[1] * 0.35 + 0.05,
+        bg[2] * 0.35 + 0.08,
+      ],
+      markerColor: cyan,
+      glowColor: theme.isLight ? green : cyan,
+      offset: [0, 0],
+      markers,
+      arcs,
+      arcColor: green,
+      arcWidth: 0.4,
+      arcHeight: 0.35,
+      markerElevation: 0.02,
+      onRender: (state) => {
+        const s = stateRef.current
+        if (!s.drag) {
+          s.phi += s.velPhi
+        }
+        state.phi = s.phi
+        state.theta = s.theta
+        state.scale = s.zoom
+      },
+    })
+
+    globeRef.current = globe
+    return () => {
+      try { globe.destroy() } catch { /* already torn down */ }
+      globeRef.current = null
+    }
+  }, [themeKey, visitor])
+
+  // ── Pointer events (drag-to-rotate + pinch/wheel zoom) ───────────────────
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -2163,36 +2251,32 @@ function GlobeMode({ visibleRef }) {
     }
 
     const onDown = e => {
-      const { x, y } = getXY(e)
-      s.drag = { startX: x, startY: y, lastRotY: s.rotY, lastX: x, prevVelY: 0 }
-      s.velYDamp = 0
-      s._face = null
+      const { x } = getXY(e)
+      s.drag = { startX: x, lastX: x, lastPhi: s.phi }
+      s.velPhiDamp = 0
       canvas.style.cursor = 'grabbing'
     }
     const onMove = e => {
-      // Pinch-zoom (two fingers)
       if (e.touches && e.touches.length === 2) {
-        const dx   = e.touches[0].clientX - e.touches[1].clientX
-        const dy   = e.touches[0].clientY - e.touches[1].clientY
+        const dx = e.touches[0].clientX - e.touches[1].clientX
+        const dy = e.touches[0].clientY - e.touches[1].clientY
         const dist = Math.sqrt(dx * dx + dy * dy)
-        if (!s.pinch) { s.pinch = { dist0: dist, zoom0: s.zoom } }
-        else { s.zoom = clampGlobeZoom(s.pinch.zoom0 * (dist / s.pinch.dist0)) }
+        if (!s.pinch) s.pinch = { dist0: dist, zoom0: s.zoom }
+        else s.zoom = clampGlobeZoom(s.pinch.zoom0 * (dist / s.pinch.dist0))
         return
       }
       s.pinch = null
-      const { x, y } = getXY(e)
-      s.mouseX = x; s.mouseY = y
+      const { x } = getXY(e)
       if (s.drag) {
-        const dx    = x - s.drag.lastX
-        s.velYDamp  = dx * 0.002             // momentum from drag speed
-        s.rotY      = s.drag.lastRotY + (x - s.drag.startX) * 0.006
+        const dx = x - s.drag.lastX
+        s.velPhiDamp = dx * 0.002
+        s.phi = s.drag.lastPhi + (x - s.drag.startX) * 0.006
         s.drag.lastX = x
       }
     }
     const onUp = () => {
       if (s.drag) {
-        // Hand off drag velocity to auto-spin
-        s.velY = Math.max(0.0004, Math.min(0.006, Math.abs(s.velYDamp))) * Math.sign(s.velYDamp || 1)
+        s.velPhi = Math.max(0.0004, Math.min(0.006, Math.abs(s.velPhiDamp))) * Math.sign(s.velPhiDamp || 1)
       }
       s.drag = null
       canvas.style.cursor = 'grab'
@@ -2206,7 +2290,6 @@ function GlobeMode({ visibleRef }) {
     window.addEventListener('touchend',   onUp)
     canvas.style.cursor = 'grab'
 
-    // Scroll-to-zoom
     const onWheel = e => {
       e.preventDefault()
       s.zoom = clampGlobeZoom(s.zoom - e.deltaY * 0.0008)
@@ -2224,725 +2307,8 @@ function GlobeMode({ visibleRef }) {
     }
   }, [])
 
-  // ── Main render loop ───────────────────────────────────────────────────────
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    if (!themeRef.current) themeRef.current = readGlobeTheme()
-    const ctx = canvas.getContext('2d')
-    const s   = stateRef.current
-
-    // ── CSS-var → rgb helper ──────────────────────────────────────────────
-    const hexToRgb = (hex, fb) => {
-      if (!hex) return fb
-      // Handle #rrggbb
-      const m6 = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
-      if (m6) return `${parseInt(m6[1],16)},${parseInt(m6[2],16)},${parseInt(m6[3],16)}`
-      // Handle #rgb shorthand
-      const m3 = hex.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i)
-      if (m3) return `${parseInt(m3[1]+m3[1],16)},${parseInt(m3[2]+m3[2],16)},${parseInt(m3[3]+m3[3],16)}`
-      // Handle rgb(r,g,b) or rgb(r, g, b)
-      const mr = hex.match(/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i)
-      if (mr) return `${mr[1]},${mr[2]},${mr[3]}`
-      return fb
-    }
-
-    const toRad = d => d * Math.PI / 180
-
-    // lat/lng → unit sphere
-    const latLng3D = (lat, lng) => ({
-      x:  Math.cos(toRad(lat)) * Math.sin(toRad(lng)),
-      y:  Math.sin(toRad(lat)),
-      z:  Math.cos(toRad(lat)) * Math.cos(toRad(lng)),
-    })
-
-    // Rotate around Y axis then X axis (yaw + tilt)
-    const rotate = (p, ry, rx) => {
-      // Y-axis rotation
-      const x1 =  p.x * Math.cos(ry) + p.z * Math.sin(ry)
-      const y1 =  p.y
-      const z1 = -p.x * Math.sin(ry) + p.z * Math.cos(ry)
-      // X-axis rotation
-      const x2 = x1
-      const y2 = y1 * Math.cos(rx) - z1 * Math.sin(rx)
-      const z2 = y1 * Math.sin(rx) + z1 * Math.cos(rx)
-      return { x: x2, y: y2, z: z2 }
-    }
-
-    // Orthographic → canvas
-    const proj = (p, cx, cy, R) => ({
-      x: cx + p.x * R,
-      y: cy - p.y * R,
-      z: p.z,
-    })
-
-    // Slerp (great-circle interpolation)
-    const slerp = (a, b, t) => {
-      const dot   = Math.max(-1, Math.min(1, a.x*b.x + a.y*b.y + a.z*b.z))
-      const omega = Math.acos(dot)
-      if (Math.abs(omega) < 1e-6) return { ...a }
-      const s0 = Math.sin((1 - t) * omega) / Math.sin(omega)
-      const s1 = Math.sin(t       * omega) / Math.sin(omega)
-      return { x: s0*a.x + s1*b.x, y: s0*a.y + s1*b.y, z: s0*a.z + s1*b.z }
-    }
-
-    const ARC_SAMPLES = 80
-    // Pre-cache base 3D positions (without rotation)
-    const base3D = GLOBE_CITIES.map(c => latLng3D(c.lat, c.lng))
-
-    let last = 0
-    const frame = ts => {
-      if (!visibleRef.current) { animRef.current = requestAnimationFrame(frame); return }
-      const dt = Math.min(ts - last, 50) / 16.67   // normalize to ~60 fps
-      last = ts
-
-      // ── Globe colors — theme-synced via themeRef (updated on data-theme change) ──
-      const { cyanRgb, greenRgb, bgRgb, isLight, textRgb, mutedRgb, orangeRgb } = themeRef.current
-      const accentRgb = cyanRgb
-
-      const dpr = window.devicePixelRatio || 1
-      const W   = canvas.width  / dpr
-      const H   = canvas.height / dpr
-      const cx  = W / 2
-      const cy  = H / 2
-      s.zoom = clampGlobeZoom(s.zoom)
-      // Globe base size — grows from 36% to 44% of the shorter dimension when zoomed in
-      const R   = Math.min(W, H) * GLOBE_BASE_RATIO * s.zoom
-
-      // ── Update rotation ──
-      if (!s.drag) {
-        if (s._face) {
-          // Gently spin to center the visitor before resuming auto-spin
-          const fp = s._face
-          const target = Math.atan2(-fp.x, fp.z)
-          let diff = target - s.rotY
-          diff = Math.atan2(Math.sin(diff), Math.cos(diff))
-          s.rotY += diff * 0.02 * dt
-          if (Math.abs(diff) < 0.01) {
-            s._faceHold = (s._faceHold || 0) + dt
-            if (s._faceHold > 160) { s._face = null; s._faceHold = 0 }
-          }
-          s.velY += (0 - s.velY) * 0.05 * dt
-        } else {
-          // Gently decay back toward auto-spin speed after a drag flick
-          s.velY += (0.0018 - s.velY) * 0.012 * dt
-          s.rotY += s.velY * dt
-        }
-      }
-
-      const ry = s.rotY
-      const rx = s.rotX
-      const liveVisitor = visitorRef.current
-
-      // Rotated city positions
-      const cities3D   = base3D.map(p => rotate(p, ry, rx))
-      const citiesProj = cities3D.map(p => proj(p, cx, cy, R))
-
-      // ── Hover detection ──
-      const mx = s.mouseX, my = s.mouseY
-      let hovIdx = -1, hovDist = 22 * 22
-      citiesProj.forEach((pp, i) => {
-        if (pp.z < 0) return
-        const d2 = (pp.x - mx) ** 2 + (pp.y - my) ** 2
-        if (d2 < hovDist) { hovDist = d2; hovIdx = i }
-      })
-      s.hovered = hovIdx
-
-      // ── Clear ──
-      ctx.clearRect(0, 0, W, H)
-
-      // ── Star field ──
-      const starBase = isLight ? '60,80,110' : '255,255,255'
-      const starMaxA = isLight ? 0.35 : 1
-      if (!s._stars) s._stars = Array.from({ length: 160 }, (_, i) => ({ x:Math.random(), y:Math.random(), r:0.4+Math.random()*1.4, a:0.3+Math.random()*0.7, tw:0.001+Math.random()*0.008, to:Math.random()*Math.PI*2, l:i%3 }))
-      s._stars.forEach(star => {
-        const tw = 0.4 + 0.6 * Math.sin(ts * star.tw + star.to)
-        const al = Math.min(1, star.a * tw * (0.6 + star.l * 0.2) * starMaxA)
-        ctx.fillStyle = `rgba(${starBase},${al})`
-        ctx.beginPath()
-        ctx.arc(star.x * W, star.y * H, star.r * (0.8 + star.l * 0.3), 0, Math.PI * 2)
-        ctx.fill()
-      })
-
-      // ── Sci-fi meteor streaks ──
-      if (!s._meteors) s._meteors = Array.from({ length: 2 }, (_, i) => ({
-        x: Math.random() * W, y: Math.random() * H * 0.5,
-        vx: 1.6 + Math.random() * 2.4, vy: 0.9 + Math.random() * 1.4,
-        life: 0, maxLife: 90 + Math.random() * 80,
-        hue: i % 2 === 0 ? greenRgb : cyanRgb,
-      }))
-      s._meteors.forEach(m => {
-        m.life += dt
-        m.x += m.vx * dt
-        m.y += m.vy * dt
-        const fade = 1 - m.life / m.maxLife
-        if (fade <= 0 || m.x > W + 40 || m.y > H + 40) {
-          Object.assign(m, { x: Math.random() * W, y: -10, vx: 1.4 + Math.random() * 2.6, vy: 0.8 + Math.random() * 1.6, life: 0, maxLife: 90 + Math.random() * 90 })
-        } else {
-          const tl = 14 + fade * 22
-          const tailX = m.x - m.vx * 5, tailY = m.y - m.vy * 5
-          const g = ctx.createLinearGradient(m.x, m.y, tailX, tailY)
-          g.addColorStop(0, `rgba(${m.hue},${0.75 * fade})`)
-          g.addColorStop(1, `rgba(${m.hue},0)`)
-          ctx.save()
-          ctx.strokeStyle = g
-          ctx.lineWidth = 1 + fade
-          ctx.lineCap = 'round'
-          ctx.beginPath()
-          ctx.moveTo(m.x, m.y)
-          ctx.lineTo(tailX, tailY)
-          ctx.stroke()
-          ctx.restore()
-        }
-      })
-
-      // ── Orbiting satellites (holo satellites circling the globe) ──
-      if (!s._sats) s._sats = Array.from({ length: 6 }, (_, i) => ({
-        a: i * 1.04,
-        tilt: ((i % 3) - 1) * 0.3,
-        speed: 0.0009 + (i % 2) * 0.0007,
-        r: 1.18 + (i % 3) * 0.07,
-        hue: i % 2 === 0 ? greenRgb : cyanRgb,
-      }))
-      s._sats.forEach(sat => {
-        sat.a += sat.speed * dt
-        const cyc = Math.cos(sat.a)
-        const orbBase = { x: sat.r * cyc, y: sat.r * Math.sin(sat.a) * 0.32, z: sat.r * cyc * 0.6 }
-        const orbP = rotate(orbBase, ry, rx)
-        const orbZ = orbP.z
-        if (orbZ > -0.1) {
-          const oq = proj(orbP, cx, cy, R)
-          const oa = Math.max(0, (orbZ + 0.5) * 0.9)
-          ctx.save()
-          ctx.shadowBlur = 10
-          ctx.shadowColor = `rgba(${sat.hue},0.9)`
-          ctx.beginPath()
-          ctx.arc(oq.x, oq.y, 1.8, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${sat.hue},${oa * 0.9})`
-          ctx.fill()
-          ctx.shadowBlur = 0
-          ctx.beginPath()
-          ctx.arc(oq.x, oq.y, 0.7, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(255,255,255,${oa})`
-          ctx.fill()
-          ctx.restore()
-        }
-      })
-
-      // ── Atmosphere halo (capped, theme-synced) ──
-      const breathe = 1 + 0.03 * Math.sin(ts * 0.001)
-      const maxDist  = Math.min(cx, cy, W - cx, H - cy) * 0.92
-      const atmoOuter = Math.min(R * 1.25 * breathe, maxDist)
-      const atmo = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, atmoOuter)
-      atmo.addColorStop(0,   `rgba(${cyanRgb},${isLight ? 0.12 : 0.18})`)
-      atmo.addColorStop(0.3, `rgba(${cyanRgb},${isLight ? 0.05 : 0.08})`)
-      atmo.addColorStop(0.7, `rgba(${cyanRgb},${isLight ? 0.02 : 0.03})`)
-      atmo.addColorStop(1,   `rgba(${cyanRgb},0)`)
-      ctx.beginPath()
-      ctx.arc(cx, cy, atmoOuter, 0, Math.PI * 2)
-      ctx.fillStyle = atmo
-      ctx.fill()
-
-      // ── Secondary green atmosphere ring ──
-      const atmo2 = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, Math.min(R * 1.15 * breathe, maxDist))
-      atmo2.addColorStop(0, `rgba(${greenRgb},${isLight ? 0.06 : 0.08})`)
-      atmo2.addColorStop(0.5, `rgba(${greenRgb},${isLight ? 0.02 : 0.03})`)
-      atmo2.addColorStop(1, `rgba(${greenRgb},0)`)
-      ctx.beginPath()
-      ctx.arc(cx, cy, Math.min(R * 1.15 * breathe, maxDist), 0, Math.PI * 2)
-      ctx.fillStyle = atmo2
-      ctx.fill()
-
-      // ── Globe body ──
-      const sphereGrad = ctx.createRadialGradient(cx - R*0.26, cy - R*0.26, 0, cx, cy, R)
-      if (isLight) {
-        sphereGrad.addColorStop(0, 'rgba(246,251,255,0.94)')
-        sphereGrad.addColorStop(0.44, 'rgba(197,212,227,0.90)')
-        sphereGrad.addColorStop(1, 'rgba(110,132,154,0.88)')
-      } else {
-        sphereGrad.addColorStop(0, `rgba(${bgRgb},0.82)`)
-        sphereGrad.addColorStop(0.5, `rgba(${bgRgb},0.90)`)
-        sphereGrad.addColorStop(1, `rgba(${bgRgb},0.96)`)
-      }
-      ctx.beginPath()
-      ctx.arc(cx, cy, R, 0, Math.PI * 2)
-      ctx.fillStyle = sphereGrad
-      ctx.fill()
-
-      // ── Sunlight highlight ──
-      const hlX = cx - R * 0.3, hlY = cy - R * 0.3
-      const hlGrad = ctx.createRadialGradient(hlX, hlY, 0, hlX, hlY, R * 0.4)
-      hlGrad.addColorStop(0, `rgba(${isLight ? '255,255,255' : cyanRgb},${isLight ? 0.15 : 0.06})`)
-      hlGrad.addColorStop(1, `rgba(${isLight ? '255,255,255' : cyanRgb},0)`)
-      ctx.beginPath()
-      ctx.arc(cx, cy, R, 0, Math.PI * 2)
-      ctx.fillStyle = hlGrad
-      ctx.fill()
-
-      // ── Inner shadow for depth ──
-      const shX = cx + R * 0.35, shY = cy + R * 0.35
-      const shadowGrad = ctx.createRadialGradient(shX, shY, 0, cx, cy, R)
-      shadowGrad.addColorStop(0, `rgba(0,0,0,${isLight ? 0.08 : 0.22})`)
-      shadowGrad.addColorStop(0.6, `rgba(0,0,0,${isLight ? 0.02 : 0.08})`)
-      shadowGrad.addColorStop(1, `rgba(0,0,0,0)`)
-      ctx.beginPath()
-      ctx.arc(cx, cy, R, 0, Math.PI * 2)
-      ctx.fillStyle = shadowGrad
-      ctx.fill()
-
-      // ── Wireframe mesh (technical drawing) ──
-      ctx.save()
-      const meshGlow = isLight ? 2.2 : 1
-      const meshBase = isLight ? textRgb : accentRgb
-      // Meridians
-      for (let lng2 = -180; lng2 < 180; lng2 += 15) {
-        ctx.beginPath()
-        let first = true
-        for (let lat2 = -90; lat2 <= 90; lat2 += 2) {
-          const p3 = rotate(latLng3D(lat2, lng2), ry, rx)
-          if (p3.z < -0.02) { first = true; continue }
-          const pp = proj(p3, cx, cy, R)
-          if (first) { ctx.moveTo(pp.x, pp.y); first = false }
-          else ctx.lineTo(pp.x, pp.y)
-        }
-        ctx.strokeStyle = `rgba(${meshBase},${0.07 * meshGlow})`
-        ctx.lineWidth   = 0.4
-        ctx.stroke()
-      }
-      // Parallels
-      for (let lat = -75; lat <= 75; lat += 15) {
-        ctx.beginPath()
-        let first = true
-        for (let lng2 = -180; lng2 <= 181; lng2 += 2) {
-          const p3 = rotate(latLng3D(lat, lng2), ry, rx)
-          if (p3.z < -0.02) { first = true; continue }
-          const pp = proj(p3, cx, cy, R)
-          if (first) { ctx.moveTo(pp.x, pp.y); first = false }
-          else ctx.lineTo(pp.x, pp.y)
-        }
-        const eq = Math.abs(lat) < 1
-        ctx.strokeStyle = eq
-          ? `rgba(${accentRgb},${0.22 * meshGlow})`
-          : `rgba(${meshBase},${(0.07 + Math.abs(lat) * 0.0006) * meshGlow})`
-        ctx.lineWidth = eq ? 0.8 : 0.4
-        ctx.stroke()
-      }
-      // Terminator arc (edge of the sphere)
-      ctx.beginPath()
-      for (let a = 0; a <= Math.PI * 2; a += 0.04) {
-        const px = cx + Math.cos(a) * R
-        const py = cy - Math.sin(a) * R
-        if (a === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py)
-      }
-      ctx.strokeStyle = `rgba(${accentRgb},${0.32 * meshGlow})`
-      ctx.lineWidth   = 1.1
-      ctx.shadowBlur  = 8
-      ctx.shadowColor = `rgba(${accentRgb},0.6)`
-      ctx.stroke()
-      ctx.shadowBlur = 0
-      // Vertex nodes at grid intersections
-      if (!s._vertT) s._vertT = 0
-      s._vertT += dt * 0.01
-      for (let lat = -60; lat <= 60; lat += 15) {
-        for (let lng2 = -165; lng2 <= 180; lng2 += 15) {
-          const p3 = rotate(latLng3D(lat, lng2), ry, rx)
-          if (p3.z < 0.04) continue
-          const pp = proj(p3, cx, cy, R)
-          const tw = 0.5 + 0.5 * Math.sin(s._vertT + lat * 0.5 + lng2 * 0.3)
-          const va = Math.max(0, p3.z * 1.2) * (0.35 + tw * 0.25)
-          ctx.beginPath()
-          ctx.arc(pp.x, pp.y, 1.05, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${cyanRgb},${va})`
-          ctx.fill()
-        }
-      }
-      ctx.restore()
-
-      // ── Holo scan sweep (bright lat-line sweeping the sphere) ──
-      const sweepT = (ts * 0.00016) % 1
-      const sweepLat = -80 + sweepT * 160
-      ctx.save()
-      ctx.beginPath()
-      let firstSweep = true
-      for (let lng2 = -180; lng2 <= 180; lng2 += 2) {
-        const p3 = rotate(latLng3D(sweepLat, lng2), ry, rx)
-        if (p3.z < 0.0) { firstSweep = true; continue }
-        const pp = proj(p3, cx, cy, R)
-        if (firstSweep) { ctx.moveTo(pp.x, pp.y); firstSweep = false }
-        else ctx.lineTo(pp.x, pp.y)
-      }
-      ctx.strokeStyle = `rgba(${cyanRgb},${0.2 + 0.35 * Math.sin(sweepT * Math.PI)})`
-      ctx.lineWidth   = 1
-      ctx.shadowBlur  = 14
-      ctx.shadowColor = `rgba(${cyanRgb},0.9)`
-      ctx.stroke()
-      ctx.restore()
-
-      // ── Connection arcs + packets ──
-      GLOBE_CONNECTIONS.forEach(([a, b], i) => {
-        const ca  = cities3D[a], cb = cities3D[b]
-        const pkt = s.packets[i]
-        const isHovArc = (s.hovered === a || s.hovered === b)
-
-        // Arc arc-sample cache
-        const arc = []
-        for (let k = 0; k <= ARC_SAMPLES; k++) {
-          const t  = k / ARC_SAMPLES
-          const pt = slerp(ca, cb, t)
-          // Lift slightly above surface
-          arc.push(proj({ x: pt.x * 1.035, y: pt.y * 1.035, z: pt.z * 1.035 }, cx, cy, R))
-        }
-
-        const avgZ     = (ca.z + cb.z) / 2
-        const arcAlpha = Math.max(0, Math.min(1, (avgZ + 0.55) * 0.9))
-        if (arcAlpha < 0.02) { pkt.t = (pkt.t + pkt.speed * dt) % 1; return }
-
-        // Draw arc with gradient along its length
-        ctx.save()
-        ctx.lineWidth = isHovArc ? 1.4 : 0.85
-        ctx.beginPath()
-        let inPath = false
-        for (let k = 0; k <= ARC_SAMPLES; k++) {
-          const pt = arc[k]
-          if (pt.z < -0.06) { inPath = false; continue }
-          if (!inPath) { ctx.moveTo(pt.x, pt.y); inPath = true }
-          else ctx.lineTo(pt.x, pt.y)
-        }
-        const arcBright = isHovArc ? 1 : 0.55
-        ctx.strokeStyle = `rgba(${accentRgb},${arcAlpha * arcBright})`
-        if (isHovArc) ctx.shadowBlur = 8, ctx.shadowColor = `rgba(${accentRgb},0.6)`
-        ctx.stroke()
-        ctx.restore()
-
-        // Packet advance — with trail dots and splash rings
-        pkt.t = (pkt.t + pkt.speed * dt) % 1
-        const pkIdx = Math.floor(pkt.t * ARC_SAMPLES)
-        const pkPt  = arc[Math.min(pkIdx, arc.length - 1)]
-        if (pkPt && pkPt.z > -0.04) {
-          const pAlpha = Math.max(0, Math.min(1, pkPt.z + 0.5)) * arcAlpha
-          ctx.save()
-          for (let trail = 1; trail <= 5; trail++) {
-            const ti = Math.max(0, pkIdx - trail * 2)
-            const tp = arc[Math.min(ti, arc.length - 1)]
-            if (!tp || tp.z < -0.04) continue
-            const tAlpha = pAlpha * (0.3 - trail * 0.05)
-            if (tAlpha <= 0) continue
-            ctx.beginPath()
-            ctx.arc(tp.x, tp.y, 2.6 - trail * 0.35, 0, Math.PI * 2)
-            ctx.fillStyle = `rgba(${greenRgb},${tAlpha})`
-            ctx.fill()
-          }
-          ctx.shadowBlur  = 18
-          ctx.shadowColor = `rgba(${greenRgb},0.9)`
-          ctx.beginPath()
-          ctx.arc(pkPt.x, pkPt.y, 3.8, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(${greenRgb},${pAlpha * 0.7})`
-          ctx.fill()
-          ctx.shadowBlur = 0
-          ctx.beginPath()
-          ctx.arc(pkPt.x, pkPt.y, 1.6, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(200,255,230,${pAlpha})`
-          ctx.fill()
-          ctx.restore()
-          if (pkt.t > 0.95 && Math.random() < 0.12) {
-            if (!s._splashes) s._splashes = []
-            s._splashes.push({ x: pkPt.x, y: pkPt.y, t: 0 })
-          }
-        }
-      })
-
-      // ── Globe outline ──
-      ctx.save()
-      ctx.beginPath()
-      ctx.arc(cx, cy, R, 0, Math.PI * 2)
-      ctx.strokeStyle = `rgba(${cyanRgb},0.14)`
-      ctx.lineWidth   = 1.2
-      ctx.stroke()
-      ctx.restore()
-
-      // ── City nodes ──
-      citiesProj.forEach((pp, i) => {
-        const city   = GLOBE_CITIES[i]
-        const alpha  = Math.max(0, pp.z * 1.5)
-        if (alpha < 0.04) return
-
-        const isHub  = city.hub
-        const isHov  = s.hovered === i
-        const nodeR  = isHub ? 6.5 : isHov ? 5 : 3.8
-        const cRGB   = isHub ? greenRgb : isHov ? '255,230,80' : cyanRgb
-
-        // Outer glow
-        const grd = ctx.createRadialGradient(pp.x, pp.y, 0, pp.x, pp.y, nodeR * 5)
-        grd.addColorStop(0,   `rgba(${cRGB},${alpha * (isHov ? 0.5 : 0.28)})`)
-        grd.addColorStop(0.4, `rgba(${cRGB},${alpha * 0.08})`)
-        grd.addColorStop(1,   `rgba(${cRGB},0)`)
-        ctx.beginPath()
-        ctx.arc(pp.x, pp.y, nodeR * 5, 0, Math.PI * 2)
-        ctx.fillStyle = grd
-        ctx.fill()
-
-        // Node body
-        ctx.save()
-        ctx.shadowBlur  = isHub ? 18 : isHov ? 14 : 9
-        ctx.shadowColor = `rgba(${cRGB},0.95)`
-        ctx.beginPath()
-        ctx.arc(pp.x, pp.y, nodeR, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${cRGB},${Math.min(1, alpha)})`
-        ctx.fill()
-        // Bright centre
-        ctx.shadowBlur = 0
-        ctx.beginPath()
-        ctx.arc(pp.x, pp.y, nodeR * 0.38, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255,255,255,${alpha * 0.9})`
-        ctx.fill()
-        ctx.restore()
-
-        // Label — visible on front half, always shown for hub or hovered
-        const showLabel = pp.z > 0.08 || isHub || isHov
-        if (showLabel) {
-          ctx.save()
-          ctx.globalAlpha = Math.min(1, alpha * 1.2)
-          ctx.font        = `${isHub || isHov ? 9 : 7.5}px monospace`
-          ctx.fillStyle   = isHub
-            ? `rgba(${greenRgb},0.95)`
-            : isHov
-              ? 'rgba(255,235,100,0.95)'
-              : `rgba(${cyanRgb},0.88)`
-          ctx.textAlign   = 'center'
-          // Offset label up+right so it doesn't overlap node
-          ctx.fillText(city.name, pp.x + (isHov ? 2 : 0), pp.y - nodeR - 6)
-          ctx.restore()
-        }
-
-        // Hover tooltip card
-        if (isHov) {
-          const tx = Math.min(pp.x + 14, W - 100)
-          const ty = Math.max(pp.y - 44, 8)
-          ctx.save()
-          ctx.fillStyle   = `rgba(${bgRgb},0.92)`
-          ctx.strokeStyle = 'rgba(255,230,80,0.7)'
-          ctx.lineWidth   = 0.8
-          ctx.beginPath()
-          ctx.roundRect ? ctx.roundRect(tx, ty, 98, 38, 4)
-            : (() => { ctx.rect(tx, ty, 98, 38) })()
-          ctx.fill(); ctx.stroke()
-          ctx.font      = '7px monospace'
-          ctx.fillStyle = 'rgba(255,230,80,0.9)'
-          ctx.textAlign = 'left'
-          ctx.fillText(city.name, tx + 8, ty + 13)
-          ctx.font      = '6px monospace'
-          ctx.fillStyle = `rgba(${cyanRgb},0.7)`
-          ctx.fillText(`${city.lat.toFixed(1)}°N  ${Math.abs(city.lng).toFixed(1)}°${city.lng < 0 ? 'W' : 'E'}`, tx + 8, ty + 25)
-          ctx.fillStyle = city.hub ? `rgba(${greenRgb},0.85)` : `rgba(${cyanRgb},0.7)`
-          ctx.fillText(city.hub ? '★ HUB NODE' : '● EDGE NODE', tx + 8, ty + 35)
-          ctx.restore()
-        }
-      })
-
-      // ── Hub pulse rings ──
-      GLOBE_CITIES.forEach((city, i) => {
-        if (!city.hub) return
-        const pp = citiesProj[i]
-        const alpha = Math.max(0, pp.z * 1.5)
-        if (alpha < 0.08) return
-        const pulse = 1 + Math.sin(ts * 0.003 + i) * 0.6
-        ctx.save()
-        ctx.beginPath()
-        ctx.arc(pp.x, pp.y, 16 * pulse, 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(${greenRgb},${alpha * 0.15 * (2 - pulse)})`
-        ctx.lineWidth = 1.2
-        ctx.stroke()
-        ctx.restore()
-      })
-
-      // ── Current visitor marker + sci-fi great-circle trace ──
-      const visitorLat = Number(liveVisitor?.lat)
-      const visitorLon = Number(liveVisitor?.lon)
-      if (Number.isFinite(visitorLat) && Number.isFinite(visitorLon)) {
-        const v3 = rotate(latLng3D(visitorLat, visitorLon), ry, rx)
-        const vp = proj(v3, cx, cy, R)
-        const alpha = Math.max(0, v3.z * 1.4)
-
-        // Progressive great-circle trace: RIYADH hub -> visitor
-        const hubIdx = 9
-        const hubBase = base3D[hubIdx]
-        const visitorBase = latLng3D(visitorLat, visitorLon)
-        const traceKey = `${visitorLat.toFixed(3)},${visitorLon.toFixed(3)}`
-        if (!s._trace || s._trace.key !== traceKey) {
-          s._trace = { key: traceKey, t: 0, pings: [], pingTimer: 0 }
-          if (!s.drag) {
-            s._face = visitorBase
-            s._faceHold = 0
-          }
-        }
-        const tr = s._trace
-        tr.t = Math.min(1, tr.t + dt * 0.0018)
-        tr.pingTimer += dt
-        if (tr.pingTimer > 70) {
-          tr.pingTimer = 0
-          tr.pings.push({ r: 0 })
-        }
-        tr.pings.forEach(p => { p.r += dt * 0.02 })
-        tr.pings = tr.pings.filter(p => p.r < 1.5)
-
-        // Trace line (partial or full great-circle)
-        ctx.save()
-        ctx.lineCap = 'round'
-        const tracePts = []
-        const SAMPLES = 90
-        for (let k = 0; k <= SAMPLES; k++) {
-          const tt = (k / SAMPLES) * tr.t
-          const mid = slerp(hubBase, visitorBase, tt)
-          const pm = rotate(mid, ry, rx)
-          if (pm.z > -0.03) tracePts.push(proj(pm, cx, cy, R))
-        }
-        if (tracePts.length > 1) {
-          const full = tr.t >= 1
-          const glowA = full ? 0.12 + 0.08 * Math.sin(ts * 0.004) : 0.18
-          ctx.save()
-          ctx.shadowBlur = 14
-          ctx.shadowColor = `rgba(${greenRgb},0.9)`
-          ctx.strokeStyle = `rgba(${greenRgb},${glowA})`
-          ctx.lineWidth = 3.5
-          ctx.beginPath()
-          ctx.moveTo(tracePts[0].x, tracePts[0].y)
-          for (let k = 1; k < tracePts.length; k++) ctx.lineTo(tracePts[k].x, tracePts[k].y)
-          ctx.stroke()
-          ctx.shadowBlur = 0
-          ctx.setLineDash([3, 6])
-          ctx.lineDashOffset = -ts * 0.02
-          ctx.strokeStyle = `rgba(${greenRgb},${full ? 0.5 + 0.2 * Math.sin(ts * 0.004) : 0.75})`
-          ctx.lineWidth = 1.2
-          ctx.beginPath()
-          ctx.moveTo(tracePts[0].x, tracePts[0].y)
-          for (let k = 1; k < tracePts.length; k++) ctx.lineTo(tracePts[k].x, tracePts[k].y)
-          ctx.stroke()
-          ctx.setLineDash([])
-          ctx.restore()
-
-          // Comet head riding the trace
-          if (!full && tracePts.length > 2) {
-            const head = tracePts[tracePts.length - 1]
-            const prev = tracePts[tracePts.length - 2]
-            const ang = Math.atan2(head.y - prev.y, head.x - prev.x)
-            ctx.save()
-            ctx.translate(head.x, head.y)
-            ctx.rotate(ang)
-            ctx.shadowBlur = 16
-            ctx.shadowColor = `rgba(${greenRgb},1)`
-            ctx.beginPath()
-            ctx.arc(0, 0, 3.2, 0, Math.PI * 2)
-            ctx.fillStyle = 'rgba(220,255,235,0.95)'
-            ctx.fill()
-            ctx.shadowBlur = 0
-            ctx.beginPath()
-            ctx.moveTo(-14, 0)
-            ctx.lineTo(0, -2.2)
-            ctx.lineTo(0, 2.2)
-            ctx.closePath()
-            const cg = ctx.createLinearGradient(-14, 0, 0, 0)
-            cg.addColorStop(0, 'rgba(30,140,90,0)')
-            cg.addColorStop(1, `rgba(${greenRgb},0.85)`)
-            ctx.fillStyle = cg
-            ctx.fill()
-            ctx.restore()
-          }
-        }
-        ctx.restore()
-
-        // Expanding radar pings from the visitor
-        if (alpha > 0.05) {
-          tr.pings.forEach(p => {
-            const ringR = 12 + p.r * 46
-            ctx.save()
-            ctx.strokeStyle = `rgba(${greenRgb},${alpha * 0.55 * (1 - p.r / 1.5)})`
-            ctx.lineWidth = 1
-            ctx.beginPath()
-            ctx.arc(vp.x, vp.y, ringR, 0, Math.PI * 2)
-            ctx.stroke()
-            ctx.restore()
-          })
-        }
-
-        // Visitor marker + rotating targeting reticle
-        if (alpha > 0.05) {
-          const pulse = 1 + Math.sin(ts * 0.006) * 0.18
-          const retAng = ts * 0.0012
-          const retR = 16
-          ctx.save()
-          ctx.translate(vp.x, vp.y)
-          ctx.save()
-          ctx.shadowBlur = 22
-          ctx.shadowColor = `rgba(${greenRgb},0.95)`
-          ctx.strokeStyle = `rgba(${greenRgb},${alpha * 0.95})`
-          ctx.fillStyle = `rgba(${greenRgb},${alpha * 0.2})`
-          ctx.lineWidth = 1.3
-          ctx.beginPath()
-          ctx.arc(0, 0, 11 * pulse, 0, Math.PI * 2)
-          ctx.fill()
-          ctx.stroke()
-          ctx.beginPath()
-          ctx.arc(0, 0, 4.4, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(220,255,235,${alpha})`
-          ctx.fill()
-          ctx.restore()
-          // Rotating bracket reticle
-          for (let k = 0; k < 4; k++) {
-            const a0 = retAng + (k * Math.PI) / 2
-            const a1 = a0 + 0.55
-            ctx.beginPath()
-            ctx.arc(0, 0, retR, a0, a1)
-            ctx.strokeStyle = `rgba(${cyanRgb},${alpha * 0.8})`
-            ctx.lineWidth = 1.4
-            ctx.shadowBlur = 8
-            ctx.shadowColor = `rgba(${cyanRgb},0.9)`
-            ctx.stroke()
-            ctx.shadowBlur = 0
-          }
-          ctx.rotate(-retAng * 1.6)
-          for (let k = 0; k < 2; k++) {
-            const d = k === 0 ? -1 : 1
-            ctx.beginPath()
-            ctx.moveTo(retR + 6, d * 5)
-            ctx.lineTo(retR + 1, d * 5)
-            ctx.strokeStyle = `rgba(${cyanRgb},${alpha * 0.6})`
-            ctx.lineWidth = 1
-            ctx.stroke()
-          }
-          ctx.restore()
-          ctx.save()
-          ctx.font = '8px monospace'
-          ctx.textAlign = 'center'
-          ctx.fillStyle = `rgba(${greenRgb},${Math.min(1, alpha * 1.2)})`
-          ctx.fillText('YOU', vp.x, vp.y - 26)
-          ctx.restore()
-        }
-      }
-
-      // ── Drag hint (fade after first interaction) ──
-      if (!s._everDragged && ts < 4000) {
-        ctx.save()
-        const hintAlpha = Math.max(0, Math.min(0.55, (4000 - ts) / 3000))
-        ctx.globalAlpha = hintAlpha
-        ctx.font        = '8px monospace'
-        ctx.fillStyle   = `rgba(${cyanRgb},1)`
-        ctx.textAlign   = 'center'
-        ctx.fillText('DRAG · SCROLL TO ZOOM · PINCH', cx, H - 14)
-        ctx.restore()
-      }
-
-      animRef.current = requestAnimationFrame(frame)
-    }
-
-    animRef.current = requestAnimationFrame(frame)
-    return () => cancelAnimationFrame(animRef.current)
-  }, [themeKey])
-
-  // Mark as dragged on first interaction
-  const markDragged = () => { stateRef.current._everDragged = true }
-
   return (
-    <div className="globe-network-shell" ref={wrapRef} onMouseDown={markDragged} onTouchStart={markDragged} style={{
+    <div className="globe-network-shell" ref={wrapRef} style={{
       width: '100%', height: '100%',
       position: 'relative', overflow: 'hidden',
       background: 'transparent',
@@ -2963,10 +2329,10 @@ function GlobeMode({ visibleRef }) {
         pointerEvents: 'none',
       }}>
         {[
-          { label: 'NODES',   value: `${GLOBE_CITIES.length}`,     color: 'var(--cyan)'  },
-          { label: 'ARCS',    value: `${GLOBE_CONNECTIONS.length}`, color: 'var(--green)' },
-          { label: 'LATENCY', value: '12ms',                        color: 'var(--cyan)'  },
-          { label: 'UPTIME',  value: '99.99%',                      color: 'var(--green)' },
+          { label: 'NODES',   value: `${GLOBE_CITIES.length}`,      color: 'var(--cyan)'  },
+          { label: 'ARCS',    value: `${GLOBE_CONNECTIONS.length + (visitor && visitor.lat !== '—' ? 1 : 0)}`, color: 'var(--green)' },
+          { label: 'LATENCY', value: '12ms',                       color: 'var(--cyan)'  },
+          { label: 'UPTIME',  value: '99.99%',                     color: 'var(--green)' },
         ].map(s => (
           <div key={s.label} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 5.5, color: 'var(--muted)', letterSpacing: 2 }}>{s.label}</span>
@@ -2975,10 +2341,10 @@ function GlobeMode({ visibleRef }) {
         ))}
       </div>
 
-      {/* Canvas — fills entire panel */}
-      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }}/>
+      {/* COBE canvas — fills entire panel */}
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
 
-      {/* Visitor HUD callout — bottom left (reticle frame + chips + hover details) */}
+      {/* Visitor HUD — bottom-left (anchored to marker when CSS anchor positioning is available) */}
       <VisitorHud visitor={visitor} />
     </div>
   )
