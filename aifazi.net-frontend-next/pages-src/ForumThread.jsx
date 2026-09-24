@@ -43,6 +43,7 @@ export default function ForumThread() {
   const [thread, setThread]     = useState(null)
   const [replies, setReplies]   = useState([])
   const [loading, setLoading]   = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [replyAttach, setReplyAttach] = useState([])
   const [submitting, setSubmitting]   = useState(false)
@@ -96,7 +97,7 @@ export default function ForumThread() {
         setMyReplyReactions(rMine)
         setSubscribed(r.data.thread.subscribers?.some(s => s?.toString() === userId))
       })
-      .catch(() => navigate('/forum'))
+      .catch(() => { setLoadError(true); setLoading(false) })
       .finally(() => setLoading(false))
   }, [id])
 
@@ -217,6 +218,16 @@ export default function ForumThread() {
       notify.success('Thread updated')
     } catch (err) { notify.error(err.response?.data?.error || 'Failed to edit thread') }
   }
+
+  if (loadError) return (
+    <div className="page-container community-page" style={{ zIndex: 1, position: 'relative' }}>
+      <ErrorRetry
+        title="Could not load this thread"
+        hint="The forum API did not return a thread. Check your connection and try again."
+        onRetry={() => window.location.reload()}
+      />
+    </div>
+  )
 
   if (loading) return <div className="page-container community-page" style={{ zIndex: 1, position: 'relative' }}>
     <div className="forum-thread-loading">
