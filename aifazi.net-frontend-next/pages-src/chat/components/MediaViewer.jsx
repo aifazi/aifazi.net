@@ -16,7 +16,7 @@ export function MediaViewer({ media, onClose }) {
           <img src={media.url} alt="Shared chat media" style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: 8, objectFit: 'contain' }} />
         )}
         <button onClick={onClose} aria-label="Close media viewer" style={{ position: 'absolute', top: -12, right: -12, width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>✕</button>
-        <div style={{ textAlign: 'center', marginTop: 8, fontFamily: T.mono, fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>
+        <div style={{ textAlign: 'center', marginTop: 8, fontFamily: T.mono, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
           Click outside to close
         </div>
       </div>

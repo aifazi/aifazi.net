@@ -84,7 +84,7 @@ export default function OrderTrackingPage() {
 
           {/* Progress */}
           <Card style={{ padding: 24, marginBottom: 24 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DELIVERY PROGRESS</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DELIVERY PROGRESS</div>
             <div style={{ height: 8, background: 'var(--bg3)', borderRadius: 4, overflow: 'hidden', marginBottom: 16 }}>
               <div style={{ height: '100%', width: `${progress}%`, background: `linear-gradient(90deg, ${G}, ${C})`, borderRadius: 4, transition: 'width 0.6s ease', boxShadow: progress > 0 ? `0 0 12px ${color}` : 'none' }} />
             </div>
@@ -99,9 +99,9 @@ export default function OrderTrackingPage() {
                       background: done || current ? (done ? G : color) : 'var(--bg3)',
                       border: `3px solid ${done || current ? (done ? G : color) : 'var(--border)'}`,
                       boxShadow: done || current ? `0 0 10px ${done ? G : color}` : 'none',
-                    }}>{done && <span style={{ fontSize: 8, lineHeight: '14px', color: '#000' }}>✓</span>}</div>
+                    }}>{done && <span style={{ fontSize: 11, lineHeight: '14px', color: '#000' }}>✓</span>}</div>
                     <div style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1.5,
+                      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5,
                       color: done || current ? G : 'var(--muted)',
                       textTransform: 'uppercase', fontWeight: current ? 700 : 400,
                     }}>
@@ -116,7 +116,7 @@ export default function OrderTrackingPage() {
           {/* Tracking info */}
           {(order.carrier || order.tracking_number) && (
             <Card style={{ padding: 24, marginBottom: 24 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: G, marginBottom: 8 }}>TRACKING NUMBER</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: G, marginBottom: 8 }}>TRACKING NUMBER</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: 2, marginBottom: 6 }}>
                 {order.tracking_number}
               </div>
@@ -135,7 +135,7 @@ export default function OrderTrackingPage() {
           {/* Delivery Agent */}
           {delivery?.agent && (
             <Card style={{ padding: 24, marginBottom: 24 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: C, marginBottom: 14 }}>DELIVERY AGENT</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: C, marginBottom: 14 }}>DELIVERY AGENT</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ width: 48, height: 48, borderRadius: '50%', background: `linear-gradient(135deg, ${C}, ${G})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#000', flexShrink: 0 }}>
                   {(delivery.agent.display_name || 'A')[0].toUpperCase()}
@@ -149,7 +149,7 @@ export default function OrderTrackingPage() {
                     </Badge>
                   </div>
                   {delivery.assignment && (
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                       {delivery.assignment.picked_up_at && <>Picked up {new Date(delivery.assignment.picked_up_at).toLocaleString()} · </>}
                       Status: {delivery.assignment.status.toUpperCase().replace('_', ' ')}
                     </div>
@@ -162,7 +162,7 @@ export default function OrderTrackingPage() {
           {/* Timeline */}
           {(order.events || []).length > 0 && (
             <Card style={{ padding: 24, marginBottom: 24 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>STATUS TIMELINE</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>STATUS TIMELINE</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {order.events.map((ev, i) => (
                   <div key={i} style={{ display: 'flex', gap: 12 }}>
@@ -185,7 +185,7 @@ export default function OrderTrackingPage() {
 
           {/* Items */}
           <Card style={{ padding: 24, marginBottom: 24 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>ORDER ITEMS</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>ORDER ITEMS</div>
             {(order.items || []).map((it, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, padding: '8px 0', borderBottom: i < (order.items || []).length - 1 ? '1px solid var(--border)' : 'none' }}>
                 <span>
@@ -204,7 +204,7 @@ export default function OrderTrackingPage() {
           {/* Downloads */}
           {(order.downloads || []).length > 0 && (
             <Card style={{ padding: 24, marginBottom: 24 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DIGITAL DOWNLOADS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DIGITAL DOWNLOADS</div>
               <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
                 Download links are only shown to the account owner. Sign in to your account and open this order to get your downloads.
               </div>

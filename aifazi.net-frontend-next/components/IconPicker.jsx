@@ -142,7 +142,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
               <IconDisplay value={selected} size={36} />
             </div>
             <div style={{ overflow: 'hidden', minWidth: 0 }}>
-              <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 2 }}>PREVIEW</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>PREVIEW</div>
               <div style={{ fontSize: 11, color: 'var(--text)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected || 'No icon selected'}</div>
             </div>
           </div>
@@ -165,7 +165,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
           {/* Animated tab */}
           {tab === 'animated' && (
             <div>
-              <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 12 }}>HOVER TO PREVIEW</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 12 }}>HOVER TO PREVIEW</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                 {LORDICON_ICONS.map(icon => (
                   <button key={icon.url} onClick={() => setSelected(icon.url)} style={{
@@ -178,11 +178,11 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
                   }}>
                     {/* pointerEvents:none prevents lord-icon shadow DOM from stealing clicks */}
                     <lord-icon src={icon.url} trigger="hover" colors="primary:#00d4ff,secondary:#00ff88" style={{ width: 32, height: 32, pointerEvents: 'none' }} />
-                    <span style={{ fontSize: 8, color: '#4a6070', letterSpacing: 1 }}>{icon.label.toUpperCase()}</span>
+                    <span style={{ fontSize: 11, color: '#4a6070', letterSpacing: 1 }}>{icon.label.toUpperCase()}</span>
                   </button>
                 ))}
               </div>
-              <div style={{ marginTop: 10, fontSize: 9, color: '#2a3a48', lineHeight: 1.8 }}>
+              <div style={{ marginTop: 10, fontSize: 11, color: '#2a3a48', lineHeight: 1.8 }}>
                 💡 More at <a href="https://lordicon.com" target="_blank" rel="noopener" style={{ color: 'var(--green)' }}>lordicon.com</a> — paste .json URL in Custom URL tab
               </div>
             </div>
@@ -191,7 +191,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
           {/* Custom URL tab */}
           {tab === 'custom' && (
             <div>
-              <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>IMAGE OR LORDICON URL</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>IMAGE OR LORDICON URL</div>
               <input
                 value={customUrl}
                 onChange={e => { setCustomUrl(e.target.value); setSelected(e.target.value) }}
@@ -202,7 +202,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
                   fontSize: 12, padding: '10px 14px', outline: 'none', boxSizing: 'border-box',
                 }}
               />
-              <div style={{ fontSize: 9, color: '#2a3a48', marginTop: 8 }}>Supports: PNG, SVG, WebP, GIF, Lordicon .json</div>
+              <div style={{ fontSize: 11, color: '#2a3a48', marginTop: 8 }}>Supports: PNG, SVG, WebP, GIF, Lordicon .json</div>
             </div>
           )}
         </div>

@@ -119,7 +119,7 @@ export default function StoreCenter() {
         if (groupVisible.length === 0) return null
         return (
           <div key={group.label}>
-            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 3, color: 'var(--muted)', marginBottom: 7, paddingLeft: 10 }}>{group.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 7, paddingLeft: 10 }}>{group.label}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {groupVisible.map(m => {
                 const active = tab === m.key
@@ -155,7 +155,7 @@ export default function StoreCenter() {
         if (groupVisible.length === 0) return null
         return (
           <div key={group.label}>
-            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 3, color: 'var(--muted)', marginBottom: 6 }}>{group.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 6 }}>{group.label}</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {groupVisible.map(m => {
                 const active = tab === m.key
@@ -190,7 +190,7 @@ export default function StoreCenter() {
           {isMobile && chips}
 
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 3, color: C, textTransform: 'uppercase' }}>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C, textTransform: 'uppercase' }}>
               {activeModule ? `${activeModule.icon}  ${activeModule.label}` : ''}
             </div>
           </div>

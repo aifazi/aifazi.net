@@ -15,7 +15,7 @@ const INP = { background: 'var(--bg3)', border: '1px solid var(--border)', color
 function Stat({ label, value, color = 'var(--muted)' }) {
   return (
     <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', minWidth: 120, flex: 1 }}>
-      <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>{label}</div>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>{label}</div>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color, marginTop: 4 }}>{value}</div>
     </div>
   )
@@ -82,7 +82,7 @@ export default function CustomersTab() {
             style={{ ...INP, width: '100%', paddingLeft: 32 }} />
           <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.5 }}>🔍</span>
         </div>
-        <button onClick={load} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '8px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>↻ REFRESH</button>
+        <button onClick={load} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>↻ REFRESH</button>
         <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{customers.length} customers</span>
       </div>
 
@@ -97,8 +97,8 @@ export default function CustomersTab() {
               <div style={{ flex: 1, minWidth: 140 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {c.username}
-                  {c.banned && <span style={{ fontFamily: MONO, fontSize: 8, padding: '1px 6px', borderRadius: 4, background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.3)', color: R }}>BANNED</span>}
-                  {c.role && c.role !== 'user' && <span style={{ fontFamily: MONO, fontSize: 8, padding: '1px 6px', borderRadius: 4, background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C }}>{c.role.toUpperCase()}</span>}
+                  {c.banned && <span style={{ fontFamily: MONO, fontSize: 11, padding: '1px 6px', borderRadius: 4, background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.3)', color: R }}>BANNED</span>}
+                  {c.role && c.role !== 'user' && <span style={{ fontFamily: MONO, fontSize: 11, padding: '1px 6px', borderRadius: 4, background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C }}>{c.role.toUpperCase()}</span>}
                 </div>
                 <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{c.email || 'no email'} · joined {fmt(c.created_at)}</div>
               </div>
@@ -118,13 +118,13 @@ export default function CustomersTab() {
 
                 {detail.orders?.length > 0 && (
                   <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>ORDERS ({detail.orders.length})</div>
+                    <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>ORDERS ({detail.orders.length})</div>
                     {detail.orders.map(o => (
                       <div key={o.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                         <span style={{ fontFamily: MONO, fontSize: 11, color: C }}>{o.order_number}</span>
-                        <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: G }}>{o.status}</span>
+                        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: G }}>{o.status}</span>
                         <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{fmt(o.created_at)}</span>
-                        {o.coupon_code && <span style={{ fontFamily: MONO, fontSize: 9, color: Y }}>🎟 {o.coupon_code}</span>}
+                        {o.coupon_code && <span style={{ fontFamily: MONO, fontSize: 11, color: Y }}>🎟 {o.coupon_code}</span>}
                         <div style={{ flex: 1 }} />
                         <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700 }}>{money(o.total_cents)}</span>
                       </div>
@@ -133,7 +133,7 @@ export default function CustomersTab() {
                 )}
 
                 <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>NOTES</div>
+                  <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>NOTES</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <input value={note} onChange={e => setNote(e.target.value)} placeholder="Add an internal note…" style={{ ...INP, flex: 1 }} />
                     <button onClick={addNote} disabled={noteBusy || !note.trim()} style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 16px', background: noteBusy || !note.trim() ? 'var(--bg3)' : 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: noteBusy || !note.trim() ? 'var(--muted)' : G, borderRadius: 6, cursor: noteBusy ? 'not-allowed' : 'pointer' }}>
@@ -144,7 +144,7 @@ export default function CustomersTab() {
                     <div key={n.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', marginBottom: 6, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>{n.body}</div>
-                        <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>{n.staff_name || 'staff'} · {fmt(n.created_at)}</div>
+                        <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>{n.staff_name || 'staff'} · {fmt(n.created_at)}</div>
                       </div>
                       <button onClick={() => delNote(c.id, n.id)} style={{ background: 'none', border: 'none', color: R, cursor: 'pointer', fontSize: 13 }}>✕</button>
                     </div>

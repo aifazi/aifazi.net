@@ -11,7 +11,7 @@ export function MiniCallBar({ room, muted, camOff, deafened, onMute, onDeafen, o
           <div style={{ fontFamily: T.mono, fontSize: 10, color: T.accent, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {room.name}
           </div>
-          <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted }}>
+          <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>
             {participants.length + 1} connected · Click to return
           </div>
         </div>

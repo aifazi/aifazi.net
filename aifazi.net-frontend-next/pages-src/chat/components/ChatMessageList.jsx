@@ -96,11 +96,11 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
       {multiSelect && selectedIds.length > 0 && (
         <div style={{ position:'sticky', top:0, zIndex:10, display:'flex', alignItems:'center', gap:8, padding:'6px 14px', background:'color-mix(in srgb, var(--green) 8%, transparent)', borderBottom:`1px solid ${T.border}`, marginBottom:4, fontFamily:T.mono, fontSize:10 }}>
           <span style={{ color:T.muted }}>{selectedIds.length} selected</span>
-          <button onClick={()=>setSelectedIds(msgs.map(m=>m.id))} style={{ background:'none', border:'1px solid '+T.border, color:T.muted, cursor:'pointer', padding:'2px 8px', fontSize:9 }}>Select all</button>
-          <button onClick={()=>{setSelectedIds([]);setMultiSelect(false)}} style={{ background:'none', border:'1px solid '+T.border, color:T.muted, cursor:'pointer', padding:'2px 8px', fontSize:9 }}>Deselect</button>
-          <button onClick={batchDel} style={{ background:'rgba(255,71,87,0.15)', border:'1px solid rgba(255,71,87,0.3)', color:'#ff4757', cursor:'pointer', padding:'2px 8px', fontSize:9, marginLeft:'auto' }}>🗑 Delete {selectedIds.length}</button>
+          <button onClick={()=>setSelectedIds(msgs.map(m=>m.id))} style={{ background:'none', border:'1px solid '+T.border, color:T.muted, cursor:'pointer', padding:'2px 8px', fontSize: 11 }}>Select all</button>
+          <button onClick={()=>{setSelectedIds([]);setMultiSelect(false)}} style={{ background:'none', border:'1px solid '+T.border, color:T.muted, cursor:'pointer', padding:'2px 8px', fontSize: 11 }}>Deselect</button>
+          <button onClick={batchDel} style={{ background:'rgba(255,71,87,0.15)', border:'1px solid rgba(255,71,87,0.3)', color:'#ff4757', cursor:'pointer', padding:'2px 8px', fontSize: 11, marginLeft:'auto' }}>🗑 Delete {selectedIds.length}</button>
           <div style={{ position:'relative' }}>
-            <button onClick={()=>setEmojiPicker(emojiPicker === 'batch' ? null : 'batch')} style={{ background:'none', border:'1px solid '+T.border, color:T.muted, cursor:'pointer', padding:'2px 8px', fontSize:9 }}>😊 React</button>
+            <button onClick={()=>setEmojiPicker(emojiPicker === 'batch' ? null : 'batch')} style={{ background:'none', border:'1px solid '+T.border, color:T.muted, cursor:'pointer', padding:'2px 8px', fontSize: 11 }}>😊 React</button>
             {emojiPicker === 'batch' && (
               <div style={{ position:'absolute', bottom:'100%', right:0, background:T.bg2, border:`1px solid ${T.border}`, borderRadius:8, padding:'4px 6px', display:'flex', gap:3, zIndex:10, boxShadow:'0 4px 16px rgba(0,0,0,0.4)' }}>
                 {REACTIONS.map(e2 => (
@@ -147,8 +147,8 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                   ], { header: item.sender }) }}
                   style={{ fontWeight:700, fontSize:13, color:aCol(item.sender), fontFamily:T.display, cursor:'pointer' }}>{item.sender}</span>
                 <span title={fmtDtTitle(item.created_at)} style={{ fontSize: 10, color: T.muted, fontFamily: T.mono }}>{fmt(item.created_at)}</span>
-                {item.edited && <span style={{ fontSize: 9, color: T.muted, fontStyle: 'italic' }}>(edited)</span>}
-                {isPinned(item.id) && <span style={{ fontSize:9, color:T.accent }}>📌</span>}
+                {item.edited && <span style={{ fontSize: 11, color: T.muted, fontStyle: 'italic' }}>(edited)</span>}
+                {isPinned(item.id) && <span style={{ fontSize: 11, color:T.accent }}>📌</span>}
                 {isMe && <ReceiptTicks msg={item} />}
               </div>
               {group.map((m, gi) => (
@@ -197,7 +197,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                           style={{ padding: '1px 7px', border: `1px solid ${(users || []).includes(me) ? 'color-mix(in srgb, var(--green) 40%, transparent)' : T.border}`, borderRadius: 10,
                             background: (users || []).includes(me) ? 'color-mix(in srgb, var(--green) 8%, transparent)' : T.surface,
                             color: T.text, fontFamily: T.mono, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          {emoji} <span style={{ fontSize: 9, color: T.muted }}>{users?.length || 0}</span>
+                          {emoji} <span style={{ fontSize: 11, color: T.muted }}>{users?.length || 0}</span>
                         </button>
                       ))}
                     </div>

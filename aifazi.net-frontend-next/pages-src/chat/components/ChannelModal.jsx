@@ -32,7 +32,7 @@ export function RoleSelect({ label, value, onChange, roles }) {
           </button>
         ))}
       </div>
-      {value.length === 0 && <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginTop: 4 }}>Empty = not restricted by this</div>}
+      {value.length === 0 && <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginTop: 4 }}>Empty = not restricted by this</div>}
     </div>
   )
 }
@@ -150,7 +150,7 @@ export function ChannelModal({ initial, onSave, onClose }) {
         </label>
 
         <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 14, marginBottom: 12 }}>
-          <div style={{ fontFamily: T.mono, fontSize: 9, color: T.accent, letterSpacing: 2, marginBottom: 10 }}>ACCESS — WHO CAN OPEN</div>
+          <div style={{ fontFamily: T.mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 10 }}>ACCESS — WHO CAN OPEN</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
             {MODES.map(m => (
               <button key={m.key} onClick={() => changeMode(m.key)}
@@ -168,7 +168,7 @@ export function ChannelModal({ initial, onSave, onClose }) {
             <div style={{ marginBottom: 10 }}>
               <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginBottom: 6 }}>ALLOWED USERS</div>
               <input value={userQ} onChange={e => searchUsers(e.target.value)} placeholder='Search users…' style={inputStyle} />
-              {userBusy && <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 4 }}>searching…</div>}
+              {userBusy && <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginTop: 4 }}>searching…</div>}
               {userRes.map(u => (
                 <button key={u.username} onClick={() => addUser(u)} disabled={allowedUsers.includes(u.username)}
                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginTop: 4, background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border}`, borderRadius: 7, color: allowedUsers.includes(u.username) ? T.muted : T.text, fontFamily: T.display, fontSize: 12, cursor: 'pointer' }}>
@@ -189,7 +189,7 @@ export function ChannelModal({ initial, onSave, onClose }) {
           )}
 
           {mode === 'closed' && (
-            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.warn, marginBottom: 8 }}>CLOSED — only staff can see this channel.</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.warn, marginBottom: 8 }}>CLOSED — only staff can see this channel.</div>
           )}
 
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
@@ -206,7 +206,7 @@ export function ChannelModal({ initial, onSave, onClose }) {
 
         {(ctype === 'voice' || ctype === 'video') && (
           <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 14 }}>
-            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>VOICE PERMISSIONS</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>VOICE PERMISSIONS</div>
             <RoleSelect label="CAN SPEAK" value={speakRoles} onChange={setSpeakRoles} />
             <RoleSelect label="CAN SCREEN SHARE" value={screenRoles} onChange={setScreenRoles} />
           </div>

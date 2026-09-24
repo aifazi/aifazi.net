@@ -71,7 +71,7 @@ function AdminPortalLink({ compact = false }) {
 /* ─── Shared micro-components ────────────────────────────────────────────── */
 function Badge({ label, color = CLRS.cyan, icon }) {
   return (
-    <span style={{ ...M, fontSize: 8, letterSpacing: 2, padding: '4px 10px',
+    <span style={{ ...M, fontSize: 11, letterSpacing: 2, padding: '4px 10px',
       color, background: color + '18', border: `1px solid ${color}40`,
       borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 4,
       whiteSpace: 'nowrap' }}>
@@ -92,7 +92,7 @@ function SectionCard({ title, tag, children, action, noPad }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.015)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {tag && <span style={{ ...M, fontSize: 7, letterSpacing: 3, color: CLRS.cyan }}>{tag}</span>}
+          {tag && <span style={{ ...M, fontSize: 11, letterSpacing: 3, color: CLRS.cyan }}>{tag}</span>}
           <span style={{ ...M, fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{title}</span>
         </div>
         {action}
@@ -105,7 +105,7 @@ function SectionCard({ title, tag, children, action, noPad }) {
 function Inp({ label, id, ...props }) {
   return (
     <div>
-      {label && <label htmlFor={id} style={{ ...M, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{label}</label>}
+      {label && <label htmlFor={id} style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{label}</label>}
       <input id={id} {...props} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
         color: 'var(--text)', ...M, fontSize: 12, padding: '10px 13px', borderRadius: 10,
         outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s', ...props.style }}
@@ -210,7 +210,7 @@ function TicketCard({ t, onClick }) {
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
           <Badge label={sc.label} color={sc.color} />
           <Badge label={pc.label} color={pc.color} />
-          <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>{ago(t.created_at)}</span>
+          <span style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>{ago(t.created_at)}</span>
           <span style={{ ...M, fontSize: 10, color: 'var(--cyan)', marginLeft: 4 }}>VIEW →</span>
         </div>
       </div>
@@ -328,11 +328,11 @@ function TicketDetailView({ ticketId, user, onBack }) {
       <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <div style={{ ...M, fontSize: 8, letterSpacing: 3, color: CLRS.cyan, marginBottom: 4 }}>TICKET DETAIL</div>
+          <div style={{ ...M, fontSize: 11, letterSpacing: 3, color: CLRS.cyan, marginBottom: 4 }}>TICKET DETAIL</div>
           <div style={{ ...M, fontSize: 13, fontWeight: 700, color: CLRS.green }}>#{ticket.ticket_id || (ticket.id || '').slice(-6).toUpperCase()}</div>
           <h3 style={{ fontSize: 15, fontWeight: 600, margin: '4px 0 0' }}>{ticket.subject}</h3>
         </div>
-        <button onClick={onBack} style={{ ...M, fontSize: 9, letterSpacing: 1,
+        <button onClick={onBack} style={{ ...M, fontSize: 11, letterSpacing: 1,
           background: 'none', border: '1px solid var(--border)', color: 'var(--muted)',
           cursor: 'pointer', borderRadius: 6, padding: '7px 14px' }}>
           ← BACK
@@ -349,12 +349,12 @@ function TicketDetailView({ ticketId, user, onBack }) {
       </div>
       {/* Description */}
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.015)' }}>
-        <div style={{ ...M, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>DESCRIPTION</div>
+        <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>DESCRIPTION</div>
         <p style={{ ...M, fontSize: 11, color: 'var(--muted)', lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap' }}>{ticket.description}</p>
       </div>
       {/* Message Thread */}
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ ...M, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>DISCUSSION</div>
+        <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>DISCUSSION</div>
         {messages.length === 0 ? (
           <div style={{ textAlign: 'center', ...M, fontSize: 10, color: 'var(--muted)', padding: 20 }}>No messages yet</div>
         ) : messages.map(msg => {
@@ -366,11 +366,11 @@ function TicketDetailView({ ticketId, user, onBack }) {
                 border: `1px solid ${isSystem ? 'rgba(168,85,247,0.2)' : isStaff ? 'color-mix(in srgb, var(--cyan) 20%, transparent)' : 'color-mix(in srgb, var(--green) 20%, transparent)'}`,
                 borderRadius: 10, padding: '10px 14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ ...M, fontSize: 8, letterSpacing: 2, color: isSystem ? CLRS.purple : isStaff ? CLRS.cyan : CLRS.green, fontWeight: 700 }}>
+                  <span style={{ ...M, fontSize: 11, letterSpacing: 2, color: isSystem ? CLRS.purple : isStaff ? CLRS.cyan : CLRS.green, fontWeight: 700 }}>
                     {isSystem ? 'SYSTEM' : isStaff ? 'STAFF' : 'YOU'}
                   </span>
-                  <span style={{ ...M, fontSize: 8, color: 'var(--muted)' }}>{msg.author_name}</span>
-                  <span style={{ ...M, fontSize: 8, color: 'var(--muted)', marginLeft: 'auto' }}>
+                  <span style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>{msg.author_name}</span>
+                  <span style={{ ...M, fontSize: 11, color: 'var(--muted)', marginLeft: 'auto' }}>
                     {msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}
                   </span>
                 </div>
@@ -385,7 +385,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
       {/* Reply box */}
       {canReply && (
         <div style={{ padding: '14px 20px' }}>
-          <label style={{ ...M, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>ADD A REPLY</label>
+          <label style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>ADD A REPLY</label>
           <textarea value={reply} onChange={e => setReply(e.target.value)}
             placeholder="Type your message here..." rows={3}
             style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)',
@@ -394,7 +394,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
             onFocus={e => e.target.style.borderColor = CLRS.green}
             onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           <button onClick={sendReply} disabled={sending || !reply.trim()} style={{
-            ...M, fontSize: 9, letterSpacing: 2, padding: '9px 18px',
+            ...M, fontSize: 11, letterSpacing: 2, padding: '9px 18px',
             background: sending || !reply.trim() ? 'var(--bg3)' : CLRS.green,
             color: sending || !reply.trim() ? 'var(--muted)' : '#000',
             border: 'none', borderRadius: 6, cursor: sending || !reply.trim() ? 'not-allowed' : 'pointer',
@@ -493,7 +493,7 @@ function MyTicketsTab({ user, initialTicketId, onTicketViewChange }) {
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg3)', border: '1px solid var(--border)',
             borderTop: `2px solid ${s.color}`, borderRadius: 8, padding: '12px 14px', textAlign: 'center' }}>
-            <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
+            <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
             <div style={{ ...M, fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
           </div>
         ))}
@@ -508,7 +508,7 @@ function MyTicketsTab({ user, initialTicketId, onTicketViewChange }) {
             const active = filter === s
             return (
               <button key={s} onClick={() => setFilter(s)} style={{
-                ...M, fontSize: 8, letterSpacing: 1, padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
+                ...M, fontSize: 11, letterSpacing: 1, padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
                 background: active ? cfg.color + '22' : 'transparent',
                 border: `1px solid ${active ? cfg.color : 'var(--border)'}`,
                 color: active ? cfg.color : 'var(--muted)', transition: 'all 0.12s',
@@ -597,7 +597,7 @@ function ActivityTab({ user }) {
           <Link key={t.id || t._id} to={`/forum/thread/${t.id || t._id}`} style={{ textDecoration: 'none', display: 'block' }}>
             <div className="forum-activity-link" style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
-              <div style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>{ago(t.created_at || t.createdAt)}</div>
+              <div style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>{ago(t.created_at || t.createdAt)}</div>
             </div>
           </Link>
         ))}
@@ -610,7 +610,7 @@ function ActivityTab({ user }) {
         ) : replies.map(r => (
           <div key={r.id || r._id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{r.content || r.body}</div>
-            <div style={{ ...M, fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>{ago(r.created_at || r.createdAt)}</div>
+            <div style={{ ...M, fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>{ago(r.created_at || r.createdAt)}</div>
           </div>
         ))}
       </SectionCard>
@@ -743,7 +743,7 @@ function ProfileEditTab({ user, onUpdate }) {
       <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 500 }}>
         <Inp label="USERNAME" id="pf-user" value={form.username} onChange={e => set('username', e.target.value)} placeholder="YourUsername" />
         {usernameCheck.msg && (
-          <div style={{ ...M, fontSize: 9, color: usernameCheck.state === 'ok' ? CLRS.green : usernameCheck.state === 'checking' ? CLRS.cyan : CLRS.red, marginTop: -8 }}>
+          <div style={{ ...M, fontSize: 11, color: usernameCheck.state === 'ok' ? CLRS.green : usernameCheck.state === 'checking' ? CLRS.cyan : CLRS.red, marginTop: -8 }}>
             {usernameCheck.msg}
           </div>
         )}
@@ -756,14 +756,14 @@ function ProfileEditTab({ user, onUpdate }) {
           <>
             <Inp label="EMAIL" id="pf-email" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="you@example.com" />
             {emailCheck.msg && (
-              <div style={{ ...M, fontSize: 9, color: emailCheck.state === 'ok' ? CLRS.green : emailCheck.state === 'checking' ? CLRS.cyan : CLRS.red, marginTop: -8 }}>
+              <div style={{ ...M, fontSize: 11, color: emailCheck.state === 'ok' ? CLRS.green : emailCheck.state === 'checking' ? CLRS.cyan : CLRS.red, marginTop: -8 }}>
                 {emailCheck.msg}
               </div>
             )}
           </>
         )}
         <div>
-          <label htmlFor="pf-bio" style={{ ...M, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>BIO</label>
+          <label htmlFor="pf-bio" style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>BIO</label>
           <textarea id="pf-bio" rows={3} value={form.bio} onChange={e => set('bio', e.target.value)}
             placeholder="Tell us about yourself…"
             style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)',
@@ -774,23 +774,23 @@ function ProfileEditTab({ user, onUpdate }) {
             onBlur={e => e.target.style.borderColor = 'var(--border)'} />
         </div>
         <div>
-          <label htmlFor="pf-avatar" style={{ ...M, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>AVATAR</label>
+          <label htmlFor="pf-avatar" style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>AVATAR</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             {form.avatar ? (
               <UserAvatar avatar={form.avatar} name={form.username} size={56} imgStyle={{ border: '1px solid var(--border)' }} />
             ) : (
               <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', ...M, fontSize: 20, color: 'var(--muted)', flexShrink: 0 }}>?</div>
             )}
-            <label htmlFor="pf-avatar-file" style={{ ...M, fontSize: 9, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: '#000', background: 'var(--green)', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <label htmlFor="pf-avatar-file" style={{ ...M, fontSize: 11, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: '#000', background: 'var(--green)', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {avatarUploading ? 'UPLOADING…' : '⤒ UPLOAD IMAGE'}
             </label>
-            <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>JPEG · PNG · GIF · WebP, max 5 MB,<br />or paste a URL below</span>
+            <span style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>JPEG · PNG · GIF · WebP, max 5 MB,<br />or paste a URL below</span>
           </div>
           <input id="pf-avatar-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp" hidden onChange={onAvatarUpload} />
         </div>
         <Inp label="AVATAR URL" id="pf-avatar" value={form.avatar} onChange={e => set('avatar', e.target.value)} placeholder="https://…/avatar.png" />
         <div style={{ marginTop: 10 }}>
-          <label style={{ ...M, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>BUILT-IN AVATARS</label>
+          <label style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }}>BUILT-IN AVATARS</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {BUILTIN_AVATARS.map(a => {
               const active = form.avatar === `avatar:${a.key}`
@@ -866,8 +866,8 @@ function ProfileSessionsPanel({ staffAccount }) {
           <div style={{ fontSize:18 }}>{sess.current ? '●' : '□'}</div>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ ...M, fontSize:11, color:'var(--text)' }}>{sess.ip || 'Unknown IP'} {sess.current && <Badge label="THIS SESSION" color={CLRS.green} />}</div>
-            <div style={{ ...M, fontSize:9, color:'var(--muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:3 }}>{sess.user_agent || 'Unknown browser'}</div>
-            <div style={{ ...M, fontSize:9, color:'var(--muted)', marginTop:3 }}>Last active {ago(sess.last_active)} · Login {sess.created_at ? new Date(sess.created_at).toLocaleString() : '—'}</div>
+            <div style={{ ...M, fontSize: 11, color:'var(--muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginTop:3 }}>{sess.user_agent || 'Unknown browser'}</div>
+            <div style={{ ...M, fontSize: 11, color:'var(--muted)', marginTop:3 }}>Last active {ago(sess.last_active)} · Login {sess.created_at ? new Date(sess.created_at).toLocaleString() : '—'}</div>
           </div>
           {!sess.current && <Btn small ghost color={CLRS.red} disabled={revoking===sess.id} onClick={() => revoke(sess.id)}>REVOKE</Btn>}
         </div>
@@ -1140,10 +1140,10 @@ function SecurityTab({ user }) {
                 )}
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ ...M, fontSize: 11, color: 'var(--text)', fontWeight: 800 }}>{provider.label}</div>
-                  <div style={{ ...M, fontSize: 9, color: provider.linked ? provider.color : 'var(--muted)', marginTop: 3 }}>
+                  <div style={{ ...M, fontSize: 11, color: provider.linked ? provider.color : 'var(--muted)', marginTop: 3 }}>
                     {provider.linked ? `Connected as ${provider.username || provider.id}` : 'Not connected'}
                   </div>
-                  {provider.linked && <div style={{ ...M, fontSize: 8, color: 'var(--muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider.id}</div>}
+                  {provider.linked && <div style={{ ...M, fontSize: 11, color: 'var(--muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider.id}</div>}
                 </div>
               </div>
               <Btn
@@ -1161,7 +1161,7 @@ function SecurityTab({ user }) {
             </div>
           ))}
         </div>
-        {identityLocked && <div style={{ ...M, fontSize: 9, color: CLRS.orange, padding: '8px 14px', background: 'rgba(255,107,53,0.07)', border: '1px solid rgba(255,107,53,0.25)', borderRadius: 6, marginTop: 8 }}>🔒 Your active FiveM identity is locked. Contact an admin or open a ticket to change OAuth accounts.</div>}
+        {identityLocked && <div style={{ ...M, fontSize: 11, color: CLRS.orange, padding: '8px 14px', background: 'rgba(255,107,53,0.07)', border: '1px solid rgba(255,107,53,0.25)', borderRadius: 6, marginTop: 8 }}>🔒 Your active FiveM identity is locked. Contact an admin or open a ticket to change OAuth accounts.</div>}
         {oauthStatus && <StatusMsg msg={oauthStatus.msg} type={oauthStatus.type} />}
       </SectionCard>
 
@@ -1173,7 +1173,7 @@ function SecurityTab({ user }) {
           <Inp label="CONFIRM NEW PASSWORD" id="sec-conf" type="password" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} autoComplete="new-password"
             style={{ borderColor: form.confirmPassword && form.confirmPassword !== form.newPassword ? CLRS.red : undefined }} />
           {form.confirmPassword && form.confirmPassword !== form.newPassword && (
-            <div style={{ ...M, fontSize: 9, color: CLRS.red }}>⚠  Passwords don&apos;t match</div>
+            <div style={{ ...M, fontSize: 11, color: CLRS.red }}>⚠  Passwords don&apos;t match</div>
           )}
           {status && <StatusMsg msg={status.msg} type={status.type} />}
           <Btn type="submit" disabled={saving}>{saving ? 'SAVING…' : 'CHANGE PASSWORD'}</Btn>
@@ -1191,7 +1191,7 @@ function SecurityTab({ user }) {
             background: 'var(--bg3)', borderRadius: 7, border: '1px solid var(--border)', flexWrap: 'wrap', gap: 10 }}>
             <div>
               <div style={{ ...M, fontSize: 11, color: 'var(--text)', fontWeight: 700 }}>Sign Out</div>
-              <div style={{ ...M, fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>Sign out of your account on this device</div>
+              <div style={{ ...M, fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>Sign out of your account on this device</div>
             </div>
             <Btn color={CLRS.orange} ghost onClick={async () => { await logout?.(); window.location.replace('/login') }} small>SIGN OUT</Btn>
           </div>
@@ -1224,7 +1224,7 @@ function OverviewTab({ user, tickets, onOpenTicket }) {
             ['STATUS',    user?.banned ? '🚫 BANNED' : '✓ ACTIVE'],
           ].map(([k, v]) => (
             <div key={k} style={{ padding: '10px 14px', background: 'var(--bg3)', borderRadius: 6, border: '1px solid var(--border)' }}>
-              <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{k}</div>
+              <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{k}</div>
               <div style={{ ...M, fontSize: 12, color: 'var(--text)' }}>{v}</div>
             </div>
           ))}
@@ -1233,7 +1233,7 @@ function OverviewTab({ user, tickets, onOpenTicket }) {
 
       {/* Ticket snapshot */}
       <SectionCard title="Helpdesk Tickets" tag="SUPPORT"
-        action={<button type="button" onClick={() => onOpenTicket?.(null)} style={{ ...M, fontSize: 8, letterSpacing: 2, color: CLRS.cyan, textDecoration: 'none', background: 'none', border: 0, cursor: 'pointer' }}>VIEW ALL →</button>}>
+        action={<button type="button" onClick={() => onOpenTicket?.(null)} style={{ ...M, fontSize: 11, letterSpacing: 2, color: CLRS.cyan, textDecoration: 'none', background: 'none', border: 0, cursor: 'pointer' }}>VIEW ALL →</button>}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 16 }}>
           {[
             { label: 'TOTAL',    value: ticketStats.total,    color: CLRS.cyan   },
@@ -1242,7 +1242,7 @@ function OverviewTab({ user, tickets, onOpenTicket }) {
           ].map(s => (
             <div key={s.label} style={{ background: 'var(--bg3)', borderTop: `2px solid ${s.color}`,
               border: '1px solid var(--border)', borderRadius: 7, padding: '10px 12px', textAlign: 'center' }}>
-              <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
+              <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
               <div style={{ ...M, fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
             </div>
           ))}
@@ -1492,7 +1492,7 @@ function FiveMTab({ user }) {
             )}
             <div style={{ flex: 1 }}>
               <div style={{ ...M, fontSize: 12, color: 'var(--text)', fontWeight: 700 }}>{discordUsername || 'Discord Account'}</div>
-              <div style={{ ...M, fontSize: 9, color: DISCORD_PURPLE, letterSpacing: 1, marginTop: 2 }}>DISCORD ID: {discordId || '—'}</div>
+              <div style={{ ...M, fontSize: 11, color: DISCORD_PURPLE, letterSpacing: 1, marginTop: 2 }}>DISCORD ID: {discordId || '—'}</div>
             </div>
             <Badge label="CONNECTED" color={CLRS.green} icon="✓" />
             {providerAction('discord', discordLinked)}
@@ -1544,8 +1544,8 @@ function FiveMTab({ user }) {
             )}
             <div style={{ flex: 1 }}>
               <div style={{ ...M, fontSize: 12, color: 'var(--text)', fontWeight: 700 }}>{steamUsername || 'Steam Account'}</div>
-              <div style={{ ...M, fontSize: 9, color: STEAM_LIGHT, letterSpacing: 1, marginTop: 2 }}>STEAM ID: {steamId || '—'}</div>
-              {steamHex && <div style={{ ...M, fontSize: 9, color: 'var(--muted)', letterSpacing: 1, marginTop: 2 }}>{steamHex}</div>}
+              <div style={{ ...M, fontSize: 11, color: STEAM_LIGHT, letterSpacing: 1, marginTop: 2 }}>STEAM ID: {steamId || '—'}</div>
+              {steamHex && <div style={{ ...M, fontSize: 11, color: 'var(--muted)', letterSpacing: 1, marginTop: 2 }}>{steamHex}</div>}
             </div>
             <Badge label="CONNECTED" color={CLRS.green} icon="✓" />
             {providerAction('steam', steamLinked)}
@@ -1627,7 +1627,7 @@ function FiveMTab({ user }) {
                         }}>
                           {step.icon}
                         </div>
-                        <div style={{ ...M, fontSize: 8, letterSpacing: 1,
+                        <div style={{ ...M, fontSize: 11, letterSpacing: 1,
                           color: done || current ? color : 'var(--muted)',
                           textAlign: 'center', maxWidth: 70 }}>
                           {step.label.toUpperCase()}
@@ -1659,7 +1659,7 @@ function FiveMTab({ user }) {
                   )}
                 </div>
                 {wl.submitted_at && (
-                  <div style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>Submitted {ago(wl.submitted_at)}</div>
+                  <div style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>Submitted {ago(wl.submitted_at)}</div>
                 )}
               </div>
 
@@ -1676,7 +1676,7 @@ function FiveMTab({ user }) {
                     : '—'],
                 ].map(([k, v]) => (
                   <div key={k} style={{ padding: '9px 12px', background: 'var(--bg3)', borderRadius: 6, border: '1px solid var(--border)' }}>
-                    <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 3 }}>{k}</div>
+                    <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 3 }}>{k}</div>
                     <div style={{ ...M, fontSize: 11, color: 'var(--text)' }}>{v}</div>
                   </div>
                 ))}
@@ -1714,7 +1714,7 @@ function FiveMTab({ user }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
                     <div>
                       <div style={{ ...M, fontSize: 12, color: 'var(--text)', fontWeight: 700 }}>{sub.form_title || sub.form_slug || 'Application'}</div>
-                      <div style={{ ...M, fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>Submitted {sub.created_at ? ago(sub.created_at) : '-'}</div>
+                      <div style={{ ...M, fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>Submitted {sub.created_at ? ago(sub.created_at) : '-'}</div>
                     </div>
                     <Badge label={st.label || stKey.toUpperCase()} color={st.color || CLRS.cyan} />
                   </div>
@@ -1726,7 +1726,7 @@ function FiveMTab({ user }) {
                       ['REVIEW NOTE', sub.reviewer_note || '-'],
                     ].map(([k, v]) => (
                       <div key={k} style={{ padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'rgba(255,255,255,0.02)' }}>
-                        <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 3 }}>{k}</div>
+                        <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 3 }}>{k}</div>
                         <div style={{ ...M, fontSize: 10, color: 'var(--text)' }}>{v}</div>
                       </div>
                     ))}
@@ -1766,7 +1766,7 @@ function OrdersDocumentsTab({ user }) {
   }
   const ghostBtn = {
     background: 'none', border: '1px solid var(--border)', color: 'var(--muted)',
-    fontSize: 9, letterSpacing: 1, padding: '6px 10px', borderRadius: 5, cursor: 'pointer',
+    fontSize: 11, letterSpacing: 1, padding: '6px 10px', borderRadius: 5, cursor: 'pointer',
   }
 
   const loadOrders = () => {
@@ -1846,7 +1846,7 @@ function OrdersDocumentsTab({ user }) {
                   <span style={{ fontSize: 10, color: 'var(--muted)' }}>{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</span>
                   <span style={{ flex: 1 }} />
                   <span style={{ ...M, fontSize: 12, fontWeight: 800 }}>${(o.total_cents / 100).toFixed(2)}</span>
-                  <span style={{ ...M, fontSize: 8, letterSpacing: 1.5, padding: '3px 10px', borderRadius: 12, border: `1px solid ${statusColor(o.status)}55`, color: statusColor(o.status), fontWeight: 800 }}>{(o.status || '').toUpperCase()}</span>
+                  <span style={{ ...M, fontSize: 11, letterSpacing: 1.5, padding: '3px 10px', borderRadius: 12, border: `1px solid ${statusColor(o.status)}55`, color: statusColor(o.status), fontWeight: 800 }}>{(o.status || '').toUpperCase()}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
                   {(o.items || []).map((it, i) => (
@@ -1880,13 +1880,13 @@ function OrdersDocumentsTab({ user }) {
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div style={{ ...M, fontSize: 12, letterSpacing: 2, color: CLRS.green, fontWeight: 800 }}>{detail.order_number}</div>
-              <span style={{ ...M, fontSize: 8, letterSpacing: 1.5, padding: '3px 10px', borderRadius: 12, border: `1px solid ${CLRS.cyan}55`, color: CLRS.cyan, fontWeight: 800 }}>{(detail.status || '').toUpperCase()}</span>
+              <span style={{ ...M, fontSize: 11, letterSpacing: 1.5, padding: '3px 10px', borderRadius: 12, border: `1px solid ${CLRS.cyan}55`, color: CLRS.cyan, fontWeight: 800 }}>{(detail.status || '').toUpperCase()}</span>
             </div>
             <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
               Placed {detail.created_at ? new Date(detail.created_at).toLocaleString() : '—'}
               {(detail.carrier || detail.tracking_number) && <div style={{ marginTop: 4 }}>📦 {detail.carrier || ''} {detail.tracking_number || ''}</div>}
             </div>
-            <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>STATUS TIMELINE</div>
+            <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>STATUS TIMELINE</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
               {(detail.events || []).length === 0 ? (
                 <span style={{ fontSize: 11, color: 'var(--muted)' }}>No updates yet.</span>
@@ -1896,12 +1896,12 @@ function OrdersDocumentsTab({ user }) {
                   <div style={{ flex: 1 }}>
                     <div style={{ color: 'var(--text)', fontWeight: 700 }}>{(ev.status || '').toUpperCase()}</div>
                     {ev.note && <div style={{ color: 'var(--muted)', fontSize: 10 }}>{ev.note}</div>}
-                    <div style={{ color: 'var(--muted)', fontSize: 9 }}>{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</div>
+                    <div style={{ color: 'var(--muted)', fontSize: 11 }}>{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</div>
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>ITEMS</div>
+            <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>ITEMS</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
               {(detail.items || []).map((it, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
@@ -1910,7 +1910,7 @@ function OrdersDocumentsTab({ user }) {
                 </div>
               ))}
             </div>
-            <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>DOWNLOADS</div>
+            <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>DOWNLOADS</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
               {(detail.downloads || []).length === 0 ? (
                 <span style={{ fontSize: 11, color: 'var(--muted)' }}>None</span>
@@ -1928,7 +1928,7 @@ function OrdersDocumentsTab({ user }) {
       )}
 
       <SectionCard title="Documents" tag="PROFILE FILES" action={
-        <label style={{ ...M, fontSize: 8, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: '#000', background: 'var(--green)', borderRadius: 6, cursor: 'pointer' }}>
+        <label style={{ ...M, fontSize: 11, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: '#000', background: 'var(--green)', borderRadius: 6, cursor: 'pointer' }}>
           {uploading ? 'UPLOADING…' : '+ UPLOAD'}
           <input type="file" hidden onChange={onUpload} />
         </label>
@@ -1948,7 +1948,7 @@ function OrdersDocumentsTab({ user }) {
                 <span style={{ fontSize: 14 }}>📄</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</div>
-                  <div style={{ fontSize: 9, color: 'var(--muted)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>
                     {d.category} · {d.mime_type} · {d.file_size ? (d.file_size / 1024).toFixed(1) + ' KB' : '—'} · {d.created_at ? new Date(d.created_at).toLocaleDateString() : ''}
                   </div>
                 </div>
@@ -2098,9 +2098,9 @@ export default function ForumProfile() {
               </div>
               {user.bio && <p style={{ ...M, fontSize: 11, color: 'var(--muted)', margin: 0, lineHeight: 1.6, maxWidth: 420 }}>{user.bio}</p>}
               <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
-                <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>📧 {user.email || '—'}</span>
-                <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>🕒 Last seen {ago(user.last_seen)}</span>
-                <span style={{ ...M, fontSize: 9, color: 'var(--muted)' }}>📅 Joined {user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}</span>
+                <span style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>📧 {user.email || '—'}</span>
+                <span style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>🕒 Last seen {ago(user.last_seen)}</span>
+                <span style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>📅 Joined {user.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}</span>
               </div>
             </div>
 
@@ -2111,7 +2111,7 @@ export default function ForumProfile() {
                 { label: 'OPEN',    value: tickets.filter(t => t.status === 'open').length, color: CLRS.orange },
               ].map(s => (
                 <div key={s.label} onClick={() => openTicket(null)} className="forum-stat-tile" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 16px', textAlign: 'center' }}>
-                  <div style={{ ...M, fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
+                  <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
                   <div style={{ ...M, fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
                 </div>
               ))}

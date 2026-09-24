@@ -109,13 +109,13 @@ function DownloadCard({ release, loading, error }) {
       )}
 
       {release?.state === 'building' && (
-        <p style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: O, textAlign: 'center', marginBottom: 8 }}>
+        <p style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: O, textAlign: 'center', marginBottom: 8 }}>
           The APK is being built right now — it usually appears here within ~15 minutes.
         </p>
       )}
 
       {release?.state === 'ready' && (
-        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: 'var(--muted)', textAlign: 'center', marginBottom: 8 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: 'var(--muted)', textAlign: 'center', marginBottom: 8 }}>
           {release?.asset_name || 'aifazi-v1.0.1.apk'} · {fmtSize(release?.asset_size)}
           {release?.published_at ? ` · ${new Date(release.published_at).toLocaleDateString()}` : ''}
         </div>
@@ -163,7 +163,7 @@ export default function AppPage() {
         {/* Download card */}
         <div style={{ maxWidth: 460, margin: '30px auto 0' }}>
           <DownloadCard release={release} loading={status === 'loading'} error={status === 'error'} />
-          <p style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: 'var(--muted)', textAlign: 'center', marginTop: 14 }}>
+          <p style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: 'var(--muted)', textAlign: 'center', marginTop: 14 }}>
             FREE · NO TRACKERS · NO ADS · DIRECT APK
           </p>
         </div>

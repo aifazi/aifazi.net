@@ -151,24 +151,24 @@ export default function AccountDashboard({ loginHref }) {
             <Card style={{ padding: 22, textAlign: 'center' }}>
               <div style={{ fontSize: 28, marginBottom: 6 }}>📦</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: G }}>{orders.length}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>ORDERS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>ORDERS</div>
             </Card>
             <Card style={{ padding: 22, textAlign: 'center' }}>
               <div style={{ fontSize: 28, marginBottom: 6 }}>⬇</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: C }}>{downloads.length}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>DOWNLOADS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>DOWNLOADS</div>
             </Card>
             <Card style={{ padding: 22, textAlign: 'center' }}>
               <div style={{ fontSize: 28, marginBottom: 6 }}>💰</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: Y }}>${totalSpent.toFixed(2)}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>TOTAL SPENT</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>TOTAL SPENT</div>
             </Card>
             <Card style={{ padding: 22, textAlign: 'center' }}>
               <div style={{ fontSize: 28, marginBottom: 6 }}>👑</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: activeSub ? G : 'var(--muted)' }}>
                 {activeSub ? 'Active' : 'None'}
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>SUBSCRIPTION</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginTop: 4 }}>SUBSCRIPTION</div>
             </Card>
           </div>
 
@@ -176,7 +176,7 @@ export default function AccountDashboard({ loginHref }) {
           <div style={{ marginBottom: 32 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: C }}>RECENT ORDERS</span>
-              {orders.length > 6 && <button onClick={() => setSection('orders')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: G, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL →</button>}
+              {orders.length > 6 && <button onClick={() => setSection('orders')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: G, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL →</button>}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {orders.slice(0, 3).map(o => {
@@ -207,7 +207,7 @@ export default function AccountDashboard({ loginHref }) {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: C }}>DIGITAL DOWNLOADS</span>
-              {downloads.length > 6 && <button onClick={() => setSection('downloads')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: G, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL →</button>}
+              {downloads.length > 6 && <button onClick={() => setSection('downloads')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: G, background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL →</button>}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {downloads.slice(0, 3).map(d => (
@@ -310,7 +310,7 @@ export default function AccountDashboard({ loginHref }) {
         <Card accent style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
             <div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>SUBSCRIPTION</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>SUBSCRIPTION</span>
               {activeSub ? (
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text)', marginTop: 6 }}>
                   {activeSub.plan_name} — Level {activeSub.plan_level || 0}

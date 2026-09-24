@@ -78,7 +78,7 @@ export function MenuPanel({ items = [], x, y, header, onClose, style = {}, menuS
         {header && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px 6px', borderBottom: `1px solid ${menuStyle === 'terminal' || menuStyle === 'matrix' ? '#00ff8833' : t.border}`, marginBottom: 4 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: menuStyle === 'neon' ? 'var(--cyan)' : t.green, display: 'inline-block', boxShadow: menuStyle !== 'minimal' ? `0 0 6px ${t.green}` : 'none' }} />
-            <span style={{ fontFamily: t.fontMono, fontSize: 9, letterSpacing: 2, color: menuStyle === 'terminal' || menuStyle === 'matrix' ? '#33ff33' : t.muted, textTransform: 'uppercase' }}>{header}</span>
+            <span style={{ fontFamily: t.fontMono, fontSize: 11, letterSpacing: 2, color: menuStyle === 'terminal' || menuStyle === 'matrix' ? '#33ff33' : t.muted, textTransform: 'uppercase' }}>{header}</span>
           </div>
         )}
         {/* Items */}
@@ -97,9 +97,9 @@ export function MenuPanel({ items = [], x, y, header, onClose, style = {}, menuS
               {item.icon != null && <span style={{ width: 18, textAlign: 'center', fontSize: 13, flexShrink: 0, opacity: 0.85, color: itemColor }}>{item.icon}</span>}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: t.fontMono, fontSize: 11, letterSpacing: 0.5, color: isActive ? itemColor : (menuStyle === 'terminal' || menuStyle === 'matrix' ? '#a0d0a0' : t.text), whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</div>
-                {item.sublabel && <div style={{ fontFamily: t.fontMono, fontSize: 9, color: t.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.sublabel}</div>}
+                {item.sublabel && <div style={{ fontFamily: t.fontMono, fontSize: 11, color: t.muted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.sublabel}</div>}
               </div>
-              {item.shortcut && <span style={{ fontFamily: t.fontMono, fontSize: 9, color: t.muted, flexShrink: 0 }}>{item.shortcut}</span>}
+              {item.shortcut && <span style={{ fontFamily: t.fontMono, fontSize: 11, color: t.muted, flexShrink: 0 }}>{item.shortcut}</span>}
               <span style={{ fontSize: 10, color: itemColor, flexShrink: 0, opacity: isActive ? 0.5 : 0, transition: 'opacity 0.1s' }}>›</span>
             </div>
           )

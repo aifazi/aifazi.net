@@ -934,13 +934,13 @@ export default function AdminChat({ embedded=false }) {
                             borderRadius:7, background:showAdminMenu?'color-mix(in srgb, var(--green) 10%, transparent)':'transparent',
                             color:showAdminMenu?T.accent:T.muted, fontFamily:T.mono, fontSize:11,
                             cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                          MOD <span style={{ fontSize:8, opacity:0.7 }}>{showAdminMenu?'▲':'▼'}</span>
+                          MOD <span style={{ fontSize: 11, opacity:0.7 }}>{showAdminMenu?'▲':'▼'}</span>
                         </button>
                         {showAdminMenu && (
                           <div style={{ position:'absolute', right:0, top:'calc(100% + 6px)', zIndex:200,
                             background:'rgba(18,21,32,0.98)', border:`1px solid ${T.border}`, borderRadius:10,
                             padding:'4px', minWidth:200, boxShadow:'0 10px 40px rgba(0,0,0,0.7)' }}>
-                            <div style={{ padding:'6px 12px 4px', fontFamily:T.mono, fontSize:9, color:T.muted, letterSpacing:2 }}>CHANNEL ACTIONS</div>
+                            <div style={{ padding:'6px 12px 4px', fontFamily:T.mono, fontSize: 11, color:T.muted, letterSpacing:2 }}>CHANNEL ACTIONS</div>
                             {[
                               { icon:'✏️', label:'Edit Channel', action:()=>{setModal(room);setShowAdminMenu(false)}, color:T.text },
                               { icon:'➕', label:'New Channel',  action:()=>{setModal('create');setShowAdminMenu(false)}, color:T.accent },
@@ -958,7 +958,7 @@ export default function AdminChat({ embedded=false }) {
                               </button>
                             ))}
                             <div style={{ height:1, background:T.border, margin:'4px 8px' }}/>
-                            <div style={{ padding:'6px 12px 4px', fontFamily:T.mono, fontSize:9, color:T.muted, letterSpacing:2 }}>MODERATION</div>
+                            <div style={{ padding:'6px 12px 4px', fontFamily:T.mono, fontSize: 11, color:T.muted, letterSpacing:2 }}>MODERATION</div>
                             <button onClick={()=>{setShowAdminMenu(false);setUserSearch({ mode:'mute' })}}
                               style={{ display:'flex', alignItems:'center', gap:9, width:'100%', padding:'8px 12px', border:'none', background:'transparent', color:T.warn, fontFamily:T.mono, fontSize:11, cursor:'pointer', borderRadius:7, textAlign:'left' }}
                               onMouseEnter={e=>e.currentTarget.style.background='rgba(255,215,0,0.08)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
@@ -975,7 +975,7 @@ export default function AdminChat({ embedded=false }) {
                               <span style={{ width:16, textAlign:'center' }}>⛔</span>Ban User
                             </button>
                             <div style={{ height:1, background:T.border, margin:'4px 8px' }}/>
-                            <div style={{ padding:'6px 12px 4px', fontFamily:T.mono, fontSize:9, color:T.muted, letterSpacing:2 }}>DANGER ZONE</div>
+                            <div style={{ padding:'6px 12px 4px', fontFamily:T.mono, fontSize: 11, color:T.muted, letterSpacing:2 }}>DANGER ZONE</div>
                             <button onClick={()=>{delChan(room);setShowAdminMenu(false)}}
                               style={{ display:'flex', alignItems:'center', gap:9, width:'100%', padding:'8px 12px', border:'none', background:'transparent', color:T.danger, fontFamily:T.mono, fontSize:11, cursor:'pointer', borderRadius:7, textAlign:'left' }}
                               onMouseEnter={e=>e.currentTarget.style.background='rgba(255,71,87,0.1)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
@@ -1137,16 +1137,16 @@ export default function AdminChat({ embedded=false }) {
         {showOnline && !isMobile && (
           <div style={{ width:190, flexShrink:0, background:T.sidebar, borderLeft:`1px solid ${T.border}`, display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <div style={{ padding:'12px 12px 8px', borderBottom:`1px solid ${T.border}`, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-              <span style={{ fontFamily:T.mono, fontSize:9, color:T.muted, letterSpacing:3 }}>ONLINE — {online.length}</span>
+              <span style={{ fontFamily:T.mono, fontSize: 11, color:T.muted, letterSpacing:3 }}>ONLINE — {online.length}</span>
               <button onClick={()=>setShowOnline(false)} style={{ padding:'2px 7px', border:`1px solid ${T.border}`, borderRadius:6, background:'transparent', color:T.muted, cursor:'pointer', fontSize:12 }}>✕</button>
             </div>
             <div style={{ flex:1, overflowY:'auto', padding:'6px 0' }}>
               {Object.entries(voicePresenceByRoom).length > 0 && (
                 <div style={{ borderBottom:`1px solid ${T.border}`, padding:'4px 0 8px', marginBottom:4 }}>
-                  <div style={{ padding:'4px 12px 6px', fontFamily:T.mono, fontSize:8, color:T.accentB, letterSpacing:2 }}>IN VOICE</div>
+                  <div style={{ padding:'4px 12px 6px', fontFamily:T.mono, fontSize: 11, color:T.accentB, letterSpacing:2 }}>IN VOICE</div>
                   {rooms.filter(r => voicePresenceByRoom[r.id]?.length).map(r => (
                     <div key={r.id} style={{ padding:'4px 12px' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:5, fontFamily:T.mono, fontSize:9, color:T.muted }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:5, fontFamily:T.mono, fontSize: 11, color:T.muted }}>
                         <span>{r.type === 'video' ? '📹' : '🔊'}</span>
                         <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.name}</span>
                       </div>
@@ -1176,7 +1176,7 @@ export default function AdminChat({ embedded=false }) {
               ))}
               {roomMembers.filter(m => m.username !== me && !online.some(o => o.username === m.username)).length > 0 && (
                 <div style={{ borderTop:`1px solid ${T.border}`, marginTop:4, paddingTop:4 }}>
-                  <div style={{ padding:'4px 12px 6px', fontFamily:T.mono, fontSize:8, color:T.muted, letterSpacing:2 }}>
+                  <div style={{ padding:'4px 12px 6px', fontFamily:T.mono, fontSize: 11, color:T.muted, letterSpacing:2 }}>
                     OFFLINE MEMBERS — {roomMembers.filter(m => m.username !== me && !online.some(o => o.username === m.username)).length}
                   </div>
                   {roomMembers.filter(m => m.username !== me && !online.some(o => o.username === m.username)).map(m => {
@@ -1221,7 +1221,7 @@ class VoiceErrorBoundary extends Component {
           flex: 1, gap: 12, padding: 40, textAlign: 'center',
         }}>
           <div style={{ fontSize: 28, opacity: 0.5 }}>🎙</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: '#f87171' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: '#f87171' }}>
             VOICE CALL CRASHED
           </div>
           <div style={{ fontSize: 13, color: 'var(--muted)' }}>
@@ -1229,7 +1229,7 @@ class VoiceErrorBoundary extends Component {
           </div>
           <button onClick={() => this.setState({ crashed: false, error: null })}
             style={{
-              fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2,
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
               padding: '8px 18px', background: 'var(--green)', color: '#000',
               border: 'none', cursor: 'pointer', borderRadius: 4,
             }}>

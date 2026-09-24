@@ -15,7 +15,7 @@ const S = {
     transition: 'border-color 0.15s, box-shadow 0.15s',
   },
   label: {
-    fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2,
+    fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
     color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 6,
   },
   btn: (bg = 'var(--green)', color = '#000') => ({
@@ -54,7 +54,7 @@ function StatCard({ label, value, color }) {
   return (
     <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '20px 24px', textAlign: 'center', borderRadius: 14 }}>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 700, color: color || 'var(--green)' }}>{value ?? '—'}</div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>{label}</div>
     </div>
   )
 }
@@ -190,7 +190,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 3, marginBottom: 4 }}>EDIT USER</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700 }}>{u?.username}</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
                   {u?.email} · joined {timeAgo(u?.createdAt)} · {u?.threadCount}T / {u?.replyCount}R
                 </div>
               </div>
@@ -202,7 +202,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
           <div style={{ display: 'flex', gap: 2, marginBottom: 24 }}>
             {modalTabs.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)}
-                style={{ ...S.btn(tab === t.key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent', tab === t.key ? 'var(--green)' : 'var(--muted)'), border: `1px solid ${tab === t.key ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, fontSize: 9, letterSpacing: 1 }}>
+                style={{ ...S.btn(tab === t.key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent', tab === t.key ? 'var(--green)' : 'var(--muted)'), border: `1px solid ${tab === t.key ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, fontSize: 11, letterSpacing: 1 }}>
                 {t.label}
               </button>
             ))}
@@ -247,7 +247,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <label style={{ ...S.label, marginBottom: 0 }}>Password Reset</label>
                   <button onClick={() => setShowPwField(v => !v)}
-                    style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 9, padding: '4px 10px' }}>
+                    style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 11, padding: '4px 10px' }}>
                     {showPwField ? 'CANCEL' : '🔑 SET NEW PASSWORD'}
                   </button>
                 </div>
@@ -285,7 +285,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                     style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'var(--text)', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {t.title}
                   </Link>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                     {t.category?.icon} {t.category?.name} · {timeAgo(t.createdAt)} · {t.replyCount} replies · {t.views} views
                   </div>
                 </div>
@@ -300,13 +300,13 @@ function UserEditModal({ userId, onClose, onSaved }) {
               {data?.recentReplies?.map(r => (
                 <div key={r._id} style={{ ...S.card, marginBottom: 6, padding: '12px 16px' }}>
                   <Link to={`/forum/thread/${r.thread?._id}`} target="_blank"
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', textDecoration: 'none', display: 'block', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', textDecoration: 'none', display: 'block', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     → {r.thread?.title}
                   </Link>
                   <div style={{ color: 'var(--text)', fontSize: 13, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                     {r.content}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                     {timeAgo(r.createdAt)}{r.edited && ' · edited'}
                   </div>
                 </div>
@@ -334,7 +334,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                       {form.banned ? '🔴 USER IS BANNED' : '🟢 USER IS ACTIVE'}
                     </div>
                     {u?.lastSeen && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                         Last seen: {timeAgo(u.lastSeen)}
                       </div>
                     )}
@@ -356,11 +356,11 @@ function UserEditModal({ userId, onClose, onSaved }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: 12, textAlign: 'center' }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--cyan)' }}>{u?.threadCount}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2 }}>THREADS</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>THREADS</div>
                 </div>
                 <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: 12, textAlign: 'center' }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--orange)' }}>{u?.replyCount}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2 }}>REPLIES</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>REPLIES</div>
                 </div>
               </div>
 
@@ -894,15 +894,15 @@ export default function ForumAdmin({ embedded = false }) {
                         fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${u.username}`} />
                       <div>
                         <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600 }}>{u.username}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{u.email} · {timeAgo(u.createdAt)}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{u.email} · {timeAgo(u.createdAt)}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '3px 8px', border: '1px solid var(--border)', color: u.banned ? 'var(--red)' : 'var(--muted)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '3px 8px', border: '1px solid var(--border)', color: u.banned ? 'var(--red)' : 'var(--muted)' }}>
                         {u.banned ? 'BANNED' : u.role.toUpperCase()}
                       </span>
                       <button onClick={() => setEditingUser(u._id)}
-                        style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 9, padding: '3px 8px' }}>
+                        style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 11, padding: '3px 8px' }}>
                         EDIT
                       </button>
                     </div>
@@ -915,7 +915,7 @@ export default function ForumAdmin({ embedded = false }) {
               {stats.recentThreads.map(t => (
                 <div key={t._id} style={S.card}>
                   <Link to={`/forum/thread/${t._id}`} style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: 'var(--text)', textDecoration: 'none', display: 'block', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</Link>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>by {t.author?.username} in {t.category?.name} · {timeAgo(t.createdAt)}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>by {t.author?.username} in {t.category?.name} · {timeAgo(t.createdAt)}</div>
                 </div>
               ))}
             </div>
@@ -962,9 +962,9 @@ export default function ForumAdmin({ embedded = false }) {
                 <label style={S.label}>PERMISSIONS MATRIX</label>
                 <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: 16 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '120px repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>ACTION</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>ACTION</div>
                     {ROLE_OPTIONS.map(r => (
-                      <div key={r} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1, textAlign: 'center' }}>{r.toUpperCase()}</div>
+                      <div key={r} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, textAlign: 'center' }}>{r.toUpperCase()}</div>
                     ))}
                   </div>
                   {[
@@ -994,7 +994,7 @@ export default function ForumAdmin({ embedded = false }) {
                       ))}
                     </div>
                   ))}
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 8 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
                     Empty = all users allowed. Check roles to restrict.
                   </div>
                 </div>
@@ -1017,10 +1017,10 @@ export default function ForumAdmin({ embedded = false }) {
                 <span style={{ fontSize: 24 }}>{cat.icon}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: cat.color || 'var(--text)' }}>{cat.name}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
                     {cat.description} · {cat.threadCount} threads · order {cat.order}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     {cat.view_roles?.length > 0 && <span>View: {cat.view_roles.join(', ')}</span>}
                     {cat.post_roles?.length > 0 && <span>Post: {cat.post_roles.join(', ')}</span>}
                     {cat.reply_roles?.length > 0 && <span>Reply: {cat.reply_roles.join(', ')}</span>}
@@ -1067,31 +1067,31 @@ export default function ForumAdmin({ embedded = false }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: u.banned ? 'var(--red)' : 'var(--text)' }}>{u.username}</span>
-                      {u.banned && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--red)', border: '1px solid rgba(255,71,87,0.4)', padding: '2px 6px' }}>BANNED</span>}
-                      {u.role === 'moderator' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', padding: '2px 6px' }}>MOD</span>}
+                      {u.banned && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', border: '1px solid rgba(255,71,87,0.4)', padding: '2px 6px' }}>BANNED</span>}
+                      {u.role === 'moderator' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', padding: '2px 6px' }}>MOD</span>}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
                       {u.email} · {u.threadCount}T {u.replyCount}R · joined {timeAgo(u.createdAt)} · last seen {timeAgo(u.lastSeen)}
                     </div>
-                    {u.banReason && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--red)', marginTop: 2 }}>Ban reason: {u.banReason}</div>}
+                    {u.banReason && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', marginTop: 2 }}>Ban reason: {u.banReason}</div>}
                     {u.bio && <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.bio}</div>}
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                     <button onClick={() => setEditingUser(u._id)}
-                      style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', fontSize: 9 }}>
+                      style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', fontSize: 11 }}>
                       ✏️ EDIT PROFILE
                     </button>
                     <div style={{ width: 150 }}>
                       <Select value={u.role} onChange={v => changeRole(u, v)}
                         options={[['user', 'USER'], ['moderator', 'MODERATOR']]}
-                        style={{ fontSize: 9 }} />
+                        style={{ fontSize: 11 }} />
                     </div>
                     <button onClick={() => toggleUserBan(u)}
-                      style={{ ...S.btn('transparent', u.banned ? 'var(--green)' : 'var(--orange)'), border: `1px solid ${u.banned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,107,53,0.3)'}`, fontSize: 9 }}>
+                      style={{ ...S.btn('transparent', u.banned ? 'var(--green)' : 'var(--orange)'), border: `1px solid ${u.banned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,107,53,0.3)'}`, fontSize: 11 }}>
                       {u.banned ? '✅ UNBAN' : '🚫 BAN'}
                     </button>
                     <button onClick={() => deleteUser(u)}
-                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 9 }}>
+                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 11 }}>
                       🗑 DEL
                     </button>
                   </div>
@@ -1119,7 +1119,7 @@ export default function ForumAdmin({ embedded = false }) {
                     <Link to={`/forum/thread/${t._id}`} style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: 'var(--text)', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {t.pinned && '📌 '}{t.locked && '🔒 '}{t.title}
                     </Link>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <span>by {t.author?.username}</span>
                       <span>{t.category?.icon} {t.category?.name}</span>
                       <span>{t.replyCount} replies</span>
@@ -1129,19 +1129,19 @@ export default function ForumAdmin({ embedded = false }) {
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     <button onClick={() => setEditingThread(t)}
-                      style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', fontSize: 9 }}>
+                      style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', fontSize: 11 }}>
                       ✏️ EDIT
                     </button>
                     <button onClick={() => toggleThread(t, 'pinned')}
-                      style={{ ...S.btn('transparent', t.pinned ? 'var(--green)' : 'var(--muted)'), border: `1px solid ${t.pinned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, fontSize: 9 }}>
+                      style={{ ...S.btn('transparent', t.pinned ? 'var(--green)' : 'var(--muted)'), border: `1px solid ${t.pinned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, fontSize: 11 }}>
                       {t.pinned ? 'UNPIN' : '📌'}
                     </button>
                     <button onClick={() => toggleThread(t, 'locked')}
-                      style={{ ...S.btn('transparent', t.locked ? 'var(--red)' : 'var(--muted)'), border: `1px solid ${t.locked ? 'rgba(255,71,87,0.3)' : 'var(--border)'}`, fontSize: 9 }}>
+                      style={{ ...S.btn('transparent', t.locked ? 'var(--red)' : 'var(--muted)'), border: `1px solid ${t.locked ? 'rgba(255,71,87,0.3)' : 'var(--border)'}`, fontSize: 11 }}>
                       {t.locked ? '🔓' : '🔒'}
                     </button>
                     <button onClick={() => deleteThread(t)}
-                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 9 }}>
+                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 11 }}>
                       🗑
                     </button>
                   </div>
@@ -1171,12 +1171,12 @@ export default function ForumAdmin({ embedded = false }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8, flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600 }}>{r.author?.username}</span>
-                        {r.author?.banned && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--red)', border: '1px solid rgba(255,71,87,0.4)', padding: '1px 5px' }}>BANNED</span>}
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{timeAgo(r.createdAt)}</span>
-                        {r.edited && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--orange)' }}>EDITED</span>}
+                        {r.author?.banned && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', border: '1px solid rgba(255,71,87,0.4)', padding: '1px 5px' }}>BANNED</span>}
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{timeAgo(r.createdAt)}</span>
+                        {r.edited && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--orange)' }}>EDITED</span>}
                       </div>
                       <Link to={`/forum/thread/${r.thread?._id}`} target="_blank"
-                        style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
+                        style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
                         → {r.thread?.title}
                       </Link>
                     </div>
@@ -1186,15 +1186,15 @@ export default function ForumAdmin({ embedded = false }) {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
                     <button onClick={() => setEditingReply(r)}
-                      style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', fontSize: 9 }}>
+                      style={{ ...S.btn('color-mix(in srgb, var(--green) 10%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', fontSize: 11 }}>
                       ✏️ EDIT
                     </button>
                     <button onClick={() => r.author?._id && setEditingUser(r.author._id)}
-                      style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 9 }}>
+                      style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 11 }}>
                       👤 USER
                     </button>
                     <button onClick={() => deleteReply(r)}
-                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 9 }}>
+                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 11 }}>
                       🗑 DEL
                     </button>
                   </div>

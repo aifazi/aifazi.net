@@ -77,7 +77,7 @@ function MinimalLoader({ onComplete }) {
       </div>
       <div style={{ textAlign:'center' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING</div>
       </div>
     </div>
   )
@@ -139,7 +139,7 @@ function MatrixLoader({ onComplete }) {
       <canvas ref={canvasRef} style={{ position:'absolute', inset:0 }} />
       <div style={{ position:'relative', zIndex:1, textAlign:'center', background:'rgba(6,10,15,0.7)', padding:'24px 40px', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', backdropFilter:'blur(4px)' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:48, fontWeight:700, color:'var(--green)', letterSpacing:-1, textShadow:'0 0 20px color-mix(in srgb, var(--green) 80%, transparent)' }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4, marginTop:8 }}>DECRYPTING PORTFOLIO</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4, marginTop:8 }}>DECRYPTING PORTFOLIO</div>
       </div>
     </div>
   )
@@ -187,7 +187,7 @@ function PulseLoader({ onComplete }) {
       </div>
       <div style={{ textAlign:'center' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>CONNECTING</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>CONNECTING</div>
       </div>
       <style>{`@keyframes ls-pulse-ring{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.15);opacity:1}}@keyframes ls-pulse-core{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}`}</style>
     </div>
@@ -218,7 +218,7 @@ function HoloLoader({ onComplete }) {
       </div>
       <div style={{ textAlign:'center' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING HOLOGRAPHIC INTERFACE</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING HOLOGRAPHIC INTERFACE</div>
       </div>
       <style>{`@keyframes ls-holo-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -247,7 +247,7 @@ function CRTLoader({ onComplete }) {
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'rgba(0,255,0,0.04)', border:'1px solid rgba(0,255,0,0.2)', borderRadius:4, marginBottom:10 }}>
         <span style={{ width:8, height:8, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 8px var(--green)' }} />
         <span style={{ fontSize:10, color:'var(--green)', letterSpacing:2 }}>aifazi.net — BOOT</span>
-        <span style={{ marginLeft:'auto', fontSize:9, color:'var(--muted)' }}>v4.2</span>
+        <span style={{ marginLeft:'auto', fontSize: 11, color:'var(--muted)' }}>v4.2</span>
       </div>
       <div style={{ height:130, overflow:'hidden', position:'relative' }}>
         {lines.map((l, i) => (
@@ -279,7 +279,7 @@ function CyberLoader({ onComplete }) {
           <div key={i} style={{ width:18, height:18, borderRadius:3, background: lit.includes(i) ? 'var(--cyan)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)', border:`1px solid ${lit.includes(i) ? 'color-mix(in srgb, var(--cyan) 80%, transparent)' : 'color-mix(in srgb, var(--cyan) 20%, transparent)'}`, boxShadow: lit.includes(i) ? '0 0 8px color-mix(in srgb, var(--cyan) 60%, transparent)' : 'none', transition:'all 0.1s' }} />
         ))}
       </div>
-      <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>BOOT SEQUENCE</div>
+      <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>BOOT SEQUENCE</div>
     </div>
   )
 }
@@ -307,7 +307,7 @@ function BarsLoader({ onComplete }) {
           const p = Math.min(100, Math.max(0, progress - i * 15))
           return (
             <div key={b.label}>
-              <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:2, marginBottom:5 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:2, marginBottom:5 }}>
                 <span>{b.label}</span><span style={{ color: b.color }}>{Math.round(p)}%</span>
               </div>
               <div style={{ height:3, background:'rgba(255,255,255,0.05)', borderRadius:2, overflow:'hidden' }}>
@@ -336,7 +336,7 @@ function WaveLoader({ onComplete }) {
           <div key={i} style={{ width:6, borderRadius:3, background: i % 2 === 0 ? 'var(--green)' : 'var(--cyan)', animation:`ls-wave-bar 1.2s ${i*0.08}s ease-in-out infinite` }} />
         ))}
       </div>
-      <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>LOADING</div>
+      <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>LOADING</div>
       <style>{`@keyframes ls-wave-bar{0%,100%{height:8px;opacity:0.4}50%{height:44px;opacity:1}}`}</style>
     </div>
   )
@@ -432,7 +432,7 @@ function OrbitLoader({ onComplete }) {
       </div>
       <div style={{ textAlign:'center' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>ESTABLISHING ORBIT</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>ESTABLISHING ORBIT</div>
       </div>
     </div>
   )
@@ -535,7 +535,7 @@ function DNALoader({ onComplete }) {
         ))}
       </div>
 
-      <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>SEQUENCING</div>
+      <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>SEQUENCING</div>
     </div>
   )
 }

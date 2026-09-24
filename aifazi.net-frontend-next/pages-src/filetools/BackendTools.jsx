@@ -40,7 +40,7 @@ function DropZone({ onFiles, accept = '*', multiple = false, files = [] }) {
           color: over ? 'var(--green)' : 'var(--muted)' }}>
           {over ? 'DROP FILES' : 'DROP FILES HERE OR CLICK TO BROWSE'}
         </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)',
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
           marginTop: 6, letterSpacing: 1 }}>Accepts: {accept}</div>
       </div>
       {files.length > 0 && (
@@ -52,7 +52,7 @@ function DropZone({ onFiles, accept = '*', multiple = false, files = [] }) {
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10,
                 color: 'var(--cyan)', flex: 1, overflow: 'hidden',
                 textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9,
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
                 color: 'var(--muted)', flexShrink: 0 }}>{fmtBytes(f.size)}</span>
               <button onClick={() => onFiles(files.filter((_, j) => j !== i))}
                 style={{ background: 'none', border: 'none', color: 'var(--red)',
@@ -380,7 +380,7 @@ export function OrganizePDFB() {
       <Field label="New page order (e.g. 3,1,2 or 1,3,5-7,2)">
         <input value={order} onChange={e => setOrder(e.target.value)} style={S.input} placeholder="3,1,2,4" />
       </Field>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
         Tip: Use comma-separated page numbers in the order you want them.
       </div>
       <StatusBox error={error} success={success} />
@@ -464,7 +464,7 @@ export function PDFInfoB() {
       <RunBtn onClick={run} loading={loading} disabled={!files[0]} label="INSPECT →" />
       {info && (
         <div style={{ ...S.panel, marginTop: 18 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>PDF METADATA</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>PDF METADATA</div>
           {Object.entries(info).filter(([, v]) => v).map(([k, v]) => (
             <div key={k} style={S.row}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>{k.toUpperCase()}</span>
@@ -948,8 +948,8 @@ export function ImageOCRB() {
       {result && (
         <div style={{ ...S.panel, marginTop: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>EXTRACTED TEXT</span>
-            <button onClick={copy} style={{ ...S.btnSm, background: 'transparent', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', fontSize: 9 }}>COPY</button>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>EXTRACTED TEXT</span>
+            <button onClick={copy} style={{ ...S.btnSm, background: 'transparent', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', fontSize: 11 }}>COPY</button>
           </div>
           <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, maxHeight: 400, overflowY: 'auto' }}>{result}</pre>
         </div>
@@ -989,8 +989,8 @@ export function DocxToTextB() {
       {result && (
         <div style={{ ...S.panel, marginTop: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>EXTRACTED TEXT</span>
-            <button onClick={download} style={{ ...S.btnSm, fontSize: 9 }}>DOWNLOAD .TXT</button>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>EXTRACTED TEXT</span>
+            <button onClick={download} style={{ ...S.btnSm, fontSize: 11 }}>DOWNLOAD .TXT</button>
           </div>
           <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, maxHeight: 400, overflowY: 'auto' }}>{result}</pre>
         </div>
@@ -1076,7 +1076,7 @@ export function TextStatsB() {
       <RunBtn onClick={run} disabled={!text.trim()} label="ANALYSE →" />
       {stats && (
         <div style={{ ...S.panel, marginTop: 16 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>TEXT STATISTICS</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>TEXT STATISTICS</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 10, marginBottom: 16 }}>
             {[
               ['Characters', stats.characters],
@@ -1087,14 +1087,14 @@ export function TextStatsB() {
               ['Avg Word Len', stats.avg_word_length],
             ].map(([label, val]) => (
               <div key={label} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '12px 14px' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>{label.toUpperCase()}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>{label.toUpperCase()}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: 'var(--cyan)' }}>{val}</div>
               </div>
             ))}
           </div>
           {stats.top_words?.length > 0 && (
             <>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>TOP WORDS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>TOP WORDS</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {stats.top_words.map(([word, count]) => (
                   <span key={word} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '3px 10px',
@@ -1130,12 +1130,12 @@ export function CompareTextB() {
   return (
     <div>
       <DropZone onFiles={setFiles} accept=".txt,.md,.js,.ts,.jsx,.tsx,.py,.json,.csv,.html,.css" multiple files={files} />
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>Select 2 text files to compare.</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>Select 2 text files to compare.</div>
       <StatusBox error={error} />
       <RunBtn onClick={run} loading={loading} disabled={files.length < 2} label="COMPARE →" />
       {diff && (
         <div style={{ ...S.panel, marginTop: 16 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 10 }}>DIFF RESULT</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 10 }}>DIFF RESULT</div>
           <pre style={{ fontFamily: 'monospace', fontSize: 12, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
             maxHeight: 500, overflowY: 'auto', margin: 0, lineHeight: 1.6 }}>
             {diff.diff?.map((line, i) => (
@@ -1181,8 +1181,8 @@ export function Base64ToolB() {
       {output && (
         <div style={{ ...S.panel, marginTop: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>RESULT</span>
-            <button onClick={copy} style={{ ...S.btnSm, fontSize: 9 }}>COPY</button>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>RESULT</span>
+            <button onClick={copy} style={{ ...S.btnSm, fontSize: 11 }}>COPY</button>
           </div>
           <pre style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--cyan)', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0, maxHeight: 300, overflowY: 'auto' }}>{output}</pre>
         </div>
@@ -1230,8 +1230,8 @@ export function JsonFormatterB() {
       {output && (
         <div style={{ ...S.panel, marginTop: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>RESULT</span>
-            <button onClick={copy} style={{ ...S.btnSm, fontSize: 9 }}>COPY</button>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>RESULT</span>
+            <button onClick={copy} style={{ ...S.btnSm, fontSize: 11 }}>COPY</button>
           </div>
           <pre style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--green)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, maxHeight: 400, overflowY: 'auto' }}>{output}</pre>
         </div>

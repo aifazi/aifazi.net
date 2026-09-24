@@ -100,7 +100,7 @@ const S = {
   },
   // -- Reusable page section header --
   sectionHead: (label) => (
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 14 }}>{label}</div>
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: 14 }}>{label}</div>
   ),
   // -- Inline stat row for cards --
   statRow: (label, value, color = 'var(--green)') => (
@@ -141,7 +141,7 @@ function PageHeader({ eyebrow, title, subtitle, actions }) {
     <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
       <div>
         {eyebrow && (
-          <div style={{ display:'flex', alignItems:'center', gap:8, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 8, textTransform: 'uppercase' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 8, textTransform: 'uppercase' }}>
             <span style={{ width:14, height:2, background:'linear-gradient(90deg,var(--cyan),transparent)', borderRadius:2 }} />
             {eyebrow}
           </div>

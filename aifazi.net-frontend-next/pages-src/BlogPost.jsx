@@ -482,14 +482,14 @@ function Comments({ slug, postId }) {
                       </span>
                       {comment.author?.role && <RoleBadge role={comment.author.role} />}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
                       {formatDate(comment.createdAt)}
                     </div>
                   </div>
                   {canDelete && (
                     <button onClick={() => remove(comment)} style={{
                       background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 8,
-                      color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 9,
+                      color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 11,
                       letterSpacing: 1, padding: '6px 10px', cursor: 'pointer'
                     }}>DELETE</button>
                   )}
@@ -528,7 +528,7 @@ function RelatedPosts({ slug, currentId }) {
             <Card hover style={{ height: '100%', padding: 20, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' }}>
                 <Badge tone="cyan">{p.category}</Badge>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{formatDate(p.created_at)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{formatDate(p.created_at)}</span>
               </div>
               <div style={{ color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, lineHeight: 1.4, marginBottom: 10 }}>
                 {p.title}
@@ -748,7 +748,7 @@ export default function BlogPost({ initialPost }) {
       <div className="blog-post-shell">
         {toc.length > 0 && (
           <aside className="blog-toc">
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>ON THIS PAGE</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>ON THIS PAGE</div>
             {toc.map(item => (
               <a key={item.id} href={`#${item.id}`} className={`toc-link toc-l${item.level}`}>{item.text}</a>
             ))}
@@ -805,7 +805,7 @@ export default function BlogPost({ initialPost }) {
           if (!videoSrc) return null
           return (
             <div style={{ marginBottom: 40 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>VIDEO</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>VIDEO</div>
               <VideoPlayer src={videoSrc} title={post.title} />
             </div>
           )

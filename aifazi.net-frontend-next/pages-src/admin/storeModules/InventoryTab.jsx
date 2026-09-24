@@ -125,7 +125,7 @@ export default function InventoryTab() {
           { label: 'LOW STOCK', value: stock.filter(r => r.quantity <= 5 && r.quantity > 0).length, color: R },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
-            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>{s.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>{s.label}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: s.color, marginTop: 4 }}>{s.value}</div>
           </div>
         ))}
@@ -138,11 +138,11 @@ export default function InventoryTab() {
           {picked && (
             <div style={{ background: 'var(--bg2)', border: `1px solid ${G}44`, borderRadius: 10, padding: 12, marginTop: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: `${G}14`, border: `1px solid ${G}44`, color: G }}>{picked.kind.toUpperCase()}</span>
-                <button onClick={resetPicked} style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: `${G}14`, border: `1px solid ${G}44`, color: G }}>{picked.kind.toUpperCase()}</span>
+                <button onClick={resetPicked} style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
               </div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, marginTop: 6 }}>{picked.name}</div>
-              <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{picked.sku || 'no sku'} · in stock {picked.stock} units</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{picked.sku || 'no sku'} · in stock {picked.stock} units</div>
             </div>
           )}
 
@@ -150,11 +150,11 @@ export default function InventoryTab() {
           <div style={{ marginTop: 10 }}>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
               {Object.entries(OP).map(([k, v]) => (
-                <button key={k} onClick={() => setOp(k)} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '6px 10px', borderRadius: 6, cursor: 'pointer', background: op === k ? `${v.color}18` : 'transparent', color: op === k ? v.color : 'var(--muted)', border: `1px solid ${op === k ? `${v.color}50` : 'var(--border)'}` }}>{v.label}</button>
+                <button key={k} onClick={() => setOp(k)} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 10px', borderRadius: 6, cursor: 'pointer', background: op === k ? `${v.color}18` : 'transparent', color: op === k ? v.color : 'var(--muted)', border: `1px solid ${op === k ? `${v.color}50` : 'var(--border)'}` }}>{v.label}</button>
               ))}
             </div>
             <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
-              <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: OP[op].color, marginBottom: 10 }}>{OP[op].hint}</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: OP[op].color, marginBottom: 10 }}>{OP[op].hint}</div>
               {op !== 'transfer' ? (
                 <select value={opLoc} onChange={e => setOpLoc(e.target.value)} style={{ width: '100%', fontFamily: MONO, fontSize: 10, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 10px', marginBottom: 8 }}>
                   <option value="">Location…</option>
@@ -191,24 +191,24 @@ export default function InventoryTab() {
               <option value="">All locations</option>
               {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
-            <button onClick={() => setShowLocs(v => !v)} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '8px 12px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>{showLocs ? 'HIDE LOCATIONS' : 'LOCATIONS'}</button>
+            <button onClick={() => setShowLocs(v => !v)} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 12px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>{showLocs ? 'HIDE LOCATIONS' : 'LOCATIONS'}</button>
           </div>
 
           {showLocs && (
             <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 12, marginBottom: 12 }}>
-              <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: C, marginBottom: 8 }}>WAREHOUSE LOCATIONS</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: C, marginBottom: 8 }}>WAREHOUSE LOCATIONS</div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                 <input value={locForm.name} onChange={e => setLocForm({ ...locForm, name: e.target.value })} placeholder="Name (e.g. Backroom)" style={{ flex: 1, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
                 <input value={locForm.code} onChange={e => setLocForm({ ...locForm, code: e.target.value })} placeholder="Code" style={{ width: 90, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
-                <button onClick={saveLoc} disabled={busy === 'loc'} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '8px 14px', background: `${G}14`, border: `1px solid ${G}44`, color: G, borderRadius: 6, cursor: busy === 'loc' ? 'wait' : 'pointer' }}>{busy === 'loc' ? '…' : '+ ADD'}</button>
+                <button onClick={saveLoc} disabled={busy === 'loc'} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: `${G}14`, border: `1px solid ${G}44`, color: G, borderRadius: 6, cursor: busy === 'loc' ? 'wait' : 'pointer' }}>{busy === 'loc' ? '…' : '+ ADD'}</button>
               </div>
               {locations.map(l => (
                 <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
                   <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>{l.name}</span>
-                  {l.code && <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{l.code}</span>}
-                  {l.is_default && <span style={{ fontFamily: MONO, fontSize: 8, padding: '1px 6px', borderRadius: 10, background: `${G}14`, border: `1px solid ${G}44`, color: G }}>DEFAULT</span>}
+                  {l.code && <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{l.code}</span>}
+                  {l.is_default && <span style={{ fontFamily: MONO, fontSize: 11, padding: '1px 6px', borderRadius: 10, background: `${G}14`, border: `1px solid ${G}44`, color: G }}>DEFAULT</span>}
                   <div style={{ flex: 1 }} />
-                  {!l.is_default && <button onClick={() => delLoc(l)} style={{ fontFamily: MONO, fontSize: 9, color: R, background: 'none', border: 'none', cursor: 'pointer' }}>DEL</button>}
+                  {!l.is_default && <button onClick={() => delLoc(l)} style={{ fontFamily: MONO, fontSize: 11, color: R, background: 'none', border: 'none', cursor: 'pointer' }}>DEL</button>}
                 </div>
               ))}
             </div>
@@ -221,9 +221,9 @@ export default function InventoryTab() {
               <div key={r.id} onClick={() => pickRow(r)} style={{ cursor: 'pointer', background: 'var(--bg2)', border: `1px solid ${r.quantity <= 5 ? `${R}50` : 'var(--border)'}`, borderRadius: 10, padding: '10px 14px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 150 }}>
                   <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>{r.product_name}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{r.sku || '—'}{r.barcode ? ` · ${r.barcode}` : ''}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{r.sku || '—'}{r.barcode ? ` · ${r.barcode}` : ''}</div>
                 </div>
-                <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{r.location_name}</span>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{r.location_name}</span>
                 <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: r.quantity <= 5 ? R : r.quantity === 0 ? 'var(--muted)' : G, minWidth: 40, textAlign: 'right' }}>{r.quantity}</span>
               </div>
             ))
@@ -233,17 +233,17 @@ export default function InventoryTab() {
 
       {/* Movements */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}>
-        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 10 }}>RECENT MOVEMENTS (LEDGER)</div>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 10 }}>RECENT MOVEMENTS (LEDGER)</div>
         {movements.length === 0 ? <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>No movements yet.</div> : (
           movements.map(m => (
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
               <span style={{ fontFamily: MONO, fontSize: 10, color: m.change_qty < 0 ? R : G, fontWeight: 700, minWidth: 54 }}>{m.change_qty > 0 ? '+' : ''}{m.change_qty}</span>
               <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--text)' }}>{m.product_name}</span>
-              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '1px 6px', borderRadius: 10, background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C }}>{m.reason}</span>
-              {m.from_location && <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{m.from_location} → {m.to_location || '—'}</span>}
-              <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{fmt(m.created_at)}</span>
-              <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{m.actor}</span>
-              {m.note && <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', fontStyle: 'italic' }}>{m.note}</span>}
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '1px 6px', borderRadius: 10, background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C }}>{m.reason}</span>
+              {m.from_location && <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{m.from_location} → {m.to_location || '—'}</span>}
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{fmt(m.created_at)}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{m.actor}</span>
+              {m.note && <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', fontStyle: 'italic' }}>{m.note}</span>}
             </div>
           ))
         )}

@@ -76,7 +76,7 @@ function UploadPhase({ onFile, loading, error }) {
 
       {/* Header */}
       <div style={{ textAlign:'center' }}>
-        <div style={{ fontFamily:C.mono, fontSize:9, letterSpacing:4, color:C.cyan, marginBottom:10,
+        <div style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:4, color:C.cyan, marginBottom:10,
           display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
           <span style={{ display:'inline-block', width:6, height:6, background:C.green, borderRadius:'50%',
             boxShadow:`0 0 8px ${C.green}` }} />
@@ -142,8 +142,8 @@ function UploadPhase({ onFile, loading, error }) {
             onMouseEnter={e=>{e.currentTarget.style.borderColor=C.cyan+'55';e.currentTarget.style.background=C.bg3}}
             onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.bg2}}>
             <div style={{ fontSize:22, marginBottom:8 }}>{f.icon}</div>
-            <div style={{ fontFamily:C.mono, fontSize:9, letterSpacing:1, color:C.text, marginBottom:4 }}>{f.label.toUpperCase()}</div>
-            <div style={{ fontFamily:C.mono, fontSize:8, color:C.muted, lineHeight:1.5 }}>{f.desc}</div>
+            <div style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:1, color:C.text, marginBottom:4 }}>{f.label.toUpperCase()}</div>
+            <div style={{ fontFamily:C.mono, fontSize: 11, color:C.muted, lineHeight:1.5 }}>{f.desc}</div>
           </div>
         ))}
       </div>
@@ -174,7 +174,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0,
         boxShadow: active ? `0 0 10px ${C.accent}55` : 'none' }}>
       <span>{t.icon}</span>
-      <span style={{ fontFamily: C.mono, fontSize: 8, letterSpacing: 0.5 }}>{t.label.toUpperCase()}</span>
+      <span style={{ fontFamily: C.mono, fontSize: 11, letterSpacing: 0.5 }}>{t.label.toUpperCase()}</span>
     </button>
   )
 
@@ -205,11 +205,11 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
                           color: SHAPE_TOOLS.some(s=>s.id===tool) ? C.accent : C.muted, fontSize: 13,
                           display:'flex', alignItems:'center', gap:3 }}>
                         <span>{SHAPE_TOOLS.find(s=>s.id===tool)?.icon || '▭'}</span>
-                        <span style={{ fontFamily:C.mono, fontSize:7 }}>{SHAPE_TOOLS.find(s=>s.id===tool)?.label.toUpperCase() || 'SHAPES'}</span>
+                        <span style={{ fontFamily:C.mono, fontSize: 11 }}>{SHAPE_TOOLS.find(s=>s.id===tool)?.label.toUpperCase() || 'SHAPES'}</span>
                       </button>
                       <button onClick={() => setShapeMenuOpen(v=>!v)}
                         style={{ width:16, border:'none', borderLeft:`1px solid ${C.border}`, background:'transparent',
-                          color:C.muted, cursor:'pointer', fontSize:8, padding:0 }}>▾</button>
+                          color:C.muted, cursor:'pointer', fontSize: 11, padding:0 }}>▾</button>
                     </div>
                     {shapeMenuOpen && (
                       <div style={{ position:'absolute', top:'100%', left:0, zIndex:999, marginTop:2,
@@ -254,23 +254,23 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
             )}
             {needsOpac && (
               <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-                <span style={{ fontFamily:C.mono, fontSize:8, color:C.muted }}>OPACITY</span>
+                <span style={{ fontFamily:C.mono, fontSize: 11, color:C.muted }}>OPACITY</span>
                 <Slider min={0.1} max={1} step={0.05} value={opacity} onChange={setOpacity}
                   style={{ width:60 }} />
-                <span style={{ fontFamily:C.mono, fontSize:9, color:C.text, width:28 }}>{Math.round(opacity*100)}%</span>
+                <span style={{ fontFamily:C.mono, fontSize: 11, color:C.text, width:28 }}>{Math.round(opacity*100)}%</span>
               </div>
             )}
             {needsSize && (
               <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-                <span style={{ fontFamily:C.mono, fontSize:8, color:C.muted }}>SIZE</span>
+                <span style={{ fontFamily:C.mono, fontSize: 11, color:C.muted }}>SIZE</span>
                 <Slider min={1} max={20} value={lineWidth} onChange={setLineWidth}
                   style={{ width:60 }} />
-                <span style={{ fontFamily:C.mono, fontSize:9, color:C.text, width:16 }}>{lineWidth}</span>
+                <span style={{ fontFamily:C.mono, fontSize: 11, color:C.text, width:16 }}>{lineWidth}</span>
               </div>
             )}
             {needsFont && (
               <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-                <span style={{ fontFamily:C.mono, fontSize:8, color:C.muted }}>SIZE</span>
+                <span style={{ fontFamily:C.mono, fontSize: 11, color:C.muted }}>SIZE</span>
                 <input type="number" min={8} max={96} value={fontSize} onChange={e=>setFontSize(+e.target.value)}
                   style={{ width:46, fontFamily:C.mono, fontSize:11, background:C.bg3, border:`1px solid ${C.border}`,
                     color:C.text, padding:'3px 6px', borderRadius:4, outline:'none' }} />
@@ -282,10 +282,10 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
 
           {/* Undo/Redo */}
           <button onClick={onUndo} disabled={!canUndo} title="Undo (Ctrl+Z)"
-            style={{ padding:'5px 10px', fontFamily:C.mono, fontSize:9, background:C.bg3,
+            style={{ padding:'5px 10px', fontFamily:C.mono, fontSize: 11, background:C.bg3,
               border:`1px solid ${C.border}`, color:canUndo?C.text:C.muted, cursor:canUndo?'pointer':'not-allowed', borderRadius:6 }}>↩ UNDO</button>
           <button onClick={onRedo} disabled={!canRedo} title="Redo (Ctrl+Y)"
-            style={{ padding:'5px 10px', fontFamily:C.mono, fontSize:9, background:C.bg3,
+            style={{ padding:'5px 10px', fontFamily:C.mono, fontSize: 11, background:C.bg3,
               border:`1px solid ${C.border}`, color:canRedo?C.text:C.muted, cursor:canRedo?'pointer':'not-allowed', borderRadius:6 }}>↪ REDO</button>
 
           {/* Zoom */}
@@ -293,7 +293,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
             border:`1px solid ${C.border}`, borderRadius:6, padding:'2px' }}>
             <button onClick={()=>setZoomIdx(i=>Math.max(0,i-1))} disabled={zoomIdx===0}
               style={{ width:24, height:24, border:'none', background:'none', color:C.text, cursor:'pointer', fontSize:14 }}>−</button>
-            <span style={{ fontFamily:C.mono, fontSize:9, color:C.cyan, minWidth:38, textAlign:'center' }}>
+            <span style={{ fontFamily:C.mono, fontSize: 11, color:C.cyan, minWidth:38, textAlign:'center' }}>
               {Math.round(ZOOM_STEPS[zoomIdx]*100)}%
             </span>
             <button onClick={()=>setZoomIdx(i=>Math.min(ZOOM_STEPS.length-1,i+1))} disabled={zoomIdx===ZOOM_STEPS.length-1}
@@ -302,7 +302,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
 
           {/* Search & Replace */}
           <button onClick={onSearch} disabled={ocring}
-            style={{ padding:'6px 12px', fontFamily:C.mono, fontSize:9, letterSpacing:1, fontWeight:700,
+            style={{ padding:'6px 12px', fontFamily:C.mono, fontSize: 11, letterSpacing:1, fontWeight:700,
               background:searchOpen?C.accent:'transparent', border:`1px solid ${searchOpen?C.accent:'color-mix(in srgb, var(--cyan) 40%, transparent)'}`,
               color:searchOpen?'#fff':C.cyan, cursor:ocring?'not-allowed':'pointer', borderRadius:6,
               display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
@@ -311,7 +311,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
 
           {/* OCR */}
           <button onClick={onOCR} disabled={ocring}
-            style={{ padding:'6px 12px', fontFamily:C.mono, fontSize:9, letterSpacing:1, fontWeight:700,
+            style={{ padding:'6px 12px', fontFamily:C.mono, fontSize: 11, letterSpacing:1, fontWeight:700,
               background:ocring?C.bg3:'color-mix(in srgb, var(--accent) 14%, transparent)', border:`1px solid ${ocring?C.border:'color-mix(in srgb, var(--accent) 50%, transparent)'}`,
               color:ocring?C.muted:C.accent, cursor:ocring?'not-allowed':'pointer', borderRadius:6,
               display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
@@ -320,7 +320,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
 
           {/* Export */}
           <button onClick={onExport} disabled={exporting}
-            style={{ padding:'6px 14px', fontFamily:C.mono, fontSize:9, letterSpacing:1, fontWeight:700,
+            style={{ padding:'6px 14px', fontFamily:C.mono, fontSize: 11, letterSpacing:1, fontWeight:700,
               background:exporting?C.bg3:'color-mix(in srgb, var(--green) 12%, transparent)', border:`1px solid ${exporting?C.border:'color-mix(in srgb, var(--green) 50%, transparent)'}`,
               color:exporting?C.muted:C.green, cursor:exporting?'not-allowed':'pointer', borderRadius:6,
               display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
@@ -350,7 +350,7 @@ function PageSidebar({ session, currentPage, setCurrentPage, onDelete, onRotate 
             alt={`Page ${i+1}`}
             style={{ width:'100%', display:'block' }} />
           <div style={{ position:'absolute', bottom:0, left:0, right:0, background:'rgba(0,0,0,0.7)',
-            fontFamily:C.mono, fontSize:8, color: i===currentPage?C.accent:C.muted,
+            fontFamily:C.mono, fontSize: 11, color: i===currentPage?C.accent:C.muted,
             textAlign:'center', padding:'3px 0', letterSpacing:1 }}>
             {i+1}
           </div>
@@ -383,12 +383,12 @@ function SearchPanel({ onClose, onSearch, onReplace, onReplaceAll, results, curr
       boxShadow:'0 12px 40px rgba(0,0,0,0.6)', overflow:'hidden' }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
         padding:'10px 14px', borderBottom:`1px solid ${C.border}`, background:C.bg3 }}>
-        <span style={{ fontFamily:C.mono, fontSize:9, letterSpacing:3, color:C.cyan }}>SEARCH & REPLACE</span>
+        <span style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:3, color:C.cyan }}>SEARCH & REPLACE</span>
         <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, cursor:'pointer', fontSize:14 }}>✕</button>
       </div>
       <div style={{ padding:14, display:'flex', flexDirection:'column', gap:10 }}>
         <div>
-          <label style={{ fontFamily:C.mono, fontSize:8, letterSpacing:2, color:C.muted, display:'block', marginBottom:5 }}>FIND</label>
+          <label style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:2, color:C.muted, display:'block', marginBottom:5 }}>FIND</label>
           <div style={{ display:'flex', gap:6 }}>
             <input value={find} onChange={e=>setFind(e.target.value)}
               placeholder="Search text…"
@@ -397,30 +397,30 @@ function SearchPanel({ onClose, onSearch, onReplace, onReplaceAll, results, curr
                 fontFamily:C.mono, fontSize:11, padding:'7px 10px', borderRadius:5, outline:'none' }} />
             <button onClick={()=>onSearch(find,matchCase)}
               style={{ padding:'7px 12px', background:C.accent+'22', border:`1px solid ${C.accent}55`,
-                color:C.accent, fontFamily:C.mono, fontSize:9, cursor:'pointer', borderRadius:5 }}>GO</button>
+                color:C.accent, fontFamily:C.mono, fontSize: 11, cursor:'pointer', borderRadius:5 }}>GO</button>
           </div>
         </div>
         <div>
-          <label style={{ fontFamily:C.mono, fontSize:8, letterSpacing:2, color:C.muted, display:'block', marginBottom:5 }}>REPLACE WITH</label>
+          <label style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:2, color:C.muted, display:'block', marginBottom:5 }}>REPLACE WITH</label>
           <input value={replace} onChange={e=>setReplace(e.target.value)}
             placeholder="Replacement text…"
             style={{ width:'100%', boxSizing:'border-box', background:C.bg3, border:`1px solid ${C.border}`, color:C.text,
               fontFamily:C.mono, fontSize:11, padding:'7px 10px', borderRadius:5, outline:'none' }} />
         </div>
         <Checkbox checked={matchCase} onChange={setMatchCase} label="Match case"
-          style={{ fontSize:9, color:C.muted, padding:'7px 10px' }} />
+          style={{ fontSize: 11, color:C.muted, padding:'7px 10px' }} />
         {results > 0 && (
-          <div style={{ fontFamily:C.mono, fontSize:9, color:C.cyan }}>
+          <div style={{ fontFamily:C.mono, fontSize: 11, color:C.cyan }}>
             {current+1} / {results} match{results!==1?'es':''}
           </div>
         )}
         <div style={{ display:'flex', gap:6 }}>
           <button onClick={()=>onReplace(find,replace,matchCase)}
             style={{ flex:1, padding:'8px', background:C.bg3, border:`1px solid ${C.border}`,
-              color:C.text, fontFamily:C.mono, fontSize:9, cursor:'pointer', borderRadius:5 }}>Replace</button>
+              color:C.text, fontFamily:C.mono, fontSize: 11, cursor:'pointer', borderRadius:5 }}>Replace</button>
           <button onClick={()=>onReplaceAll(find,replace,matchCase)}
             style={{ flex:1, padding:'8px', background:'color-mix(in srgb, var(--green) 10%, transparent)', border:`1px solid color-mix(in srgb, var(--green) 40%, transparent)`,
-              color:C.green, fontFamily:C.mono, fontSize:9, cursor:'pointer', borderRadius:5 }}>Replace All</button>
+              color:C.green, fontFamily:C.mono, fontSize: 11, cursor:'pointer', borderRadius:5 }}>Replace All</button>
         </div>
       </div>
     </div>
@@ -435,7 +435,7 @@ function LinkDialog({ pos, onConfirm, onClose }) {
     <div style={{ position:'absolute', left:pos.x, top:pos.y, zIndex:300, width:280,
       background:C.bg2, border:`1px solid ${C.cyan}44`, borderRadius:8,
       boxShadow:'0 8px 32px rgba(0,0,0,0.6)', padding:14 }}>
-      <div style={{ fontFamily:C.mono, fontSize:8, letterSpacing:3, color:C.cyan, marginBottom:10 }}>ADD LINK</div>
+      <div style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:3, color:C.cyan, marginBottom:10 }}>ADD LINK</div>
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
         <input autoFocus value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://..."
           style={{ background:C.bg3, border:`1px solid ${C.border}`, color:C.text,
@@ -445,11 +445,11 @@ function LinkDialog({ pos, onConfirm, onClose }) {
             fontFamily:C.mono, fontSize:11, padding:'7px 10px', borderRadius:5, outline:'none' }} />
         <div style={{ display:'flex', gap:6 }}>
           <button onClick={()=>onConfirm(url,label)} style={{ flex:1, padding:'8px', background:'color-mix(in srgb, var(--green) 10%, transparent)',
-            border:`1px solid color-mix(in srgb, var(--green) 40%, transparent)`, color:C.green, fontFamily:C.mono, fontSize:9, cursor:'pointer', borderRadius:5 }}>
+            border:`1px solid color-mix(in srgb, var(--green) 40%, transparent)`, color:C.green, fontFamily:C.mono, fontSize: 11, cursor:'pointer', borderRadius:5 }}>
             ADD LINK
           </button>
           <button onClick={onClose} style={{ padding:'8px 12px', background:'transparent',
-            border:`1px solid ${C.border}`, color:C.muted, fontFamily:C.mono, fontSize:9, cursor:'pointer', borderRadius:5 }}>
+            border:`1px solid ${C.border}`, color:C.muted, fontFamily:C.mono, fontSize: 11, cursor:'pointer', borderRadius:5 }}>
             CANCEL
           </button>
         </div>
@@ -973,7 +973,7 @@ export default function PDFEditor() {
 
       {/* Status bar */}
       <div style={{ background:C.bg2, borderTop:`1px solid ${C.border}`, padding:'5px 16px',
-        display:'flex', alignItems:'center', gap:16, fontFamily:C.mono, fontSize:9, color:C.muted,
+        display:'flex', alignItems:'center', gap:16, fontFamily:C.mono, fontSize: 11, color:C.muted,
         flexWrap:'wrap', rowGap:2 }}>
         <span>📄 <span style={{color:C.cyan}}>{session.filename}</span></span>
         <span style={{color:C.border}}>|</span>

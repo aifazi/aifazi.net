@@ -95,20 +95,20 @@ function DetailDrawer({ entry, onClose }) {
           ))}
           {entry.error && (
             <div style={{ marginTop:8, padding:'14px 16px', background:'rgba(248,113,113,0.06)', border:'1px solid rgba(248,113,113,0.25)', borderRadius:6 }}>
-              <div style={{ fontFamily:C.mono, fontSize:9, color:C.red, letterSpacing:2, marginBottom:8 }}>ERROR</div>
+              <div style={{ fontFamily:C.mono, fontSize: 11, color:C.red, letterSpacing:2, marginBottom:8 }}>ERROR</div>
               <pre style={{ fontFamily:C.mono, fontSize:11, color:'#fca5a5', margin:0, whiteSpace:'pre-wrap', lineHeight:1.7 }}>{entry.error}</pre>
             </div>
           )}
           {entry.html && (
             <div style={{ marginTop:12 }}>
-              <div style={{ fontFamily:C.mono, fontSize:9, color:C.muted, letterSpacing:2, marginBottom:8 }}>HTML PREVIEW</div>
+              <div style={{ fontFamily:C.mono, fontSize: 11, color:C.muted, letterSpacing:2, marginBottom:8 }}>HTML PREVIEW</div>
               <div style={{ background:'white', borderRadius:6, padding:16, maxHeight:400, overflow:'auto' }}
                 dangerouslySetInnerHTML={{ __html: _sanitize(entry.html) }} />
             </div>
           )}
           {entry.text && (
             <div style={{ marginTop:12 }}>
-              <div style={{ fontFamily:C.mono, fontSize:9, color:C.muted, letterSpacing:2, marginBottom:8 }}>PLAIN TEXT</div>
+              <div style={{ fontFamily:C.mono, fontSize: 11, color:C.muted, letterSpacing:2, marginBottom:8 }}>PLAIN TEXT</div>
               <pre style={{ fontFamily:C.mono, fontSize:11, color:C.text, margin:0, whiteSpace:'pre-wrap', lineHeight:1.6, background:'rgba(0,0,0,0.15)', borderRadius:6, padding:16 }}>{entry.text}</pre>
             </div>
           )}
@@ -230,7 +230,7 @@ export default function MailQueue() {
       {/* Header */}
       <div style={{ marginBottom:24, display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div>
-          <div style={{ display:'flex', alignItems:'center', gap:8, fontFamily:C.mono, fontSize:9, color:C.cyan, letterSpacing:4, marginBottom:8, textTransform:'uppercase' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, fontFamily:C.mono, fontSize: 11, color:C.cyan, letterSpacing:4, marginBottom:8, textTransform:'uppercase' }}>
             <span style={{ width:14, height:2, background:'linear-gradient(90deg,#22d3ee,transparent)', borderRadius:2 }} />
             ADMIN · MAIL
           </div>
@@ -248,7 +248,7 @@ export default function MailQueue() {
             </>
           )}
           {selected.size > 0 && selected.size !== viableBulk.length && (
-            <span style={{ fontFamily:C.mono, fontSize:9, color:C.muted }}>
+            <span style={{ fontFamily:C.mono, fontSize: 11, color:C.muted }}>
               ({selected.size - viableBulk.length} not actionable)
             </span>
           )}
@@ -284,7 +284,7 @@ export default function MailQueue() {
               padding:'10px 14px', background:C.bg2, border:`1px solid ${C.border}`,
               borderRadius:8, display:'flex', flexDirection:'column', gap:4,
             }}>
-              <span style={{ fontFamily:C.mono, fontSize:8, letterSpacing:2, color:C.muted }}>{label}</span>
+              <span style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:2, color:C.muted }}>{label}</span>
               <span style={{ fontFamily:C.mono, fontSize:20, fontWeight:700, color }}>{value}</span>
             </div>
           ))}
@@ -296,7 +296,7 @@ export default function MailQueue() {
         <div style={{ display:'flex', gap:2, background:C.bg2, border:`1px solid ${C.border}`, borderRadius:6, padding:3 }}>
           {FILTERS.map(f => (
             <button key={f} onClick={() => { setFilter(f); setPage(1) }} style={{
-              fontFamily:C.mono, fontSize:9, letterSpacing:1.5, padding:'6px 12px',
+              fontFamily:C.mono, fontSize: 11, letterSpacing:1.5, padding:'6px 12px',
               background: filter===f ? '#22d3ee22' : 'transparent',
               color: filter===f ? C.cyan : C.muted, border:'none', cursor:'pointer', borderRadius:4,
               transition:'all 0.15s', textTransform:'uppercase',
@@ -323,7 +323,7 @@ export default function MailQueue() {
           <Checkbox checked={selected.size === safeEmails.length && safeEmails.length > 0}
             onChange={toggleAll} style={{ width:24, height:24, padding:0, justifyContent:'center' }} />
           {['RECIPIENT','SUBJECT','TYPE','STATUS','SENT AT','ACTIONS'].map(h => (
-            <div key={h} style={{ fontFamily:C.mono, fontSize:8, letterSpacing:2, color:C.muted }}>{h}</div>
+            <div key={h} style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:2, color:C.muted }}>{h}</div>
           ))}
         </div>
 
@@ -352,12 +352,12 @@ export default function MailQueue() {
                   onClick={e => e.stopPropagation()} />
                 <div style={{ overflow:'hidden' }}>
                   <div style={{ fontFamily:C.mono, fontSize:11, color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{em.to}</div>
-                  {em.name && <div style={{ fontFamily:C.mono, fontSize:9, color:C.muted }}>{em.name}</div>}
+                  {em.name && <div style={{ fontFamily:C.mono, fontSize: 11, color:C.muted }}>{em.name}</div>}
                 </div>
                 <div style={{ fontFamily:C.ui, fontSize:11, color:C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', paddingRight:8 }}>{em.subject}</div>
-                <div style={{ fontFamily:C.mono, fontSize:9, color:C.purple, letterSpacing:1 }}>{em.type?.toUpperCase()}</div>
+                <div style={{ fontFamily:C.mono, fontSize: 11, color:C.purple, letterSpacing:1 }}>{em.type?.toUpperCase()}</div>
                 <Badge status={em.status} />
-                <div style={{ fontFamily:C.mono, fontSize:9, color:C.muted }}>
+                <div style={{ fontFamily:C.mono, fontSize: 11, color:C.muted }}>
                   {em.sentAt ? new Date(em.sentAt).toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'}) : '—'}
                 </div>
                 <div style={{ display:'flex', gap:4, flexWrap:'wrap' }} onClick={e => e.stopPropagation()}>
@@ -376,14 +376,14 @@ export default function MailQueue() {
               {isExpanded && (
                 <div style={{ padding:'14px 14px 14px 50px', background:'rgba(0,0,0,0.1)', borderBottom:`1px solid ${C.border}` }}>
                   <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:6 }}>
-                    <span style={{ fontFamily:C.mono, fontSize:9, color:C.muted }}>PROVIDER:</span>
-                    <span style={{ fontFamily:C.mono, fontSize:9, color:C.text }}>{em.provider || '—'}</span>
-                    <span style={{ fontFamily:C.mono, fontSize:9, color:C.muted, marginLeft:12 }}>MSG ID:</span>
-                    <span style={{ fontFamily:C.mono, fontSize:9, color:C.text }}>{em.providerMsgId || '—'}</span>
-                    <span style={{ fontFamily:C.mono, fontSize:9, color:C.muted, marginLeft:12 }}>ATTEMPTS:</span>
-                    <span style={{ fontFamily:C.mono, fontSize:9, color:C.text }}>{em.attempts ?? 1}</span>
-                    <span style={{ fontFamily:C.mono, fontSize:9, color:C.muted, marginLeft:12 }}>CREATED:</span>
-                    <span style={{ fontFamily:C.mono, fontSize:9, color:C.text }}>{em.createdAt ? new Date(em.createdAt).toLocaleString() : '—'}</span>
+                    <span style={{ fontFamily:C.mono, fontSize: 11, color:C.muted }}>PROVIDER:</span>
+                    <span style={{ fontFamily:C.mono, fontSize: 11, color:C.text }}>{em.provider || '—'}</span>
+                    <span style={{ fontFamily:C.mono, fontSize: 11, color:C.muted, marginLeft:12 }}>MSG ID:</span>
+                    <span style={{ fontFamily:C.mono, fontSize: 11, color:C.text }}>{em.providerMsgId || '—'}</span>
+                    <span style={{ fontFamily:C.mono, fontSize: 11, color:C.muted, marginLeft:12 }}>ATTEMPTS:</span>
+                    <span style={{ fontFamily:C.mono, fontSize: 11, color:C.text }}>{em.attempts ?? 1}</span>
+                    <span style={{ fontFamily:C.mono, fontSize: 11, color:C.muted, marginLeft:12 }}>CREATED:</span>
+                    <span style={{ fontFamily:C.mono, fontSize: 11, color:C.text }}>{em.createdAt ? new Date(em.createdAt).toLocaleString() : '—'}</span>
                   </div>
                   {em.error && (
                     <div style={{ padding:'8px 10px', background:'rgba(248,113,113,0.06)', border:'1px solid rgba(248,113,113,0.2)', borderRadius:4 }}>
@@ -392,7 +392,7 @@ export default function MailQueue() {
                   )}
                   {em.html && (
                     <details style={{ marginTop:8 }}>
-                      <summary style={{ fontFamily:C.mono, fontSize:9, color:C.cyan, cursor:'pointer', letterSpacing:1 }}>HTML PREVIEW</summary>
+                      <summary style={{ fontFamily:C.mono, fontSize: 11, color:C.cyan, cursor:'pointer', letterSpacing:1 }}>HTML PREVIEW</summary>
                       <div style={{ marginTop:8, background:'white', borderRadius:6, padding:12, maxHeight:300, overflow:'auto' }}
                         dangerouslySetInnerHTML={{ __html: _sanitize(em.html) }} />
                     </details>

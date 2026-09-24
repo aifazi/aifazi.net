@@ -83,7 +83,7 @@ export default function MailStalwart() {
           <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: 'var(--cyan)' }}>STALWART QUEUE</div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>Self-hosted MTA queue — retry re-queues now, drop discards permanently (audited).</div>
         </div>
-        <button onClick={load} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '8px 14px', cursor: 'pointer', background: 'transparent', color: 'var(--cyan)', border: '1px solid rgba(34,211,238,0.27)', borderRadius: 8, fontWeight: 700 }}>↻ REFRESH</button>
+        <button onClick={load} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 14px', cursor: 'pointer', background: 'transparent', color: 'var(--cyan)', border: '1px solid rgba(34,211,238,0.27)', borderRadius: 8, fontWeight: 700 }}>↻ REFRESH</button>
       </div>
 
       {loading ? <div className="loader" />
@@ -103,7 +103,7 @@ export default function MailStalwart() {
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg2)' }}>
                   {['QUEUE ID', 'FROM', 'TO', 'NEXT RETRY', 'EXPIRES', 'ACTIONS'].map(h => (
-                    <th key={h} style={{ padding: '9px 12px', textAlign: 'left', color: 'var(--muted)', fontSize: 8, letterSpacing: 2 }}>{h}</th>
+                    <th key={h} style={{ padding: '9px 12px', textAlign: 'left', color: 'var(--muted)', fontSize: 11, letterSpacing: 2 }}>{h}</th>
                   ))}
                 </tr>
               </thead>

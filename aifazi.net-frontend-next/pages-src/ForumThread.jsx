@@ -297,7 +297,7 @@ export default function ForumThread() {
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{thread.author?.username}</div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <RoleBadge role={thread.author?.role} />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{timeAgo(thread.createdAt)}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{timeAgo(thread.createdAt)}</span>
               </div>
             </div>
             <div style={{ flex: 1 }} />
@@ -364,7 +364,7 @@ export default function ForumThread() {
                           <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{reply.author?.username}</span>
                           <RoleBadge role={reply.author?.role} />
                         </div>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{timeAgo(reply.createdAt)}{reply.edited && ' (edited)'}</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{timeAgo(reply.createdAt)}{reply.edited && ' (edited)'}</span>
                       </div>
                       <div style={{ flex: 1 }} />
                       {canEdit && !editingReply && (

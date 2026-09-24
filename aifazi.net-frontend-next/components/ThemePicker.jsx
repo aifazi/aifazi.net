@@ -403,18 +403,18 @@ function OverviewPreview({ t }) {
           boxShadow: f.isWin95 ? 'inset -1px -1px 0 #808080, inset 1px 1px 0 #ffffff, inset -2px -2px 0 #404040, inset 2px 2px 0 #dfdfdf' : f.isSynth ? `0 0 10px ${t.primary}88` : f.isNeumorph ? '2px 2px 5px #b8bec8, -1px -1px 4px #ffffff' : 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <span style={{ fontSize: 7, fontWeight: 800, color: f.isWin95 ? '#000' : f.isBrut ? t.bg : '#000', letterSpacing: 1 }}>APPLY</span>
+          <span style={{ fontSize: 11, fontWeight: 800, color: f.isWin95 ? '#000' : f.isBrut ? t.bg : '#000', letterSpacing: 1 }}>APPLY</span>
         </div>
         <div style={{ padding: '4px 8px', background: 'transparent', borderRadius: f.isBrut||f.isWin95 ? 0 : 4,
           border: f.isWin95 ? 'none' : `1px solid ${t.primary}`,
           boxShadow: f.isWin95 ? 'inset -1px -1px 0 #808080, inset 1px 1px 0 #ffffff' : 'none',
         }}>
-          <span style={{ fontSize: 7, color: f.isWin95 ? '#000' : t.primary }}>CANCEL</span>
+          <span style={{ fontSize: 11, color: f.isWin95 ? '#000' : t.primary }}>CANCEL</span>
         </div>
         <div style={{ padding: '3px 7px', background: `${t.primary}20`,
           border: `1px solid ${t.border}`, borderRadius: f.isBrut||f.isWin95 ? 0 : f.isPastel ? 20 : 10,
         }}>
-          <span style={{ fontSize: 7, color: t.primary }}>TAG</span>
+          <span style={{ fontSize: 11, color: t.primary }}>TAG</span>
         </div>
       </div>
     </div>
@@ -513,22 +513,22 @@ function InputPreview({ t }) {
     <div style={{ padding: 14, background: t.bg, borderRadius: 8, height: 148, overflow: 'hidden', ...getExtraBg(t) }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div>
-          <div style={{ fontSize: 7, color: t.muted, letterSpacing: 2, marginBottom: 4, fontWeight: 600,
+          <div style={{ fontSize: 11, color: t.muted, letterSpacing: 2, marginBottom: 4, fontWeight: 600,
             fontFamily: f.isTerm ? 'monospace' : 'inherit',
           }}>{f.isTerm ? '> USERNAME:' : 'USERNAME'}</div>
           <div style={{ ...cs, padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontSize: 8, color: t.primary, opacity: 0.5 }}>{f.isTerm ? '>' : f.isMacos ? '' : '▶'}</div>
+            <div style={{ fontSize: 11, color: t.primary, opacity: 0.5 }}>{f.isTerm ? '>' : f.isMacos ? '' : '▶'}</div>
             <div style={{ height: 8, width: 60, background: t.primary, opacity: 0.6, borderRadius: f.isBrut||f.isWin95 ? 0 : 2 }}/>
             <div style={{ width: 1, height: 12, background: t.primary, animation: 'tpBlink 1s infinite' }}/>
           </div>
         </div>
         <div>
-          <div style={{ fontSize: 7, color: t.muted, letterSpacing: 2, marginBottom: 4, fontWeight: 600 }}>
+          <div style={{ fontSize: 11, color: t.muted, letterSpacing: 2, marginBottom: 4, fontWeight: 600 }}>
             {f.isTerm ? '> CATEGORY:' : 'CATEGORY'}
           </div>
           <div style={{ ...cs, padding: '7px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ height: 6, width: 50, background: t.muted, opacity: 0.4, borderRadius: 2 }}/>
-            <div style={{ fontSize: 8, color: t.muted }}>{f.isWin95 ? '▼' : '▾'}</div>
+            <div style={{ fontSize: 11, color: t.muted }}>{f.isWin95 ? '▼' : '▾'}</div>
           </div>
         </div>
         <div style={{ background: `#ff475711`, borderRadius: f.isBrut||f.isWin95 ? 0 : 4,
@@ -536,8 +536,8 @@ function InputPreview({ t }) {
           padding: '5px 10px', display: 'flex', gap: 5, alignItems: 'center',
           boxShadow: f.isNeumorph ? 'inset 2px 2px 4px #b8bec8, inset -1px -1px 3px #ffffff' : 'none',
         }}>
-          <span style={{ fontSize: 8, color: '#ff4757' }}>✕</span>
-          <span style={{ fontSize: 8, color: '#ff4757', letterSpacing: 1 }}>FIELD REQUIRED</span>
+          <span style={{ fontSize: 11, color: '#ff4757' }}>✕</span>
+          <span style={{ fontSize: 11, color: '#ff4757', letterSpacing: 1 }}>FIELD REQUIRED</span>
         </div>
       </div>
     </div>
@@ -566,12 +566,12 @@ function NotificationPreview({ t }) {
             ...(f.isGlass ? { backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', background: `rgba(${accent === '#22c55e' ? '34,197,94' : accent === '#f59e0b' ? '245,158,11' : '239,68,68'},0.08)` } : {}),
           }}>
             <div style={{ width: f.isBrut ? 4 : 2, position: 'absolute', left: 0, top: 0, bottom: 0, background: accent }}/>
-            <span style={{ fontSize: 9, color: accent, fontWeight: 800, marginLeft: 5 }}>{icon}</span>
+            <span style={{ fontSize: 11, color: accent, fontWeight: 800, marginLeft: 5 }}>{icon}</span>
             <div style={{ flex: 1 }}>
               <div style={{ height: 5, background: accent, borderRadius: 2, width: '40%', marginBottom: 3 }}/>
               <div style={{ height: 4, background: t.muted, borderRadius: 2, width: '70%', opacity: 0.4 }}/>
             </div>
-            <span style={{ fontSize: 7, color: t.muted }}>✕</span>
+            <span style={{ fontSize: 11, color: t.muted }}>✕</span>
           </div>
         ))}
       </div>
@@ -595,12 +595,12 @@ function DialogPreview({ t }) {
           border: '2px solid #000',
         }}>
           <div style={{ background: t.primary, padding: '3px 6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 8, color: '#fff', fontWeight: 700, letterSpacing: 0.5 }}>⚠ Confirm</span>
+            <span style={{ fontSize: 11, color: '#fff', fontWeight: 700, letterSpacing: 0.5 }}>⚠ Confirm</span>
             <div style={{ display: 'flex', gap: 2 }}>
               {['─','□','✕'].map(c => (
                 <div key={c} style={{ width: 14, height: 12, background: t.bg3, border: '1px solid #808080',
                   boxShadow: 'inset -1px -1px 0 #404040, inset 1px 1px 0 #fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, color: '#000' }}>{c}</div>
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#000' }}>{c}</div>
               ))}
             </div>
           </div>
@@ -614,7 +614,7 @@ function DialogPreview({ t }) {
                 boxShadow: 'inset -1px -1px 0 #808080, inset 1px 1px 0 #ffffff, inset -2px -2px 0 #404040, inset 2px 2px 0 #dfdfdf',
                 border: lbl === 'OK' ? '2px solid #000' : '1px solid #808080',
               }}>
-                <span style={{ fontSize: 8, color: '#000', fontWeight: lbl === 'OK' ? 700 : 400 }}>{lbl}</span>
+                <span style={{ fontSize: 11, color: '#000', fontWeight: lbl === 'OK' ? 700 : 400 }}>{lbl}</span>
               </div>
             ))}
           </div>
@@ -633,10 +633,10 @@ function DialogPreview({ t }) {
           </div>
           <div style={{ borderTop: '0.5px solid rgba(0,0,0,0.1)', display: 'flex' }}>
             <div style={{ flex: 1, padding: '8px', textAlign: 'center', borderRight: '0.5px solid rgba(0,0,0,0.1)' }}>
-              <span style={{ fontSize: 8, color: t.primary, fontWeight: 600, letterSpacing: 0.3 }}>Cancel</span>
+              <span style={{ fontSize: 11, color: t.primary, fontWeight: 600, letterSpacing: 0.3 }}>Cancel</span>
             </div>
             <div style={{ flex: 1, padding: '8px', textAlign: 'center', background: `${t.primary}08` }}>
-              <span style={{ fontSize: 8, color: t.primary, fontWeight: 700, letterSpacing: 0.3 }}>OK</span>
+              <span style={{ fontSize: 11, color: t.primary, fontWeight: 700, letterSpacing: 0.3 }}>OK</span>
             </div>
           </div>
         </div>
@@ -644,17 +644,17 @@ function DialogPreview({ t }) {
         <div style={{ width: '100%', ...cs, overflow: 'hidden' }}>
           <div style={{ height: f.isBrut ? 5 : 3, background: `linear-gradient(90deg, ${t.primary}, ${t.secondary})` }}/>
           <div style={{ padding: '10px 12px 8px' }}>
-            <div style={{ fontSize: 7, color: t.primary, letterSpacing: 2, marginBottom: 5, opacity: 0.8 }}>⚠ CONFIRM ACTION</div>
+            <div style={{ fontSize: 11, color: t.primary, letterSpacing: 2, marginBottom: 5, opacity: 0.8 }}>⚠ CONFIRM ACTION</div>
             <div style={{ height: 6, background: t.text, borderRadius: 2, width: '75%', marginBottom: 4, opacity: 0.8 }}/>
             <div style={{ height: 4, background: t.muted, borderRadius: 2, width: '90%', marginBottom: 2, opacity: 0.4 }}/>
             <div style={{ height: 4, background: t.muted, borderRadius: 2, width: '65%', opacity: 0.3 }}/>
           </div>
           <div style={{ display: 'flex', borderTop: `1px solid ${t.border}` }}>
             <div style={{ flex: 1, padding: '7px', textAlign: 'center', borderRight: `1px solid ${t.border}` }}>
-              <span style={{ fontSize: 7, color: t.muted, letterSpacing: 1 }}>CANCEL</span>
+              <span style={{ fontSize: 11, color: t.muted, letterSpacing: 1 }}>CANCEL</span>
             </div>
             <div style={{ flex: 1, padding: '7px', textAlign: 'center', background: `${t.primary}18` }}>
-              <span style={{ fontSize: 7, color: t.primary, letterSpacing: 1, fontWeight: 700 }}>CONFIRM</span>
+              <span style={{ fontSize: 11, color: t.primary, letterSpacing: 1, fontWeight: 700 }}>CONFIRM</span>
             </div>
           </div>
         </div>
@@ -680,21 +680,21 @@ function ButtonsPreview({ t }) {
             boxShadow: 'inset -1px -1px 0 #808080, inset 1px 1px 0 #ffffff, inset -2px -2px 0 #404040, inset 2px 2px 0 #dfdfdf',
             display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #000',
           }}>
-            <span style={{ fontSize: 9, color: '#000', fontWeight: 700 }}>Primary Button</span>
+            <span style={{ fontSize: 11, color: '#000', fontWeight: 700 }}>Primary Button</span>
           </div>
         ) : f.isMacos ? (
           <div style={{ padding: '7px 14px', background: t.primary, borderRadius: 8,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: `0 1px 3px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(0,0,0,0.1)`,
           }}>
-            <span style={{ fontSize: 9, fontWeight: 600, color: '#fff', letterSpacing: 0.3 }}>Primary Button</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#fff', letterSpacing: 0.3 }}>Primary Button</span>
           </div>
         ) : f.isNeumorph ? (
           <div style={{ padding: '8px 14px', background: t.bg, borderRadius: 8,
             boxShadow: '4px 4px 8px #b8bec8, -3px -3px 6px #ffffff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: t.primary, letterSpacing: 1 }}>PRIMARY BUTTON</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: t.primary, letterSpacing: 1 }}>PRIMARY BUTTON</span>
           </div>
         ) : f.isPastel ? (
           <div style={{ padding: '8px 14px', borderRadius: 20,
@@ -702,7 +702,7 @@ function ButtonsPreview({ t }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: `0 4px 14px ${t.primary}55`,
           }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', letterSpacing: 1 }}>Primary Button ✨</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', letterSpacing: 1 }}>Primary Button ✨</span>
           </div>
         ) : (
           <div style={{ padding: '8px 14px', clipPath: clip, borderRadius: r,
@@ -711,7 +711,7 @@ function ButtonsPreview({ t }) {
             background: f.isTerm ? 'transparent' : t.primary,
             boxShadow: f.isBrut ? `3px 3px 0 ${t.secondary}` : f.isSynth || f.isNoir ? `0 0 14px ${t.primary}88` : f.isAurora ? `0 0 16px ${t.primary}66` : `0 0 12px ${t.primary}44`,
           }}>
-            <span style={{ fontSize: 9, fontWeight: 800, color: f.isBrut ? t.bg : f.isTerm ? t.primary : '#000', letterSpacing: 2 }}>PRIMARY BUTTON</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: f.isBrut ? t.bg : f.isTerm ? t.primary : '#000', letterSpacing: 2 }}>PRIMARY BUTTON</span>
           </div>
         )}
         {/* Outline */}
@@ -721,7 +721,7 @@ function ButtonsPreview({ t }) {
           border: f.isWin95 ? 'none' : `${f.isBrut ? '2' : '1'}px solid ${t.secondary}`,
           boxShadow: f.isWin95 ? 'inset -1px -1px 0 #808080, inset 1px 1px 0 #fff' : f.isNeumorph ? '3px 3px 8px #b8bec8, -2px -2px 6px #ffffff' : f.isSynth ? `0 0 8px ${t.secondary}44` : 'none',
         }}>
-          <span style={{ fontSize: 9, color: f.isWin95 ? '#000' : t.secondary, letterSpacing: f.isMacos ? 0.3 : 2,
+          <span style={{ fontSize: 11, color: f.isWin95 ? '#000' : t.secondary, letterSpacing: f.isMacos ? 0.3 : 2,
             fontWeight: f.isMacos ? 500 : 400,
           }}>Outline Button</span>
         </div>
@@ -735,7 +735,7 @@ function ButtonsPreview({ t }) {
               border: f.isWin95 ? 'none' : f.isNeumorph ? 'none' : i === 1 ? `1px solid ${t.primary}` : `1px solid ${t.border}`,
               boxShadow: f.isBrut ? `1px 1px 0 ${t.secondary}` : f.isNeumorph ? (i===1 ? `inset 2px 2px 4px #b8bec8, inset -1px -1px 3px #ffffff` : `2px 2px 4px #b8bec8, -1px -1px 3px #ffffff`) : f.isWin95 ? 'inset -1px -1px 0 #808080, inset 1px 1px 0 #fff' : 'none',
             }}>
-              <span style={{ fontSize: 7, color: i === 1 ? t.primary : i === 2 ? '#ef4444' : f.isWin95 ? '#000' : t.muted, letterSpacing: f.isMacos ? 0 : 1 }}>{lbl}</span>
+              <span style={{ fontSize: 11, color: i === 1 ? t.primary : i === 2 ? '#ef4444' : f.isWin95 ? '#000' : t.muted, letterSpacing: f.isMacos ? 0 : 1 }}>{lbl}</span>
             </div>
           ))}
         </div>
@@ -847,7 +847,7 @@ function HeaderPreview({ t }) {
                 <line x1="18" y1="13" x2="18" y2="25" stroke={t.primary} strokeWidth="3" strokeLinecap="round"/>
               </svg>
               <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
                   letterSpacing: 2, color: textColor, lineHeight: 1 }}>TANVIR</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 5, letterSpacing: 3,
                   color: accentColor, opacity: 0.8, lineHeight: 1 }}>.DEV</div>
@@ -892,7 +892,7 @@ function HeaderPreview({ t }) {
           </div>
           {/* Sign in button */}
           <div style={{
-            padding: '2px 6px', fontSize: 7,
+            padding: '2px 6px', fontSize: 11,
             fontFamily: 'var(--font-mono)', letterSpacing: 1,
             color: f.isWin95 ? '#000' : accentColor,
             border: f.isWin95 ? 'none' : f.isBrut ? `2px solid #000` : `1px solid ${accentColor}55`,
@@ -1024,7 +1024,7 @@ function FooterPreview({ t }) {
               {f.isWin95 ? (
                 <div style={{ width: 14, height: 14, background: accentColor,
                   boxShadow: 'inset -1px -1px 0 rgba(0,0,0,0.3),inset 1px 1px 0 rgba(255,255,255,0.5)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8 }}>T</div>
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>T</div>
               ) : (
                 <svg width="14" height="14" viewBox="0 0 36 36" fill="none">
                   <polygon points="18,1 33,9.5 33,26.5 18,35 3,26.5 3,9.5"
@@ -1033,10 +1033,10 @@ function FooterPreview({ t }) {
                   <line x1="18" y1="13" x2="18" y2="25" stroke={accentColor} strokeWidth="3.5" strokeLinecap="round"/>
                 </svg>
               )}
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
                 letterSpacing: 2, color: textColor }}>TANVIR.DEV</span>
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: mutedColor,
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: mutedColor,
               lineHeight: 1.8, marginBottom: 8 }}>
               Network Engineer<br/>UAE · Remote
             </div>
@@ -1050,7 +1050,7 @@ function FooterPreview({ t }) {
                   boxShadow: f.isWin95 ? 'inset -1px -1px 0 #808080,inset 1px 1px 0 #fff'
                     : f.isNeumorph ? '2px 2px 4px #b8bec8,-1px -1px 3px #fff' : 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 8, color: mutedColor, fontFamily: 'var(--font-mono)',
+                  fontSize: 11, color: mutedColor, fontFamily: 'var(--font-mono)',
                 }}>{s}</div>
               ))}
             </div>
@@ -1059,13 +1059,13 @@ function FooterPreview({ t }) {
           {/* Nav cols */}
           {cols.map(col => (
             <div key={col.head}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2,
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
                 color: accentColor2, marginBottom: 6, paddingBottom: 4,
                 borderBottom: f.isWin95 ? '1px solid #808080' : f.isBrut ? '2px solid #000'
                   : `1px solid ${t.border}`,
               }}>{col.head}</div>
               {col.links.map(lk => (
-                <div key={lk} style={{ fontFamily: 'var(--font-mono)', fontSize: 7,
+                <div key={lk} style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
                   color: mutedColor, lineHeight: 1.9 }}>{lk}</div>
               ))}
             </div>
@@ -1081,11 +1081,11 @@ function FooterPreview({ t }) {
             <div style={{ width: 5, height: 5, borderRadius: '50%', background: accentColor,
               boxShadow: (f.isSynth||f.isAurora||f.isTerm) ? `0 0 5px ${accentColor}` : 'none',
             }}/>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: mutedColor, letterSpacing: 1 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: mutedColor, letterSpacing: 1 }}>
               ALL SYSTEMS OK
             </span>
           </div>
-          <span suppressHydrationWarning style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: mutedColor }}>
+          <span suppressHydrationWarning style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: mutedColor }}>
             © {new Date().getFullYear()} tanvir@aifazi.net
           </span>
         </div>
@@ -1188,7 +1188,7 @@ function ThemeCard({ t, isActive, isSelected, onSelect }) {
         <div style={{ position: 'absolute', top: 7, right: 7, width: 16, height: 16,
           borderRadius: f.isBrut || f.isWin95 ? '0' : '50%',
           background: t.primary, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 9, color: '#000', fontWeight: 900,
+          fontSize: 11, color: '#000', fontWeight: 900,
         }}>✓</div>
       )}
       {isActive && !isSelected && (
@@ -1216,12 +1216,12 @@ function ThemeCard({ t, isActive, isSelected, onSelect }) {
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 1,
           color: isSelected ? t.primary : 'rgba(255,255,255,0.82)',
         }}>{t.name}</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 1, padding: '1px 5px',
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '1px 5px',
           borderRadius: f.isBrut || f.isWin95 ? 0 : 3,
           background: tagColor.bg, border: `1px solid ${tagColor.border}`, color: tagColor.color,
         }}>{t.tag}</span>
       </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'rgba(255,255,255,0.3)', lineHeight: 1.3 }}>{t.desc}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.3)', lineHeight: 1.3 }}>{t.desc}</div>
     </button>
   )
 }
@@ -1411,7 +1411,7 @@ export default function ThemePicker({ open, onClose }) {
               </svg>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: 'var(--green)' }}>THEME LIBRARY</span>
             </div>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, color: 'var(--muted)', margin: 0 }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--muted)', margin: 0 }}>
               {isThemeLocked ? '🔒 THEME LOCKED BY ADMIN' : `${THEMES.filter(t => t.type !== 'package').length} THEMES + ${packageThemes.length} PACKAGES — SELECT THEN APPLY`}
             </p>
           </div>
@@ -1419,12 +1419,12 @@ export default function ThemePicker({ open, onClose }) {
             {/* ── ADMIN ONLY: link to Admin Portal global settings ── */}
             {isAdmin && (
               <a href="/admin" onClick={onClose} title="Manage global theme & site settings in Admin Portal"
-                style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+                style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.color = '#f59e0b' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
               >
                 ⚙ GLOBAL
-                <span style={{ fontSize: 7, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '1px 4px', borderRadius: 3, letterSpacing: 1 }}>ADMIN ↗</span>
+                <span style={{ fontSize: 11, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '1px 4px', borderRadius: 3, letterSpacing: 1 }}>ADMIN ↗</span>
               </a>
             )}
             <button className="tp-close" onClick={onClose}
@@ -1436,7 +1436,7 @@ export default function ThemePicker({ open, onClose }) {
 
         {/* ── Component Category Tabs ── */}
         <div style={{ padding: '10px 14px 0', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>PREVIEW CATEGORY</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>PREVIEW CATEGORY</div>
           <div style={{ display: 'flex', gap: 3, overflowX: 'auto', paddingBottom: 10 }}>
             {CATEGORIES.map(cat => {
               const active = activeCategory === cat.id
@@ -1448,8 +1448,8 @@ export default function ThemePicker({ open, onClose }) {
                     borderRadius: 6, cursor: 'pointer', transition: 'all 0.15s',
                     color: active ? '#000' : 'var(--muted)',
                   }}>
-                  <span style={{ fontSize: 9 }}>{cat.icon}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, fontWeight: active ? 700 : 400 }}>{cat.label}</span>
+                  <span style={{ fontSize: 11 }}>{cat.icon}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, fontWeight: active ? 700 : 400 }}>{cat.label}</span>
                 </button>
               )
             })}
@@ -1459,7 +1459,7 @@ export default function ThemePicker({ open, onClose }) {
         {/* ── Live Preview Panel ── */}
         <div style={{ margin: '10px 14px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>
               PREVIEW — {previewTheme.name.toUpperCase()} ({previewTheme.style.toUpperCase()})
             </span>
             <div style={{ display: 'flex', gap: 4 }}>
@@ -1477,7 +1477,7 @@ export default function ThemePicker({ open, onClose }) {
         <div style={{ padding: '10px 14px 0', flexShrink: 0 }}>
           {/* Type row */}
           <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)',
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)',
               display: 'flex', alignItems: 'center', marginRight: 2 }}>TYPE:</div>
             {['ALL', 'COLOR', 'DESIGN', 'PACKAGES'].map(f => {
               const active = styleFilter === f
@@ -1489,10 +1489,10 @@ export default function ThemePicker({ open, onClose }) {
                     background: active ? 'rgba(168,85,247,0.18)' : 'transparent',
                     border: `1px solid ${active ? '#c084fc' : 'var(--border)'}`,
                     borderRadius: 5, cursor: 'pointer', transition: 'all 0.15s',
-                    fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1,
+                    fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                     color: active ? '#c084fc' : 'var(--muted)', fontWeight: active ? 700 : 400,
                   }}>
-                  {f} <span style={{ opacity: 0.5, fontSize: 7 }}>({countMap[f]})</span>
+                  {f} <span style={{ opacity: 0.5, fontSize: 11 }}>({countMap[f]})</span>
                 </button>
               )
             })}
@@ -1500,7 +1500,7 @@ export default function ThemePicker({ open, onClose }) {
           {/* Tag filter (hide in DESIGN / PACKAGES mode since those span all tags) */}
           {styleFilter !== 'DESIGN' && styleFilter !== 'PACKAGES' && (
             <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)',
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)',
                 display: 'flex', alignItems: 'center', marginRight: 2 }}>TAG:</div>
               {['ALL', 'DARK', 'LIGHT'].map(f => {
                 const active = filter === f
@@ -1510,7 +1510,7 @@ export default function ThemePicker({ open, onClose }) {
                       background: active ? `${activeTheme.primary}18` : 'transparent',
                       border: `1px solid ${active ? activeTheme.primary : 'var(--border)'}`,
                       borderRadius: 5, cursor: 'pointer', transition: 'all 0.15s',
-                      fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1,
+                      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                       color: active ? 'var(--green)' : 'var(--muted)', fontWeight: active ? 700 : 400,
                     }}>{f}</button>
                 )
@@ -1552,10 +1552,10 @@ export default function ThemePicker({ open, onClose }) {
               ))}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text)', letterSpacing: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', letterSpacing: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {activeTheme.name}
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', letterSpacing: 1 }}>ACTIVE</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>ACTIVE</div>
             </div>
             {pending && pendingTheme ? (
               <>
@@ -1566,14 +1566,14 @@ export default function ThemePicker({ open, onClose }) {
                   ))}
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: pendingTheme.primary, letterSpacing: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: pendingTheme.primary, letterSpacing: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {pendingTheme.name}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', letterSpacing: 1 }}>SELECTED</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>SELECTED</div>
                 </div>
               </>
             ) : (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1, opacity: 0.6 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, opacity: 0.6 }}>
                 ← pick a theme
               </div>
             )}
@@ -1585,7 +1585,7 @@ export default function ThemePicker({ open, onClose }) {
               <button onClick={handleCancel}
                 style={{ flex: '0 0 72px', padding: '10px 0',
                   background: 'transparent', border: '1px solid var(--border)', borderRadius: 6,
-                  fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', cursor: 'pointer',
                   transition: 'all 0.15s',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor='var(--text)'; e.currentTarget.style.color='var(--text)' }}
@@ -1635,7 +1635,7 @@ export default function ThemePicker({ open, onClose }) {
               <span style={{ fontSize: 16 }}>⚙</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: 3, color: '#f59e0b' }}>GLOBAL SETTINGS</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1 }}>APPLIED TO ALL SITE VISITORS</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>APPLIED TO ALL SITE VISITORS</div>
               </div>
               <button onClick={() => setShowAdminPanel(false)} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>✕</button>
             </div>
@@ -1677,7 +1677,7 @@ export default function ThemePicker({ open, onClose }) {
                           {s.id === 'terminal' && <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#33ff33' }}>&gt;_<span style={{ borderRight: '2px solid #33ff33', animation: 'tpBlink 1s step-end infinite', marginLeft: 2 }} /></span>}
                           {s.id === 'minimal'  && <div style={{ width: 22, height: 22, border: '3px solid #0a1118', borderTopColor: '#00ff88', borderRadius: '50%', animation: 'tpSpin 0.8s linear infinite' }} />}
                           {s.id === 'glitch'   && <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 15, color: '#fff', textShadow: '2px 0 #ff003c, -2px 0 #00eaff', animation: 'miniGlitch 2.5s infinite' }}>AI</span>}
-                          {s.id === 'splash'   && <div style={{ textAlign: 'center' }}><div style={{ fontSize: 14, animation: 'miniZoomIn 1.8s ease-out infinite alternate' }}>⬡</div><div style={{ fontFamily: 'monospace', fontSize: 8, letterSpacing: 3, color: '#00ff88', marginTop: 1 }}>AIFAZI</div></div>}
+                          {s.id === 'splash'   && <div style={{ textAlign: 'center' }}><div style={{ fontSize: 14, animation: 'miniZoomIn 1.8s ease-out infinite alternate' }}>⬡</div><div style={{ fontFamily: 'monospace', fontSize: 11, letterSpacing: 3, color: '#00ff88', marginTop: 1 }}>AIFAZI</div></div>}
                           {s.id === 'matrix'   && <div style={{ display: 'flex', gap: 3, fontFamily: 'monospace', fontSize: 10, color: '#00ff88' }}>{['1','0','1','0','1'].map((c,i) => <span key={i} style={{ animation: `miniDotBounce 1.2s ${i*0.15}s ease-in-out infinite`, display: 'inline-block' }}>{c}</span>)}</div>}
                           {s.id === 'pulse'    && <div style={{ position: 'relative', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid #00ff88', animation: 'lsPulse 1.4s ease-in-out infinite' }} /><div style={{ position: 'absolute', inset: 7, borderRadius: '50%', border: '1px solid #00d4ff', animation: 'lsPulse 1.4s 0.3s ease-in-out infinite' }} /><div style={{ width: 5, height: 5, borderRadius: '50%', background: '#00ff88' }} /></div>}
                           {s.id === 'cyber'    && <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap', width: 40, justifyContent: 'center' }}>{[...Array(9)].map((_,i) => <div key={i} style={{ width: 10, height: 10, border: '1px solid #00d4ff', borderRadius: 2, animation: `lsCyberHex 1.8s ${i*0.12}s ease-in-out infinite` }} />)}</div>}
@@ -1686,8 +1686,8 @@ export default function ThemePicker({ open, onClose }) {
                           {s.id === 'neon'     && <span style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: 12, letterSpacing: 3, color: '#00ff88', animation: 'lsNeon 3s infinite' }}>NET</span>}
                         </div>
                         <div style={{ padding: '6px 6px 7px', textAlign: 'center' }}>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 1, marginBottom: 2 }}>{s.label}</div>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)' }}>{s.desc}</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 1, marginBottom: 2 }}>{s.label}</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{s.desc}</div>
                         </div>
                       </button>
                     )
@@ -1724,8 +1724,8 @@ export default function ThemePicker({ open, onClose }) {
                           )}
                         </div>
                         <div style={{ padding: '6px 6px 7px', textAlign: 'center' }}>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: active ? 'var(--cyan)' : 'var(--text)', letterSpacing: 1, marginBottom: 2 }}>{a.label}</div>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)' }}>{a.desc}</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: active ? 'var(--cyan)' : 'var(--text)', letterSpacing: 1, marginBottom: 2 }}>{a.label}</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{a.desc}</div>
                         </div>
                       </button>
                     )
@@ -1740,7 +1740,7 @@ export default function ThemePicker({ open, onClose }) {
                 <div style={{ background: globalDraft.maintenanceMode ? 'rgba(245,158,11,0.06)' : 'var(--bg3)', border: `1px solid ${globalDraft.maintenanceMode ? 'rgba(245,158,11,0.35)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px', marginBottom: 10, transition: 'all .2s' }}>
                   <Toggle label="Enable maintenance mode" checked={globalDraft.maintenanceMode} onChange={v => setGlobalDraft(d => ({ ...d, maintenanceMode: v }))} accent="#f59e0b" />
                   {globalDraft.maintenanceMode && (
-                    <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 8, color: '#f59e0b', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f59e0b', letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', animation: 'tpBlink 1s infinite' }}/>
                       LIVE — VISITORS SEE MAINTENANCE PAGE
                     </div>
@@ -1750,7 +1750,7 @@ export default function ThemePicker({ open, onClose }) {
                 {globalDraft.maintenanceMode && (<>
 
                   {/* ── Page Style ── */}
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>PAGE STYLE</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>PAGE STYLE</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 5, marginBottom: 12 }}>
                     {[
                       { id: 'terminal',    icon: '>_',  label: 'Terminal',    desc: 'Boot console' },
@@ -1768,15 +1768,15 @@ export default function ThemePicker({ open, onClose }) {
                             border: `1px solid ${active ? '#f59e0b' : 'var(--border)'}`,
                             borderRadius: 7, cursor: 'pointer', transition: 'all .15s' }}>
                           <span style={{ fontSize: 16, fontFamily: 'monospace' }}>{s.icon}</span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700, color: active ? '#f59e0b' : 'var(--text)', letterSpacing: 1 }}>{s.label}</span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)' }}>{s.desc}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: active ? '#f59e0b' : 'var(--text)', letterSpacing: 1 }}>{s.label}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{s.desc}</span>
                         </button>
                       )
                     })}
                   </div>
 
                   {/* ── Status Badge Type ── */}
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>STATUS BADGE</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>STATUS BADGE</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 12 }}>
                     {['MAINTENANCE', 'UPDATING', 'COMING SOON', 'OFFLINE', 'UPGRADING'].map(s => {
                       const active = globalDraft.maintenanceStatus === s
@@ -1787,7 +1787,7 @@ export default function ThemePicker({ open, onClose }) {
                           style={{ padding: '4px 9px', background: active ? `${c}18` : 'transparent',
                             border: `1px solid ${active ? c : 'var(--border)'}`,
                             borderRadius: 4, cursor: 'pointer', transition: 'all .15s',
-                            fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1,
+                            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                             color: active ? c : 'var(--muted)', fontWeight: active ? 700 : 400 }}>
                           {s}
                         </button>
@@ -1796,7 +1796,7 @@ export default function ThemePicker({ open, onClose }) {
                   </div>
 
                   {/* ── Icon picker ── */}
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>PAGE ICON</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>PAGE ICON</div>
                   <div style={{ display: 'flex', gap: 5, marginBottom: 12 }}>
                     {['⚙️','🔧','🚀','🛠️','⚡','🔒','🌐','💻'].map(ic => (
                       <button key={ic} onClick={() => setGlobalDraft(d => ({ ...d, maintenanceIcon: ic }))}
@@ -1810,7 +1810,7 @@ export default function ThemePicker({ open, onClose }) {
                   </div>
 
                   {/* ── Background Style ── */}
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>BACKGROUND PATTERN</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>BACKGROUND PATTERN</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5, marginBottom: 12 }}>
                     {[
                       { id: 'grid',   label: 'Grid',   preview: 'repeating-linear-gradient(0deg,#0d0 1px,transparent 20px),repeating-linear-gradient(90deg,#0d0 1px,transparent 20px)' },
@@ -1826,7 +1826,7 @@ export default function ThemePicker({ open, onClose }) {
                             border: `1.5px solid ${active ? '#f59e0b' : 'var(--border)'}`,
                             transition: 'all .15s' }}>
                           <div style={{ position: 'absolute', inset: 0, background: '#0a0f18', backgroundImage: bg.preview, backgroundSize: '20px 20px' }}/>
-                          <span style={{ position: 'relative', fontFamily: 'var(--font-mono)', fontSize: 7, color: active ? '#f59e0b' : 'var(--muted)', letterSpacing: 1, display: 'block', textAlign: 'center', paddingTop: 26 }}>{bg.label}</span>
+                          <span style={{ position: 'relative', fontFamily: 'var(--font-mono)', fontSize: 11, color: active ? '#f59e0b' : 'var(--muted)', letterSpacing: 1, display: 'block', textAlign: 'center', paddingTop: 26 }}>{bg.label}</span>
                         </button>
                       )
                     })}
@@ -1838,8 +1838,8 @@ export default function ThemePicker({ open, onClose }) {
                     {globalDraft.maintenanceShowProgress && (
                       <div style={{ marginTop: 10 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2 }}>PROGRESS</span>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#f59e0b', fontWeight: 700 }}>{globalDraft.maintenanceProgress}%</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>PROGRESS</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>{globalDraft.maintenanceProgress}%</span>
                         </div>
                         <input type="range" min={0} max={100} value={globalDraft.maintenanceProgress}
                           onChange={e => setGlobalDraft(d => ({ ...d, maintenanceProgress: +e.target.value }))}
@@ -1853,7 +1853,7 @@ export default function ThemePicker({ open, onClose }) {
 
                   {/* ── Expected return time ── */}
                   <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginBottom: 5 }}>EXPECTED RETURN TIME</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 5 }}>EXPECTED RETURN TIME</div>
                     <input value={globalDraft.maintenanceReturnTime} onChange={e => setGlobalDraft(d => ({ ...d, maintenanceReturnTime: e.target.value }))}
                       placeholder="e.g. Today at 6:00 PM UTC"
                       style={{ width: '100%', background: 'var(--bg3)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '8px 10px', borderRadius: 6, outline: 'none', boxSizing: 'border-box' }} />
@@ -1866,7 +1866,7 @@ export default function ThemePicker({ open, onClose }) {
 
                   {/* ── Message ── */}
                   <div style={{ marginBottom: 4 }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginBottom: 5 }}>MAINTENANCE MESSAGE</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 5 }}>MAINTENANCE MESSAGE</div>
                     <textarea value={globalDraft.maintenanceMessage} onChange={e => setGlobalDraft(d => ({ ...d, maintenanceMessage: e.target.value }))} rows={3} placeholder="We are currently performing maintenance..."
                       style={{ width: '100%', background: 'var(--bg3)', border: '1px solid rgba(245,158,11,0.4)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '8px 10px', borderRadius: 6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
@@ -1895,8 +1895,8 @@ export default function ThemePicker({ open, onClose }) {
                           <HeaderPreviewSVG id={p.id} />
                         </div>
                         <div style={{ padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 1 }}>{p.name}</span>
-                          {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--green)', padding: '1px 4px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)' }}>✓ ACTIVE</span>}
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 1 }}>{p.name}</span>
+                          {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', padding: '1px 4px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)' }}>✓ ACTIVE</span>}
                         </div>
                       </button>
                     )
@@ -1922,8 +1922,8 @@ export default function ThemePicker({ open, onClose }) {
                           <FooterPreviewSVG id={p.id} />
                         </div>
                         <div style={{ padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 1 }}>{p.name}</span>
-                          {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--green)', padding: '1px 4px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)' }}>✓ ACTIVE</span>}
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 1 }}>{p.name}</span>
+                          {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', padding: '1px 4px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)' }}>✓ ACTIVE</span>}
                         </div>
                       </button>
                     )
@@ -1950,8 +1950,8 @@ export default function ThemePicker({ open, onClose }) {
 function Section({ label, desc, children }) {
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--muted)', marginBottom: 3 }}>{label}</div>
-      {desc && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', opacity: 0.6, marginBottom: 8, lineHeight: 1.5 }}>{desc}</div>}
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 3 }}>{label}</div>
+      {desc && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', opacity: 0.6, marginBottom: 8, lineHeight: 1.5 }}>{desc}</div>}
       {children}
     </div>
   )
@@ -1964,7 +1964,7 @@ function Toggle({ label, checked, onChange, accent = 'var(--green)' }) {
         style={{ width: 36, height: 20, borderRadius: 10, background: checked ? accent : 'var(--bg3)', border: `1px solid ${checked ? accent : 'var(--border)'}`, position: 'relative', flexShrink: 0, cursor: 'pointer', transition: 'all .2s' }}>
         <div style={{ position: 'absolute', top: 2, left: checked ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: checked ? '#000' : 'var(--muted)', transition: 'left .2s' }} />
       </div>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: checked ? accent : 'var(--muted)', transition: 'color .2s' }}>{label}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: checked ? accent : 'var(--muted)', transition: 'color .2s' }}>{label}</span>
     </label>
   )
 }
@@ -1988,7 +1988,7 @@ function MaintenancePreviewStrip({ draft }) {
 
   return (
     <div style={{ marginTop: 10, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)', padding: '5px 8px', background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', padding: '5px 8px', background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
         ◉ LIVE PREVIEW
       </div>
       <div style={{ height: 120, background: '#060a0f', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...bgPat }}>
@@ -1998,7 +1998,7 @@ function MaintenancePreviewStrip({ draft }) {
           {/* status badge */}
           <div style={{ display: 'inline-block', padding: '2px 8px', background: `${sc}15`, border: `1px solid ${sc}44`,
             borderRadius: 3, marginBottom: 6 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: sc }}>{draft.maintenanceStatus}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: sc }}>{draft.maintenanceStatus}</span>
           </div>
           {/* title bars */}
           <div style={{ height: 5, background: 'rgba(255,255,255,0.7)', borderRadius: 2, width: 100, margin: '0 auto 4px' }}/>
@@ -2011,7 +2011,7 @@ function MaintenancePreviewStrip({ draft }) {
           )}
           {/* return time */}
           {draft.maintenanceReturnTime && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'rgba(255,255,255,0.3)', letterSpacing: 1 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.3)', letterSpacing: 1 }}>
               ⏱ {draft.maintenanceReturnTime}
             </div>
           )}
@@ -2019,7 +2019,7 @@ function MaintenancePreviewStrip({ draft }) {
         {/* style label badge */}
         <div style={{ position: 'absolute', top: 6, right: 6, padding: '2px 6px', background: 'rgba(0,0,0,0.6)',
           border: '1px solid var(--border)', borderRadius: 3 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1, textTransform: 'uppercase' }}>{draft.maintenanceStyle}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, textTransform: 'uppercase' }}>{draft.maintenanceStyle}</span>
         </div>
       </div>
     </div>
@@ -2030,7 +2030,7 @@ function AdminThemeBtn({ id, label, active, onClick, color, bg }) {
   return (
     <button onClick={onClick} style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 6, background: active ? `${color}15` : 'var(--bg3)', border: `1px solid ${active ? color : 'var(--border)'}`, borderRadius: 6, cursor: 'pointer', transition: 'all .15s', textAlign: 'left' }}>
       {bg && <div style={{ width: 12, height: 12, borderRadius: 3, background: bg, border: `2px solid ${color}`, flexShrink: 0 }} />}
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: active ? color : 'var(--muted)', fontWeight: active ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: active ? color : 'var(--muted)', fontWeight: active ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
       {active && <span style={{ marginLeft: 'auto', color, fontSize: 10 }}>✓</span>}
     </button>
   )

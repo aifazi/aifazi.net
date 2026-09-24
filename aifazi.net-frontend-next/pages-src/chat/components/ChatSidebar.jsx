@@ -38,14 +38,14 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
     <div style={{ width: 224, display: 'flex', flexDirection: 'column', height: '100%', background: T.sidebar, borderRight: `1px solid ${T.border}`, overflow: 'hidden' }}>
       <div style={{ padding: '14px 14px 10px', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 3, color: T.muted }}>CHANNELS</span>
+          <span style={{ fontFamily: T.mono, fontSize: 11, letterSpacing: 3, color: T.muted }}>CHANNELS</span>
           {isAdmin && <button onClick={onCreate} style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, color: T.muted, fontSize: 16, cursor: 'pointer', padding: '0 6px', lineHeight: 1 }}>+</button>}
         </div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
         {vcChs.length > 0 && (
           <>
-            <div style={{ padding: '8px 6px 4px', fontFamily: T.mono, fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.15)', textTransform: 'uppercase' }}>Voice Channels</div>
+            <div style={{ padding: '8px 6px 4px', fontFamily: T.mono, fontSize: 11, letterSpacing: 2, color: 'rgba(255,255,255,0.15)', textTransform: 'uppercase' }}>Voice Channels</div>
             {vcChs.map(r => {
               const people = voicePresenceByRoom?.[r.id] || []
               return (
@@ -60,7 +60,7 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
                     <span style={{ fontSize: 14 }}>{r.type === 'video' ? '📹' : '🔊'}</span>
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
                     {accessIcon(r) && <span style={{ fontSize: 10, flexShrink: 0 }}>{accessIcon(r)}</span>}
-                    {people.length > 0 && <span style={{ fontFamily: T.mono, fontSize: 9, color: T.accent }}>{people.length}</span>}
+                    {people.length > 0 && <span style={{ fontFamily: T.mono, fontSize: 11, color: T.accent }}>{people.length}</span>}
                     {callRoom?.id === r.id && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#23d160', flexShrink: 0 }} />}
                   </button>
                   {people.length > 0 && (
@@ -72,7 +72,7 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
                           <RolePill role={p.role} />
                         </div>
                       ))}
-                      {people.length > 5 && <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted }}>+{people.length - 5} more</div>}
+                      {people.length > 5 && <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>+{people.length - 5} more</div>}
                     </div>
                   )}
                 </div>
@@ -82,7 +82,7 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
           </>
         )}
 
-        <div style={{ padding: '4px 6px 4px', fontFamily: T.mono, fontSize: 8, letterSpacing: 2, color: 'rgba(255,255,255,0.15)', textTransform: 'uppercase' }}>Text Channels</div>
+        <div style={{ padding: '4px 6px 4px', fontFamily: T.mono, fontSize: 11, letterSpacing: 2, color: 'rgba(255,255,255,0.15)', textTransform: 'uppercase' }}>Text Channels</div>
         {txtChs.map(r => (
           <button key={r.id}
             onMouseEnter={() => setHov(r.id)} onMouseLeave={() => setHov(null)}
@@ -94,7 +94,7 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
             <span style={{ fontSize: 12 }}>{r.emoji || '#'}</span>
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
             {accessIcon(r) && <span style={{ fontSize: 10, flexShrink: 0 }}>{accessIcon(r)}</span>}
-            {unread[r.id] > 0 && <span style={{ background: T.accent, color: '#000', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, fontFamily: T.mono }}>{unread[r.id]}</span>}
+            {unread[r.id] > 0 && <span style={{ background: T.accent, color: '#000', fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 10, fontFamily: T.mono }}>{unread[r.id]}</span>}
           </button>
         ))}
       </div>
@@ -105,7 +105,7 @@ export function ChatSidebar({ rooms, active, onSelect, onlineCount, unread, isAd
             <span style={{ fontSize: 12, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{me}</span>
             <RolePill role={role} />
           </div>
-          <div style={{ fontSize: 9, color: T.muted }}>{onlineCount} online</div>
+          <div style={{ fontSize: 11, color: T.muted }}>{onlineCount} online</div>
         </div>
         {callRoom && <button onClick={onLeaveCall} style={{ background: T.danger, border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, padding: '4px 8px', cursor: 'pointer', fontFamily: T.mono }}>LEAVE</button>}
       </div>

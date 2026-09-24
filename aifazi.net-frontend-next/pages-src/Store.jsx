@@ -283,7 +283,7 @@ export default function StorePage({ fivem = false }) {
                   <div key={label} style={{ padding: '18px 14px', borderRadius: 14, border: `1px solid ${mix(color, 18)}`, background: mix(color, 5), textAlign: 'center' }}>
                     <div style={{ fontSize: 28, marginBottom: 6 }}>{icon}</div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color }}>{label}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1, marginTop: 2 }}>{sub}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, marginTop: 2 }}>{sub}</div>
                   </div>
                 ))}
               </div>

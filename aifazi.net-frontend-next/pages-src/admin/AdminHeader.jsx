@@ -74,7 +74,7 @@ function HBtn({ icon, label, onClick, danger, badge, active }) {
       {label && <span>{label}</span>}
       {badge > 0 && (
         <span style={{ position:'absolute', top:-3, right:-3, minWidth:16, height:16, borderRadius:8,
-          background:'#ef4444', fontSize:9, color:'#fff', display:'flex', alignItems:'center',
+          background:'#ef4444', fontSize: 11, color:'#fff', display:'flex', alignItems:'center',
           justifyContent:'center', fontWeight:700, padding:'0 3px', fontFamily:C.fontMono }}>
           {badge}
         </span>
@@ -185,7 +185,7 @@ function SearchModal({ onClose, setView, navItems }) {
           gap:16, background:C.bg }}>
           {[['↑↓','navigate'],['↵','open'],['ESC','close']].map(([k,l]) => (
             <div key={k} style={{ display:'flex', alignItems:'center', gap:5 }}>
-              <kbd style={{ fontFamily:C.fontMono, fontSize:9, color:C.muted, padding:'1px 5px',
+              <kbd style={{ fontFamily:C.fontMono, fontSize: 11, color:C.muted, padding:'1px 5px',
                 background:C.bg3, border:`1px solid ${C.border}`, borderRadius:4 }}>{k}</kbd>
               <span style={{ fontSize:11, color:C.muted, fontFamily:C.fontUi }}>{l}</span>
             </div>
@@ -210,7 +210,7 @@ function NotifDropdown({ alerts, onDismiss, onClearAll }) {
           {alerts.length > 0 && <span style={{ fontSize:11, fontFamily:C.fontMono, color:C.accent }}>{alerts.length} active</span>}
           {alerts.length > 0 && (
             <button onClick={onClearAll} style={{
-              fontFamily:C.fontMono, fontSize:9, letterSpacing:1, padding:'3px 9px',
+              fontFamily:C.fontMono, fontSize: 11, letterSpacing:1, padding:'3px 9px',
               background:'rgba(248,113,113,0.1)', border:'1px solid rgba(248,113,113,0.3)',
               color:C.red, borderRadius:5, cursor:'pointer', transition:'all 0.14s',
             }}>CLEAR ALL</button>
@@ -471,7 +471,7 @@ export default function AdminHeader({ view, setView, onLogout, sidebarCollapsed,
             <div key={s.label} style={{ display:'flex', flexDirection:'column', alignItems:'center',
               justifyContent:'center', padding:'4px 14px', height:40, minWidth:72,
               borderRadius:8, background:s.bg, border:`1px solid ${s.bd}` }}>
-              <div style={{ fontSize:8, letterSpacing:1, color:C.muted, textTransform:'uppercase',
+              <div style={{ fontSize: 11, letterSpacing:1, color:C.muted, textTransform:'uppercase',
                 fontFamily:C.fontMono, lineHeight:1, marginBottom:2 }}>{s.label}</div>
               <div style={{ fontSize:15, fontWeight:700, color:s.color, fontFamily:C.fontMono,
                 lineHeight:1 }}>{s.value}</div>

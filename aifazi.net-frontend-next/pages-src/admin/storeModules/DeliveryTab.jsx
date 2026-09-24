@@ -72,7 +72,7 @@ export default function DeliveryAdminTab() {
                 <span style={{ fontSize: 20 }}>🚚</span>
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{a.display_name || a.user?.username || 'Agent'}</span>
                 <span style={{
-                  fontFamily: MONO, fontSize: 8, letterSpacing: 1.5, padding: '3px 8px', borderRadius: 20,
+                  fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, padding: '3px 8px', borderRadius: 20,
                   color: a.status === 'available' ? G : a.status === 'busy' ? 'var(--orange)' : 'var(--muted)',
                   border: `1px solid ${a.status === 'available' ? mix(G, 30) : a.status === 'busy' ? mix('var(--orange)', 30) : 'var(--border)'}`,
                   marginLeft: 'auto',
@@ -100,7 +100,7 @@ export default function DeliveryAdminTab() {
             <div key={a.id} style={S.card}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: C }}>#{a.order_number || a.id}</span>
-                <span style={{ fontFamily: MONO, fontSize: 9, padding: '3px 8px', borderRadius: 10, background: mix(G, 10), color: G }}>{a.status?.toUpperCase()}</span>
+                <span style={{ fontFamily: MONO, fontSize: 11, padding: '3px 8px', borderRadius: 10, background: mix(G, 10), color: G }}>{a.status?.toUpperCase()}</span>
                 <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--muted)' }}>{a.agent_name || 'Unassigned'}</span>
               </div>
             </div>

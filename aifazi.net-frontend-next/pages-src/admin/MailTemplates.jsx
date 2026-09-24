@@ -223,7 +223,7 @@ const DEFAULT_TEMPLATES = {
 function VarChip({ v, onClick }) {
   return (
     <button onClick={onClick} title="Insert variable" style={{
-      fontFamily:C.mono, fontSize:9, letterSpacing:1, padding:'3px 8px',
+      fontFamily:C.mono, fontSize: 11, letterSpacing:1, padding:'3px 8px',
       background:'rgba(167,139,250,0.1)', border:'1px solid rgba(167,139,250,0.3)',
       color:'#a78bfa', cursor:'pointer', borderRadius:4, transition:'all 0.1s',
     }}>{v}</button>
@@ -334,7 +334,7 @@ const [saveError, setSaveError] = useState('')
 
   const tabBtn = (id, label) => (
     <button onClick={() => setTab(id)} style={{
-      fontFamily:C.mono, fontSize:9, letterSpacing:2, padding:'8px 16px',
+      fontFamily:C.mono, fontSize: 11, letterSpacing:2, padding:'8px 16px',
       background: tab===id ? 'rgba(34,211,238,0.15)' : 'transparent',
       color: tab===id ? C.cyan : C.muted, border:'none', cursor:'pointer',
       borderBottom:`2px solid ${tab===id ? C.cyan : 'transparent'}`, transition:'all 0.15s',
@@ -355,7 +355,7 @@ const [saveError, setSaveError] = useState('')
 
       {/* Subject */}
       <div>
-        <label style={{ fontFamily:C.mono, fontSize:9, letterSpacing:2, color:C.muted, display:'block', marginBottom:6 }}>EMAIL SUBJECT</label>
+        <label style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:2, color:C.muted, display:'block', marginBottom:6 }}>EMAIL SUBJECT</label>
         <input value={subject} onChange={e => { setSubject(e.target.value); setDirty(true) }}
           style={{ width:'100%', boxSizing:'border-box', padding:'10px 14px',
             fontFamily:C.mono, fontSize:12, background:C.bg2, border:`1px solid ${C.border}`,
@@ -364,7 +364,7 @@ const [saveError, setSaveError] = useState('')
 
       {/* Available variables */}
       <div>
-        <div style={{ fontFamily:C.mono, fontSize:9, letterSpacing:2, color:C.muted, marginBottom:8 }}>AVAILABLE VARIABLES — click to insert at cursor</div>
+        <div style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:2, color:C.muted, marginBottom:8 }}>AVAILABLE VARIABLES — click to insert at cursor</div>
         <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
           {purpose.vars.map(v => <VarChip key={v} v={v} onClick={() => insertVar(v)} />)}
         </div>
@@ -390,7 +390,7 @@ const [saveError, setSaveError] = useState('')
       {tab === 'preview' && (
         <div style={{ border:`1px solid ${C.border}`, borderRadius:4, overflow:'hidden' }}>
           <div style={{ padding:'8px 14px', background:C.bg2, borderBottom:`1px solid ${C.border}`,
-            fontFamily:C.mono, fontSize:9, color:C.muted, letterSpacing:2 }}>
+            fontFamily:C.mono, fontSize: 11, color:C.muted, letterSpacing:2 }}>
             PREVIEW — variables replaced with sample data
           </div>
           <iframe srcDoc={previewHtml} title="Template preview"
@@ -418,8 +418,8 @@ const [saveError, setSaveError] = useState('')
           background:'transparent', color:C.muted, border:`1px solid ${C.border}`,
           cursor:'pointer', borderRadius:4,
         }}>↺ RESET DEFAULT</button>
-        {dirty && <span style={{ fontFamily:C.mono, fontSize:9, color:C.yellow, letterSpacing:2 }}>UNSAVED CHANGES</span>}
-        {saveError && <span style={{ fontFamily:C.mono, fontSize:9, color:'#f87171', letterSpacing:1 }}>⚠ {saveError}</span>}
+        {dirty && <span style={{ fontFamily:C.mono, fontSize: 11, color:C.yellow, letterSpacing:2 }}>UNSAVED CHANGES</span>}
+        {saveError && <span style={{ fontFamily:C.mono, fontSize: 11, color:'#f87171', letterSpacing:1 }}>⚠ {saveError}</span>}
       </div>
     </div>
   )
@@ -465,7 +465,7 @@ export default function MailTemplates() {
     <div style={{ paddingBottom:60 }}>
       {/* Header */}
       <div style={{ marginBottom:24 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, fontFamily:C.mono, fontSize:9, color:C.cyan, letterSpacing:4, marginBottom:8, textTransform:'uppercase' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, fontFamily:C.mono, fontSize: 11, color:C.cyan, letterSpacing:4, marginBottom:8, textTransform:'uppercase' }}>
           <span style={{ width:14, height:2, background:'linear-gradient(90deg,#22d3ee,transparent)', borderRadius:2 }} />
           ADMIN · MAIL
         </div>
@@ -487,11 +487,11 @@ export default function MailTemplates() {
         {/* Sidebar — purpose list */}
         <div style={{ border:`1px solid ${C.border}`, borderRadius:8, overflow:'hidden', position:'sticky', top:16 }}>
           <div style={{ padding:'12px 14px', background:C.bg2, borderBottom:`1px solid ${C.border}` }}>
-            <div style={{ fontFamily:C.mono, fontSize:9, color:C.muted, letterSpacing:2, marginBottom:10 }}>FILTER BY GROUP</div>
+            <div style={{ fontFamily:C.mono, fontSize: 11, color:C.muted, letterSpacing:2, marginBottom:10 }}>FILTER BY GROUP</div>
             <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
               {['All', ...GROUPS].map(g => (
                 <button key={g} onClick={() => setActiveGroup(g)} style={{
-                  fontFamily:C.mono, fontSize:8, letterSpacing:1, padding:'4px 8px',
+                  fontFamily:C.mono, fontSize: 11, letterSpacing:1, padding:'4px 8px',
                   background: activeGroup===g ? 'rgba(34,211,238,0.15)' : 'transparent',
                   color: activeGroup===g ? C.cyan : C.muted,
                   border:`1px solid ${activeGroup===g ? 'rgba(34,211,238,0.4)' : C.border}`,
@@ -517,10 +517,10 @@ export default function MailTemplates() {
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontFamily:C.mono, fontSize:10, color: isActive ? C.cyan : C.text,
                     overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.label}</div>
-                  <div style={{ fontFamily:C.mono, fontSize:8, color:C.muted, marginTop:2 }}>{p.group}</div>
+                  <div style={{ fontFamily:C.mono, fontSize: 11, color:C.muted, marginTop:2 }}>{p.group}</div>
                 </div>
                 {isCustomised && (
-                  <span style={{ fontFamily:C.mono, fontSize:7, letterSpacing:1, padding:'2px 5px',
+                  <span style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:1, padding:'2px 5px',
                     background:'rgba(74,222,128,0.1)', border:'1px solid rgba(74,222,128,0.3)',
                     color:C.green, borderRadius:3, flexShrink:0 }}>CUSTOM</span>
                 )}

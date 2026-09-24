@@ -291,7 +291,7 @@ function OAuthSettings() {
             background: 'var(--bg2)', border: '1px solid var(--border)',
             borderRadius: 12, padding: '14px 16px',
           }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)' }}>{s.label}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>{s.label}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: s.color, marginTop: 4 }}>{s.value}</div>
           </div>
         ))}

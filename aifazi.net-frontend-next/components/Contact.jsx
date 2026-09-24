@@ -82,7 +82,7 @@ export default function Contact() {
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
             >
               <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--cyan)', flexShrink: 0, minWidth: 80 }}>{item.label}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)', flexShrink: 0, minWidth: 80 }}>{item.label}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 <EditableText contentKey={item.key} defaultValue={item.def} />
               </span>

@@ -141,7 +141,7 @@ function MetaAnalyzer() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24, background: 'var(--bg3)', border: `1px solid ${scoreColor}33`, padding: '20px 24px' }}>
             <div style={{ fontSize: 48, fontWeight: 900, color: scoreColor, fontFamily: 'var(--font-mono)', lineHeight: 1 }}>{result.score}</div>
             <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 4 }}>SEO SCORE</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 4 }}>SEO SCORE</div>
               <div style={{ fontSize: 14, color: scoreColor }}>
                 {result.score >= 80 ? '✅ Good — minor improvements possible' : result.score >= 50 ? '⚠️ Fair — several issues to fix' : '❌ Poor — critical issues found'}
               </div>
@@ -174,7 +174,7 @@ function MetaAnalyzer() {
             <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '0 20px' }}>
               {Object.entries(result.meta).map(([k, v]) => v ? (
                 <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '8px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', flexShrink: 0 }}>{k.toUpperCase()}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', flexShrink: 0 }}>{k.toUpperCase()}</span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', wordBreak: 'break-all', textAlign: 'right', maxWidth: '60%' }}>{v}</span>
                 </div>
               ) : null)}
@@ -228,7 +228,7 @@ function KeywordDensity() {
 
           {result.targetResult && (
             <div style={{ background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', padding: '16px 20px', marginBottom: 20 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>TARGET: &quot;{target.trim().toUpperCase()}&quot;</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>TARGET: &quot;{target.trim().toUpperCase()}&quot;</div>
               <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
                 <div><span style={{ color: 'var(--muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>COUNT: </span><span style={{ color: 'var(--green)', fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{result.targetResult.count}</span></div>
                 <div><span style={{ color: 'var(--muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}>DENSITY: </span><span style={{ color: densityColor(result.targetResult.density), fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{result.targetResult.density}%</span></div>
@@ -243,7 +243,7 @@ function KeywordDensity() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--green)' }}>
-                {['KEYWORD','COUNT','DENSITY','STATUS'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--green)', fontSize: 9, letterSpacing: 2 }}>{h}</th>)}
+                {['KEYWORD','COUNT','DENSITY','STATUS'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--green)', fontSize: 11, letterSpacing: 2 }}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -315,7 +315,7 @@ function ReadabilityScore() {
               { label: 'TOTAL WORDS',  value: result.words, color: 'var(--muted)' },
             ].map(({ label, value, color, suffix }) => (
               <div key={label} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: 16 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>{label}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>{label}</div>
                 <div style={{ fontSize: 26, fontWeight: 900, color, fontFamily: 'var(--font-mono)' }}>{value}<span style={{ fontSize: 11, color: 'var(--muted)' }}>{suffix}</span></div>
               </div>
             ))}
@@ -407,7 +407,7 @@ function BulkUrlChecker() {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--green)' }}>
                 {['URL','SCORE','TITLE','DESCRIPTION','OG IMAGE','CANONICAL'].map(h => (
-                  <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--green)', fontSize: 9, letterSpacing: 2 }}>{h}</th>
+                  <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: 'var(--green)', fontSize: 11, letterSpacing: 2 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -484,7 +484,7 @@ function SitemapGenerator() {
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <div style={S.sectionLabel}>OUTPUT — SAVE AS sitemap.xml (place in your public folder)</div>
-            <button onClick={copy} style={{ ...S.btn, padding: '6px 16px', fontSize: 9, background: copied ? 'var(--cyan)' : 'var(--green)' }}>{copied ? '✓ COPIED' : 'COPY'}</button>
+            <button onClick={copy} style={{ ...S.btn, padding: '6px 16px', fontSize: 11, background: copied ? 'var(--cyan)' : 'var(--green)' }}>{copied ? '✓ COPIED' : 'COPY'}</button>
           </div>
           <textarea readOnly value={output} rows={14} style={{ ...S.input, color: 'var(--cyan)', fontSize: 11, resize: 'none' }} />
         </>
@@ -545,7 +545,7 @@ function OGPreview() {
 
           {form.title && (
             <details style={{ marginTop: 16 }}>
-              <summary style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', cursor: 'pointer', letterSpacing: 2 }}>COPY HTML TAGS</summary>
+              <summary style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', cursor: 'pointer', letterSpacing: 2 }}>COPY HTML TAGS</summary>
               <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', background: 'var(--bg3)', border: '1px solid var(--border)', padding: 12, marginTop: 8, overflowX: 'auto', whiteSpace: 'pre-wrap' }}>{`<meta property="og:title" content="${form.title}" />\n<meta property="og:description" content="${form.description}" />\n<meta property="og:image" content="${form.image}" />\n<meta property="og:url" content="${form.url}" />${form.siteName ? `\n<meta property="og:site_name" content="${form.siteName}" />` : ''}\n<meta name="twitter:card" content="summary_large_image" />\n<meta name="twitter:title" content="${form.title}" />\n<meta name="twitter:description" content="${form.description}" />\n<meta name="twitter:image" content="${form.image}" />`}</pre>
             </details>
           )}
@@ -658,7 +658,7 @@ function RobotsTxtGenerator() {
         <div style={{ marginTop: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <div style={S.sectionLabel}>OUTPUT — SAVE AS robots.txt in your project root</div>
-            <button onClick={copy} style={{ ...S.btn, padding: '6px 16px', fontSize: 9, background: copied ? 'var(--cyan)' : 'var(--green)' }}>{copied ? '✓ COPIED' : 'COPY'}</button>
+            <button onClick={copy} style={{ ...S.btn, padding: '6px 16px', fontSize: 11, background: copied ? 'var(--cyan)' : 'var(--green)' }}>{copied ? '✓ COPIED' : 'COPY'}</button>
           </div>
           <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)', background: 'var(--bg3)', border: '1px solid var(--border)', padding: 16, overflowX: 'auto' }}>{output}</pre>
         </div>
@@ -674,8 +674,8 @@ const S = {
   tab:          { fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '8px 14px', background: 'var(--bg2)', color: 'var(--muted)', border: '1px solid var(--border)', cursor: 'pointer' },
   tabActive:    { background: 'color-mix(in srgb, var(--green) 10%, transparent)', color: 'var(--green)', borderColor: 'color-mix(in srgb, var(--green) 40%, transparent)' },
   error:        { color: '#ff4757', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 8 },
-  sectionLabel: { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 },
-  fieldLabel:   { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 },
+  sectionLabel: { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 },
+  fieldLabel:   { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 },
 }
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────

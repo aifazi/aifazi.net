@@ -103,47 +103,47 @@ export default function CouponsTab() {
     <div>
       {editing ? (
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>{editing === 'new' ? 'NEW COUPON' : 'EDIT COUPON'}</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>{editing === 'new' ? 'NEW COUPON' : 'EDIT COUPON'}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 10 }}>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>CODE</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>CODE</label>
               <input value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="SAVE20" style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>TYPE</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>TYPE</label>
               <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} style={{ ...input, width: '100%' }}>
                 <option value="percent">Percent %</option>
                 <option value="fixed">Fixed $</option>
               </select>
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>{form.type === 'percent' ? 'PERCENT (0–100)' : 'AMOUNT (CENTS)'}</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>{form.type === 'percent' ? 'PERCENT (0–100)' : 'AMOUNT (CENTS)'}</label>
               <input type="number" value={form.type === 'percent' ? form.value_percent : form.value_cents} onChange={e => setForm(form.type === 'percent' ? { ...form, value_percent: Number(e.target.value) } : { ...form, value_cents: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>MIN SUBTOTAL (CENTS)</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>MIN SUBTOTAL (CENTS)</label>
               <input type="number" value={form.min_subtotal_cents} onChange={e => setForm({ ...form, min_subtotal_cents: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>MAX USES (0 = ∞)</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>MAX USES (0 = ∞)</label>
               <input type="number" value={form.max_uses} onChange={e => setForm({ ...form, max_uses: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>PER-USER LIMIT (0 = ∞)</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>PER-USER LIMIT (0 = ∞)</label>
               <input type="number" value={form.per_user_limit} onChange={e => setForm({ ...form, per_user_limit: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>STARTS</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>STARTS</label>
               <input type="datetime-local" value={form.starts_at || ''} onChange={e => setForm({ ...form, starts_at: e.target.value })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>EXPIRES</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>EXPIRES</label>
               <input type="datetime-local" value={form.expires_at || ''} onChange={e => setForm({ ...form, expires_at: e.target.value })} style={{ ...input, width: '100%' }} />
             </div>
           </div>
 
           <div style={{ marginTop: 12 }}>
-            <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>DESCRIPTION</label>
+            <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>DESCRIPTION</label>
             <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="10% off for launch week" style={{ ...input, width: '100%' }} />
           </div>
 
@@ -198,16 +198,16 @@ export default function CouponsTab() {
             <div key={c.id} style={{ background: 'var(--bg2)', border: `1px solid ${active ? 'var(--border)' : 'rgba(255,255,255,.08)'}`, opacity: active ? 1 : 0.55, borderRadius: 10, padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: C, minWidth: 90 }}>🎟 {c.code}</div>
               <span style={{ fontFamily: MONO, fontSize: 10, padding: '2px 10px', borderRadius: 12, background: c.type === 'percent' ? 'rgba(250,204,21,.08)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: `1px solid ${c.type === 'percent' ? 'rgba(250,204,21,.3)' : 'color-mix(in srgb, var(--cyan) 30%, transparent)'}`, color: c.type === 'percent' ? Y : C }}>{val}</span>
-              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: active ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'rgba(255,71,87,.08)', border: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,71,87,.3)'}`, color: active ? G : R }}>{active ? 'ACTIVE' : 'PAUSED'}</span>
-              {c.min_subtotal_cents > 0 && <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>min {money(c.min_subtotal_cents)}</span>}
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: active ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'rgba(255,71,87,.08)', border: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,71,87,.3)'}`, color: active ? G : R }}>{active ? 'ACTIVE' : 'PAUSED'}</span>
+              {c.min_subtotal_cents > 0 && <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>min {money(c.min_subtotal_cents)}</span>}
               <div style={{ flex: 1 }} />
-              <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', textAlign: 'right' }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>
                 {c.used_count || 0} / {c.max_uses || '∞'} uses
                 <div>{c.expires_at ? `exp ${fmt(c.expires_at)}${tzAbbr ? ` ${tzAbbr}` : ''}` : 'no expiry'}</div>
               </div>
-              <button onClick={() => toggleActive(c)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>{active ? 'PAUSE' : 'ACTIVATE'}</button>
-              <button onClick={() => startEdit(c)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
-              <button onClick={() => remove(c)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
+              <button onClick={() => toggleActive(c)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>{active ? 'PAUSE' : 'ACTIVATE'}</button>
+              <button onClick={() => startEdit(c)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
+              <button onClick={() => remove(c)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
             </div>
           )
         })

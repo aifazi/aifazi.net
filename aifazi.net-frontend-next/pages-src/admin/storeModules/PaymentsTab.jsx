@@ -59,7 +59,7 @@ export default function PaymentsTab() {
           { label: 'TXN COUNT', value: txns.length, color: 'var(--text)' },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
-            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>{s.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>{s.label}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: s.color, marginTop: 4 }}>{s.value}</div>
           </div>
         ))}
@@ -68,7 +68,7 @@ export default function PaymentsTab() {
       {/* Refundable paid orders */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginBottom: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)' }}>REFUND A PAID ORDER</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>REFUND A PAID ORDER</div>
           <select value={orderFilter} onChange={e => setOrderFilter(e.target.value)} style={{ fontFamily: MONO, fontSize: 10, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '6px 10px' }}>
             <option value="all">All orders</option>
             <option value="paid">Paid</option>
@@ -82,11 +82,11 @@ export default function PaymentsTab() {
             {orders.map(o => (
               <div key={o.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <span style={{ fontFamily: MONO, fontSize: 11, color: C }}>{o.order_number}</span>
-                <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: G }}>{o.status}</span>
+                <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: G }}>{o.status}</span>
                 <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{o.customer_name || '—'}</span>
                 <div style={{ flex: 1 }} />
                 <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700 }}>{money(o.total_cents)}</span>
-                <button onClick={() => refund(o)} disabled={refunding === o.id || o.status === 'refunded'} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '6px 12px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: o.status === 'refunded' ? 'var(--muted)' : R, borderRadius: 6, cursor: o.status === 'refunded' ? 'not-allowed' : 'pointer', opacity: o.status === 'refunded' ? 0.5 : 1 }}>
+                <button onClick={() => refund(o)} disabled={refunding === o.id || o.status === 'refunded'} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 12px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: o.status === 'refunded' ? 'var(--muted)' : R, borderRadius: 6, cursor: o.status === 'refunded' ? 'not-allowed' : 'pointer', opacity: o.status === 'refunded' ? 0.5 : 1 }}>
                   {o.status === 'refunded' ? 'REFUNDED' : refunding === o.id ? '…' : 'REFUND'}
                 </button>
               </div>
@@ -98,7 +98,7 @@ export default function PaymentsTab() {
       {/* Transaction ledger */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
         {[['all', 'ALL'], ['sale', 'SALES'], ['refund', 'REFUNDS'], ['credit', 'CREDITS']].map(([v, l]) => (
-          <button key={v} onClick={() => setKind(v)} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', background: kind === v ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent', color: kind === v ? G : 'var(--muted)', border: `1px solid ${kind === v ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}` }}>{l}</button>
+          <button key={v} onClick={() => setKind(v)} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 12px', borderRadius: 20, cursor: 'pointer', background: kind === v ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent', color: kind === v ? G : 'var(--muted)', border: `1px solid ${kind === v ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}` }}>{l}</button>
         ))}
       </div>
 
@@ -109,13 +109,13 @@ export default function PaymentsTab() {
           const col = KIND_COLORS[t.kind] || 'var(--muted)'
           return (
             <div key={t.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: `${col}14`, border: `1px solid ${col}44`, color: col, minWidth: 70, textAlign: 'center' }}>{t.kind.toUpperCase()}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: `${col}14`, border: `1px solid ${col}44`, color: col, minWidth: 70, textAlign: 'center' }}>{t.kind.toUpperCase()}</span>
               <div style={{ flex: 1, minWidth: 140 }}>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>{t.customer || '—'}</div>
-                <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{fmt(t.created_at)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{fmt(t.created_at)}</div>
               </div>
-              {t.order_id && <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>order {t.order_id.slice(0, 8)}</span>}
-              {t.stripe_payment_intent_id && <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>pi_{t.stripe_payment_intent_id.slice(0, 12)}…</span>}
+              {t.order_id && <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>order {t.order_id.slice(0, 8)}</span>}
+              {t.stripe_payment_intent_id && <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>pi_{t.stripe_payment_intent_id.slice(0, 12)}…</span>}
               <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: col, minWidth: 90, textAlign: 'right' }}>{t.kind === 'refund' ? '−' : '+'}{money(t.amount_cents)}</span>
             </div>
           )

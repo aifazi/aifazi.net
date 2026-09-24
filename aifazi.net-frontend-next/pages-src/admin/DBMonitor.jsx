@@ -16,7 +16,7 @@ const TabIcon = ({ text, active }) => (
   <span style={{
     display:'inline-flex', alignItems:'center', justifyContent:'center', minWidth:22, height:16,
     marginRight:7, padding:'0 4px', border:`1px solid ${active ? 'var(--primary,var(--cyan,#00d4ff))' : 'var(--border)'}`,
-    color:active ? 'var(--primary,var(--cyan,#00d4ff))' : 'var(--muted)', fontSize:7, letterSpacing:0,
+    color:active ? 'var(--primary,var(--cyan,#00d4ff))' : 'var(--muted)', fontSize: 11, letterSpacing:0,
   }}>{text}</span>
 )
 
@@ -41,14 +41,14 @@ function AuthLogTab() {
 
   const pages = Math.ceil(total / 50) || 1
   const badge = (label, color) => (
-    <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:8, letterSpacing:1, padding:'1px 7px', background:`${color}18`, border:`1px solid ${color}44`, color, borderRadius:3 }}>{label}</span>
+    <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:1, padding:'1px 7px', background:`${color}18`, border:`1px solid ${color}44`, color, borderRadius:3 }}>{label}</span>
   )
 
   return (
     <div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-        <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--muted)', letterSpacing:2 }}>{total.toLocaleString()} AUTH EVENTS</span>
-        <button onClick={() => load(page)} disabled={loading} style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, padding:'5px 12px', background:'transparent', color:'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:loading?'not-allowed':'pointer' }}>{loading ? '..' : 'REFRESH'}</button>
+        <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:2 }}>{total.toLocaleString()} AUTH EVENTS</span>
+        <button onClick={() => load(page)} disabled={loading} style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'5px 12px', background:'transparent', color:'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:loading?'not-allowed':'pointer' }}>{loading ? '..' : 'REFRESH'}</button>
       </div>
       {loading && !logs.length ? <div style={{ textAlign:'center', padding:40, fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
       : !logs.length ? <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--border)' }}>No auth log entries yet</div>
@@ -66,12 +66,12 @@ function AuthLogTab() {
                   <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:2 }}>
                     <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--text)', fontWeight:700 }}>{entry.username || '-'}</span>
                     {badge(evtLabel, evtColor)}{entry.role ? badge(entry.role.toUpperCase(), 'var(--muted)') : null}
-                    {entry.ip ? <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--cyan,#00d4ff)' }}>{entry.ip}</span> : null}
+                    {entry.ip ? <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--cyan,#00d4ff)' }}>{entry.ip}</span> : null}
                   </div>
-                  {entry.userAgent ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{entry.userAgent}</div> : null}
-                  {entry.reason ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--red,#ff4757)', marginTop:2 }}>{entry.reason}</div> : null}
+                  {entry.userAgent ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{entry.userAgent}</div> : null}
+                  {entry.reason ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--red,#ff4757)', marginTop:2 }}>{entry.reason}</div> : null}
                 </div>
-                <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--border)', flexShrink:0, whiteSpace:'nowrap' }}>{ago(entry.createdAt)}</span>
+                <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', flexShrink:0, whiteSpace:'nowrap' }}>{ago(entry.createdAt)}</span>
               </div>
             )
           })}
@@ -79,9 +79,9 @@ function AuthLogTab() {
       }
       {pages > 1 && (
         <div style={{ display:'flex', gap:8, marginTop:16, justifyContent:'center', alignItems:'center' }}>
-          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, padding:'6px 14px', background:'var(--bg)', color:page<=1?'var(--border)':'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:page<=1?'not-allowed':'pointer' }}>PREV</button>
-          <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--border)' }}>Page {page} / {pages}</span>
-          <button disabled={page >= pages} onClick={() => setPage(p => p + 1)} style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, padding:'6px 14px', background:'var(--bg)', color:page>=pages?'var(--border)':'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:page>=pages?'not-allowed':'pointer' }}>NEXT</button>
+          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'6px 14px', background:'var(--bg)', color:page<=1?'var(--border)':'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:page<=1?'not-allowed':'pointer' }}>PREV</button>
+          <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>Page {page} / {pages}</span>
+          <button disabled={page >= pages} onClick={() => setPage(p => p + 1)} style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'6px 14px', background:'var(--bg)', color:page>=pages?'var(--border)':'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:page>=pages?'not-allowed':'pointer' }}>NEXT</button>
         </div>
       )}
     </div>
@@ -117,7 +117,7 @@ function SqlConsoleTab() {
           Run the <code style={{color:'var(--cyan)'}}>migration_db_console.sql</code> in Supabase SQL Editor first to create the <code style={{color:'var(--cyan)'}}>exec_sql</code> function.
         </div>
         <button onClick={() => navigator.clipboard.writeText("CREATE OR REPLACE FUNCTION exec_sql(sql_text text) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$ DECLARE result JSONB; BEGIN BEGIN EXECUTE format('SELECT COALESCE(json_agg(row_to_json(t)), ''[]''::json) FROM (%s) t', sql_text) INTO result; RETURN result; EXCEPTION WHEN OTHERS THEN BEGIN EXECUTE sql_text; RETURN json_build_object('ok', true)::jsonb; EXCEPTION WHEN OTHERS THEN RETURN json_build_object('error', SQLERRM)::jsonb; END; END; END; $$;")}
-          style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, padding:'8px 16px', background:'color-mix(in srgb, var(--cyan) 10%, transparent)', border:'1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color:'var(--cyan,#00d4ff)', cursor:'pointer' }}>COPY SQL</button>
+          style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'8px 16px', background:'color-mix(in srgb, var(--cyan) 10%, transparent)', border:'1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color:'var(--cyan,#00d4ff)', cursor:'pointer' }}>COPY SQL</button>
       </div>
     </div>
   )
@@ -125,8 +125,8 @@ function SqlConsoleTab() {
   return (
     <div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-        <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--muted)', letterSpacing:2 }}>SQL CONSOLE <span style={{color:'var(--green,#00ff88)',fontSize:8}}>ACTIVE</span></span>
-        <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:8, color:'var(--border)', letterSpacing:1 }}>Ctrl+Enter to run</span>
+        <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:2 }}>SQL CONSOLE <span style={{color:'var(--green,#00ff88)',fontSize: 11}}>ACTIVE</span></span>
+        <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:1 }}>Ctrl+Enter to run</span>
       </div>
       <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', overflow:'hidden' }}>
         <div style={{ borderBottom:'1px solid #0f1a26' }}>
@@ -136,10 +136,10 @@ function SqlConsoleTab() {
         </div>
         <div style={{ display:'flex', gap:6, padding:'6px 10px', alignItems:'center' }}>
           <button onClick={run} disabled={loading || !sql.trim()}
-            style={{ padding:'5px 16px', background:loading?'var(--border)':'var(--cyan,#00d4ff)', color:'#000', fontFamily:'var(--font-mono,monospace)', fontSize:9, fontWeight:700, letterSpacing:1, border:'none', cursor:loading?'not-allowed':'pointer', opacity:!sql.trim()?0.4:1 }}>
+            style={{ padding:'5px 16px', background:loading?'var(--border)':'var(--cyan,#00d4ff)', color:'#000', fontFamily:'var(--font-mono,monospace)', fontSize: 11, fontWeight:700, letterSpacing:1, border:'none', cursor:loading?'not-allowed':'pointer', opacity:!sql.trim()?0.4:1 }}>
             {loading ? 'RUNNING' : 'RUN'}
           </button>
-          <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:8, color:'var(--border)' }}>{'>'}</span>
+          <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>{'>'}</span>
         </div>
         {error && <div style={{ padding:'10px 14px', background:'rgba(255,71,87,0.06)', borderTop:'1px solid #ff475730', fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--red,#ff4757)', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{error}</div>}
         {results !== null && (
@@ -147,12 +147,12 @@ function SqlConsoleTab() {
             {Array.isArray(results) && results.length === 0 ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--border)', textAlign:'center', padding:20 }}>0 rows returned</div>
             : Array.isArray(results) ? (
               <div>
-                <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--border)', marginBottom:10, letterSpacing:1 }}>{results.length.toLocaleString()} row{results.length !== 1 ? 's' : ''} returned</div>
+                <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', marginBottom:10, letterSpacing:1 }}>{results.length.toLocaleString()} row{results.length !== 1 ? 's' : ''} returned</div>
                 <div className="dbmon-scroll" style={{ overflowX:'auto' }}>
                   <table className="dbmon-table" style={{ width:'100%', borderCollapse:'collapse', fontFamily:'var(--font-mono,monospace)', fontSize:10 }}>
                     <thead>
                       <tr style={{ borderBottom:'1px solid #1e2d45' }}>
-                        {Object.keys(results[0] || {}).slice(0, 12).map(k => <th key={k} style={{ padding:'5px 8px', textAlign:'left', color:'var(--muted)', fontSize:8, letterSpacing:2, whiteSpace:'nowrap' }}>{k.toUpperCase()}</th>)}
+                        {Object.keys(results[0] || {}).slice(0, 12).map(k => <th key={k} style={{ padding:'5px 8px', textAlign:'left', color:'var(--muted)', fontSize: 11, letterSpacing:2, whiteSpace:'nowrap' }}>{k.toUpperCase()}</th>)}
                       </tr>
                     </thead>
                     <tbody>
@@ -167,7 +167,7 @@ function SqlConsoleTab() {
                       ))}
                     </tbody>
                   </table>
-                  {results.length > 200 && <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--border)', textAlign:'center', padding:'12px 0', letterSpacing:1 }}>Showing 200 of {results.length.toLocaleString()} rows</div>}
+                  {results.length > 200 && <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', textAlign:'center', padding:'12px 0', letterSpacing:1 }}>Showing 200 of {results.length.toLocaleString()} rows</div>}
                 </div>
                 {/* P1-11 — CSS-only mobile fix: sticky first column + 11px floor
                     (full card rewrite out of scope) */}
@@ -190,7 +190,7 @@ function SqlConsoleTab() {
           { label:'ACTIVE CONNS', sql:"SELECT pid, state, left(query,80) as query, query_start::text FROM pg_stat_activity WHERE state != 'idle' ORDER BY query_start DESC LIMIT 20", color:'var(--yellow,#ffd700)' },
           { label:'LOCKED Q', sql:"SELECT pid, wait_event_type, wait_event, left(a.query,100) as query, a.state FROM pg_locks l JOIN pg_stat_activity a USING (pid) WHERE NOT granted AND a.state != 'idle' LIMIT 10", color:'var(--red,#ff4757)' },
         ].map(({ label, sql: presetSql, color }) => (
-          <button key={label} onClick={() => setSql(presetSql)} style={{ padding:'5px 10px', background:`${color}10`, color, border:`1px solid ${color}33`, fontFamily:'var(--font-mono,monospace)', fontSize:8, letterSpacing:1, cursor:'pointer' }}>{label}</button>
+          <button key={label} onClick={() => setSql(presetSql)} style={{ padding:'5px 10px', background:`${color}10`, color, border:`1px solid ${color}33`, fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:1, cursor:'pointer' }}>{label}</button>
         ))}
       </div>
     </div>
@@ -220,13 +220,13 @@ function DbOverview() {
 
   return (
     <div>
-      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, letterSpacing:3, color:'var(--border)', marginBottom:20 }}>DATABASE OVERVIEW</div>
+      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:20 }}>DATABASE OVERVIEW</div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
         {cards.map(c => (
           <div key={c.label} style={{ background:'var(--bg2)', border:`1px solid ${c.color}18`, padding:'16px 18px' }}>
-            <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:8, letterSpacing:2, color:'var(--muted)', marginBottom:6 }}>{c.label}</div>
+            <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:2, color:'var(--muted)', marginBottom:6 }}>{c.label}</div>
             <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:24, fontWeight:700, color:c.color, lineHeight:1 }}>{fmt(c.value)}</div>
-            {c.sub && <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--muted)', marginTop:6 }}>{c.sub}</div>}
+            {c.sub && <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', marginTop:6 }}>{c.sub}</div>}
           </div>
         ))}
       </div>
@@ -323,12 +323,12 @@ function BackupTab() {
 
   return (
     <div style={{ maxWidth: 700 }}>
-      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, letterSpacing:3, color:'var(--border)', marginBottom:20 }}>DATABASE BACKUP &amp; EXPORT</div>
+      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:20 }}>DATABASE BACKUP &amp; EXPORT</div>
 
       {/* Collection stats */}
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', padding:'20px 24px', marginBottom:24 }}>
-        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, letterSpacing:2, color:'var(--muted)', marginBottom:14 }}>COLLECTION SNAPSHOT</div>
-        {loading ? <div style={{ textAlign:'center', padding:20, fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--border)', letterSpacing:2 }}>LOADING..</div>
+        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:2, color:'var(--muted)', marginBottom:14 }}>COLLECTION SNAPSHOT</div>
+        {loading ? <div style={{ textAlign:'center', padding:20, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:2 }}>LOADING..</div>
         : stats ? (
           <>
             <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14, fontFamily:'var(--font-mono,monospace)', fontSize:10 }}>
@@ -349,7 +349,7 @@ function BackupTab() {
               Total records: <strong style={{ color:'var(--green,#00ff88)' }}>{(stats.totalRecords || 0).toLocaleString()}</strong>
             </div>
             {Object.keys(stats.errors || {}).length > 0 && (
-              <div style={{ marginTop:10, fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--red,#ff4757)', lineHeight:1.6 }}>
+              <div style={{ marginTop:10, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--red,#ff4757)', lineHeight:1.6 }}>
                 Failed count checks: {Object.keys(stats.errors).join(', ')}
               </div>
             )}
@@ -368,7 +368,7 @@ function BackupTab() {
 
       {/* SQL Export checklist */}
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', padding:'20px 24px', marginBottom:24 }}>
-        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, letterSpacing:3, color:'var(--muted)', marginBottom:16 }}>SQL EXPORT</div>
+        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:16 }}>SQL EXPORT</div>
         <p style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--muted)', lineHeight:1.8, marginBottom:18 }}>
           Download an SQL file with the options selected below. Schema-only gives you an empty database template for source control.
         </p>
@@ -380,7 +380,7 @@ function BackupTab() {
             <input type="checkbox" checked={options.schema} onChange={() => {}} style={{ accentColor:'var(--green,#00ff88)', width:16, height:16, cursor:'pointer' }} />
             <div>
               <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--text)', fontWeight:600 }}>Schema</div>
-              <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--muted)', marginTop:2 }}>
+              <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', marginTop:2 }}>
                 CREATE TABLE statements {options.ifNotExists ? 'with IF NOT EXISTS' : 'without IF NOT EXISTS'}
               </div>
             </div>
@@ -403,13 +403,13 @@ function BackupTab() {
             <input type="checkbox" checked={options.data} onChange={() => {}} style={{ accentColor:'var(--green,#00ff88)', width:16, height:16, cursor:'pointer' }} />
             <div>
               <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--text)', fontWeight:600 }}>Data</div>
-              <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, color:'var(--muted)', marginTop:2 }}>INSERT INTO statements (passwords and secrets excluded)</div>
+              <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', marginTop:2 }}>INSERT INTO statements (passwords and secrets excluded)</div>
             </div>
           </label>
         </div>
 
         <div style={{ display:'flex', gap:4, marginBottom:6 }}>
-          <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:8, color:'var(--muted)', letterSpacing:1 }}>
+          <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:1 }}>
             {options.schema && options.data ? 'FULL EXPORT' : options.schema ? 'SCHEMA ONLY (empty template)' : options.data ? 'DATA ONLY' : 'NOTHING SELECTED'}
           </span>
         </div>
@@ -431,7 +431,7 @@ function BackupTab() {
 
       {/* JSON Backup */}
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', padding:'20px 24px' }}>
-        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, letterSpacing:3, color:'var(--muted)', marginBottom:12 }}>JSON BACKUP</div>
+        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:12 }}>JSON BACKUP</div>
         <p style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--muted)', lineHeight:1.8, marginBottom:16 }}>
           Full JSON export of all database collections. Useful for data migration or manual restoration.
         </p>
@@ -447,14 +447,14 @@ function BackupTab() {
           <span style={{ fontSize:11, marginRight:8 }}>[JSON]</span>
           {downloadingJson ? 'GENERATING JSON...' : 'DOWNLOAD JSON BACKUP'}
         </button>
-        <div style={{ marginTop:14, fontFamily:'var(--font-mono,monospace)', fontSize:8, color:'var(--border)', lineHeight:1.8, padding:'10px 14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ marginTop:14, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', lineHeight:1.8, padding:'10px 14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)' }}>
           Includes discovered public tables · Passwords, tokens and nested secrets redacted · Store securely
         </div>
       </div>
 
       {/* Restore drill */}
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', padding:'20px 24px', marginTop:24 }}>
-        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:9, letterSpacing:3, color:'var(--muted)', marginBottom:12 }}>RESTORE DRILL</div>
+        <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:12 }}>RESTORE DRILL</div>
         <p style={{ fontFamily:'var(--font-mono,monospace)', fontSize:10, color:'var(--muted)', lineHeight:1.8, marginBottom:16 }}>
           Replays the live export and validates every table&apos;s generated SQL plus row counts vs the snapshot. Read-only — no prod data is touched.
         </p>
@@ -525,9 +525,9 @@ export default function DBMonitor({ initialTab = 'overview' }) {
       <div style={{ borderBottom:'1px solid var(--border)', padding:'0 20px', overflowX:'auto', display:'flex', flexShrink:0, background:'var(--bg)' }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{ padding:'11px 16px', background:'transparent', color:activeTab===t.id?'var(--primary,var(--cyan,#00d4ff))':'var(--muted)', borderBottom:activeTab===t.id?'2px solid var(--primary,var(--cyan,#00d4ff))':'2px solid transparent', borderTop:'none', borderLeft:'none', borderRight:'none', cursor:'pointer', fontSize:9, letterSpacing:2, fontFamily:'var(--font-mono,monospace)', marginBottom:-1, whiteSpace:'nowrap' }}>
+            style={{ padding:'11px 16px', background:'transparent', color:activeTab===t.id?'var(--primary,var(--cyan,#00d4ff))':'var(--muted)', borderBottom:activeTab===t.id?'2px solid var(--primary,var(--cyan,#00d4ff))':'2px solid transparent', borderTop:'none', borderLeft:'none', borderRight:'none', cursor:'pointer', fontSize: 11, letterSpacing:2, fontFamily:'var(--font-mono,monospace)', marginBottom:-1, whiteSpace:'nowrap' }}>
             <TabIcon text={t.icon} active={activeTab===t.id} />{t.label}
-            {t.dev && <span style={{color:'var(--orange,#ff6b35)',fontSize:7,letterSpacing:1,marginLeft:4}}>DEV</span>}
+            {t.dev && <span style={{color:'var(--orange,#ff6b35)',fontSize: 11,letterSpacing:1,marginLeft:4}}>DEV</span>}
           </button>
         ))}
       </div>

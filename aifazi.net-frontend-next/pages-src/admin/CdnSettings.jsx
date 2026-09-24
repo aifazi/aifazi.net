@@ -19,15 +19,15 @@ const SecretField = ({ label, placeholder, help, value, onChange, T }) => {
           <div style={{ ...T.inp, flex: 1, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ color: '#00ff88', fontSize: 10 }}>✓</span>
             <span style={{ letterSpacing: 2 }}>{val}</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', marginLeft: 4 }}>SAVED</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', marginLeft: 4 }}>SAVED</span>
           </div>
-          <button type="button" onClick={() => onChange('')} style={{ ...T.btn('ghost'), padding: '11px 14px', fontSize: 9 }}>CHANGE</button>
+          <button type="button" onClick={() => onChange('')} style={{ ...T.btn('ghost'), padding: '11px 14px', fontSize: 11 }}>CHANGE</button>
         </div>
       ) : (
         <input type="password" value={val} onChange={e => onChange(e.target.value)}
           placeholder={placeholder} style={T.inp} autoComplete="new-password" />
       )}
-      {help && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>{help}</div>}
+      {help && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>{help}</div>}
     </div>
   )
 }
@@ -302,7 +302,7 @@ function CdnSettings() {
                 <span style={T.statusDot(testStatus)} />{testStatus === 'ok' ? 'CONNECTED' : 'FAILED'}
               </div>
             )}
-            <button onClick={() => setShowLog(p => !p)} style={{ ...T.btn('ghost'), fontSize: 9, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={() => setShowLog(p => !p)} style={{ ...T.btn('ghost'), fontSize: 11, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Icon name="clipboard" size={14} />{showLog ? 'HIDE LOG' : `LOG${activityLog.length ? ` (${activityLog.length})` : ''}`}
             </button>
           </div>
@@ -312,14 +312,14 @@ function CdnSettings() {
       {/* -- Activity log ---------------------------------------------------- */}
       {showLog && (
         <div style={{ ...T.card, marginBottom: 20, background: 'var(--bg)' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>ACTIVITY LOG</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>ACTIVITY LOG</div>
           {activityLog.length === 0
             ? <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', textAlign: 'center', padding: '20px 0' }}>No activity yet this session.</div>
             : activityLog.map((e, i) => (
               <div key={i} style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: i < activityLog.length - 1 ? '1px solid var(--border)' : 'none', alignItems: 'flex-start' }}>
                 <span style={T.statusDot(e.status)} />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', minWidth: 60 }}>{e.time}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', minWidth: 44, letterSpacing: 1 }}>{e.type.toUpperCase()}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', minWidth: 60 }}>{e.time}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', minWidth: 44, letterSpacing: 1 }}>{e.type.toUpperCase()}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: e.status === 'ok' ? '#64748b' : '#ff4757aa', flex: 1, lineHeight: 1.5 }}>{e.msg}</span>
               </div>
             ))
@@ -367,12 +367,12 @@ function CdnSettings() {
                   <div style={{ fontSize: 22, marginBottom: 8 }}>{info.icon}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: active ? info.color : 'var(--text)', letterSpacing: 1 }}>{info.name}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '2px 7px', background: `${info.badgeColor}22`, color: info.badgeColor, border: `1px solid ${info.badgeColor}44` }}>{info.badge}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '2px 7px', background: `${info.badgeColor}22`, color: info.badgeColor, border: `1px solid ${info.badgeColor}44` }}>{info.badge}</span>
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', lineHeight: 1.6 }}>{info.desc}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', lineHeight: 1.6 }}>{info.desc}</div>
                   {info.link && (
                     <a href={info.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
-                      style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: info.color, textDecoration: 'none', display: 'block', marginTop: 8 }}>
+                      style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: info.color, textDecoration: 'none', display: 'block', marginTop: 8 }}>
                       Get free account ?
                     </a>
                   )}
@@ -410,7 +410,7 @@ function CdnSettings() {
           {/* -- Cloudinary ----------------------------------------------- */}
           {cfg.provider === 'cloudinary' && (
             <>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#3448c5', letterSpacing: 3, marginBottom: 16 }}>🏞️ CLOUDINARY CREDENTIALS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#3448c5', letterSpacing: 3, marginBottom: 16 }}>🏞️ CLOUDINARY CREDENTIALS</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#3448c511', border: '1px solid #3448c522' }}>
                 Find these in Cloudinary Dashboard ? Settings ? Access Keys. The <strong style={{ color: '#94a3b8' }}>Cloud Name</strong> is shown on the Dashboard home.
                 <a href="https://console.cloudinary.com/settings/api-keys" target="_blank" rel="noreferrer" style={{ color: '#3448c5', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Open API Keys ?</a>
@@ -430,7 +430,7 @@ function CdnSettings() {
                 <div>
                   <label style={T.label}>Upload Folder</label>
                   <input value={cfg.cloudinaryFolder || ''} onChange={e => set('cloudinaryFolder', e.target.value)} placeholder="portfolio" style={T.inp} />
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Folder path inside your Cloudinary media library.</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Folder path inside your Cloudinary media library.</div>
                 </div>
               </div>
             </>
@@ -439,7 +439,7 @@ function CdnSettings() {
           {/* -- Cloudflare R2 -------------------------------------------- */}
           {cfg.provider === 'r2' && (
             <>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#f6821f', letterSpacing: 3, marginBottom: 16 }}>⚡ CLOUDFLARE R2 CREDENTIALS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f6821f', letterSpacing: 3, marginBottom: 16 }}>⚡ CLOUDFLARE R2 CREDENTIALS</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#f6821f11', border: '1px solid #f6821f22' }}>
                 Cloudflare Dashboard ? R2 ? Manage R2 API Tokens. Create a token with <strong style={{ color: '#94a3b8' }}>Object Read & Write</strong> permission.
                 <a href="https://dash.cloudflare.com/?to=/:account/r2/api-tokens" target="_blank" rel="noreferrer" style={{ color: '#f6821f', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Open R2 Tokens ?</a>
@@ -448,7 +448,7 @@ function CdnSettings() {
                 <div>
                   <label style={T.label}>Account ID <span style={{ color: '#ff4757' }}>*</span></label>
                   <input value={cfg.r2AccountId || ''} onChange={e => set('r2AccountId', e.target.value)} placeholder="abcdef1234567890abcdef1234567890" style={T.inp} />
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Found in Cloudflare Dashboard ? right sidebar &quot;Account ID&quot;</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Found in Cloudflare Dashboard ? right sidebar &quot;Account ID&quot;</div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
@@ -465,7 +465,7 @@ function CdnSettings() {
                   <div>
                     <label style={T.label}>Public Bucket URL</label>
                     <input value={cfg.r2PublicUrl || ''} onChange={e => set('r2PublicUrl', e.target.value)} placeholder="https://pub-xxx.r2.dev" style={T.inp} />
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Enable Public Access on the bucket, or use a custom domain below.</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Enable Public Access on the bucket, or use a custom domain below.</div>
                   </div>
                 </div>
               </div>
@@ -475,7 +475,7 @@ function CdnSettings() {
           {/* -- Backblaze B2 --------------------------------------------- */}
           {cfg.provider === 'b2' && (
             <>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#e05c2c', letterSpacing: 3, marginBottom: 16 }}>💾 BACKBLAZE B2 CREDENTIALS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#e05c2c', letterSpacing: 3, marginBottom: 16 }}>💾 BACKBLAZE B2 CREDENTIALS</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#e05c2c11', border: '1px solid #e05c2c22' }}>
                 Backblaze Dashboard ? App Keys ? Add a New Application Key. Select your bucket and allow <strong style={{ color: '#94a3b8' }}>Read &amp; Write</strong>.
                 <a href="https://secure.backblaze.com/app_keys.htm" target="_blank" rel="noreferrer" style={{ color: '#e05c2c', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Open App Keys ?</a>
@@ -503,12 +503,12 @@ function CdnSettings() {
                     <label style={T.label}>Region <span style={{ color: '#ff4757' }}>*</span></label>
                     <Select value={cfg.b2Region || 'us-west-004'} onChange={v => set('b2Region', v)}
                       options={['us-west-004','us-east-005','eu-central-003','ap-southeast-001']} />
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Shown in Bucket ? Bucket Settings ? Endpoint.</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Shown in Bucket ? Bucket Settings ? Endpoint.</div>
                   </div>
                   <div>
                     <label style={T.label}>Download URL</label>
                     <input value={cfg.b2DownloadUrl || ''} onChange={e => set('b2DownloadUrl', e.target.value)} placeholder="https://f004.backblazeb2.com" style={T.inp} />
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Found in Bucket Details page.</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Found in Bucket Details page.</div>
                   </div>
                 </div>
               </div>
@@ -518,7 +518,7 @@ function CdnSettings() {
           {/* -- ImageKit ------------------------------------------------- */}
           {cfg.provider === 'imagekit' && (
             <>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#009ef7', letterSpacing: 3, marginBottom: 16 }}>🖼️ IMAGEKIT CREDENTIALS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#009ef7', letterSpacing: 3, marginBottom: 16 }}>🖼️ IMAGEKIT CREDENTIALS</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#009ef711', border: '1px solid #009ef722' }}>
                 ImageKit Dashboard ? Developer Options ? API Keys.
                 <a href="https://imagekit.io/dashboard/developer/api-keys" target="_blank" rel="noreferrer" style={{ color: '#009ef7', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Open API Keys ?</a>
@@ -527,7 +527,7 @@ function CdnSettings() {
                 <div>
                   <label style={T.label}>URL Endpoint <span style={{ color: '#ff4757' }}>*</span></label>
                   <input value={cfg.imagekitUrlEndpoint || ''} onChange={e => set('imagekitUrlEndpoint', e.target.value)} placeholder="https://ik.imagekit.io/yourid" style={T.inp} />
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Found in ImageKit Dashboard ? URL Endpoints.</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Found in ImageKit Dashboard ? URL Endpoints.</div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
@@ -547,7 +547,7 @@ function CdnSettings() {
           {/* -- BunnyCDN ------------------------------------------------- */}
           {cfg.provider === 'bunny' && (
             <>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#fac517', letterSpacing: 3, marginBottom: 16 }}>🐰 BUNNYCDN CREDENTIALS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#fac517', letterSpacing: 3, marginBottom: 16 }}>🐰 BUNNYCDN CREDENTIALS</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#fac51711', border: '1px solid #fac51722' }}>
                 Bunny Dashboard ? Storage ? your zone ? FTP &amp; API Access. The Access Key is at the top of that page.
                 <a href="https://dash.bunny.net/storage" target="_blank" rel="noreferrer" style={{ color: '#fac517', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Open Storage ?</a>
@@ -569,7 +569,7 @@ function CdnSettings() {
                   <div>
                     <label style={T.label}>Pull Zone URL</label>
                     <input value={cfg.bunnyPullZoneUrl || ''} onChange={e => set('bunnyPullZoneUrl', e.target.value)} placeholder="https://myzone.b-cdn.net" style={T.inp} />
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Pull Zone ? hostname of the zone linked to your storage zone.</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Pull Zone ? hostname of the zone linked to your storage zone.</div>
                   </div>
                 </div>
               </div>
@@ -594,7 +594,7 @@ function CdnSettings() {
       {activeSection === 'domain' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={T.card}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 3, marginBottom: 16 }}>🌐 CUSTOM DELIVERY DOMAIN</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 3, marginBottom: 16 }}>🌐 CUSTOM DELIVERY DOMAIN</div>
             <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#00ff8808', border: '1px solid #00ff8822' }}>
               Once you have configured a CNAME or proxy (see Setup Guide), enter your custom CDN subdomain here.
               All new uploads will be served from this domain. Existing Media Library URLs are not retroactively rewritten.
@@ -604,7 +604,7 @@ function CdnSettings() {
               <input value={cfg.customDomain || ''} onChange={e => set('customDomain', e.target.value)}
                 placeholder={CDN_URL}
                 style={{ ...T.inp, borderColor: cfg.customDomain ? 'var(--green)' : undefined }} />
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>
                 Include the scheme (https://). Leave blank to use the provider&apos;s default URL.
               </div>
             </div>
@@ -612,13 +612,13 @@ function CdnSettings() {
             {/* Live preview */}
             {cfg.customDomain && (
               <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--bg)', border: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-                <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>URL PREVIEW</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>URL PREVIEW</div>
                 <div style={{ color: '#475569' }}>Before: <span style={{ color: '#ff4757' }}>https://res.cloudinary.com/mycloud/image/upload/portfolio/file.jpg</span></div>
                 <div style={{ color: '#475569', marginTop: 4 }}>After:&nbsp;&nbsp;<span style={{ color: '#00ff88' }}>{cfg.customDomain.replace(/\/$/, '')}/image/upload/portfolio/file.jpg</span></div>
               </div>
             )}
 
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', marginTop: 16, lineHeight: 1.8, padding: '10px 14px', background: '#ffd70008', border: '1px solid #ffd70022' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', marginTop: 16, lineHeight: 1.8, padding: '10px 14px', background: '#ffd70008', border: '1px solid #ffd70022' }}>
               <span style={{ color: '#ffd700' }}>ℹ️ {activeProvider.name} note: </span>{activeProvider.customDomainNote}
             </div>
           </div>
@@ -704,7 +704,7 @@ function CdnSettings() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
                 <span style={{ fontSize: 18 }}>{icon}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color, letterSpacing: 2 }}>{title.toUpperCase()}</span>
-                {cfg.provider === key && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '2px 8px', background: `${color}22`, color, border: `1px solid ${color}44`, marginLeft: 4 }}>ACTIVE</span>}
+                {cfg.provider === key && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '2px 8px', background: `${color}22`, color, border: `1px solid ${color}44`, marginLeft: 4 }}>ACTIVE</span>}
               </div>
               <ol style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {steps.map((s, i) => (
@@ -712,7 +712,7 @@ function CdnSettings() {
                 ))}
               </ol>
               <button onClick={() => { set('provider', key); setActiveSection('credentials') }}
-                style={{ ...T.btn('ghost'), marginTop: 16, fontSize: 9, padding: '8px 16px' }}>
+                style={{ ...T.btn('ghost'), marginTop: 16, fontSize: 11, padding: '8px 16px' }}>
                 {cfg.provider === key ? '✅ ACTIVE  GO TO CREDENTIALS' : `SELECT ${title.split(' ')[0].toUpperCase()} →`}
               </button>
             </div>
@@ -720,7 +720,7 @@ function CdnSettings() {
 
           {/* DNS cheat sheet */}
           <div style={{ ...T.card, background: 'var(--bg)' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 14 }}>DNS CHEAT SHEET  cdn.aifazi.net</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 14 }}>DNS CHEAT SHEET  cdn.aifazi.net</div>
             <div style={{ display: 'grid', gap: 10 }}>
               {[
                 { provider: 'Cloudflare R2',  type: 'via CF dashboard', target: 'Bucket ? Settings ? Custom Domains' },
@@ -731,7 +731,7 @@ function CdnSettings() {
               ].map((row, i) => (
                 <div key={i} style={{ display: 'grid', gridTemplateColumns: '130px 80px 1fr', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
                   <span style={{ color: 'var(--text)' }}>{row.provider}</span>
-                  <span style={{ color: '#ffd700', fontSize: 9 }}>{row.type}</span>
+                  <span style={{ color: '#ffd700', fontSize: 11 }}>{row.type}</span>
                   <span style={{ color: '#475569' }}>{row.target}</span>
                 </div>
               ))}

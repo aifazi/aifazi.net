@@ -393,10 +393,10 @@ function PresetPicker({ presets, value, onChange, renderPreview, cols = 3 }) {
             {/* Label */}
             <div style={{ padding: '6px 8px 7px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 0.5 }}>{p.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 0.5 }}>{p.name}</span>
                 {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, letterSpacing: 2, color: 'var(--green)', padding: '1px 4px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', borderRadius: 2 }}>ACTIVE</span>}
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', lineHeight: 1.4 }}>{p.desc}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.4 }}>{p.desc}</div>
             </div>
           </button>
         )
@@ -425,7 +425,7 @@ function PillPicker({ options, value, onChange, accentFn }) {
         const active = value === opt
         const color  = accentFn ? accentFn(opt) : 'var(--green)'
         return (
-          <button key={opt} onClick={() => onChange(opt)} style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, cursor: 'pointer', transition: 'all 0.15s', background: active ? `${color}22` : 'var(--bg3)', border: `1px solid ${active ? color : 'var(--border)'}`, color: active ? color : 'var(--muted)', borderRadius: 4 }}>
+          <button key={opt} onClick={() => onChange(opt)} style={{ padding: '5px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', transition: 'all 0.15s', background: active ? `${color}22` : 'var(--bg3)', border: `1px solid ${active ? color : 'var(--border)'}`, color: active ? color : 'var(--muted)', borderRadius: 4 }}>
             {opt}
           </button>
         )
@@ -541,11 +541,11 @@ function SiteSettings() {
 
   const T = {
     card:  { background: 'var(--bg2)', border: '1px solid var(--border)', padding: '24px', marginBottom: 20 },
-    label: { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, display: 'block' },
+    label: { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, display: 'block' },
     inp:   { width: '100%', boxSizing: 'border-box', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, padding: '10px 12px', outline: 'none' },
-    sub:   { fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4, lineHeight: 1.5 },
+    sub:   { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4, lineHeight: 1.5 },
     row:   { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 },
-    sec:   { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid var(--border)' },
+    sec:   { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid var(--border)' },
   }
 
   if (loading) return <div className="loader" />
@@ -574,7 +574,7 @@ function SiteSettings() {
         @keyframes apReduced     { 0%{opacity:0} 100%{opacity:1} }
       `}</style>
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>SYSTEM</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 4, marginBottom: 6 }}>SYSTEM</div>
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, margin: 0 }}>Site Settings</h2>
         <p style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 6 }}>Site identity, social links and maintenance page. Theme, layout &amp; animation settings are in <strong style={{ color: 'var(--cyan)' }}>Theme Library → ⚙️ Global Settings</strong>.</p>
       </div>
@@ -624,7 +624,7 @@ function SiteSettings() {
       <div style={{ ...T.card, border: `1px solid ${isActive ? 'rgba(255,71,87,0.4)' : 'var(--border)'}` }}>
         <div style={{ ...T.sec, color: isActive ? '#ff4757' : 'var(--muted)', borderColor: isActive ? 'rgba(255,71,87,0.2)' : 'var(--border)' }}>
           MAINTENANCE PAGE
-          {isActive && <span style={{ marginLeft: 10, padding: '2px 8px', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', fontSize: 8, letterSpacing: 2 }}>ACTIVE</span>}
+          {isActive && <span style={{ marginLeft: 10, padding: '2px 8px', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', fontSize: 11, letterSpacing: 2 }}>ACTIVE</span>}
         </div>
 
         {/* Scope selector */}
@@ -733,10 +733,10 @@ function SiteSettings() {
           <div style={{ padding: '10px 14px', background: 'var(--bg)', border: `1px solid ${accentColor}33`, borderRadius: 6, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 18 }}>{sget('maintenanceIcon') || '○'}</span>
             <div style={{ flex: 1, minWidth: 160 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: accentColor }}>{sget('maintenanceStatus') || 'MAINTENANCE'}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: accentColor }}>{sget('maintenanceStatus') || 'MAINTENANCE'}</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', marginTop: 2 }}>{(sget('maintenanceMessage') || 'No message set').slice(0, 60)}</div>
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textAlign: 'right' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>
               <div>Style: <span style={{ color: 'var(--cyan)' }}>{sget('maintenanceStyle') || 'terminal'}</span></div>
               <div>BG: <span style={{ color: 'var(--cyan)' }}>{sget('maintenanceBgStyle') || 'grid'}</span></div>
               {sget('maintenanceReturnTime') && <div>ETA: <span style={{ color: accentColor }}>{sget('maintenanceReturnTime')}</span></div>}

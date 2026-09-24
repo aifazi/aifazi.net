@@ -149,10 +149,10 @@ export default function Blog({ initialPosts }) {
 
           {allTags.length > 0 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginRight: 4 }}>TAGS:</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginRight: 4 }}>TAGS:</span>
               {activeTag && (
                 <button onClick={() => setActiveTag('')} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+                  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                   padding: '4px 10px', borderRadius: 999, border: '1px solid rgba(255,60,60,0.4)',
                   background: 'rgba(255,60,60,0.08)', color: 'var(--red)',
                   cursor: 'pointer'
@@ -160,7 +160,7 @@ export default function Blog({ initialPosts }) {
               )}
               {allTags.map(tag => (
                 <button key={tag} onClick={() => setActiveTag(activeTag === tag ? '' : tag)} style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+                  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                   padding: '4px 10px', borderRadius: 999, border: '1px solid',
                   borderColor: activeTag === tag ? 'var(--green)' : 'var(--border)',
                   background: activeTag === tag ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent',

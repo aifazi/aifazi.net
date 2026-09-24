@@ -43,7 +43,7 @@ function StatBlock({ label, value, color }) {
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: color || 'var(--text)', lineHeight: 1 }}>
         {value}
       </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginTop: 3 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginTop: 3 }}>
         {label}
       </div>
     </div>
@@ -113,7 +113,7 @@ export default function FiveMStatus({ expanded = false, adminMode = false }) {
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: cfg.color }}>
               {cfg.label}
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1, marginTop: 2, maxWidth: 280 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, marginTop: 2, maxWidth: 280 }}>
               {loading ? 'Fetching server data…' : (data?.display_message || 'Unknown')}
             </div>
           </div>
@@ -130,7 +130,7 @@ export default function FiveMStatus({ expanded = false, adminMode = false }) {
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: cfg.color }}>
               {data.players_online}
             </span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
               / {data.max_players} PLAYERS
             </span>
           </div>
@@ -138,7 +138,7 @@ export default function FiveMStatus({ expanded = false, adminMode = false }) {
 
         {/* Last seen label */}
         {!loading && data?.last_seen_label && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1, flexShrink: 0 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, flexShrink: 0 }}>
             {data.last_seen_label}
           </div>
         )}
@@ -157,7 +157,7 @@ export default function FiveMStatus({ expanded = false, adminMode = false }) {
             <StatBlock label="MAX SLOTS"   value={data.max_players   || 48}      color="var(--muted)" />
           </div>
           {data.server_name && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1, textAlign: 'center', marginTop: 10 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, textAlign: 'center', marginTop: 10 }}>
               {data.server_name}
             </div>
           )}
@@ -168,7 +168,7 @@ export default function FiveMStatus({ expanded = false, adminMode = false }) {
       {adminMode && !loading && (
         <div style={{ padding: '0 18px 14px' }}>
           {!expanded && <div style={{ height: 1, background: 'var(--border)', marginBottom: 12 }} />}
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>
             DEV OVERRIDE {data?.dev_override ? <span style={{ color: 'var(--orange)' }}>({data.dev_override.toUpperCase()})</span> : <span style={{ color: '#2a3a48' }}>INACTIVE</span>}
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -184,7 +184,7 @@ export default function FiveMStatus({ expanded = false, adminMode = false }) {
                   disabled={overriding || active}
                   style={{
                     flex: '1 1 0', padding: '7px 10px', cursor: active || overriding ? 'default' : 'pointer',
-                    fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+                    fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                     background: active ? `${color}20` : 'transparent',
                     border: `1px solid ${active ? color : 'var(--border)'}`,
                     color: active ? color : 'var(--muted)',

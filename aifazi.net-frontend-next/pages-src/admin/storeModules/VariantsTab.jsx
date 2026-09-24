@@ -114,36 +114,36 @@ export default function VariantsTab({ focusProductId }) {
     <div>
       {editing && (
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>{editing === 'new' ? 'NEW VARIANT' : 'EDIT VARIANT'}</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>{editing === 'new' ? 'NEW VARIANT' : 'EDIT VARIANT'}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10 }}>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>PRODUCT</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>PRODUCT</label>
               <select value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })} style={{ ...input, width: '100%' }}>
                 {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>VARIANT NAME</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>VARIANT NAME</label>
               <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Size M · Color Red" style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>SKU</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>SKU</label>
               <input value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>BARCODE (scan on phone)</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>BARCODE (scan on phone)</label>
               <input value={form.barcode} onChange={e => setForm({ ...form, barcode: e.target.value })} placeholder="EAN / UPC" style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>PRICE (CENTS)</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>PRICE (CENTS)</label>
               <input type="number" value={form.price_cents} onChange={e => setForm({ ...form, price_cents: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>STOCK</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>STOCK</label>
               <input type="number" value={form.stock_qty} onChange={e => setForm({ ...form, stock_qty: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
-              <label style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>ATTRIBUTES (key:value)</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>ATTRIBUTES (key:value)</label>
               <input value={form.attributes} onChange={e => setForm({ ...form, attributes: e.target.value })} placeholder="Size:M, Color:Red" style={{ ...input, width: '100%' }} />
             </div>
           </div>
@@ -179,22 +179,22 @@ export default function VariantsTab({ focusProductId }) {
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: out ? R : low ? Y : G, boxShadow: `0 0 8px ${out ? R : low ? Y : G}` }} />
               <div style={{ flex: 1, minWidth: 150 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{v.name}</div>
-                <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{pname(v.product_id)} · {v.sku || 'no sku'} · {money(v.price_cents)}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{pname(v.product_id)} · {v.sku || 'no sku'} · {money(v.price_cents)}</div>
               </div>
               {Object.entries(v.attributes || {}).map(([k, val]) => (
-                <span key={k} style={{ fontFamily: MONO, fontSize: 9, padding: '2px 8px', borderRadius: 12, background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C }}>{k}: {val}</span>
+                <span key={k} style={{ fontFamily: MONO, fontSize: 11, padding: '2px 8px', borderRadius: 12, background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C }}>{k}: {val}</span>
               ))}
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: out ? R : low ? Y : 'var(--text)', minWidth: 46, textAlign: 'right' }}>{stock}</span>
                 {editing === v.id ? null : (
                   <>
                     <input type="number" value={stockQty} onChange={e => setStockQty(e.target.value)} style={{ ...input, width: 70, padding: '5px 8px' }} />
-                    <button onClick={() => setStock(v, stockQty)} disabled={stockBusy === v.id} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>SET</button>
+                    <button onClick={() => setStock(v, stockQty)} disabled={stockBusy === v.id} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>SET</button>
                   </>
                 )}
               </div>
-              <button onClick={() => startEdit(v)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
-              <button onClick={() => remove(v)} style={{ fontFamily: MONO, fontSize: 9, padding: '6px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
+              <button onClick={() => startEdit(v)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
+              <button onClick={() => remove(v)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
             </div>
           )
         })

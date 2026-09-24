@@ -10,8 +10,8 @@ function ProgressBar({ value, color = 'var(--orange)', label }) {
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)' }}>{label}</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color }}>{value}%</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>{label}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color }}>{value}%</span>
       </div>
       <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
         <div style={{ height: '100%', borderRadius: 2, background: `linear-gradient(90deg, ${color}, color-mix(in srgb, ${color} 53%, transparent))`, width: `${value}%`, transition: 'width 1.2s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 0 8px color-mix(in srgb, ${color} 53%, transparent)` }} />
@@ -67,7 +67,7 @@ function StyleTerminal({ message, status, icon, returnTime, showProgress, progre
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 16px', background: `color-mix(in srgb, ${accentColor} 8%, transparent)`, border: `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)`, borderRadius: 20 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: accentColor, boxShadow: `0 0 8px ${accentColor}`, animation: 'maint-blink 1.4s infinite' }} />
-          <span style={{ fontSize: 9, letterSpacing: 4, color: accentColor }}>{status}</span>
+          <span style={{ fontSize: 11, letterSpacing: 4, color: accentColor }}>{status}</span>
         </div>
       </div>
       {/* Icon */}
@@ -83,7 +83,7 @@ function StyleTerminal({ message, status, icon, returnTime, showProgress, progre
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', marginBottom: 16, textAlign: 'left' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
           {['#ff5f56', '#ffbd2e', '#27c93f'].map(c => <div key={c} style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />)}
-          <span style={{ fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginLeft: 'auto' }}>maintenance.sh</span>
+          <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginLeft: 'auto' }}>maintenance.sh</span>
         </div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, lineHeight: 2 }}>
           <div><span style={{ color: 'var(--green)' }}>$</span> <span style={{ color: 'var(--cyan)' }}>status</span></div>
@@ -126,7 +126,7 @@ function StyleCyber({ message, status, icon, returnTime, showProgress, progress,
   return (
     <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '24px', maxWidth: 640, width: '100%' }}>
       {/* Glowing title */}
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 8, color: accentColor, marginBottom: 8, opacity: 0.7 }}>{'// SYSTEM ALERT'}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 8, color: accentColor, marginBottom: 8, opacity: 0.7 }}>{'// SYSTEM ALERT'}</div>
       <h1 style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(36px,6vw,68px)', fontWeight: 900, color: accentColor, textShadow: `0 0 20px ${accentColor}, 0 0 60px color-mix(in srgb, ${accentColor} 27%, transparent)`, marginBottom: 8, letterSpacing: -1, lineHeight: 1 }}>
         {icon} {status}
       </h1>
@@ -138,7 +138,7 @@ function StyleCyber({ message, status, icon, returnTime, showProgress, progress,
       </div>
       {showProgress && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
             <span>PROGRESS</span><span style={{ color: accentColor }}>{progress}%</span>
           </div>
           <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
@@ -161,7 +161,7 @@ function StyleGlitch({ message, status, icon, returnTime, showProgress, progress
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', lineHeight: 1.8, marginBottom: 24 }}>{message}</p>
       {showProgress && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
             <span>PROGRESS</span><span style={{ color: accentColor }}>{progress}%</span>
           </div>
           <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
@@ -240,7 +240,7 @@ function StyleHolo({ message, status, icon, returnTime, showProgress, progress, 
       </div>
       <div style={{ position: 'relative', background: 'rgba(255,255,255,0.03)', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 20, padding: '36px 28px', backdropFilter: 'blur(16px)', boxShadow: '0 24px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)' }}>
         <div style={{ fontSize: 44, marginBottom: 18 }}>{icon}</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 5, color: accentColor, marginBottom: 10, textTransform: 'uppercase' }}>{status}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 5, color: accentColor, marginBottom: 10, textTransform: 'uppercase' }}>{status}</div>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(30px,5vw,50px)', fontWeight: 800, margin: '0 0 12px', lineHeight: 1.1,
           background: 'linear-gradient(90deg, var(--green), var(--cyan) 45%, var(--purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           Back Soon
@@ -269,7 +269,7 @@ function StyleGridPulse({ message, status, icon, returnTime, showProgress, progr
           {icon}
           <div style={{ position: 'absolute', inset: -10, borderRadius: '50%', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)', animation: 'maint-spin 6s linear infinite', borderTopColor: 'transparent' }} />
         </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 4, color: accentColor }}>{status}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: accentColor }}>{status}</div>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,5vw,46px)', fontWeight: 800, margin: 0, color: 'var(--text)', lineHeight: 1.1 }}>
           <span style={{ color: accentColor }}>SYSTEM</span> OFFLINE
         </h1>
@@ -296,7 +296,7 @@ function StyleOrbit({ message, status, icon, returnTime, showProgress, progress,
           </div>
         ))}
       </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 5, color: accentColor, marginBottom: 8 }}>{status}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 5, color: accentColor, marginBottom: 8 }}>{status}</div>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,5vw,46px)', fontWeight: 800, margin: '0 0 12px', color: 'var(--text)', lineHeight: 1.1 }}>Offline</h1>
       <p style={{ fontSize: 13, lineHeight: 1.8, color: 'var(--muted)', maxWidth: 440, margin: '0 auto 22px' }}>{message}</p>
       {showProgress && <div style={{ maxWidth: 320, margin: '0 auto 18px' }}><ProgressBar label="PROGRESS" value={progress} color={accentColor} /></div>}

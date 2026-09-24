@@ -849,7 +849,7 @@ function Badge({ type }) {
   const s = STATUS[type] || STATUS.todo
   return (
     <span style={{
-      fontFamily: C.fontMono, fontSize: 9, letterSpacing: 1.5, padding: '2px 8px',
+      fontFamily: C.fontMono, fontSize: 11, letterSpacing: 1.5, padding: '2px 8px',
       background: s.bg, border: `1px solid ${s.border}`, color: s.color,
       borderRadius: 4, whiteSpace: 'nowrap', flexShrink: 0,
     }}>{s.label}</span>
@@ -859,7 +859,7 @@ function Badge({ type }) {
 function AreaTag({ label }) {
   return (
     <span style={{
-      fontFamily: C.fontMono, fontSize: 8, letterSpacing: 1, padding: '2px 7px',
+      fontFamily: C.fontMono, fontSize: 11, letterSpacing: 1, padding: '2px 7px',
       background: 'rgba(255,255,255,0.05)', border: `1px solid ${C.border2}`,
       color: C.muted, borderRadius: 3, whiteSpace: 'nowrap', flexShrink: 0,
     }}>{label}</span>
@@ -911,12 +911,12 @@ function VersionBlock({ entry, isLatest }) {
           letterSpacing: 1,
         }}>v{entry.version}</span>
         <span style={{
-          fontFamily: C.fontMono, fontSize: 8, letterSpacing: 2, padding: '2px 8px',
+          fontFamily: C.fontMono, fontSize: 11, letterSpacing: 2, padding: '2px 8px',
           background: ts.bg, border: `1px solid ${ts.border}`, color: ts.color, borderRadius: 4,
         }}>{ts.label}</span>
         {isLatest && (
           <span style={{
-            fontFamily: C.fontMono, fontSize: 8, letterSpacing: 2, padding: '2px 8px',
+            fontFamily: C.fontMono, fontSize: 11, letterSpacing: 2, padding: '2px 8px',
             background: 'rgba(34,211,238,0.12)', border: '1px solid rgba(34,211,238,0.35)',
             color: C.cyan, borderRadius: 4,
           }}>LATEST</span>
@@ -998,7 +998,7 @@ export default function Changelog() {
 
       {/* Page header */}
       <div style={{ marginBottom: 28 }}>
-        <div style={{ fontFamily: C.fontMono, fontSize: 9, color: C.cyan, letterSpacing: 4, marginBottom: 6 }}>ADMIN PORTAL</div>
+        <div style={{ fontFamily: C.fontMono, fontSize: 11, color: C.cyan, letterSpacing: 4, marginBottom: 6 }}>ADMIN PORTAL</div>
         <h2 style={{ fontFamily: C.fontMono, fontSize: 26, fontWeight: 800, margin: '0 0 8px', color: C.text, letterSpacing: 1 }}>Changelog & Roadmap</h2>
         <div style={{ fontFamily: C.fontUi, fontSize: 12, color: C.muted, lineHeight: 1.7 }}>
           {CHANGELOG.length} versions · {totalChanges} tracked changes · roadmap updated regularly
@@ -1018,7 +1018,7 @@ export default function Changelog() {
             border: `1px solid ${C.border}`, borderRadius: 8,
             display: 'flex', flexDirection: 'column', gap: 2,
           }}>
-            <span style={{ fontFamily: C.fontMono, fontSize: 8, color: C.muted, letterSpacing: 2 }}>{s.label}</span>
+            <span style={{ fontFamily: C.fontMono, fontSize: 11, color: C.muted, letterSpacing: 2 }}>{s.label}</span>
             <span style={{ fontFamily: C.fontMono, fontSize: 16, fontWeight: 700, color: s.color }}>{s.value}</span>
           </div>
         ))}

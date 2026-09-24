@@ -14,7 +14,7 @@ export default function StorePlanCard({ plan, index, featuredIndex, currentLevel
       className={`ec-plan-card ${featured ? 'ec-plan-featured' : ''}`}
       style={{ '--plan-color': color }}
     >
-      {featured && <div style={{ position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)', padding: '4px 16px', borderRadius: '0 0 10px 10px', background: color, color: '#000', fontSize: 9, fontWeight: 900, letterSpacing: 2 }}>POPULAR</div>}
+      {featured && <div style={{ position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%)', padding: '4px 16px', borderRadius: '0 0 10px 10px', background: color, color: '#000', fontSize: 11, fontWeight: 900, letterSpacing: 2 }}>POPULAR</div>}
       {current && <div style={{ position: 'absolute', top: 10, right: 10 }}><Badge tone="green" glow>ACTIVE</Badge></div>}
 
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color, letterSpacing: 2, fontWeight: 800 }}>LEVEL {plan.level}</div>

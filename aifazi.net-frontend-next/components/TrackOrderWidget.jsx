@@ -37,7 +37,7 @@ export default function TrackOrderWidget() {
     <div>
       {/* Lookup form */}
       <Card style={{ padding: 20, marginBottom: 20 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: C, marginBottom: 12 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: C, marginBottom: 12 }}>
           TRACK ORDER
         </div>
         <form onSubmit={handleLookup} style={{ display: 'flex', gap: 0 }}>
@@ -85,7 +85,7 @@ export default function TrackOrderWidget() {
                   background: i <= currentStep && currentStep >= 0 ? G : 'var(--bg3)',
                   border: `2px solid ${i <= currentStep && currentStep >= 0 ? G : 'var(--border)'}`,
                 }} />
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 1, color: i <= currentStep && currentStep >= 0 ? G : 'var(--muted)', textTransform: 'uppercase' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: i <= currentStep && currentStep >= 0 ? G : 'var(--muted)', textTransform: 'uppercase' }}>
                   {step}
                 </div>
               </div>
@@ -111,7 +111,7 @@ export default function TrackOrderWidget() {
           {/* Tracking info */}
           {(order.carrier || order.tracking_number) && (
             <div style={{ padding: '10px 14px', background: mix(G, 5), border: `1px solid ${mix(G, 18)}`, borderRadius: 8, marginTop: 12 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: G, letterSpacing: 2, marginBottom: 4 }}>TRACKING</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: G, letterSpacing: 2, marginBottom: 4 }}>TRACKING</div>
               <div style={{ fontSize: 13, color: 'var(--text)' }}>
                 {order.carrier || 'Carrier'}: {order.tracking_number}
                 {order.tracking_url && (

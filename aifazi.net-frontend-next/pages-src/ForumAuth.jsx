@@ -195,7 +195,7 @@ export function ForumLogin() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>PASSWORD</label>
-              <Link to="/forum/forgot-password" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', textDecoration: 'none', letterSpacing: 1 }}>
+              <Link to="/forum/forgot-password" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', textDecoration: 'none', letterSpacing: 1 }}>
                 FORGOT PASSWORD?
               </Link>
             </div>
@@ -425,7 +425,7 @@ export function ForumRegister() {
       {/* OAuth options */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0 0' }}>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2 }}>OR</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>OR</span>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
       </div>
 
@@ -642,7 +642,7 @@ export function ForgotPassword() {
                 placeholder="your@email.com  or  CoolUsername"
                 style={inputStyle}
               />
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 6, letterSpacing: 1 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 6, letterSpacing: 1 }}>
                 Both email and username are accepted
               </div>
             </div>
@@ -768,7 +768,7 @@ export function ResetPassword() {
               {[1,2,3,4].map(i => (
                 <div key={i} style={{ height: 3, flex: 1, background: i <= strength ? strengthColor : 'var(--border)', transition: 'background 0.3s' }} />
               ))}
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: strengthColor, letterSpacing: 1, marginLeft: 6, whiteSpace: 'nowrap' }}>{strengthLabel}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: strengthColor, letterSpacing: 1, marginLeft: 6, whiteSpace: 'nowrap' }}>{strengthLabel}</span>
             </div>
           )}
         </div>

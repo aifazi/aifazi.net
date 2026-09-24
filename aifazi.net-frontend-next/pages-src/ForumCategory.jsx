@@ -126,7 +126,7 @@ export default function ForumCategory() {
             {cats.map(c => (
               <Link key={c.id || c._id} to={`/forum/category/${c.slug || c.id}`}
                 style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1.2,
+                  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.2,
                   padding: '6px 12px', borderRadius: 999,
                   border: `1px solid ${c.slug === slug ? (c.color || 'var(--cyan)') : 'var(--border)'}`,
                   color: c.slug === slug ? (c.color || 'var(--cyan)') : 'var(--muted)',
@@ -146,7 +146,7 @@ export default function ForumCategory() {
             {cats.length > 1 && (
               <Card style={{ padding: 22 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>ALL CATEGORIES</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>ALL CATEGORIES</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {cats.map(c => (

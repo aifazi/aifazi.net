@@ -106,7 +106,7 @@ export default function ForumHome() {
             <aside className="forum-home-sidebar" style={{ position: 'sticky', top: 96, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Stats */}
               <Card style={{ padding: 22 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>STATS</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>STATS</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <Stat small label="Categories" value={cats.length} color="var(--green)" icon="🗂" />
                   <Stat small label="Threads" value={totalThreads} color="var(--cyan)" icon="🧵" />
@@ -117,7 +117,7 @@ export default function ForumHome() {
               {/* Categories */}
               <Card style={{ padding: 22 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>CATEGORIES</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>CATEGORIES</span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)' }}>{cats.length}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -156,7 +156,7 @@ export default function ForumHome() {
               {topContributors.length > 0 && (
                 <Card style={{ padding: 22 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>TOP VOICES</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>TOP VOICES</span>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)' }}>{topContributors.length}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

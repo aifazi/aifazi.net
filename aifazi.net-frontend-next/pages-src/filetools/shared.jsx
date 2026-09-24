@@ -32,7 +32,7 @@ const S = {
   btn:      { fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:2, padding:'10px 22px', background:'var(--green)', color:'#000', border:'none', cursor:'pointer', fontWeight:700, whiteSpace:'nowrap' },
   btnOut:   { fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:2, padding:'10px 22px', background:'transparent', color:'var(--cyan)', border:'1px solid var(--cyan)', cursor:'pointer', fontWeight:700, whiteSpace:'nowrap' },
   btnSm:    { fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:2, padding:'7px 14px', background:'var(--green)', color:'#000', border:'none', cursor:'pointer', fontWeight:700 },
-  label:    { fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2, color:'var(--muted)', display:'block', marginBottom:6 },
+  label:    { fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, color:'var(--muted)', display:'block', marginBottom:6 },
   err:      { color:'var(--red)', fontFamily:'var(--font-mono)', fontSize:11, marginTop:8, padding:'8px 12px', background:'rgba(255,71,87,.08)', border:'1px solid rgba(255,71,87,.3)' },
   success:  { color:'var(--green)', fontFamily:'var(--font-mono)', fontSize:11, marginTop:8, padding:'8px 12px', background:'color-mix(in srgb, var(--green) 7%, transparent)', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)' },
   panel:    { background:'var(--bg3)', border:'1px solid var(--border)', padding:'20px 24px', marginTop:16 },
@@ -55,7 +55,7 @@ function DropZone({ onFiles, accept='*', multiple=false, label='Drop files here 
       <input ref={ref} type="file" accept={accept} multiple={multiple} style={{ display:'none' }} onChange={e => handle(e.target.files)} />
       <div style={{ fontSize:32, marginBottom:10 }}>📂</div>
       <div style={{ fontFamily:'var(--font-mono)', fontSize:11, color: over ? 'var(--green)' : 'var(--muted)', letterSpacing:2 }}>{label.toUpperCase()}</div>
-      <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', marginTop:6, letterSpacing:1 }}>Accepts: {accept}</div>
+      <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', marginTop:6, letterSpacing:1 }}>Accepts: {accept}</div>
     </div>
   )
 }

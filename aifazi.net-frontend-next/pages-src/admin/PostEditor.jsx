@@ -108,7 +108,7 @@ function MediaThumb({ file, height = 120, cdnConfig = null }) {
       }}>
         <span style={{ fontSize: 26 }}>{icon}</span>
         <span style={{
-          fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, textAlign: 'center',
+          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, textAlign: 'center',
           color: failed ? '#ff6b7a' : 'var(--muted)',
           padding: failed ? '2px 6px' : 0,
           background: failed ? 'rgba(255,71,87,0.1)' : 'transparent',
@@ -161,7 +161,7 @@ function SlashMenu({ pos, query, onSelect, onClose }) {
     }}>
       {grouped.map(group => (
         <div key={group.group}>
-          <div style={{ padding: '8px 14px 4px', fontSize: 9, letterSpacing: 2, color: 'color-mix(in srgb, var(--cyan) 50%, transparent)' }}>{group.group}</div>
+          <div style={{ padding: '8px 14px 4px', fontSize: 11, letterSpacing: 2, color: 'color-mix(in srgb, var(--cyan) 50%, transparent)' }}>{group.group}</div>
           {group.items.map(item => {
             const idx = flatI++
             const isActive = idx === activeIdx
@@ -192,7 +192,7 @@ function SlashMenu({ pos, query, onSelect, onClose }) {
           })}
         </div>
       ))}
-      <div style={{ padding: '6px 14px', fontSize: 9, color: '#2a3a48', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 12 }}>
+      <div style={{ padding: '6px 14px', fontSize: 11, color: '#2a3a48', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 12 }}>
         <span>↑↓ nav</span><span>⏎ select</span><span>esc close</span>
       </div>
     </div>
@@ -283,7 +283,7 @@ function RichEditor({ value, onChange }) {
         ))}
         {!isMobile && (
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingRight: 4 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'color-mix(in srgb, var(--cyan) 40%, transparent)', letterSpacing: 1 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'color-mix(in srgb, var(--cyan) 40%, transparent)', letterSpacing: 1 }}>
               type <span style={{ color: 'var(--cyan)', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', padding: '1px 5px', borderRadius: 2 }}>/</span> for commands
             </span>
           </div>
@@ -398,9 +398,9 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
               >
                 <MediaThumb file={file} height={isMobile ? 90 : 120} cdnConfig={cdnConfig} />
                 <div style={{ padding: '6px 8px', background: 'var(--bg2)' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.original_name}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.original_name}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{formatSize(file.size)}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{formatSize(file.size)}</span>
                     <button onClick={e => { e.stopPropagation(); handleDelete(file.id) }} aria-label={`Delete ${file.original_name}`} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>🗑</button>
                   </div>
                 </div>
@@ -614,18 +614,18 @@ function PostEditor({ post, onSave, onCancel }) {
         {/* SEO Preview */}
         {(form.title || form.excerpt) && (
           <div style={{ border: '1px solid var(--border)', padding: '14px 16px', background: 'var(--bg2)' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 10 }}>SEO PREVIEW</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 10 }}>SEO PREVIEW</div>
             <div style={{ fontFamily: 'sans-serif', fontSize: 18, color: '#1a73e8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 600 }}>
               {form.title ? (form.title.length > 60 ? form.title.slice(0, 57) + '...' : form.title) : 'Post title'}
             </div>
             {form.title && form.title.length > 60 && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', marginTop: 2 }}>Title too long ({form.title.length}/60 chars)</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff4757', marginTop: 2 }}>Title too long ({form.title.length}/60 chars)</div>
             )}
             <div style={{ fontFamily: 'sans-serif', fontSize: 13, color: '#4a4a4a', marginTop: 4, lineHeight: 1.5, maxWidth: 600 }}>
               {form.excerpt ? (form.excerpt.length > 160 ? form.excerpt.slice(0, 157) + '...' : form.excerpt) : 'Add an excerpt for better SEO'}
             </div>
             {form.excerpt && form.excerpt.length > 160 && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ffd700', marginTop: 2 }}>Excerpt truncated to 160 chars in search results</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ffd700', marginTop: 2 }}>Excerpt truncated to 160 chars in search results</div>
             )}
           </div>
         )}
@@ -637,10 +637,10 @@ function PostEditor({ post, onSave, onCancel }) {
           const ogDomain = 'aifazi.net'
           return (
             <div style={{ border: '1px solid var(--border)', padding: '14px 16px', background: 'var(--bg2)' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>SOCIAL SHARE PREVIEW</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>SOCIAL SHARE PREVIEW</div>
               {/* Twitter/X Card */}
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>𝕏 / TWITTER</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>𝕏 / TWITTER</div>
                 <div style={{ border: '1px solid #2f3336', borderRadius: 12, overflow: 'hidden', maxWidth: 500, background: '#000' }}>
                   {form.cover_image && (
                     <img src={form.cover_image} alt="X card cover preview" loading="lazy" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
@@ -654,7 +654,7 @@ function PostEditor({ post, onSave, onCancel }) {
               </div>
               {/* LinkedIn Card */}
               <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>LINKEDIN</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>LINKEDIN</div>
                 <div style={{ border: '1px solid #d0d7de', borderRadius: 2, overflow: 'hidden', maxWidth: 500, background: '#fff' }}>
                   {form.cover_image && (
                     <img src={form.cover_image} alt="LinkedIn card cover preview" loading="lazy" style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
@@ -679,7 +679,7 @@ function PostEditor({ post, onSave, onCancel }) {
             </button>
           </div>
           <RichEditor value={form.content} onChange={v => set('content', v)} />
-          <div style={{ display: 'flex', gap: 16, marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>
+          <div style={{ display: 'flex', gap: 16, marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
             <span>{wordCount.toLocaleString()} words</span>
             <span>~{readingTime} min read</span>
           </div>
@@ -703,7 +703,7 @@ function PostEditor({ post, onSave, onCancel }) {
           <DateTimePicker value={form.publish_at} onChange={v => set('publish_at', v)} placeholder="Publish immediately..." />
           {form.publish_at && new Date(form.publish_at) > new Date() && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, padding: '3px 10px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.35)', color: '#a855f7', borderRadius: 4 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '3px 10px', background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.35)', color: '#a855f7', borderRadius: 4 }}>
                 📅 SCHEDULED — {new Date(form.publish_at).toLocaleString(undefined, { timeZoneName: 'short' })}
               </span>
               <button type="button" onClick={() => set('publish_at', '')} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11 }}>✕ clear</button>
@@ -730,10 +730,10 @@ function PostEditor({ post, onSave, onCancel }) {
             💾 DRAFT
           </button>
           {/* #9 — Autosave status indicator */}
-          {autoStatus === 'saving' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: 1 }}>⏳ Autosaving…</span>}
-          {autoStatus === 'saved'  && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>✓ Autosaved {savedAt ? new Date(savedAt).toLocaleTimeString() : ''}</span>}
-          {autoStatus === 'error'  && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', letterSpacing: 1 }}>⚠ Autosave failed</span>}
-          {autoStatus === 'idle' && isDirty && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ffd700', letterSpacing: 1 }}>● unsaved changes</span>}
+          {autoStatus === 'saving' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 1 }}>⏳ Autosaving…</span>}
+          {autoStatus === 'saved'  && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>✓ Autosaved {savedAt ? new Date(savedAt).toLocaleTimeString() : ''}</span>}
+          {autoStatus === 'error'  && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff4757', letterSpacing: 1 }}>⚠ Autosave failed</span>}
+          {autoStatus === 'idle' && isDirty && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ffd700', letterSpacing: 1 }}>● unsaved changes</span>}
         </div>
 
       </div>

@@ -43,7 +43,7 @@ const OS_ICONS = { ios: '📱', android: '🤖', windows: '💻', macos: '🍎',
 function CopyBtn({ text, label, onCopy }) {
   return (
     <button onClick={() => onCopy(text, label)} title={`Copy ${label || 'to clipboard'}`}
-      style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '3px 8px',
+      style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '3px 8px',
         background: 'transparent', color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.35)',
         borderRadius: 5, cursor: 'pointer', flexShrink: 0 }}>
       ⧉ COPY
@@ -730,7 +730,7 @@ function VpnPanelInner() {
                         <div title={`${d.date}: ${d.sessions} sessions, ↓ ${formatBytes(d.rx)} / ↑ ${formatBytes(d.tx)}`}
                           style={{ width: '100%', height: h, borderRadius: '4px 4px 2px 2px',
                             background: 'linear-gradient(180deg, var(--cyan), var(--green))', opacity: 0.85 }} />
-                        <div style={{ color: 'var(--muted)', fontSize: 9, fontFamily: 'var(--font-mono)' }}>{String(d.date).slice(5)}</div>
+                        <div style={{ color: 'var(--muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>{String(d.date).slice(5)}</div>
                       </div>
                     )
                   })}

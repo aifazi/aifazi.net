@@ -251,7 +251,7 @@ export default function DMPanel({ me, onClose }) {
       {/* Thread list */}
       <div style={{ width: 230, flexShrink: 0, background: T.sidebar, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: '12px 14px 10px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 3, color: T.muted }}>DIRECT MESSAGES</span>
+          <span style={{ fontFamily: T.mono, fontSize: 11, letterSpacing: 3, color: T.muted }}>DIRECT MESSAGES</span>
           <button onClick={onClose} style={{ padding: '2px 7px', border: `1px solid ${T.border}`, borderRadius: 6, background: 'transparent', color: T.muted, cursor: 'pointer', fontSize: 12 }}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
@@ -278,7 +278,7 @@ export default function DMPanel({ me, onClose }) {
                     {t.last_message || ''}
                   </div>
                 </div>
-                {t.unread > 0 && <span style={{ background: T.accent, color: 'var(--bg)', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, fontFamily: T.mono, flexShrink: 0 }}>{t.unread}</span>}
+                {t.unread > 0 && <span style={{ background: T.accent, color: 'var(--bg)', fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 10, fontFamily: T.mono, flexShrink: 0 }}>{t.unread}</span>}
               </button>
             )
           })}
@@ -380,17 +380,17 @@ export default function DMPanel({ me, onClose }) {
                           )}
                           {m.type === 'text' && <Markdown text={m.content} />}
                           {m.type === 'text' && <MediaPreviews text={m.content} onMediaClick={setMediaViewer} right={isMine} />}
-                          <div style={{ marginTop: 2, fontSize: 9, color: T.muted, fontFamily: T.mono, textAlign: 'right' }}>
+                          <div style={{ marginTop: 2, fontSize: 11, color: T.muted, fontFamily: T.mono, textAlign: 'right' }}>
                             {fmt(m.created_at)}{m.edited ? ' · edited' : ''}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10, marginTop: 2, fontFamily: T.mono, fontSize: 9, color: T.muted, opacity: 0 }}>
-                          <button onClick={() => { setReplyTo(m); setInput(i => i + '@' + m.sender + ' ') }} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 9 }}>Reply</button>
-                          <button onClick={() => react(m.id, '👍')} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 9 }}>React</button>
-                          {isMine && <button onClick={() => setEditing(m)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 9 }}>Edit</button>}
-                          {isMine && <button onClick={() => delMsg(m.id)} style={{ background: 'none', border: 'none', color: T.danger, cursor: 'pointer', fontSize: 9 }}>Delete</button>}
+                        <div style={{ display: 'flex', gap: 10, marginTop: 2, fontFamily: T.mono, fontSize: 11, color: T.muted, opacity: 0 }}>
+                          <button onClick={() => { setReplyTo(m); setInput(i => i + '@' + m.sender + ' ') }} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 11 }}>Reply</button>
+                          <button onClick={() => react(m.id, '👍')} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 11 }}>React</button>
+                          {isMine && <button onClick={() => setEditing(m)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 11 }}>Edit</button>}
+                          {isMine && <button onClick={() => delMsg(m.id)} style={{ background: 'none', border: 'none', color: T.danger, cursor: 'pointer', fontSize: 11 }}>Delete</button>}
                         </div>
-                        {seen && <div style={{ fontSize: 9, color: T.muted, fontFamily: T.mono }}>✓ seen</div>}
+                        {seen && <div style={{ fontSize: 11, color: T.muted, fontFamily: T.mono }}>✓ seen</div>}
                       </div>
                     </div>
                   </React.Fragment>

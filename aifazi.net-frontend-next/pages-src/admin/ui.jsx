@@ -101,7 +101,7 @@ export function Badge({ children, color = 'var(--green)', tone, style }) {
   }[badgeStyle] || {}
   return (
     <span style={{
-      fontFamily: MONO, fontSize: 8, letterSpacing: 1.5, padding: '3px 9px', borderRadius: 'var(--comp-badge-radius, 999px)',
+      fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, padding: '3px 9px', borderRadius: 'var(--comp-badge-radius, 999px)',
       background: `color-mix(in srgb, ${c} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${c} 40%, transparent)`,
       color: c, whiteSpace: 'nowrap', ...fwBase, ...(style || {}),
     }}>{children}</span>
@@ -131,9 +131,9 @@ export function StatCard({ label, value, color = 'var(--green)', sub, onClick, s
       onMouseEnter={e => { e.currentTarget.style.borderColor = color; if (onClick) e.currentTarget.style.transform = 'translateY(-2px)' }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${color}, transparent)` }} />
-      <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>{label}</div>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>{sub}</div>}
+      {sub && <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>{sub}</div>}
     </div>
   )
 }

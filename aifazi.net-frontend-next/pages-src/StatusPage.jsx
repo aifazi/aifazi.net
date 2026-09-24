@@ -52,7 +52,7 @@ function UptimeBar({ value, barColor }) {
       <div style={{ flex: 1, height: 4, background: 'var(--bg3)', borderRadius: 3, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${Math.max(0, Math.min(100, value ?? 0))}%`, background: barColor, borderRadius: 3 }} />
       </div>
-      <span style={{ fontFamily: MONO, fontSize: 9, color: ok ? 'var(--text)' : 'var(--muted)', minWidth: 40, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: ok ? 'var(--text)' : 'var(--muted)', minWidth: 40, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
         {ok ? `${value}%` : '—'}
       </span>
     </div>
@@ -83,12 +83,12 @@ function ServiceRow({ s, mounted }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{s.label}</span>
             {s.custom && (
-              <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, padding: '2px 8px', background: `${C}0f`, border: `1px solid ${C}30`, color: C, borderRadius: 99 }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', background: `${C}0f`, border: `1px solid ${C}30`, color: C, borderRadius: 99 }}>
                 {String(s.type || 'monitor').toUpperCase()}
               </span>
             )}
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <span>{s.latency_avg_ms != null ? `avg ${s.latency_avg_ms}ms` : 'no latency data'}</span>
             {s.latency_ms != null && <span>last {s.latency_ms}ms</span>}
             <span>checked {mounted ? timeAgo(s.last_checked) : ''}</span>
@@ -96,7 +96,7 @@ function ServiceRow({ s, mounted }) {
         </div>
 
         <span style={{
-          fontFamily: MONO, fontSize: 9, letterSpacing: 2, padding: '5px 14px', borderRadius: 999, whiteSpace: 'nowrap',
+          fontFamily: MONO, fontSize: 11, letterSpacing: 2, padding: '5px 14px', borderRadius: 999, whiteSpace: 'nowrap',
           background: `${statusColor}1a`, border: `1px solid ${statusColor}55`, color: statusColor, fontWeight: 700,
         }}>
           {!isUp && !isUnknown && <span style={{ animation: 'dotPulse 1.6s infinite', marginRight: 6 }}>●</span>}
@@ -106,15 +106,15 @@ function ServiceRow({ s, mounted }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px 22px', marginTop: 16 }}>
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>UPTIME · 24H</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>UPTIME · 24H</div>
           <UptimeBar value={s.uptime_24h} barColor={barColor} />
         </div>
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>UPTIME · 7 DAYS</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>UPTIME · 7 DAYS</div>
           <UptimeBar value={s.uptime_7d} barColor={barColor} />
         </div>
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>UPTIME · 30 DAYS</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>UPTIME · 30 DAYS</div>
           <UptimeBar value={s.uptime_30d} barColor={barColor} />
         </div>
       </div>
@@ -134,7 +134,7 @@ function IncidentTimeline({ incidents, mounted }) {
     <div style={{ marginTop: 40 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: O }}>INCIDENT HISTORY</span>
-        <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>LAST 30 DAYS</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>LAST 30 DAYS</span>
         <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
       </div>
       <div style={{ position: 'relative', paddingLeft: 26 }}>
@@ -149,7 +149,7 @@ function IncidentTimeline({ incidents, mounted }) {
               <span style={{ fontSize: 12 }}>{inc.ongoing ? '🔴' : '🔶'}</span>
               <div style={{ flex: 1, minWidth: 170 }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{inc.label}</div>
-                <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
                   {mounted && inc.start ? new Date(inc.start).toLocaleString() : ''}
                   {mounted && inc.end && inc.end !== inc.start ? ` → ${new Date(inc.end).toLocaleTimeString()}` : ''}
                 </div>
@@ -220,9 +220,9 @@ export default function StatusPage({ initialData = null }) {
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, letterSpacing: 3, color: 'var(--text)' }}>AIFAZI<span style={{ color: C }}>·STATUS</span></span>
           <span style={{ flex: 1 }} />
-          <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>AUTO-REFRESH {mounted ? countdown : REFRESH_MS / 1000}s</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>AUTO-REFRESH {mounted ? countdown : REFRESH_MS / 1000}s</span>
           <button onClick={refreshNow} style={{
-            fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '6px 12px', cursor: 'pointer',
+            fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 12px', cursor: 'pointer',
             background: 'transparent', color: C, border: `1px solid ${C}45`, borderRadius: 8, fontWeight: 700,
           }}>↻ REFRESH</button>
         </div>
@@ -256,7 +256,7 @@ export default function StatusPage({ initialData = null }) {
         </div>
 
         {/* Updated line */}
-        <div style={{ textAlign: 'center', fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 14 }}>
+        <div style={{ textAlign: 'center', fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 14 }}>
           {updated ? `UPDATED ${updated} · ${updatedAgo}` : 'LIVE MONITORING'}
           {ongoing > 0 && <span style={{ color: R, fontWeight: 700 }}> · {ongoing} INCIDENT{ongoing > 1 ? 'S' : ''} ONGOING</span>}
         </div>
@@ -280,7 +280,7 @@ export default function StatusPage({ initialData = null }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
               <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: 'var(--text)' }}>MONITORED SERVICES</span>
               <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-              <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{svcs.length} TOTAL</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{svcs.length} TOTAL</span>
             </div>
             {core.map((s, i) => <ServiceRow key={s.name || i} s={s} mounted={mounted} />)}
 

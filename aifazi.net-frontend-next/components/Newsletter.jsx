@@ -76,7 +76,7 @@ export default function Newsletter() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
             <div style={{ width: 28, height: 1, background: 'var(--green)' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 4, color: 'var(--green)' }}>NEWSLETTER_v1.0</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: 'var(--green)' }}>NEWSLETTER_v1.0</span>
           </div>
           <h3 style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 'clamp(20px, 2.5vw, 32px)', lineHeight: 1.2, marginBottom: 16, color: 'var(--text)' }}>
             <span style={{ color: 'var(--green)' }}>$</span> subscribe<br />
@@ -97,7 +97,7 @@ export default function Newsletter() {
             {['#ff5f57','#ffbd2e','#28c840'].map((c, i) => (
               <div key={i} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
             ))}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginLeft: 8 }}>visitor@aifazi.net — subscribe</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginLeft: 8 }}>visitor@aifazi.net — subscribe</span>
           </div>
 
           <div style={{ padding: '24px 24px 28px' }}>
@@ -121,7 +121,7 @@ export default function Newsletter() {
                 ))}
                 <div style={{ marginTop: 14, display: 'flex', gap: 10 }}>
                   <button onClick={unsubscribe} disabled={status === 'loading'}
-                    style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--muted)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, cursor: 'pointer', transition: 'all 0.2s' }}
+                    style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--muted)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer', transition: 'all 0.2s' }}
                     onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.borderColor = 'var(--red)' }}
                     onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.borderColor = 'var(--muted)' }}
                   >
@@ -135,7 +135,7 @@ export default function Newsletter() {
                   {'>'} ✓ Subscribed ({email})
                 </div>
                 <button onClick={unsubscribe} disabled={status === 'loading'}
-                  style={{ marginTop: 14, padding: '8px 16px', background: 'transparent', border: '1px solid var(--muted)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, cursor: 'pointer', transition: 'all 0.2s' }}
+                  style={{ marginTop: 14, padding: '8px 16px', background: 'transparent', border: '1px solid var(--muted)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer', transition: 'all 0.2s' }}
                   onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.borderColor = 'var(--red)' }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.borderColor = 'var(--muted)' }}
                 >

@@ -72,16 +72,16 @@ export function SalesTab({ data, onRefresh }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
         {stats.map(s => (
           <div key={s.label} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px' }}>
-            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 3, color: 'var(--muted)', marginBottom: 10 }}>{s.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 10 }}>{s.label}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: s.color, lineHeight: 1, marginBottom: 6 }}>{s.value}</div>
-            <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{s.sub}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{s.sub}</div>
           </div>
         ))}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>TOP PRODUCTS BY UNITS SOLD</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>TOP PRODUCTS BY UNITS SOLD</div>
           {(data?.top_products || []).length === 0 && <div style={{ color: 'var(--muted)', fontSize: 12 }}>No sales yet.</div>}
           {(data?.top_products || []).map(p => (
             <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -92,13 +92,13 @@ export function SalesTab({ data, onRefresh }) {
         </div>
 
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>LOW STOCK ALERTS</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>LOW STOCK ALERTS</div>
           {(data?.low_stock || []).length === 0 && <div style={{ color: 'var(--muted)', fontSize: 12 }}>All stock levels healthy.</div>}
           {(data?.low_stock || []).map(p => (
             <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{p.sku || p.slug}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{p.sku || p.slug}</div>
               </div>
               <Badge color={O}>{p.stock_qty} left</Badge>
             </div>
@@ -107,7 +107,7 @@ export function SalesTab({ data, onRefresh }) {
       </div>
 
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 18 }}>
-        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>RECENT ORDERS</div>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>RECENT ORDERS</div>
         {(data?.recent_orders || []).map(o => (
           <div key={o.order_number} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', flexWrap: 'wrap' }}>
             <span style={{ fontFamily: MONO, fontSize: 11, color: C }}>{o.order_number}</span>
@@ -228,38 +228,38 @@ export function ProductsTab({ categories, onOpenVariants }) {
             <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: G, marginBottom: 18 }}>{editing ? 'EDIT PRODUCT' : 'NEW PRODUCT'}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Name *</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Name *</label>
                 {input(form.name, v => inp('name', v), false)}
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Slug *</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Slug *</label>
                 {input(form.slug, v => inp('slug', v))}
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Category</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Category</label>
                 <select value={form.category_id || ''} onChange={e => inp('category_id', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }}>
                   <option value="">— None —</option>
                   {(categories || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>SKU</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>SKU</label>
                 {input(form.sku, v => inp('sku', v))}
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Barcode (scan on phone)</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Barcode (scan on phone)</label>
                 {input(form.barcode, v => inp('barcode', v))}
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Price (cents)</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Price (cents)</label>
                 {numberInput(form.price_cents, v => inp('price_cents', v))}
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Compare-at price (cents)</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Compare-at price (cents)</label>
                 <input type="number" value={form.compare_at_cents || ''} onChange={e => inp('compare_at_cents', e.target.value ? Number(e.target.value) : null)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Type</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Type</label>
                 <select value={form.type} onChange={e => inp('type', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }}>
                   <option value="physical">Physical</option>
                   <option value="digital">Digital</option>
@@ -267,20 +267,20 @@ export function ProductsTab({ categories, onOpenVariants }) {
                 </select>
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Stock qty</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Stock qty</label>
                 {numberInput(form.stock_qty, v => inp('stock_qty', v))}
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Low-stock threshold</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Low-stock threshold</label>
                 {numberInput(form.low_stock_threshold, v => inp('low_stock_threshold', v))}
               </div>
             </div>
             <div style={{ marginTop: 12 }}>
-              <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Description</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Description</label>
               <textarea value={form.description} onChange={e => inp('description', e.target.value)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
             </div>
             <div style={{ marginTop: 12 }}>
-              <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Product image</label>
+              <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Product image</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 {form.image_url ? (
                   <img src={form.image_url} alt={`Preview of ${form.name || 'product'} image`} loading="lazy" style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)', background: 'var(--bg3)' }} />
@@ -294,7 +294,7 @@ export function ProductsTab({ categories, onOpenVariants }) {
             {form.type === 'digital' && (
               <>
                 <div style={{ marginTop: 12 }}>
-                  <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Digital file (upload or paste path/URL)</label>
+                  <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Digital file (upload or paste path/URL)</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <div style={{ flex: 1 }}>{input(form.digital_file_url, v => inp('digital_file_url', v), false)}</div>
                     <Btn onClick={() => document.getElementById('storeFileInput')?.click()} small color={C}>UPLOAD</Btn>
@@ -302,7 +302,7 @@ export function ProductsTab({ categories, onOpenVariants }) {
                   <input id="storeFileInput" type="file" hidden onChange={uploadDigitalFile} />
                 </div>
                 <div style={{ marginTop: 12 }}>
-                  <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Downloads allowed per purchase</label>
+                  <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Downloads allowed per purchase</label>
                   {numberInput(form.download_limit, v => inp('download_limit', v))}
                 </div>
               </>
@@ -411,7 +411,7 @@ export function CategoriesTab() {
           <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8 }}>
             <span style={{ fontSize: 16 }}>{c.icon}</span>
             <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600 }}>{c.name}</span>
-            <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{c.slug}</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{c.slug}</span>
             <Btn onClick={() => { setEditing(c.id); setForm({ ...EMPTY_CAT, ...c }) }} small color={C}>EDIT</Btn>
             <Btn onClick={() => remove(c)} small danger>×</Btn>
           </div>
@@ -422,24 +422,24 @@ export function CategoriesTab() {
         <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C, marginBottom: 16 }}>{editing ? 'EDIT CATEGORY' : 'NEW CATEGORY'}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
-            <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Name *</label>
+            <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Name *</label>
             <input value={form.name} onChange={e => inp('name', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Slug *</label>
+            <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Slug *</label>
             <input value={form.slug} onChange={e => inp('slug', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Icon (emoji)</label>
+            <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Icon (emoji)</label>
             <input value={form.icon} onChange={e => inp('icon', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Display order</label>
+            <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Display order</label>
             <input type="number" value={form.display_order} onChange={e => inp('display_order', Number(e.target.value) || 0)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
           </div>
         </div>
         <div style={{ marginTop: 12 }}>
-          <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Description</label>
+          <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Description</label>
           <input value={form.description} onChange={e => inp('description', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
@@ -524,7 +524,7 @@ export function OrdersTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
         {['', 'pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'].map(s => (
-          <button key={s} onClick={() => setFilter(s)} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '6px 10px', borderRadius: 20, cursor: 'pointer',
+          <button key={s} onClick={() => setFilter(s)} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 10px', borderRadius: 20, cursor: 'pointer',
             background: filter === s ? `${STATUS_COLORS[s] || G}20` : 'transparent', color: filter === s ? (STATUS_COLORS[s] || G) : 'var(--muted)',
             border: `1px solid ${filter === s ? (STATUS_COLORS[s] || G) : 'var(--border)'}`, textTransform: 'uppercase' }}>{s || 'all'}</button>
         ))}
@@ -780,36 +780,36 @@ export function PlansTab({ categories }) {
             <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: G, marginBottom: 18 }}>{editing ? 'EDIT PLAN' : 'NEW PLAN'}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Name *</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Name *</label>
                 {input(form.name, v => inp('name', v), false)}
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Slug *</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Slug *</label>
                 {input(form.slug, v => inp('slug', v))}
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Price (cents)</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Price (cents)</label>
                 {numberInput(form.price_cents, v => inp('price_cents', v))}
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Interval</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Interval</label>
                 <select value={form.interval} onChange={e => inp('interval', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }}>
                   <option value="month">month</option><option value="year">year</option><option value="week">week</option>
                 </select>
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Level</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Level</label>
                 {numberInput(form.level, v => inp('level', v))}
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Category</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Category</label>
                 <select value={form.category_id || ''} onChange={e => inp('category_id', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }}>
                   <option value="">— None —</option>
                   {(categories || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Display order</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Display order</label>
                 {numberInput(form.display_order, v => inp('display_order', v))}
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 8 }}>
@@ -818,19 +818,19 @@ export function PlansTab({ categories }) {
                 </label>
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Headline</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Headline</label>
                 {input(form.headline, v => inp('headline', v), false)}
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Description</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Description</label>
                 <textarea value={form.description} onChange={e => inp('description', e.target.value)} rows={2} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Perks (JSON object)</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Perks (JSON object)</label>
                 <textarea value={form.perks} onChange={e => inp('perks', e.target.value)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Features (JSON array)</label>
+                <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Features (JSON array)</label>
                 <textarea value={form.features} onChange={e => inp('features', e.target.value)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
               </div>
             </div>
@@ -948,7 +948,7 @@ export default function StorePanel() {
         eyebrow="STORE"
         title="Store Management"
         subtitle="Products, inventory, orders, invoices, quotes, plans and subscriptions."
-        actions={<button onClick={loadSales} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>↻ REFRESH</button>}
+        actions={<button onClick={loadSales} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>↻ REFRESH</button>}
       />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>

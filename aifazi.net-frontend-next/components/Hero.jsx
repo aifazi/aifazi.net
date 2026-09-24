@@ -448,7 +448,7 @@ export default function Hero() {
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>
                 <span data-stat-num className="stat-num"><EditableText contentKey={numKey} defaultValue={num} /></span>
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>
                 <EditableText contentKey={labelKey} defaultValue={label} />
               </div>
             </div>

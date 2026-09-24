@@ -17,12 +17,12 @@ const PushCTA = ({ pushState, onEnable, onDisable }) => {
   if (pushState === 'granted') return (
     <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)', letterSpacing: 1 }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>
         🔔 Push notifications ON
       </span>
       <button onClick={onDisable}
         style={{ background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
-          fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 1,
+          fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1,
           padding: '3px 9px', borderRadius: 4, transition: 'all 0.15s' }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = '#ff4757'; e.currentTarget.style.color = '#ff4757' }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}>
@@ -33,7 +33,7 @@ const PushCTA = ({ pushState, onEnable, onDisable }) => {
 
   if (pushState === 'denied') return (
     <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', letterSpacing: 1 }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff4757', letterSpacing: 1 }}>
         🔕 Notifications blocked — enable in browser settings
       </span>
     </div>
@@ -41,7 +41,7 @@ const PushCTA = ({ pushState, onEnable, onDisable }) => {
 
   if (pushState === 'loading') return (
     <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)',
-      fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1 }}>
+      fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
       ⏳ Requesting permission…
     </div>
   )
@@ -188,7 +188,7 @@ export default function NotificationBell({ forumUser }) {
         {unreadCount > 0 && (
           <span style={{ position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16,
             borderRadius: 'var(--comp-badge-radius, 8px)', background: 'var(--comp-badge-bg, var(--green))', color: 'var(--comp-btn-text, #000)', border: 'var(--comp-badge-border, none)',
-            fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+            fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
             display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
@@ -212,7 +212,7 @@ export default function NotificationBell({ forumUser }) {
             {unreadCount > 0 && (
               <button onClick={markAllRead}
                 style={{ background: 'none', border: 'none', cursor: 'pointer',
-                  fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)',
+                  fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
                   letterSpacing: 1, padding: '2px 6px', transition: 'color 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--green)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}>

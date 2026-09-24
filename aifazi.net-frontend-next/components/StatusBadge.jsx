@@ -43,7 +43,7 @@ export function StatusAdmin() {
 
   return (
     <div style={{ padding: 20, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>
         AVAILABILITY STATUS
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -67,7 +67,7 @@ export function StatusAdmin() {
               {s.label.toUpperCase()}
             </span>
             {current === s.key && (
-              <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 9, color: s.color }}>● ACTIVE</span>
+              <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: s.color }}>● ACTIVE</span>
             )}
           </button>
         ))}
@@ -116,7 +116,7 @@ export default function StatusBadge({ size = 'sm' }) {
         width: 6, height: 6, borderRadius: '50%', background: status.color,
         animation: status.pulse ? 'statusPulse 1.5s infinite' : 'none',
       }} />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: status.color, letterSpacing: 1, textTransform: 'uppercase' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: status.color, letterSpacing: 1, textTransform: 'uppercase' }}>
         <StatusLabel status={status} />
       </span>
       <style>{`@keyframes statusPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }`}</style>

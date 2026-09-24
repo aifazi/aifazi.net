@@ -248,7 +248,7 @@ export function MediaUploader({ onUploaded, defaultKind = 'all', buttonLabel }) 
         {KIND_CHIPS.map(k => (
           <button key={k.key} type="button" onClick={() => setKind(k.key)}
             style={{
-              fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
               padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
               border: `1px solid ${kind === k.key ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}`,
               background: kind === k.key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent',

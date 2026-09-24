@@ -150,7 +150,7 @@ const inputStyle = {
 
 const labelStyle = {
   fontFamily: 'var(--font-mono)',
-  fontSize: 9,
+  fontSize: 11,
   letterSpacing: 2,
   color: 'var(--muted)',
   display: 'block',

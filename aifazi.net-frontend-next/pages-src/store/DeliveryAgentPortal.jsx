@@ -228,7 +228,7 @@ export default function DeliveryAgentPortal() {
           {['available', 'busy', 'offline'].map(s => (
             <button key={s} onClick={() => setMyStatus(s)}
               style={{
-                fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1.5,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5,
                 padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontWeight: 700,
                 border: `1px solid ${agent?.status === s ? (s === 'available' ? G : s === 'busy' ? Y : 'var(--border)') : 'var(--border)'}`,
                 background: agent?.status === s ? mix(G, 10) : 'transparent',
@@ -248,17 +248,17 @@ export default function DeliveryAgentPortal() {
         <Card style={{ padding: 18, textAlign: 'center' }}>
           <div style={{ fontSize: 24, marginBottom: 4 }}>📋</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: C }}>{activeCount}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>ACTIVE</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>ACTIVE</div>
         </Card>
         <Card style={{ padding: 18, textAlign: 'center' }}>
           <div style={{ fontSize: 24, marginBottom: 4 }}>✅</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: G }}>{completedCount}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>COMPLETED</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>COMPLETED</div>
         </Card>
         <Card style={{ padding: 18, textAlign: 'center' }}>
           <div style={{ fontSize: 24, marginBottom: 4 }}>📦</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{assignments.length}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>TOTAL</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>TOTAL</div>
         </Card>
       </div>
 
@@ -282,7 +282,7 @@ export default function DeliveryAgentPortal() {
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: C }}>#{o?.order_number}</span>
                     <Badge tone={st.color}>{st.label}</Badge>
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
                     {o?.shipping_address && <span>📍 {o.shipping_address} · </span>}
                     Assigned {new Date(a.assigned_at).toLocaleDateString()}
                     {a.picked_up_at && <> · Picked up {new Date(a.picked_up_at).toLocaleTimeString()}</>}
@@ -291,7 +291,7 @@ export default function DeliveryAgentPortal() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>${total.toFixed(2)}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{(a.items || []).length} item{(a.items || []).length !== 1 ? 's' : ''}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{(a.items || []).length} item{(a.items || []).length !== 1 ? 's' : ''}</div>
                 </div>
               </div>
 

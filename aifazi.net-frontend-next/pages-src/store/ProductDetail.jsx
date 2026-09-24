@@ -170,7 +170,7 @@ export default function ProductDetail() {
                     {'★'.repeat(r.rating || 5)}{'☆'.repeat(5 - (r.rating || 5))}
                   </div>
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{r.author_name || 'Anonymous'}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
                     {r.created_at ? new Date(r.created_at).toLocaleDateString() : ''}
                   </span>
                 </div>
