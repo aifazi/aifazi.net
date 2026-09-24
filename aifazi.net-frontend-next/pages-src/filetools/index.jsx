@@ -99,7 +99,7 @@ function ToolCard({ tool, onClick }) {
         position:'relative', overflow:'hidden',
         display:'flex', flexDirection:'column',
       }}
-    >
+     role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div style={{ position:'absolute', top:0, left:0, right:0, height:2,
         background: `linear-gradient(90deg,${tool.color},${tool.color}00)`,
         opacity: hover ? 1 : 0.3, transition:'opacity .18s' }} />

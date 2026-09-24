@@ -223,8 +223,8 @@ export default function ContentManager() {
 
       {/* History modal */}
       {historyKey && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', padding: 16 }} onClick={() => setHistoryKey(null)}>
-          <div style={{ ...modalStyle, maxWidth: 620 }} onClick={e => e.stopPropagation()}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', padding: 16 }} onClick={() => setHistoryKey(null)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div style={{ ...modalStyle, maxWidth: 620 }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--yellow)', marginBottom: 6 }}>VERSION HISTORY</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', wordBreak: 'break-all', marginBottom: 12 }}>{historyKey}</div>
             {historyLoading ? (
@@ -256,8 +256,8 @@ export default function ContentManager() {
 
       {/* Edit modal */}
       {editing && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', padding: 16 }} onClick={() => setEditing(null)}>
-          <div style={modalStyle} onClick={e => e.stopPropagation()}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', padding: 16 }} onClick={() => setEditing(null)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div style={modalStyle} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 6 }}>EDIT BLOCK</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', wordBreak: 'break-all', marginBottom: 12 }}>{editing.key}</div>
             <textarea

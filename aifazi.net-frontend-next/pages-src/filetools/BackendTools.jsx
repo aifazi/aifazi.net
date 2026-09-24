@@ -32,7 +32,7 @@ function DropZone({ onFiles, accept = '*', multiple = false, files = [] }) {
           transition: 'all .2s', background: over ? 'color-mix(in srgb, var(--green) 5%, transparent)' : 'var(--bg3)',
           borderRadius: 2,
         }}
-      >
+       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <input ref={ref} type="file" accept={accept} multiple={multiple}
           style={{ display: 'none' }} onChange={e => handle(e.target.files)} />
         <div style={{ fontSize: 32, marginBottom: 10 }}>📂</div>

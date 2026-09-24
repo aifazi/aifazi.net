@@ -74,7 +74,7 @@ export function UserSearchModal({ title, actionLabel, onSelect, onClose }) {
                 background: selectedUser?.username === u.username ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent',
                 border: selectedUser?.username === u.username ? `1px solid color-mix(in srgb, var(--green) 25%, transparent)` : '1px solid transparent', transition: 'all 0.15s' }}
               onMouseEnter={e => { if (selectedUser?.username !== u.username) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = selectedUser?.username === u.username ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent' }}>
+              onMouseLeave={e => { e.currentTarget.style.background = selectedUser?.username === u.username ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
               <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0, overflow: 'hidden' }}>
                 {builtinAvatarEmoji(u.avatar) || avatarUrl(u.avatar) ? <UserAvatar avatar={u.avatar} name={u.username} size={30} /> : (u.username?.[0] || '?').toUpperCase()}
               </div>

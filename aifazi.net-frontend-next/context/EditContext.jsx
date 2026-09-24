@@ -555,7 +555,7 @@ function EmojiPicker({ value, onChange }) {
             transition: 'border-color 0.2s',
           }}
           title="Click to pick emoji"
-        >{value || '❓'}</div>
+         role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>{value || '❓'}</div>
         <input
           value={value || ''}
           onChange={e => onChange(e.target.value)}
@@ -623,7 +623,7 @@ function IconField({ value, onChange }) {
           transition: 'border-color 0.2s',
         }}
         title="Click to pick icon"
-      >
+       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <IconDisplay value={value} size={36} />
       </div>
       {open && (
@@ -702,7 +702,7 @@ export function EditableList({ contentKey, defaultValue, renderItem, fields, add
 
       {editIdx !== null && (
         <>
-          <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} />
+          <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px rgba(0,255,136,0.15)', padding: '32px', width: '100%', maxWidth: 520, zIndex: 99996, maxHeight: '80vh', overflowY: 'auto' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD ITEM' : '✎ EDIT ITEM'}</div>
             {fields.map(field => (
@@ -836,7 +836,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
       {/* ── Review Changes (diff preview) ─────────────────────────────────── */}
       {showDiff && (
         <>
-          <div onClick={() => setShowDiff(false)} style={{ position: 'fixed', inset: 0, zIndex: 999995, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} />
+          <div onClick={() => setShowDiff(false)} style={{ position: 'fixed', inset: 0, zIndex: 999995, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
           <div style={{
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 999996,
             width: '100%', maxWidth: 640, maxHeight: '80vh', overflowY: 'auto',
@@ -1091,12 +1091,12 @@ function ContentSearchPalette({ open, query, onQuery, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div onClick={e => e.stopPropagation()} style={{
         position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: 560, background: 'var(--bg2)', border: '1px solid var(--border)',
         borderRadius: 10, boxShadow: '0 20px 60px rgba(0,0,0,0.6)', overflow: 'hidden',
-      }}>
+      }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
           <span style={{ fontSize: 13, opacity: 0.6 }}>🔍</span>
           <input autoFocus value={query} onChange={e => onQuery(e.target.value)} placeholder="Search content keys on this page…"
@@ -1377,7 +1377,7 @@ export function EditableIcon({ contentKey, defaultValue = '❓', size = 36, styl
         }}
         onMouseEnter={e => e.currentTarget.style.outline = '2px solid var(--cyan)'}
         onMouseLeave={e => { if (!open) e.currentTarget.style.outline = '1px dashed rgba(0,212,255,0.3)' }}
-      >
+       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <IconDisplay value={value} size={size} />
         <span style={{
           position: 'absolute', bottom: -6, right: -6,
@@ -1472,8 +1472,8 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', fontFamily: 'var(--font-mono)', padding: 16,
-        }} onClick={() => setOpen(false)}>
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
+        }} onClick={() => setOpen(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 12 }}>EDIT IMAGE · {contentKey}</div>
             <img src={safeImageSrc(draftUrl)} alt={draftAlt} style={{ width: '100%', maxHeight: 180, objectFit: 'contain', marginBottom: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }} onError={e => { e.currentTarget.style.opacity = 0.25 }} onLoad={e => { e.currentTarget.style.opacity = 1 }} />
             <div style={{ marginBottom: 10 }}>
@@ -1554,8 +1554,8 @@ export function EditableLink({ contentKey, hrefKey, defaultValue = 'Learn more',
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', fontFamily: 'var(--font-mono)', padding: 16,
-        }} onClick={() => setOpen(false)}>
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()}>
+        }} onClick={() => setOpen(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: '#ffb74d', marginBottom: 12 }}>EDIT LINK · {contentKey}</div>
             <div style={{ marginBottom: 10 }}>
               <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>LABEL</label>

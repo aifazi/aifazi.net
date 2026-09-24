@@ -105,7 +105,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
   return createPortal(
     <>
       {/* Backdrop */}
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', zIndex: 999997 }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', zIndex: 999997 }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
 
       {/* Modal — 3-part flex: header (pinned) | content (scrolls) | footer (pinned) */}
       <div style={{

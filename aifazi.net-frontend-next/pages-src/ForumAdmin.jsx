@@ -80,8 +80,8 @@ function useNotify() {
 
 function ConfirmModal({ message, onOk, onCancel, danger = false }) {
   return (
-    <div style={S.modal} onClick={onCancel}>
-      <div style={{ ...S.modalBox(danger ? 'var(--red)' : 'var(--border)'), maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+    <div style={S.modal} onClick={onCancel} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      <div style={{ ...S.modalBox(danger ? 'var(--red)' : 'var(--border)'), maxWidth: 400 }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, marginBottom: 12 }}>Confirm</div>
         <p style={{ color: 'var(--muted)', marginBottom: 24, lineHeight: 1.6 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -174,8 +174,8 @@ function UserEditModal({ userId, onClose, onSaved }) {
     <>
       {Toast}
       {confirm && <ConfirmModal {...confirm} onCancel={() => setConfirm(null)} />}
-      <div style={{ ...S.modal, zIndex: 2100 }} onClick={onClose}>
-        <div style={S.modalBox()} onClick={e => e.stopPropagation()}>
+      <div style={{ ...S.modal, zIndex: 2100 }} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        <div style={S.modalBox()} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
 
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
@@ -422,8 +422,8 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
   }
 
   return (
-    <div style={S.modal} onClick={onClose}>
-      <div style={S.modalBox('var(--cyan)')} onClick={e => e.stopPropagation()}>
+    <div style={S.modal} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      <div style={S.modalBox('var(--cyan)')} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: 3 }}>✏️ EDIT THREAD</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20 }}>✕</button>
@@ -507,8 +507,8 @@ function ReplyEditModal({ reply, onClose, onSaved }) {
   }
 
   return (
-    <div style={S.modal} onClick={onClose}>
-      <div style={S.modalBox('var(--orange)')} onClick={e => e.stopPropagation()}>
+    <div style={S.modal} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      <div style={S.modalBox('var(--orange)')} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange)', letterSpacing: 3, marginBottom: 6 }}>✏️ EDIT REPLY</div>
@@ -553,8 +553,8 @@ function BanModal({ user, onClose, onSaved }) {
   }
 
   return (
-    <div style={S.modal} onClick={onClose}>
-      <div style={{ ...S.modalBox('var(--red)'), maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+    <div style={S.modal} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      <div style={{ ...S.modalBox('var(--red)'), maxWidth: 420 }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', letterSpacing: 3, marginBottom: 16 }}>🚫 BAN USER</div>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, marginBottom: 20 }}>Ban {user.username}?</div>
         <label style={S.label}>Ban Reason (shown to user on login)</label>

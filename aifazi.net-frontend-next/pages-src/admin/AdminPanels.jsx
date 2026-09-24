@@ -1342,7 +1342,7 @@ function NewsletterPanel() {
       {/* Broadcast Modal */}
       {broadcastOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          onClick={e => e.target === e.currentTarget && setBroadcast(false)}>
+          onClick={e => e.target === e.currentTarget && setBroadcast(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <div style={{ background: 'var(--bg)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)', width: '100%', maxWidth: 620, boxShadow: '0 0 60px color-mix(in srgb, var(--cyan) 8%, transparent)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Header */}
             <div style={{ padding: '16px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>

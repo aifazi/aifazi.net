@@ -101,7 +101,7 @@ function FwAnimPreview({ id }) {
   const [ping,setPing]=useState(false)
   const map={ smooth:{d:'0.35s',e:'cubic-bezier(0.16,1,0.3,1)',info:'0.35s · elastic'}, snappy:{d:'0.12s',e:'cubic-bezier(0.4,0,0.2,1)',info:'0.12s · crisp'}, bouncy:{d:'0.45s',e:'cubic-bezier(0.34,1.56,0.64,1)',info:'0.45s · spring'}, expressive:{d:'0.5s',e:'cubic-bezier(0.22,1.5,0.36,1)',info:'0.5s · dramatic'}, reduced:{d:'0.2s',e:'cubic-bezier(0.4,0,0.2,1)',info:'0.2s · subtle'}, elastic:{d:'0.5s',e:'cubic-bezier(0.68,-0.55,0.27,1.55)',info:'0.5s · overshoot'}, cinematic:{d:'1.2s',e:'cubic-bezier(0.25,0.1,0.25,1)',info:'1.2s · dramatic'}, none:{d:'0s',e:'linear',info:'instant'} }
   const p=map[id]||map.smooth
-  return <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7, width:'100%', cursor:'pointer' }} title="Click to preview" onClick={()=>{setPing(false);requestAnimationFrame(()=>requestAnimationFrame(()=>setPing(true)))}}><div style={{ width:26, height:26, borderRadius:'50%', background:'color-mix(in srgb, var(--cyan) 18%, transparent)', border:'2px solid var(--cyan)', transform:ping?'scale(1.5) translateY(-10px)':'scale(1) translateY(0)', opacity:id==='none'?(ping?0:1):1, transition:`transform ${p.d} ${p.e}, opacity ${p.d} ${p.e}`, boxShadow:'0 0 8px color-mix(in srgb, var(--cyan) 30%, transparent)' }} onTransitionEnd={()=>setPing(false)}/><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, letterSpacing:1, textAlign:'center' }}>{p.info}</div></div>
+  return <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7, width:'100%', cursor:'pointer' }} title="Click to preview" onClick={()=>{setPing(false);requestAnimationFrame(()=>requestAnimationFrame(()=>setPing(true)))}} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}><div style={{ width:26, height:26, borderRadius:'50%', background:'color-mix(in srgb, var(--cyan) 18%, transparent)', border:'2px solid var(--cyan)', transform:ping?'scale(1.5) translateY(-10px)':'scale(1) translateY(0)', opacity:id==='none'?(ping?0:1):1, transition:`transform ${p.d} ${p.e}, opacity ${p.d} ${p.e}`, boxShadow:'0 0 8px color-mix(in srgb, var(--cyan) 30%, transparent)' }} onTransitionEnd={()=>setPing(false)}/><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, letterSpacing:1, textAlign:'center' }}>{p.info}</div></div>
 }
 function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
   const s = pkg.settings
@@ -194,7 +194,7 @@ function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
 }
 
 function FwStyleCard({ item, isActive, onSelect, accentColor, category }) {
-  return <div onClick={()=>onSelect(item.id)} style={{ background:isActive?`${accentColor}09`:_BG2, border:`2px solid ${isActive?accentColor:_BD}`, borderRadius:10, cursor:'pointer', overflow:'hidden', transition:'all 0.18s cubic-bezier(0.16,1,0.3,1)', boxShadow:isActive?`0 0 18px ${accentColor}28, 0 4px 16px rgba(0,0,0,0.3)`:'0 2px 8px rgba(0,0,0,0.2)', position:'relative', transform:isActive?'translateY(-2px)':'translateY(0)' }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.borderColor=`${accentColor}55`;e.currentTarget.style.transform='translateY(-2px)'}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.borderColor=_BD;e.currentTarget.style.transform='translateY(0)'}}}>
+  return <div onClick={()=>onSelect(item.id)} style={{ background:isActive?`${accentColor}09`:_BG2, border:`2px solid ${isActive?accentColor:_BD}`, borderRadius:10, cursor:'pointer', overflow:'hidden', transition:'all 0.18s cubic-bezier(0.16,1,0.3,1)', boxShadow:isActive?`0 0 18px ${accentColor}28, 0 4px 16px rgba(0,0,0,0.3)`:'0 2px 8px rgba(0,0,0,0.2)', position:'relative', transform:isActive?'translateY(-2px)':'translateY(0)' }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.borderColor=`${accentColor}55`;e.currentTarget.style.transform='translateY(-2px)'}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.borderColor=_BD;e.currentTarget.style.transform='translateY(0)'}}} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
     {isActive&&<div style={{ position:'absolute', top:7, right:7, zIndex:2, width:18, height:18, borderRadius:'50%', background:accentColor, display:'flex', alignItems:'center', justifyContent:'center', fontSize: 11, color:'#000', fontWeight:900 }}>✓</div>}
     <div style={{ height:82, background:_BG, borderBottom:`1px solid ${_BD}`, display:'flex', alignItems:'center', justifyContent:'center', padding:'10px 14px', overflow:'hidden' }}>
       {category==='menu'&&<FwMenuPreview id={item.id}/>}{category==='notify'&&<FwNotifyPreview id={item.id}/>}{category==='dialog'&&<FwDialogPreview id={item.id}/>}{category==='input'&&<FwInputPreview id={item.id}/>}{category==='surface'&&<FwSurfacePreview id={item.id}/>}{category==='loading'&&<FwLoadingPreview id={item.id}/>}{category==='animation'&&<FwAnimPreview id={item.id}/>}
@@ -2141,7 +2141,7 @@ function ThemeLibrary() {
                     transition: 'border-color 0.2s, transform 0.15s, box-shadow 0.2s',
                     boxShadow: isActive ? `0 0 22px ${t.primary}44` : isFocused ? `0 0 16px ${t.primary}33` : '0 2px 12px rgba(0,0,0,0.3)',
                   }}
-                >
+                 role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                   {/* Mini UI mockup — card boxes + button/input/badge samples use the theme's component tokens */}
                   <div style={{ padding: 12, background: t.bg, borderBottom: `1px solid ${t.border}`, position: 'relative', height: 158, overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 36, background: t.bg2, borderRight: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', gap: 5, padding: '8px 4px', alignItems: 'center' }}>
@@ -2316,7 +2316,7 @@ function ThemeLibrary() {
                     display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', textAlign: 'center',
                     boxShadow: isSelected ? `0 0 14px ${currentDef.primary}33` : 'none',
                   }}
-                >
+                 role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                   {/* -- Live demo -- */}
                   <div style={{ width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0, overflow: 'hidden' }}>
 
@@ -2670,7 +2670,7 @@ function ThemeLibrary() {
                         transition: 'border-color 0.2s, transform 0.15s, box-shadow 0.2s',
                         boxShadow: isActive ? `0 0 22px ${t.primary}44` : '0 2px 12px rgba(0,0,0,0.3)',
                       }}
-                    >
+                     role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                       <div style={{ padding: '10px 14px 8px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${t.border}` }}>
                         <div style={{ display: 'flex', gap: 4 }}>
                           {[t.bg, t.primary, t.secondary, t.orange].map((c, i) => (

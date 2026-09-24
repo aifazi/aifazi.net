@@ -534,7 +534,7 @@ export function OrdersTab() {
         <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No orders{filter ? ` with status "${filter}"` : ''}.</div>
       ) : orders.map(o => (
         <div key={o.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpanded(e => ({ ...e, [o.id]: !e[o.id] }))}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpanded(e => ({ ...e, [o.id]: !e[o.id] }))} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <span style={{ fontFamily: MONO, fontSize: 12, color: C, fontWeight: 700 }}>{o.order_number}</span>
             <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}><RelTime iso={o.created_at} /></span>
             <span style={{ flex: 1 }} />
@@ -567,8 +567,8 @@ export function OrdersTab() {
       ))}
 
       {detail && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }} onClick={() => setDetail(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 24, width: '100%', maxWidth: 600, maxHeight: '92vh', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }} onClick={() => setDetail(null)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 24, width: '100%', maxWidth: 600, maxHeight: '92vh', overflowY: 'auto' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: 2, color: G }}>{detail.order_number}</div>
               <StatusBadge status={detail.status} />
@@ -673,7 +673,7 @@ export function QuotesTab() {
         <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No quote requests yet.</div>
       ) : quotes.map(q => (
         <div key={q.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpanded(e => ({ ...e, [q.id]: !e[q.id] }))}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpanded(e => ({ ...e, [q.id]: !e[q.id] }))} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <span style={{ fontFamily: MONO, fontSize: 12, color: C, fontWeight: 700 }}>{q.quote_number}</span>
             <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}><RelTime iso={q.created_at} /></span>
             <span style={{ flex: 1 }} />

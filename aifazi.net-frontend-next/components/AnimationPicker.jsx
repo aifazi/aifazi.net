@@ -249,7 +249,7 @@ export default function AnimationPicker() {
           background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(3px)',
           opacity: open ? 1 : 0, transition: 'opacity 0.3s ease',
         }}
-      />
+       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
 
       {/* Drawer — inline CSS vars override any data-theme cascade */}
       <div style={{

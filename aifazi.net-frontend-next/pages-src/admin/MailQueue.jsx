@@ -65,12 +65,12 @@ function DetailDrawer({ entry, onClose }) {
     <div style={{
       position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'flex-end',
       background:'rgba(0,0,0,0.6)',
-    }} onClick={onClose}>
+    }} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div onClick={e => e.stopPropagation()} style={{
         width:'100%', maxWidth:740, margin:'0 auto', maxHeight:'80vh', overflow:'auto',
         background:C.bg2, border:`1px solid ${C.border}`, borderRadius:'12px 12px 0 0',
         padding:'28px 32px 40px',
-      }}>
+      }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
           <div style={{ fontFamily:C.mono, fontSize:11, color:C.cyan, letterSpacing:2 }}>EMAIL DETAILS</div>
           <button onClick={onClose} style={{ background:'none', border:'none', color:C.muted, cursor:'pointer', fontSize:18 }}>✕</button>
@@ -346,7 +346,7 @@ export default function MailQueue() {
                 borderBottom:`1px solid ${C.border}`,
                 borderLeft:`2px solid ${isSel ? C.cyan : 'transparent'}`,
                 transition:'all 0.1s', cursor:'pointer',
-              }} onClick={() => setExpandId(isExpanded ? null : em.id)}>
+              }} onClick={() => setExpandId(isExpanded ? null : em.id)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                 <Checkbox checked={isSel} onChange={() => toggleSelect(em.id)}
                   style={{ width:24, height:24, padding:0, justifyContent:'center' }}
                   onClick={e => e.stopPropagation()} />
@@ -360,7 +360,7 @@ export default function MailQueue() {
                 <div style={{ fontFamily:C.mono, fontSize: 11, color:C.muted }}>
                   {em.sentAt ? new Date(em.sentAt).toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'}) : '—'}
                 </div>
-                <div style={{ display:'flex', gap:4, flexWrap:'wrap' }} onClick={e => e.stopPropagation()}>
+                <div style={{ display:'flex', gap:4, flexWrap:'wrap' }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                   {['failed','pending','resent'].includes(em.status) && (
                     <Btn label="↺ RETRY"  color={C.green}  small onClick={() => act('resend',  em.id)} disabled={isActing} />
                   )}

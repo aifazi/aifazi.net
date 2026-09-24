@@ -129,7 +129,7 @@ export function StatCard({ label, value, color = 'var(--green)', sub, onClick, s
       ...(style || {}),
     }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = color; if (onClick) e.currentTarget.style.transform = 'translateY(-2px)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }}>
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${color}, transparent)` }} />
       <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>{label}</div>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
@@ -281,7 +281,7 @@ export function Modal({ open, onClose, title, width = 560, noBackdropClose, chil
     <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-label={titleId ? undefined : name}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div onClick={noBackdropClose ? undefined : onClose} aria-hidden="true"
-        style={{ position: 'absolute', inset: 0, background: 'rgba(3,8,14,0.72)', backdropFilter: 'blur(3px)' }} />
+        style={{ position: 'absolute', inset: 0, background: 'rgba(3,8,14,0.72)', backdropFilter: 'blur(3px)' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
       <div ref={panelRef} tabIndex={-1} style={{
         position: 'relative', width: '100%', maxWidth: width, maxHeight: '88vh', overflowY: 'auto',
         background: 'var(--comp-card-bg, var(--bg2))', border: 'var(--comp-card-border, 1px solid var(--border))', borderRadius: 'var(--comp-card-radius, 14px)',

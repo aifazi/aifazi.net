@@ -6,7 +6,7 @@ export default function CartDrawer({ open, onClose, cart, user, loginHref, isLoa
   return (
     <>
       {/* Backdrop */}
-      <div className={`ec-cart-backdrop ${open ? 'open' : ''}`} onClick={onClose} />
+      <div className={`ec-cart-backdrop ${open ? 'open' : ''}`} onClick={onClose}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
 
       {/* Drawer */}
       <div className={`ec-cart-drawer ${open ? 'open' : ''}`}>

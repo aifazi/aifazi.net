@@ -39,7 +39,7 @@ const InfoCard = ({ icon, label, value, color, onClick }) => (
     }}
     onMouseEnter={e => onClick && (e.currentTarget.style.borderColor = 'var(--green)')}
     onMouseLeave={e => onClick && (e.currentTarget.style.borderColor = 'var(--border)')}
-  >
+   role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
       {icon} {label}
     </div>
@@ -492,7 +492,7 @@ function WildcardCalc() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color, letterSpacing: 1, cursor: 'pointer' }}
                 onClick={() => navigator.clipboard.writeText(value).then(() => notify.success('Copied!'))}
                 title="Click to copy"
-              >{value}</div>
+               role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>{value}</div>
             </div>
           ))}
         </div>

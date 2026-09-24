@@ -234,7 +234,7 @@ export default function RoamingRobot() {
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div ref={wrapperRef} className="roaming-robot" style={{ position: 'fixed', left: INITIAL_POS.x, top: INITIAL_POS.y, width: 48, height: 64, zIndex: 9990, pointerEvents: 'none', userSelect: 'none', willChange: 'left, top' }}>
         {msg && <Bubble msg={msg} dir={dir} color={accent} />}
-        <div style={{ cursor: 'pointer', pointerEvents: 'auto' }} title="Click to hide" onClick={() => setVisible(false)}>
+        <div style={{ cursor: 'pointer', pointerEvents: 'auto' }} title="Click to hide" onClick={() => setVisible(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <RobotSVG state={state} dir={dir} color={accent} />
         </div>
       </div>

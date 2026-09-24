@@ -362,7 +362,7 @@ function CdnSettings() {
                   background: active ? `${info.color}11` : 'var(--bg3)',
                   border: `1px solid ${active ? info.color : 'var(--border)'}`,
                   transition: 'all 0.15s',
-                }}>
+                }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                   {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: info.color, borderRadius: '12px 12px 0 0' }} />}
                   <div style={{ fontSize: 22, marginBottom: 8 }}>{info.icon}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>

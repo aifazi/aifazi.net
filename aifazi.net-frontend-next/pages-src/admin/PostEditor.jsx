@@ -395,7 +395,7 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
                 onClick={() => onSelect && onSelect(file)}
                 onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-              >
+               role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                 <MediaThumb file={file} height={isMobile ? 90 : 120} cdnConfig={cdnConfig} />
                 <div style={{ padding: '6px 8px', background: 'var(--bg2)' }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.original_name}</div>

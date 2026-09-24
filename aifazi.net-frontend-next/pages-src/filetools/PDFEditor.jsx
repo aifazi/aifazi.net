@@ -104,7 +104,7 @@ function UploadPhase({ onFile, loading, error }) {
           transition:'all .22s cubic-bezier(.34,1.56,.64,1)',
           boxShadow:over?`0 0 40px color-mix(in srgb, var(--green) 14%, transparent), inset 0 0 40px color-mix(in srgb, var(--green) 3%, transparent)`:undefined,
           transform:over?'scale(1.01)':'scale(1)',
-        }}>
+        }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <input ref={inp} type="file" accept=".pdf" style={{display:'none'}}
           onChange={e=>handle(e.target.files[0])} />
         <div style={{ fontSize:52, marginBottom:16, filter:over?'drop-shadow(0 0 12px var(--green))':undefined,
@@ -345,7 +345,7 @@ function PageSidebar({ session, currentPage, setCurrentPage, onDelete, onRotate 
           onClick={()=>setCurrentPage(i)}
           style={{ cursor:'pointer', border:`2px solid ${i===currentPage?C.accent:C.border}`,
             borderRadius:6, overflow:'hidden', background:C.bg3, position:'relative',
-            transition:'border-color .15s', flexShrink:0 }}>
+            transition:'border-color .15s', flexShrink:0 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <img src={`/api/pdf-editor/thumb/${session.session_id}/${i}`}
             alt={`Page ${i+1}`}
             style={{ width:'100%', display:'block' }} />

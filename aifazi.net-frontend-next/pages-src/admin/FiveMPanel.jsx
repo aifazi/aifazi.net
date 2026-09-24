@@ -512,7 +512,7 @@ function WhitelistPanel() {
         return (
         <div key={app.id} style={{background:BG2,border:`1px solid ${selected?.id===app.id?G+'40':BD}`,
           borderRadius:10,padding:'14px 16px',cursor:'pointer',transition:'border-color 0.14s'}}
-          onClick={e=>{ if(e.target.closest('textarea,input,button,select,[data-core-control]')) return; setSelected(selected?.id===app.id?null:app) }}>
+          onClick={e=>{ if(e.target.closest('textarea,input,button,select,[data-core-control]')) return; setSelected(selected?.id===app.id?null:app) }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontWeight:600,color:TEXT}}>{app.character_name}</div>
@@ -562,7 +562,7 @@ function WhitelistPanel() {
                   ))}
                 </div>
               )}
-              <div onClick={e=>e.stopPropagation()}>
+              <div onClick={e=>e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr auto auto',gap:8,alignItems:'end',marginBottom:10}}>
                   <div>
                     <div style={{fontSize:10,color:MUTED,fontFamily:MONO,marginBottom:4}}>PRIORITY TIER</div>
@@ -1132,7 +1132,7 @@ function BansPanel() {
                       style={{background:selectedPlayer?.id===app.id?'#ff475720':BG3,
                         border:`1px solid ${selectedPlayer?.id===app.id?'#ff475760':BD}`,
                         borderRadius:8,padding:'10px 14px',cursor:'pointer',display:'flex',
-                        alignItems:'center',gap:12,transition:'all 0.12s'}}>
+                        alignItems:'center',gap:12,transition:'all 0.12s'}} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                       <div style={{width:34,height:34,borderRadius:8,background:'#ff475730',
                         display:'flex',alignItems:'center',justifyContent:'center',
                         fontSize:14,fontWeight:700,color:'#ff4757',fontFamily:MONO}}>

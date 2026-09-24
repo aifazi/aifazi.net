@@ -512,7 +512,7 @@ export default function MailTemplates() {
                 background: isActive ? 'rgba(34,211,238,0.07)' : 'transparent',
                 borderLeft:`3px solid ${isActive ? C.cyan : 'transparent'}`,
                 transition:'all 0.12s',
-              }}>
+              }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                 <span style={{ fontSize:16, flexShrink:0 }}>{p.icon}</span>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontFamily:C.mono, fontSize:10, color: isActive ? C.cyan : C.text,

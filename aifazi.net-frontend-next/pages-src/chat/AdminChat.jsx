@@ -860,7 +860,7 @@ export default function AdminChat({ embedded=false }) {
         {isMobile && showSidebar && (
           <div onClick={()=>setShowSidebar(false)} style={{
             position:'absolute', inset:0, background:'rgba(0,0,0,0.6)', zIndex:40, backdropFilter:'blur(2px)'
-          }}/>
+          }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
         )}
 
         {/* Sidebar */}

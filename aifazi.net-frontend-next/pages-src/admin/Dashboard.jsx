@@ -55,7 +55,7 @@ function StatsGrid({ dashStats, isMobile, setView }) {
           background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14,
           padding: isMobile ? '14px' : '18px 20px', cursor: card.action ? 'pointer' : 'default',
           position: 'relative', overflow: 'hidden',
-        }}>
+        }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${card.color}, transparent)`, borderRadius: '14px 14px 0 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>{card.label}</div>

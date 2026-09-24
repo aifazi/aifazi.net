@@ -214,7 +214,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
                       borderLeft: isSelected ? '2px solid var(--green)' : '2px solid transparent',
                       transition: 'all 0.1s',
                     }}
-                  >
+                   role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                     <span style={{ fontSize: 14, width: 20, textAlign: 'center', flexShrink: 0 }}>{cmd.icon}</span>
                     <span style={{ fontSize: 14, color: isSelected ? 'var(--text)' : 'var(--text2)' }}>{cmd.label}</span>
                     {isSelected && (

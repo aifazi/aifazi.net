@@ -154,7 +154,7 @@ function VideoPlayer({ url }) {
 
         {/* Center play overlay */}
         {!playing && (
-          <div onClick={togglePlay} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(0,0,0,0.35)' }}>
+          <div onClick={togglePlay} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(0,0,0,0.35)' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'color-mix(in srgb, var(--green) 85%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px color-mix(in srgb, var(--green) 50%, transparent)' }}>
               <span role="img" aria-label="Play" style={{ color: '#000', fontSize: 22, marginLeft: 4 }}>▶</span>
             </div>
@@ -165,7 +165,7 @@ function VideoPlayer({ url }) {
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, opacity: showControls ? 1 : 0, transition: 'opacity 0.3s', background: 'linear-gradient(transparent, rgba(0,0,0,0.88))', padding: '20px 12px 10px' }}>
           {/* Progress bar */}
           <div style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 2, marginBottom: 10, cursor: 'pointer' }}
-            onClick={e => { const r = e.currentTarget.getBoundingClientRect(); onSeek((e.clientX - r.left) / r.width) }}>
+            onClick={e => { const r = e.currentTarget.getBoundingClientRect(); onSeek((e.clientX - r.left) / r.width) }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ height: '100%', width: `${progress * 100}%`, background: 'linear-gradient(90deg, var(--green), var(--cyan))', borderRadius: 2, position: 'relative', transition: 'width 0.1s' }}>
               <div style={{ position: 'absolute', right: -5, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, background: '#fff', borderRadius: '50%', boxShadow: '0 0 6px color-mix(in srgb, var(--green) 80%, transparent)' }} />
             </div>

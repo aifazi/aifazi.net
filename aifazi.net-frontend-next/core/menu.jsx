@@ -209,7 +209,7 @@ export function Dropdown({ trigger, items = [], placement = 'bottom-left', heade
 
   return (
     <>
-      <div ref={triggerRef} onClick={openDropdown} style={{ display: 'inline-block' }}>
+      <div ref={triggerRef} onClick={openDropdown} style={{ display: 'inline-block' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         {trigger}
       </div>
       {open && (

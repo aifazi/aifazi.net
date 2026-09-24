@@ -82,7 +82,7 @@ export function UserAvatar({ avatar, name = '', size = 40, style, imgStyle, imgC
           background: 'rgba(128,128,128,0.12)', border: '1px solid var(--border)',
           ...style,
         }}
-      >
+       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <span aria-hidden="true">{emoji}</span>
       </div>
     )

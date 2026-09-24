@@ -698,7 +698,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
           <div key={tid(t)} style={{ ...S.card, cursor: 'pointer' }}
             onClick={() => openTicket(tid(t))}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--cyan) 25%, transparent)'; e.currentTarget.style.background = 'var(--bg)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg2)' }}>
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg2)' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
@@ -724,7 +724,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
                 )}
               </div>
               <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', alignItems: 'flex-start' }}
-                onClick={e => e.stopPropagation()}>
+                onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                 {t.status === 'open' && (
                   <button onClick={() => quickStatus(t, 'in-progress')}
                     style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '5px 10px',

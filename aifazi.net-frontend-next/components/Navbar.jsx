@@ -789,7 +789,7 @@ export default function Navbar() {
 
         {/* Mobile menu — always in DOM for aria-controls, hidden when closed */}
         {isMobileNav && menuOpen && (
-          <div className="nav-mobile-backdrop" onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 110 }} aria-hidden="true" />
+          <div className="nav-mobile-backdrop" onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 110 }} aria-hidden="true"  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
         )}
         {isMobileNav && (
           <div id="site-mobile-menu" className="nav-mobile-menu" hidden={!menuOpen} aria-hidden={!menuOpen} style={{ background: 'var(--bg)', backgroundImage: 'linear-gradient(180deg, color-mix(in srgb, var(--bg2) 88%, var(--bg) 12%), var(--bg))', backdropFilter: 'none', WebkitBackdropFilter: 'none', borderTop: '1px solid var(--border)', borderBottom: '1px solid color-mix(in srgb, var(--cyan) 22%, transparent)', display: menuOpen ? 'flex' : 'none', flexDirection: 'column', maxHeight: headerStyle === 'pill' ? 'calc(100dvh - 72px - env(safe-area-inset-top, 0px))' : 'calc(100dvh - 68px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', animation: menuOpen ? 'mobileMenuIn var(--motion-normal) var(--ease-spring)' : 'none', paddingBottom: 'env(safe-area-inset-bottom, 8px)', position: 'fixed', top: headerStyle === 'pill' ? 'calc(68px + env(safe-area-inset-top, 0px))' : 68, left: 0, right: 0, width: '100vw', zIndex: 120, boxShadow: '0 24px 90px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.03)' }}>

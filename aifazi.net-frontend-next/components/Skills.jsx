@@ -177,7 +177,7 @@ function SkillList({ catIdx, items, isAdmin, onUpdate }) {
       )}
       {editIdx !== null && (
         <>
-          <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} />
+          <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px color-mix(in srgb, var(--green) 15%, transparent)', padding: 32, width: '100%', maxWidth: 420, zIndex: 99996 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD SKILL' : '✎ EDIT SKILL'}</div>
             {SKILL_FIELDS.map(f => (
@@ -293,7 +293,7 @@ function CatEditModal({ cat, onSave, onClose }) {
   const [iconOpen, setIconOpen] = useState(false)
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
       <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px color-mix(in srgb, var(--green) 15%, transparent)', padding: 32, width: '100%', maxWidth: 520, zIndex: 99996, maxHeight: '85vh', overflowY: 'auto' }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{cat ? '✎ EDIT CATEGORY' : '+ ADD CATEGORY'}</div>
 
@@ -301,7 +301,7 @@ function CatEditModal({ cat, onSave, onClose }) {
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>ICON</label>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div onClick={() => setIconOpen(true)} style={{ width: 52, height: 52, fontSize: 28, background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: 4 }}>
+            <div onClick={() => setIconOpen(true)} style={{ width: 52, height: 52, fontSize: 28, background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: 4 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
               <IconDisplay value={draft.icon} size={36} />
             </div>
             <input value={draft.icon || ''} onChange={e => setDraft(d => ({ ...d, icon: e.target.value }))} placeholder="or paste emoji / lordicon URL" style={{ ...modalInput, marginBottom: 0, flex: 1 }} />

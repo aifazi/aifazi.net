@@ -874,7 +874,7 @@ function ChangeItem({ change }) {
       background: open ? 'rgba(255,255,255,0.03)' : 'transparent',
       border: `1px solid ${open ? C.border2 : 'transparent'}`,
       transition: 'all 0.15s',
-    }} onClick={() => setOpen(o => !o)}>
+    }} onClick={() => setOpen(o => !o)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
         <Badge type={change.type} />
         <AreaTag label={change.area} />

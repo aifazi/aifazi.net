@@ -137,8 +137,8 @@ function ImagePreview({ file }) {
         )}
       </div>
       {open && (
-        <div className="media-lightbox" onClick={() => setOpen(false)}>
-          <div className="media-lightbox-inner" onClick={e => e.stopPropagation()}>
+        <div className="media-lightbox" onClick={() => setOpen(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div className="media-lightbox-inner" onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <button className="media-lightbox-close" onClick={() => setOpen(false)}>✕</button>
             <img src={mediaUrl(src)} alt={name} style={{ maxWidth: '100%', maxHeight: '82vh', borderRadius: 10, display: 'block', margin: '0 auto' }} />
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 12 }}>{name}</div>

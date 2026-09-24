@@ -708,7 +708,7 @@ export default function NetworkSim({ embedded }) {
           padding: '16px 20px', fontSize: 12, lineHeight: 1.6,
           maxHeight: 400, overflowY: 'auto', cursor: 'text',
         }}
-      >
+       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         {lines.map((line, i) => (
           <div key={i} style={{
             whiteSpace: 'pre',

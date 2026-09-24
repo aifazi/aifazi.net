@@ -112,7 +112,7 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
       {/* Mobile backdrop */}
       {isMobile && open && (
         <div onClick={onClose}
-          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:98, backdropFilter:'blur(2px)' }} />
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:98, backdropFilter:'blur(2px)' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
       )}
 
       <aside style={{

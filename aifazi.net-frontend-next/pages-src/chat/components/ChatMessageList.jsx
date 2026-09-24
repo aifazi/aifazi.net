@@ -155,7 +155,7 @@ export function ChatMessageList({ msgs, me, isAdmin, onDel, onReply, onEdit, onR
                 <div key={m.id || gi} className={selectedIds.includes(m.id) ? 'chat-msg-row chat-msg-row-selected' : 'chat-msg-row'} style={{ display:'flex', gap:8, marginBottom:2, alignItems:'flex-start',
                   background: selectedIds.includes(m.id) ? 'color-mix(in srgb, var(--green) 6%, transparent)' : activeMsg === m.id ? 'color-mix(in srgb, var(--green) 4%, transparent)' : 'transparent' }}>
                   {multiSelect && (
-                    <div onClick={() => toggleSelect(m.id)} style={{ cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', height:34, justifyContent:'center', width:16 }}>
+                    <div onClick={() => toggleSelect(m.id)} style={{ cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', height:34, justifyContent:'center', width:16 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                       <div style={{ width:16, height:16, borderRadius:3, border: selectedIds.includes(m.id) ? `1.5px solid ${T.accent}` : `1.5px solid ${T.border}`, background: selectedIds.includes(m.id) ? T.accent : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:'var(--bg)' }}>
                         {selectedIds.includes(m.id) && '✓'}
                       </div>

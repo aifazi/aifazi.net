@@ -292,7 +292,7 @@ function MailSettings() {
                   background: active ? `${info.color}11` : 'var(--bg3)',
                   border: `1px solid ${active ? info.color : 'var(--border)'}`,
                   transition: 'all 0.15s', position: 'relative',
-                }}>
+                }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                   {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: info.color }} />}
                   <div style={{ fontSize: 20, marginBottom: 8 }}>{info.icon}</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: active ? info.color : 'var(--text)', marginBottom: 4, letterSpacing: 1 }}>{info.name}</div>
@@ -543,7 +543,7 @@ function MailSettings() {
             <div style={{
               width: 36, height: 20, borderRadius: 10, position: 'relative', cursor: 'pointer',
               background: cfg.incomingEnabled ? 'var(--cyan)' : '#1e2d45', transition: 'background 0.2s',
-            }} onClick={() => set('incomingEnabled', !cfg.incomingEnabled)}>
+            }} onClick={() => set('incomingEnabled', !cfg.incomingEnabled)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
               <div style={{
                 position: 'absolute', top: 3, left: cfg.incomingEnabled ? 18 : 3,
                 width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.2s',

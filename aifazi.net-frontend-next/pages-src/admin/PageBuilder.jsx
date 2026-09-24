@@ -507,8 +507,8 @@ export default function PageBuilder() {
 
       {/* Block props modal */}
       {editingLoc && editedBlock && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', padding: 16 }} onClick={() => setEditingLoc(null)}>
-          <div style={modalStyle} onClick={e => e.stopPropagation()}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', padding: 16 }} onClick={() => setEditingLoc(null)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div style={modalStyle} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 12 }}>EDIT BLOCK PROPS</div>
             <BlockEditor block={editedBlock} onClose={() => setEditingLoc(null)} onSave={applyBlock} />
           </div>
