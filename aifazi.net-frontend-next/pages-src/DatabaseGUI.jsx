@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useDialog } from "../core/dialog.jsx";
 import { useNotify } from "../core/notify.jsx";
 import { Checkbox, Select } from "../core/ui.jsx";
+import Clickable from "../core/Clickable.jsx";
 import { getAuthToken } from "../lib/api";
 import api from "../lib/api";  // <- use the internal axios proxy (handles /api prefix + auth token)
 
@@ -305,7 +306,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                   {r:"chat",      desc:"Private chat system access only."},
                   {r:"admin",     desc:"Full admin panel. All permissions."},
                 ].map(({r, desc}) => (
-                  <div key={r} onClick={() => setNewRole(r)} style={{
+                  <button key={r} type="button" onClick={() => setNewRole(r)} aria-pressed={newRole===r} style={{
                     padding:"14px", cursor:"pointer", transition:"all 0.15s",
                     background:newRole===r?roleBg(r):"var(--bg)",
                     border:`1px solid ${newRole===r?roleColor(r)+"55":"var(--border)"}`,
@@ -314,7 +315,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                       {newRole===r?"* ":"o "}{r.toUpperCase()}
                     </div>
                     <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:9, color:"var(--muted)", lineHeight:1.4 }}>{desc}</div>
-                  </div>
+                  </button>
                 ))}
               </div>
               <div style={{ display:"flex", gap:10, alignItems:"center" }}>
@@ -720,10 +721,10 @@ function ExportPanel({ token, toast, stats }) {
           <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:3, color:"var(--border)", marginBottom:14 }}>COLLECTION SIZES</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:8 }}>
             {Object.entries({ users: stats.counts?.users?.total, posts: stats.counts?.posts?.total, threads: stats.counts?.forum?.threads, replies: stats.counts?.forum?.replies, contacts: stats.counts?.contacts, media: stats.counts?.media, staff: stats.counts?.staff, newsletter: stats.counts?.newsletter?.total }).map(([k,v]) => (
-              <div key={k} onClick={() => setCollection(k)} style={{ padding:"12px", background:collection===k?"color-mix(in srgb, var(--green) 3%, transparent)":"var(--bg)", border:`1px solid ${collection===k?"color-mix(in srgb, var(--green) 20%, transparent)":"var(--border)"}`, cursor:"pointer" }}>
+              <Clickable key={k} label={`Collection ${k}`} onClick={() => setCollection(k)} style={{ padding:"12px", background:collection===k?"color-mix(in srgb, var(--green) 3%, transparent)":"var(--bg)", border:`1px solid ${collection===k?"color-mix(in srgb, var(--green) 20%, transparent)":"var(--border)"}`, cursor:"pointer" }}>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:8, letterSpacing:2, color:"var(--muted)", marginBottom:4 }}>{k.toUpperCase()}</div>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:18, fontWeight:700, color:"var(--green,#00ff88)" }}>{(v||0).toLocaleString()}</div>
-              </div>
+              </Clickable>
             ))}
           </div>
         </div>

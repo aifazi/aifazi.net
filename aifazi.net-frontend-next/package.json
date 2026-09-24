@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint . --max-warnings=150",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -38,7 +39,8 @@
     "cssnano": "^9.0.4",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.3",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^3.2.7"
   },
   "overrides": {
     "html-encoding-sniffer": "4.0.0"

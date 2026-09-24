@@ -35,7 +35,6 @@ lint.ignore = [
     "I001",    # import sorting
     "SIM102",  # nested if
     "E722",    # bare except
-    "F821",    # undefined name
 ]
 
 [tool.ruff.lint.per-file-ignores]

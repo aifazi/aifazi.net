@@ -5,6 +5,7 @@ import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
 import { Card, NeonButton, Badge, EmptyState } from '../components/community'
+import Clickable from '@/core/Clickable.jsx'
 import { SITE_URL, STORE_URL, hostOf } from '@/lib/config'
 import StorePlanCard from './store/StorePlanCard'
 import StoreProductCard from './store/StoreProductCard'
@@ -311,11 +312,11 @@ export default function StorePage({ fivem = false }) {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(categories.length, isMobile ? 3 : 6)}, 1fr)`, gap: 12 }}>
                 {categories.map(c => (
-                  <div key={c.id} className="ec-cat-card" onClick={() => { setTabAndUrl('shop'); setActiveCategory(c.slug || c.name) }}>
+                  <Clickable key={c.id} className="ec-cat-card" label={c.name} onClick={() => { setTabAndUrl('shop'); setActiveCategory(c.slug || c.name) }}>
                     <div className="ec-cat-icon">{c.icon || '🛒'}</div>
                     <div className="ec-cat-name">{c.name}</div>
                     <div className="ec-cat-count">{products.filter(p => (p.category || '').toLowerCase() === (c.name || '').toLowerCase()).length} items</div>
-                  </div>
+                  </Clickable>
                 ))}
               </div>
             </div>
@@ -353,18 +354,18 @@ export default function StorePage({ fivem = false }) {
 
           {/* Promo cards */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 48 }}>
-            <div className="ec-cat-card" style={{ textAlign: 'left', padding: 28, alignItems: 'flex-start', cursor: 'pointer' }} onClick={() => setTabAndUrl('vip')}>
+            <Clickable className="ec-cat-card" label="VIP Subscriptions" style={{ textAlign: 'left', padding: 28, alignItems: 'flex-start', cursor: 'pointer' }} onClick={() => setTabAndUrl('vip')}>
               <div style={{ fontSize: 36 }}>👑</div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>VIP Subscriptions</div>
               <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>Unlock in-game perks, priority access, and exclusive content. Auto-applied on join.</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: G, marginTop: 8, fontWeight: 700 }}>VIEW PLANS →</div>
-            </div>
-            <div className="ec-cat-card" style={{ textAlign: 'left', padding: 28, alignItems: 'flex-start', cursor: 'pointer', borderColor: mix(C, 20) }} onClick={() => setTabAndUrl('orders')}>
+            </Clickable>
+            <Clickable className="ec-cat-card" label="Track Your Order" style={{ textAlign: 'left', padding: 28, alignItems: 'flex-start', cursor: 'pointer', borderColor: mix(C, 20) }} onClick={() => setTabAndUrl('orders')}>
               <div style={{ fontSize: 36 }}>📋</div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Track Your Order</div>
               <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>Check status, download digital goods, and manage your account in one place.</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: C, marginTop: 8, fontWeight: 700 }}>MY ACCOUNT →</div>
-            </div>
+            </Clickable>
           </div>
         </div>
       )}

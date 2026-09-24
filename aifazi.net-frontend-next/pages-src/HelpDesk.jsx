@@ -4,6 +4,7 @@ import api from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { useForum } from '../context/ForumContext'
 import { Select } from '../core/ui.jsx'
+import Clickable from '@/core/Clickable.jsx'
 import { getSupabase } from '@/lib/supabase'
 
 const mono = { fontFamily: 'var(--font-mono)' }
@@ -567,7 +568,7 @@ const filtered = ticketList.filter(t => (
           {filtered.map(t => {
             const sc = STATUS_CFG[t.status] || STATUS_CFG.open
             return (
-              <div key={t.id} onClick={() => onViewTicket?.(t.id, '')}
+              <Clickable key={t.id} label={`Ticket ${t.subject || t.id}`} onClick={() => onViewTicket?.(t.id, '')}
                 style={{ cursor: 'pointer', background: 'var(--bg3)', border: '1px solid var(--border)',
                   borderLeft: `3px solid ${sc.color}`, borderRadius: 8, padding: '14px 16px', marginBottom: 8,
                   transition: 'all 0.15s' }}
@@ -588,7 +589,7 @@ const filtered = ticketList.filter(t => (
                 <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', marginTop: 8 }}>
                   #{t.ticket_id || (t.id || '').slice(-6).toUpperCase()} · {t.category || 'general'} · {t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}
                 </div>
-              </div>
+              </Clickable>
             )
           })}
         </div>
