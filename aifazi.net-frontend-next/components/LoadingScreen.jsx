@@ -619,20 +619,19 @@ const BOOT_SEEN_KEY = "aifazi_boot_seen"
 
 export default function LoadingScreen({ onComplete, style }) {
   // Repeat visits skip the theatrical boot (still call onComplete so the veil never sticks).
-  const [skipBoot, setSkipBoot] = useState(false)
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(BOOT_SEEN_KEY)) {
-        setSkipBoot(true)
-        onComplete?.()
-        return
-      }
-      localStorage.setItem(BOOT_SEEN_KEY, "1")
-    } catch { /* private mode */ }
-  }, [onComplete])
-  if (skipBoot) return null
-
+  // useSyncExternalStore keeps this SSR-safe: server snapshot is false (show boot).
+  const bootSeen = useSyncExternalStore(
+    () => () => {},
+    () => { try { return localStorage.getItem(BOOT_SEEN_KEY) === '1' } catch { return false } },
+    () => false,
+  )
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
+  useEffect(() => {
+    try { localStorage.setItem(BOOT_SEEN_KEY, '1') } catch { /* private mode */ }
+    if (bootSeen) onComplete?.()
+  }, [bootSeen, onComplete])
+  if (bootSeen) return null
+
   const raw = style || (mounted ? localStorage.getItem('loading-style') : null) || 'terminal'
   const s = loadingStyleKey(raw, 'terminal')
   return (

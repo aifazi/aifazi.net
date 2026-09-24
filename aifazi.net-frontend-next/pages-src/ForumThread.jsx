@@ -7,6 +7,7 @@ import { dialog } from '../core/dialog.jsx'
 import { notify } from '../core/notify.jsx'
 import { Card, Badge, NeonButton, Avatar, RoleBadge, timeAgo } from '../components/community'
 import { MediaAttachment, MediaUploader } from '../components/MediaPreview'
+import { ErrorRetry } from '../core/Feedback.jsx'
 
 const EMOJIS = ['👍', '❤️', '🔥', '😂', '😮']
 
