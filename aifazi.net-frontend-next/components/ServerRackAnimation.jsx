@@ -1829,6 +1829,188 @@ function firstGeoValue(...values) {
   return found === undefined ? '—' : String(found).trim()
 }
 
+// Mask public IP: keep first two octets, hide the rest (87.201.x.x)
+function maskIp(ip) {
+  if (!ip || ip === '—') return '—'
+  const parts = String(ip).split('.')
+  if (parts.length === 4) return `${parts[0]}.${parts[1]}.x.x`
+  return String(ip).slice(0, 3) + '…'
+}
+
+/** HUD telemetry callout — reticle frame, location headline, fact chips, hover details. */
+function VisitorHud({ visitor }) {
+  const [open, setOpen] = useState(false)
+
+  if (!visitor) {
+    return (
+      <div className="globe-visitor-shell" style={{
+        position: 'absolute', bottom: 12, left: 14, zIndex: 3,
+        pointerEvents: 'none',
+      }}>
+        <div className="globe-visitor-card" style={{
+          borderRadius: 4, padding: '8px 12px',
+          fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
+          letterSpacing: 1.5,
+        }}>
+          <span style={{ color: 'var(--green)', marginRight: 8 }}>◉</span>
+          LOCATING…
+        </div>
+      </div>
+    )
+  }
+
+  const place = [visitor.city, visitor.country].filter(v => v && v !== '—').join(', ') || 'Unknown'
+  const chips = [
+    visitor.ipType && visitor.ipType !== '—' ? visitor.ipType : null,
+    visitor.tz && visitor.tz !== '—' ? visitor.tz : null,
+    visitor.asn && visitor.asn !== '—' ? visitor.asn : null,
+  ].filter(Boolean)
+
+  const details = [
+    ['IP',        maskIp(visitor.ip)],
+    ['LOCATION',  visitor.address || place],
+    ['REGION',    visitor.region],
+    ['COORDS',    visitor.lat !== '—' ? `${visitor.lat}°, ${visitor.lon}°` : '—'],
+    ['TZ',        [visitor.tz, visitor.utc].filter(v => v && v !== '—').join(' ')],
+    ['ISP',       visitor.org],
+    ['NETWORK',   visitor.network],
+  ].filter(([, v]) => v && v !== '—')
+
+  return (
+    <div className="globe-visitor-shell" style={{
+      position: 'absolute', bottom: 12, left: 14, zIndex: 4,
+      maxWidth: 'calc(100% - 28px)',
+    }}>
+      <div
+        className="globe-visitor-card"
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        tabIndex={0}
+        role="status"
+        aria-label={`Visitor telemetry: ${place}`}
+        style={{
+          position: 'relative',
+          borderRadius: 4,
+          padding: '10px 14px 11px',
+          minWidth: 220,
+          maxWidth: 320,
+          cursor: 'default',
+          outline: 'none',
+        }}
+      >
+        {/* Corner brackets — targeting reticle */}
+        {[
+          { top: -1, left: -1, borderTop: '1.5px solid var(--cyan)', borderLeft: '1.5px solid var(--cyan)' },
+          { top: -1, right: -1, borderTop: '1.5px solid var(--cyan)', borderRight: '1.5px solid var(--cyan)' },
+          { bottom: -1, left: -1, borderBottom: '1.5px solid var(--cyan)', borderLeft: '1.5px solid var(--cyan)' },
+          { bottom: -1, right: -1, borderBottom: '1.5px solid var(--cyan)', borderRight: '1.5px solid var(--cyan)' },
+        ].map((s, i) => (
+          <span key={i} aria-hidden style={{
+            position: 'absolute', width: 10, height: 10,
+            pointerEvents: 'none', opacity: 0.85, ...s,
+          }} />
+        ))}
+
+        {/* Status row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
+          <span aria-hidden style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: 'var(--green)',
+            boxShadow: '0 0 8px var(--green)',
+            animation: 'hudPulse 1.8s ease-in-out infinite',
+            flexShrink: 0,
+          }} />
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11,
+            color: 'var(--green)', letterSpacing: 2, fontWeight: 700,
+          }}>LIVE</span>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11,
+            color: 'var(--muted)', letterSpacing: 1.2, marginLeft: 'auto',
+          }}>{visitor.updatedAt || 'NOW'}</span>
+        </div>
+
+        {/* Location headline */}
+        <div style={{
+          fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700,
+          color: 'var(--text)', lineHeight: 1.2, letterSpacing: -0.2,
+          marginBottom: 2, wordBreak: 'break-word',
+        }}>
+          {visitor.flag && visitor.flag !== '—' ? visitor.flag + ' ' : ''}{place}
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 11,
+          color: 'var(--muted)', letterSpacing: 0.4, marginBottom: 8,
+        }}>
+          {maskIp(visitor.ip)}{visitor.ipType && visitor.ipType !== '—' ? ` · ${visitor.ipType}` : ''}
+        </div>
+
+        {/* Fact chips */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+          {chips.map(c => (
+            <span key={c} style={{
+              fontFamily: 'var(--font-mono)', fontSize: 11,
+              color: 'var(--cyan)',
+              background: 'color-mix(in srgb, var(--cyan) 10%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--cyan) 28%, transparent)',
+              borderRadius: 3, padding: '2px 7px', letterSpacing: 0.3,
+              whiteSpace: 'nowrap',
+            }}>{c}</span>
+          ))}
+        </div>
+
+        {/* Expanded details — hover / focus */}
+        <div style={{
+          display: 'grid',
+          gridTemplateRows: open ? '1fr' : '0fr',
+          transition: 'grid-template-rows 0.28s var(--ease-out, ease), opacity 0.22s ease',
+          opacity: open ? 1 : 0,
+          marginTop: open ? 9 : 0,
+        }}>
+          <div style={{ overflow: 'hidden' }}>
+            <div style={{
+              borderTop: '1px solid color-mix(in srgb, var(--cyan) 18%, transparent)',
+              paddingTop: 8,
+              display: 'grid', gridTemplateColumns: '64px minmax(0, 1fr)',
+              columnGap: 8, rowGap: 3,
+            }}>
+              {details.map(([label, val]) => (
+                <div key={label} style={{ display: 'contents' }}>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 11,
+                    color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.45,
+                  }}>{label}</span>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 11,
+                    color: 'var(--cyan)', fontWeight: 600, lineHeight: 1.45,
+                    wordBreak: 'break-word',
+                  }}>{val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes hudPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.45; transform: scale(0.85); }
+        }
+        .globe-visitor-card:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 2px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .globe-visitor-card span[style*="hudPulse"] { animation: none !important; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 function GlobeMode({ visibleRef }) {
   const canvasRef = useRef()
   const wrapRef   = useRef()
@@ -2796,56 +2978,8 @@ function GlobeMode({ visibleRef }) {
       {/* Canvas — fills entire panel */}
       <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }}/>
 
-      {/* Visitor info card — bottom left */}
-      <div className="globe-visitor-shell" style={{
-        position: 'absolute', bottom: 12, left: 14, zIndex: 3,
-        display: 'flex', flexDirection: 'column', gap: 4,
-        pointerEvents: 'none', maxWidth: 'calc(100% - 28px)',
-      }}>
-        {visitor ? (
-          <div className="globe-visitor-card" style={{
-            borderRadius: 6,
-            padding: '9px 11px',
-            display: 'grid',
-            gridTemplateColumns: '96px minmax(0, 1fr)',
-            columnGap: 10,
-            rowGap: 4,
-            width: 330,
-            maxWidth: '100%',
-          }}>
-            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2 }}>VISITOR TRACE</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, color: 'var(--muted)', letterSpacing: 1.4 }}>{visitor.updatedAt || 'LIVE'}</span>
-            </div>
-            {[
-              ['IP ADDRESS',     visitor.ip],
-              ['IP TYPE',        visitor.ipType],
-              ['LOCATION',       `${visitor.flag && visitor.flag !== '—' ? visitor.flag + ' ' : ''}${visitor.city || '—'}, ${visitor.country || '—'}`],
-              ['APPROX ADDRESS', visitor.address],
-              ['REGION',         visitor.region],
-              ['POSTAL',         visitor.postal],
-              ['COORDINATES',    `${visitor.lat || '—'}°, ${visitor.lon || '—'}°`],
-              ['TIMEZONE',       [visitor.tz, visitor.utc].filter(v => v && v !== '—').join(' ') || '—'],
-              ['ISP / ORG',      visitor.org],
-              ['NETWORK',        visitor.network],
-              ['ASN',            visitor.asn],
-              ['CURRENCY',       visitor.currency],
-            ].filter(([, val]) => val && val !== '—' && val !== '—, —' && val !== '°, °').map(([label, val]) => (
-              <div key={label} style={{ display: 'contents' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, color: 'var(--muted)', letterSpacing: 1.4, lineHeight: '1.55' }}>{label}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: label === 'APPROX ADDRESS' ? 'var(--green)' : 'var(--cyan)', fontWeight: 700, lineHeight: '1.55', wordBreak: 'break-word' }}>{val}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 6, color: 'var(--muted)',
-            letterSpacing: 1.5, opacity: 0.6,
-          }}>
-            LOCATING VISITOR…
-          </div>
-        )}
-      </div>
+      {/* Visitor HUD callout — bottom left (reticle frame + chips + hover details) */}
+      <VisitorHud visitor={visitor} />
     </div>
   )
 }
