@@ -615,7 +615,23 @@ const LOADING_STYLE_IDS = ['terminal', 'minimal', 'glitch', 'splash', 'pulse', '
 function loadingStyleKey(v, fallback = 'terminal') {
   return typeof v === 'string' && LOADING_STYLE_IDS.includes(v) ? v : fallback
 }
+const BOOT_SEEN_KEY = "aifazi_boot_seen"
+
 export default function LoadingScreen({ onComplete, style }) {
+  // Repeat visits skip the theatrical boot (still call onComplete so the veil never sticks).
+  const [skipBoot, setSkipBoot] = useState(false)
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(BOOT_SEEN_KEY)) {
+        setSkipBoot(true)
+        onComplete?.()
+        return
+      }
+      localStorage.setItem(BOOT_SEEN_KEY, "1")
+    } catch { /* private mode */ }
+  }, [onComplete])
+  if (skipBoot) return null
+
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
   const raw = style || (mounted ? localStorage.getItem('loading-style') : null) || 'terminal'
   const s = loadingStyleKey(raw, 'terminal')
