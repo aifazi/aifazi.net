@@ -3906,8 +3906,9 @@ footer[data-footer-style]:not([data-footer-style="cyber"])::after {
 /* ── terminal-light: daylight phosphor variant (mirrors THEME_OVERRIDES) ── */
 
 
-/* Per-theme design system lives in theme-library.css */
-@import './theme-library.css';
+/* Per-theme design system lives in theme-library.css (imported from app/layout.tsx
+   AFTER this file so [data-theme] overrides win the cascade). A late @import here
+   is invalid CSS and gets dropped in production builds. */
 
 
 /* ══════════════════════════════════════════

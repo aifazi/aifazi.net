@@ -11,6 +11,10 @@ import { LIGHT_THEMES as LIGHT_THEME_LIST, VALID_THEMES } from '@/core/themeCata
 import { SITE_URL } from '@/lib/config'
 import { jsonLdScript, organizationJsonLd, websiteJsonLd } from '@/lib/seo'
 import './globals.css'
+// Theme personalities must load AFTER globals.css so [data-theme] rules win the
+// cascade. A late @import inside globals.css is invalid CSS (imports must precede
+// other rules) and browsers drop it — which silently disables every theme's look.
+import './theme-library.css'
 
 /** Escape JSON so it can never break out of an inline <script> (`</script>`). */
 function escapeJsonForInline(value: unknown): string {
