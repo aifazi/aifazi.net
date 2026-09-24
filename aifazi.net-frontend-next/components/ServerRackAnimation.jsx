@@ -2177,7 +2177,7 @@ function GlobeMode({ visibleRef }) {
 
     const markers = GLOBE_CITIES.map(c => ({
       location: [c.lat, c.lng],
-      size: c.hub ? 0.09 : 0.05,
+      size: c.hub ? 0.1 : 0.06,
       color: c.hub ? green : cyan,
     }))
 
@@ -2203,6 +2203,16 @@ function GlobeMode({ visibleRef }) {
       })
     }
 
+    // COBE maps a world-dot texture against baseColor — keep the earth visible.
+    // Near-black baseColor makes continents disappear and only bare arcs show.
+    const baseColor = theme.isLight
+      ? [0.62, 0.68, 0.74]
+      : [
+          Math.max(0.14, bg[0] * 0.35 + 0.12),
+          Math.max(0.22, bg[1] * 0.35 + 0.18),
+          Math.max(0.28, bg[2] * 0.35 + 0.22),
+        ]
+
     const globe = createGlobe(canvas, {
       devicePixelRatio: dpr,
       width,
@@ -2211,21 +2221,18 @@ function GlobeMode({ visibleRef }) {
       theta: stateRef.current.theta,
       dark: theme.isLight ? 0 : 1,
       diffuse: 1.2,
-      scale: stateRef.current.zoom,
+      scale: stateRef.current.zoom * 0.92,
       mapSamples: 16000,
-      mapBrightness: theme.isLight ? 3.5 : 5.5,
-      baseColor: [
-        bg[0] * 0.35 + 0.04,
-        bg[1] * 0.35 + 0.05,
-        bg[2] * 0.35 + 0.08,
-      ],
+      mapBrightness: theme.isLight ? 4.5 : 6.5,
+      mapBaseBrightness: 0.04,
+      baseColor,
       markerColor: cyan,
-      glowColor: theme.isLight ? green : cyan,
+      glowColor: theme.isLight ? [0.55, 0.65, 0.75] : [0.15, 0.35, 0.45],
       offset: [0, 0],
       markers,
       arcs,
       arcColor: green,
-      arcWidth: 0.4,
+      arcWidth: 0.45,
       arcHeight: 0.35,
       markerElevation: 0.02,
     })
