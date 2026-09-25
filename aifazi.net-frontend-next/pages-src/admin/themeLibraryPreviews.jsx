@@ -80,6 +80,8 @@ function FwAnimPreview({ id }) {
 }
 
 export {
+  // Style tokens — also consumed by ThemeLibrary.jsx cards/sections
+  _G, _CY, _BG, _BG2, _BG3, _BD, _TX, _MT, _FM, _FD, _tag,
   FwMenuPreview, FwNotifyPreview, FwDialogPreview,
   FwInputPreview, FwSurfacePreview, FwLoadingPreview, FwAnimPreview,
 }

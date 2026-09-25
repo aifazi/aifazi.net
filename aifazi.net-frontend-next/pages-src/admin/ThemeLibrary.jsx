@@ -29,11 +29,26 @@ import { getComponentTokens, resolveComponentTokens } from '@/core/componentToke
 import {
   FwMenuPreview, FwNotifyPreview, FwDialogPreview,
   FwInputPreview, FwSurfacePreview, FwLoadingPreview, FwAnimPreview,
+  // Shared style tokens used across cards/sections in this file
+  _G, _CY, _BG, _BG2, _BG3, _BD, _TX, _MT, _FM, _FD, _tag,
 } from './themeLibraryPreviews'
+
+// Luminance-based light detection (keeps package previews readable on any theme)
+function isLightSurface(hex) {
+  if (!hex) return false
+  const m = String(hex).match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
+  if (!m) return false
+  const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16)
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 140
+}
+
+const LIGHT_PACKAGE_THEMES = new Set([
+  'paper', 'macos', 'brutalist', 'pastel', 'win95', 'neumorph', 'light', 'cyber-light',
+])
 
 function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
   const s = pkg.settings
-  const isLight = ['paper', 'macos', 'brutalist'].includes(s.globalTheme)
+  const isLight = LIGHT_PACKAGE_THEMES.has(s.globalTheme) || isLightSurface(pkg.previewBg)
   const text = isLight ? '#111827' : '#dbeafe'
   const muted = isLight ? '#6b7280' : '#7f95aa'
   const panel = isLight ? 'rgba(255,255,255,0.86)' : 'rgba(8,14,24,0.88)'
@@ -43,6 +58,9 @@ function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
     <button
       onClick={() => onApply(pkg)}
       disabled={isSaving}
+      className="tl-pkg-card"
+      data-active={isActive ? 'true' : undefined}
+      aria-pressed={isActive}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -56,8 +74,6 @@ function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
         boxShadow: isActive ? `0 0 28px ${pkg.accent}35, 0 18px 42px rgba(0,0,0,.32)` : '0 10px 28px rgba(0,0,0,.24)',
         transition: 'transform .18s var(--ease, ease), border-color .18s var(--ease, ease), box-shadow .18s var(--ease, ease)',
       }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)' }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)' }}
     >
       <div style={{ height: 210, width: '100%', background: pkg.previewBg, position: 'relative', overflow: 'hidden', borderBottom: `1px solid ${border}` }}>
         <div style={{ position: 'absolute', inset: 0, opacity: .5, backgroundImage: s.backgroundPattern === 'clean' ? 'none' : `linear-gradient(${pkg.accent}22 1px, transparent 1px), linear-gradient(90deg, ${pkg.accent}18 1px, transparent 1px)`, backgroundSize: s.backgroundPattern === 'circuit' ? '28px 28px' : '18px 18px' }} />
@@ -122,13 +138,66 @@ function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
 }
 
 function FwStyleCard({ item, isActive, onSelect, accentColor, category }) {
-  return <div onClick={()=>onSelect(item.id)} style={{ background:isActive?`${accentColor}09`:_BG2, border:`2px solid ${isActive?accentColor:_BD}`, borderRadius:10, cursor:'pointer', overflow:'hidden', transition:'all 0.18s cubic-bezier(0.16,1,0.3,1)', boxShadow:isActive?`0 0 18px ${accentColor}28, 0 4px 16px rgba(0,0,0,0.3)`:'0 2px 8px rgba(0,0,0,0.2)', position:'relative', transform:isActive?'translateY(-2px)':'translateY(0)' }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.borderColor=`${accentColor}55`;e.currentTarget.style.transform='translateY(-2px)'}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.borderColor=_BD;e.currentTarget.style.transform='translateY(0)'}}} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
-    {isActive&&<div style={{ position:'absolute', top:7, right:7, zIndex:2, width:18, height:18, borderRadius:'50%', background:accentColor, display:'flex', alignItems:'center', justifyContent:'center', fontSize: 11, color:'#000', fontWeight:900 }}>✓</div>}
-    <div style={{ height:82, background:_BG, borderBottom:`1px solid ${_BD}`, display:'flex', alignItems:'center', justifyContent:'center', padding:'10px 14px', overflow:'hidden' }}>
-      {category==='menu'&&<FwMenuPreview id={item.id}/>}{category==='notify'&&<FwNotifyPreview id={item.id}/>}{category==='dialog'&&<FwDialogPreview id={item.id}/>}{category==='input'&&<FwInputPreview id={item.id}/>}{category==='surface'&&<FwSurfacePreview id={item.id}/>}{category==='loading'&&<FwLoadingPreview id={item.id}/>}{category==='animation'&&<FwAnimPreview id={item.id}/>}
+  return (
+    <div
+      onClick={() => onSelect(item.id)}
+      className="tl-style-card"
+      data-active={isActive ? 'true' : undefined}
+      style={{
+        background: isActive ? `${accentColor}09` : _BG2,
+        border: `2px solid ${isActive ? accentColor : _BD}`,
+        borderRadius: 10,
+        cursor: 'pointer',
+        overflow: 'hidden',
+        transition: 'all 0.18s cubic-bezier(0.16,1,0.3,1)',
+        boxShadow: isActive
+          ? `0 0 18px ${accentColor}28, 0 4px 16px rgba(0,0,0,0.3)`
+          : '0 2px 8px rgba(0,0,0,0.2)',
+        position: 'relative',
+        transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
+      }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect(item.id)
+        }
+      }}
+    >
+      {isActive && (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute', top: 7, right: 7, zIndex: 2,
+            width: 18, height: 18, borderRadius: '50%', background: accentColor,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, color: '#000', fontWeight: 900,
+          }}
+        >✓</div>
+      )}
+      <div style={{
+        height: 82, background: _BG, borderBottom: `1px solid ${_BD}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '10px 14px', overflow: 'hidden',
+      }}>
+        {category === 'menu' && <FwMenuPreview id={item.id} />}
+        {category === 'notify' && <FwNotifyPreview id={item.id} />}
+        {category === 'dialog' && <FwDialogPreview id={item.id} />}
+        {category === 'input' && <FwInputPreview id={item.id} />}
+        {category === 'surface' && <FwSurfacePreview id={item.id} />}
+        {category === 'loading' && <FwLoadingPreview id={item.id} />}
+        {category === 'animation' && <FwAnimPreview id={item.id} />}
+      </div>
+      <div style={{ padding: '10px 12px 12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+          {item.icon && <span style={{ fontSize: 13, opacity: 0.8 }}>{item.icon}</span>}
+          <span style={{ fontFamily: _FM, fontSize: 11, fontWeight: 600, color: isActive ? accentColor : _TX, letterSpacing: 0.3 }}>{item.label}</span>
+        </div>
+        <div style={{ fontFamily: _FM, fontSize: 11, color: _MT, lineHeight: 1.5 }}>{item.desc}</div>
+      </div>
     </div>
-    <div style={{ padding:'10px 12px 12px' }}><div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:3 }}>{item.icon&&<span style={{ fontSize:13, opacity:0.8 }}>{item.icon}</span>}<span style={{ fontFamily:_FM, fontSize:11, fontWeight:600, color:isActive?accentColor:_TX, letterSpacing:0.3 }}>{item.label}</span></div><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, lineHeight:1.5 }}>{item.desc}</div></div>
-  </div>
+  )
 }
 function FwCategorySection({ cat, draft, onSelect, isUnsaved }) {
   const activeId=draft[cat.configKey], cols=cat.id==='animation'?150:175
@@ -147,11 +216,11 @@ function FwNavRail({ active, onNav, draft, siteConfig }) {
     <div style={{ fontFamily:_FM, fontSize: 11, letterSpacing:3, color:_MT, paddingBottom:8, marginBottom:4, borderBottom:`1px solid ${_BD}` }}>CATEGORIES</div>
     {FRAMEWORK_CATEGORIES.map(cat=>{
       const isActive=active===cat.id, changed=draft[cat.configKey]!==(siteConfig?.[cat.configKey]||DEFAULT_FRAMEWORK[cat.configKey])
-      return <button key={cat.id} onClick={()=>onNav(cat.id)} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'10px', borderRadius:6, border:'none', background:isActive?`${cat.color}18`:'transparent', color:isActive?cat.color:_MT, cursor:'pointer', fontFamily:_FM, fontSize: 11, letterSpacing:0.5, transition:'all 0.12s', position:'relative', marginBottom:2, boxShadow:isActive?`inset 0 0 0 1px ${cat.color}40`:'none' }} onMouseEnter={e=>{if(!isActive){e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.color=_TX}}} onMouseLeave={e=>{if(!isActive){e.currentTarget.style.background='transparent';e.currentTarget.style.color=_MT}}}>
+      return <button key={cat.id} onClick={()=>onNav(cat.id)} className="tl-nav-item" data-active={isActive?'true':undefined} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'10px', borderRadius:6, border:'none', background:isActive?`${cat.color}18`:'transparent', color:isActive?cat.color:_MT, cursor:'pointer', fontFamily:_FM, fontSize: 11, letterSpacing:0.5, transition:'all 0.12s', position:'relative', marginBottom:2, boxShadow:isActive?`inset 0 0 0 1px ${cat.color}40`:'none' }}>
         {isActive&&<span style={{ position:'absolute', left:0, top:'15%', bottom:'15%', width:2, borderRadius:'0 2px 2px 0', background:cat.color }}/>}
         <span style={{ fontSize:15, width:20, textAlign:'center' }}>{cat.icon}</span>
         <span style={{ flex:1, textAlign:'left' }}>{cat.label}</span>
-        {changed&&<span style={{ width:6, height:6, borderRadius:'50%', background:cat.color, boxShadow:`0 0 5px ${cat.color}` }}/>}
+        {changed&&<span style={{ width:6, height:6, borderRadius:'50%', background:cat.color, boxShadow:`0 0 5px ${cat.color}` }} aria-label="Unsaved changes" />}
       </button>
     })}
     <div style={{ marginTop:20, padding:'14px 12px', background:_BG3, border:`1px solid ${_BD}`, borderRadius:8 }}>
@@ -676,13 +745,20 @@ function customHistReducer(state, action) {
 
 function TabBtn({ id, label, active, onSelect }) {
   return (
-    <button onClick={onSelect} style={{
-      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '9px 16px',
-      background: active ? 'var(--green)' : 'transparent',
-      color: active ? '#000' : 'var(--muted)',
-      border: 'none', cursor: 'pointer', borderRadius: 8,
-      transition: 'all 0.15s', fontWeight: active ? 700 : 400,
-    }}>{label}</button>
+    <button
+      onClick={onSelect}
+      role="tab"
+      aria-selected={active}
+      className="tl-tab-btn"
+      data-active={active ? 'true' : undefined}
+      style={{
+        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '9px 16px',
+        background: active ? 'var(--green)' : 'transparent',
+        color: active ? '#000' : 'var(--muted)',
+        border: 'none', cursor: 'pointer', borderRadius: 8,
+        transition: 'all 0.15s', fontWeight: active ? 700 : 400,
+      }}
+    >{label}</button>
   )
 }
 
@@ -697,6 +773,7 @@ function ThemeLibrary() {
   const [copiedAnim, setCopiedAnim]     = useState(null)
   const [animCat, setAnimCat]           = useState('ALL')
   const [themeSearch, setThemeSearch] = useState('')
+  const [pkgSearch, setPkgSearch] = useState('')
   const [recentThemes, setRecentThemes] = useState(() => {
     try { return JSON.parse(localStorage.getItem('tl_recent') || '[]') } catch { return [] }
   })
@@ -1808,6 +1885,48 @@ function ThemeLibrary() {
         .tl-card:hover { border-color: var(--green) !important; transform: translateY(-2px); }
         .tl-anim-card  { transition: border-color 0.15s, box-shadow 0.15s; cursor: pointer; }
         .tl-anim-card:hover { border-color: var(--green) !important; }
+        /* Package + style cards — CSS hover/focus (no JS style mutation) */
+        .tl-pkg-card:hover:not(:disabled) { transform: translateY(-3px); }
+        .tl-pkg-card:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 3px;
+        }
+        .tl-style-card:hover:not([data-active='true']) {
+          transform: translateY(-2px);
+          border-color: color-mix(in srgb, var(--green) 45%, transparent) !important;
+        }
+        .tl-style-card:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 2px;
+        }
+        .tl-search {
+          width: 100%; max-width: 320px;
+          background: var(--bg3); border: 1px solid var(--border);
+          color: var(--text); padding: 8px 12px 8px 32px;
+          font-family: var(--font-mono); font-size: 11px;
+          border-radius: 6px; outline: none;
+          transition: border-color 0.18s ease;
+          box-sizing: border-box;
+        }
+        .tl-search:focus { border-color: var(--green); }
+        .tl-search-wrap { position: relative; display: inline-flex; align-items: center; }
+        .tl-search-icon {
+          position: absolute; left: 10px; color: var(--muted);
+          font-size: 12px; pointer-events: none;
+        }
+        .tl-tab-btn:hover:not([data-active='true']) { color: var(--text); }
+        .tl-tab-btn:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 2px;
+        }
+        .tl-nav-item:hover:not([data-active='true']) {
+          background: rgba(255,255,255,0.04);
+          color: var(--text);
+        }
+        .tl-nav-item:focus-visible {
+          outline: 2px solid var(--green);
+          outline-offset: 1px;
+        }
       `}</style>
 
       {/* Header */}
@@ -1889,23 +2008,57 @@ function ThemeLibrary() {
             <div style={{ fontFamily: _FM, fontSize: 11, color: _MT, lineHeight: 1.7, maxWidth: 920 }}>
               Each package applies a coordinated set of theme, header, footer, menu, dialog, notification, input, surface, background, loading, and animation settings. After applying one, all manual controls below stay available for fine tuning.
             </div>
+            <div style={{ marginTop: 14 }}>
+              <div className="tl-search-wrap">
+                <span className="tl-search-icon" aria-hidden>⌕</span>
+                <input
+                  className="tl-search"
+                  type="search"
+                  placeholder="Search packages by name, mood, or theme…"
+                  value={pkgSearch}
+                  onChange={e => setPkgSearch(e.target.value)}
+                  aria-label="Search theme packages"
+                />
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16 }}>
-            {THEME_PACKAGES.map(pkg => {
-              const status = packageStatus(pkg)
+          {(() => {
+            const q = pkgSearch.trim().toLowerCase()
+            const list = q
+              ? THEME_PACKAGES.filter(pkg =>
+                  [pkg.name, pkg.mood, pkg.desc, pkg.settings?.globalTheme, pkg.settings?.headerStyle, pkg.settings?.menuStyle]
+                    .filter(Boolean).join(' ').toLowerCase().includes(q))
+              : THEME_PACKAGES
+            if (!list.length) {
               return (
-                <ThemePackageCard
-                  key={pkg.id}
-                  pkg={pkg}
-                  isActive={status.isActive}
-                  isCustomized={status.isCustomized}
-                  isSaving={savingPackage === pkg.id}
-                  onApply={handleThemePackageApply}
-                />
+                <div style={{
+                  padding: '36px 20px', textAlign: 'center',
+                  border: '1px dashed var(--border)', borderRadius: 10,
+                  fontFamily: _FM, fontSize: 11, color: _MT,
+                }}>
+                  No packages match &quot;{pkgSearch}&quot;. Try a different name, mood, or theme.
+                </div>
               )
-            })}
-          </div>
+            }
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16 }}>
+                {list.map(pkg => {
+                  const status = packageStatus(pkg)
+                  return (
+                    <ThemePackageCard
+                      key={pkg.id}
+                      pkg={pkg}
+                      isActive={status.isActive}
+                      isCustomized={status.isCustomized}
+                      isSaving={savingPackage === pkg.id}
+                      onApply={handleThemePackageApply}
+                    />
+                  )
+                })}
+              </div>
+            )
+          })()}
 
           <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontFamily: _FM, fontSize: 11, color: _MT }}>
             {savingPackage
