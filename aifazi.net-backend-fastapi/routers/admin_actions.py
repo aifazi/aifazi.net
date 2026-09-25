@@ -5,7 +5,7 @@ Mounted at /api/admin in main.py
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-from database import supabase
+from database import _escape_ilike, supabase
 from dependencies import require_admin, require_staff
 from permissions import require_permission
 from utils.audit import record as _audit
@@ -465,7 +465,7 @@ def _abuse_find_user(username: str | None, user_id: str | None) -> dict | None:
             res = supabase.table("users").select("*").eq("username", username).limit(1).execute()
             if res.data:
                 return res.data[0]
-            res = supabase.table("users").select("*").ilike("username", username).limit(5).execute()
+            res = supabase.table("users").select("*").ilike("username", _escape_ilike(username)).limit(5).execute()
             for row in (res.data or []):
                 if (row.get("username") or "").lower() == username.lower():
                     return row

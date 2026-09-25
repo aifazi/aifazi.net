@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-from database import supabase
+from database import _escape_ilike, supabase
 from permissions import require_any_permission
 from routers.store_ecommerce import _mark_order_paid
 from utils.audit import record as _audit
@@ -340,7 +340,7 @@ async def create_pos_order(body: PosOrderBody, request: Request, user: dict = De
 
 
 def _coupon_discount(code: str, subtotal_cents: int, product_ids: list[str]) -> dict | None:
-    res = supabase.table("store_coupons").select("*").ilike("code", code.strip()).limit(1).execute()
+    res = supabase.table("store_coupons").select("*").ilike("code", _escape_ilike(code.strip())).limit(1).execute()
     if not res.data:
         return None
     c = res.data[0]

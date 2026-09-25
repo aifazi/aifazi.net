@@ -24,7 +24,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from database import safe_search_term, supabase
+from database import _escape_ilike, safe_search_term, supabase
 from dependencies import get_current_user, require_staff
 from utils.email import render_template
 from utils.email_queue import queue_email, queue_email_bulk
@@ -224,7 +224,7 @@ def _resolve_room_permissions(room_id: str, user: dict) -> set[str]:
             supabase.table("chat_members")
             .select("role")
             .eq("room_id", room_id)
-            .ilike("username", uname)
+            .ilike("username", _escape_ilike(uname))
             .limit(1)
             .execute()
             .data

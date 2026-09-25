@@ -39,7 +39,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 from postgrest.exceptions import APIError
 from pydantic import BaseModel
 
-from database import supabase
+from database import _escape_ilike, supabase
 from dependencies import bearer, get_current_user
 from routers.store_inventory import consume_stock
 
@@ -189,7 +189,7 @@ def _resolve_coupon(code: str, subtotal_cents: int, product_ids: list[str], user
     """Validate a coupon code and compute the discount. Returns None if invalid."""
     if not code:
         return None
-    res = supabase.table("store_coupons").select("*").ilike("code", code.strip()).limit(1).execute()
+    res = supabase.table("store_coupons").select("*").ilike("code", _escape_ilike(code.strip())).limit(1).execute()
     if not res.data:
         return None
     c = res.data[0]
