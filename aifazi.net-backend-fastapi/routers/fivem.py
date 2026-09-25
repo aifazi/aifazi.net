@@ -65,6 +65,9 @@ from utils.email_queue import queue_email
 
 log = logging.getLogger("fivem")
 router = APIRouter()
+# Ban routes register first via fivem_bans_api (thin wrappers over handlers below).
+from routers.fivem_bans_api import router as _bans_router
+router.include_router(_bans_router)
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 FRONTEND_HOST = FRONTEND_URL.replace("https://", "").replace("http://", "")
@@ -1251,7 +1254,6 @@ async def receive_txadmin_event(
     return {"ok": True, "event": event}
 
 # â”€â”€â”€ Bans â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.get("/bans")
 async def list_bans(active: bool | None = None, limit: int = 50, offset: int = 0,
                     _: dict = Depends(require_staff)):
     q = supabase.table("fivem_bans").select("*", count="exact")
@@ -1259,7 +1261,6 @@ async def list_bans(active: bool | None = None, limit: int = 50, offset: int = 0
     res = q.order("banned_at", desc=True).range(offset, offset + limit - 1).execute()
     return {"bans": res.data or [], "total": res.count or 0}
 
-@router.get("/bans/pending-sync")
 async def pending_ban_sync(request: Request, limit: int = 25):
     _check_token(request)
     res = (supabase.table("fivem_bans").select("*")
@@ -1291,7 +1292,6 @@ async def pending_ban_sync(request: Request, limit: int = 25):
         })
     return rows
 
-@router.get("/bans/pending-unban")
 async def pending_unban_sync(request: Request, limit: int = 25):
     _check_token(request)
     res = (supabase.table("fivem_bans").select("*")
@@ -1316,7 +1316,6 @@ async def pending_unban_sync(request: Request, limit: int = 25):
         })
     return rows
 
-@router.post("/bans/mark-synced")
 async def mark_ban_synced(body: BanSyncAck, request: Request):
     _check_token(request)
     ban_res = supabase.table("fivem_bans").select("id,active,source").eq("id", body.ban_id).execute()
@@ -1420,7 +1419,6 @@ async def _push_unban_to_txadmin(ban_id: str) -> dict:
         return {"ok": False, "error": str(exc)}
 
 
-@router.post("/bans")
 async def create_ban(
     body: BanCreate,
     background_tasks: BackgroundTasks,
@@ -1497,19 +1495,16 @@ async def create_ban(
     return {"message": "Player banned â€” queued for server sync.", "ban": ban}
 
 
-@router.patch("/bans/{ban_id}")
 async def update_ban(ban_id: str, body: BanUpdate, _: dict = Depends(require_staff)):
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
     if not updates: raise HTTPException(400, "No fields to update")
     res = supabase.table("fivem_bans").update(updates).eq("id", ban_id).execute()
     return {"message": "Ban updated.", "ban": (res.data or [{}])[0]}
 
-@router.delete("/bans/{ban_id}")
 async def delete_ban(ban_id: str, _: dict = Depends(require_admin)):
     supabase.table("fivem_bans").delete().eq("id", ban_id).execute()
     return {"message": "Ban removed."}
 
-@router.post("/bans/{ban_id}/unban")
 async def unban_player(
     ban_id: str,
     background_tasks: BackgroundTasks,
