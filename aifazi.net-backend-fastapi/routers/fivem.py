@@ -69,8 +69,10 @@ router = APIRouter()
 # over the handlers below — same pattern as auth_staff.py).
 from routers.fivem_bans_api import router as _bans_router
 from routers.fivem_whitelist_api import router as _whitelist_router
+from routers.fivem_status_api import router as _status_router
 router.include_router(_bans_router)
 router.include_router(_whitelist_router)
+router.include_router(_status_router)
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 FRONTEND_HOST = FRONTEND_URL.replace("https://", "").replace("http://", "")
@@ -1533,7 +1535,6 @@ async def unban_player(
 
     return {"message": "Player unbanned â€” queued for server sync.", "ban": ban}
 
-@router.post("/status")
 async def update_server_status(body: StatusUpdate, request: Request):
     _check_token(request)
     now_iso      = _now()
@@ -1579,7 +1580,6 @@ async def update_server_status(body: StatusUpdate, request: Request):
 
     return {"ok": True}
 
-@router.get("/status")
 async def get_server_status():
     res = supabase.table("fivem_status").select("*").eq("id", "main").execute()
     if not res.data:
@@ -1625,7 +1625,6 @@ async def get_server_status():
         "display_message": msg, "fake_data": False,
     }
 
-@router.get("/status/overview")
 async def get_public_status_overview(hours: int = 24):
     """Public, visitor-safe server overview: status summary + sanitized online
     player list (names/ping only — all identifiers stripped) + history series.
@@ -1698,7 +1697,6 @@ async def get_public_status_overview(hours: int = 24):
 
     return {"status": status, "players": players, "history": hist_res.data or [], "hours": hours}
 
-@router.post("/status/refresh")
 async def refresh_status_timestamp(user: dict = Depends(require_staff)):
     """
     Reload the current status for the admin panel without changing the heartbeat
@@ -1712,12 +1710,10 @@ async def refresh_status_timestamp(user: dict = Depends(require_staff)):
     })
     return {"ok": True, **status}
 
-@router.patch("/dev-override")
 async def set_dev_override(body: DevOverride, _: dict = Depends(require_admin)):
     supabase.table("fivem_status").update({"dev_override": body.override}).eq("id", "main").execute()
     return {"ok": True, "override": body.override}
 
-@router.get("/history")
 async def get_status_history(hours: int = 24, _: dict = Depends(require_staff)):
     since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
     res = (supabase.table("server_status_history")
@@ -1726,7 +1722,6 @@ async def get_status_history(hours: int = 24, _: dict = Depends(require_staff)):
     return {"history": res.data or [], "hours": hours}
 
 # â”€â”€â”€ Players â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.post("/players")
 async def update_players(request: Request, background_tasks: BackgroundTasks):
     """Accepts {players: [...]} from Lua. Also handles bare array for compat."""
     _check_token(request)
@@ -1747,7 +1742,6 @@ async def update_players(request: Request, background_tasks: BackgroundTasks):
     _stamp_whitelist_activity(players, _now())
     return {"ok": True, "count": len(players)}
 
-@router.get("/players")
 async def get_players(_: dict = Depends(require_staff)):
     res = supabase.table("fivem_players").select("*").eq("id", "main").execute()
     def _recent(ts, w=120):
@@ -1763,7 +1757,6 @@ async def get_players(_: dict = Depends(require_staff)):
     return {"players": [], "updated_at": None, "online": False}
 
 # â”€â”€â”€ Cron â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.post("/cron/cleanup")
 async def cron_cleanup(request: Request):
     """
     Called by Vercel cron (see vercel.json). Cleans up old realtime events.
@@ -1790,7 +1783,6 @@ async def cron_cleanup(request: Request):
     return {"ok": True, "cutoff": cutoff}
 
 # â”€â”€â”€ Stats tile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.get("/stats")
 async def fivem_stats(_: dict = Depends(require_staff)):
     pending  = supabase.table("fivem_whitelist").select("id", count="exact").eq("status", "pending").execute()
     approved = supabase.table("fivem_whitelist").select("id", count="exact").eq("status", "approved").execute()
@@ -1820,7 +1812,6 @@ async def fivem_stats(_: dict = Depends(require_staff)):
     }
 
 # â”€â”€â”€ Player Records â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.get("/players/records")
 async def list_player_records(
     q: str = "", limit: int = 50, offset: int = 0,
     _: dict = Depends(require_staff),
@@ -1841,7 +1832,6 @@ async def list_player_records(
     return {"records": res.data or [], "total": res.count or 0}
 
 
-@router.get("/players/records/{license_key}")
 async def get_player_record(license_key: str, _: dict = Depends(require_staff)):
     res = supabase.table("player_records").select("*").eq("license_key", license_key).limit(1).execute()
     if not res.data:
@@ -1849,7 +1839,6 @@ async def get_player_record(license_key: str, _: dict = Depends(require_staff)):
     return res.data[0]
 
 
-@router.get("/players/sessions")
 async def list_player_sessions(
     license_key: str = "", limit: int = 50, offset: int = 0,
     _: dict = Depends(require_staff),
@@ -1929,7 +1918,6 @@ def _upsert_player_record(ids: dict, player_name: str, server_id: Any, now_iso: 
     return (res.data or [None])[0]
 
 
-@router.post("/players/join")
 async def record_player_join(body: PlayerJoinBody, request: Request):
     """Lua fires on successful join — creates/updates player record + opens a session."""
     _check_token(request)
@@ -1951,7 +1939,6 @@ async def record_player_join(body: PlayerJoinBody, request: Request):
     return {"ok": True, "record_id": record["id"], "session_id": (sess.data or [{}])[0].get("id")}
 
 
-@router.post("/players/leave")
 async def record_player_leave(body: PlayerLeaveBody, request: Request):
     """Lua fires on playerDropped — closes the open session and bumps totals."""
     _check_token(request)
@@ -1990,7 +1977,6 @@ async def record_player_leave(body: PlayerLeaveBody, request: Request):
     return {"ok": True, "closed": closed, "license_key": license_key}
 
 
-@router.post("/players/heartbeat-sync")
 async def heartbeat_sync_players(body: PlayerHeartbeatBody, request: Request):
     """Lua sends with each heartbeat — keeps player_records.last_seen fresh."""
     _check_token(request)
