@@ -2093,6 +2093,7 @@ function GlobeMode({ visibleRef }) {
   const [visitor, setVisitor] = useState(null)
   const visitorRef = useRef(null)
   const [visitorTrail, setVisitorTrail] = useState([])
+  const visitorTrailRef = useRef([])
   const [themeKey, setThemeKey] = useState(0)
   const themeRef = useRef(null)
   const [focusCity, setFocusCity] = useState(null)
@@ -2105,6 +2106,7 @@ function GlobeMode({ visibleRef }) {
   const packetsOnRef = useRef(true)
   const [routeLog, setRouteLog] = useState([])
   const routeLogRef = useRef([])
+  const routeSyncRef = useRef(0)
   const [fps, setFps] = useState(60)
   const fpsRef = useRef({ samples: 0, last: 0, avg: 60 })
   const [perfTier, setPerfTier] = useState(() => {
@@ -2134,6 +2136,7 @@ function GlobeMode({ visibleRef }) {
   })
 
   useEffect(() => { visitorRef.current = visitor }, [visitor])
+  useEffect(() => { visitorTrailRef.current = visitorTrail }, [visitorTrail])
   useEffect(() => { autoRotateRef.current = autoRotate }, [autoRotate])
   useEffect(() => { packetsOnRef.current = packetsOn }, [packetsOn])
 
@@ -2409,7 +2412,7 @@ function GlobeMode({ visibleRef }) {
     }))
 
     // Ghost trail markers (prior visitor fixes this session)
-    visitorTrail.forEach((t, i) => {
+    visitorTrailRef.current.forEach((t, i) => {
       markers.push({
         id: `trail-${i}`,
         location: [t.lat, t.lon],
@@ -2600,7 +2603,11 @@ function GlobeMode({ visibleRef }) {
               ms: 8 + Math.floor(Math.random() * 40),
             }
             routeLogRef.current = [entry, ...routeLogRef.current].slice(0, 6)
-            setRouteLog(routeLogRef.current)
+            // Throttle React state sync — the rAF loop owns the log; UI polls it
+            if (now - routeSyncRef.current > 400) {
+              routeSyncRef.current = now
+              setRouteLog(routeLogRef.current)
+            }
           }
           const r = allRoutes[p.route]
           // dir 1 = toward hub (request), -1 = away from hub (response)
@@ -2638,9 +2645,9 @@ function GlobeMode({ visibleRef }) {
       try { globe.destroy() } catch { /* already torn down */ }
       globeRef.current = null
     }
-  }, [themeKey, visitor, visibleRef, visitorTrail, perfTier])
+  }, [themeKey, visitor, perfTier])
 
-  // ── ResizeObserver — recreate globe when the panel size changes ──
+  // ── ResizeObserver — resize the live globe (no full recreate) ──
   useEffect(() => {
     const wrap = wrapRef.current
     if (!wrap || typeof ResizeObserver === 'undefined') return
@@ -2652,7 +2659,19 @@ function GlobeMode({ visibleRef }) {
       if (Math.abs(r.width - lastW) < 24 && Math.abs(r.height - lastH) < 24) return
       lastW = r.width; lastH = r.height
       clearTimeout(t)
-      t = setTimeout(() => setThemeKey(k => k + 1), 180)
+      t = setTimeout(() => {
+        const width = Math.max(240, Math.floor(r.width || wrap.clientWidth || 480))
+        const height = Math.max(240, Math.floor(r.height || wrap.clientHeight || 360))
+        const g = globeRef.current
+        if (g) {
+          try {
+            // COBE accepts width/height updates without tearing down WebGL
+            g.update({ width, height })
+            return
+          } catch { /* fall through to recreate */ }
+        }
+        setThemeKey(k => k + 1)
+      }, 220)
     })
     ro.observe(wrap)
     return () => { clearTimeout(t); ro.disconnect() }

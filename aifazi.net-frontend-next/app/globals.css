@@ -3929,104 +3929,159 @@ a:focus-visible,
 }
 
 /* ══════════════════════════════════════════
-   LARGE SCREENS (1400px+) — content measure
-   Keep layouts centered and readable on
-   1440 / ultrawide / 4K displays.
+   FLUID RESPONSIVE SCALE
+   One continuous scale from 320px → 4K.
+   Content measure + type + spacing all clamp().
 ══════════════════════════════════════════ */
 :root {
   --content-max: 1200px;
   --content-max-wide: 1360px;
+  --page-px: clamp(16px, 3.5vw, 64px);
+  --page-py: clamp(56px, 8vw, 120px);
+  --grid-gap: clamp(16px, 2.2vw, 40px);
+  --hero-gap: clamp(24px, 3vw, 48px);
 }
 
-@media (min-width: 1400px) {
-  .nav-inner {
-    max-width: var(--content-max-wide);
-    margin-inline: auto;
-    width: 100%;
-  }
-
-  .hero-layout {
-    max-width: var(--content-max-wide) !important;
-    margin-inline: auto !important;
-  }
-
-  .section-header {
-    max-width: var(--content-max-wide);
-    width: 100%;
-    margin-inline: auto;
-  }
-
-  .about-grid,
-  .contact-grid,
-  .newsletter-grid {
-    max-width: var(--content-max-wide);
-    width: 100%;
-    margin-inline: auto;
-  }
-
-  .skills-grid,
-  .projects-grid,
-  .services-grid {
-    max-width: var(--content-max-wide);
-    margin-inline: auto;
-  }
-
-  /* Type breathes a little more on large canvases */
-  .section-title {
-    font-size: clamp(36px, 3.8vw, 68px) !important;
-    letter-spacing: -1px;
-  }
-
-  #hero h1 {
-    font-size: clamp(64px, 6.2vw, 118px) !important;
-  }
-
-  #hero p {
-    font-size: 18px !important;
-    line-height: 1.9 !important;
-  }
+/* Shared measure for nav / sections / footer — auto-centers on wide canvases */
+.nav-inner,
+.hero-layout,
+.section-header,
+.about-grid,
+.contact-grid,
+.newsletter-grid,
+.skills-grid,
+.projects-grid,
+.services-grid,
+.ftm5-grid,
+.store-footer-grid {
+  width: 100%;
+  max-width: var(--content-max-wide);
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
+/* Hero two-column: fluid gap, left column can shrink, no horizontal clip */
+.hero-layout {
+  gap: var(--hero-gap) !important;
+  flex-wrap: wrap !important;
+  align-items: center;
+}
+
+.hero-left {
+  flex: 1 1 min(520px, 100%) !important;
+  max-width: min(680px, 100%) !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.hero-rack-panel {
+  flex: 1 1 min(420px, 100%) !important;
+  min-width: 0 !important;
+  min-height: clamp(320px, 48vh, 560px) !important;
+}
+
+/* Sections use the shared measure for their content blocks */
+#hero {
+  padding: var(--page-py) var(--page-px) clamp(32px, 5vh, 72px) !important;
+  overflow: hidden;
+}
+
+#about, #experience, #skills, #services,
+#projects, #certifications, #contact,
+#newsletter, #explore {
+  padding: var(--page-py) var(--page-px) !important;
+}
+
+.about-grid {
+  gap: var(--grid-gap) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)) !important;
+}
+
+.contact-grid,
+.newsletter-grid {
+  gap: var(--grid-gap) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)) !important;
+}
+
+.services-grid {
+  gap: var(--grid-gap) !important;
+}
+
+/* Type — continuous scale, never below 11px chrome floor */
+#hero h1 {
+  font-size: clamp(40px, 7.2vw, 118px) !important;
+  letter-spacing: clamp(-2px, -0.15vw, -0.5px) !important;
+  overflow-wrap: anywhere;
+}
+
+#hero p {
+  font-size: clamp(15px, 1.15vw + 12px, 18px) !important;
+  max-width: min(520px, 100%) !important;
+}
+
+.section-title {
+  font-size: clamp(28px, 3.6vw, 68px) !important;
+  letter-spacing: clamp(-1px, -0.05vw, 0px) !important;
+}
+
+.section-tag {
+  font-size: clamp(11px, 0.7vw + 9px, 13px) !important;
+}
+
+/* CTA row never clips */
+.hero-cta-row {
+  max-width: 100% !important;
+  flex-wrap: wrap !important;
+  gap: clamp(10px, 1.4vw, 20px) !important;
+}
+
+.hero-cta-row > * {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* Stats strip scales with the left column */
+.hero-stats {
+  max-width: min(380px, 100%) !important;
+}
+
+/* Visitor HUD — compact, scales with the globe panel */
+.globe-visitor-card {
+  width: min(300px, calc(100vw - 32px)) !important;
+  max-width: 100% !important;
+}
+
+.globe-visitor-shell {
+  max-width: min(320px, calc(100% - 20px)) !important;
+}
+
+/* Globe chrome: hide city labels on narrow panels */
+@media (max-width: 1100px) {
+  .globe-city-label { font-size: 9px !important; letter-spacing: 1px !important; }
+}
+
+@media (max-width: 720px) {
+  .globe-city-label { display: none !important; }
+  .hero-rack-panel { display: none !important; }
+}
+
+/* 1920+ — slightly richer measure and type */
 @media (min-width: 1920px) {
   :root {
     --content-max-wide: 1440px;
-  }
-
-  .about-grid,
-  .contact-grid,
-  .newsletter-grid {
-    gap: 96px !important;
-  }
-
-  .services-grid {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 380px)) !important;
+    --grid-gap: clamp(24px, 2vw, 48px);
   }
 }
 
+/* 2560+ / 4K */
 @media (min-width: 2560px) {
   :root {
     --content-max-wide: 1600px;
   }
-
   #hero h1 {
-    font-size: clamp(80px, 5vw, 140px) !important;
+    font-size: clamp(72px, 4.6vw, 140px) !important;
   }
-
   .section-title {
-    font-size: clamp(44px, 3.2vw, 80px) !important;
-  }
-}
-
-/* Large-screen: keep footer / store chrome on the same content measure */
-@media (min-width: 1400px) {
-  .ftm5-grid,
-  .store-footer-grid {
-    max-width: var(--content-max-wide);
-    margin-inline: auto;
-  }
-
-  .nav-inner > * {
-    /* prevent logo/links from stretching the whole ultrawide bar */
-    min-width: 0;
+    font-size: clamp(40px, 3vw, 80px) !important;
   }
 }
