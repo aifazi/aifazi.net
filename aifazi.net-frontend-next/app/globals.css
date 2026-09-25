@@ -3929,76 +3929,106 @@ a:focus-visible,
 }
 
 /* ══════════════════════════════════════════
-   EXPAND TO FRAME — every component stretches
-   to its container / viewport border at all
-   sizes (small → large → ultrawide). Content
-   GROWS to the frame; it is not pulled inward.
+   RESPONSIVE LAYOUT — balanced at every size
+   Components fill their grid cells / frames,
+   but buttons and text keep natural width.
+   (Restores the proven hero look.)
 ══════════════════════════════════════════ */
 :root {
-  /* Fluid spacing only — no content max-width */
-  --page-px: clamp(12px, 2.5vw, 48px);
-  --page-py: clamp(48px, 7vw, 100px);
-  --grid-gap: clamp(12px, 1.8vw, 32px);
-  --hero-gap: clamp(16px, 2.5vw, 40px);
+  --page-px: clamp(20px, 4vw, 60px);
+  --page-py: clamp(64px, 9vw, 120px);
+  --grid-gap: clamp(16px, 2vw, 36px);
+  --hero-gap: clamp(28px, 3.5vw, 48px);
+  --content-wide: 1400px;
 }
 
-/* ── Page / sections: full-bleed frames ── */
+/* ── Page frames ── */
 html, body {
   width: 100%;
-  max-width: 100%;
   overflow-x: hidden;
-}
-
-main,
-main > section,
-main > div,
-.page-container,
-.page-container > * {
-  width: 100% !important;
-  max-width: none !important;
-  box-sizing: border-box !important;
 }
 
 #hero,
 #about, #experience, #skills, #services,
 #projects, #certifications, #contact,
 #newsletter, #explore {
-  width: 100% !important;
-  max-width: none !important;
+  width: 100%;
   padding: var(--page-py) var(--page-px) !important;
-  box-sizing: border-box !important;
+  box-sizing: border-box;
 }
 
-/* ── Hero: columns expand to fill the row frame ── */
+/* ── Hero: two columns, natural text measure, globe panel beside ── */
 .hero-layout {
-  width: 100% !important;
-  max-width: none !important;
+  width: 100%;
+  max-width: var(--content-wide);
+  margin-inline: auto;
   display: flex !important;
   flex-wrap: wrap !important;
-  align-items: stretch !important;
+  align-items: center !important;
   gap: var(--hero-gap) !important;
-  box-sizing: border-box !important;
-  margin: 0 !important;
+  box-sizing: border-box;
 }
 
 .hero-left {
-  flex: 1 1 min(420px, 100%) !important;
-  width: auto !important;
-  max-width: none !important;
+  flex: 1 1 min(480px, 100%) !important;
   min-width: 0 !important;
-  box-sizing: border-box !important;
+  max-width: 640px !important;
+  box-sizing: border-box;
 }
 
 .hero-rack-panel {
-  flex: 1 1 min(360px, 100%) !important;
-  width: auto !important;
-  max-width: none !important;
+  flex: 1 1 min(380px, 100%) !important;
   min-width: 0 !important;
-  min-height: clamp(300px, 52vh, 640px) !important;
-  box-sizing: border-box !important;
+  min-height: clamp(340px, 50vh, 620px) !important;
+  box-sizing: border-box;
 }
 
-/* ── Grids: stretch to the full frame width ── */
+/* Hero text keeps a readable measure (as in the good layout) */
+#hero h1 {
+  font-size: clamp(48px, 7vw, 110px) !important;
+  letter-spacing: -2px;
+  line-height: 0.92;
+}
+
+#hero p {
+  font-size: clamp(15px, 1.1vw + 12px, 18px) !important;
+  max-width: 520px !important;
+  line-height: 1.9;
+}
+
+/* CTA row: natural button widths, wrap only when needed */
+.hero-cta-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 16px !important;
+  width: 100%;
+  max-width: 100%;
+}
+
+.hero-cta-row > * {
+  flex: 0 1 auto !important;
+  width: auto !important;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+/* Buttons keep their padding-driven width */
+.btn-primary,
+.btn-outline {
+  width: auto !important;
+  max-width: 100%;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Stats strip: compact, not full-bleed */
+.hero-stats {
+  max-width: 380px !important;
+  width: 100%;
+}
+
+/* ── Section grids: fill the content frame, cards fill cells ── */
 .about-grid,
 .contact-grid,
 .newsletter-grid,
@@ -4007,161 +4037,109 @@ main > div,
 .skills-grid,
 .blog-grid,
 .store-grid,
-.certs-grid,
-.hero-stats,
-.ftm5-grid,
-.store-footer-grid {
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  align-items: stretch !important;
-  justify-content: stretch !important;
-  box-sizing: border-box !important;
+.certs-grid {
+  width: 100%;
+  max-width: var(--content-wide);
+  margin-inline: auto;
+  align-items: stretch;
+  box-sizing: border-box;
 }
 
 .about-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
-  gap: var(--grid-gap) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)) !important;
+  gap: clamp(32px, 4vw, 80px) !important;
 }
 
 .contact-grid,
 .newsletter-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)) !important;
   gap: var(--grid-gap) !important;
 }
 
 .services-grid {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)) !important;
   gap: var(--grid-gap) !important;
 }
 
-/* Grid children fill their cell to the border */
-.about-grid > *,
-.contact-grid > *,
-.newsletter-grid > *,
+/* Cards fill their grid cell (not the whole page) */
 .services-grid > *,
 .projects-grid > *,
 .skills-grid > *,
 .blog-grid > *,
 .store-grid > *,
 .certs-grid > *,
-.hero-stats > * {
-  width: 100% !important;
-  max-width: none !important;
-  min-width: 0 !important;
-  height: 100%;
-  box-sizing: border-box !important;
+.about-grid > *,
+.contact-grid > *,
+.newsletter-grid > * {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-/* ── Cards / panels: extend to their frame border ── */
-.card-hover,
-.svc-card,
-.sk-cell,
-.globe-visitor-card,
-.globe-node-panel,
-.store-card,
-.community-card,
-.qi-grid > * {
-  width: 100% !important;
-  max-width: none !important;
-  box-sizing: border-box !important;
+/* ── Section headers align with content ── */
+.section-header {
+  width: 100%;
+  max-width: var(--content-wide);
+  margin-inline: auto;
 }
 
-/* ── Forms / CTAs: fill the row frame ── */
-.form-group,
-.form-group input,
-.form-group textarea,
-.form-group select {
-  width: 100% !important;
-  max-width: none !important;
-  box-sizing: border-box !important;
+.section-title {
+  font-size: clamp(32px, 4vw, 68px) !important;
 }
 
-.hero-cta-row {
-  display: flex !important;
-  width: 100% !important;
-  max-width: none !important;
-  flex-wrap: wrap !important;
-  gap: clamp(10px, 1.2vw, 18px) !important;
+.section-line {
+  flex: 1 1 auto;
+  max-width: 240px;
 }
 
-.hero-cta-row > * {
-  flex: 1 1 auto !important;
-  min-width: min(140px, 100%);
-  text-align: center;
-  justify-content: center;
-}
-
-.btn-primary,
-.btn-outline {
-  width: 100% !important;
-  max-width: none !important;
-  box-sizing: border-box !important;
-}
-
-/* ── Nav bar spans the frame ── */
+/* ── Nav: content measure, not full-bleed stretch ── */
 nav .nav-inner {
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
+  width: 100%;
+  max-width: var(--content-wide);
+  margin-inline: auto;
+  box-sizing: border-box;
   justify-content: space-between;
-  gap: clamp(6px, 1.2vw, 16px);
+  gap: clamp(8px, 1.5vw, 20px);
 }
 
-/* ── Visitor HUD fills its shell ── */
+/* ── Visitor HUD: compact floating card ── */
 .globe-visitor-shell {
-  width: min(100%, 340px) !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
+  width: min(100%, 320px) !important;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .globe-visitor-card {
   width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-/* ── Type scales with the frame ── */
-#hero h1 {
-  font-size: clamp(40px, 7.5vw, 120px) !important;
-  letter-spacing: clamp(-2px, -0.12vw, -0.5px) !important;
-  overflow-wrap: anywhere;
-  max-width: none !important;
+/* ── Forms: full width inside their container (not page) ── */
+.form-group,
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  box-sizing: border-box;
 }
 
-#hero p {
-  font-size: clamp(15px, 1.1vw + 12px, 19px) !important;
-  max-width: min(560px, 100%) !important;
-}
-
-.section-title {
-  font-size: clamp(28px, 3.8vw, 72px) !important;
-}
-
-.section-header {
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-}
-
-.section-line {
-  flex: 1 1 auto !important;
-  max-width: none !important;
-}
-
-/* ── Narrow frames: hide chrome that can't fit ── */
-@media (max-width: 1100px) {
-  .globe-city-label { font-size: 9px !important; letter-spacing: 1px !important; }
-}
-
-@media (max-width: 720px) {
-  .globe-city-label { display: none !important; }
+/* ── Narrow: stack CTAs only when they cannot fit in a row ── */
+@media (max-width: 900px) {
   .hero-rack-panel { display: none !important; }
-  .hero-cta-row > * { flex: 1 1 100% !important; }
+  .hero-left { max-width: 100% !important; }
+}
+
+@media (max-width: 640px) {
+  .hero-cta-row > * {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    white-space: normal;
+  }
+  .globe-city-label { display: none !important; }
 }
 
 @media (max-width: 480px) {
-  #hero h1 { font-size: clamp(36px, 11vw, 56px) !important; }
+  #hero h1 { font-size: clamp(36px, 11vw, 52px) !important; }
   .section-title { font-size: clamp(24px, 8vw, 36px) !important; }
 }
