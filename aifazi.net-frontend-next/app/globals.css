@@ -3929,133 +3929,228 @@ a:focus-visible,
 }
 
 /* ══════════════════════════════════════════
-   FLUID RESPONSIVE SCALE
-   One continuous scale from 320px → 4K.
-   Content measure + type + spacing all clamp().
+   EXPAND TO FRAME — every component stretches
+   to its container / viewport border at all
+   sizes (small → large → ultrawide). Content
+   GROWS to the frame; it is not pulled inward.
 ══════════════════════════════════════════ */
 :root {
-  --content-max: 1200px;
-  --content-max-wide: 1360px;
-  --page-px: clamp(16px, 3.5vw, 64px);
-  --page-py: clamp(56px, 8vw, 120px);
-  --grid-gap: clamp(16px, 2.2vw, 40px);
-  --hero-gap: clamp(24px, 3vw, 48px);
+  /* Fluid spacing only — no content max-width */
+  --page-px: clamp(12px, 2.5vw, 48px);
+  --page-py: clamp(48px, 7vw, 100px);
+  --grid-gap: clamp(12px, 1.8vw, 32px);
+  --hero-gap: clamp(16px, 2.5vw, 40px);
 }
 
-/* Shared measure for nav / sections / footer — auto-centers on wide canvases */
-.nav-inner,
-.hero-layout,
-.section-header,
-.about-grid,
-.contact-grid,
-.newsletter-grid,
-.skills-grid,
-.projects-grid,
-.services-grid,
-.ftm5-grid,
-.store-footer-grid {
+/* ── Page / sections: full-bleed frames ── */
+html, body {
   width: 100%;
-  max-width: var(--content-max-wide);
-  margin-inline: auto;
-  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
-/* Hero two-column: fluid gap, left column can shrink, no horizontal clip */
+main,
+main > section,
+main > div,
+.page-container,
+.page-container > * {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}
+
+#hero,
+#about, #experience, #skills, #services,
+#projects, #certifications, #contact,
+#newsletter, #explore {
+  width: 100% !important;
+  max-width: none !important;
+  padding: var(--page-py) var(--page-px) !important;
+  box-sizing: border-box !important;
+}
+
+/* ── Hero: columns expand to fill the row frame ── */
 .hero-layout {
-  gap: var(--hero-gap) !important;
+  width: 100% !important;
+  max-width: none !important;
+  display: flex !important;
   flex-wrap: wrap !important;
-  align-items: center;
+  align-items: stretch !important;
+  gap: var(--hero-gap) !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
 }
 
 .hero-left {
-  flex: 1 1 min(520px, 100%) !important;
-  max-width: min(680px, 100%) !important;
+  flex: 1 1 min(420px, 100%) !important;
+  width: auto !important;
+  max-width: none !important;
   min-width: 0 !important;
   box-sizing: border-box !important;
 }
 
 .hero-rack-panel {
-  flex: 1 1 min(420px, 100%) !important;
+  flex: 1 1 min(360px, 100%) !important;
+  width: auto !important;
+  max-width: none !important;
   min-width: 0 !important;
-  min-height: clamp(320px, 48vh, 560px) !important;
+  min-height: clamp(300px, 52vh, 640px) !important;
+  box-sizing: border-box !important;
 }
 
-/* Sections use the shared measure for their content blocks */
-#hero {
-  padding: var(--page-py) var(--page-px) clamp(32px, 5vh, 72px) !important;
-  overflow: hidden;
-}
-
-#about, #experience, #skills, #services,
-#projects, #certifications, #contact,
-#newsletter, #explore {
-  padding: var(--page-py) var(--page-px) !important;
+/* ── Grids: stretch to the full frame width ── */
+.about-grid,
+.contact-grid,
+.newsletter-grid,
+.services-grid,
+.projects-grid,
+.skills-grid,
+.blog-grid,
+.store-grid,
+.certs-grid,
+.hero-stats,
+.ftm5-grid,
+.store-footer-grid {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  box-sizing: border-box !important;
 }
 
 .about-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
   gap: var(--grid-gap) !important;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)) !important;
 }
 
 .contact-grid,
 .newsletter-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)) !important;
   gap: var(--grid-gap) !important;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)) !important;
 }
 
 .services-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)) !important;
   gap: var(--grid-gap) !important;
 }
 
-/* Type — continuous scale, never below 11px chrome floor */
-#hero h1 {
-  font-size: clamp(40px, 7.2vw, 118px) !important;
-  letter-spacing: clamp(-2px, -0.15vw, -0.5px) !important;
-  overflow-wrap: anywhere;
+/* Grid children fill their cell to the border */
+.about-grid > *,
+.contact-grid > *,
+.newsletter-grid > *,
+.services-grid > *,
+.projects-grid > *,
+.skills-grid > *,
+.blog-grid > *,
+.store-grid > *,
+.certs-grid > *,
+.hero-stats > * {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 100%;
+  box-sizing: border-box !important;
 }
 
-#hero p {
-  font-size: clamp(15px, 1.15vw + 12px, 18px) !important;
-  max-width: min(520px, 100%) !important;
+/* ── Cards / panels: extend to their frame border ── */
+.card-hover,
+.svc-card,
+.sk-cell,
+.globe-visitor-card,
+.globe-node-panel,
+.store-card,
+.community-card,
+.qi-grid > * {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
 }
 
-.section-title {
-  font-size: clamp(28px, 3.6vw, 68px) !important;
-  letter-spacing: clamp(-1px, -0.05vw, 0px) !important;
+/* ── Forms / CTAs: fill the row frame ── */
+.form-group,
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
 }
 
-.section-tag {
-  font-size: clamp(11px, 0.7vw + 9px, 13px) !important;
-}
-
-/* CTA row never clips */
 .hero-cta-row {
-  max-width: 100% !important;
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
   flex-wrap: wrap !important;
-  gap: clamp(10px, 1.4vw, 20px) !important;
+  gap: clamp(10px, 1.2vw, 18px) !important;
 }
 
 .hero-cta-row > * {
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: 1 1 auto !important;
+  min-width: min(140px, 100%);
+  text-align: center;
+  justify-content: center;
 }
 
-/* Stats strip scales with the left column */
-.hero-stats {
-  max-width: min(380px, 100%) !important;
+.btn-primary,
+.btn-outline {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
 }
 
-/* Visitor HUD — compact, scales with the globe panel */
-.globe-visitor-card {
-  width: min(300px, calc(100vw - 32px)) !important;
-  max-width: 100% !important;
+/* ── Nav bar spans the frame ── */
+nav .nav-inner {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  justify-content: space-between;
+  gap: clamp(6px, 1.2vw, 16px);
 }
 
+/* ── Visitor HUD fills its shell ── */
 .globe-visitor-shell {
-  max-width: min(320px, calc(100% - 20px)) !important;
+  width: min(100%, 340px) !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-/* Globe chrome: hide city labels on narrow panels */
+.globe-visitor-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* ── Type scales with the frame ── */
+#hero h1 {
+  font-size: clamp(40px, 7.5vw, 120px) !important;
+  letter-spacing: clamp(-2px, -0.12vw, -0.5px) !important;
+  overflow-wrap: anywhere;
+  max-width: none !important;
+}
+
+#hero p {
+  font-size: clamp(15px, 1.1vw + 12px, 19px) !important;
+  max-width: min(560px, 100%) !important;
+}
+
+.section-title {
+  font-size: clamp(28px, 3.8vw, 72px) !important;
+}
+
+.section-header {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.section-line {
+  flex: 1 1 auto !important;
+  max-width: none !important;
+}
+
+/* ── Narrow frames: hide chrome that can't fit ── */
 @media (max-width: 1100px) {
   .globe-city-label { font-size: 9px !important; letter-spacing: 1px !important; }
 }
@@ -4063,165 +4158,10 @@ a:focus-visible,
 @media (max-width: 720px) {
   .globe-city-label { display: none !important; }
   .hero-rack-panel { display: none !important; }
+  .hero-cta-row > * { flex: 1 1 100% !important; }
 }
 
-/* 1920+ — slightly richer measure and type */
-@media (min-width: 1920px) {
-  :root {
-    --content-max-wide: 1440px;
-    --grid-gap: clamp(24px, 2vw, 48px);
-  }
-}
-
-/* 2560+ / 4K */
-@media (min-width: 2560px) {
-  :root {
-    --content-max-wide: 1600px;
-  }
-  #hero h1 {
-    font-size: clamp(72px, 4.6vw, 140px) !important;
-  }
-  .section-title {
-    font-size: clamp(40px, 3vw, 80px) !important;
-  }
-}
-
-/* ══════════════════════════════════════════
-   EDGE FIT — components fill their container
-   borders automatically at every screen size.
-══════════════════════════════════════════ */
-
-/* Every direct section block fills the page width */
-main > section,
-main > div,
-.page-container > * {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* Grid children stretch to their cell borders */
-.services-grid > *,
-.projects-grid > *,
-.skills-grid > *,
-.about-grid > *,
-.contact-grid > *,
-.newsletter-grid > *,
-.blog-grid > *,
-.store-grid > *,
-.certs-grid > *,
-.hero-stats > * {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-.services-grid,
-.projects-grid,
-.skills-grid,
-.about-grid,
-.contact-grid,
-.newsletter-grid,
-.blog-grid,
-.store-grid,
-.certs-grid {
-  width: 100%;
-  align-items: stretch !important;
-  justify-content: stretch !important;
-}
-
-/* Cards / panels hug their outer border */
-.card-hover,
-.svc-card,
-.sk-cell,
-.globe-visitor-card,
-.globe-node-panel,
-.store-card,
-.community-card {
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-  overflow: hidden;
-}
-
-/* Forms and primary actions fill the row */
-.form-group,
-.form-group input,
-.form-group textarea,
-.form-group select,
-.btn-primary,
-.btn-outline,
-.hero-cta-row {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.hero-cta-row {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: clamp(10px, 1.2vw, 18px) !important;
-}
-
-.hero-cta-row > * {
-  flex: 1 1 auto;
-  min-width: min(160px, 100%);
-  text-align: center;
-  justify-content: center;
-}
-
-/* Hero columns split the row edge-to-edge */
-.hero-layout {
-  width: 100% !important;
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: stretch !important;
-  gap: var(--hero-gap, 32px) !important;
-  box-sizing: border-box !important;
-}
-
-.hero-left,
-.hero-rack-panel {
-  box-sizing: border-box !important;
-  min-width: 0 !important;
-  overflow: hidden;
-}
-
-/* Nav bar content spans the full bar */
-nav .nav-inner {
-  width: 100%;
-  max-width: var(--content-max-wide);
-  margin-inline: auto;
-  box-sizing: border-box;
-  justify-content: space-between;
-  gap: clamp(8px, 1.5vw, 20px);
-}
-
-/* Visitor HUD fills its shell */
-.globe-visitor-shell {
-  width: min(100%, 320px);
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.globe-visitor-card {
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-/* Tables / data panels */
-.globe-node-panel-grid,
-.community-banner,
-.store-hero {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* No horizontal overflow from children */
-.hero-layout > *,
-.section-header > *,
-.globe-network-shell > * {
-  max-width: 100%;
+@media (max-width: 480px) {
+  #hero h1 { font-size: clamp(36px, 11vw, 56px) !important; }
+  .section-title { font-size: clamp(24px, 8vw, 36px) !important; }
 }
