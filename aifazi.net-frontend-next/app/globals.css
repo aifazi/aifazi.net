@@ -4085,3 +4085,143 @@ a:focus-visible,
     font-size: clamp(40px, 3vw, 80px) !important;
   }
 }
+
+/* ══════════════════════════════════════════
+   EDGE FIT — components fill their container
+   borders automatically at every screen size.
+══════════════════════════════════════════ */
+
+/* Every direct section block fills the page width */
+main > section,
+main > div,
+.page-container > * {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Grid children stretch to their cell borders */
+.services-grid > *,
+.projects-grid > *,
+.skills-grid > *,
+.about-grid > *,
+.contact-grid > *,
+.newsletter-grid > *,
+.blog-grid > *,
+.store-grid > *,
+.certs-grid > *,
+.hero-stats > * {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.services-grid,
+.projects-grid,
+.skills-grid,
+.about-grid,
+.contact-grid,
+.newsletter-grid,
+.blog-grid,
+.store-grid,
+.certs-grid {
+  width: 100%;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+
+/* Cards / panels hug their outer border */
+.card-hover,
+.svc-card,
+.sk-cell,
+.globe-visitor-card,
+.globe-node-panel,
+.store-card,
+.community-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden;
+}
+
+/* Forms and primary actions fill the row */
+.form-group,
+.form-group input,
+.form-group textarea,
+.form-group select,
+.btn-primary,
+.btn-outline,
+.hero-cta-row {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.hero-cta-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: clamp(10px, 1.2vw, 18px) !important;
+}
+
+.hero-cta-row > * {
+  flex: 1 1 auto;
+  min-width: min(160px, 100%);
+  text-align: center;
+  justify-content: center;
+}
+
+/* Hero columns split the row edge-to-edge */
+.hero-layout {
+  width: 100% !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: stretch !important;
+  gap: var(--hero-gap, 32px) !important;
+  box-sizing: border-box !important;
+}
+
+.hero-left,
+.hero-rack-panel {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  overflow: hidden;
+}
+
+/* Nav bar content spans the full bar */
+nav .nav-inner {
+  width: 100%;
+  max-width: var(--content-max-wide);
+  margin-inline: auto;
+  box-sizing: border-box;
+  justify-content: space-between;
+  gap: clamp(8px, 1.5vw, 20px);
+}
+
+/* Visitor HUD fills its shell */
+.globe-visitor-shell {
+  width: min(100%, 320px);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.globe-visitor-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Tables / data panels */
+.globe-node-panel-grid,
+.community-banner,
+.store-hero {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* No horizontal overflow from children */
+.hero-layout > *,
+.section-header > *,
+.globe-network-shell > * {
+  max-width: 100%;
+}
