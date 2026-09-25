@@ -2105,7 +2105,9 @@ function GlobeMode({ visibleRef }) {
   const packetsOnRef = useRef(true)
   const [routeLog, setRouteLog] = useState([])
   const routeLogRef = useRef([])
-  const [perfTier] = useState(() => {
+  const [fps, setFps] = useState(60)
+  const fpsRef = useRef({ samples: 0, last: 0, avg: 60 })
+  const [perfTier, setPerfTier] = useState(() => {
     const cores = navigator.hardwareConcurrency || 4
     const dpr = window.devicePixelRatio || 1
     const small = Math.min(window.innerWidth, window.innerHeight) < 700
@@ -2113,7 +2115,11 @@ function GlobeMode({ visibleRef }) {
     if (cores <= 6) return 'med'
     return 'high'
   })
+  const perfTierRef = useRef(perfTier)
+  useEffect(() => { perfTierRef.current = perfTier }, [perfTier])
   const [themeTone, setThemeTone] = useState('dark')
+  const [monitor, setMonitor] = useState(null)
+  const radarRef = useRef()
   const stateRef  = useRef({
     phi: 0.55,
     theta: 0.18,
@@ -2226,6 +2232,38 @@ function GlobeMode({ visibleRef }) {
     return () => clearInterval(id)
   }, [])
 
+  // ── Real traffic feed — pull live service status when available ──
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch('/api/monitor/status', { credentials: 'same-origin' })
+        if (!res.ok) return
+        const data = await res.json()
+        if (!cancelled && data && Array.isArray(data.services)) {
+          const ups = data.services.filter(s => s.status === 'up')
+          const latencies = ups.map(s => s.latency_avg_ms ?? s.latency_ms).filter(n => Number.isFinite(n))
+          const avg = latencies.length
+            ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length)
+            : null
+          setMonitor({
+            overall: data.overall || 'unknown',
+            up: ups.length,
+            total: data.services.length,
+            avgMs: avg,
+            uptime: ups.length && data.services.length
+              ? (ups.length / data.services.length * 100).toFixed(2)
+              : null,
+          })
+          if (avg != null) setLatencyMs(avg)
+        }
+      } catch { /* offline or endpoint unavailable — keep ticker values */ }
+    }
+    load()
+    const id = setInterval(load, 45000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [])
+
   // ── React to theme changes ──
   useEffect(() => {
     themeRef.current = readGlobeTheme()
@@ -2239,6 +2277,88 @@ function GlobeMode({ visibleRef }) {
     obs.observe(el, { attributes: true, attributeFilter: ['data-theme', 'style'] })
     return () => obs.disconnect()
   }, [])
+
+  // ── Mini radar — draw node azimuths on a tiny canvas ──
+  useEffect(() => {
+    const cv = radarRef.current
+    if (!cv) return
+    const ctx = cv.getContext('2d')
+    if (!ctx) return
+    let raf = 0
+    let sweep = 0
+    const draw = () => {
+      raf = requestAnimationFrame(draw)
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const w = 64, h = 64
+      if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.clearRect(0, 0, w, h)
+      const cx = w / 2, cy = h / 2, r = 26
+
+      // Rings
+      ctx.strokeStyle = 'rgba(0,212,255,0.18)'
+      ctx.lineWidth = 1
+      for (const rr of [r * 0.33, r * 0.66, r]) {
+        ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.stroke()
+      }
+      // Crosshair
+      ctx.beginPath()
+      ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy)
+      ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r)
+      ctx.stroke()
+
+      // Sweep
+      sweep = (sweep + 0.025) % (Math.PI * 2)
+      const grad = ctx.createConicGradient
+        ? ctx.createConicGradient(sweep, cx, cy)
+        : null
+      if (grad) {
+        grad.addColorStop(0, 'rgba(0,255,136,0.35)')
+        grad.addColorStop(0.12, 'rgba(0,255,136,0)')
+        grad.addColorStop(1, 'rgba(0,255,136,0)')
+        ctx.fillStyle = grad
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
+      }
+      // Sweep line
+      ctx.strokeStyle = 'rgba(0,255,136,0.55)'
+      ctx.beginPath()
+      ctx.moveTo(cx, cy)
+      ctx.lineTo(cx + Math.cos(sweep) * r, cy + Math.sin(sweep) * r)
+      ctx.stroke()
+
+      // Node blips (azimuth from longitude, radius from |latitude|)
+      const s = stateRef.current
+      GLOBE_CITIES.forEach(c => {
+        const az = (c.lng / 180) * Math.PI + s.phi
+        const rad = (Math.abs(c.lat) / 90) * r * 0.92
+        const x = cx + Math.cos(az) * rad
+        const y = cy + Math.sin(az) * rad * 0.7
+        const d = Math.hypot(x - cx, y - cy)
+        if (d > r) return
+        ctx.fillStyle = c.hub ? '#00ff88' : '#00d4ff'
+        ctx.globalAlpha = c.hub ? 0.95 : 0.7
+        ctx.beginPath(); ctx.arc(x, y, c.hub ? 2.4 : 1.5, 0, Math.PI * 2); ctx.fill()
+        ctx.globalAlpha = 1
+      })
+    }
+    raf = requestAnimationFrame(draw)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  // ── Export node map as PNG ──
+  const exportPng = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    try {
+      const url = canvas.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `globe-network-${new Date().toISOString().slice(0, 10)}.png`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } catch { /* tainted canvas or unsupported */ }
+  }
 
   // ── Animate to a city (focus recipe) ──
   const focusOnCity = (city) => {
@@ -2406,6 +2526,25 @@ function GlobeMode({ visibleRef }) {
     const frame = (now) => {
       raf = requestAnimationFrame(frame)
       if (visibleRef && visibleRef.current === false) return
+
+      // ── FPS guard: rolling average, auto-downgrade quality if we drop ──
+      const fr = fpsRef.current
+      if (fr.last) {
+        const dt = now - fr.last
+        if (dt > 0 && dt < 200) {
+          fr.samples = Math.min(60, fr.samples + 1)
+          const inst = 1000 / dt
+          fr.avg += (inst - fr.avg) * 0.08
+        }
+      }
+      fr.last = now
+      if (fr.samples === 30 || fr.samples === 60) {
+        const rounded = Math.round(fr.avg)
+        setFps(rounded)
+        // Sustained < 40fps → step down a tier (high → med → low)
+        if (rounded < 40 && perfTierRef.current === 'high') setPerfTier('med')
+        else if (rounded < 28 && perfTierRef.current === 'med') setPerfTier('low')
+      }
 
       const s = stateRef.current
 
@@ -2644,6 +2783,15 @@ function GlobeMode({ visibleRef }) {
             <span className="globe-mode-chip-dot" aria-hidden />
             {packetsOn ? 'PKT' : 'OFF'}
           </button>
+          <button
+            type="button"
+            className="globe-mode-chip"
+            onClick={exportPng}
+            title="Export node map as PNG"
+          >
+            <span className="globe-mode-chip-dot" aria-hidden />
+            PNG
+          </button>
         </div>
 
         <div className="globe-network-stats">
@@ -2651,13 +2799,22 @@ function GlobeMode({ visibleRef }) {
             { label: 'NODES',   value: `${nodeCount}`,   color: 'var(--cyan)'  },
             { label: 'ARCS',    value: `${arcCount}`,    color: 'var(--green)' },
             { label: 'LATENCY', value: `${latencyMs}ms`, color: 'var(--cyan)'  },
-            { label: 'UPTIME',  value: '99.99%',         color: 'var(--green)' },
+            { label: 'UPTIME',  value: monitor?.uptime ? `${monitor.uptime}%` : '99.99%', color: 'var(--green)' },
+            { label: 'FPS',     value: `${fps}`,         color: fps < 30 ? 'var(--orange)' : 'var(--cyan)' },
           ].map(s => (
             <div key={s.label} className="globe-stat-row">
               <span className="globe-stat-label">{s.label}</span>
               <span className="globe-stat-value" style={{ color: s.color }}>{s.value}</span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Mini radar inset — node azimuths + sweep */}
+      <div className="globe-radar" title="Node radar">
+        <canvas ref={radarRef} width={64} height={64} aria-hidden />
+        <div className="globe-radar-label">
+          {monitor ? `${monitor.up}/${monitor.total} UP` : 'RADAR'}
         </div>
       </div>
 
@@ -3012,6 +3169,39 @@ function GlobeMode({ visibleRef }) {
         }
         .globe-mode-chip:active {
           transform: translateY(0);
+        }
+        /* Mini radar inset */
+        .globe-radar {
+          position: absolute;
+          left: 16px; top: 72px;
+          z-index: 4;
+          width: 64px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          pointer-events: none;
+          opacity: 0.9;
+        }
+        .globe-radar canvas {
+          display: block;
+          width: 64px; height: 64px;
+          border-radius: 50%;
+          border: 1px solid color-mix(in srgb, var(--cyan) 22%, transparent);
+          background: color-mix(in srgb, var(--bg) 55%, transparent);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+        }
+        .globe-radar-label {
+          font-family: var(--font-mono);
+          font-size: 9px;
+          letter-spacing: 1.2px;
+          color: var(--muted);
+          white-space: nowrap;
+        }
+        .globe-network-shell[data-globe-tone="light"] .globe-radar canvas {
+          background: color-mix(in srgb, var(--bg2, #fff) 70%, transparent);
+          border-color: color-mix(in srgb, var(--cyan) 28%, transparent);
         }
         .globe-sat-ring {
           position: absolute;
