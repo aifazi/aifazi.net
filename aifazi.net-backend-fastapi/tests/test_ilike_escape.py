@@ -1,5 +1,10 @@
 """Unit tests for ilike wildcard escaping (PostgREST exact-match lookups)."""
+import os
+import sys
 import unittest
+
+os.environ.setdefault("ENV", "development")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database import _escape_ilike, safe_search_term
 
