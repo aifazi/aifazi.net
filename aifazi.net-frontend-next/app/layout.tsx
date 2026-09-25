@@ -44,6 +44,13 @@ export const metadata: Metadata = {
   description: 'Full-stack developer, community platform, blog and tools.',
   metadataBase: new URL(SITE_URL),
   alternates: { canonical: '/' },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/logo.svg', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: '/logo.svg', type: 'image/svg+xml' }],
+  },
   openGraph: {
     type: 'website',
     siteName: 'aifazi.net',
