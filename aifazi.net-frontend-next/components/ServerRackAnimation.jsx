@@ -2371,6 +2371,8 @@ function GlobeMode({ visibleRef }) {
 
     // Flight packets — great-circle interp along hub routes, live-updated markers.
     // Two directions per route: req (client→hub, orange/cyan) and res (hub→client, green).
+    const baseMarkers = markers
+    const scratchPackets = []
     const hubRoutes = GLOBE_CONNECTIONS.filter(e => e.hub).map(e => ({
       from: GLOBE_CITIES[e.from],
       to:   GLOBE_CITIES[e.to],
@@ -2428,10 +2430,11 @@ function GlobeMode({ visibleRef }) {
         }
       }
 
-      // Advance flight packets along great circles (client ⇄ server realtime routing)
-      let nextMarkers = markers
+      // Advance flight packets along great circles (client ⇄ server realtime routing).
+      // Reuse scratch slot objects to avoid allocating a new markers list every frame.
+      let nextMarkers = baseMarkers
       if (packetsOnRef.current && allRoutes.length) {
-        const packetMarkers = packetSeeds.map((p, i) => {
+        packetSeeds.forEach((p, i) => {
           p.t += p.speed
           if (p.t > 1) {
             p.t -= 1
@@ -2460,14 +2463,13 @@ function GlobeMode({ visibleRef }) {
           const color = p.dir === 1
             ? (r.client ? orange : cyan)
             : green
-          return {
-            id: `pkt-${i}`,
-            location: [lat, lng],
-            size: r.client && p.dir === 1 ? 0.032 : 0.022,
-            color,
-          }
+          const slot = scratchPackets[i] || (scratchPackets[i] = { id: `pkt-${i}`, location: [0, 0], size: 0.02, color: green })
+          slot.location[0] = lat
+          slot.location[1] = lng
+          slot.size = r.client && p.dir === 1 ? 0.032 : 0.022
+          slot.color = color
         })
-        nextMarkers = [...markers, ...packetMarkers]
+        nextMarkers = baseMarkers.concat(scratchPackets.slice(0, packetSeeds.length))
       }
 
       try {
@@ -2615,58 +2617,48 @@ function GlobeMode({ visibleRef }) {
         background: 'transparent',
       }}
     >
-      {/* Floating title — top left */}
-      <div className="globe-network-title" style={{
-        position: 'absolute', top: 12, left: 16, zIndex: 3,
-        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3,
-        color: 'var(--cyan)', opacity: 0.55, pointerEvents: 'none',
-        maxWidth: 'calc(100% - 280px)',
-        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-      }}>
-        GLOBAL NETWORK · LIVE CONNECTION MAP
-      </div>
+      {/* Top chrome — single flex row: title · controls · stats (collision-proof) */}
+      <div className="globe-top-bar">
+        <div className="globe-network-title" title="GLOBAL NETWORK · LIVE CONNECTION MAP">
+          GLOBAL NETWORK · LIVE CONNECTION MAP
+        </div>
 
-      {/* Floating stats — top right */}
-      <div className="globe-network-stats" style={{
-        position: 'absolute', top: 10, right: 16, zIndex: 3,
-        display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
-        pointerEvents: 'none',
-      }}>
-        {[
-          { label: 'NODES',   value: `${nodeCount}`,           color: 'var(--cyan)'  },
-          { label: 'ARCS',    value: `${arcCount}`,            color: 'var(--green)' },
-          { label: 'LATENCY', value: `${latencyMs}ms`,         color: 'var(--cyan)'  },
-          { label: 'UPTIME',  value: '99.99%',                 color: 'var(--green)' },
-        ].map(s => (
-          <div key={s.label} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>{s.label}</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11,   color: s.color,       fontWeight: 700  }}>{s.value}</span>
-          </div>
-        ))}
-      </div>
+        <div className="globe-mode-chips" role="toolbar" aria-label="Globe display controls">
+          <button
+            type="button"
+            className={`globe-mode-chip${autoRotate ? ' is-on' : ''}`}
+            onClick={() => setAutoRotate(v => !v)}
+            aria-pressed={autoRotate}
+            title={autoRotate ? 'Pause auto-rotate' : 'Resume auto-rotate'}
+          >
+            <span className="globe-mode-chip-dot" aria-hidden />
+            {autoRotate ? 'AUTO' : 'LOCK'}
+          </button>
+          <button
+            type="button"
+            className={`globe-mode-chip${packetsOn ? ' is-on' : ''}`}
+            onClick={() => setPacketsOn(v => !v)}
+            aria-pressed={packetsOn}
+            title={packetsOn ? 'Hide flight packets' : 'Show flight packets'}
+          >
+            <span className="globe-mode-chip-dot" aria-hidden />
+            {packetsOn ? 'PKT' : 'OFF'}
+          </button>
+        </div>
 
-      {/* Mode chips — sit under the stats stack so they never collide with the title */}
-      <div className="globe-mode-chips" role="toolbar" aria-label="Globe display controls">
-        <button
-          type="button"
-          className={`globe-mode-chip${autoRotate ? ' is-on' : ''}`}
-          onClick={() => setAutoRotate(v => !v)}
-          aria-pressed={autoRotate}
-          title={autoRotate ? 'Pause auto-rotate' : 'Resume auto-rotate'}
-        >
-          <span className="globe-mode-chip-dot" aria-hidden />
-          {autoRotate ? 'AUTO' : 'LOCK'}
-        </button>
-        <button
-          type="button"
-          className={`globe-mode-chip${packetsOn ? ' is-on' : ''}`}
-          onClick={() => setPacketsOn(v => !v)}
-          aria-pressed={packetsOn}
-          title={packetsOn ? 'Hide flight packets' : 'Show flight packets'}
-        >
-          <span className="globe-mode-chip-dot" aria-hidden />
-          {packetsOn ? 'PKT' : 'OFF'}
-        </button>
+        <div className="globe-network-stats">
+          {[
+            { label: 'NODES',   value: `${nodeCount}`,   color: 'var(--cyan)'  },
+            { label: 'ARCS',    value: `${arcCount}`,    color: 'var(--green)' },
+            { label: 'LATENCY', value: `${latencyMs}ms`, color: 'var(--cyan)'  },
+            { label: 'UPTIME',  value: '99.99%',         color: 'var(--green)' },
+          ].map(s => (
+            <div key={s.label} className="globe-stat-row">
+              <span className="globe-stat-label">{s.label}</span>
+              <span className="globe-stat-value" style={{ color: s.color }}>{s.value}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Satellites ring — decorative orbiting edge nodes */}
@@ -2907,12 +2899,67 @@ function GlobeMode({ visibleRef }) {
           text-shadow: 0 0 8px color-mix(in srgb, var(--green) 40%, transparent);
           transition: opacity 0.35s ease;
         }
-        .globe-mode-chips {
+        /* ── Top chrome: flex row, title | controls | stats ── */
+        .globe-top-bar {
           position: absolute;
-          top: 118px; right: 16px;
-          z-index: 4;
+          top: 0; left: 0; right: 0;
+          z-index: 5;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px;
+          pointer-events: none;
+        }
+        .globe-top-bar > * { pointer-events: auto; }
+        .globe-top-bar .globe-network-title {
+          flex: 1 1 auto;
+          min-width: 0;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 2.5px;
+          color: var(--cyan);
+          opacity: 0.62;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          pointer-events: none;
+          text-shadow: 0 0 10px rgba(0,212,255,0.18);
+        }
+        .globe-top-bar .globe-mode-chips {
+          position: static;
           display: flex;
           gap: 6px;
+          flex: 0 0 auto;
+        }
+        .globe-top-bar .globe-network-stats {
+          flex: 0 0 auto;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          align-items: flex-end;
+          padding: 6px 8px;
+          border-radius: 6px;
+          background: rgba(0,0,0,0.08);
+          border: 1px solid rgba(0,212,255,0.08);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          pointer-events: none;
+        }
+        .globe-stat-row {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+        .globe-stat-label {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          color: var(--muted);
+          letter-spacing: 2px;
+        }
+        .globe-stat-value {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          font-weight: 700;
         }
         .globe-mode-chip {
           display: inline-flex;
@@ -2934,6 +2981,7 @@ function GlobeMode({ visibleRef }) {
           transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease, transform 0.12s ease;
           user-select: none;
           line-height: 1;
+          flex-shrink: 0;
         }
         .globe-mode-chip-dot {
           width: 5px; height: 5px;
@@ -3206,23 +3254,25 @@ function GlobeMode({ visibleRef }) {
         .globe-network-shell[data-globe-tone="light"] .globe-hub-ring {
           box-shadow: 0 0 12px color-mix(in srgb, var(--green) 40%, transparent);
         }
-        @media (max-width: 640px) {
+        @media (max-width: 720px) {
+          .globe-top-bar {
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px 12px;
+          }
+          .globe-top-bar .globe-network-title {
+            flex: 1 1 100%;
+            letter-spacing: 1.5px;
+            font-size: 10px;
+          }
+          .globe-top-bar .globe-network-stats {
+            margin-left: auto;
+          }
           .globe-arc-label { display: none; }
           .globe-city-label { font-size: 9px; letter-spacing: 1px; }
           .globe-node-panel { width: min(200px, calc(100% - 28px)); }
-          .globe-mode-chips {
-            top: auto;
-            bottom: 10px;
-            right: 14px;
-            left: auto;
-          }
-          .globe-network-title {
-            max-width: calc(100% - 32px);
-            letter-spacing: 2px;
-            font-size: 10px;
-          }
           .globe-sat-ring { display: none; }
-          .globe-route-log { bottom: 88px; max-width: calc(100% - 28px); }
+          .globe-route-log { bottom: 52px; max-width: calc(100% - 28px); }
         }
         @media (prefers-reduced-motion: reduce) {
           .globe-hub-ring,

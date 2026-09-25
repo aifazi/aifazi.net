@@ -297,7 +297,12 @@ function IpInfo() {
     setError(''); setResult(null)
     setLoading(true)
     try {
-      const url = target ? `https://ipapi.co/${target}/json/` : 'https://ipapi.co/json/'
+      // Only allow IPv4/IPv6 literals or hostname-safe lookups — never raw path input.
+      const q = String(target || '').trim()
+      if (q && !/^[0-9a-fA-F.:]{2,45}$/.test(q)) {
+        throw new Error('Enter a valid IP address')
+      }
+      const url = q ? `https://ipapi.co/${encodeURIComponent(q)}/json/` : 'https://ipapi.co/json/'
       const res = await fetch(url)
       const data = await res.json()
       if (data.error) throw new Error(data.reason || 'Lookup failed')
