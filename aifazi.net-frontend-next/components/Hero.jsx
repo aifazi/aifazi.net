@@ -359,7 +359,7 @@ export default function Hero() {
       <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, color-mix(in srgb, var(--cyan) 6%, transparent) 0%, transparent 65%)', left: 100, bottom: -100, animation: 'orb-drift 20s ease-in-out infinite reverse', pointerEvents: 'none' }} />
 
       {/* ── Two-column layout: content left, server rack animation right ── */}
-      <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, display: 'flex', alignItems: 'center', gap: 40, position: 'relative', zIndex: 2, flexWrap: 'wrap' }} className="hero-layout">
+      <div style={{ width: '100%', maxWidth: 1360, marginLeft: 'auto', marginRight: 'auto', minWidth: 0, display: 'flex', alignItems: 'center', gap: 40, position: 'relative', zIndex: 2, flexWrap: 'wrap' }} className="hero-layout">
 
       {/* Left: all existing content */}
       <div ref={heroLeftRef} className="hero-left" style={{ flex: '1 1 520px', width: '100%', maxWidth: 680, minWidth: 0 }}>

@@ -3927,3 +3927,106 @@ a:focus-visible,
 [role="button"]:focus-visible {
   filter: brightness(1.08);
 }
+
+/* ══════════════════════════════════════════
+   LARGE SCREENS (1400px+) — content measure
+   Keep layouts centered and readable on
+   1440 / ultrawide / 4K displays.
+══════════════════════════════════════════ */
+:root {
+  --content-max: 1200px;
+  --content-max-wide: 1360px;
+}
+
+@media (min-width: 1400px) {
+  .nav-inner {
+    max-width: var(--content-max-wide);
+    margin-inline: auto;
+    width: 100%;
+  }
+
+  .hero-layout {
+    max-width: var(--content-max-wide) !important;
+    margin-inline: auto !important;
+  }
+
+  .section-header {
+    max-width: var(--content-max-wide);
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  .about-grid,
+  .contact-grid,
+  .newsletter-grid {
+    max-width: var(--content-max-wide);
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  .skills-grid,
+  .projects-grid,
+  .services-grid {
+    max-width: var(--content-max-wide);
+    margin-inline: auto;
+  }
+
+  /* Type breathes a little more on large canvases */
+  .section-title {
+    font-size: clamp(36px, 3.8vw, 68px) !important;
+    letter-spacing: -1px;
+  }
+
+  #hero h1 {
+    font-size: clamp(64px, 6.2vw, 118px) !important;
+  }
+
+  #hero p {
+    font-size: 18px !important;
+    line-height: 1.9 !important;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --content-max-wide: 1440px;
+  }
+
+  .about-grid,
+  .contact-grid,
+  .newsletter-grid {
+    gap: 96px !important;
+  }
+
+  .services-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 380px)) !important;
+  }
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --content-max-wide: 1600px;
+  }
+
+  #hero h1 {
+    font-size: clamp(80px, 5vw, 140px) !important;
+  }
+
+  .section-title {
+    font-size: clamp(44px, 3.2vw, 80px) !important;
+  }
+}
+
+/* Large-screen: keep footer / store chrome on the same content measure */
+@media (min-width: 1400px) {
+  .ftm5-grid,
+  .store-footer-grid {
+    max-width: var(--content-max-wide);
+    margin-inline: auto;
+  }
+
+  .nav-inner > * {
+    /* prevent logo/links from stretching the whole ultrawide bar */
+    min-width: 0;
+  }
+}
