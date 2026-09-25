@@ -394,7 +394,7 @@ function PresetPicker({ presets, value, onChange, renderPreview, cols = 3 }) {
             <div style={{ padding: '6px 8px 7px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: active ? 'var(--green)' : 'var(--text)', letterSpacing: 0.5 }}>{p.name}</span>
-                {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, letterSpacing: 2, color: 'var(--green)', padding: '1px 4px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', borderRadius: 2 }}>ACTIVE</span>}
+                {active && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--green)', padding: '1px 4px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', borderRadius: 2 }}>ACTIVE</span>}
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.4 }}>{p.desc}</div>
             </div>
