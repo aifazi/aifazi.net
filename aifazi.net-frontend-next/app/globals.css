@@ -74,6 +74,8 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Root follows the active theme --bg (overscroll + first paint) */
+  background: var(--bg);
 }
 
 body {
@@ -4134,4 +4136,11 @@ nav .nav-inner {
 @media (max-width: 480px) {
   #hero h1 { font-size: clamp(36px, 11vw, 52px) !important; }
   .section-title { font-size: clamp(24px, 8vw, 36px) !important; }
+}
+
+/* ── Theme background must track data-theme ──
+   Surface styles may add images/gradients on top, but the solid
+   fill is always the active theme's --bg. */
+html, body {
+  background-color: var(--bg) !important;
 }
