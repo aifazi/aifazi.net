@@ -215,10 +215,16 @@ function GlitchName({ children, color }) {
     return () => clearTimeout(t)
   }, [])
 
+  // data-text must be a plain string — React nodes stringify to
+  // "[object Object]" and the glitch ::before/::after overlays garble the label.
+  const glitchText = typeof children === 'string' || typeof children === 'number'
+    ? String(children)
+    : ''
+
   return (
     <span
-      className={glitching ? 'glitch-active' : ''}
-      data-text={children}
+      className={glitching && glitchText ? 'glitch-active' : ''}
+      data-text={glitchText || undefined}
       style={{
         color: color || 'var(--text)',
         textShadow: color === 'var(--green)'
@@ -359,9 +365,14 @@ export default function Hero() {
       <div ref={heroLeftRef} className="hero-left" style={{ flex: '1 1 520px', width: '100%', maxWidth: 680, minWidth: 0 }}>
         {/* Status row */}
         <AnimatableWrapper animKey="hero.statusRow" label="Status Row" currentAnim="fadeRight 0.6s 0.05s both">
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--green)', letterSpacing: 4, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'glow-pulse 2s ease-in-out infinite' }} />
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--green)',
+          letterSpacing: 4, marginBottom: 24,
+          display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+          position: 'relative', zIndex: 6,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'glow-pulse 2s ease-in-out infinite', flexShrink: 0 }} />
             <span style={{ color: 'var(--cyan)' }}>&gt; </span>
             <EditableText contentKey="hero.status" defaultValue="AVAILABLE FOR NEW PROJECTS" />
           </div>
@@ -470,6 +481,9 @@ export default function Hero() {
           alignSelf: 'stretch',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative',
+          // Own stacking context so globe chrome can't paint over hero-left badges
+          zIndex: 1,
+          isolation: 'isolate',
         }} className="hero-rack-panel">
           <ServerRackAnimation />
         </div>
