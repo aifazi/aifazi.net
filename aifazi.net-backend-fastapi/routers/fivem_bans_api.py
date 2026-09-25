@@ -6,17 +6,10 @@ Same pattern as auth_staff.py.
 from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
-from pydantic import BaseModel
 
 from dependencies import require_admin, require_staff
 
 router = APIRouter()
-
-
-class BanSyncAck(BaseModel):
-    ban_id: str
-    ok: bool = True
-    message: str | None = None
 
 
 @router.get("/bans")
@@ -42,10 +35,11 @@ async def pending_unban_sync(request: Request, limit: int = 25):
 
 
 @router.post("/bans/mark-synced")
-async def mark_ban_synced(body: BanSyncAck, request: Request):
+async def mark_ban_synced(body: dict, request: Request):
+    from routers.fivem import BanSyncAck
     from routers.fivem import mark_ban_synced as _mono
 
-    return await _mono(body, request)
+    return await _mono(BanSyncAck(**(body or {})), request)
 
 
 @router.post("/bans")
