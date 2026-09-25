@@ -258,6 +258,78 @@
   box-shadow:0 14px 36px rgba(21,48,74,0.14);
 }
 
+[data-theme="light"] .globe-city-label,
+[data-theme="cyber-light"] .globe-city-label {
+  color:var(--cyan) !important;
+  background:rgba(235,244,252,0.78);
+  border-color:rgba(0,93,143,0.22);
+}
+[data-theme="light"] .globe-city-label.is-hub,
+[data-theme="light"] .globe-city-label:hover,
+[data-theme="light"] .globe-city-label.is-focus,
+[data-theme="cyber-light"] .globe-city-label.is-hub,
+[data-theme="cyber-light"] .globe-city-label:hover,
+[data-theme="cyber-light"] .globe-city-label.is-focus {
+  color:var(--green) !important;
+  border-color:rgba(0,110,56,0.38);
+}
+[data-theme="light"] .globe-arc-label,
+[data-theme="cyber-light"] .globe-arc-label {
+  color:var(--green) !important;
+  text-shadow:0 0 8px rgba(0,110,56,0.2);
+}
+[data-theme="light"] .globe-city-chip,
+[data-theme="cyber-light"] .globe-city-chip {
+  background:rgba(235,244,252,0.82);
+  border-color:rgba(0,93,143,0.18);
+  color:var(--muted) !important;
+}
+[data-theme="light"] .globe-city-chip:hover,
+[data-theme="light"] .globe-city-chip.is-focus,
+[data-theme="cyber-light"] .globe-city-chip:hover,
+[data-theme="cyber-light"] .globe-city-chip.is-focus {
+  color:var(--cyan) !important;
+  border-color:rgba(0,93,143,0.4);
+}
+[data-theme="light"] .globe-city-chip.is-hub,
+[data-theme="cyber-light"] .globe-city-chip.is-hub {
+  color:var(--green) !important;
+  border-color:rgba(0,110,56,0.35);
+}
+
+[data-theme="light"] .globe-mode-chip,
+[data-theme="cyber-light"] .globe-mode-chip {
+  background:rgba(235,244,252,0.82);
+  border-color:rgba(0,93,143,0.18);
+  color:var(--muted) !important;
+}
+[data-theme="light"] .globe-mode-chip.is-on,
+[data-theme="cyber-light"] .globe-mode-chip.is-on {
+  color:var(--green) !important;
+  border-color:rgba(0,110,56,0.4);
+  box-shadow:0 0 10px rgba(0,110,56,0.12);
+}
+[data-theme="light"] .globe-node-panel,
+[data-theme="cyber-light"] .globe-node-panel {
+  background:rgba(235,244,252,0.88);
+  border-color:rgba(0,93,143,0.22);
+  box-shadow:0 14px 36px rgba(21,48,74,0.12);
+}
+[data-theme="light"] .globe-node-panel-title,
+[data-theme="cyber-light"] .globe-node-panel-title {
+  color:var(--text) !important;
+}
+[data-theme="light"] .globe-hub-ring,
+[data-theme="cyber-light"] .globe-hub-ring {
+  border-color:var(--green);
+  box-shadow:0 0 12px rgba(0,110,56,0.35);
+}
+[data-theme="light"] .globe-sat,
+[data-theme="cyber-light"] .globe-sat {
+  background:var(--cyan);
+  box-shadow:0 0 8px rgba(0,93,143,0.45);
+}
+
 [data-theme="light"] .scanline { background:linear-gradient(transparent,rgba(0,138,69,0.04),transparent); }
 
 

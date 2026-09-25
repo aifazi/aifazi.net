@@ -188,7 +188,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
           <div key={gi} style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch',
             borderRight: `1px solid ${C.border}`, paddingRight: 8, marginRight: 8, flexShrink: 0 }}>
             {/* group label */}
-            <div style={{ fontFamily: C.mono, fontSize: 6, letterSpacing: 2, color: C.muted,
+            <div style={{ fontFamily: C.mono, fontSize: 10, letterSpacing: 2, color: C.muted,
               textAlign: 'center', marginBottom: 4 }}>{group.label}</div>
             {/* group buttons */}
             <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>

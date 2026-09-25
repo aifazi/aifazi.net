@@ -1002,7 +1002,7 @@ function AnnouncementsPanel() {
                     }}>
                       <span style={{ fontSize: 17, lineHeight: 1 }}>{s.icon}</span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, fontWeight: on ? 700 : 400 }}>{s.label.toUpperCase()}</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, color: on ? activeType.color + 'bb' : 'var(--border)', textAlign: 'center', lineHeight: 1.3 }}>{s.desc}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: on ? activeType.color + 'bb' : 'var(--border)', textAlign: 'center', lineHeight: 1.3 }}>{s.desc}</span>
                     </button>
                   )
                 })}
@@ -1155,7 +1155,7 @@ function AnnouncementsPanel() {
                       {activeType.icon} {activeType.label.toUpperCase()}
                     </span>
                     {form.style !== 'banner' && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, color: activeType.color + '99', letterSpacing: 1 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: activeType.color + '99', letterSpacing: 1 }}>
                         {styleObj.icon} {styleObj.label.toUpperCase()}
                       </span>
                     )}

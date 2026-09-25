@@ -1723,7 +1723,7 @@ function AvatarMode({ visibleRef }) {
         padding: '0 20px', gap: 12, background: 'rgba(0,0,0,0.2)' }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)',
           boxShadow: '0 0 6px var(--green)', flexShrink: 0 }}/>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6, color: 'var(--green)', letterSpacing: 1 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1 }}>
           HOLOGRAPHIC PRESENCE ACTIVE · IDENTITY VERIFIED · SECURE CONNECTION
         </span>
       </div>
@@ -1733,9 +1733,9 @@ function AvatarMode({ visibleRef }) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  MODE 8: GLOBE — spinning 3D network globe (pure Canvas 2D, no Three.js)
+//  MODE 8: GLOBE — COBE WebGL network globe
 //  Great-circle arcs · glowing city nodes · drag-to-rotate · scroll-to-zoom
-//  Theme-synced · bigger · more interactable
+//  Theme-synced · visitor HUD via CSS Anchor Positioning when available
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Read a CSS variable from the root element (falls back gracefully)
@@ -1788,32 +1788,57 @@ function readGlobeTheme() {
   return { cyanRgb, greenRgb, bgRgb, isLight, textRgb, mutedRgb, orangeRgb }
 }
 
+// Bindable city nodes — `id` drives CSS Anchor Positioning labels.
 const GLOBE_CITIES = [
-  { name: 'NEW YORK',   lat:  40.7, lng:  -74.0, hub: false },
-  { name: 'LONDON',     lat:  51.5, lng:   -0.1, hub: false },
-  { name: 'TOKYO',      lat:  35.7, lng:  139.7, hub: false },
-  { name: 'DUBAI',      lat:  25.2, lng:   55.3, hub: false },
-  { name: 'SINGAPORE',  lat:   1.3, lng:  103.8, hub: false },
-  { name: 'SAO PAULO',  lat: -23.5, lng:  -46.6, hub: false },
-  { name: 'SYDNEY',     lat: -33.9, lng:  151.2, hub: false },
-  { name: 'PARIS',      lat:  48.9, lng:    2.3, hub: false },
-  { name: 'MUMBAI',     lat:  19.1, lng:   72.9, hub: false },
-  { name: 'RIYADH',     lat:  24.7, lng:   46.7, hub: true  },
-  { name: 'TORONTO',    lat:  43.7, lng:  -79.4, hub: false },
-  { name: 'FRANKFURT',  lat:  50.1, lng:    8.7, hub: false },
+  { id: 'nyc',  name: 'NEW YORK',   lat:  40.7, lng:  -74.0, hub: false, region: 'NA'  },
+  { id: 'lon',  name: 'LONDON',     lat:  51.5, lng:   -0.1, hub: false, region: 'EU'  },
+  { id: 'tyo',  name: 'TOKYO',      lat:  35.7, lng:  139.7, hub: false, region: 'APAC'},
+  { id: 'dxb',  name: 'DUBAI',      lat:  25.2, lng:   55.3, hub: false, region: 'MEA' },
+  { id: 'sin',  name: 'SINGAPORE',  lat:   1.3, lng:  103.8, hub: false, region: 'APAC'},
+  { id: 'gru',  name: 'SAO PAULO',  lat: -23.5, lng:  -46.6, hub: false, region: 'LATAM'},
+  { id: 'syd',  name: 'SYDNEY',     lat: -33.9, lng:  151.2, hub: false, region: 'APAC'},
+  { id: 'cdg',  name: 'PARIS',      lat:  48.9, lng:    2.3, hub: false, region: 'EU'  },
+  { id: 'bom',  name: 'MUMBAI',     lat:  19.1, lng:   72.9, hub: false, region: 'APAC'},
+  { id: 'ruh',  name: 'RIYADH',     lat:  24.7, lng:   46.7, hub: true,  region: 'MEA' },
+  { id: 'yyz',  name: 'TORONTO',    lat:  43.7, lng:  -79.4, hub: false, region: 'NA'  },
+  { id: 'fra',  name: 'FRANKFURT',  lat:  50.1, lng:    8.7, hub: false, region: 'EU'  },
 ]
 
+// Edge list [fromIdx, toIdx]; hub routes get a distinct arc color + label.
 const GLOBE_CONNECTIONS = [
-  [0,1],[1,7],[0,10],[1,11],[2,8],[3,9],
-  [3,1],[8,4],[4,2],[5,0],[6,4],[9,3],
-  [11,7],[0,3],[9,8],[2,6],[9,1],[4,6],
+  { from: 0,  to: 1,  hub: false },
+  { from: 1,  to: 7,  hub: false },
+  { from: 0,  to: 10, hub: true  },
+  { from: 1,  to: 11, hub: true  },
+  { from: 2,  to: 8,  hub: false },
+  { from: 3,  to: 9,  hub: true  },
+  { from: 3,  to: 1,  hub: false },
+  { from: 8,  to: 4,  hub: false },
+  { from: 4,  to: 2,  hub: false },
+  { from: 5,  to: 0,  hub: false },
+  { from: 6,  to: 4,  hub: false },
+  { from: 9,  to: 3,  hub: true  },
+  { from: 11, to: 7,  hub: false },
+  { from: 0,  to: 3,  hub: false },
+  { from: 9,  to: 8,  hub: true  },
+  { from: 2,  to: 6,  hub: false },
+  { from: 9,  to: 1,  hub: true  },
+  { from: 4,  to: 6,  hub: false },
 ]
 
-// Computed once at module load (deterministic per visit) so render stays pure.
-const GLOBE_PACKETS = GLOBE_CONNECTIONS.map(() => ({
-  t:     Math.random(),
-  speed: 0.003 + Math.random() * 0.003,
-}))
+// Progressive-enhancement gate for CSS Anchor Positioning labels.
+function supportsCssAnchors() {
+  if (typeof CSS === 'undefined' || !CSS.supports) return false
+  return CSS.supports('anchor-name: --cobe-probe') || CSS.supports('position-anchor: --cobe-probe')
+}
+
+// Center a lat/lng in COBE's view (phi = longitude spin, theta = latitude tilt).
+function cityToAngles(lat, lng) {
+  return {
+    phi: -lng * Math.PI / 180,
+    theta: Math.max(-1.1, Math.min(1.1, lat * Math.PI / 180)),
+  }
+}
 
 const GLOBE_MIN_ZOOM = 0.55
 const GLOBE_MAX_ZOOM = 1.35
@@ -1884,7 +1909,11 @@ function VisitorHud({ visitor }) {
       className="globe-visitor-shell"
       data-anchored={hasCoords ? 'true' : undefined}
       style={{
-        position: 'absolute', bottom: 12, left: 14, zIndex: 4,
+        position: 'absolute',
+        // Default corner placement; CSS anchor rules override via [data-anchored]
+        bottom: 12,
+        left: 14,
+        zIndex: 4,
         maxWidth: 'calc(100% - 28px)',
       }}
     >
@@ -2011,17 +2040,20 @@ function VisitorHud({ visitor }) {
           outline-offset: 2px;
         }
         /* CSS Anchor Positioning — lock the HUD to the COBE visitor marker when
-           the browser supports it; otherwise the shell stays bottom-left. */
-        @supports (position-anchor: --cobe-visitor) {
+           the browser supports it; otherwise the shell stays bottom-left.
+           !important beats the inline corner placement on the shell. */
+        @supports (anchor-name: --cobe-visitor) {
           .globe-visitor-shell[data-anchored='true'] {
-            position: absolute;
+            position: absolute !important;
             position-anchor: --cobe-visitor;
-            bottom: calc(anchor(top) + 10px);
-            left: anchor(center);
+            bottom: calc(anchor(top) + 10px) !important;
+            left: anchor(center) !important;
+            right: auto !important;
+            top: auto !important;
             translate: -50% 0;
             opacity: var(--cobe-visible-visitor, 1);
             transition: opacity 0.3s ease;
-            max-width: min(320px, calc(100% - 28px));
+            max-width: min(320px, calc(100% - 28px)) !important;
           }
         }
         @media (prefers-reduced-motion: reduce) {
@@ -2032,7 +2064,7 @@ function VisitorHud({ visitor }) {
   )
 }
 
-// ── COBE-based globe (replaces the canvas-2D renderer) ───────────────────────
+// ── COBE-based globe — full v2 feature surface ───────────────────────────────
 function rgbToArr(rgbStr, fallback = '0,212,255') {
   const p = String(rgbStr || fallback).split(',').map(Number)
   const n = p.length >= 3 ? p : fallback.split(',').map(Number)
@@ -2045,19 +2077,41 @@ function GlobeMode({ visibleRef }) {
   const globeRef  = useRef(null)
   const [visitor, setVisitor] = useState(null)
   const visitorRef = useRef(null)
+  const [visitorTrail, setVisitorTrail] = useState([])
   const [themeKey, setThemeKey] = useState(0)
   const themeRef = useRef(null)
+  const [focusCity, setFocusCity] = useState(null)
+  const [selectedNode, setSelectedNode] = useState(null)
+  const [anchorsOk] = useState(() => supportsCssAnchors())
+  const [latencyMs, setLatencyMs] = useState(12)
+  const [autoRotate, setAutoRotate] = useState(true)
+  const autoRotateRef = useRef(true)
+  const [packetsOn, setPacketsOn] = useState(true)
+  const packetsOnRef = useRef(true)
+  const [perfTier] = useState(() => {
+    const cores = navigator.hardwareConcurrency || 4
+    const dpr = window.devicePixelRatio || 1
+    const small = Math.min(window.innerWidth, window.innerHeight) < 700
+    if (cores <= 4 || small || dpr > 2.2) return 'low'
+    if (cores <= 6) return 'med'
+    return 'high'
+  })
   const stateRef  = useRef({
-    phi: 0.55,          // COBE longitude
-    theta: 0.18,        // COBE latitude tilt
-    velPhi: 0.0022,     // auto-spin velocity
-    velPhiDamp: 0,      // drag momentum
-    drag: null,         // { startX, lastX, lastPhi }
+    phi: 0.55,
+    theta: 0.18,
+    velPhi: 0.0022,
+    velPhiDamp: 0,
+    velThetaDamp: 0,
+    drag: null,
     zoom: 1.0,
     pinch: null,
+    focusAnim: null,
+    packetT: 0,
   })
 
   useEffect(() => { visitorRef.current = visitor }, [visitor])
+  useEffect(() => { autoRotateRef.current = autoRotate }, [autoRotate])
+  useEffect(() => { packetsOnRef.current = packetsOn }, [packetsOn])
 
   // ── Fetch visitor geo info ────────────────────────────────────────────────
   useEffect(() => {
@@ -2118,7 +2172,16 @@ function GlobeMode({ visibleRef }) {
       for (const url of sources) {
         try {
           const parsed = parseVisitor(await fetchJson(url))
-          if (!cancelled) setVisitor(parsed)
+          if (!cancelled) {
+            setVisitor(parsed)
+            // Keep a short trail of prior visits (this session) for ghost markers.
+            if (Number.isFinite(+parsed.lat) && parsed.lat !== '—') {
+              setVisitorTrail(prev => {
+                const next = [{ lat: +parsed.lat, lon: +parsed.lon, id: `v${Date.now()}` }, ...prev]
+                return next.slice(0, 5)
+              })
+            }
+          }
           return
         } catch {
           // Try the next public geo provider.
@@ -2137,6 +2200,14 @@ function GlobeMode({ visibleRef }) {
     return () => { cancelled = true }
   }, [])
 
+  // ── Live latency ticker (cosmetic telemetry) ──
+  useEffect(() => {
+    const id = setInterval(() => {
+      setLatencyMs(9 + Math.floor(Math.random() * 9))
+    }, 2800)
+    return () => clearInterval(id)
+  }, [])
+
   // ── React to theme changes ──
   useEffect(() => {
     themeRef.current = readGlobeTheme()
@@ -2149,7 +2220,27 @@ function GlobeMode({ visibleRef }) {
     return () => obs.disconnect()
   }, [])
 
-  // ── COBE globe instance (recreated on theme / visitor change) ──
+  // ── Animate to a city (focus recipe) ──
+  const focusOnCity = (city) => {
+    const s = stateRef.current
+    const { phi, theta } = cityToAngles(city.lat, city.lng)
+    // Shortest angular path for phi
+    let toPhi = phi
+    while (toPhi - s.phi > Math.PI) toPhi -= Math.PI * 2
+    while (s.phi - toPhi > Math.PI) toPhi += Math.PI * 2
+    s.focusAnim = {
+      fromPhi: s.phi, fromTheta: s.theta,
+      toPhi, toTheta: theta,
+      t0: 0, // stamped on the first rAF tick
+      dur: 900,
+    }
+    s.velPhi = 0
+    s.velPhiDamp = 0
+    setFocusCity(city.id)
+    setSelectedNode(city)
+  }
+
+  // ── COBE globe instance (recreated on theme / visitor / resize / trail) ──
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || typeof createGlobe !== 'function') return
@@ -2158,42 +2249,75 @@ function GlobeMode({ visibleRef }) {
     const theme = themeRef.current
     const v = visitorRef.current
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    // COBE multiplies width/height by devicePixelRatio internally — pass CSS pixels.
     const rect = canvas.getBoundingClientRect()
-    const width = Math.max(200, Math.floor(rect.width * dpr))
-    const height = Math.max(200, Math.floor(rect.height * dpr))
+    const width = Math.max(240, Math.floor(rect.width || wrapRef.current?.clientWidth || 480))
+    const height = Math.max(240, Math.floor(rect.height || wrapRef.current?.clientHeight || 360))
 
-    const cyan  = rgbToArr(theme.cyanRgb,  '0,212,255')
-    const green = rgbToArr(theme.greenRgb, '0,255,136')
+    const cyan   = rgbToArr(theme.cyanRgb,  '0,212,255')
+    const green  = rgbToArr(theme.greenRgb, '0,255,136')
     const orange = rgbToArr(theme.orangeRgb, '255,107,53')
-    const bg    = rgbToArr(theme.bgRgb, '0,12,28')
+    const bg     = rgbToArr(theme.bgRgb, '0,12,28')
 
+    // Bindable markers — every city gets an id for CSS anchors + labels.
     const markers = GLOBE_CITIES.map(c => ({
+      id: c.id,
       location: [c.lat, c.lng],
-      size: c.hub ? 0.09 : 0.05,
+      size: c.hub ? 0.11 : 0.06,
       color: c.hub ? green : cyan,
     }))
 
-    const arcs = GLOBE_CONNECTIONS.map(([a, b]) => ({
-      from: [GLOBE_CITIES[a].lat, GLOBE_CITIES[a].lng],
-      to:   [GLOBE_CITIES[b].lat, GLOBE_CITIES[b].lng],
-    }))
+    // Ghost trail markers (prior visitor fixes this session)
+    visitorTrail.forEach((t, i) => {
+      markers.push({
+        id: `trail-${i}`,
+        location: [t.lat, t.lon],
+        size: Math.max(0.02, 0.05 - i * 0.008),
+        color: [orange[0] * 0.55, orange[1] * 0.55, orange[2] * 0.55],
+      })
+    })
+
+    // Bindable arcs — per-route color, id for arc labels.
+    // COBE exposes `--cobe-arc-{id}` / `--cobe-visible-arc-{id}` (arc- prefix is added by COBE).
+    const arcs = GLOBE_CONNECTIONS.map((e) => {
+      const a = GLOBE_CITIES[e.from]
+      const b = GLOBE_CITIES[e.to]
+      return {
+        id: `${a.id}-${b.id}`,
+        from: [a.lat, a.lng],
+        to:   [b.lat, b.lng],
+        color: e.hub ? green : cyan,
+      }
+    })
 
     // Visitor marker + arc from the Riyadh hub (bindable via CSS anchors)
     const hasVisitor = v && Number.isFinite(+v.lat) && Number.isFinite(+v.lon) && v.lat !== '—'
     if (hasVisitor) {
       markers.push({
         location: [+v.lat, +v.lon],
-        size: 0.12,
+        size: 0.13,
         color: orange,
         id: 'visitor',
       })
       const hub = GLOBE_CITIES.find(c => c.hub) || GLOBE_CITIES[9]
       arcs.push({
+        id: 'visitor',
         from: [hub.lat, hub.lng],
         to:   [+v.lat, +v.lon],
-        color: green,
+        color: orange,
       })
     }
+
+    // COBE maps a world-dot texture against baseColor — keep the earth visible.
+    const baseColor = theme.isLight
+      ? [0.62, 0.68, 0.74]
+      : [
+          Math.max(0.14, bg[0] * 0.35 + 0.12),
+          Math.max(0.22, bg[1] * 0.35 + 0.18),
+          Math.max(0.28, bg[2] * 0.35 + 0.22),
+        ]
+
+    const mapSamples = perfTier === 'low' ? 8000 : perfTier === 'med' ? 12000 : 16000
 
     const globe = createGlobe(canvas, {
       devicePixelRatio: dpr,
@@ -2203,42 +2327,126 @@ function GlobeMode({ visibleRef }) {
       theta: stateRef.current.theta,
       dark: theme.isLight ? 0 : 1,
       diffuse: 1.2,
-      scale: stateRef.current.zoom,
-      mapSamples: 16000,
-      mapBrightness: theme.isLight ? 3.5 : 5.5,
-      baseColor: [
-        bg[0] * 0.35 + 0.04,
-        bg[1] * 0.35 + 0.05,
-        bg[2] * 0.35 + 0.08,
-      ],
+      scale: stateRef.current.zoom * 0.92,
+      opacity: 1,
+      mapSamples,
+      mapBrightness: theme.isLight ? 4.5 : 6.5,
+      mapBaseBrightness: 0.04,
+      baseColor,
       markerColor: cyan,
-      glowColor: theme.isLight ? green : cyan,
+      glowColor: theme.isLight ? [0.55, 0.65, 0.75] : [0.15, 0.35, 0.45],
       offset: [0, 0],
       markers,
       arcs,
       arcColor: green,
-      arcWidth: 0.4,
+      arcWidth: 0.45,
       arcHeight: 0.35,
       markerElevation: 0.02,
-      onRender: (state) => {
-        const s = stateRef.current
-        if (!s.drag) {
-          s.phi += s.velPhi
-        }
-        state.phi = s.phi
-        state.theta = s.theta
-        state.scale = s.zoom
-      },
+      context: { antialias: true, alpha: true, powerPreference: 'default' },
     })
 
     globeRef.current = globe
+
+    // Flight packets — great-circle interp along hub routes, live-updated markers.
+    const hubRoutes = GLOBE_CONNECTIONS.filter(e => e.hub).map(e => ({
+      from: GLOBE_CITIES[e.from],
+      to:   GLOBE_CITIES[e.to],
+    }))
+    const packetCount = perfTier === 'low' ? 3 : 6
+    const packetSeeds = Array.from({ length: packetCount }, (_, i) => ({
+      route: i % Math.max(1, hubRoutes.length),
+      t: (i / packetCount),
+      speed: 0.0018 + (i % 3) * 0.0007,
+    }))
+
+    // COBE v2 has no onRender — drive phi/theta/scale via globe.update() each frame.
+    // Pause when the panel is off-screen (visibleRef) to save GPU.
+    let raf = 0
+    const frame = (now) => {
+      raf = requestAnimationFrame(frame)
+      if (visibleRef && visibleRef.current === false) return
+
+      const s = stateRef.current
+
+      // Focus animation (ease-out cubic)
+      if (s.focusAnim) {
+        const fa = s.focusAnim
+        if (!fa.t0) fa.t0 = now
+        const t = Math.min(1, (now - fa.t0) / fa.dur)
+        const e = 1 - Math.pow(1 - t, 3)
+        s.phi = fa.fromPhi + (fa.toPhi - fa.fromPhi) * e
+        s.theta = fa.fromTheta + (fa.toTheta - fa.fromTheta) * e
+        if (t >= 1) {
+          s.focusAnim = null
+          s.velPhi = 0.0012
+        }
+      } else if (!s.drag) {
+        if (autoRotateRef.current) s.phi += s.velPhi
+        // Gentle theta settle toward current tilt target
+        if (Math.abs(s.velThetaDamp) > 0.0001) {
+          s.theta = Math.max(-1.1, Math.min(1.1, s.theta + s.velThetaDamp))
+          s.velThetaDamp *= 0.92
+        }
+      }
+
+      // Advance flight packets along great circles
+      let nextMarkers = markers
+      if (packetsOnRef.current && hubRoutes.length) {
+        const packetMarkers = packetSeeds.map((p, i) => {
+          p.t += p.speed
+          if (p.t > 1) p.t -= 1
+          const r = hubRoutes[p.route]
+          // Linear lat/lng interp is fine for short visual hops
+          const lat = r.from.lat + (r.to.lat - r.from.lat) * p.t
+          const lng = r.from.lng + (r.to.lng - r.from.lng) * p.t
+          return {
+            id: `pkt-${i}`,
+            location: [lat, lng],
+            size: 0.035,
+            color: green,
+          }
+        })
+        nextMarkers = [...markers, ...packetMarkers]
+      }
+
+      try {
+        globe.update({
+          phi: s.phi,
+          theta: s.theta,
+          scale: s.zoom * 0.92,
+          opacity: 1,
+          markers: nextMarkers,
+        })
+      } catch { /* globe destroyed */ }
+    }
+    raf = requestAnimationFrame(frame)
+
     return () => {
+      cancelAnimationFrame(raf)
       try { globe.destroy() } catch { /* already torn down */ }
       globeRef.current = null
     }
-  }, [themeKey, visitor])
+  }, [themeKey, visitor, visibleRef, visitorTrail, perfTier])
 
-  // ── Pointer events (drag-to-rotate + pinch/wheel zoom) ───────────────────
+  // ── ResizeObserver — recreate globe when the panel size changes ──
+  useEffect(() => {
+    const wrap = wrapRef.current
+    if (!wrap || typeof ResizeObserver === 'undefined') return
+    let t = 0
+    let lastW = 0, lastH = 0
+    const ro = new ResizeObserver(entries => {
+      const r = entries[0]?.contentRect
+      if (!r) return
+      if (Math.abs(r.width - lastW) < 24 && Math.abs(r.height - lastH) < 24) return
+      lastW = r.width; lastH = r.height
+      clearTimeout(t)
+      t = setTimeout(() => setThemeKey(k => k + 1), 180)
+    })
+    ro.observe(wrap)
+    return () => { clearTimeout(t); ro.disconnect() }
+  }, [])
+
+  // ── Pointer + keyboard (drag-rotate XYZ, pinch/wheel zoom, arrows) ──
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -2251,9 +2459,11 @@ function GlobeMode({ visibleRef }) {
     }
 
     const onDown = e => {
-      const { x } = getXY(e)
-      s.drag = { startX: x, lastX: x, lastPhi: s.phi }
+      const { x, y } = getXY(e)
+      s.drag = { startX: x, startY: y, lastX: x, lastY: y, lastPhi: s.phi, lastTheta: s.theta }
       s.velPhiDamp = 0
+      s.velThetaDamp = 0
+      s.focusAnim = null
       canvas.style.cursor = 'grabbing'
     }
     const onMove = e => {
@@ -2266,12 +2476,18 @@ function GlobeMode({ visibleRef }) {
         return
       }
       s.pinch = null
-      const { x } = getXY(e)
+      const { x, y } = getXY(e)
       if (s.drag) {
         const dx = x - s.drag.lastX
+        const dy = y - s.drag.lastY
         s.velPhiDamp = dx * 0.002
         s.phi = s.drag.lastPhi + (x - s.drag.startX) * 0.006
+        s.theta = Math.max(-1.1, Math.min(1.1,
+          s.drag.lastTheta + (y - s.drag.startY) * 0.004
+        ))
+        s.velThetaDamp = dy * 0.0015
         s.drag.lastX = x
+        s.drag.lastY = y
       }
     }
     const onUp = () => {
@@ -2282,19 +2498,33 @@ function GlobeMode({ visibleRef }) {
       canvas.style.cursor = 'grab'
     }
 
+    const onWheel = e => {
+      e.preventDefault()
+      s.zoom = clampGlobeZoom(s.zoom - e.deltaY * 0.0008)
+    }
+
+    const onKey = e => {
+      const step = e.shiftKey ? 0.12 : 0.05
+      if (e.key === 'ArrowLeft')  { s.phi -= step; s.focusAnim = null; e.preventDefault() }
+      if (e.key === 'ArrowRight') { s.phi += step; s.focusAnim = null; e.preventDefault() }
+      if (e.key === 'ArrowUp')    { s.theta = Math.min(1.1, s.theta + step); s.focusAnim = null; e.preventDefault() }
+      if (e.key === 'ArrowDown')  { s.theta = Math.max(-1.1, s.theta - step); s.focusAnim = null; e.preventDefault() }
+      if (e.key === '+' || e.key === '=') { s.zoom = clampGlobeZoom(s.zoom + 0.08) }
+      if (e.key === '-' || e.key === '_') { s.zoom = clampGlobeZoom(s.zoom - 0.08) }
+    }
+
     canvas.addEventListener('mousedown',  onDown)
     canvas.addEventListener('touchstart', onDown, { passive: true })
     window.addEventListener('mousemove',  onMove)
     window.addEventListener('touchmove',  onMove, { passive: true })
     window.addEventListener('mouseup',    onUp)
     window.addEventListener('touchend',   onUp)
-    canvas.style.cursor = 'grab'
-
-    const onWheel = e => {
-      e.preventDefault()
-      s.zoom = clampGlobeZoom(s.zoom - e.deltaY * 0.0008)
-    }
     canvas.addEventListener('wheel', onWheel, { passive: false })
+    window.addEventListener('keydown', onKey)
+    canvas.style.cursor = 'grab'
+    canvas.tabIndex = 0
+    canvas.setAttribute('role', 'application')
+    canvas.setAttribute('aria-label', 'Interactive global network globe. Drag to rotate, scroll to zoom, arrow keys to pan.')
 
     return () => {
       canvas.removeEventListener('mousedown',  onDown)
@@ -2304,8 +2534,14 @@ function GlobeMode({ visibleRef }) {
       window.removeEventListener('mouseup',    onUp)
       window.removeEventListener('touchend',   onUp)
       canvas.removeEventListener('wheel',      onWheel)
+      window.removeEventListener('keydown',    onKey)
     }
   }, [])
+
+  const hasVisitorCoords = visitor && Number.isFinite(+visitor.lat) && visitor.lat !== '—'
+  const arcCount = GLOBE_CONNECTIONS.length + (hasVisitorCoords ? 1 : 0)
+  const nodeCount = GLOBE_CITIES.length + (hasVisitorCoords ? 1 : 0)
+  const hubLinks = GLOBE_CONNECTIONS.filter(e => e.hub).length
 
   return (
     <div className="globe-network-shell" ref={wrapRef} style={{
@@ -2329,23 +2565,461 @@ function GlobeMode({ visibleRef }) {
         pointerEvents: 'none',
       }}>
         {[
-          { label: 'NODES',   value: `${GLOBE_CITIES.length}`,      color: 'var(--cyan)'  },
-          { label: 'ARCS',    value: `${GLOBE_CONNECTIONS.length + (visitor && visitor.lat !== '—' ? 1 : 0)}`, color: 'var(--green)' },
-          { label: 'LATENCY', value: '12ms',                       color: 'var(--cyan)'  },
-          { label: 'UPTIME',  value: '99.99%',                     color: 'var(--green)' },
+          { label: 'NODES',   value: `${nodeCount}`,           color: 'var(--cyan)'  },
+          { label: 'ARCS',    value: `${arcCount}`,            color: 'var(--green)' },
+          { label: 'LATENCY', value: `${latencyMs}ms`,         color: 'var(--cyan)'  },
+          { label: 'UPTIME',  value: '99.99%',                 color: 'var(--green)' },
         ].map(s => (
           <div key={s.label} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 5.5, color: 'var(--muted)', letterSpacing: 2 }}>{s.label}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>{s.label}</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11,   color: s.color,       fontWeight: 700  }}>{s.value}</span>
           </div>
         ))}
       </div>
 
+      {/* Mode chips — auto-rotate / packets */}
+      <div className="globe-mode-chips" role="toolbar" aria-label="Globe display controls">
+        <button
+          type="button"
+          className={`globe-mode-chip${autoRotate ? ' is-on' : ''}`}
+          onClick={() => setAutoRotate(v => !v)}
+          aria-pressed={autoRotate}
+          title={autoRotate ? 'Pause auto-rotate' : 'Resume auto-rotate'}
+        >
+          {autoRotate ? '◉ AUTO' : '○ LOCK'}
+        </button>
+        <button
+          type="button"
+          className={`globe-mode-chip${packetsOn ? ' is-on' : ''}`}
+          onClick={() => setPacketsOn(v => !v)}
+          aria-pressed={packetsOn}
+          title={packetsOn ? 'Hide flight packets' : 'Show flight packets'}
+        >
+          {packetsOn ? '⟶ PKT' : '⟶ OFF'}
+        </button>
+      </div>
+
+      {/* Satellites ring — decorative orbiting edge nodes */}
+      <div className="globe-sat-ring" aria-hidden>
+        <span className="globe-sat s1" />
+        <span className="globe-sat s2" />
+        <span className="globe-sat s3" />
+      </div>
+
       {/* COBE canvas — fills entire panel */}
       <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
 
+      {/* Hub live-badge pulse ring — anchored to Riyadh when CSS anchors exist */}
+      {anchorsOk && (
+        <div
+          className="globe-hub-ring"
+          style={{
+            positionAnchor: '--cobe-ruh',
+            opacity: 'var(--cobe-visible-ruh, 0)',
+          }}
+          aria-hidden
+        />
+      )}
+
+      {/* Bindable city labels — CSS Anchor Positioning (Chrome 125+) */}
+      {anchorsOk && (
+        <div className="globe-label-layer" aria-hidden={false}>
+          {GLOBE_CITIES.map(c => (
+            <div
+              key={c.id}
+              className={`globe-city-label${c.hub ? ' is-hub' : ''}${focusCity === c.id ? ' is-focus' : ''}`}
+              style={{
+                positionAnchor: `--cobe-${c.id}`,
+                opacity: `var(--cobe-visible-${c.id}, 0)`,
+                filter: `blur(calc((1 - var(--cobe-visible-${c.id}, 0)) * 4px))`,
+              }}
+              onClick={() => focusOnCity(c)}
+              role="button"
+              tabIndex={-1}
+            >
+              {c.name}
+              {c.hub && <span className="globe-city-hub-dot" />}
+            </div>
+          ))}
+
+          {/* Hub-route arc labels */}
+          {GLOBE_CONNECTIONS.filter(e => e.hub).map(e => {
+            const a = GLOBE_CITIES[e.from]
+            const b = GLOBE_CITIES[e.to]
+            const id = `${a.id}-${b.id}`
+            return (
+              <div
+                key={id}
+                className="globe-arc-label"
+                style={{
+                  positionAnchor: `--cobe-arc-${id}`,
+                  opacity: `var(--cobe-visible-arc-${id}, 0)`,
+                  filter: `blur(calc((1 - var(--cobe-visible-arc-${id}, 0)) * 3px))`,
+                }}
+              >
+                {a.id.toUpperCase()} → {b.id.toUpperCase()}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* City chip rail — works without CSS anchors; click to focus */}
+      <div className="globe-city-rail" role="toolbar" aria-label="Focus a network node">
+        {GLOBE_CITIES.filter(c => c.hub || ['nyc', 'lon', 'tyo', 'sin', 'dxb'].includes(c.id)).map(c => (
+          <button
+            key={c.id}
+            type="button"
+            className={`globe-city-chip${focusCity === c.id ? ' is-focus' : ''}${c.hub ? ' is-hub' : ''}`}
+            onClick={() => focusOnCity(c)}
+            title={`Focus ${c.name}`}
+          >
+            {c.hub && <span className="globe-city-hub-dot" />}
+            {c.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Node detail side panel */}
+      {selectedNode && (
+        <aside
+          className="globe-node-panel"
+          role="dialog"
+          aria-label={`${selectedNode.name} node details`}
+        >
+          <header className="globe-node-panel-head">
+            <div>
+              <div className="globe-node-panel-title">
+                {selectedNode.hub && <span className="globe-city-hub-dot" />}
+                {selectedNode.name}
+              </div>
+              <div className="globe-node-panel-sub">
+                {selectedNode.region} · {selectedNode.hub ? 'CORE HUB' : 'EDGE NODE'}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="globe-node-panel-close"
+              onClick={() => { setSelectedNode(null); setFocusCity(null) }}
+              aria-label="Close node details"
+            >
+              ✕
+            </button>
+          </header>
+
+          <div className="globe-node-panel-grid">
+            {[
+              ['STATUS',   'ONLINE',           'ok'],
+              ['LATENCY',  `${8 + (selectedNode.name.length * 3) % 22}ms`, 'ok'],
+              ['LINKS',    `${GLOBE_CONNECTIONS.filter(e =>
+                GLOBE_CITIES[e.from].id === selectedNode.id || GLOBE_CITIES[e.to].id === selectedNode.id
+              ).length}`, 'ok'],
+              ['LOAD',     `${28 + (selectedNode.name.charCodeAt(0) % 40)}%`, 'warn'],
+              ['ROLE',     selectedNode.hub ? 'TRANSIT' : 'PEER', 'ok'],
+              ['PROTO',    'COBE/QUIC',        'ok'],
+            ].map(([label, val, tone]) => (
+              <div key={label} className="globe-node-panel-row">
+                <span>{label}</span>
+                <strong data-tone={tone}>{val}</strong>
+              </div>
+            ))}
+          </div>
+
+          <div className="globe-node-panel-spark" aria-hidden>
+            {Array.from({ length: 14 }, (_, i) => (
+              <i key={i} style={{ height: `${28 + ((i * 17 + selectedNode.name.length * 5) % 52)}%` }} />
+            ))}
+          </div>
+          <div className="globe-node-panel-foot">THROUGHPUT · LAST 60s</div>
+        </aside>
+      )}
+
       {/* Visitor HUD — bottom-left (anchored to marker when CSS anchor positioning is available) */}
       <VisitorHud visitor={visitor} />
+
+      <style>{`
+        .globe-label-layer {
+          position: absolute; inset: 0;
+          pointer-events: none;
+          z-index: 2;
+        }
+        .globe-city-label {
+          position: absolute;
+          bottom: anchor(top);
+          left: anchor(center);
+          translate: -50% 0;
+          margin-bottom: 6px;
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 1.5px;
+          color: var(--cyan);
+          white-space: nowrap;
+          pointer-events: auto;
+          cursor: pointer;
+          padding: 2px 6px;
+          border-radius: 3px;
+          background: color-mix(in srgb, var(--bg) 55%, transparent);
+          border: 1px solid color-mix(in srgb, var(--cyan) 18%, transparent);
+          transition: opacity 0.35s ease, filter 0.35s ease, transform 0.2s ease, color 0.2s ease;
+          user-select: none;
+        }
+        .globe-city-label:hover,
+        .globe-city-label.is-focus {
+          color: var(--green);
+          border-color: color-mix(in srgb, var(--green) 45%, transparent);
+          transform: translate(-50%, -2px) scale(1.06);
+        }
+        .globe-city-label.is-hub {
+          color: var(--green);
+          border-color: color-mix(in srgb, var(--green) 35%, transparent);
+          font-weight: 700;
+        }
+        .globe-city-hub-dot {
+          display: inline-block;
+          width: 5px; height: 5px;
+          border-radius: 50%;
+          background: var(--green);
+          box-shadow: 0 0 6px var(--green);
+          margin-right: 5px;
+          vertical-align: middle;
+          animation: hudPulse 2s ease-in-out infinite;
+        }
+        .globe-hub-ring {
+          position: absolute;
+          position-anchor: --cobe-ruh;
+          top: anchor(center);
+          left: anchor(center);
+          translate: -50% -50%;
+          width: 28px; height: 28px;
+          border-radius: 50%;
+          border: 1.5px solid var(--green);
+          box-shadow: 0 0 12px color-mix(in srgb, var(--green) 55%, transparent);
+          pointer-events: none;
+          z-index: 2;
+          animation: hubRing 2.2s ease-out infinite;
+        }
+        @keyframes hubRing {
+          0%   { transform: translate(-50%,-50%) scale(0.7); opacity: 0.95; }
+          70%  { transform: translate(-50%,-50%) scale(1.8); opacity: 0; }
+          100% { transform: translate(-50%,-50%) scale(0.7); opacity: 0; }
+        }
+        .globe-arc-label {
+          position: absolute;
+          bottom: anchor(top);
+          left: anchor(center);
+          translate: -50% 0;
+          font-family: var(--font-mono);
+          font-size: 9px;
+          letter-spacing: 1.2px;
+          color: var(--green);
+          opacity: 0.7;
+          white-space: nowrap;
+          pointer-events: none;
+          text-shadow: 0 0 8px color-mix(in srgb, var(--green) 40%, transparent);
+          transition: opacity 0.35s ease;
+        }
+        .globe-mode-chips {
+          position: absolute;
+          top: 10px; left: 50%;
+          transform: translateX(-50%);
+          z-index: 4;
+          display: flex;
+          gap: 6px;
+        }
+        .globe-mode-chip {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 1.5px;
+          color: var(--muted);
+          background: color-mix(in srgb, var(--bg) 70%, transparent);
+          border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+          border-radius: 3px;
+          padding: 4px 10px;
+          cursor: pointer;
+          backdrop-filter: blur(4px);
+          transition: color 0.2s, border-color 0.2s;
+        }
+        .globe-mode-chip.is-on {
+          color: var(--green);
+          border-color: color-mix(in srgb, var(--green) 45%, transparent);
+          box-shadow: 0 0 10px color-mix(in srgb, var(--green) 18%, transparent);
+        }
+        .globe-mode-chip:hover {
+          color: var(--cyan);
+          border-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+        }
+        .globe-sat-ring {
+          position: absolute;
+          inset: 12% 18%;
+          pointer-events: none;
+          z-index: 1;
+          animation: satSpin 48s linear infinite;
+        }
+        .globe-sat {
+          position: absolute;
+          width: 4px; height: 4px;
+          border-radius: 50%;
+          background: var(--cyan);
+          box-shadow: 0 0 8px var(--cyan);
+          opacity: 0.55;
+        }
+        .globe-sat.s1 { top: 0; left: 50%; }
+        .globe-sat.s2 { top: 50%; right: 0; }
+        .globe-sat.s3 { bottom: 0; left: 28%; }
+        @keyframes satSpin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        .globe-city-rail {
+          position: absolute;
+          left: 14px; right: 14px; bottom: 10px;
+          z-index: 3;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          pointer-events: none;
+        }
+        @supports (anchor-name: --x) {
+          .globe-city-rail { display: none; }
+        }
+        .globe-city-chip {
+          pointer-events: auto;
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 1.2px;
+          color: var(--muted);
+          background: color-mix(in srgb, var(--bg) 70%, transparent);
+          border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+          border-radius: 3px;
+          padding: 4px 8px;
+          cursor: pointer;
+          transition: color 0.2s, border-color 0.2s, transform 0.15s;
+          backdrop-filter: blur(4px);
+        }
+        .globe-city-chip:hover,
+        .globe-city-chip.is-focus {
+          color: var(--cyan);
+          border-color: color-mix(in srgb, var(--cyan) 45%, transparent);
+          transform: translateY(-1px);
+        }
+        .globe-city-chip.is-hub {
+          color: var(--green);
+          border-color: color-mix(in srgb, var(--green) 40%, transparent);
+        }
+        .globe-node-panel {
+          position: absolute;
+          top: 52px; right: 14px;
+          width: min(240px, calc(100% - 28px));
+          z-index: 5;
+          border-radius: 6px;
+          background: color-mix(in srgb, var(--bg) 82%, transparent);
+          border: 1px solid color-mix(in srgb, var(--cyan) 22%, transparent);
+          backdrop-filter: blur(10px);
+          box-shadow: 0 12px 36px rgba(0,0,0,0.28);
+          padding: 12px 12px 10px;
+          font-family: var(--font-mono);
+          animation: panelIn 0.22s ease;
+        }
+        @keyframes panelIn {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .globe-node-panel-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+        .globe-node-panel-title {
+          font-family: var(--font-display);
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--text);
+          letter-spacing: 0.3px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .globe-node-panel-sub {
+          font-size: 10px;
+          letter-spacing: 1.4px;
+          color: var(--muted);
+          margin-top: 2px;
+        }
+        .globe-node-panel-close {
+          background: transparent;
+          border: 1px solid transparent;
+          color: var(--muted);
+          font-size: 12px;
+          cursor: pointer;
+          padding: 2px 6px;
+          border-radius: 3px;
+          line-height: 1;
+        }
+        .globe-node-panel-close:hover {
+          color: var(--orange);
+          border-color: color-mix(in srgb, var(--orange) 35%, transparent);
+        }
+        .globe-node-panel-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 6px 10px;
+        }
+        .globe-node-panel-row {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .globe-node-panel-row span {
+          font-size: 9px;
+          letter-spacing: 1.4px;
+          color: var(--muted);
+        }
+        .globe-node-panel-row strong {
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--cyan);
+        }
+        .globe-node-panel-row strong[data-tone="ok"]   { color: var(--green); }
+        .globe-node-panel-row strong[data-tone="warn"] { color: var(--orange); }
+        .globe-node-panel-spark {
+          display: flex;
+          align-items: flex-end;
+          gap: 3px;
+          height: 36px;
+          margin-top: 12px;
+          padding: 4px 2px;
+          border-top: 1px solid color-mix(in srgb, var(--cyan) 14%, transparent);
+        }
+        .globe-node-panel-spark i {
+          flex: 1;
+          display: block;
+          border-radius: 1px;
+          background: linear-gradient(to top, color-mix(in srgb, var(--green) 55%, transparent), var(--cyan));
+          opacity: 0.75;
+          min-height: 4px;
+        }
+        .globe-node-panel-foot {
+          margin-top: 6px;
+          font-size: 9px;
+          letter-spacing: 1.5px;
+          color: var(--muted);
+          text-align: right;
+        }
+        @media (max-width: 640px) {
+          .globe-arc-label { display: none; }
+          .globe-city-label { font-size: 9px; letter-spacing: 1px; }
+          .globe-node-panel { width: min(200px, calc(100% - 28px)); }
+          .globe-mode-chips { top: auto; bottom: 48px; }
+          .globe-sat-ring { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .globe-hub-ring,
+          .globe-sat-ring,
+          .globe-city-hub-dot { animation: none !important; }
+        }
+      `}</style>
     </div>
   )
 }

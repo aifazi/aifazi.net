@@ -849,7 +849,7 @@ function HeaderPreview({ t }) {
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
                   letterSpacing: 2, color: textColor, lineHeight: 1 }}>TANVIR</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 5, letterSpacing: 3,
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3,
                   color: accentColor, opacity: 0.8, lineHeight: 1 }}>.DEV</div>
               </div>
             </div>
