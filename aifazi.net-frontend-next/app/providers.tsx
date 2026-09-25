@@ -524,7 +524,11 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
         // picked a theme. In incognito (empty localStorage) the built-in default
         // 'cyber-dark' was already written by the [theme] effect, so we can't use
         // site-theme as the signal — we use the dedicated user-set flag instead.
-        else if (!localStorage.getItem('site-theme-user-set')) { setThemeState(data.globalTheme); applyFrameworkForTheme(data.globalTheme) }
+        // The flag is mirrored to a cross-domain cookie so store/fivem hosts
+        // honor the same client's choice.
+        else if (!localStorage.getItem('site-theme-user-set') && !getCrossDomainCookie('site-theme-user-set')) {
+          setThemeState(data.globalTheme); applyFrameworkForTheme(data.globalTheme)
+        }
       }
     } finally {
       setSiteConfigReady(true)
@@ -533,6 +537,38 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
 
   // FIX #9: Include refreshSiteConfig in dependency array (satisfies exhaustive-deps)
   useEffect(() => { refreshSiteConfig() }, [refreshSiteConfig])
+
+  // Near-realtime settings sync (maintenance toggles, theme lock, etc.).
+  // Socket.IO is disabled on the backend, so poll gently — especially important
+  // for store.aifazi.net / fivem.aifazi.net when admin flips subdomain maintenance.
+  useEffect(() => {
+    const id = setInterval(() => {
+      // Skip when the tab is hidden to save battery / bandwidth
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+      void refreshSiteConfig()
+    }, 25000)
+    return () => clearInterval(id)
+  }, [refreshSiteConfig])
+
+  // Cross-tab / cross-subdomain: when another host writes a site-config change
+  // to localStorage it won't fire here (different origin) — but the cookie
+  // mirror does. Re-read the theme cookie on focus so aifazi.net → store
+  // hops stay in sync for the same client when admin has not pinned a theme.
+  useEffect(() => {
+    const onFocus = () => {
+      if (siteConfig.lockTheme) return
+      if (localStorage.getItem('site-theme-user-set') || getCrossDomainCookie('site-theme-user-set')) {
+        const saved = localStorage.getItem('site-theme') || getCrossDomainCookie('site-theme')
+        if (saved && VALID_THEMES.includes(saved) && saved !== theme) {
+          loadFontForTheme(saved)
+          setThemeState(saved)
+          applyFrameworkForTheme(saved)
+        }
+      }
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [theme, siteConfig.lockTheme])
 
   useEffect(() => {
     const refresh = () => { setUserIsAdmin(checkIsAdmin()); setAuthEpoch(e => e + 1) }

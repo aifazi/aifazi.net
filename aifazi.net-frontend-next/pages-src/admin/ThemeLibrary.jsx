@@ -3049,7 +3049,14 @@ function ThemeLibrary() {
           <button key={p.id} onClick={() => { if (!savingBg) onSelect(p.id) }} disabled={savingBg}
             className="bg-card-btn"
             style={{ padding: 0, background: active ? 'color-mix(in srgb, var(--green) 7%, transparent)' : 'var(--bg2)', border: `2px solid ${active ? 'var(--green)' : 'var(--border)'}`, boxShadow: active ? '0 0 12px color-mix(in srgb, var(--green) 20%, transparent)' : 'none', cursor: savingBg ? 'wait' : 'pointer', borderRadius: 8, overflow: 'hidden', transition: 'all 0.15s', textAlign: 'center' }}>
-            <div className={`${previewClass} ${p.id}`} style={{ background: 'var(--bg)', borderBottom: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className={`${previewClass} ${p.id}`} style={{
+              background: 'var(--bg)',
+              borderBottom: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'var(--border)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              height: 80, position: 'relative', overflow: 'hidden',
+              // faint inset so animation + grid tiles never blend together
+              boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--border) 35%, transparent)',
+            }}>
               {p.id === 'none' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: 'var(--muted)', opacity: 0.3 }}>—</span>}
               {p.id === 'clean' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, color: 'var(--muted)', opacity: 0.3 }}>—</span>}
             </div>
