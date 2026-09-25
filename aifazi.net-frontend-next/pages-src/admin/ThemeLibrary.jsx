@@ -23,6 +23,9 @@ import {
   CUSTOM_COLOR_TOKENS, applyThemeCustom, themeSelector,
   combineFontOptions, filterFontOptions, stripModeNeutralColors,
 } from '@/core/themeCustom'
+import {
+  parseThemeDesignPackage, exportThemeDesignPackage,
+} from '@/core/themeDesign'
 import { THEME_FAMILY_SIBLINGS } from '@/core/themeCatalog'
 import { getComponentTokens, resolveComponentTokens } from '@/core/componentTokens'
 
@@ -428,7 +431,21 @@ async function copyWithFallback(text) {
 
 // Shared preset validation — the paste-JSON import and the .json file upload
 // both funnel through here so files and pasted text accept the same shapes.
+// Accepts preset exports, plain customizations, and full theme-design packages.
 function parsePresetJson(text) {
+  // Try the full theme-design package parser first (handles $schema / components / framework)
+  try {
+    const pkg = parseThemeDesignPackage(text)
+    if (pkg.kind === 'design' && pkg.themeCustom) {
+      return { name: String(pkg.name).slice(0, 60), draft: pkg.themeCustom, design: pkg }
+    }
+    if (pkg.themeCustom) {
+      return { name: String(pkg.name).slice(0, 60), draft: pkg.themeCustom, design: pkg }
+    }
+    if (pkg.kind === 'preset' || pkg.kind === 'custom') {
+      return { name: String(pkg.name).slice(0, 60), draft: pkg.themeCustom || {}, design: pkg }
+    }
+  } catch { /* fall through to legacy preset shape */ }
   const parsed = JSON.parse(String(text || '').trim())
   const draft = parsed?.draft || parsed
   if (!draft || typeof draft !== 'object' || Array.isArray(draft)) throw new Error('bad shape')
@@ -1161,6 +1178,8 @@ function ThemeLibrary() {
   const [presetName, setPresetName] = useState('')
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [importText, setImportText] = useState('')
+  const [presetDragOver, setPresetDragOver] = useState(false)
+  const presetFileInputRef = useRef(null)
   const presetFileRef = useRef(null)
 
   const persistSettings = async (patch) => {
@@ -1234,6 +1253,29 @@ function ThemeLibrary() {
     a.remove()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
     toast.success(`Preset "${p.name}" downloaded as .json`, { title: '⬇ Downloaded' })
+  }
+
+  // Full theme design package — look layer (all components) + pattern prefs + custom
+  const downloadThemeDesign = () => {
+    try {
+      const tc = siteConfig?.themeCustom?.[customTarget] || customDraft || null
+      const payload = exportThemeDesignPackage(customTarget, {
+        themeCustom: tc,
+        name: THEME_DEFS.find(t => t.id === customTarget)?.name || customTarget,
+      })
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${String(payload.name || 'theme').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'theme'}.design.json`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      toast.success(`Theme design package for "${payload.name}" downloaded`, { title: '⬇ Design Exported' })
+    } catch (e) {
+      toast.error('Could not export theme design', { title: 'Export Failed' })
+    }
   }
 
   const importPresetFile = async (file) => {
@@ -3432,14 +3474,25 @@ function ThemeLibrary() {
 
             {/* Presets */}
             <div style={T.card}>
-              <div style={{ ...T.sec, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ ...T.sec, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                 <span>THEME PRESETS  ({themePresets.length})</span>
-                <button onClick={() => setPresetModalOpen(true)}
-                  style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--cyan) 14%, transparent)', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', borderRadius: 6 }}>
-                  + SAVE CURRENT AS PRESET
-                </button>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button onClick={downloadThemeDesign}
+                    title="Download the full theme design package (all component styles + framework prefs + customization) as JSON"
+                    style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--green) 14%, transparent)', color: 'var(--green)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 6 }}>
+                    ⬇ EXPORT DESIGN
+                  </button>
+                  <button onClick={() => setPresetModalOpen(true)}
+                    style={{ padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'color-mix(in srgb, var(--cyan) 14%, transparent)', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', borderRadius: 6 }}>
+                    + SAVE CURRENT AS PRESET
+                  </button>
+                </div>
               </div>
-              <div style={{ ...T.sub, marginBottom: 12 }}>Presets snapshot the whole customization draft and can be applied to any theme in one click — no more re-typing the same look on every theme.</div>
+              <div style={{ ...T.sub, marginBottom: 12 }}>
+                Presets snapshot the customization draft. <strong style={{ color: 'var(--text)' }}>EXPORT DESIGN</strong> downloads the
+                full theme design package — every component (menu, dialog, notify, alert, button, card…) plus framework preferences —
+                scoped to the theme so it never clashes with global admin settings. Import via drag-and-drop below.
+              </div>
               {themePresets.length === 0 && <div style={{ ...T.sub, color: 'var(--orange)' }}>No presets yet. Save the current look (any theme) as a reusable preset.</div>}
               {themePresets.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 10 }}>
@@ -3665,15 +3718,64 @@ function ThemeLibrary() {
               </div>
             </Modal>
 
-            {/* Import preset from JSON */}
+            {/* Import preset from JSON — paste, file picker, or drag-and-drop */}
             <Modal open={importModalOpen} onClose={() => setImportModalOpen(false)} title="IMPORT PRESET" width={520}>
               <div style={{ padding: 20 }}>
                 <div style={{ ...T.sub, marginBottom: 14 }}>
-                  Paste the JSON copied from an exported preset, or any plain theme-customization object
+                  Drop a <code style={{ color: 'var(--purple)', fontSize: 11 }}>.json</code> preset file, choose one, or paste the JSON
                   (<code style={{ color: 'var(--purple)', fontSize: 11 }}>{'{ fontDisplay, fontMono, colors: {}, glow, radius, borderWidth, bgPattern, css }'}</code>).
                 </div>
+
+                {/* Drag-and-drop zone */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Drop a preset JSON file here, or click to browse"
+                  onClick={() => presetFileInputRef.current?.click()}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); presetFileInputRef.current?.click() } }}
+                  onDragOver={e => { e.preventDefault(); e.stopPropagation(); setPresetDragOver(true) }}
+                  onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setPresetDragOver(false) }}
+                  onDrop={e => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setPresetDragOver(false)
+                    const file = e.dataTransfer?.files?.[0]
+                    if (file) void importPresetFile(file)
+                  }}
+                  style={{
+                    border: `2px dashed ${presetDragOver ? 'var(--green)' : 'var(--border)'}`,
+                    background: presetDragOver ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'var(--bg3)',
+                    borderRadius: 10,
+                    padding: '22px 16px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    marginBottom: 16,
+                    transition: 'border-color 0.15s ease, background 0.15s ease',
+                    outline: 'none',
+                  }}
+                >
+                  <div style={{ fontSize: 22, marginBottom: 6, opacity: 0.85 }}>{presetDragOver ? '📥' : '📄'}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: presetDragOver ? 'var(--green)' : 'var(--text)', fontWeight: 700, letterSpacing: 1 }}>
+                    {presetDragOver ? 'Drop to import' : 'Drag & drop a preset .json here'}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                    or click to browse files
+                  </div>
+                  <input
+                    ref={presetFileInputRef}
+                    type="file"
+                    accept="application/json,.json"
+                    style={{ display: 'none' }}
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (file) void importPresetFile(file)
+                      e.target.value = ''
+                    }}
+                  />
+                </div>
+
                 <textarea value={importText} onChange={e => setImportText(e.target.value)} spellCheck={false}
-                  rows={7}
+                  rows={6}
                   placeholder={`{\n  "name": "My Look",\n  "draft": { "fontDisplay": "…", "colors": { … }, "glow": 0.5, "css": "" }\n}`}
                   style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 20, resize: 'vertical' }} />
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -3683,7 +3785,7 @@ function ThemeLibrary() {
                   </button>
                   <button onClick={importPreset}
                     style={{ padding: '9px 20px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 8 }}>
-                    📥 IMPORT
+                    📥 IMPORT PASTE
                   </button>
                 </div>
               </div>

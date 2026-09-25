@@ -298,6 +298,25 @@ function flags(t) {
   }
 }
 
+const LIGHT_STYLE_IDS = new Set([
+  'paper', 'neumorph', 'macos', 'brutalist', 'pastel', 'win95', 'light', 'cyber-light',
+])
+
+/** Single source of truth for light-theme detection in previews. */
+function isLightTheme(t) {
+  if (!t) return false
+  if (t.tag === 'LIGHT') return true
+  if (t.style && LIGHT_STYLE_IDS.has(t.style)) return true
+  // Fallback: luminance of the theme background
+  const hex = t.bg
+  const m = typeof hex === 'string' && hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
+  if (m) {
+    const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16)
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 140
+  }
+  return false
+}
+
 function radius(t) {
   const f = flags(t)
   if (f.isBrut || f.isTerm || f.isWin95 || f.isCrt) return '0px'
@@ -747,7 +766,7 @@ function ButtonsPreview({ t }) {
 // ── Header Preview ────────────────────────────────────────────────────────────
 function HeaderPreview({ t }) {
   const f = flags(t)
-  const isLight = t.style === 'paper' || t.style === 'neumorph' || t.style === 'macos' || t.style === 'brutalist' || t.style === 'pastel' || t.style === 'win95' || t.tag === 'LIGHT'
+  const isLight = isLightTheme(t)
 
   // Per-theme nav bar style
   const navBg = f.isWin95     ? '#c0c0c0'
@@ -949,7 +968,7 @@ function HeaderPreview({ t }) {
 // ── Footer Preview ─────────────────────────────────────────────────────────────
 function FooterPreview({ t }) {
   const f = flags(t)
-  const isLight = t.tag === 'LIGHT' || f.isBrut || f.isNeumorph || f.isMacos || f.isPaper || f.isPastel || f.isWin95
+  const isLight = isLightTheme(t)
 
   const footerBg = f.isWin95 ? '#c0c0c0' : f.isNeumorph ? '#e0e5ec'
     : f.isMacos ? 'rgba(245,245,247,0.97)' : f.isPaper ? '#f5f0e8'

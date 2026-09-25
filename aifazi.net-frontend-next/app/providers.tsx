@@ -27,6 +27,7 @@ import { loadFontForTheme as loadThemeFont } from '@/core/fonts'
 import { applyThemeCustom, resolveThemeCustom } from '@/core/themeCustom'
 import { applyComponentTokens } from '@/core/componentTokens'
 import { VALID_THEMES, LIGHT_THEMES, THEME_PAIRS } from '@/core/themeCatalog'
+import { applyThemeDesign, resolveFrameworkPatterns } from '@/core/themeDesign'
 import { applyThemeFramework } from '@/core/framework-styles'
 import { isAdmin as checkIsAdmin, getAuthToken, getImpersonationUsername } from '@/lib/api'
 import { exitImpersonation } from '@/lib/impersonation'
@@ -290,14 +291,14 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     })()
   }, [])
 
-  // Local-only personality write: resolves THEME_FRAMEWORK for the theme id
-  // and merges the 9 framework keys into siteConfig state (no backend write,
-  // no event dispatch — purely this browser's preview). Unmapped ids no-op.
+  // Local-only personality write: applies the theme's LOOK layer (component
+  // design tokens as scoped CSS vars). The PATTERN layer (menu/dialog/notify
+  // style ids) is resolved at eff time via resolveFrameworkPatterns — never
+  // written into siteConfig — so global admin framework settings stay pinned
+  // and themes cannot clash with them.
   function applyFrameworkForTheme(id: string) {
     try {
-      applyThemeFramework(id, (k: string, v: string) =>
-        setSiteConfig(prev => (prev && (prev as Record<string, any>)[k] === v ? prev : { ...prev, [k]: v }))
-      )
+      applyThemeDesign(id)
     } catch {}
   }
 
@@ -420,35 +421,46 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
 
   // Per-family component tokens (buttons/cards/inputs/badges/bubbles) — writes
   // the active theme's --comp-* variables so shared primitives follow the
-  // theme family instead of one generic default look.
+  // theme family instead of one generic default look. applyThemeDesign adds
+  // the full look layer (menu/dialog/notify/alert design tokens) on top.
   useEffect(() => {
     applyComponentTokens(theme)
+    applyThemeDesign(theme)
   }, [theme])
 
   // Effective framework config = site-wide admin settings, layered with the
   // user's locally-applied package (per-user override wins for this browser).
   // A locked site design wins over everything — ignore any stale stored
   // package while lockTheme is on (applyUserPackage already blocks new ones).
+  //
+  // THEME-SCOPED PATTERN LAYER: resolveFrameworkPatterns fills gaps with the
+  // active theme's preferred patterns only where admin/package have not
+  // pinned a value. siteConfig itself is never mutated by theme switches.
   const pkgSettings = siteConfig.lockTheme ? {} : (userPackage?.settings || {})
+  const themePatterns = resolveFrameworkPatterns(theme, {
+    globalFramework: siteConfig,
+    userPackage: pkgSettings,
+    locked: !!siteConfig.lockTheme,
+  })
   const eff = {
     ...siteConfig,
-    inputStyle:          pkgSettings.inputStyle          || siteConfig.inputStyle,
-    surfaceStyle:        pkgSettings.surfaceStyle        || siteConfig.surfaceStyle,
+    inputStyle:          pkgSettings.inputStyle          || themePatterns.inputStyle,
+    surfaceStyle:        pkgSettings.surfaceStyle        || themePatterns.surfaceStyle,
     bgAnimation:         pkgSettings.bgAnimation         || siteConfig.bgAnimation,
     gridPattern:         pkgSettings.gridPattern         || siteConfig.gridPattern,
     backgroundPattern:   pkgSettings.backgroundPattern   || siteConfig.backgroundPattern,
     animationPreset:     pkgSettings.animationPreset     || siteConfig.animationPreset,
-    loadingScreenStyle:  pkgSettings.loadingScreenStyle  || siteConfig.loadingScreenStyle,
-    menuStyle:           pkgSettings.menuStyle           || siteConfig.menuStyle,
-    notifyStyle:         pkgSettings.notifyStyle         || siteConfig.notifyStyle,
+    loadingScreenStyle:  pkgSettings.loadingScreenStyle  || themePatterns.loadingScreenStyle,
+    menuStyle:           pkgSettings.menuStyle           || themePatterns.menuStyle,
+    notifyStyle:         pkgSettings.notifyStyle         || themePatterns.notifyStyle,
     notifyPosition:      pkgSettings.notifyPosition      || siteConfig.notifyPosition,
-    dialogStyle:         pkgSettings.dialogStyle         || siteConfig.dialogStyle,
-    buttonStyle:         pkgSettings.buttonStyle         || siteConfig.buttonStyle,
-    cardStyle:           pkgSettings.cardStyle           || siteConfig.cardStyle,
-    tableStyle:          pkgSettings.tableStyle          || siteConfig.tableStyle,
-    badgeStyle:          pkgSettings.badgeStyle          || siteConfig.badgeStyle,
-    headerStyle:         pkgSettings.headerStyle         || siteConfig.headerStyle,
-    footerStyle:         pkgSettings.footerStyle         || siteConfig.footerStyle,
+    dialogStyle:         pkgSettings.dialogStyle         || themePatterns.dialogStyle,
+    buttonStyle:         pkgSettings.buttonStyle         || themePatterns.buttonStyle,
+    cardStyle:           pkgSettings.cardStyle           || themePatterns.cardStyle,
+    tableStyle:          pkgSettings.tableStyle          || themePatterns.tableStyle,
+    badgeStyle:          pkgSettings.badgeStyle          || themePatterns.badgeStyle,
+    headerStyle:         pkgSettings.headerStyle         || themePatterns.headerStyle,
+    footerStyle:         pkgSettings.footerStyle         || themePatterns.footerStyle,
   }
 
   useEffect(() => {
