@@ -340,11 +340,14 @@ function buildCsp(nonce: string): string {
   const cdnHttps = httpsOf(hostOf(CDN_URL)) || CDN_URL
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval' " : ''}https://cdn.lordicon.com https://cdnjs.cloudflare.com`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    // unpkg is required for dynamically loaded Leaflet / pdf-lib / tesseract
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval' " : ''}https://cdn.lordicon.com https://cdnjs.cloudflare.com https://unpkg.com`,
+    // Leaflet CSS lives on unpkg; Google Fonts for webfonts
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
     "font-src 'self' https://fonts.gstatic.com",
-    `img-src 'self' data: blob: ${cdnHttps} https://*.supabase.co https://res.cloudinary.com https://api.dicebear.com ${siteWildHttps} https://*.imgur.com https://i.imgur.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://*.unsplash.com https://*.googleusercontent.com https://*.githubusercontent.com`,
-    `connect-src 'self' ${isDev ? 'http://localhost:8000 http://127.0.0.1:8000 ' : ''}${apiHttps} ${siteWildHttps} ${siteWildWss} https://*.supabase.co wss://*.supabase.co ${cdnHttps} https://*.ingest.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://ipwho.is https://ipapi.co https://ipwhois.app https://api64.ipify.org`,
+    // unpkg hosts Leaflet marker icons; OSM tiles power the live location map
+    `img-src 'self' data: blob: ${cdnHttps} https://*.supabase.co https://res.cloudinary.com https://api.dicebear.com ${siteWildHttps} https://*.imgur.com https://i.imgur.com https://*.cloudinary.com https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://*.unsplash.com https://*.googleusercontent.com https://*.githubusercontent.com https://unpkg.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org`,
+    `connect-src 'self' ${isDev ? 'http://localhost:8000 http://127.0.0.1:8000 ' : ''}${apiHttps} ${siteWildHttps} ${siteWildWss} https://*.supabase.co wss://*.supabase.co ${cdnHttps} https://*.ingest.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com https://ipwho.is https://ipapi.co https://ipwhois.app https://api64.ipify.org https://unpkg.com`,
     `media-src 'self' ${cdnHttps} ${siteWildHttps} data: blob: https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.amazonaws.com https://res.cloudinary.com`,
     "frame-src 'self' https://www.youtube.com https://player.vimeo.com",
     "worker-src 'self' blob:",
