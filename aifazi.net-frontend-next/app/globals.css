@@ -3929,20 +3929,19 @@ a:focus-visible,
 }
 
 /* ══════════════════════════════════════════
-   RESPONSIVE LAYOUT — balanced at every size
-   Components fill their grid cells / frames,
-   but buttons and text keep natural width.
-   (Restores the proven hero look.)
+   EDGE-TO-EDGE LAYOUT
+   Content fills the viewport frame (like the
+   original design). No centered measure box —
+   only fluid padding and type scale.
 ══════════════════════════════════════════ */
 :root {
-  --page-px: clamp(20px, 4vw, 60px);
-  --page-py: clamp(64px, 9vw, 120px);
-  --grid-gap: clamp(16px, 2vw, 36px);
-  --hero-gap: clamp(28px, 3.5vw, 48px);
-  --content-wide: 1400px;
+  --page-px: clamp(20px, 3.5vw, 56px);
+  --page-py: clamp(56px, 8vw, 110px);
+  --grid-gap: clamp(16px, 2vw, 32px);
+  --hero-gap: clamp(24px, 3vw, 48px);
 }
 
-/* ── Page frames ── */
+/* ── Full-width page frames ── */
 html, body {
   width: 100%;
   overflow-x: hidden;
@@ -3952,16 +3951,17 @@ html, body {
 #about, #experience, #skills, #services,
 #projects, #certifications, #contact,
 #newsletter, #explore {
-  width: 100%;
+  width: 100% !important;
+  max-width: none !important;
   padding: var(--page-py) var(--page-px) !important;
   box-sizing: border-box;
 }
 
-/* ── Hero: two columns, natural text measure, globe panel beside ── */
+/* ── Hero: two columns fill the viewport row ── */
 .hero-layout {
-  width: 100%;
-  max-width: var(--content-wide);
-  margin-inline: auto;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: center !important;
@@ -3972,37 +3972,38 @@ html, body {
 .hero-left {
   flex: 1 1 min(480px, 100%) !important;
   min-width: 0 !important;
-  max-width: 640px !important;
+  max-width: none !important;
   box-sizing: border-box;
 }
 
 .hero-rack-panel {
-  flex: 1 1 min(380px, 100%) !important;
+  flex: 1 1 min(420px, 100%) !important;
   min-width: 0 !important;
-  min-height: clamp(340px, 50vh, 620px) !important;
+  min-height: clamp(380px, 58vh, 720px) !important;
   box-sizing: border-box;
 }
 
-/* Hero text keeps a readable measure (as in the good layout) */
+/* Type scales with the frame */
 #hero h1 {
-  font-size: clamp(48px, 7vw, 110px) !important;
+  font-size: clamp(52px, 7.5vw, 118px) !important;
   letter-spacing: -2px;
   line-height: 0.92;
+  max-width: none !important;
 }
 
 #hero p {
   font-size: clamp(15px, 1.1vw + 12px, 18px) !important;
-  max-width: 520px !important;
+  max-width: 540px !important;
   line-height: 1.9;
 }
 
-/* CTA row: natural button widths, wrap only when needed */
+/* CTA row: natural widths, stays in a row */
 .hero-cta-row {
   display: flex !important;
   flex-wrap: wrap !important;
-  gap: 16px !important;
+  gap: 18px !important;
   width: 100%;
-  max-width: 100%;
+  max-width: none !important;
 }
 
 .hero-cta-row > * {
@@ -4012,7 +4013,6 @@ html, body {
   white-space: nowrap;
 }
 
-/* Buttons keep their padding-driven width */
 .btn-primary,
 .btn-outline {
   width: auto !important;
@@ -4022,13 +4022,12 @@ html, body {
   justify-content: center;
 }
 
-/* Stats strip: compact, not full-bleed */
 .hero-stats {
-  max-width: 380px !important;
+  max-width: 400px !important;
   width: 100%;
 }
 
-/* ── Section grids: fill the content frame, cards fill cells ── */
+/* ── Section grids fill the row edge-to-edge ── */
 .about-grid,
 .contact-grid,
 .newsletter-grid,
@@ -4037,31 +4036,31 @@ html, body {
 .skills-grid,
 .blog-grid,
 .store-grid,
-.certs-grid {
-  width: 100%;
-  max-width: var(--content-wide);
-  margin-inline: auto;
-  align-items: stretch;
+.certs-grid,
+.section-header {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
   box-sizing: border-box;
+  align-items: stretch;
 }
 
 .about-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)) !important;
-  gap: clamp(32px, 4vw, 80px) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)) !important;
+  gap: clamp(28px, 3.5vw, 72px) !important;
 }
 
 .contact-grid,
 .newsletter-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
   gap: var(--grid-gap) !important;
 }
 
 .services-grid {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)) !important;
   gap: var(--grid-gap) !important;
 }
 
-/* Cards fill their grid cell (not the whole page) */
 .services-grid > *,
 .projects-grid > *,
 .skills-grid > *,
@@ -4076,35 +4075,29 @@ html, body {
   box-sizing: border-box;
 }
 
-/* ── Section headers align with content ── */
-.section-header {
-  width: 100%;
-  max-width: var(--content-wide);
-  margin-inline: auto;
-}
-
 .section-title {
-  font-size: clamp(32px, 4vw, 68px) !important;
+  font-size: clamp(32px, 4vw, 72px) !important;
 }
 
 .section-line {
   flex: 1 1 auto;
-  max-width: 240px;
+  max-width: 280px;
 }
 
-/* ── Nav: content measure, not full-bleed stretch ── */
+/* ── Nav spans the full bar (edge-to-edge) ── */
 nav .nav-inner {
-  width: 100%;
-  max-width: var(--content-wide);
-  margin-inline: auto;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding-inline: var(--page-px) !important;
   box-sizing: border-box;
   justify-content: space-between;
   gap: clamp(8px, 1.5vw, 20px);
 }
 
-/* ── Visitor HUD: compact floating card ── */
+/* ── Visitor HUD floats on the globe ── */
 .globe-visitor-shell {
-  width: min(100%, 320px) !important;
+  width: min(100%, 340px) !important;
   max-width: 100%;
   box-sizing: border-box;
 }
@@ -4115,7 +4108,7 @@ nav .nav-inner {
   box-sizing: border-box;
 }
 
-/* ── Forms: full width inside their container (not page) ── */
+/* ── Forms fill their container ── */
 .form-group,
 .form-group input,
 .form-group textarea,
@@ -4124,10 +4117,9 @@ nav .nav-inner {
   box-sizing: border-box;
 }
 
-/* ── Narrow: stack CTAs only when they cannot fit in a row ── */
+/* ── Narrow frames ── */
 @media (max-width: 900px) {
   .hero-rack-panel { display: none !important; }
-  .hero-left { max-width: 100% !important; }
 }
 
 @media (max-width: 640px) {
