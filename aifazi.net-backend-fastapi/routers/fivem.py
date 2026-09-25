@@ -65,9 +65,12 @@ from utils.email_queue import queue_email
 
 log = logging.getLogger("fivem")
 router = APIRouter()
-# Ban routes register first via fivem_bans_api (thin wrappers over handlers below).
+# Ban + whitelist routes register first via dedicated modules (thin wrappers
+# over the handlers below — same pattern as auth_staff.py).
 from routers.fivem_bans_api import router as _bans_router
+from routers.fivem_whitelist_api import router as _whitelist_router
 router.include_router(_bans_router)
+router.include_router(_whitelist_router)
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 FRONTEND_HOST = FRONTEND_URL.replace("https://", "").replace("http://", "")
@@ -432,7 +435,6 @@ async def _sync_to_txadmin(app: dict, approved_by: str, source: str) -> dict:
     return upd
 
 # â”€â”€â”€ Whitelist â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.get("/whitelist/my-application")
 async def my_whitelist_application(user: dict = Depends(get_current_user)):
     """
     Return the logged-in forum user's latest whitelist application.
@@ -481,7 +483,6 @@ async def my_whitelist_application(user: dict = Depends(get_current_user)):
 
     return _effective_whitelist_status(app_res.data[0])
 
-@router.post("/whitelist/apply")
 async def apply_whitelist(body: WhitelistApply, user: dict = Depends(get_current_user)):
     if not body.rules_accepted:
         raise HTTPException(400, "You must accept the server rules.")
@@ -529,7 +530,6 @@ async def apply_whitelist(body: WhitelistApply, user: dict = Depends(get_current
     notify_admin('🎮', 'New Whitelist Application', f"{app.get('discord_name') or body.discord_name or user.get('username', 'Someone')} applied to whitelist")
     return {"message": "Application submitted!", "id": app.get("id")}
 
-@router.get("/whitelist/check/{identifier}")
 async def check_whitelist(request: Request, identifier: str):
     _check_token(request)
     q = supabase.table("fivem_whitelist").select("status,steam_hex,fivem_id,fivem_license,character_name,priority_tier,priority_level,priority_expires_at").eq("status", "approved")
@@ -550,7 +550,6 @@ async def check_whitelist(request: Request, identifier: str):
         "priority": _active_priority(app),
     }
 
-@router.get("/whitelist/search")
 async def search_whitelist(
     q: str = "",
     status: str | None = None,
@@ -603,7 +602,6 @@ async def search_whitelist(
     return {"applications": res.data or [], "total": res.count or 0, "query": q}
 
 
-@router.get("/whitelist")
 async def list_whitelist(
     status: str | None = None, limit: int = 50, offset: int = 0,
     since_seconds: int | None = None, _: dict = Depends(require_staff)
@@ -616,7 +614,6 @@ async def list_whitelist(
     res = q.order("applied_at", desc=True).range(offset, offset + limit - 1).execute()
     return {"applications": res.data or [], "total": res.count or 0}
 
-@router.get("/whitelist/history")
 async def whitelist_history(limit: int = 100, _: dict = Depends(require_staff)):
     """Full approval history with source label and txAdmin sync status."""
     res = (supabase.table("fivem_whitelist")
@@ -646,7 +643,6 @@ async def whitelist_history(limit: int = 100, _: dict = Depends(require_staff)):
 
     return {"history": rows, "total": len(rows)}
 
-@router.get("/whitelist/pending-sync")
 async def pending_sync(request: Request):
     """
     Static route must be declared before /whitelist/{app_id}; Lua expects a bare
@@ -679,7 +675,6 @@ def _pending_count(table: str, filters: dict[str, Any], in_filters: dict[str, li
     res = q.limit(1).execute()
     return int(res.count or 0)
 
-@router.post("/sync/refresh")
 async def refresh_server_sync(
     body: ServerSyncRefresh | None = None,
     user: dict = Depends(require_staff),
@@ -741,13 +736,11 @@ async def refresh_server_sync(
         "pending": pending,
     }
 
-@router.get("/whitelist/{app_id}")
 async def get_whitelist_app(app_id: str, _: dict = Depends(require_staff)):
     res = supabase.table("fivem_whitelist").select("*").eq("id", app_id).execute()
     if not res.data: raise HTTPException(404, "Application not found")
     return res.data[0]
 
-@router.patch("/whitelist/{app_id}/priority")
 async def update_whitelist_priority(
     app_id: str,
     body: WhitelistPriorityUpdate,
@@ -773,7 +766,6 @@ async def update_whitelist_priority(
     })
     return {"message": "Priority updated.", "app": updated_app}
 
-@router.patch("/whitelist/{app_id}")
 async def review_whitelist(
     app_id: str, body: WhitelistReview,
     background_tasks: BackgroundTasks,
@@ -912,12 +904,10 @@ async def get_discord_member(discord_id: str, _: dict = Depends(require_staff)):
     }
 
 
-@router.delete("/whitelist/{app_id}")
 async def delete_whitelist_app(app_id: str, _: dict = Depends(require_admin)):
     supabase.table("fivem_whitelist").delete().eq("id", app_id).execute()
     return {"message": "Application deleted."}
 
-@router.post("/whitelist/manual")
 async def manual_add_whitelist(
     body: WhitelistManualAdd,
     background_tasks: BackgroundTasks,
@@ -981,7 +971,6 @@ async def manual_add_whitelist(
     return {"message": "Player manually whitelisted â€” syncing to server in background.", "app": app}
 
 # â”€â”€â”€ Fallback Lua polling endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.post("/whitelist/mark-synced")
 async def mark_synced(body: MarkSynced, request: Request):
     """Lua calls this after successfully adding a player to txAdmin."""
     _check_token(request)
@@ -999,7 +988,6 @@ async def mark_synced(body: MarkSynced, request: Request):
 
 
 
-@router.get("/application-actions/pending")
 async def pending_application_actions(request: Request):
     _check_token(request)
     res = (
@@ -1028,7 +1016,6 @@ async def pending_application_actions(request: Request):
         })
     return out
 
-@router.post("/application-actions/mark-synced")
 async def mark_application_action_synced(body: ApplicationActionSyncBody, request: Request):
     _check_token(request)
     current = supabase.table("application_form_submissions").select("action_attempts").eq("id", body.submission_id).limit(1).execute()
@@ -2026,7 +2013,6 @@ async def heartbeat_sync_players(body: PlayerHeartbeatBody, request: Request):
     return {"ok": True, "synced": synced}
 
 
-@router.post("/whitelist/update-identifiers")
 async def update_whitelist_identifiers(body: WhitelistIdentifiersBody, request: Request):
     """Lua patches license/steam/fivem identifiers onto the approved whitelist row on connect."""
     _check_token(request)
@@ -2074,7 +2060,6 @@ class BulkWhitelistApproveBody(BaseModel):
     priority_expires_at: str | None = None
 
 
-@router.post("/whitelist/bulk-approve")
 async def bulk_approve_whitelist(
     body: BulkWhitelistApproveBody,
     background_tasks: BackgroundTasks,
