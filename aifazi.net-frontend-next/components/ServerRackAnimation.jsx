@@ -2450,13 +2450,20 @@ function GlobeMode({ visibleRef }) {
       })
     }
 
-    // COBE maps a world-dot texture against baseColor — keep the earth visible.
+    // COBE maps a world-dot texture against baseColor — blend the theme's cyan
+    // and green into the earth so land dots recolor with the active palette.
+    // Near-black baseColor makes continents disappear; pure bg makes them grey.
+    const mix = (a, b, t) => a + (b - a) * t
     const baseColor = theme.isLight
-      ? [0.62, 0.68, 0.74]
+      ? [
+          mix(0.62, cyan[0], 0.22),
+          mix(0.68, cyan[1], 0.22),
+          mix(0.74, green[2], 0.18),
+        ]
       : [
-          Math.max(0.14, bg[0] * 0.35 + 0.12),
-          Math.max(0.22, bg[1] * 0.35 + 0.18),
-          Math.max(0.28, bg[2] * 0.35 + 0.22),
+          Math.max(0.12, mix(bg[0] * 0.4 + 0.1, cyan[0], 0.28)),
+          Math.max(0.18, mix(bg[1] * 0.4 + 0.16, green[1], 0.22)),
+          Math.max(0.24, mix(bg[2] * 0.4 + 0.2, cyan[2], 0.3)),
         ]
 
     const mapSamples = perfTier === 'low' ? 8000 : perfTier === 'med' ? 12000 : 16000
@@ -2472,11 +2479,14 @@ function GlobeMode({ visibleRef }) {
       scale: stateRef.current.zoom * 0.92,
       opacity: 1,
       mapSamples,
-      mapBrightness: theme.isLight ? 3.8 : 5.2,
-      mapBaseBrightness: 0.03,
+      mapBrightness: theme.isLight ? 4.2 : 5.6,
+      mapBaseBrightness: 0.04,
       baseColor,
       markerColor: cyan,
-      glowColor: theme.isLight ? [0.55, 0.65, 0.75] : [0.12, 0.3, 0.4],
+      // Atmospheric glow follows the theme accent, not a fixed slate
+      glowColor: theme.isLight
+        ? [mix(0.55, cyan[0], 0.35), mix(0.65, cyan[1], 0.35), mix(0.75, green[2], 0.3)]
+        : [mix(0.12, cyan[0], 0.45), mix(0.3, green[1], 0.35), mix(0.4, cyan[2], 0.5)],
       offset: [0, 0],
       markers,
       arcs,
