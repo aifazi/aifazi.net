@@ -359,10 +359,11 @@ export default function Hero() {
       <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, color-mix(in srgb, var(--cyan) 6%, transparent) 0%, transparent 65%)', left: 100, bottom: -100, animation: 'orb-drift 20s ease-in-out infinite reverse', pointerEvents: 'none' }} />
 
       {/* ── Two-column layout: content left, server rack animation right ── */}
-      <div style={{ width: '100%', maxWidth: 1360, marginLeft: 'auto', marginRight: 'auto', minWidth: 0, display: 'flex', alignItems: 'center', gap: 40, position: 'relative', zIndex: 2, flexWrap: 'wrap' }} className="hero-layout">
+      {/* Width/measure handled by .hero-layout in globals.css (fluid scale) */}
+      <div style={{ width: '100%', minWidth: 0, display: 'flex', alignItems: 'center', gap: 40, position: 'relative', zIndex: 2, flexWrap: 'wrap', boxSizing: 'border-box', paddingLeft: 0, paddingRight: 0 }} className="hero-layout">
 
       {/* Left: all existing content */}
-      <div ref={heroLeftRef} className="hero-left" style={{ flex: '1 1 520px', width: '100%', maxWidth: 680, minWidth: 0 }}>
+      <div ref={heroLeftRef} className="hero-left" style={{ flex: '1 1 520px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
         {/* Status row */}
         <AnimatableWrapper animKey="hero.statusRow" label="Status Row" currentAnim="fadeRight 0.6s 0.05s both">
         <div style={{
@@ -477,13 +478,14 @@ export default function Hero() {
       {/* Right: Server Rack Animation — hidden on small screens */}
       {mounted && (
         <div ref={rackRef} style={{
-          flex: '1 1 0', minWidth: 0, minHeight: 500,
+          flex: '1 1 min(420px, 100%)', minWidth: 0,
           alignSelf: 'stretch',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative',
           // Own stacking context so globe chrome can't paint over hero-left badges
           zIndex: 1,
           isolation: 'isolate',
+          boxSizing: 'border-box',
         }} className="hero-rack-panel">
           <ServerRackAnimation />
         </div>
