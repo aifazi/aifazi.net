@@ -79,9 +79,128 @@ function FwAnimPreview({ id }) {
   return <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7, width:'100%', cursor:'pointer' }} title="Click to preview" onClick={()=>{setPing(false);requestAnimationFrame(()=>requestAnimationFrame(()=>setPing(true)))}} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}><div style={{ width:26, height:26, borderRadius:'50%', background:'color-mix(in srgb, var(--cyan) 18%, transparent)', border:'2px solid var(--cyan)', transform:ping?'scale(1.5) translateY(-10px)':'scale(1) translateY(0)', opacity:id==='none'?(ping?0:1):1, transition:`transform ${p.d} ${p.e}, opacity ${p.d} ${p.e}`, boxShadow:'0 0 8px color-mix(in srgb, var(--cyan) 30%, transparent)' }} onTransitionEnd={()=>setPing(false)}/><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, letterSpacing:1, textAlign:'center' }}>{p.info}</div></div>
 }
 
+// ── Button previews (previously empty on the Cards/Buttons/Tables/Badges tabs) ─
+function FwButtonPreview({ id }) {
+  const conf = {
+    cyber:     { bg:_G, color:'#000', border:'none', r:2, clip:'polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))', label:'EXECUTE' },
+    pill:      { bg:_G, color:'#000', border:'none', r:999, label:'Continue' },
+    brutalist: { bg:_G, color:'#000', border:'2px solid #000', r:0, sh:'3px 3px 0 #000', label:'SUBMIT' },
+    ghost:     { bg:'transparent', color:_CY, border:`1px solid ${_CY}66`, r:6, label:'Cancel' },
+    neon:      { bg:'transparent', color:_CY, border:`1px solid ${_CY}`, r:4, sh:`0 0 12px ${_CY}55`, label:'LAUNCH' },
+    terminal:  { bg:'transparent', color:_G, border:`1px solid ${_G}55`, r:0, label:'> run' },
+    minimal:   { bg:'transparent', color:_MT, border:'none', r:4, label:'Edit' },
+    holo:      { bg:'rgba(8,20,32,0.85)', color:'#e6faff', border:'1px solid rgba(0,229,255,0.5)', r:8, sh:'0 0 14px rgba(0,229,255,0.25)', label:'ACTIVATE' },
+  }
+  const s = conf[id] || conf.cyber
+  return (
+    <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:7, alignItems:'center', padding:'6px 0' }}>
+      <div style={{
+        fontFamily:_FM, fontSize:11, fontWeight:700, letterSpacing:1.5,
+        padding:'7px 14px', background:s.bg, color:s.color, border:s.border,
+        borderRadius:s.r, boxShadow:s.sh, clipPath:s.clip, whiteSpace:'nowrap',
+      }}>{s.label}</div>
+      <div style={{ display:'flex', gap:6 }}>
+        <div style={{ width:36, height:14, borderRadius:s.r, background:s.bg, opacity:.45, border:s.border }} />
+        <div style={{ width:22, height:14, borderRadius:s.r, background:'transparent', border:s.border, opacity:.55 }} />
+      </div>
+    </div>
+  )
+}
+
+function FwCardPreview({ id }) {
+  const conf = {
+    cyber:     { bg:_BG2, border:`1px solid ${_CY}44`, r:4, accent:_CY, sh:'none', bar:true },
+    glass:     { bg:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.14)', r:10, accent:_CY, bd:'blur(12px)', sh:'0 8px 24px rgba(0,0,0,0.3)' },
+    brutalist: { bg:'#fff', border:'2px solid #000', r:0, accent:'#000', sh:'4px 4px 0 #000', dark:true },
+    paper:     { bg:'#faf6ef', border:'1px solid #d9cbb8', r:2, accent:'#b45309', sh:'0 2px 6px rgba(0,0,0,0.12)', dark:true },
+    minimal:   { bg:_BG2, border:`1px solid ${_BD}`, r:8, accent:_MT, sh:'none' },
+    neon:      { bg:_BG, border:`1px solid ${_CY}`, r:6, accent:_CY, sh:`0 0 14px ${_CY}44` },
+    terminal:  { bg:'#060a06', border:'1px solid #33ff3355', r:2, accent:'#33ff33', sh:'none' },
+  }
+  const s = conf[id] || conf.cyber
+  const line = s.dark ? '#111' : _TX
+  const meta = s.dark ? '#6b7280' : _MT
+  return (
+    <div style={{
+      width:'100%', height:'100%', padding:8, boxSizing:'border-box',
+      background:s.bg, border:s.border, borderRadius:s.r, boxShadow:s.sh,
+      backdropFilter:s.bd, display:'flex', flexDirection:'column', gap:5,
+    }}>
+      {s.bar && <div style={{ width:28, height:3, borderRadius:2, background:s.accent }} />}
+      <div style={{ height:6, width:'72%', borderRadius:2, background:line, opacity:.85 }} />
+      <div style={{ height:4, width:'92%', borderRadius:2, background:meta, opacity:.45 }} />
+      <div style={{ height:4, width:'58%', borderRadius:2, background:meta, opacity:.3 }} />
+      <div style={{ marginTop:'auto', display:'flex', gap:4 }}>
+        <div style={{ width:22, height:8, borderRadius:2, background:s.accent, opacity:.7 }} />
+        <div style={{ width:16, height:8, borderRadius:2, background:meta, opacity:.3 }} />
+      </div>
+    </div>
+  )
+}
+
+function FwTablePreview({ id }) {
+  const conf = {
+    cyber:     { head:_BG3, row:_BG2, line:_BD, r:3, stripe:false, accent:_CY },
+    minimal:   { head:'transparent', row:'transparent', line:'transparent', r:0, accent:_MT, underline:true },
+    brutalist: { head:'#fff', row:'#fff', line:'#000', r:0, thick:true, dark:true, accent:'#000' },
+    glass:     { head:'rgba(255,255,255,0.08)', row:'rgba(255,255,255,0.04)', line:'rgba(255,255,255,0.12)', r:6, bd:'blur(10px)', accent:_CY },
+    striped:   { head:_BG3, row:_BG2, line:'transparent', r:3, stripe:true, accent:_G },
+  }
+  const s = conf[id] || conf.cyber
+  const txt = s.dark ? '#111' : _TX
+  const mut = s.dark ? '#6b7280' : _MT
+  return (
+    <div style={{
+      width:'100%', height:'100%', padding:7, boxSizing:'border-box',
+      display:'flex', flexDirection:'column', gap:3, backdropFilter:s.bd,
+    }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 0.7fr', gap:4, padding:'4px 5px', background:s.head, borderRadius:s.r, borderBottom:s.underline?`1px solid ${s.line}`:undefined, borderTop:s.thick?`2px solid ${s.line}`:undefined, borderLeft:s.thick?`2px solid ${s.line}`:undefined, borderRight:s.thick?`2px solid ${s.line}`:undefined }}>
+        {['HOST','ROLE','PING'].map(h => <div key={h} style={{ fontFamily:_FM, fontSize:11, color:s.accent, letterSpacing:1 }}>{h}</div>)}
+      </div>
+      {[0,1,2].map(i => (
+        <div key={i} style={{
+          display:'grid', gridTemplateColumns:'1.2fr 1fr 0.7fr', gap:4,
+          padding:'3px 5px', borderRadius:s.r,
+          background: s.stripe && i%2 ? 'color-mix(in srgb, var(--green) 6%, transparent)' : s.row,
+          borderBottom:s.underline?`1px solid ${s.line}`:(s.thick?undefined:`1px solid ${s.line}44`),
+          borderLeft:s.thick?`2px solid ${s.line}`:undefined,
+          borderRight:s.thick?`2px solid ${s.line}`:undefined,
+        }}>
+          <div style={{ height:4, borderRadius:2, background:txt, opacity:.75 }} />
+          <div style={{ height:4, borderRadius:2, background:mut, opacity:.45 }} />
+          <div style={{ height:4, borderRadius:2, background:s.accent, opacity:.55 }} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function FwBadgePreview({ id }) {
+  const conf = {
+    pill:      { r:999, bg:'color-mix(in srgb, var(--green) 14%, transparent)', color:_G, border:'none' },
+    square:    { r:2, bg:'color-mix(in srgb, var(--cyan) 12%, transparent)', color:_CY, border:`1px solid ${_CY}44` },
+    neon:      { r:3, bg:'transparent', color:_CY, border:`1px solid ${_CY}`, sh:`0 0 10px ${_CY}55` },
+    minimal:   { r:0, bg:'transparent', color:_MT, border:'none' },
+    brutalist: { r:0, bg:_G, color:'#000', border:'2px solid #000', sh:'2px 2px 0 #000' },
+  }
+  const s = conf[id] || conf.pill
+  return (
+    <div style={{ width:'100%', display:'flex', flexWrap:'wrap', gap:6, alignItems:'center', justifyContent:'center', padding:'4px 0' }}>
+      {['ONLINE','v2.0','PRO'].map((t,i) => (
+        <span key={t} style={{
+          fontFamily:_FM, fontSize:11, fontWeight:700, letterSpacing:1.5,
+          padding:'3px 8px', borderRadius:s.r, background:s.bg, color:s.color,
+          border:s.border, boxShadow:s.sh, opacity: i===2 ? .65 : 1,
+        }}>{t}</span>
+      ))}
+    </div>
+  )
+}
+
 export {
   // Style tokens — also consumed by ThemeLibrary.jsx cards/sections
   _G, _CY, _BG, _BG2, _BG3, _BD, _TX, _MT, _FM, _FD, _tag,
   FwMenuPreview, FwNotifyPreview, FwDialogPreview,
   FwInputPreview, FwSurfacePreview, FwLoadingPreview, FwAnimPreview,
+  FwButtonPreview, FwCardPreview, FwTablePreview, FwBadgePreview,
 }

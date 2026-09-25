@@ -9,6 +9,7 @@ import {
 import {
   FwMenuPreview, FwNotifyPreview, FwDialogPreview,
   FwInputPreview, FwSurfacePreview, FwLoadingPreview, FwAnimPreview,
+  FwButtonPreview, FwCardPreview, FwTablePreview, FwBadgePreview,
   _G, _CY, _BG, _BG2, _BG3, _BD, _TX, _MT, _FM, _FD, _tag,
 } from './themeLibraryPreviews'
 
@@ -167,6 +168,10 @@ export function FwStyleCard({ item, isActive, onSelect, accentColor, category })
         {category === 'surface' && <FwSurfacePreview id={item.id} />}
         {category === 'loading' && <FwLoadingPreview id={item.id} />}
         {category === 'animation' && <FwAnimPreview id={item.id} />}
+        {category === 'button' && <FwButtonPreview id={item.id} />}
+        {category === 'card' && <FwCardPreview id={item.id} />}
+        {category === 'table' && <FwTablePreview id={item.id} />}
+        {category === 'badge' && <FwBadgePreview id={item.id} />}
       </div>
       <div style={{ padding: '10px 12px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
