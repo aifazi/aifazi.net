@@ -1750,7 +1750,19 @@ const LIGHT_THEME_IDS = new Set([
   'rose-light','forest-light','glass-light','synthwave-light',
   'terminal-light','neon-noir-light','aurora-light',
   'brutalist','paper','neumorph','macos','pastel','win95',
+  // Additional light variants discovered in theme-library.css
+  'cobalt-light','ember-light','honey-light','ice-light','lava-light',
+  'mario-light','minecraft-light','pacman-light','slate-light','sonic-light',
+  'teal-light','toxic-light','violet-light',
 ])
+
+// Prefer luminance over the ID list so new themes stay in sync automatically.
+function isLightFromLuminance(rgbCsv) {
+  const p = String(rgbCsv || '').split(',').map(Number)
+  if (p.length < 3 || p.some(n => !Number.isFinite(n))) return false
+  // Rec. 709 relative luminance approximation on 0–255 channels
+  return (0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]) > 140
+}
 
 function readGlobeTheme() {
   if (typeof window === 'undefined') return {
@@ -1758,7 +1770,6 @@ function readGlobeTheme() {
     isLight: false, textRgb: '200,216,232', mutedRgb: '107,130,150', orangeRgb: '255,107,53',
   }
   const themeAttr = document.documentElement.getAttribute('data-theme') || ''
-  const isLight = LIGHT_THEME_IDS.has(themeAttr) || (!themeAttr && window.matchMedia('(prefers-color-scheme: light)').matches)
   const hexToRgb = (hex, fb) => {
     if (!hex) return fb
     const m6 = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
@@ -1769,14 +1780,18 @@ function readGlobeTheme() {
     if (mr) return `${mr[1]},${mr[2]},${mr[3]}`
     return fb
   }
+  const rawBg = cssVar('--bg', '')
+  const parsedBg = hexToRgb(rawBg, null)
+  // Luminance of the real --bg wins; fall back to ID list / system preference.
+  const isLight = parsedBg
+    ? isLightFromLuminance(parsedBg)
+    : (LIGHT_THEME_IDS.has(themeAttr) || (!themeAttr && window.matchMedia('(prefers-color-scheme: light)').matches))
   const read = (prop, darkDef, lightDef) => {
     const raw = cssVar(prop, '')
     return hexToRgb(raw || null, isLight ? lightDef : darkDef)
   }
   const cyanRgb   = read('--cyan',    '0,212,255',  '0,93,143')
   const greenRgb  = read('--green',   '0,255,136',  '0,110,56')
-  const rawBg      = cssVar('--bg', isLight ? '#c8d4e0' : '#060a0f')
-  const parsedBg   = hexToRgb(rawBg, null)
   const bgRgb      = (() => {
     if (!parsedBg) return isLight ? '200,214,228' : '0,12,28'
     const p = parsedBg.split(',').map(Number)
@@ -2088,6 +2103,8 @@ function GlobeMode({ visibleRef }) {
   const autoRotateRef = useRef(true)
   const [packetsOn, setPacketsOn] = useState(true)
   const packetsOnRef = useRef(true)
+  const [routeLog, setRouteLog] = useState([])
+  const routeLogRef = useRef([])
   const [perfTier] = useState(() => {
     const cores = navigator.hardwareConcurrency || 4
     const dpr = window.devicePixelRatio || 1
@@ -2096,6 +2113,7 @@ function GlobeMode({ visibleRef }) {
     if (cores <= 6) return 'med'
     return 'high'
   })
+  const [themeTone, setThemeTone] = useState('dark')
   const stateRef  = useRef({
     phi: 0.55,
     theta: 0.18,
@@ -2211,9 +2229,11 @@ function GlobeMode({ visibleRef }) {
   // ── React to theme changes ──
   useEffect(() => {
     themeRef.current = readGlobeTheme()
+    setThemeTone(themeRef.current.isLight ? 'light' : 'dark')
     const el = document.documentElement
     const obs = new MutationObserver(() => {
       themeRef.current = readGlobeTheme()
+      setThemeTone(themeRef.current.isLight ? 'light' : 'dark')
       setThemeKey(k => k + 1)
     })
     obs.observe(el, { attributes: true, attributeFilter: ['data-theme', 'style'] })
@@ -2260,10 +2280,11 @@ function GlobeMode({ visibleRef }) {
     const bg     = rgbToArr(theme.bgRgb, '0,12,28')
 
     // Bindable markers — every city gets an id for CSS anchors + labels.
+    // Keep nodes small and crisp; hub is only slightly larger.
     const markers = GLOBE_CITIES.map(c => ({
       id: c.id,
       location: [c.lat, c.lng],
-      size: c.hub ? 0.11 : 0.06,
+      size: c.hub ? 0.072 : 0.038,
       color: c.hub ? green : cyan,
     }))
 
@@ -2272,13 +2293,14 @@ function GlobeMode({ visibleRef }) {
       markers.push({
         id: `trail-${i}`,
         location: [t.lat, t.lon],
-        size: Math.max(0.02, 0.05 - i * 0.008),
-        color: [orange[0] * 0.55, orange[1] * 0.55, orange[2] * 0.55],
+        size: Math.max(0.014, 0.028 - i * 0.004),
+        color: [orange[0] * 0.5, orange[1] * 0.5, orange[2] * 0.5],
       })
     })
 
     // Bindable arcs — per-route color, id for arc labels.
-    // COBE exposes `--cobe-arc-{id}` / `--cobe-visible-arc-{id}` (arc- prefix is added by COBE).
+    // Non-hub routes use a dimmer cyan so the network reads as hierarchy, not spaghetti.
+    const dimCyan = [cyan[0] * 0.55, cyan[1] * 0.55, cyan[2] * 0.55]
     const arcs = GLOBE_CONNECTIONS.map((e) => {
       const a = GLOBE_CITIES[e.from]
       const b = GLOBE_CITIES[e.to]
@@ -2286,7 +2308,7 @@ function GlobeMode({ visibleRef }) {
         id: `${a.id}-${b.id}`,
         from: [a.lat, a.lng],
         to:   [b.lat, b.lng],
-        color: e.hub ? green : cyan,
+        color: e.hub ? green : dimCyan,
       }
     })
 
@@ -2295,7 +2317,7 @@ function GlobeMode({ visibleRef }) {
     if (hasVisitor) {
       markers.push({
         location: [+v.lat, +v.lon],
-        size: 0.13,
+        size: 0.085,
         color: orange,
         id: 'visitor',
       })
@@ -2326,37 +2348,54 @@ function GlobeMode({ visibleRef }) {
       phi: stateRef.current.phi,
       theta: stateRef.current.theta,
       dark: theme.isLight ? 0 : 1,
-      diffuse: 1.2,
+      diffuse: 1.15,
       scale: stateRef.current.zoom * 0.92,
       opacity: 1,
       mapSamples,
-      mapBrightness: theme.isLight ? 4.5 : 6.5,
-      mapBaseBrightness: 0.04,
+      mapBrightness: theme.isLight ? 3.8 : 5.2,
+      mapBaseBrightness: 0.03,
       baseColor,
       markerColor: cyan,
-      glowColor: theme.isLight ? [0.55, 0.65, 0.75] : [0.15, 0.35, 0.45],
+      glowColor: theme.isLight ? [0.55, 0.65, 0.75] : [0.12, 0.3, 0.4],
       offset: [0, 0],
       markers,
       arcs,
       arcColor: green,
-      arcWidth: 0.45,
-      arcHeight: 0.35,
-      markerElevation: 0.02,
+      arcWidth: 0.28,
+      arcHeight: 0.18,
+      markerElevation: 0.012,
       context: { antialias: true, alpha: true, powerPreference: 'default' },
     })
 
     globeRef.current = globe
 
     // Flight packets — great-circle interp along hub routes, live-updated markers.
+    // Two directions per route: req (client→hub, orange/cyan) and res (hub→client, green).
     const hubRoutes = GLOBE_CONNECTIONS.filter(e => e.hub).map(e => ({
       from: GLOBE_CITIES[e.from],
       to:   GLOBE_CITIES[e.to],
     }))
-    const packetCount = perfTier === 'low' ? 3 : 6
+    // Always include visitor→hub as the primary realtime client route when available.
+    const clientRoutes = []
+    if (hasVisitor) {
+      const hub = GLOBE_CITIES.find(c => c.hub) || GLOBE_CITIES[9]
+      clientRoutes.push({
+        from: { id: 'visitor', name: visitor?.city || 'CLIENT', lat: +v.lat, lng: +v.lon },
+        to:   hub,
+        client: true,
+      })
+    }
+    const allRoutes = [...clientRoutes, ...hubRoutes]
+    const packetCount = perfTier === 'low' ? 4 : 8
+    const REQ_KINDS = ['GET /api', 'POST /auth', 'WS SYNC', 'GET /cdn', 'RPC CALL', 'GET /status']
     const packetSeeds = Array.from({ length: packetCount }, (_, i) => ({
-      route: i % Math.max(1, hubRoutes.length),
+      route: i % Math.max(1, allRoutes.length),
       t: (i / packetCount),
-      speed: 0.0018 + (i % 3) * 0.0007,
+      speed: 0.0016 + (i % 3) * 0.0006,
+      // Alternate request (toward hub) and response (away from hub)
+      dir: i % 2 === 0 ? 1 : -1,
+      kind: REQ_KINDS[i % REQ_KINDS.length],
+      logged: false,
     }))
 
     // COBE v2 has no onRender — drive phi/theta/scale via globe.update() each frame.
@@ -2389,21 +2428,43 @@ function GlobeMode({ visibleRef }) {
         }
       }
 
-      // Advance flight packets along great circles
+      // Advance flight packets along great circles (client ⇄ server realtime routing)
       let nextMarkers = markers
-      if (packetsOnRef.current && hubRoutes.length) {
+      if (packetsOnRef.current && allRoutes.length) {
         const packetMarkers = packetSeeds.map((p, i) => {
           p.t += p.speed
-          if (p.t > 1) p.t -= 1
-          const r = hubRoutes[p.route]
-          // Linear lat/lng interp is fine for short visual hops
-          const lat = r.from.lat + (r.to.lat - r.from.lat) * p.t
-          const lng = r.from.lng + (r.to.lng - r.from.lng) * p.t
+          if (p.t > 1) {
+            p.t -= 1
+            // Log a completed hop to the live routing ticker
+            const r = allRoutes[p.route]
+            const fromName = p.dir === 1 ? r.from.name : r.to.name
+            const toName   = p.dir === 1 ? r.to.name : r.from.name
+            const entry = {
+              id: `${i}-${Date.now()}`,
+              kind: p.dir === 1 ? p.kind : '200 OK',
+              from: fromName,
+              to: toName,
+              dir: p.dir,
+              ms: 8 + Math.floor(Math.random() * 40),
+            }
+            routeLogRef.current = [entry, ...routeLogRef.current].slice(0, 6)
+            setRouteLog(routeLogRef.current)
+          }
+          const r = allRoutes[p.route]
+          // dir 1 = toward hub (request), -1 = away from hub (response)
+          const a = p.dir === 1 ? r.from : r.to
+          const b = p.dir === 1 ? r.to : r.from
+          const lat = a.lat + (b.lat - a.lat) * p.t
+          const lng = a.lng + (b.lng - a.lng) * p.t
+          // Requests glow orange/cyan; responses glow green
+          const color = p.dir === 1
+            ? (r.client ? orange : cyan)
+            : green
           return {
             id: `pkt-${i}`,
             location: [lat, lng],
-            size: 0.035,
-            color: green,
+            size: r.client && p.dir === 1 ? 0.032 : 0.022,
+            color,
           }
         })
         nextMarkers = [...markers, ...packetMarkers]
@@ -2544,24 +2605,31 @@ function GlobeMode({ visibleRef }) {
   const hubLinks = GLOBE_CONNECTIONS.filter(e => e.hub).length
 
   return (
-    <div className="globe-network-shell" ref={wrapRef} style={{
-      width: '100%', height: '100%',
-      position: 'relative', overflow: 'hidden',
-      background: 'transparent',
-    }}>
+    <div
+      className="globe-network-shell"
+      ref={wrapRef}
+      data-globe-tone={themeTone}
+      style={{
+        width: '100%', height: '100%',
+        position: 'relative', overflow: 'hidden',
+        background: 'transparent',
+      }}
+    >
       {/* Floating title — top left */}
       <div className="globe-network-title" style={{
-        position: 'absolute', top: 10, left: 14, zIndex: 3,
+        position: 'absolute', top: 12, left: 16, zIndex: 3,
         fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3,
         color: 'var(--cyan)', opacity: 0.55, pointerEvents: 'none',
+        maxWidth: 'calc(100% - 280px)',
+        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
       }}>
         GLOBAL NETWORK · LIVE CONNECTION MAP
       </div>
 
       {/* Floating stats — top right */}
       <div className="globe-network-stats" style={{
-        position: 'absolute', top: 8, right: 14, zIndex: 3,
-        display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-end',
+        position: 'absolute', top: 10, right: 16, zIndex: 3,
+        display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
         pointerEvents: 'none',
       }}>
         {[
@@ -2570,14 +2638,14 @@ function GlobeMode({ visibleRef }) {
           { label: 'LATENCY', value: `${latencyMs}ms`,         color: 'var(--cyan)'  },
           { label: 'UPTIME',  value: '99.99%',                 color: 'var(--green)' },
         ].map(s => (
-          <div key={s.label} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div key={s.label} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>{s.label}</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11,   color: s.color,       fontWeight: 700  }}>{s.value}</span>
           </div>
         ))}
       </div>
 
-      {/* Mode chips — auto-rotate / packets */}
+      {/* Mode chips — sit under the stats stack so they never collide with the title */}
       <div className="globe-mode-chips" role="toolbar" aria-label="Globe display controls">
         <button
           type="button"
@@ -2586,7 +2654,8 @@ function GlobeMode({ visibleRef }) {
           aria-pressed={autoRotate}
           title={autoRotate ? 'Pause auto-rotate' : 'Resume auto-rotate'}
         >
-          {autoRotate ? '◉ AUTO' : '○ LOCK'}
+          <span className="globe-mode-chip-dot" aria-hidden />
+          {autoRotate ? 'AUTO' : 'LOCK'}
         </button>
         <button
           type="button"
@@ -2595,7 +2664,8 @@ function GlobeMode({ visibleRef }) {
           aria-pressed={packetsOn}
           title={packetsOn ? 'Hide flight packets' : 'Show flight packets'}
         >
-          {packetsOn ? '⟶ PKT' : '⟶ OFF'}
+          <span className="globe-mode-chip-dot" aria-hidden />
+          {packetsOn ? 'PKT' : 'OFF'}
         </button>
       </div>
 
@@ -2734,6 +2804,24 @@ function GlobeMode({ visibleRef }) {
         </aside>
       )}
 
+      {/* Live routing ticker — client ⇄ server hops */}
+      {routeLog.length > 0 && (
+        <div className="globe-route-log" role="log" aria-live="polite" aria-label="Live routing hops">
+          {routeLog.map((e, i) => (
+            <div key={e.id} className="globe-route-log-row" style={{ opacity: 1 - i * 0.14 }}>
+              <span className="globe-route-log-dir" data-dir={e.dir === 1 ? 'up' : 'down'}>
+                {e.dir === 1 ? '▲' : '▼'}
+              </span>
+              <span className="globe-route-log-kind" data-dir={e.dir === 1 ? 'up' : 'down'}>{e.kind}</span>
+              <span className="globe-route-log-path">
+                {e.from} → {e.to}
+              </span>
+              <span className="globe-route-log-ms">{e.ms}ms</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Visitor HUD — bottom-left (anchored to marker when CSS anchor positioning is available) */}
       <VisitorHud visitor={visitor} />
 
@@ -2776,13 +2864,14 @@ function GlobeMode({ visibleRef }) {
         }
         .globe-city-hub-dot {
           display: inline-block;
-          width: 5px; height: 5px;
+          width: 4px; height: 4px;
           border-radius: 50%;
           background: var(--green);
-          box-shadow: 0 0 6px var(--green);
-          margin-right: 5px;
+          box-shadow: 0 0 5px var(--green);
+          margin-right: 4px;
           vertical-align: middle;
           animation: hudPulse 2s ease-in-out infinite;
+          flex-shrink: 0;
         }
         .globe-hub-ring {
           position: absolute;
@@ -2790,18 +2879,18 @@ function GlobeMode({ visibleRef }) {
           top: anchor(center);
           left: anchor(center);
           translate: -50% -50%;
-          width: 28px; height: 28px;
+          width: 18px; height: 18px;
           border-radius: 50%;
-          border: 1.5px solid var(--green);
-          box-shadow: 0 0 12px color-mix(in srgb, var(--green) 55%, transparent);
+          border: 1.25px solid var(--green);
+          box-shadow: 0 0 10px color-mix(in srgb, var(--green) 45%, transparent);
           pointer-events: none;
           z-index: 2;
           animation: hubRing 2.2s ease-out infinite;
         }
         @keyframes hubRing {
-          0%   { transform: translate(-50%,-50%) scale(0.7); opacity: 0.95; }
-          70%  { transform: translate(-50%,-50%) scale(1.8); opacity: 0; }
-          100% { transform: translate(-50%,-50%) scale(0.7); opacity: 0; }
+          0%   { transform: translate(-50%,-50%) scale(0.75); opacity: 0.9; }
+          70%  { transform: translate(-50%,-50%) scale(1.55); opacity: 0; }
+          100% { transform: translate(-50%,-50%) scale(0.75); opacity: 0; }
         }
         .globe-arc-label {
           position: absolute;
@@ -2820,33 +2909,61 @@ function GlobeMode({ visibleRef }) {
         }
         .globe-mode-chips {
           position: absolute;
-          top: 10px; left: 50%;
-          transform: translateX(-50%);
+          top: 118px; right: 16px;
           z-index: 4;
           display: flex;
           gap: 6px;
         }
         .globe-mode-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          height: 26px;
+          padding: 0 10px;
           font-family: var(--font-mono);
           font-size: 10px;
-          letter-spacing: 1.5px;
+          font-weight: 600;
+          letter-spacing: 1.6px;
           color: var(--muted);
-          background: color-mix(in srgb, var(--bg) 70%, transparent);
-          border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-          border-radius: 3px;
-          padding: 4px 10px;
+          background: color-mix(in srgb, var(--bg) 62%, transparent);
+          border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+          border-radius: 4px;
           cursor: pointer;
-          backdrop-filter: blur(4px);
-          transition: color 0.2s, border-color 0.2s;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease, transform 0.12s ease;
+          user-select: none;
+          line-height: 1;
+        }
+        .globe-mode-chip-dot {
+          width: 5px; height: 5px;
+          border-radius: 50%;
+          background: var(--muted);
+          opacity: 0.55;
+          transition: background 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+          flex-shrink: 0;
         }
         .globe-mode-chip.is-on {
           color: var(--green);
-          border-color: color-mix(in srgb, var(--green) 45%, transparent);
-          box-shadow: 0 0 10px color-mix(in srgb, var(--green) 18%, transparent);
+          border-color: color-mix(in srgb, var(--green) 38%, transparent);
+          background: color-mix(in srgb, var(--green) 8%, color-mix(in srgb, var(--bg) 70%, transparent));
+        }
+        .globe-mode-chip.is-on .globe-mode-chip-dot {
+          background: var(--green);
+          opacity: 1;
+          box-shadow: 0 0 6px var(--green);
         }
         .globe-mode-chip:hover {
           color: var(--cyan);
           border-color: color-mix(in srgb, var(--cyan) 40%, transparent);
+          transform: translateY(-1px);
+        }
+        .globe-mode-chip:focus-visible {
+          outline: 2px solid var(--cyan);
+          outline-offset: 2px;
+        }
+        .globe-mode-chip:active {
+          transform: translateY(0);
         }
         .globe-sat-ring {
           position: absolute;
@@ -2884,27 +3001,43 @@ function GlobeMode({ visibleRef }) {
         }
         .globe-city-chip {
           pointer-events: auto;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          height: 24px;
+          padding: 0 8px;
           font-family: var(--font-mono);
           font-size: 10px;
+          font-weight: 500;
           letter-spacing: 1.2px;
           color: var(--muted);
-          background: color-mix(in srgb, var(--bg) 70%, transparent);
-          border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
-          border-radius: 3px;
-          padding: 4px 8px;
+          background: color-mix(in srgb, var(--bg) 62%, transparent);
+          border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+          border-radius: 4px;
           cursor: pointer;
-          transition: color 0.2s, border-color 0.2s, transform 0.15s;
-          backdrop-filter: blur(4px);
+          transition: color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          line-height: 1;
+          white-space: nowrap;
         }
         .globe-city-chip:hover,
         .globe-city-chip.is-focus {
           color: var(--cyan);
-          border-color: color-mix(in srgb, var(--cyan) 45%, transparent);
+          border-color: color-mix(in srgb, var(--cyan) 42%, transparent);
           transform: translateY(-1px);
+        }
+        .globe-city-chip:focus-visible {
+          outline: 2px solid var(--cyan);
+          outline-offset: 2px;
         }
         .globe-city-chip.is-hub {
           color: var(--green);
-          border-color: color-mix(in srgb, var(--green) 40%, transparent);
+          border-color: color-mix(in srgb, var(--green) 38%, transparent);
+        }
+        .globe-city-chip .globe-city-hub-dot {
+          width: 4px; height: 4px;
+          margin-right: 0;
         }
         .globe-node-panel {
           position: absolute;
@@ -3007,17 +3140,95 @@ function GlobeMode({ visibleRef }) {
           color: var(--muted);
           text-align: right;
         }
+        /* Live routing ticker */
+        .globe-route-log {
+          position: absolute;
+          left: 14px; bottom: 52px;
+          z-index: 4;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          pointer-events: none;
+          max-width: min(340px, calc(100% - 28px));
+        }
+        .globe-route-log-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.6px;
+          padding: 3px 8px;
+          border-radius: 3px;
+          background: color-mix(in srgb, var(--bg) 72%, transparent);
+          border: 1px solid color-mix(in srgb, var(--cyan) 14%, transparent);
+          backdrop-filter: blur(4px);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          animation: routeIn 0.28s ease;
+        }
+        @keyframes routeIn {
+          from { opacity: 0; transform: translateX(-8px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        .globe-route-log-dir {
+          font-size: 9px;
+          line-height: 1;
+          width: 12px;
+          text-align: center;
+        }
+        .globe-route-log-dir[data-dir="up"]   { color: var(--orange); }
+        .globe-route-log-dir[data-dir="down"] { color: var(--green); }
+        .globe-route-log-kind {
+          font-weight: 700;
+          min-width: 64px;
+        }
+        .globe-route-log-kind[data-dir="up"]   { color: var(--cyan); }
+        .globe-route-log-kind[data-dir="down"] { color: var(--green); }
+        .globe-route-log-path {
+          color: var(--muted);
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .globe-route-log-ms {
+          color: var(--cyan);
+          font-weight: 700;
+          font-size: 10px;
+        }
+        /* Theme-tone sync — chrome adapts to real --bg luminance */
+        .globe-network-shell[data-globe-tone="light"] .globe-route-log-row {
+          background: color-mix(in srgb, var(--bg2, var(--bg)) 82%, transparent);
+          border-color: color-mix(in srgb, var(--cyan) 20%, transparent);
+          box-shadow: 0 6px 18px rgba(21,48,74,0.08);
+        }
+        .globe-network-shell[data-globe-tone="light"] .globe-hub-ring {
+          box-shadow: 0 0 12px color-mix(in srgb, var(--green) 40%, transparent);
+        }
         @media (max-width: 640px) {
           .globe-arc-label { display: none; }
           .globe-city-label { font-size: 9px; letter-spacing: 1px; }
           .globe-node-panel { width: min(200px, calc(100% - 28px)); }
-          .globe-mode-chips { top: auto; bottom: 48px; }
+          .globe-mode-chips {
+            top: auto;
+            bottom: 10px;
+            right: 14px;
+            left: auto;
+          }
+          .globe-network-title {
+            max-width: calc(100% - 32px);
+            letter-spacing: 2px;
+            font-size: 10px;
+          }
           .globe-sat-ring { display: none; }
+          .globe-route-log { bottom: 88px; max-width: calc(100% - 28px); }
         }
         @media (prefers-reduced-motion: reduce) {
           .globe-hub-ring,
           .globe-sat-ring,
-          .globe-city-hub-dot { animation: none !important; }
+          .globe-city-hub-dot,
+          .globe-route-log-row { animation: none !important; }
         }
       `}</style>
     </div>
