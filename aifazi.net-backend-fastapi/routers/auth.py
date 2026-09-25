@@ -1149,7 +1149,7 @@ async def create_staff(body: StaffCreateBody, request: Request, admin: dict = De
         raise HTTPException(400, "Username is required")
     if email:
         _ensure_email_available(email)
-    existing = supabase.table("users").select("id").ilike("username", username).limit(5).execute()
+    existing = supabase.table("users").select("id").ilike("username", _escape_ilike(username)).limit(5).execute()
     if any((r.get("username") or "").lower() == username.lower() for r in (existing.data or [])):
         raise HTTPException(409, "Username already exists")
     payload = {"username": username, "email": email, "email_verified": False, "role": body.role, "created_by": "admin", "staff_permissions": perms}

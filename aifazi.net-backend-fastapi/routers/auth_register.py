@@ -13,7 +13,7 @@ import bcrypt as _bcrypt
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from database import supabase
+from database import _escape_ilike, supabase
 from utils.timezone import utc_now
 
 router = APIRouter()
@@ -74,13 +74,13 @@ class ResetBody(BaseModel):
 def _find_account(username: str | None = None, email: str | None = None):
     """Resolve a users row by username or email (case-insensitive)."""
     if username and username.strip():
-        res = supabase.table("users").select("username,email").ilike("username", username.strip()).limit(5).execute()
+        res = supabase.table("users").select("username,email").ilike("username", _escape_ilike(username.strip())).limit(5).execute()
         needle = username.strip().lower()
         row = next((r for r in (res.data or []) if (r.get("username") or "").lower() == needle), None)
         if row:
             return row
     if email and "@" in email:
-        res = supabase.table("users").select("username,email").ilike("email", email.strip()).limit(5).execute()
+        res = supabase.table("users").select("username,email").ilike("email", _escape_ilike(email.strip())).limit(5).execute()
         needle = email.strip().lower()
         return next((r for r in (res.data or []) if (r.get("email") or "").lower() == needle), None)
     return None
