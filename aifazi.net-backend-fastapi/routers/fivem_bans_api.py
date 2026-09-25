@@ -5,9 +5,7 @@ Same pattern as auth_staff.py.
 """
 from __future__ import annotations
 
-from typing import Optional
-
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from pydantic import BaseModel
 
 from dependencies import require_admin, require_staff
@@ -22,7 +20,7 @@ class BanSyncAck(BaseModel):
 
 
 @router.get("/bans")
-async def list_bans(active: Optional[bool] = None, limit: int = 50, offset: int = 0,
+async def list_bans(active: bool | None = None, limit: int = 50, offset: int = 0,
                     _: dict = Depends(require_staff)):
     from routers.fivem import list_bans as _mono
 
