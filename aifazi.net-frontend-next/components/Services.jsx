@@ -6,10 +6,10 @@ import { AnimatableWrapper, EditableList, EditableText } from '../context/EditCo
 import { IconDisplay, useLordiconScript } from './IconPicker'
 
 const DEFAULT_SERVICES = [
-  { icon: '🌐', title: 'Network Design', desc: 'Enterprise LAN/WAN design, routing, redundancy, and documentation.', features: ['OSPF / BGP / EIGRP', 'VLAN & QoS Design', 'Redundancy & Failover', 'Network Documentation'], accent: 'var(--green)' },
-  { icon: '🔒', title: 'Security & Firewall', desc: 'Perimeter hardening, VPN, IDS/IPS, and zero-trust architecture.', features: ['Firewall Rule Optimization', 'IPSec / SSL VPN', 'IDS/IPS Deployment', 'Zero Trust Architecture'], accent: 'var(--red)' },
-  { icon: '☁️', title: 'Cloud & Hybrid', desc: 'AWS/Azure migration, VPC design, Direct Connect, and cost control.', features: ['AWS / Azure Setup', 'Cloud Migration Planning', 'Hybrid Connectivity', 'Cost Optimization'], accent: 'var(--cyan)' },
-  { icon: '🖥️', title: 'Servers & Systems', desc: 'Linux/Windows servers, AD, virtualization, and containerized apps.', features: ['Linux / Windows Server', 'Docker & Virtualization', 'Active Directory', 'Backup & Recovery'], accent: 'var(--orange)' },
+  { icon: '🌐', title: 'Website & Web Apps', desc: 'Custom sites and web apps — React/Next.js, FastAPI, Supabase, deployed to Vercel.', features: ['React / Next.js', 'FastAPI / Node', 'Supabase / MongoDB', 'CMS & Landing Pages'], accent: 'var(--green)' },
+  { icon: '📱', title: 'Mobile Apps', desc: 'React Native apps shipped to the Play Store with OTA updates.', features: ['React Native / Expo', 'EAS Build & OTA', 'Play Store Deploy', 'App Maintenance'], accent: 'var(--cyan)' },
+  { icon: '🎮', title: 'FiveM Scripting', desc: 'Commercial game scripts for QB-Core, QBX, ESX, and standalone servers.', features: ['Lua / JS Scripts', 'ox_lib UIs', 'Server-Authoritative Logic', 'Tebex Delivery'], accent: 'var(--purple)' },
+  { icon: '🖥️', title: 'Network & M365 Support', desc: 'Microsoft 365, AD, networking, and IT policy & security documentation.', features: ['Microsoft 365 / Entra', 'Active Directory', 'Firewall & VPN', 'IT Policy & Compliance'], accent: 'var(--orange)' },
 ]
 
 const SERVICE_FIELDS = [
