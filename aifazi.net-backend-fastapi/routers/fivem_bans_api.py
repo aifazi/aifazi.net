@@ -36,7 +36,7 @@ async def pending_unban_sync(request: Request, limit: int = 25):
 
 @router.post("/bans/mark-synced")
 async def mark_ban_synced(body: dict, request: Request):
-    from routers.fivem import BanSyncAck
+    from routers.fivem_models import BanSyncAck
     from routers.fivem import mark_ban_synced as _mono
 
     return await _mono(BanSyncAck(**(body or {})), request)
@@ -44,7 +44,7 @@ async def mark_ban_synced(body: dict, request: Request):
 
 @router.post("/bans")
 async def create_ban(payload: dict, background_tasks: BackgroundTasks, user: dict = Depends(require_staff)):
-    from routers.fivem import BanCreate
+    from routers.fivem_models import BanCreate
     from routers.fivem import create_ban as _mono
 
     return await _mono(BanCreate(**(payload or {})), background_tasks, user)
@@ -52,7 +52,7 @@ async def create_ban(payload: dict, background_tasks: BackgroundTasks, user: dic
 
 @router.patch("/bans/{ban_id}")
 async def update_ban(ban_id: str, payload: dict, _: dict = Depends(require_staff)):
-    from routers.fivem import BanUpdate
+    from routers.fivem_models import BanUpdate
     from routers.fivem import update_ban as _mono
 
     return await _mono(ban_id, BanUpdate(**(payload or {})), _)

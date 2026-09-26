@@ -45,6 +45,16 @@ from utils.fivem_bans import (
     _ban_duration_txadmin, _resolve_net_id,
 )
 
+from routers.fivem_models import (
+    _check_token,
+    WhitelistApply, WhitelistReview, WhitelistManualAdd, WhitelistPriorityUpdate,
+    BanCreate, BanUpdate, BanSyncAck, StatusUpdate, DevOverride, MarkSynced,
+    ApplicationActionSyncBody, ServerSyncRefresh, TxAdminEvent,
+    PlayerJoinBody, PlayerLeaveBody, PlayerHeartbeatBody, WhitelistIdentifiersBody,
+    BulkWhitelistApproveBody, TxAdminActionBody,
+    ConnectTokenResponse, VerifyTokenRequest, ConnectSessionRequest,
+)
+
 
 # H19 â€” escape helper. The f-string email templates below previously inlined
 # raw `reason`, `note`, `name`, and `char` straight into HTML email bodies. A
@@ -253,13 +263,7 @@ def _compute_status(updated_at_str):
     if age < DEGRADED_THRESHOLD_S:  return "degraded", age
     return "offline", age
 
-def _check_token(request: Request):
-    secret = os.getenv("FIVEM_SERVER_SECRET", "")
-    token  = request.headers.get("X-FiveM-Token", "")
-    if not secret:
-        raise HTTPException(503, "FiveM server token is not configured")
-    if not token or not hmac.compare_digest(token, secret):
-        raise HTTPException(403, "Invalid server token")
+# _check_token imported from routers.fivem_models
 
 def _uptime_str(s):
     if not s or s <= 0: return "0m"
@@ -278,81 +282,18 @@ def _last_seen_str(age):
 # _now() and _push_realtime() imported from utils.fivem_shared
 
 # â”€â”€â”€ Pydantic models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class WhitelistApply(BaseModel):
-    discord_id: str | None = None; discord_name: str | None = None; steam_hex: str | None = None
-    fivem_id: str | None = None; character_name: str; character_backstory: str
-    age: int; rp_experience: str; why_join: str; rules_accepted: bool
-    email: str | None = None   # collected on the apply form so we can email results
-    extra_answers: dict | None = None
 
-class WhitelistReview(BaseModel):
-    status: str; reviewer_note: str | None = None
-    priority_tier: str | None = None
-    priority_level: int | None = None
-    priority_expires_at: str | None = None
 
-class WhitelistManualAdd(BaseModel):
-    discord_id: str; discord_name: str; character_name: str
-    steam_hex: str | None = None; fivem_license: str | None = None; fivem_id: str | None = None
-    reviewer_note: str | None = None
-    priority_tier: str | None = None
-    priority_level: int | None = None
-    priority_expires_at: str | None = None
 
-class WhitelistPriorityUpdate(BaseModel):
-    priority_tier: str | None = None
-    priority_level: int | None = None
-    priority_expires_at: str | None = None
 
-class BanCreate(BaseModel):
-    # identifiers can be a comma-separated string OR a list (from frontend player picker)
-    identifier:  str | None = None          # single steam hex / fivem id
-    identifiers: list[str] | None = None    # multiple ids (all player identifiers)
-    net_id:      int | None = None          # server netId (if player is online)
-    player_name: str
-    reason:      str
-    duration:    str = "permanent"
-    expires_at:  str | None = None          # ISO datetime (kept for DB compat)
 
-class BanUpdate(BaseModel):
-    reason: str | None = None; expires_at: str | None = None; active: bool | None = None
 
-class BanSyncAck(BaseModel):
-    ban_id: str
-    ok: bool = True
-    message: str | None = None
 
-class StatusUpdate(BaseModel):
-    players_online: int
-    max_players: int
-    server_name: str | None = None
-    server_version: str | None = None
-    uptime_seconds: int = 0
-    resource_count: int = 0
-    force_offline: bool = False
-    # FIX: accept 'players' list sent by Lua heartbeat (was silently ignored)
-    players: list[Any] | None = None
 
-class DevOverride(BaseModel):
-    override: Literal["force_online", "maintenance"] | None = None
 
-class MarkSynced(BaseModel):
-    license: str | None = None   # kept for Lua compat
-    app_id:  str | None = None
-    success: bool = True
-    error:   str | None = None
 
-class ApplicationActionSyncBody(BaseModel):
-    submission_id: str
-    status: Literal["synced", "failed", "skipped"] = "synced"
-    message: str | None = None
 
-class ServerSyncRefresh(BaseModel):
-    app_id: str | None = None
-    reason: str | None = None
 
-class TxAdminEvent(BaseModel):
-    event: str; data: dict = {}; ts: int | None = None
 
 # _active_priority imported from utils.fivem_shared
 
@@ -1851,38 +1792,6 @@ async def list_player_sessions(
 
 
 # ── Player data sync (Lua → website) ──────────────────────────────────────────
-class PlayerJoinBody(BaseModel):
-    server_id: int
-    player_name: str
-    license: str | None = None
-    license2: str | None = None
-    steam_hex: str | None = None
-    fivem_id: str | None = None
-    discord_id: str | None = None
-    identifiers: list[str] = []
-
-
-class PlayerLeaveBody(BaseModel):
-    server_id: int
-    player_name: str | None = None
-    license: str | None = None
-    license2: str | None = None
-    steam_hex: str | None = None
-    identifiers: list[str] = []
-    disconnect_reason: str | None = None
-
-
-class PlayerHeartbeatBody(BaseModel):
-    players: list[dict] = []
-
-
-class WhitelistIdentifiersBody(BaseModel):
-    discord_id: str | None = None
-    license: str | None = None
-    license2: str | None = None
-    steam_hex: str | None = None
-    fivem_id: str | None = None
-    identifiers: list[str] = []
 
 
 
@@ -2129,12 +2038,6 @@ async def txadmin_status(_: dict = Depends(require_staff)):
 _TXADMIN_ACTIONS = ("kick", "ban", "stop-resource", "start-resource")
 
 
-class TxAdminActionBody(BaseModel):
-    action: str
-    target: str = ""
-    reason: str | None = None
-    confirm: bool = False
-
 
 def _resolve_live_netid(target: str) -> str | None:
     """Resolve a player name or server id to a txAdmin netid using the latest
@@ -2222,25 +2125,7 @@ _CONNECT_COOLDOWN_S = 30
 _STAFF_DIRECT_ROLES = {"admin", "moderator", "editor", "chat", "fivem", "staff"}
 
 
-class ConnectTokenResponse(BaseModel):
-    token: str
-    expires_in: int
-    username: str
-    connect_url: str
 
-
-class VerifyTokenRequest(BaseModel):
-    token: str
-
-
-class ConnectSessionRequest(BaseModel):
-    player_name: str | None = None
-    fivem_license: str | None = None
-    license2: str | None = None
-    steam_hex: str | None = None
-    fivem_id: str | None = None
-    discord_id: str | None = None
-    identifiers: list[str] = []
 
 
 def _jwt_secret() -> str:

@@ -21,7 +21,7 @@ async def my_whitelist_application(user: dict = Depends(get_current_user)):
 
 @router.post("/whitelist/apply")
 async def apply_whitelist(payload: dict, user: dict = Depends(get_current_user)):
-    from routers.fivem import WhitelistApply
+    from routers.fivem_models import WhitelistApply
     from routers.fivem import apply_whitelist as _mono
 
     return await _mono(WhitelistApply(**(payload or {})), user)
@@ -78,7 +78,7 @@ async def refresh_server_sync(
     payload: dict | None = None,
     user: dict = Depends(require_staff),
 ):
-    from routers.fivem import ServerSyncRefresh
+    from routers.fivem_models import ServerSyncRefresh
     from routers.fivem import refresh_server_sync as _mono
 
     body = ServerSyncRefresh(**(payload or {})) if payload else None
@@ -98,7 +98,7 @@ async def update_whitelist_priority(
     payload: dict,
     user: dict = Depends(require_staff),
 ):
-    from routers.fivem import WhitelistPriorityUpdate
+    from routers.fivem_models import WhitelistPriorityUpdate
     from routers.fivem import update_whitelist_priority as _mono
 
     return await _mono(app_id, WhitelistPriorityUpdate(**(payload or {})), user)
@@ -111,7 +111,7 @@ async def review_whitelist(
     background_tasks: BackgroundTasks,
     user: dict = Depends(require_staff),
 ):
-    from routers.fivem import WhitelistReview
+    from routers.fivem_models import WhitelistReview
     from routers.fivem import review_whitelist as _mono
 
     return await _mono(app_id, WhitelistReview(**(payload or {})), background_tasks, user)
@@ -130,7 +130,7 @@ async def manual_add_whitelist(
     background_tasks: BackgroundTasks,
     user: dict = Depends(require_staff),
 ):
-    from routers.fivem import WhitelistManualAdd
+    from routers.fivem_models import WhitelistManualAdd
     from routers.fivem import manual_add_whitelist as _mono
 
     return await _mono(WhitelistManualAdd(**(payload or {})), background_tasks, user)
@@ -138,7 +138,7 @@ async def manual_add_whitelist(
 
 @router.post("/whitelist/mark-synced")
 async def mark_synced(payload: dict, request: Request):
-    from routers.fivem import MarkSynced
+    from routers.fivem_models import MarkSynced
     from routers.fivem import mark_synced as _mono
 
     return await _mono(MarkSynced(**(payload or {})), request)
@@ -153,7 +153,7 @@ async def pending_application_actions(request: Request):
 
 @router.post("/application-actions/mark-synced")
 async def mark_application_action_synced(payload: dict, request: Request):
-    from routers.fivem import ApplicationActionSyncBody
+    from routers.fivem_models import ApplicationActionSyncBody
     from routers.fivem import mark_application_action_synced as _mono
 
     return await _mono(ApplicationActionSyncBody(**(payload or {})), request)
@@ -161,7 +161,7 @@ async def mark_application_action_synced(payload: dict, request: Request):
 
 @router.post("/whitelist/update-identifiers")
 async def update_whitelist_identifiers(payload: dict, request: Request):
-    from routers.fivem import WhitelistIdentifiersBody
+    from routers.fivem_models import WhitelistIdentifiersBody
     from routers.fivem import update_whitelist_identifiers as _mono
 
     return await _mono(WhitelistIdentifiersBody(**(payload or {})), request)
@@ -173,7 +173,7 @@ async def bulk_approve_whitelist(
     background_tasks: BackgroundTasks,
     user: dict = Depends(require_staff),
 ):
-    from routers.fivem import BulkWhitelistApproveBody
+    from routers.fivem_models import BulkWhitelistApproveBody
     from routers.fivem import bulk_approve_whitelist as _mono
 
     return await _mono(BulkWhitelistApproveBody(**(payload or {})), background_tasks, user)

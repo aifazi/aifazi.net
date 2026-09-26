@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.post("/status")
 async def update_server_status(payload: dict, request: Request):
-    from routers.fivem import StatusUpdate
+    from routers.fivem_models import StatusUpdate
     from routers.fivem import update_server_status as _mono
 
     return await _mono(StatusUpdate(**(payload or {})), request)
@@ -43,7 +43,7 @@ async def refresh_status_timestamp(user: dict = Depends(require_staff)):
 
 @router.patch("/dev-override")
 async def set_dev_override(payload: dict, _: dict = Depends(require_admin)):
-    from routers.fivem import DevOverride
+    from routers.fivem_models import DevOverride
     from routers.fivem import set_dev_override as _mono
 
     return await _mono(DevOverride(**(payload or {})), _)
@@ -117,7 +117,7 @@ async def list_player_sessions(
 
 @router.post("/players/join")
 async def record_player_join(payload: dict, request: Request):
-    from routers.fivem import PlayerJoinBody
+    from routers.fivem_models import PlayerJoinBody
     from routers.fivem import record_player_join as _mono
 
     return await _mono(PlayerJoinBody(**(payload or {})), request)
@@ -125,7 +125,7 @@ async def record_player_join(payload: dict, request: Request):
 
 @router.post("/players/leave")
 async def record_player_leave(payload: dict, request: Request):
-    from routers.fivem import PlayerLeaveBody
+    from routers.fivem_models import PlayerLeaveBody
     from routers.fivem import record_player_leave as _mono
 
     return await _mono(PlayerLeaveBody(**(payload or {})), request)
@@ -133,7 +133,7 @@ async def record_player_leave(payload: dict, request: Request):
 
 @router.post("/players/heartbeat-sync")
 async def heartbeat_sync_players(payload: dict, request: Request):
-    from routers.fivem import PlayerHeartbeatBody
+    from routers.fivem_models import PlayerHeartbeatBody
     from routers.fivem import heartbeat_sync_players as _mono
 
     return await _mono(PlayerHeartbeatBody(**(payload or {})), request)
