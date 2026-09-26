@@ -1,6 +1,7 @@
 'use client'
 // seoToolsParts.jsx — SEO analyzer tools (extracted).
 import { useState, useEffect } from 'react'
+import api from '@/lib/api'
 import { Select } from '../core/ui.jsx'
 
 function escapeHtml(s) {

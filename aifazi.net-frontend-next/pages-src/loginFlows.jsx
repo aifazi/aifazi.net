@@ -1,6 +1,7 @@
 'use client'
 // loginFlows.jsx — sign-in / sign-up / 2FA / forgot flows (extracted).
 import { useState, useEffect, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import api, { saveTokens, clearAuthTokens, getRole, ensureAdminGate } from '@/lib/api'
 import { authProviderLoginRoute, safeNextPath, FORGOT_PASSWORD_PATH } from '@/lib/authRoutes'
 
