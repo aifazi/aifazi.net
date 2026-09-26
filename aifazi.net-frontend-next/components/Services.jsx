@@ -6,10 +6,10 @@ import { AnimatableWrapper, EditableList, EditableText } from '../context/EditCo
 import { IconDisplay, useLordiconScript } from './IconPicker'
 
 const DEFAULT_SERVICES = [
-  { icon: '🌐', title: 'Network Design & Architecture', desc: 'End-to-end design of enterprise LAN/WAN infrastructure. From IP addressing and routing protocols to redundancy planning and documentation.', features: ['OSPF / BGP / EIGRP', 'VLAN & QoS Design', 'Redundancy & Failover', 'Network Documentation'], accent: 'var(--green)' },
-  { icon: '🔒', title: 'Security & Firewall', desc: 'Hardening your perimeter with enterprise-grade firewall deployment, VPN solutions, IDS/IPS configuration, and ongoing security audits.', features: ['Firewall Rule Optimization', 'IPSec / SSL VPN', 'IDS/IPS Deployment', 'Zero Trust Architecture'], accent: 'var(--red)' },
-  { icon: '☁️', title: 'Cloud & Hybrid Infrastructure', desc: 'Seamless migration to cloud-hybrid models with AWS and Azure. Direct Connect, VPC design, and cloud-native security controls.', features: ['AWS / Azure Setup', 'Cloud Migration Planning', 'Hybrid Connectivity', 'Cost Optimization'], accent: 'var(--cyan)' },
-  { icon: '🖥️', title: 'Server & Systems Administration', desc: 'Linux and Windows server deployment, Active Directory, virtualization stacks, and containerized application environments.', features: ['Linux / Windows Server', 'Docker & Virtualization', 'Active Directory', 'Backup & Recovery'], accent: 'var(--orange)' },
+  { icon: '🌐', title: 'Network Design', desc: 'Enterprise LAN/WAN design, routing, redundancy, and documentation.', features: ['OSPF / BGP / EIGRP', 'VLAN & QoS Design', 'Redundancy & Failover', 'Network Documentation'], accent: 'var(--green)' },
+  { icon: '🔒', title: 'Security & Firewall', desc: 'Perimeter hardening, VPN, IDS/IPS, and zero-trust architecture.', features: ['Firewall Rule Optimization', 'IPSec / SSL VPN', 'IDS/IPS Deployment', 'Zero Trust Architecture'], accent: 'var(--red)' },
+  { icon: '☁️', title: 'Cloud & Hybrid', desc: 'AWS/Azure migration, VPC design, Direct Connect, and cost control.', features: ['AWS / Azure Setup', 'Cloud Migration Planning', 'Hybrid Connectivity', 'Cost Optimization'], accent: 'var(--cyan)' },
+  { icon: '🖥️', title: 'Servers & Systems', desc: 'Linux/Windows servers, AD, virtualization, and containerized apps.', features: ['Linux / Windows Server', 'Docker & Virtualization', 'Active Directory', 'Backup & Recovery'], accent: 'var(--orange)' },
 ]
 
 const SERVICE_FIELDS = [

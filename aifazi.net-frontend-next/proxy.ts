@@ -31,11 +31,11 @@ const FIVEM_ENABLED    = FIVEM_HOSTNAME !== SITE_HOST && isPublicDomain(FIVEM_HO
 const STORE_ENABLED    = STORE_HOSTNAME !== SITE_HOST && isPublicDomain(STORE_HOSTNAME)
 const STATUS_ENABLED   = STATUS_HOSTNAME !== SITE_HOST && isPublicDomain(STATUS_HOSTNAME)
 const FIVEM_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/forms', '/chat', '/profile', '/login']
-const FIVEM_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/sw.js'])
+const FIVEM_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/sw.js', '/favicon.ico', '/logo.svg'])
 const STORE_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/login', '/profile', '/forms', '/blog', '/contact', '/privacy', '/tools']
-const STORE_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico', '/manifest.webmanifest', '/sw.js'])
+const STORE_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico', '/logo.svg', '/manifest.webmanifest', '/sw.js'])
 const STATUS_SHARED_PREFIXES = ['/api', '/auth', '/login', '/admin']
-const STATUS_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico'])
+const STATUS_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico', '/logo.svg'])
 const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET   || ''
 const PASETO_SECRET       = process.env.PASETO_SECRET || ''
 // Must match the backend's ADMIN_GATE_SECRET exactly. No fallback to
