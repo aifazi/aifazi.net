@@ -1,7 +1,7 @@
 'use client'
 // forumProfileParts.jsx — shared profile widgets (extracted).
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Link } from '@/lib/router-compat'
+import { Link, useNavigate } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { UserAvatar } from '@/lib/avatar'
 import { Select } from '../core/ui.jsx'
