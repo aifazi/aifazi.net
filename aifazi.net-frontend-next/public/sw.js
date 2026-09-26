@@ -1,14 +1,25 @@
 // Minimal offline cache — same-origin GET only
-// Bump CACHE on deploy to invalidate stale chunks (or inject BUILD_ID via next.config.js env)
-const CACHE = 'aifazi-v3'
+// Bump CACHE on deploy to invalidate stale chunks
+const CACHE = 'aifazi-v4'
 const OFFLINE_URLS = ['/', '/blog', '/forum']
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(OFFLINE_URLS.map(u => new Request(u, { cache: 'reload' })))) )
+  // Never fail install because one URL is unavailable (403 / redirect).
+  e.waitUntil(
+    caches.open(CACHE).then((c) =>
+      Promise.allSettled(
+        OFFLINE_URLS.map((u) =>
+          fetch(new Request(u, { cache: 'reload' }))
+            .then((res) => { if (res && res.ok) return c.put(u, res.clone()) })
+            .catch(() => {})
+        )
+      )
+    )
+  )
   self.skipWaiting()
 })
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))) )
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))))
   self.clients.claim()
 })
 self.addEventListener('fetch', (e) => {
@@ -20,21 +31,19 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(fetch(req).catch(() => caches.match(req)))
     return
   }
-  // Navigations: network-first (fresh HTML), fallback to cache
   if (req.mode === 'navigate' || req.destination === 'document') {
-    e.respondWith(fetch(req).then(res => {
+    e.respondWith(fetch(req).then((res) => {
       const clone = res.clone()
-      caches.open(CACHE).then(c => c.put(req, clone))
+      caches.open(CACHE).then((c) => c.put(req, clone))
       return res
-    }).catch(() => caches.match(req).then(cached => cached || caches.match('/'))))
+    }).catch(() => caches.match(req).then((cached) => cached || caches.match('/'))))
     return
   }
-  // Assets: cache-first
   e.respondWith(
-    caches.match(req).then(cached => cached || fetch(req).then(res => {
+    caches.match(req).then((cached) => cached || fetch(req).then((res) => {
       if (res.ok && req.url.startsWith('http')) {
         const clone = res.clone()
-        caches.open(CACHE).then(c => c.put(req, clone))
+        caches.open(CACHE).then((c) => c.put(req, clone))
       }
       return res
     }).catch(() => caches.match('/')))
