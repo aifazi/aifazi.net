@@ -67,11 +67,11 @@ function BarcodeScanner({ onScan, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, padding: 28, width: '100%', maxWidth: 480 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, padding: 28, width: '100%', maxWidth: 480 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: G }}>SCAN BARCODE</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18 }}>✕</button>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: G }}>SCAN BARCODE</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18 }} aria-label="Close">✕</button>
         </div>
 
         {!manual ? (
@@ -218,7 +218,7 @@ export default function DeliveryAgentPortal() {
         <div style={{ fontSize: 32 }}>🚚</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{agent?.display_name || 'Agent'}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
             {agent?.current_area && <span>{agent?.current_area} · </span>}
             {agent?.vehicle && <span>{agent?.vehicle} · </span>}
             {activeCount} active · {completedCount} completed today
@@ -228,7 +228,7 @@ export default function DeliveryAgentPortal() {
           {['available', 'busy', 'offline'].map(s => (
             <button key={s} onClick={() => setMyStatus(s)}
               style={{
-                fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1.5,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5,
                 padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontWeight: 700,
                 border: `1px solid ${agent?.status === s ? (s === 'available' ? G : s === 'busy' ? Y : 'var(--border)') : 'var(--border)'}`,
                 background: agent?.status === s ? mix(G, 10) : 'transparent',
@@ -248,22 +248,22 @@ export default function DeliveryAgentPortal() {
         <Card style={{ padding: 18, textAlign: 'center' }}>
           <div style={{ fontSize: 24, marginBottom: 4 }}>📋</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: C }}>{activeCount}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>ACTIVE</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>ACTIVE</div>
         </Card>
         <Card style={{ padding: 18, textAlign: 'center' }}>
           <div style={{ fontSize: 24, marginBottom: 4 }}>✅</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: G }}>{completedCount}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>COMPLETED</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>COMPLETED</div>
         </Card>
         <Card style={{ padding: 18, textAlign: 'center' }}>
           <div style={{ fontSize: 24, marginBottom: 4 }}>📦</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{assignments.length}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>TOTAL</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>TOTAL</div>
         </Card>
       </div>
 
       {/* Assignments */}
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: C, marginBottom: 16 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: C, marginBottom: 16 }}>
         {assignments.length > 0 ? 'MY DELIVERIES' : 'NO DELIVERIES'}
       </div>
 
@@ -282,7 +282,7 @@ export default function DeliveryAgentPortal() {
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: C }}>#{o?.order_number}</span>
                     <Badge tone={st.color}>{st.label}</Badge>
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
                     {o?.shipping_address && <span>📍 {o.shipping_address} · </span>}
                     Assigned {new Date(a.assigned_at).toLocaleDateString()}
                     {a.picked_up_at && <> · Picked up {new Date(a.picked_up_at).toLocaleTimeString()}</>}
@@ -291,7 +291,7 @@ export default function DeliveryAgentPortal() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>${total.toFixed(2)}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{(a.items || []).length} item{(a.items || []).length !== 1 ? 's' : ''}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{(a.items || []).length} item{(a.items || []).length !== 1 ? 's' : ''}</div>
                 </div>
               </div>
 
@@ -325,7 +325,7 @@ export default function DeliveryAgentPortal() {
               )}
 
               {a.notes && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
                   📝 {a.notes}
                 </div>
               )}

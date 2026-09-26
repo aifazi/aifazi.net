@@ -65,9 +65,9 @@ function DownloadCard({ release, loading, error }) {
         </svg>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>aifazi mobile</div>
-          <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, color: C }}>ANDROID APP</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: C }}>ANDROID APP</div>
         </div>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '4px 10px', borderRadius: 99, background: `${G}14`, border: `1px solid ${G}40`, color: G }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '4px 10px', borderRadius: 99, background: `${G}14`, border: `1px solid ${G}40`, color: G }}>
           {release?.version ? `v${release.version}` : 'v1.0.1'}
         </div>
       </div>
@@ -109,20 +109,20 @@ function DownloadCard({ release, loading, error }) {
       )}
 
       {release?.state === 'building' && (
-        <p style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: O, textAlign: 'center', marginBottom: 8 }}>
+        <p style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: O, textAlign: 'center', marginBottom: 8 }}>
           The APK is being built right now — it usually appears here within ~15 minutes.
         </p>
       )}
 
       {release?.state === 'ready' && (
-        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: 'var(--muted)', textAlign: 'center', marginBottom: 8 }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: 'var(--muted)', textAlign: 'center', marginBottom: 8 }}>
           {release?.asset_name || 'aifazi-v1.0.1.apk'} · {fmtSize(release?.asset_size)}
           {release?.published_at ? ` · ${new Date(release.published_at).toLocaleDateString()}` : ''}
         </div>
       )}
 
       {notes && (
-        <div style={{ marginTop: 18, border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', background: 'var(--bg3)', whiteSpace: 'pre-wrap', fontFamily: MONO, fontSize: 10, lineHeight: 1.6, color: 'var(--muted)' }}>
+        <div style={{ marginTop: 18, border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', background: 'var(--bg3)', whiteSpace: 'pre-wrap', fontFamily: MONO, fontSize: 11, lineHeight: 1.6, color: 'var(--muted)' }}>
           {notes}
         </div>
       )}
@@ -147,7 +147,7 @@ export default function AppPage() {
       <div style={{ maxWidth: 820, margin: '0 auto' }}>
         {/* Hero */}
         <div style={{ textAlign: 'center', marginBottom: 10 }}>
-          <EditableText contentKey="app.eyebrow" defaultValue="AIFAZI.NET · MOBILE APP" as="div" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 4, color: C, marginBottom: 12 }} />
+          <EditableText contentKey="app.eyebrow" defaultValue="AIFAZI.NET · MOBILE APP" as="div" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 4, color: C, marginBottom: 12 }} />
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 800, margin: '0 0 10px', color: 'var(--text)' }}>
             <EditableText contentKey="app.title" defaultValue="aifazi, in your pocket" />
           </h1>
@@ -163,7 +163,7 @@ export default function AppPage() {
         {/* Download card */}
         <div style={{ maxWidth: 460, margin: '30px auto 0' }}>
           <DownloadCard release={release} loading={status === 'loading'} error={status === 'error'} />
-          <p style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, color: 'var(--muted)', textAlign: 'center', marginTop: 14 }}>
+          <p style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: 'var(--muted)', textAlign: 'center', marginTop: 14 }}>
             FREE · NO TRACKERS · NO ADS · DIRECT APK
           </p>
         </div>
@@ -178,25 +178,25 @@ export default function AppPage() {
             <div key={title} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '18px', background: 'var(--bg2)' }}>
               <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{title}</div>
-              <div style={{ fontFamily: MONO, fontSize: 10, lineHeight: 1.6, color: 'var(--muted)' }}>{desc}</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.6, color: 'var(--muted)' }}>{desc}</div>
             </div>
           ))}
         </div>
 
         {/* Features grid */}
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: G, margin: '26px 0 14px' }}><EditableText contentKey="app.featuresLabel" defaultValue="FEATURES" /></div>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: G, margin: '26px 0 14px' }}><EditableText contentKey="app.featuresLabel" defaultValue="FEATURES" /></div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
           {FEATURES.map(f => (
             <div key={f.title} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: '16px', background: 'var(--bg2)' }}>
               <div style={{ fontSize: 20, marginBottom: 8 }}>{f.icon}</div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 5 }}>{f.title}</div>
-              <div style={{ fontFamily: MONO, fontSize: 10, lineHeight: 1.6, color: 'var(--muted)' }}>{f.desc}</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.6, color: 'var(--muted)' }}>{f.desc}</div>
             </div>
           ))}
         </div>
 
         {/* FAQ */}
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 3, color: C, margin: '34px 0 14px' }}><EditableText contentKey="app.faqLabel" defaultValue="FAQ" /></div>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 3, color: C, margin: '34px 0 14px' }}><EditableText contentKey="app.faqLabel" defaultValue="FAQ" /></div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {FAQ.map(f => (
             <details key={f.q} style={{ border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg2)' }}>
@@ -212,7 +212,7 @@ export default function AppPage() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 36 }}>
-          <Link to="/" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 2, color: C, textDecoration: 'none' }}>← BACK TO SITE</Link>
+          <Link to="/" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: C, textDecoration: 'none' }}>← BACK TO SITE</Link>
         </div>
       </div>
     </div>

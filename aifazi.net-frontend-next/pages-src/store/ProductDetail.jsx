@@ -90,7 +90,7 @@ export default function ProductDetail() {
   return (
     <div className="page-container community-page" style={{ zIndex: 1, paddingTop: 40 }}>
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" style={{ padding: '0 0 20px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--muted)' }}>
+      <nav aria-label="Breadcrumb" style={{ padding: '0 0 20px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--muted)' }}>
         <Link to="/store" style={{ color: 'var(--muted)', textDecoration: 'none' }}>STORE</Link>
         <span style={{ margin: '0 8px' }}>/</span>
         {product.category && <><Link to={`/store?cat=${encodeURIComponent(product.category)}`} style={{ color: C, textDecoration: 'none' }}>{product.category.toUpperCase()}</Link><span style={{ margin: '0 8px' }}>/</span></>}
@@ -149,7 +149,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Meta */}
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.8 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.8 }}>
             {product.sku && <div>SKU: {product.sku}</div>}
             {product.type && <div>Type: {product.type.toUpperCase()}</div>}
           </div>
@@ -159,18 +159,18 @@ export default function ProductDetail() {
       {/* Reviews */}
       {reviews.length > 0 && (
         <div className="community-shell" style={{ marginTop: 56, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: C, marginBottom: 20 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: C, marginBottom: 20 }}>
             REVIEWS ({reviews.length})
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {reviews.map(r => (
               <Card key={r.id} style={{ padding: 18 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: Y }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: Y }}>
                     {'★'.repeat(r.rating || 5)}{'☆'.repeat(5 - (r.rating || 5))}
                   </div>
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{r.author_name || 'Anonymous'}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
                     {r.created_at ? new Date(r.created_at).toLocaleDateString() : ''}
                   </span>
                 </div>
@@ -184,7 +184,7 @@ export default function ProductDetail() {
       {/* Related products */}
       {related.length > 0 && (
         <div className="community-shell" style={{ marginTop: 56, paddingTop: 40, borderTop: '1px solid var(--border)' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: C, marginBottom: 20 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: C, marginBottom: 20 }}>
             YOU MIGHT ALSO LIKE
           </div>
           <div className="product-related-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14 }}>

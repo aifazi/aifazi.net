@@ -137,8 +137,8 @@ function ImagePreview({ file }) {
         )}
       </div>
       {open && (
-        <div className="media-lightbox" onClick={() => setOpen(false)}>
-          <div className="media-lightbox-inner" onClick={e => e.stopPropagation()}>
+        <div className="media-lightbox" onClick={() => setOpen(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          <div className="media-lightbox-inner" onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <button className="media-lightbox-close" onClick={() => setOpen(false)}>✕</button>
             <img src={mediaUrl(src)} alt={name} style={{ maxWidth: '100%', maxHeight: '82vh', borderRadius: 10, display: 'block', margin: '0 auto' }} />
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 12 }}>{name}</div>
@@ -173,7 +173,7 @@ function OfficePreview({ file }) {
       <div className="media-office-bar">
         <span className="media-file-icon" style={{ fontSize: 16 }}>{isSheet ? '📊' : '📝'}</span>
         <span className="media-file-name" style={{ color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>{name}</span>
-        <a href={url} target="_blank" rel="noopener noreferrer" className="media-file-download" style={{ color: 'var(--green)', fontSize: 10 }}>OPEN ↗</a>
+        <a href={url} target="_blank" rel="noopener noreferrer" className="media-file-download" style={{ color: 'var(--green)', fontSize: 11 }}>OPEN ↗</a>
       </div>
       <iframe src={viewerSrc} className="media-office-iframe" title={name} />
     </div>
@@ -248,7 +248,7 @@ export function MediaUploader({ onUploaded, defaultKind = 'all', buttonLabel }) 
         {KIND_CHIPS.map(k => (
           <button key={k.key} type="button" onClick={() => setKind(k.key)}
             style={{
-              fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
               padding: '6px 12px', borderRadius: 999, cursor: 'pointer',
               border: `1px solid ${kind === k.key ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)'}`,
               background: kind === k.key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent',
@@ -266,7 +266,7 @@ export function MediaUploader({ onUploaded, defaultKind = 'all', buttonLabel }) 
       {attachments.length > 0 && (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           {attachments.map((f, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 999, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 999, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>
               {f.mimetype?.startsWith('image/') ? '🖼' : f.mimetype?.startsWith('video/') ? '🎬' : f.mimetype === 'application/pdf' ? '📄' : '📎'} {f.original_name}
               <button onClick={() => remove(i)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>✕</button>
             </div>

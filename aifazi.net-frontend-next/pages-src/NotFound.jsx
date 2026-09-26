@@ -147,7 +147,7 @@ export default function NotFound() {
             {['#ff5f56','#ffbd2e','#27c93f'].map(c => (
               <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
             ))}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2, margin: '0 auto' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, margin: '0 auto' }}>
               network-diagnostic.sh
             </span>
           </div>
@@ -184,7 +184,7 @@ export default function NotFound() {
 
         {/* Error code */}
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)',
+          fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
           letterSpacing: 3, marginTop: 48,
           animation: 'fadeIn 1s 1.2s ease both', opacity: 0,
           animationFillMode: 'forwards'

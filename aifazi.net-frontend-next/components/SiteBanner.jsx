@@ -106,7 +106,7 @@ function LinkBtn({ banner, cfg }) {
     <a href={banner.link} target="_blank" rel="noopener noreferrer"
       style={{
         flexShrink:0, display:'flex', alignItems:'center', gap:5,
-        fontFamily:'var(--font-mono)', fontSize:10, fontWeight:700, letterSpacing:1.2,
+        fontFamily:'var(--font-mono)', fontSize: 11, fontWeight:700, letterSpacing:1.2,
         color: cfg.accent, textDecoration:'none', padding:'6px 14px', borderRadius:5,
         border:`1px solid ${cfg.accent}50`, background:`${cfg.accent}12`,
         marginRight:10, whiteSpace:'nowrap', transition:'all 0.18s',
@@ -176,7 +176,7 @@ function StripBanner({ banner, cfg, onDismiss, leaving, index }) {
         <div style={{ width:5, height:5, borderRadius:'50%', background:cfg.accent,
           boxShadow:`0 0 7px ${cfg.accent}`, animation:`${cfg.pulse} 1.6s ease-in-out infinite` }} />
       </div>
-      <span style={{ fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2.5, padding:'3px 9px',
+      <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2.5, padding:'3px 9px',
         flexShrink:0, fontWeight:700, color:cfg.accent, background:`${cfg.accent}14`,
         border:`1px solid ${cfg.accent}40`, borderRadius:4, marginRight:14, whiteSpace:'nowrap' }}>
         {cfg.label}
@@ -196,7 +196,7 @@ function StripBanner({ banner, cfg, onDismiss, leaving, index }) {
         )}
       </div>
       {expiry && (
-        <span style={{ flexShrink:0, fontFamily:'var(--font-mono)', fontSize:8, letterSpacing:1,
+        <span style={{ flexShrink:0, fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:1,
           color:`${cfg.accent}cc`, marginRight:10, whiteSpace:'nowrap', padding:'3px 8px',
           border:`1px solid ${cfg.accent}30`, borderRadius:3, animation:'bnrExpiry 3s ease-in-out infinite' }}>
           ⏱ {expiry}
@@ -230,10 +230,10 @@ function HeroBanner({ banner, cfg, onDismiss, leaving, index }) {
         </div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexWrap:'wrap' }}>
-            <span style={{ fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2.5, fontWeight:700,
+            <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2.5, fontWeight:700,
               color:cfg.accent, background:`${cfg.accent}14`, border:`1px solid ${cfg.accent}40`,
               borderRadius:4, padding:'3px 9px' }}>{cfg.label}</span>
-            {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}bb`,
+            {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:`${cfg.accent}bb`,
               padding:'2px 7px', border:`1px solid ${cfg.accent}30`, borderRadius:3,
               animation:'bnrExpiry 3s ease-in-out infinite' }}>⏱ {expiry}</span>}
             {banner.pinned && <span style={{ fontSize:12, opacity:0.8 }}>📌</span>}
@@ -266,7 +266,7 @@ function MinimalBanner({ banner, cfg, onDismiss, leaving, index }) {
         flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
         {banner.message}
       </span>
-      {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}cc`,
+      {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:`${cfg.accent}cc`,
         whiteSpace:'nowrap', padding:'2px 7px', border:`1px solid ${cfg.accent}30`, borderRadius:3,
         flexShrink:0, animation:'bnrExpiry 3s ease-in-out infinite' }}>⏱ {expiry}</span>}
       <LinkBtn banner={banner} cfg={cfg} />
@@ -294,7 +294,7 @@ function FloatingBanner({ banner, cfg, onDismiss, leaving }) {
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ color:cfg.accent, display:'flex' }}>{cfg.icon}</div>
-            <span style={{ fontFamily:'var(--font-mono)', fontSize:8, letterSpacing:2, fontWeight:700,
+            <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, fontWeight:700,
               color:cfg.accent, background:`${cfg.accent}14`, border:`1px solid ${cfg.accent}40`,
               borderRadius:3, padding:'2px 7px' }}>{cfg.label}</span>
             {banner.pinned && <span style={{ fontSize:11, opacity:0.8 }}>📌</span>}
@@ -304,7 +304,7 @@ function FloatingBanner({ banner, cfg, onDismiss, leaving }) {
         <div style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'#dce8f4',
           lineHeight:1.6, marginBottom:8 }}>{banner.message}</div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:6 }}>
-          {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}aa`,
+          {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:`${cfg.accent}aa`,
             padding:'2px 7px', border:`1px solid ${cfg.accent}30`, borderRadius:3,
             animation:'bnrExpiry 3s ease-in-out infinite' }}>⏱ {expiry}</span>}
           {!expiry && <span />}
@@ -335,7 +335,7 @@ function PillBanner({ banner, cfg, onDismiss, leaving, index }) {
         <span style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'#e8eef8',
           letterSpacing:0.4, whiteSpace:'nowrap', maxWidth:420,
           overflow:'hidden', textOverflow:'ellipsis' }}>{banner.message}</span>
-        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}bb`,
+        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:`${cfg.accent}bb`,
           padding:'2px 7px', border:`1px solid ${cfg.accent}35`, borderRadius:99, flexShrink:0,
           animation:'bnrExpiry 3s ease-in-out infinite' }}>⏱ {expiry}</span>}
         {(banner.link && (banner.link_label || banner.linkLabel)) && (
@@ -359,12 +359,12 @@ function GlassBanner({ banner, cfg, onDismiss, leaving, index }) {
         boxShadow:`0 14px 38px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08)`,
         backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)' }}>
         <div style={{ color:cfg.accent, display:'flex', flexShrink:0 }}>{cfg.icon}</div>
-        <span style={{ fontFamily:'var(--font-mono)', fontSize:8, letterSpacing:2, fontWeight:700,
+        <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, fontWeight:700,
           color:cfg.accent, padding:'3px 8px', border:`1px solid ${cfg.accent}35`, borderRadius:99,
           background:`${cfg.accent}12`, whiteSpace:'nowrap' }}>{cfg.label}</span>
         <span style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'#e8eef8', lineHeight:1.5,
           flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.message}</span>
-        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}bb`,
+        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:`${cfg.accent}bb`,
           padding:'2px 7px', border:`1px solid ${cfg.accent}30`, borderRadius:99, flexShrink:0 }}>⏱ {expiry}</span>}
         <LinkBtn banner={banner} cfg={cfg} />
         <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
@@ -385,7 +385,7 @@ function OutlineBanner({ banner, cfg, onDismiss, leaving, index }) {
         <span style={{ color:cfg.accent, display:'flex', flexShrink:0 }}>{cfg.icon}</span>
         <span style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'#e7edf7',
           flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.message}</span>
-        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}cc`,
+        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:`${cfg.accent}cc`,
           whiteSpace:'nowrap', flexShrink:0 }}>⏱ {expiry}</span>}
         <LinkBtn banner={banner} cfg={cfg} />
         <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
@@ -404,7 +404,7 @@ function TickerBanner({ banner, cfg, onDismiss, leaving, index }) {
       <div style={{ flexShrink:0, height:'100%', display:'flex', alignItems:'center', gap:7,
         padding:'0 14px', background:`${cfg.accent}16`, color:cfg.accent, borderRight:`1px solid ${cfg.accent}35` }}>
         {cfg.icon}
-        <span style={{ fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2, fontWeight:700 }}>{cfg.label}</span>
+        <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, fontWeight:700 }}>{cfg.label}</span>
       </div>
       <div style={{ flex:1, minWidth:0, overflow:'hidden', whiteSpace:'nowrap' }}>
         <span style={{ display:'inline-block', fontFamily:'var(--font-mono)', fontSize:11, color:'#e8eef8',
@@ -412,7 +412,7 @@ function TickerBanner({ banner, cfg, onDismiss, leaving, index }) {
           {banner.message}&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;{banner.message}&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;
         </span>
       </div>
-      {expiry && <span style={{ flexShrink:0, fontFamily:'var(--font-mono)', fontSize:8,
+      {expiry && <span style={{ flexShrink:0, fontFamily:'var(--font-mono)', fontSize: 11,
         color:`${cfg.accent}cc`, padding:'0 10px', whiteSpace:'nowrap' }}>⏱ {expiry}</span>}
       <LinkBtn banner={banner} cfg={cfg} />
       <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
@@ -432,11 +432,11 @@ function NeonBanner({ banner, cfg, onDismiss, leaving, index }) {
         border:`1px solid color-mix(in srgb, ${cfg.accent} 55%, transparent)`,
         boxShadow:`0 0 22px color-mix(in srgb, ${cfg.accent} 22%, transparent), inset 0 0 14px color-mix(in srgb, ${cfg.accent} 8%, transparent)` }}>
         <span style={{ color:cfg.accent, filter:`drop-shadow(0 0 6px color-mix(in srgb, ${cfg.accent} 60%, transparent))`, display:'flex', flexShrink:0 }}>{cfg.icon}</span>
-        <span style={{ fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2, fontWeight:700, color:cfg.accent,
+        <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, fontWeight:700, color:cfg.accent,
           textShadow:`0 0 10px color-mix(in srgb, ${cfg.accent} 60%, transparent)`, whiteSpace:'nowrap', flexShrink:0 }}>{cfg.label}</span>
         <span style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'#eef2f9', flex:1, minWidth:0,
           overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.message}</span>
-        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}dd`, whiteSpace:'nowrap', flexShrink:0 }}>⏱ {expiry}</span>}
+        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:`${cfg.accent}dd`, whiteSpace:'nowrap', flexShrink:0 }}>⏱ {expiry}</span>}
         <LinkBtn banner={banner} cfg={cfg} />
         <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
       </div>
@@ -455,7 +455,7 @@ function TerminalBanner({ banner, cfg, onDismiss, leaving, index }) {
         <span style={{ color:'var(--green)' }}>$</span>
         <span style={{ color:cfg.accent, letterSpacing:1 }}>{cfg.label.toLowerCase()}</span>
         <span style={{ color:'#8b98a8', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.message}</span>
-        {expiry && <span style={{ color:`${cfg.accent}bb`, fontSize:9, whiteSpace:'nowrap', flexShrink:0 }}># eta {expiry}</span>}
+        {expiry && <span style={{ color:`${cfg.accent}bb`, fontSize: 11, whiteSpace:'nowrap', flexShrink:0 }}># eta {expiry}</span>}
         <LinkBtn banner={banner} cfg={cfg} />
         <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
       </div>
@@ -473,10 +473,10 @@ function GradientBanner({ banner, cfg, onDismiss, leaving, index }) {
       <div style={{ height:3, background:grad, boxShadow:`0 0 14px color-mix(in srgb, ${cfg.accent} 60%, transparent)` }} />
       <div style={{ display:'flex', alignItems:'center', gap:12, maxWidth:1180, margin:'0 auto', padding:'11px 16px' }}>
         <span style={{ color:cfg.accent, display:'flex', flexShrink:0 }}>{cfg.icon}</span>
-        <span style={{ fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2, fontWeight:700, color:cfg.accent, whiteSpace:'nowrap', flexShrink:0 }}>{cfg.label}</span>
+        <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, fontWeight:700, color:cfg.accent, whiteSpace:'nowrap', flexShrink:0 }}>{cfg.label}</span>
         <span style={{ fontFamily:'var(--font-mono)', fontSize:12, color:'#f2f5fa', flex:1, minWidth:0,
           overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{banner.message}</span>
-        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize:8, color:`${cfg.accent}dd`, whiteSpace:'nowrap', flexShrink:0 }}>⏱ {expiry}</span>}
+        {expiry && <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:`${cfg.accent}dd`, whiteSpace:'nowrap', flexShrink:0 }}>⏱ {expiry}</span>}
         <LinkBtn banner={banner} cfg={cfg} />
         <DismissBtn banner={banner} cfg={cfg} onDismiss={onDismiss} />
       </div>

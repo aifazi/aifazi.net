@@ -25,7 +25,7 @@ export function VoicePanel({ room, onLeave }) {
       >
         OPEN NEXTCLOUD TALK
       </a>
-      <button onClick={onLeave} style={{ padding: '8px 16px', border: `${T.borderW} solid ${T.border}`, borderRadius: T.radius, background: 'transparent', color: T.muted, fontFamily: T.mono, fontSize: 10, cursor: 'pointer' }}>
+      <button onClick={onLeave} style={{ padding: '8px 16px', border: `${T.borderW} solid ${T.border}`, borderRadius: T.radius, background: 'transparent', color: T.muted, fontFamily: T.mono, fontSize: 11, cursor: 'pointer' }}>
         BACK TO CHAT
       </button>
     </div>

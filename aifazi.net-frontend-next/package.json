@@ -10,6 +10,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint . --max-warnings=150",
+    "lint:hooks": "python ../scripts/check_hook_imports.py",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test"
@@ -20,6 +21,7 @@
     "@sentry/nextjs": "^10.74.0",
     "@supabase/supabase-js": "^2.116.0",
     "axios": "^1.20.0",
+    "cobe": "^2.0.1",
     "dompurify": "^3.4.15",
     "gsap": "^3.15.0",
     "html5-qrcode": "^2.3.8",

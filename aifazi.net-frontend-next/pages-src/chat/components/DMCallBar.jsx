@@ -15,7 +15,7 @@ export function DMCallBar({ peer, onEnd }) {
         <div style={{ fontSize: 12, fontWeight: 700, color: T.text }}>
           Voice calls are on Nextcloud Talk
         </div>
-        <div style={{ fontSize: 10, color: T.muted }}>
+        <div style={{ fontSize: 11, color: T.muted }}>
           Open Talk to call {peer}
         </div>
       </div>

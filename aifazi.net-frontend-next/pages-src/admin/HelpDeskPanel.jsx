@@ -25,7 +25,7 @@ const tcat = t => t.created_at || t.createdAt
 function StatusBadge({ status }) {
   const s = STATUS_MAP[status] || STATUS_MAP.open
   return (
-    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, padding: '3px 8px',
+    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '3px 8px',
       color: s.color, background: s.bg, border: `1px solid ${s.border}`, borderRadius: 4, whiteSpace: 'nowrap' }}>
       {status.replace('-', ' ').toUpperCase()}
     </span>
@@ -35,7 +35,7 @@ function StatusBadge({ status }) {
 function PriorityBadge({ priority }) {
   const c = PRIORITY_MAP[priority] || '#888'
   return (
-    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, padding: '2px 10px',
+    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '2px 10px',
       color: '#fff', background: c, borderRadius: 4, fontWeight: 700 }}>
       {priority?.toUpperCase()}
     </span>
@@ -58,15 +58,15 @@ function MessageBubble({ msg }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2,
+            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
             color: isSystem ? '#a855f7' : isStaff ? 'var(--cyan)' : 'var(--green)', fontWeight: 700,
           }}>
             {isSystem ? 'SYSTEM' : isStaff ? 'STAFF' : 'USER'}
           </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
             {msg.author_name}
           </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', marginLeft: 'auto' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginLeft: 'auto' }}>
             {msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}
           </span>
         </div>
@@ -128,7 +128,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
   const inp = { background: 'var(--bg3)', border: '1px solid var(--border)',
     color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, padding: '10px 12px',
     outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }
-  const lbl = { display: 'block', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2,
+  const lbl = { display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
     color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' }
 
   const STATUSES = ['open', 'in-progress', 'pending', 'resolved', 'closed']
@@ -142,11 +142,11 @@ function TicketDetailView({ ticket, onBack, onSave }) {
       <div style={{ padding: '16px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>TICKET DETAIL</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>TICKET DETAIL</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>{tkid(ticket)}</div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, marginTop: 4 }}>{ticket.subject}</div>
         </div>
-        <button onClick={onBack} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+        <button onClick={onBack} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
           background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer',
           borderRadius: 6, padding: '7px 14px' }}>
           ← BACK TO LIST
@@ -162,7 +162,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
           ['PRIORITY', <PriorityBadge key="p" priority={ticket.priority} />],
         ].map(([k, v]) => (
           <div key={k}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 3 }}>{k}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 3 }}>{k}</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>{v}</div>
           </div>
         ))}
@@ -170,15 +170,15 @@ function TicketDetailView({ ticket, onBack, onSave }) {
 
       {/* Description */}
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.015)' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>DESCRIPTION</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>DESCRIPTION</div>
         <p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap' }}>{ticket.description}</p>
       </div>
 
       {/* Message Thread */}
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>DISCUSSION THREAD</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>DISCUSSION THREAD</div>
         {messages.length === 0 ? (
-          <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: 20 }}>No messages yet</div>
+          <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: 20 }}>No messages yet</div>
         ) : (
           messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)
         )}
@@ -194,25 +194,25 @@ function TicketDetailView({ ticket, onBack, onSave }) {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <div>
-              <label style={{ ...lbl, fontSize: 7, marginBottom: 2 }}>STATUS</label>
+              <label style={{ ...lbl, fontSize: 11, marginBottom: 2 }}>STATUS</label>
               <Select value={form.status} onChange={v => set('status', v)}
                 options={STATUSES.map(s => ({ value: s, label: s.replace('-', ' ').toUpperCase() }))} />
             </div>
             <div>
-              <label style={{ ...lbl, fontSize: 7, marginBottom: 2 }}>PRIORITY</label>
+              <label style={{ ...lbl, fontSize: 11, marginBottom: 2 }}>PRIORITY</label>
               <Select value={form.priority} onChange={v => set('priority', v)}
                 options={PRIORITIES.map(p => ({ value: p, label: p.toUpperCase() }))} />
             </div>
             <div>
-              <label style={{ ...lbl, fontSize: 7, marginBottom: 2 }}>INTERNAL NOTE</label>
+              <label style={{ ...lbl, fontSize: 11, marginBottom: 2 }}>INTERNAL NOTE</label>
               <input value={form.internal_note} onChange={e => set('internal_note', e.target.value)}
                 placeholder="Team note..." style={{ ...inp, fontSize: 11, padding: '6px 10px', borderRadius: 4, width: 200, borderColor: 'rgba(255,215,0,0.2)' }} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button onClick={onBack} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '9px 14px', fontSize: 9 }}>CANCEL</button>
+            <button onClick={onBack} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '9px 14px', fontSize: 11 }}>CANCEL</button>
             <button onClick={handleSave} disabled={saving}
-              style={{ ...S.btn(), padding: '9px 16px', fontSize: 9, opacity: saving ? 0.6 : 1 }}>
+              style={{ ...S.btn(), padding: '9px 16px', fontSize: 11, opacity: saving ? 0.6 : 1 }}>
               {saving ? 'SAVING...' : reply.trim() ? '✓ SAVE & REPLY' : '✓ SAVE'}
             </button>
           </div>
@@ -286,7 +286,7 @@ function HelpDeskSettings() {
   const inp = { background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)',
     fontFamily: 'var(--font-mono)', fontSize: 12, padding: '8px 10px', outline: 'none',
     borderRadius: 4, boxSizing: 'border-box' }
-  const lbl = { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }
+  const lbl = { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }
 
   if (loading) return <div className="loader" />
   if (!config) return <div style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--orange)', padding: 40 }}>Failed to load settings</div>
@@ -298,7 +298,7 @@ function HelpDeskSettings() {
           subtitle="Customize categories, priorities, auto-reply, and more"
           actions={
             <button onClick={handleSave} disabled={saving}
-              style={{ ...S.btn(), fontSize: 10, padding: '9px 20px', opacity: saving ? 0.6 : 1 }}>
+              style={{ ...S.btn(), fontSize: 11, padding: '9px 20px', opacity: saving ? 0.6 : 1 }}>
               {saving ? 'SAVING...' : '✓ SAVE ALL SETTINGS'}
             </button>
           }
@@ -307,16 +307,16 @@ function HelpDeskSettings() {
 
       {/* Statuses (read-only, always needed) */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 16 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>TICKET STATUSES</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>TICKET STATUSES</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {(config.statuses || ['open', 'in-progress', 'pending', 'resolved', 'closed']).map(s => (
-            <span key={s} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '4px 12px',
+            <span key={s} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '4px 12px',
               background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 4, color: 'var(--cyan)' }}>
               {s.replace('-', ' ').toUpperCase()}
             </span>
           ))}
         </div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 8 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
           Statuses are fixed. Use them in your workflow.
         </div>
       </div>
@@ -324,8 +324,8 @@ function HelpDeskSettings() {
       {/* Categories */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--cyan)' }}>CATEGORIES</div>
-          <button onClick={addCategory} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>+ ADD CATEGORY</button>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)' }}>CATEGORIES</div>
+          <button onClick={addCategory} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>+ ADD CATEGORY</button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {(config.categories || []).map((cat, i) => (
@@ -335,7 +335,7 @@ function HelpDeskSettings() {
                 cats[i] = e.target.value
                 set('categories', cats)
               }} style={{ ...inp, flex: 1 }} />
-              <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
             </div>
           ))}
         </div>
@@ -349,8 +349,8 @@ function HelpDeskSettings() {
       {/* Priorities */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--cyan)' }}>PRIORITIES</div>
-          <button onClick={addPriority} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>+ ADD PRIORITY</button>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)' }}>PRIORITIES</div>
+          <button onClick={addPriority} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>+ ADD PRIORITY</button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {(config.priorities || []).map((p, i) => (
@@ -380,7 +380,7 @@ function HelpDeskSettings() {
                   set('priorities', ps)
                 }} />
               <span style={{ width: 16, height: 16, borderRadius: '50%', background: p.color, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }} />
-              <button onClick={() => removePriority(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => removePriority(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
             </div>
           ))}
         </div>
@@ -393,7 +393,7 @@ function HelpDeskSettings() {
 
       {/* Auto-Close */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 16 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>AUTO-CLOSE</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>AUTO-CLOSE</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Auto-close resolved tickets after</span>
           <input type="number" min={0} value={config.auto_close_days || 7}
@@ -405,7 +405,7 @@ function HelpDeskSettings() {
 
       {/* Auto-Response */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 16 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>AUTO-RESPONSE</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>AUTO-RESPONSE</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
           <input type="checkbox" checked={config.auto_respond_enabled !== false}
             onChange={e => set('auto_respond_enabled', e.target.checked)}
@@ -420,7 +420,7 @@ function HelpDeskSettings() {
 
       {/* Attachments */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>ATTACHMENTS</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>ATTACHMENTS</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <input type="checkbox" checked={config.allow_attachments === true}
             onChange={e => set('allow_attachments', e.target.checked)}
@@ -606,7 +606,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
   if (tab === 'settings') return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <button onClick={() => setTab('tickets')} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: 'var(--cyan)', background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}>
+        <button onClick={() => setTab('tickets')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--cyan)', background: 'none', border: '1px solid color-mix(in srgb, var(--cyan) 20%, transparent)', borderRadius: 6, padding: '8px 16px', cursor: 'pointer' }}>
           ← BACK TO TICKETS
         </button>
       </div>
@@ -623,13 +623,13 @@ export default function HelpDeskPanel({ initialTicketId }) {
         actions={
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setTab('settings')}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px',
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '7px 14px',
                 background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)',
                 cursor: 'pointer', borderRadius: 6 }}>
               ⚙ SETTINGS
             </button>
             <button onClick={() => { load(1); loadStats() }}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px',
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '7px 14px',
                 background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)',
                 cursor: 'pointer', borderRadius: 6 }}>
               ↻ REFRESH
@@ -643,7 +643,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
           {STAT_ITEMS.map(s => (
             <div key={s.label} style={{ background: 'var(--bg2)', border: '1px solid var(--border)',
               borderTop: `2px solid ${s.color}`, borderRadius: 8, padding: '10px 16px', minWidth: 100 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value ?? '—'}</div>
             </div>
           ))}
@@ -669,7 +669,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
           </div>
           <div style={{ display: 'flex', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
             {[['all', 'All'], ['open', 'Open'], ['in-progress', 'Active'], ['pending', 'Pending'], ['resolved', 'Resolved'], ['closed', 'Closed']].map(([v, l]) => (
-              <button key={v} onClick={() => setFStatus(v)} style={{ fontFamily: 'var(--font-mono)', fontSize: 8,
+              <button key={v} onClick={() => setFStatus(v)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
                 letterSpacing: 1, padding: '7px 10px', cursor: 'pointer', border: 'none',
                 borderRight: '1px solid var(--border)',
                 background: fStatus === v ? 'color-mix(in srgb, var(--cyan) 12%, transparent)' : 'transparent',
@@ -698,16 +698,16 @@ export default function HelpDeskPanel({ initialTicketId }) {
           <div key={tid(t)} style={{ ...S.card, cursor: 'pointer' }}
             onClick={() => openTicket(tid(t))}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--cyan) 25%, transparent)'; e.currentTarget.style.background = 'var(--bg)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg2)' }}>
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg2)' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
                   <PriorityBadge priority={t.priority} />
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--green)', fontWeight: 700 }}>{tkid(t)}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--green)', fontWeight: 700 }}>{tkid(t)}</span>
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{t.subject}</span>
                   <StatusBadge status={t.status} />
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
                   <span>👤 {t.name}</span>
                   <span style={{ color: 'var(--cyan)' }}>{t.email}</span>
                   <span style={{ textTransform: 'capitalize' }}>📂 {t.category}</span>
@@ -716,7 +716,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
                   <span style={{ color: 'var(--muted)' }}>💬 {t.message_count || 0}</span>
                 </div>
                 {t.internal_note && (
-                  <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ffd700',
+                  <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ffd700',
                     background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)',
                     padding: '3px 10px', borderRadius: 4, display: 'inline-block' }}>
                     📝 {t.internal_note}
@@ -724,21 +724,21 @@ export default function HelpDeskPanel({ initialTicketId }) {
                 )}
               </div>
               <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', alignItems: 'flex-start' }}
-                onClick={e => e.stopPropagation()}>
+                onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                 {t.status === 'open' && (
                   <button onClick={() => quickStatus(t, 'in-progress')}
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '5px 10px',
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '5px 10px',
                       background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)',
                       color: '#00d4ff', cursor: 'pointer', borderRadius: 4 }}>START</button>
                 )}
                 {['open', 'in-progress', 'pending'].includes(t.status) && (
                   <button onClick={() => quickStatus(t, 'resolved')}
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '5px 10px',
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '5px 10px',
                       background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)',
                       color: 'var(--green)', cursor: 'pointer', borderRadius: 4 }}>RESOLVE</button>
                 )}
                 <button onClick={() => handleDelete(tid(t), tkid(t))}
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1, padding: '5px 10px',
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '5px 10px',
                     background: 'transparent', border: '1px solid rgba(255,71,87,0.3)',
                     color: 'var(--red)', cursor: 'pointer', borderRadius: 4 }}>DEL</button>
               </div>
@@ -749,14 +749,14 @@ export default function HelpDeskPanel({ initialTicketId }) {
         {pages > 1 && (
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16, flexWrap: 'wrap' }}>
             <button onClick={() => load(page - 1)} disabled={page <= 1}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent',
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '7px 14px', background: 'transparent',
                 border: '1px solid var(--border)', color: page <= 1 ? 'var(--muted)' : 'var(--text)',
                 cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>← PREV</button>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: '7px 14px' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '7px 14px' }}>
               Page {page} of {pages}
             </span>
             <button onClick={() => load(page + 1)} disabled={page >= pages}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, padding: '7px 14px', background: 'transparent',
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '7px 14px', background: 'transparent',
                 border: '1px solid var(--border)', color: page >= pages ? 'var(--muted)' : 'var(--text)',
                 cursor: page >= pages ? 'not-allowed' : 'pointer' }}>NEXT →</button>
           </div>
