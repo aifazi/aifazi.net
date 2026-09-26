@@ -720,7 +720,7 @@ function FooterFiveM({ socialLinks, year }) {
   const connectRoute   = useFiveMRoute('/connect')
   const whitelistRoute = useFiveMRoute('/whitelist')
   const statusRoute    = useFiveMRoute('/status')
-  const profileRoute   = useFiveMRoute('/profile')
+  const profileRoute   = '/profile'  // shared main profile on every host
 
   const navLinks = [
     { label: 'Connect',   to: connectRoute },
