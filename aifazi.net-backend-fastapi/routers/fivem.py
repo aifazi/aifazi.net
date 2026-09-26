@@ -1163,6 +1163,7 @@ async def refresh_status_timestamp(user: dict = Depends(require_staff)):
     timestamp. FiveM itself must report online/offline so this endpoint cannot
     accidentally make a stopped server look online.
     """
+    from routers.fivem_status_api import get_server_status
     status = await get_server_status()
     await _push_realtime("server_status_refresh", {
         "requested_by": user.get("username", "admin"),
