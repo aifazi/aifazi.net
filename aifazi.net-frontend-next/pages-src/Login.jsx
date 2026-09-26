@@ -5,14 +5,10 @@ import api, { saveTokens, clearAuthTokens, getRole, ensureAdminGate } from '@/li
 import { authProviderLoginRoute, safeNextPath, FORGOT_PASSWORD_PATH } from '@/lib/authRoutes'
 import {
   loadGsap, AuthCheck, PassToggle, PasswordStrength, errorText, apiErrorText,
-  ErrorBox, SuccessBox, FieldWrap, ADMIN_ROLES,
+  ErrorBox, SuccessBox, FieldWrap, ADMIN_ROLES, reducedMotion,
   SignIn, VerifyWaiting, SignUp, ForgotPassword, TwoFAStep,
 } from './loginFlows'
 
-// P2 — gsap is heavy and Login is a first-paint route: lazy-load it like the
-// existing import('gsap') hook pattern (components/Hero.jsx) instead of a
-// static top-level import.
-let _gsapCache = null
 const TABS = [
   { key: 'signin',   label: 'Sign in'  },
   { key: 'register', label: 'Create'   },
