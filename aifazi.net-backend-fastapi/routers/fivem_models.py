@@ -7,10 +7,65 @@ from __future__ import annotations
 
 import hmac
 import os
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from fastapi import HTTPException, Request
 from pydantic import BaseModel
+
+ONLINE_THRESHOLD_S = int(os.getenv("FIVEM_STATUS_ONLINE_THRESHOLD", "900"))
+DEGRADED_THRESHOLD_S = int(os.getenv("FIVEM_STATUS_DEGRADED_THRESHOLD", "1800"))
+
+
+def compute_status(updated_at_str: str | None):
+    if not updated_at_str:
+        return "offline", float("inf")
+    try:
+        updated = datetime.fromisoformat(str(updated_at_str).replace("Z", "+00:00"))
+        if updated.tzinfo is None:
+            updated = updated.replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - updated).total_seconds()
+    except Exception:
+        return "offline", float("inf")
+    if age < ONLINE_THRESHOLD_S:
+        return "online", age
+    if age < DEGRADED_THRESHOLD_S:
+        return "degraded", age
+    return "offline", age
+
+
+_compute_status = compute_status
+
+
+def uptime_str(s) -> str:
+    if not s or s <= 0:
+        return "0m"
+    d, r = divmod(int(s), 86400)
+    h, r = divmod(r, 3600)
+    m, _ = divmod(r, 60)
+    if d:
+        return f"{d}d {h}h"
+    if h:
+        return f"{h}h {m}m"
+    return f"{m}m"
+
+
+_uptime_str = uptime_str
+
+
+def last_seen_str(age) -> str:
+    if age == float("inf"):
+        return "Never"
+    if age < 60:
+        return "Just now"
+    if age < 3600:
+        return f"{int(age // 60)} min ago"
+    if age < 86400:
+        return f"{int(age // 3600)}h ago"
+    return f"{int(age // 86400)}d ago"
+
+
+_last_seen_str = last_seen_str
 
 
 def check_fivem_token(request: Request) -> None:

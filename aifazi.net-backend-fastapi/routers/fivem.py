@@ -53,6 +53,8 @@ from routers.fivem_models import (
     PlayerJoinBody, PlayerLeaveBody, PlayerHeartbeatBody, WhitelistIdentifiersBody,
     BulkWhitelistApproveBody, TxAdminActionBody,
     ConnectTokenResponse, VerifyTokenRequest, ConnectSessionRequest,
+    _compute_status, _uptime_str, _last_seen_str,
+    ONLINE_THRESHOLD_S, DEGRADED_THRESHOLD_S,
 )
 
 
@@ -248,36 +250,12 @@ async def _discord_remove_whitelist_role(discord_id: str) -> tuple[bool, str]:
     return False, f"Discord API {r.status_code}: {r.text[:200]}"
 
 # â”€â”€â”€ Thresholds â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-ONLINE_THRESHOLD_S   = int(os.getenv("FIVEM_STATUS_ONLINE_THRESHOLD", "900"))
-DEGRADED_THRESHOLD_S = int(os.getenv("FIVEM_STATUS_DEGRADED_THRESHOLD", "1800"))
+# status thresholds + helpers imported from routers.fivem_models
 
-def _compute_status(updated_at_str):
-    if not updated_at_str:
-        return "offline", float("inf")
-    try:
-        updated = datetime.fromisoformat(updated_at_str.replace("Z", "+00:00"))
-        age = (datetime.now(timezone.utc) - updated).total_seconds()
-    except Exception:
-        return "offline", float("inf")
-    if age < ONLINE_THRESHOLD_S:    return "online",   age
-    if age < DEGRADED_THRESHOLD_S:  return "degraded", age
-    return "offline", age
 
 # _check_token imported from routers.fivem_models
 
-def _uptime_str(s):
-    if not s or s <= 0: return "0m"
-    d, r = divmod(int(s), 86400); h, r = divmod(r, 3600); m, _ = divmod(r, 60)
-    if d: return f"{d}d {h}h"
-    if h: return f"{h}h {m}m"
-    return f"{m}m"
 
-def _last_seen_str(age):
-    if age == float("inf"): return "Never"
-    if age < 60:    return "Just now"
-    if age < 3600:  return f"{int(age//60)} min ago"
-    if age < 86400: return f"{int(age//3600)}h ago"
-    return f"{int(age//86400)}d ago"
 
 # _now() and _push_realtime() imported from utils.fivem_shared
 
@@ -1184,88 +1162,6 @@ async def receive_txadmin_event(
     return {"ok": True, "event": event}
 
 # â”€â”€â”€ Bans â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async def list_bans(active: bool | None = None, limit: int = 50, offset: int = 0,
-                    _: dict = Depends(require_staff)):
-    q = supabase.table("fivem_bans").select("*", count="exact")
-    if active is not None: q = q.eq("active", active)
-    res = q.order("banned_at", desc=True).range(offset, offset + limit - 1).execute()
-    return {"bans": res.data or [], "total": res.count or 0}
-
-async def pending_ban_sync(request: Request, limit: int = 25):
-    _check_token(request)
-    res = (supabase.table("fivem_bans").select("*")
-           .eq("active", True)
-           .eq("txadmin_synced", False)
-           .order("banned_at", desc=False)
-           .limit(limit)
-           .execute())
-    rows: list[dict] = []
-    for ban in res.data or []:
-        ids = _normalize_identifier_list(ban.get("all_ids"))
-        ident = (ban.get("identifier") or "").strip()
-        if ident and ident not in ids:
-            ids.insert(0, ident)
-        license_id = _first_identifier(ids, ("license:", "license2:"))
-        discord_id = _first_identifier(ids, ("discord:",))
-        rows.append({
-            "id": ban.get("id"),
-            "identifier": ident or _primary_ban_identifier(ids),
-            "identifiers": ids,
-            "license": license_id,
-            "discord": discord_id,
-            "player_name": ban.get("player_name") or "Unknown",
-            "reason": ban.get("reason") or "Banned",
-            "duration": _ban_duration_txadmin(ban),
-            "banned_by": ban.get("banned_by") or "website",
-            "expires_at": ban.get("expires_at"),
-            "expire": _ban_expire_epoch(ban.get("expires_at")),
-        })
-    return rows
-
-async def pending_unban_sync(request: Request, limit: int = 25):
-    _check_token(request)
-    res = (supabase.table("fivem_bans").select("*")
-           .eq("active", False)
-           .eq("txadmin_synced", False)
-           .in_("source", ("qbx_unban_pending", "txadmin_unban_pending", "txadmin_revoke_failed"))
-           .order("unbanned_at", desc=False)
-           .limit(limit)
-           .execute())
-    rows: list[dict] = []
-    for ban in res.data or []:
-        ids = _normalize_identifier_list(ban.get("all_ids"))
-        ident = (ban.get("identifier") or "").strip()
-        if ident and ident not in ids:
-            ids.insert(0, ident)
-        rows.append({
-            "id": ban.get("id"),
-            "identifier": ident or _primary_ban_identifier(ids),
-            "identifiers": ids,
-            "license": _first_identifier(ids, ("license:", "license2:")),
-            "discord": _first_identifier(ids, ("discord:",)),
-        })
-    return rows
-
-async def mark_ban_synced(body: BanSyncAck, request: Request):
-    _check_token(request)
-    ban_res = supabase.table("fivem_bans").select("id,active,source").eq("id", body.ban_id).execute()
-    if not ban_res.data:
-        raise HTTPException(404, "Ban not found")
-    ban = ban_res.data[0]
-    active = bool(ban.get("active"))
-    updates = {
-        "txadmin_synced": body.ok,
-        "source": "qbx_core" if body.ok and active else "qbx_core_unbanned" if body.ok else ban.get("source") or "qbx_sync_failed",
-    }
-    supabase.table("fivem_bans").update(updates).eq("id", body.ban_id).execute()
-    return {"ok": True, "synced": body.ok}
-
-
-# ── Ban application via txAdmin (website → game server) ───────────────────────
-
-
-
-
 async def _push_ban_to_txadmin(ban_id: str) -> dict:
     """Apply a website ban through txAdmin; marks the row synced on success."""
     try:
@@ -1425,16 +1321,6 @@ async def create_ban(
     return {"message": "Player banned â€” queued for server sync.", "ban": ban}
 
 
-async def update_ban(ban_id: str, body: BanUpdate, _: dict = Depends(require_staff)):
-    updates = {k: v for k, v in body.model_dump().items() if v is not None}
-    if not updates: raise HTTPException(400, "No fields to update")
-    res = supabase.table("fivem_bans").update(updates).eq("id", ban_id).execute()
-    return {"message": "Ban updated.", "ban": (res.data or [{}])[0]}
-
-async def delete_ban(ban_id: str, _: dict = Depends(require_admin)):
-    supabase.table("fivem_bans").delete().eq("id", ban_id).execute()
-    return {"message": "Ban removed."}
-
 async def unban_player(
     ban_id: str,
     background_tasks: BackgroundTasks,
@@ -1521,51 +1407,6 @@ async def update_server_status(body: StatusUpdate, request: Request):
 
     return {"ok": True}
 
-async def get_server_status():
-    res = supabase.table("fivem_status").select("*").eq("id", "main").execute()
-    if not res.data:
-        return {
-            "status": "offline", "players_online": 0, "max_players": 48,
-            "last_seen": None, "last_seen_label": "No heartbeat received",
-            "uptime_seconds": 0, "uptime_label": "0m", "resource_count": 0,
-            "server_name": "AIFAZI RP", "peak_players": 0,
-            "dev_override": None, "display_message": "No heartbeat received", "fake_data": False,
-        }
-    d  = res.data[0]
-    ov = d.get("dev_override")
-    uptime = d.get("uptime_seconds", 0)
-
-    if ov == "maintenance":
-        return {"status": "maintenance", "players_online": 0, "max_players": d.get("max_players", 48),
-                "display_message": "Server is under maintenance",
-                **{k: d.get(k) for k in ("server_name","peak_players","resource_count","updated_at")},
-                "dev_override": "maintenance", "uptime_seconds": 0, "uptime_label": "0m",
-                "last_seen": d.get("updated_at"), "last_seen_label": "Maintenance Mode", "fake_data": False}
-
-    if ov == "force_online":
-        return {"status": "online", "players_online": d.get("players_online", 0),
-                "max_players": d.get("max_players", 48),
-                "display_message": "Force Online override active", "dev_override": "force_online",
-                "uptime_seconds": uptime, "uptime_label": _uptime_str(uptime),
-                "server_name": d.get("server_name"), "peak_players": d.get("peak_players", 0),
-                "resource_count": d.get("resource_count", 0),
-                "last_seen": d.get("updated_at"), "last_seen_label": "Force Online (dev)", "fake_data": False}
-
-    status, age = _compute_status(d.get("updated_at"))
-    players = d.get("players_online", 0) if status != "offline" else 0
-    if status == "online":     msg = f"Online â€” {players}/{d.get('max_players',48)} players"
-    elif status == "degraded": msg = f"Starting upâ€¦ (last seen {_last_seen_str(age)})"
-    else:                      msg = f"Offline (last seen {_last_seen_str(age)})"
-
-    return {
-        "status": status, "players_online": players, "max_players": d.get("max_players", 48),
-        "last_seen": d.get("updated_at"), "last_seen_label": _last_seen_str(age),
-        "uptime_seconds": uptime, "uptime_label": _uptime_str(uptime),
-        "resource_count": d.get("resource_count", 0), "server_name": d.get("server_name", "AIFAZI RP"),
-        "peak_players": d.get("peak_players", 0), "dev_override": None,
-        "display_message": msg, "fake_data": False,
-    }
-
 async def get_public_status_overview(hours: int = 24):
     """Public, visitor-safe server overview: status summary + sanitized online
     player list (names/ping only — all identifiers stripped) + history series.
@@ -1651,17 +1492,6 @@ async def refresh_status_timestamp(user: dict = Depends(require_staff)):
     })
     return {"ok": True, **status}
 
-async def set_dev_override(body: DevOverride, _: dict = Depends(require_admin)):
-    supabase.table("fivem_status").update({"dev_override": body.override}).eq("id", "main").execute()
-    return {"ok": True, "override": body.override}
-
-async def get_status_history(hours: int = 24, _: dict = Depends(require_staff)):
-    since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
-    res = (supabase.table("server_status_history")
-           .select("recorded_at,players_online,max_players,uptime_seconds,status")
-           .gte("recorded_at", since).order("recorded_at", desc=False).execute())
-    return {"history": res.data or [], "hours": hours}
-
 # â”€â”€â”€ Players â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async def update_players(request: Request, background_tasks: BackgroundTasks):
     """Accepts {players: [...]} from Lua. Also handles bare array for compat."""
@@ -1683,46 +1513,7 @@ async def update_players(request: Request, background_tasks: BackgroundTasks):
     _stamp_whitelist_activity(players, _now())
     return {"ok": True, "count": len(players)}
 
-async def get_players(_: dict = Depends(require_staff)):
-    res = supabase.table("fivem_players").select("*").eq("id", "main").execute()
-    def _recent(ts, w=120):
-        try:
-            return (datetime.now(timezone.utc) -
-                    datetime.fromisoformat(ts.replace("Z", "+00:00"))).total_seconds() < w
-        except (TypeError, ValueError):
-            return False
-    if res.data:
-        d = res.data[0]
-        online = _recent(d.get("updated_at", ""))
-        return {"players": d.get("players", []) if online else [], "updated_at": d.get("updated_at"), "online": online}
-    return {"players": [], "updated_at": None, "online": False}
-
 # â”€â”€â”€ Cron â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async def cron_cleanup(request: Request):
-    """
-    Called by Vercel cron (see vercel.json). Cleans up old realtime events.
-    Secured by CRON_SECRET env var matching the Authorization header.
-
-    H6 â€” uses `hmac.compare_digest` instead of `!=` for constant-time comparison
-    (avoids remote timing-oracle recovery of the cron secret).
-    """
-    cron_secret = os.getenv("CRON_SECRET", "")
-    auth_header = request.headers.get("Authorization", "")
-    if not cron_secret:
-        raise HTTPException(503, "Cron secret is not configured")
-    expected = f"Bearer {cron_secret}"
-    if not hmac.compare_digest(auth_header, expected):
-        raise HTTPException(403, "Invalid cron secret")
-
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
-    try:
-        supabase.table("fivem_realtime_events").delete().lt("created_at", cutoff).execute()
-        log.info("Cron: cleaned realtime events older than 1h")
-    except Exception as e:
-        log.warning("Cron cleanup failed: %s", e)
-
-    return {"ok": True, "cutoff": cutoff}
-
 # â”€â”€â”€ Stats tile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async def fivem_stats(_: dict = Depends(require_staff)):
     pending  = supabase.table("fivem_whitelist").select("id", count="exact").eq("status", "pending").execute()
@@ -1753,44 +1544,6 @@ async def fivem_stats(_: dict = Depends(require_staff)):
     }
 
 # â”€â”€â”€ Player Records â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async def list_player_records(
-    q: str = "", limit: int = 50, offset: int = 0,
-    _: dict = Depends(require_staff),
-):
-    query = supabase.table("player_records").select("*", count="exact")
-    if q and q.strip():
-        t = safe_search_term(q.strip())
-        query = query.or_(
-            f"player_name.ilike.%{t}%,"
-            f"license_key.ilike.%{t}%,"
-            f"license_hex.ilike.%{t}%,"
-            f"license2_hex.ilike.%{t}%,"
-            f"discord_id.ilike.%{t}%,"
-            f"steam_hex.ilike.%{t}%,"
-            f"forum_username.ilike.%{t}%"
-        )
-    res = query.order("last_seen_at", desc=True).range(offset, offset + limit - 1).execute()
-    return {"records": res.data or [], "total": res.count or 0}
-
-
-async def get_player_record(license_key: str, _: dict = Depends(require_staff)):
-    res = supabase.table("player_records").select("*").eq("license_key", license_key).limit(1).execute()
-    if not res.data:
-        raise HTTPException(404, "Player record not found")
-    return res.data[0]
-
-
-async def list_player_sessions(
-    license_key: str = "", limit: int = 50, offset: int = 0,
-    _: dict = Depends(require_staff),
-):
-    query = supabase.table("player_sessions").select("*", count="exact")
-    if license_key:
-        query = query.eq("license_key", license_key)
-    res = query.order("joined_at", desc=True).range(offset, offset + limit - 1).execute()
-    return {"sessions": res.data or [], "total": res.count or 0}
-
-
 # ── Player data sync (Lua → website) ──────────────────────────────────────────
 
 
