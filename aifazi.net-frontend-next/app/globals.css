@@ -4161,3 +4161,8 @@ nav .nav-inner {
 html, body {
   background-color: var(--bg) !important;
 }
+
+/* Nav status chip — hide when the bar is crowded */
+@media (max-width: 1100px) {
+  .nav-status-chip { display: none !important; }
+}
