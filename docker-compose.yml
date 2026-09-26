@@ -124,3 +124,6 @@ networks:
 volumes:
   clamav-db:
     driver: local
+
+# Tip: copy this file to docker-compose.override.yml (gitignored) and point
+# env_file at a staging .env so compose never talks to production Supabase.

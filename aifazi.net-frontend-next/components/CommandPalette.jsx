@@ -131,7 +131,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
       title="Search — Ctrl+K / ⌘K"
       aria-label="Open command palette"
       style={{
-        fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
         padding: '6px 12px', background: 'var(--bg3)',
         border: '1px solid var(--border)', color: 'var(--muted)',
         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
@@ -214,7 +214,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
                       borderLeft: isSelected ? '2px solid var(--green)' : '2px solid transparent',
                       transition: 'all 0.1s',
                     }}
-                  >
+                   role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                     <span style={{ fontSize: 14, width: 20, textAlign: 'center', flexShrink: 0 }}>{cmd.icon}</span>
                     <span style={{ fontSize: 14, color: isSelected ? 'var(--text)' : 'var(--text2)' }}>{cmd.label}</span>
                     {isSelected && (

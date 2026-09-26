@@ -175,7 +175,7 @@ function ProjectCard({ project, index }) {
             {project.preview
               ? <span />
               : <span style={{ fontSize: 30, display: 'inline-block', animation: 'float 6s ease-in-out infinite', animationDelay: `${index * 0.5}s` }}>{project.icon}</span>}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{project.num}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{project.num}</span>
           </div>
 
           {/* Title */}
@@ -194,7 +194,7 @@ function ProjectCard({ project, index }) {
               {(project.tags || []).map(t => <span key={t} className="tag" style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t}</span>)}
             </div>
             {project.link && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 2, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 14 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 14 }}>
                 VIEW PROJECT →
               </div>
             )}
@@ -241,10 +241,11 @@ export default function Projects() {
         .projects-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-          gap: 24px;
+          gap: clamp(20px, 2.2vw, 36px);
           align-items: stretch;
-          width: min(100%, 1500px);
-          margin: 48px auto 0;
+          justify-content: center;
+          width: min(100%, 1480px);
+          margin: 56px auto 0;
         }
 
         .prj-card-wrapper { display: flex; flex-direction: column; flex: 1; height: 100%; }
@@ -255,10 +256,10 @@ export default function Projects() {
           flex-direction: column;
           flex: 1;
           height: 100%;
-          padding: 28px;
+          padding: clamp(28px, 2.4vw, 40px);
           background: var(--bg3);
           border: 1px solid var(--border);
-          border-radius: 4px;
+          border-radius: 8px;
           overflow: hidden;
           transition: border-color .35s ease, transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s ease;
           --mx: 50%; --my: 50%;

@@ -116,7 +116,7 @@ export default function StoreHeader() {
             <span style={{
               position: 'absolute', top: 0, right: -2,
               width: 18, height: 18, borderRadius: '50%', background: S,
-              color: '#000', fontSize: 10, fontWeight: 900,
+              color: '#000', fontSize: 11, fontWeight: 900,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontFamily: 'var(--font-mono)',
             }}>{cartCount}</span>
@@ -145,7 +145,7 @@ export default function StoreHeader() {
           </Link>
         ) : (
           <Link to="/login" style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, fontWeight: 700,
+            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700,
             color: S, textDecoration: 'none', padding: '8px 16px', border: `1px solid color-mix(in srgb, var(--green) 30%, transparent)`,
             borderRadius: 999, transition: 'background 0.2s',
           }}

@@ -12,7 +12,7 @@ export default function BuilderPage({ slug }) {
 
   return (
     <main style={{ maxWidth: 1080, margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: '2rem' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', textTransform: 'uppercase', marginBottom: '2rem' }}>
         /pages/{slug}
       </div>
       <BlockRenderer slug={slug} layout={hasLayout ? layout : []} />

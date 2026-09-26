@@ -196,7 +196,7 @@ Against **72 routers** and a large SPA this is ~5–8% behavioral coverage.
 - `requirements.txt` pins `httpx==0.27.2` while `requirements-dev.txt` has `httpx==0.28.1` — **version skew**. Align on one (prefer the newer patched line after audit).
 - Comment says “pin with pip-compile” but there is no lockfile — add `requirements.lock` / `uv.lock`.
 - Frontend Next 16 / React 19 — fine; keep Dependabot (already configured).
-- `chat_ai.py` is a stub (“OpenAI removed”) but README still lists OpenAI models — update docs.
+- ~~`chat_ai.py` is a stub (“OpenAI removed”) but README still lists OpenAI models~~ — **done**: backend README no longer claims OpenAI.
 
 ### 3.5 Structure (INFO/GOOD)
 

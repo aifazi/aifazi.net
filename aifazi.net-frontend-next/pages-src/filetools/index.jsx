@@ -99,7 +99,7 @@ function ToolCard({ tool, onClick }) {
         position:'relative', overflow:'hidden',
         display:'flex', flexDirection:'column',
       }}
-    >
+     role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div style={{ position:'absolute', top:0, left:0, right:0, height:2,
         background: `linear-gradient(90deg,${tool.color},${tool.color}00)`,
         opacity: hover ? 1 : 0.3, transition:'opacity .18s' }} />
@@ -115,17 +115,17 @@ function ToolCard({ tool, onClick }) {
             transition:'color .18s', display:'flex', alignItems:'center', gap:6 }}>
             {tool.name}
             {tool.badge && (
-              <span style={{ fontFamily:'var(--font-mono)', fontSize:7, letterSpacing:1.5,
+              <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:1.5,
                 padding:'1px 5px', background:`${tool.color}25`, border:`1px solid ${tool.color}60`,
                 color:tool.color, borderRadius:3, flexShrink:0 }}>{tool.badge}</span>
             )}
           </div>
-          <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)',
+          <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)',
             lineHeight:1.5, letterSpacing:0.3 }}>{tool.desc}</div>
         </div>
       </div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'auto' }}>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:8, letterSpacing:2,
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2,
           color: tool.color, opacity: hover ? 1 : 0, transition:'opacity .18s' }}>
           OPEN TOOL →
         </div>
@@ -144,10 +144,10 @@ function CatSection({ catId, tools, onSelect }) {
     <div style={{ marginBottom:40 }}>
       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
         <div style={{ width:4, height:20, background:meta.color, borderRadius:2 }} />
-        <span style={{ fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:3, color:meta.color }}>
+        <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:3, color:meta.color }}>
           {meta.icon} {meta.label.toUpperCase()}
         </span>
-        <span style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)',
+        <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)',
           padding:'2px 8px', border:'1px solid var(--border)' }}>{tools.length} tools</span>
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:10 }}>
@@ -192,7 +192,7 @@ export default function FileTools() {
             backgroundSize:'40px 40px' }} />
 
           <div style={{ maxWidth:1100, margin:'0 auto', position:'relative' }}>
-            <div style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--cyan)',
+            <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--cyan)',
               letterSpacing:4, marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
               <span style={{ display:'inline-block', width:6, height:6, background:'var(--green)', borderRadius:'50%' }} />
               FILE UTILITIES — BROWSER POWERED
@@ -218,7 +218,7 @@ export default function FileTools() {
               ].map(({ n, label, color }) => (
                 <div key={label} style={{ display:'flex', alignItems:'baseline', gap:8 }}>
                   <span style={{ fontFamily:'var(--font-mono)', fontSize:28, fontWeight:700, color }}>{n}</span>
-                  <span style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:1 }}>{label.toUpperCase()}</span>
+                  <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:1 }}>{label.toUpperCase()}</span>
                 </div>
               ))}
             </div>
@@ -233,10 +233,10 @@ export default function FileTools() {
           <div>
             {/* Breadcrumb */}
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:24,
-              fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)' }}>
+              fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)' }}>
               <button onClick={() => setActiveTool(null)}
                 style={{ background:'none', border:'none', color:'var(--cyan)', cursor:'pointer',
-                  fontFamily:'var(--font-mono)', fontSize:10, padding:0 }}>
+                  fontFamily:'var(--font-mono)', fontSize: 11, padding:0 }}>
                 ← All Tools
               </button>
               <span>/</span>
@@ -261,12 +261,12 @@ export default function FileTools() {
                 <div style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'var(--muted)' }}>{activeTool.desc}</div>
               </div>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                <span style={{ fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2,
+                <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2,
                   padding:'4px 10px', border:'1px solid var(--border)', color:'var(--muted)' }}>
                   🔒 LOCAL ONLY
                 </span>
                 <button onClick={() => setActiveTool(null)}
-                  style={{ fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:1, padding:'8px 16px',
+                  style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:1, padding:'8px 16px',
                     background:'transparent', color:'var(--muted)', border:'1px solid var(--border)', cursor:'pointer' }}>
                   ✕ CLOSE
                 </button>
@@ -301,7 +301,7 @@ export default function FileTools() {
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 <button onClick={() => { setCat('all'); setSearch('') }}
                   style={{
-                    fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2, padding:'8px 14px',
+                    fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, padding:'8px 14px',
                     background: cat==='all' ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'var(--bg2)',
                     color: cat==='all' ? 'var(--green)' : 'var(--muted)',
                     border: `1px solid ${cat==='all' ? 'color-mix(in srgb, var(--green) 50%, transparent)' : 'var(--border)'}`,
@@ -312,14 +312,14 @@ export default function FileTools() {
                   return (
                     <button key={id} onClick={() => { setCat(id); setSearch('') }}
                       style={{
-                        fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2, padding:'8px 12px',
+                        fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, padding:'8px 12px',
                         background: cat===id ? `${m.color}18` : 'var(--bg2)',
                         color: cat===id ? m.color : 'var(--muted)',
                         border: `1px solid ${cat===id ? m.color+'50' : 'var(--border)'}`,
                         cursor:'pointer', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:5,
                       }}>
                       {m.icon} {m.label.toUpperCase()}
-                      <span style={{ fontSize:8, opacity:0.7 }}>({count})</span>
+                      <span style={{ fontSize: 11, opacity:0.7 }}>({count})</span>
                     </button>
                   )
                 })}
@@ -365,7 +365,7 @@ export default function FileTools() {
                     <div style={{ fontSize:22, marginBottom:10 }}>{icon}</div>
                     <div style={{ fontFamily:'var(--font-display)', fontSize:15, fontWeight:700,
                       color:'var(--text)', marginBottom:6 }}>{title}</div>
-                    <div style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)', lineHeight:1.7 }}>{desc}</div>
+                    <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', lineHeight:1.7 }}>{desc}</div>
                   </div>
                 ))}
               </div>

@@ -15,7 +15,7 @@ const inputStyle = {
 }
 
 const labelStyle = {
-  fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
   color: 'var(--muted)', display: 'block', marginBottom: 8,
 }
 
@@ -67,7 +67,7 @@ const Tag = ({ text, color = 'var(--green)' }) => (
 
 const BackLink = ({ to = '/', label = '← BACK TO HOME' }) => (
   <div style={{ marginTop: 16, textAlign: 'center' }}>
-    <Link to={to} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>
+    <Link to={to} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>
       {label}
     </Link>
   </div>
@@ -90,7 +90,7 @@ function EmailSentScreen({ email, onResend, resending, resent, type = 'verify' }
         }
       </p>
 
-      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '16px 20px', marginBottom: 24, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
+      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '16px 20px', marginBottom: 24, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
         💡 Check your spam folder if you don&apos;t see it in a few minutes.
       </div>
 
@@ -195,7 +195,7 @@ export function ForumLogin() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <label style={{ ...labelStyle, marginBottom: 0 }}>PASSWORD</label>
-              <Link to="/forum/forgot-password" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', textDecoration: 'none', letterSpacing: 1 }}>
+              <Link to="/forum/forgot-password" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', textDecoration: 'none', letterSpacing: 1 }}>
                 FORGOT PASSWORD?
               </Link>
             </div>
@@ -226,17 +226,17 @@ export function ForumLogin() {
 const UnStatus = ({ username, check, suggest, onSuggest }) => {
   if (!username || username.length < 3) return null
   if (check === 'checking') return (
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 6, letterSpacing: 1 }}>
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 6, letterSpacing: 1 }}>
       ⏳ Checking availability…
     </div>
   )
   if (check === 'available') return (
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', marginTop: 6, letterSpacing: 1 }}>
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', marginTop: 6, letterSpacing: 1 }}>
       ✓ Available
     </div>
   )
   if (check === 'taken') return (
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>
       ✗ Username taken
       {suggest && (
         <span>
@@ -244,7 +244,7 @@ const UnStatus = ({ username, check, suggest, onSuggest }) => {
           <button
             type="button"
             onClick={() => onSuggest()}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 10, padding: 0, textDecoration: 'underline' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: 0, textDecoration: 'underline' }}
           >
             {suggest}
           </button>
@@ -391,7 +391,7 @@ export function ForumRegister() {
           <label style={labelStyle}>PASSWORD</label>
           <input type="password" value={form.password} onChange={e => set('password', e.target.value)} required placeholder="Min 8 characters" minLength={8} style={inputStyle} />
           {form.password.length > 0 && form.password.length < 8 && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--orange)', marginTop: 6, letterSpacing: 1 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--orange)', marginTop: 6, letterSpacing: 1 }}>
               {8 - form.password.length} more character{8 - form.password.length !== 1 ? 's' : ''} needed
             </div>
           )}
@@ -409,7 +409,7 @@ export function ForumRegister() {
             }}
           />
           {form.confirm.length > 0 && form.confirm !== form.password && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>
               Passwords don&apos;t match
             </div>
           )}
@@ -425,7 +425,7 @@ export function ForumRegister() {
       {/* OAuth options */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0 0' }}>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2 }}>OR</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>OR</span>
         <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
       </div>
 
@@ -505,7 +505,7 @@ export function VerifyEmail() {
             <p style={{ color: 'var(--muted)', lineHeight: 1.8, marginBottom: 24 }}>
               Your account is active. Redirecting you...
             </p>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
               <Link to="/" style={{ color: 'var(--green)', textDecoration: 'none' }}>CLICK HERE IF NOT REDIRECTED →</Link>
             </div>
           </>
@@ -570,7 +570,7 @@ export function ForgotPassword() {
   }
 
   const tabStyle = (active) => ({
-    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+    flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
     padding: '12px 8px', border: 'none', cursor: 'pointer',
     background: active ? 'var(--cyan)' : 'var(--bg3)',
     color:      active ? '#000'        : 'var(--muted)',
@@ -589,10 +589,10 @@ export function ForgotPassword() {
         <p style={{ color: 'var(--muted)', lineHeight: 1.8, marginBottom: 24, fontSize: 15 }}>
           If an account matches <strong style={{ color: 'var(--text)' }}>{identifier}</strong>, a reset link has been sent. It expires in&nbsp;1&nbsp;hour.
         </p>
-        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '14px 18px', marginBottom: 28, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
+        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '14px 18px', marginBottom: 28, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
           💡 Check your spam folder if you don&apos;t see it.
         </div>
-        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
+        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
       </div>
     </PageWrap>
   )
@@ -607,10 +607,10 @@ export function ForgotPassword() {
         <p style={{ color: 'var(--muted)', lineHeight: 1.8, marginBottom: 24, fontSize: 15 }}>
           If <strong style={{ color: 'var(--text)' }}>{findEmail}</strong> is registered, your username has been sent to that address.
         </p>
-        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '14px 18px', marginBottom: 28, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
+        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '14px 18px', marginBottom: 28, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1.8 }}>
           💡 Check your spam folder if you don&apos;t see it.
         </div>
-        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
+        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
       </div>
     </PageWrap>
   )
@@ -642,7 +642,7 @@ export function ForgotPassword() {
                 placeholder="your@email.com  or  CoolUsername"
                 style={inputStyle}
               />
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 6, letterSpacing: 1 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 6, letterSpacing: 1 }}>
                 Both email and username are accepted
               </div>
             </div>
@@ -652,9 +652,9 @@ export function ForgotPassword() {
             </button>
           </form>
           <div style={{ marginTop: 20, textAlign: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
               Don&apos;t know your username?{' '}
-              <button onClick={() => setTab('find')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1, padding: 0 }}>
+              <button onClick={() => setTab('find')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1, padding: 0 }}>
                 Find it here
               </button>
             </span>
@@ -686,9 +686,9 @@ export function ForgotPassword() {
             </button>
           </form>
           <div style={{ marginTop: 20, textAlign: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
               Know your username?{' '}
-              <button onClick={() => setTab('reset')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: 1, padding: 0 }}>
+              <button onClick={() => setTab('reset')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', letterSpacing: 1, padding: 0 }}>
                 Reset password instead
               </button>
             </span>
@@ -697,7 +697,7 @@ export function ForgotPassword() {
       )}
 
       <div style={{ marginTop: 28, textAlign: 'center' }}>
-        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
+        <Link to="/login" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO LOGIN</Link>
       </div>
     </PageWrap>
   )
@@ -768,7 +768,7 @@ export function ResetPassword() {
               {[1,2,3,4].map(i => (
                 <div key={i} style={{ height: 3, flex: 1, background: i <= strength ? strengthColor : 'var(--border)', transition: 'background 0.3s' }} />
               ))}
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: strengthColor, letterSpacing: 1, marginLeft: 6, whiteSpace: 'nowrap' }}>{strengthLabel}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: strengthColor, letterSpacing: 1, marginLeft: 6, whiteSpace: 'nowrap' }}>{strengthLabel}</span>
             </div>
           )}
         </div>
@@ -776,7 +776,7 @@ export function ResetPassword() {
           <label style={labelStyle}>CONFIRM PASSWORD</label>
           <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required placeholder="Repeat password" style={{ ...inputStyle, borderColor: confirm.length > 0 && confirm !== password ? 'rgba(255,71,87,0.6)' : 'var(--border)' }} />
           {confirm.length > 0 && confirm !== password && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>Passwords don&apos;t match</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>Passwords don&apos;t match</div>
           )}
         </div>
 

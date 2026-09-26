@@ -10,10 +10,10 @@ function FieldError({ msg }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 6, marginTop: 4,
-      fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)',
+      fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)',
       animation: 'fieldShake 0.35s ease-out',
     }}>
-      <span style={{ fontSize: 10 }}>⚠</span> {msg}
+      <span style={{ fontSize: 11 }}>⚠</span> {msg}
     </div>
   )
 }
@@ -82,7 +82,7 @@ export default function Contact() {
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
             >
               <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--cyan)', flexShrink: 0, minWidth: 80 }}>{item.label}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)', flexShrink: 0, minWidth: 80 }}>{item.label}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 <EditableText contentKey={item.key} defaultValue={item.def} />
               </span>
@@ -105,7 +105,7 @@ export default function Contact() {
                 <div style={{ paddingLeft: 16 }}>Typically within 24–48 hours.</div>
               </div>
               <button type="button" onClick={() => setStatus(null)}
-                style={{ alignSelf: 'flex-start', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '8px 18px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', transition: 'all 0.2s' }}
+                style={{ alignSelf: 'flex-start', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '8px 18px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', transition: 'all 0.2s' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--green)'; e.currentTarget.style.color = 'var(--green)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
               >+ SEND ANOTHER</button>
@@ -114,7 +114,7 @@ export default function Contact() {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div className="form-group">
-                  <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>{'>'}</span> NAME</label>
+                  <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{'>'}</span> NAME</label>
                   <input name="name" value={form.name}
                     onChange={e => { setForm(f => ({...f, name: e.target.value})); if (errors.name) setErrors(p => ({...p, name: ''})) }}
                     placeholder="John Doe"
@@ -122,7 +122,7 @@ export default function Contact() {
                   {errors.name && <FieldError msg={errors.name} />}
                 </div>
                 <div className="form-group">
-                  <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>{'>'}</span> EMAIL</label>
+                  <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{'>'}</span> EMAIL</label>
                   <input name="email" type="email" value={form.email}
                     onChange={e => { setForm(f => ({...f, email: e.target.value})); if (errors.email) setErrors(p => ({...p, email: ''})) }}
                     placeholder="john@company.com"
@@ -132,12 +132,12 @@ export default function Contact() {
               </div>
 
               <div className="form-group">
-                <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>{'>'}</span> SUBJECT</label>
+                <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{'>'}</span> SUBJECT</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
                   {SUBJECTS.map(s => (
                     <button key={s} type="button" onClick={() => { setForm(f => ({...f, subject: f.subject === s ? '' : s})); setErrors(p => ({...p, subject: ''})) }}
                       style={{
-                        fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+                        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                         padding: '6px 14px', cursor: 'pointer', transition: 'all 0.2s',
                         background: form.subject === s ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
                         border: form.subject === s ? '1px solid var(--green)' : errors.subject ? '1px solid rgba(255,71,87,0.5)' : '1px solid var(--border)',
@@ -152,7 +152,7 @@ export default function Contact() {
               </div>
 
               <div className="form-group">
-                <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>{'>'}</span> MESSAGE</label>
+                <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{'>'}</span> MESSAGE</label>
                 <textarea name="message" value={form.message}
                   onChange={e => { setForm(f => ({...f, message: e.target.value})); if (errors.message) setErrors(p => ({...p, message: ''})) }}
                   rows={6} placeholder="Describe your project or inquiry..."
