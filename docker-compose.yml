@@ -4,9 +4,14 @@
 # Logs:    docker compose logs -f
 # Rebuild: docker compose up -d --build
 #
-# Uses PRODUCTION Supabase — no local Supabase services.
-# The browser connects to the production Supabase URL directly.
-# The backend connects to production Supabase via its service role key.
+# ⚠️  SUPABASE ISOLATION
+# Prefer a NON-PROD Supabase project for local compose. Point .env.local at it:
+#   SUPABASE_URL=https://<staging-project>.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY=<staging service role>
+#   NEXT_PUBLIC_SUPABASE_URL=https://<staging-project>.supabase.co
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY=<staging anon>
+# Production keys in local .env.local risk accidental data mutation.
+# If you must use prod (legacy), treat every local mutation as production.
 
 services:
   clamav:
@@ -119,3 +124,6 @@ networks:
 volumes:
   clamav-db:
     driver: local
+
+# Tip: copy this file to docker-compose.override.yml (gitignored) and point
+# env_file at a staging .env so compose never talks to production Supabase.

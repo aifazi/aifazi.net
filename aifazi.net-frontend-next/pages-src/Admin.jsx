@@ -84,7 +84,7 @@ export default function Admin({ serverUser: serverUserProp }) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 20, padding: 24 }}>
         <div style={{ fontSize: 64 }}>⚙️</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: '#ff4757', padding: '4px 14px', background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.3)' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: '#ff4757', padding: '4px 14px', background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.3)' }}>
           UNAUTHORIZED ACCESS
         </div>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, margin: 0, textAlign: 'center' }}>

@@ -106,7 +106,7 @@ export default function ForumHome() {
             <aside className="forum-home-sidebar" style={{ position: 'sticky', top: 96, display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Stats */}
               <Card style={{ padding: 22 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>STATS</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>STATS</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <Stat small label="Categories" value={cats.length} color="var(--green)" icon="🗂" />
                   <Stat small label="Threads" value={totalThreads} color="var(--cyan)" icon="🧵" />
@@ -117,8 +117,8 @@ export default function ForumHome() {
               {/* Categories */}
               <Card style={{ padding: 22 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>CATEGORIES</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)' }}>{cats.length}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>CATEGORIES</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)' }}>{cats.length}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {cats.length === 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '8px 0' }}>No categories yet.</div>}
@@ -133,7 +133,7 @@ export default function ForumHome() {
                       <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
                       {cat.locked && <span style={{ fontSize: 11, opacity: 0.5 }}>🔒</span>}
                       <span style={{
-                        fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)',
+                        fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)',
                         background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 18%, transparent)',
                         borderRadius: 999, padding: '2px 8px', flexShrink: 0,
                       }}>{cat.threadCount || 0}</span>
@@ -156,8 +156,8 @@ export default function ForumHome() {
               {topContributors.length > 0 && (
                 <Card style={{ padding: 22 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>TOP VOICES</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)' }}>{topContributors.length}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>TOP VOICES</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)' }}>{topContributors.length}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {topContributors.map(([name, score], i) => (
@@ -166,12 +166,12 @@ export default function ForumHome() {
                         borderRadius: 10, background: 'rgba(255,255,255,0.015)',
                       }}>
                         <span style={{
-                          fontFamily: 'var(--font-mono)', fontSize: 10, color: i === 0 ? 'var(--green)' : i === 1 ? 'var(--cyan)' : 'var(--muted)',
+                          fontFamily: 'var(--font-mono)', fontSize: 11, color: i === 0 ? 'var(--green)' : i === 1 ? 'var(--cyan)' : 'var(--muted)',
                           fontWeight: 700, width: 18, textAlign: 'center', flexShrink: 0,
                         }}>#{i + 1}</span>
                         <Avatar user={{ username: name, avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=00ff88,00d4ff&fontSize=36` }} size={28} />
                         <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', flexShrink: 0 }}>{score} pts</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>{score} pts</span>
                       </div>
                     ))}
                   </div>
@@ -191,7 +191,7 @@ export default function ForumHome() {
                         <Link to={`/forum/thread/${t.id || t._id}`} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: 'inherit' }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: 'var(--text)', wordBreak: 'break-word' }}>{t.title}</span>
-                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
                               <span style={{ color: t.category?.color || 'var(--cyan)' }}>{t.category?.icon} {t.category?.name || ''}</span>
                               <span>by <span style={{ color: 'var(--text)' }}>{t.author?.username || t.author_name}</span></span>
                             </div>
@@ -227,7 +227,7 @@ export default function ForumHome() {
                           {t.locked && <Badge tone="red">🔒 Locked</Badge>}
                           <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: 'var(--text)', wordBreak: 'break-word' }}>{t.title}</span>
                         </div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
                           <span style={{ color: t.category?.color || 'var(--cyan)' }}>{t.category?.icon} {t.category?.name || ''}</span>
                           <span>by <span style={{ color: 'var(--text)' }}>{t.author?.username || t.author_name}</span></span>
                           <span>{timeAgo(t.created_at || t.createdAt)}</span>

@@ -38,7 +38,7 @@ function TerminalLoader({ onComplete }) {
       <div style={{ width:'100%', maxWidth:520, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, overflow:'hidden', boxShadow:'0 0 60px color-mix(in srgb, var(--green) 10%, transparent)', animation:'fadeUp .6s .2s ease both', position:'relative', zIndex:1 }}>
         <div style={{ background:'color-mix(in srgb, var(--cyan) 8%, transparent)', padding:'10px 16px', display:'flex', alignItems:'center', gap:8, borderBottom:'1px solid var(--border)' }}>
           {['#ff5f56','#ffbd2e','#27c93f'].map(c => <div key={c} style={{ width:10, height:10, borderRadius:'50%', background:c }} />)}
-          <div style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)', letterSpacing:2, margin:'0 auto' }}>boot.sh — tanvir@portfolio</div>
+          <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:2, margin:'0 auto' }}>boot.sh — tanvir@portfolio</div>
         </div>
         <div style={{ padding:'16px 20px', minHeight:'min(240px, 40vh)' }}>
           {lines.map((line, i) => (
@@ -50,8 +50,8 @@ function TerminalLoader({ onComplete }) {
         </div>
         <div style={{ padding:'0 24px 20px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
-            <span style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)', letterSpacing:2 }}>LOADING</span>
-            <span style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--green)' }}>{progress}%</span>
+            <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:2 }}>LOADING</span>
+            <span style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--green)' }}>{progress}%</span>
           </div>
           <div style={{ height:2, background:'rgba(255,255,255,0.06)', overflow:'hidden' }}>
             <div style={{ height:'100%', width:`${progress}%`, background:'linear-gradient(to right,var(--green),var(--cyan))', boxShadow:'0 0 10px color-mix(in srgb, var(--green) 60%, transparent)', transition:'width .3s ease' }} />
@@ -77,7 +77,7 @@ function MinimalLoader({ onComplete }) {
       </div>
       <div style={{ textAlign:'center' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING</div>
       </div>
     </div>
   )
@@ -98,7 +98,7 @@ function GlitchLoader({ onComplete }) {
         <span aria-hidden style={{ position:'absolute', inset:0, color:'var(--cyan)', clipPath:'polygon(0 0,100% 0,100% 35%,0 35%)', animation:'glitch-t 2s infinite', opacity:.7 }}>TANVIR.</span>
         <span aria-hidden style={{ position:'absolute', inset:0, color:'#ff2d8b', clipPath:'polygon(0 65%,100% 65%,100% 100%,0 100%)', animation:'glitch-b 2s .12s infinite', opacity:.7 }}>TANVIR.</span>
       </div>
-      <div style={{ marginTop:24, fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:6, color:'var(--muted)' }}>
+      <div style={{ marginTop:24, fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:6, color:'var(--muted)' }}>
         {['▓▓▓░░░░░░░','▓▓▓▓▓▓░░░░','▓▓▓▓▓▓▓▓░░','▓▓▓▓▓▓▓▓▓░','▓▓▓▓▓▓▓▓▓▓'][Math.min(phase,4)]}
       </div>
       <style>{`
@@ -110,6 +110,8 @@ function GlitchLoader({ onComplete }) {
 }
 
 function MatrixLoader({ onComplete }) {
+  // Skip rAF char-rain when the user asked for reduced motion.
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   const canvasRef = useRef(null)
   const [exiting, setExiting] = useState(false)
   useEffect(() => {
@@ -126,7 +128,7 @@ function MatrixLoader({ onComplete }) {
         ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*16, y*16)
         if (y*16 > canvas.height && Math.random() > 0.975) drops[i] = 0
         drops[i]++
-      }); raf = requestAnimationFrame(draw)
+      }); if (!reduced) raf = requestAnimationFrame(draw)
     }
     draw()
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1200)
@@ -137,7 +139,7 @@ function MatrixLoader({ onComplete }) {
       <canvas ref={canvasRef} style={{ position:'absolute', inset:0 }} />
       <div style={{ position:'relative', zIndex:1, textAlign:'center', background:'rgba(6,10,15,0.7)', padding:'24px 40px', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', backdropFilter:'blur(4px)' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:48, fontWeight:700, color:'var(--green)', letterSpacing:-1, textShadow:'0 0 20px color-mix(in srgb, var(--green) 80%, transparent)' }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4, marginTop:8 }}>DECRYPTING PORTFOLIO</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4, marginTop:8 }}>DECRYPTING PORTFOLIO</div>
       </div>
     </div>
   )
@@ -185,7 +187,7 @@ function PulseLoader({ onComplete }) {
       </div>
       <div style={{ textAlign:'center' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>CONNECTING</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>CONNECTING</div>
       </div>
       <style>{`@keyframes ls-pulse-ring{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.15);opacity:1}}@keyframes ls-pulse-core{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}`}</style>
     </div>
@@ -216,7 +218,7 @@ function HoloLoader({ onComplete }) {
       </div>
       <div style={{ textAlign:'center' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING HOLOGRAPHIC INTERFACE</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING HOLOGRAPHIC INTERFACE</div>
       </div>
       <style>{`@keyframes ls-holo-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -244,8 +246,8 @@ function CRTLoader({ onComplete }) {
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', fontFamily:'var(--font-mono)', width:'100%', maxWidth:440, padding:'0 8px' }}>
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'rgba(0,255,0,0.04)', border:'1px solid rgba(0,255,0,0.2)', borderRadius:4, marginBottom:10 }}>
         <span style={{ width:8, height:8, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 8px var(--green)' }} />
-        <span style={{ fontSize:10, color:'var(--green)', letterSpacing:2 }}>aifazi.net — BOOT</span>
-        <span style={{ marginLeft:'auto', fontSize:9, color:'var(--muted)' }}>v4.2</span>
+        <span style={{ fontSize: 11, color:'var(--green)', letterSpacing:2 }}>aifazi.net — BOOT</span>
+        <span style={{ marginLeft:'auto', fontSize: 11, color:'var(--muted)' }}>v4.2</span>
       </div>
       <div style={{ height:130, overflow:'hidden', position:'relative' }}>
         {lines.map((l, i) => (
@@ -277,7 +279,7 @@ function CyberLoader({ onComplete }) {
           <div key={i} style={{ width:18, height:18, borderRadius:3, background: lit.includes(i) ? 'var(--cyan)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)', border:`1px solid ${lit.includes(i) ? 'color-mix(in srgb, var(--cyan) 80%, transparent)' : 'color-mix(in srgb, var(--cyan) 20%, transparent)'}`, boxShadow: lit.includes(i) ? '0 0 8px color-mix(in srgb, var(--cyan) 60%, transparent)' : 'none', transition:'all 0.1s' }} />
         ))}
       </div>
-      <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>BOOT SEQUENCE</div>
+      <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>BOOT SEQUENCE</div>
     </div>
   )
 }
@@ -305,7 +307,7 @@ function BarsLoader({ onComplete }) {
           const p = Math.min(100, Math.max(0, progress - i * 15))
           return (
             <div key={b.label}>
-              <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:2, marginBottom:5 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:2, marginBottom:5 }}>
                 <span>{b.label}</span><span style={{ color: b.color }}>{Math.round(p)}%</span>
               </div>
               <div style={{ height:3, background:'rgba(255,255,255,0.05)', borderRadius:2, overflow:'hidden' }}>
@@ -334,7 +336,7 @@ function WaveLoader({ onComplete }) {
           <div key={i} style={{ width:6, borderRadius:3, background: i % 2 === 0 ? 'var(--green)' : 'var(--cyan)', animation:`ls-wave-bar 1.2s ${i*0.08}s ease-in-out infinite` }} />
         ))}
       </div>
-      <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>LOADING</div>
+      <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>LOADING</div>
       <style>{`@keyframes ls-wave-bar{0%,100%{height:8px;opacity:0.4}50%{height:44px;opacity:1}}`}</style>
     </div>
   )
@@ -350,7 +352,7 @@ function NeonLoader({ onComplete }) {
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:24 }}>
       <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(52px,10vw,96px)', fontWeight:900, letterSpacing:4, color:'var(--text)', textTransform:'uppercase', animation:'ls-neon-flicker 3s infinite', textShadow:'0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green),0 0 120px color-mix(in srgb, var(--green) 50%, transparent)' }}>TANVIR</div>
-      <div style={{ fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:8, color:'var(--cyan)', animation:'ls-neon-sub 3s 0.3s infinite', textShadow:'0 0 8px var(--cyan)' }}>NETWORK ENGINEER</div>
+      <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:8, color:'var(--cyan)', animation:'ls-neon-sub 3s 0.3s infinite', textShadow:'0 0 8px var(--cyan)' }}>NETWORK ENGINEER</div>
       <style>{`
         @keyframes ls-neon-flicker{0%,100%{opacity:1;text-shadow:0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green)}45%{opacity:0.15;text-shadow:none}50%{opacity:1;text-shadow:0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green)}75%{opacity:0.3;text-shadow:none}80%{opacity:1;text-shadow:0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green)}}
         @keyframes ls-neon-sub{0%,100%{opacity:1}45%{opacity:0.1}50%{opacity:1}75%{opacity:0.2}80%{opacity:1}}
@@ -430,7 +432,7 @@ function OrbitLoader({ onComplete }) {
       </div>
       <div style={{ textAlign:'center' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>ESTABLISHING ORBIT</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>ESTABLISHING ORBIT</div>
       </div>
     </div>
   )
@@ -477,7 +479,7 @@ function TypewriterLoader({ onComplete }) {
         {/* Blinking cursor */}
         <span ref={cursorRef} style={{ display:'inline-block', width:'0.06em', height:'0.85em', background:'var(--green)', marginLeft:4, verticalAlign:'middle', animation:'blink .7s steps(1) infinite', boxShadow:'0 0 10px var(--green)' }} />
       </div>
-      <div data-tagline style={{ fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:6, color:'var(--cyan)', textShadow:'0 0 12px var(--cyan)' }}>
+      <div data-tagline style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:6, color:'var(--cyan)', textShadow:'0 0 12px var(--cyan)' }}>
         {TAGLINE}
       </div>
     </div>
@@ -533,7 +535,7 @@ function DNALoader({ onComplete }) {
         ))}
       </div>
 
-      <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', letterSpacing:4 }}>SEQUENCING</div>
+      <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>SEQUENCING</div>
     </div>
   )
 }
@@ -598,7 +600,7 @@ function CountdownLoader({ onComplete }) {
       }}>
         {display}
       </div>
-      <div ref={labelRef} style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--muted)', letterSpacing:6 }}>
+      <div ref={labelRef} style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:6 }}>
         TANVIR<span style={{ color:'var(--green)' }}>.</span>
       </div>
     </div>
@@ -613,8 +615,23 @@ const LOADING_STYLE_IDS = ['terminal', 'minimal', 'glitch', 'splash', 'pulse', '
 function loadingStyleKey(v, fallback = 'terminal') {
   return typeof v === 'string' && LOADING_STYLE_IDS.includes(v) ? v : fallback
 }
+const BOOT_SEEN_KEY = "aifazi_boot_seen"
+
 export default function LoadingScreen({ onComplete, style }) {
+  // Repeat visits skip the theatrical boot (still call onComplete so the veil never sticks).
+  // useSyncExternalStore keeps this SSR-safe: server snapshot is false (show boot).
+  const bootSeen = useSyncExternalStore(
+    () => () => {},
+    () => { try { return localStorage.getItem(BOOT_SEEN_KEY) === '1' } catch { return false } },
+    () => false,
+  )
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
+  useEffect(() => {
+    try { localStorage.setItem(BOOT_SEEN_KEY, '1') } catch { /* private mode */ }
+    if (bootSeen) onComplete?.()
+  }, [bootSeen, onComplete])
+  if (bootSeen) return null
+
   const raw = style || (mounted ? localStorage.getItem('loading-style') : null) || 'terminal'
   const s = loadingStyleKey(raw, 'terminal')
   return (

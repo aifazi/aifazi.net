@@ -43,7 +43,7 @@ export function StatusAdmin() {
 
   return (
     <div style={{ padding: 20, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>
         AVAILABILITY STATUS
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -67,7 +67,7 @@ export function StatusAdmin() {
               {s.label.toUpperCase()}
             </span>
             {current === s.key && (
-              <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 9, color: s.color }}>● ACTIVE</span>
+              <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: s.color }}>● ACTIVE</span>
             )}
           </button>
         ))}
@@ -92,18 +92,35 @@ export default function StatusBadge({ size = 'sm' }) {
   const status = STATUSES.find(s => s.key === statusKey) || STATUSES[0]
 
   if (size === 'lg') return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center', gap: 8,
-      padding: '6px 14px',
-      background: `color-mix(in srgb, ${status.color} 10%, transparent)`,
-      border: `1px solid color-mix(in srgb, ${status.color} 40%, transparent)`,
-    }}>
+    <div
+      className="status-badge-lg"
+      data-status={status.key}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        padding: '7px 14px',
+        borderRadius: 6,
+        // Solid surface so the badge never disappears under the globe/hero chrome
+        background: 'color-mix(in srgb, var(--bg2, var(--bg)) 92%, transparent)',
+        border: `1.5px solid ${status.color}`,
+        boxShadow: `0 0 14px color-mix(in srgb, ${status.color} 25%, transparent)`,
+        position: 'relative',
+        zIndex: 6,
+        isolation: 'isolate',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
+    >
       <span style={{
         width: 7, height: 7, borderRadius: '50%', background: status.color,
         animation: status.pulse ? 'statusPulse 1.5s infinite' : 'none',
         flexShrink: 0,
+        boxShadow: `0 0 6px ${status.color}`,
       }} />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: status.color, letterSpacing: 2, textTransform: 'uppercase' }}>
+      <span style={{
+        fontFamily: 'var(--font-mono)', fontSize: 11, color: status.color,
+        letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700,
+        lineHeight: 1.2,
+      }}>
         <StatusLabel status={status} />
       </span>
       <style>{`@keyframes statusPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }`}</style>
@@ -116,7 +133,7 @@ export default function StatusBadge({ size = 'sm' }) {
         width: 6, height: 6, borderRadius: '50%', background: status.color,
         animation: status.pulse ? 'statusPulse 1.5s infinite' : 'none',
       }} />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: status.color, letterSpacing: 1, textTransform: 'uppercase' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: status.color, letterSpacing: 1, textTransform: 'uppercase' }}>
         <StatusLabel status={status} />
       </span>
       <style>{`@keyframes statusPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }`}</style>

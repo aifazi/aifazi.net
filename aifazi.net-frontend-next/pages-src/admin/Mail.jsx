@@ -35,7 +35,7 @@ export default function Mail({ initialTab = 'queue' }) {
       <div style={{ display: 'flex', gap: 3, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24, maxWidth: 680 }}>
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5,
+            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5,
             padding: '9px 16px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
             background: tab === t.key ? 'var(--green)' : 'transparent',
             color: tab === t.key ? '#000' : 'var(--muted)', border: 'none', cursor: 'pointer', borderRadius: 8,

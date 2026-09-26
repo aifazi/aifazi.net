@@ -92,7 +92,7 @@ function MarqueeBadges({ badges }) {
       <div ref={trackRef} style={{ display: 'flex', gap: 12, whiteSpace: 'nowrap', width: 'max-content' }}>
         {doubled.map((badge, i) => (
           <span key={i} style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
             padding: '6px 14px', border: '1px solid color-mix(in srgb, var(--cyan) 15%, transparent)',
             color: 'var(--muted)', background: 'color-mix(in srgb, var(--cyan) 3%, transparent)',
             flexShrink: 0, display: 'inline-block',
@@ -148,8 +148,8 @@ function DraggableBadge({ badge, style, onMouseEnter, onMouseLeave, 'data-ha-bad
   )
 }
 
-const DEFAULT_WORDS = ['Network Specialist', 'IT Specialist', 'Infrastructure Architect', 'Security Specialist']
-const DEFAULT_BADGES = ['Cisco', 'FortiGate', 'pfSense', 'Cyber Security', 'Docker', 'Linux']
+const DEFAULT_WORDS = ['Systems Administrator', 'Full-Stack Developer', 'IT Consultant', 'FiveM Script Dev']
+const DEFAULT_BADGES = ['React', 'Next.js', 'FastAPI', 'Supabase', 'Docker', 'FiveM', 'Lua', 'React Native', 'Microsoft 365']
 const DEFAULT_STATS = [
   { num: '5+', label: 'YEARS EXP', color: 'var(--green)',  numKey: 'hero.stat0.num', labelKey: 'hero.stat0.label' },
   { num: '20+', label: 'PROJECTS', color: 'var(--cyan)',   numKey: 'hero.stat1.num', labelKey: 'hero.stat1.label' },
@@ -215,10 +215,16 @@ function GlitchName({ children, color }) {
     return () => clearTimeout(t)
   }, [])
 
+  // data-text must be a plain string — React nodes stringify to
+  // "[object Object]" and the glitch ::before/::after overlays garble the label.
+  const glitchText = typeof children === 'string' || typeof children === 'number'
+    ? String(children)
+    : ''
+
   return (
     <span
-      className={glitching ? 'glitch-active' : ''}
-      data-text={children}
+      className={glitching && glitchText ? 'glitch-active' : ''}
+      data-text={glitchText || undefined}
       style={{
         color: color || 'var(--text)',
         textShadow: color === 'var(--green)'
@@ -353,15 +359,21 @@ export default function Hero() {
       <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, color-mix(in srgb, var(--cyan) 6%, transparent) 0%, transparent 65%)', left: 100, bottom: -100, animation: 'orb-drift 20s ease-in-out infinite reverse', pointerEvents: 'none' }} />
 
       {/* ── Two-column layout: content left, server rack animation right ── */}
-      <div style={{ width: '100%', maxWidth: '100%', minWidth: 0, display: 'flex', alignItems: 'center', gap: 40, position: 'relative', zIndex: 2, flexWrap: 'wrap' }} className="hero-layout">
+      {/* Width/measure handled by .hero-layout in globals.css (fluid scale) */}
+      <div style={{ width: '100%', minWidth: 0, display: 'flex', alignItems: 'center', gap: 40, position: 'relative', zIndex: 2, flexWrap: 'wrap', boxSizing: 'border-box', paddingLeft: 0, paddingRight: 0 }} className="hero-layout">
 
       {/* Left: all existing content */}
-      <div ref={heroLeftRef} className="hero-left" style={{ flex: '1 1 520px', width: '100%', maxWidth: 680, minWidth: 0 }}>
+      <div ref={heroLeftRef} className="hero-left" style={{ flex: '1 1 520px', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
         {/* Status row */}
         <AnimatableWrapper animKey="hero.statusRow" label="Status Row" currentAnim="fadeRight 0.6s 0.05s both">
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--green)', letterSpacing: 4, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'glow-pulse 2s ease-in-out infinite' }} />
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--green)',
+          letterSpacing: 4, marginBottom: 24,
+          display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+          position: 'relative', zIndex: 6,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'glow-pulse 2s ease-in-out infinite', flexShrink: 0 }} />
             <span style={{ color: 'var(--cyan)' }}>&gt; </span>
             <EditableText contentKey="hero.status" defaultValue="AVAILABLE FOR NEW PROJECTS" />
           </div>
@@ -410,7 +422,7 @@ export default function Hero() {
           boxShadow: 'inset 0 0 30px color-mix(in srgb, var(--green) 2%, transparent)',
           letterSpacing: '0.01em',
         }}>
-          <EditableText contentKey="hero.desc" defaultValue="Designing, deploying, and securing enterprise-grade network infrastructure. From routing protocols to zero-trust architecture — I keep systems connected and protected." multiline />
+          <EditableText contentKey="hero.desc" defaultValue="IT professional and self-taught developer with hands-on experience across enterprise network & systems administration, Microsoft 365, and full-stack software. I own projects end-to-end — from server infrastructure to shipping production web and mobile apps." multiline />
         </p>
         </AnimatableWrapper>
 
@@ -448,7 +460,7 @@ export default function Hero() {
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>
                 <span data-stat-num className="stat-num"><EditableText contentKey={numKey} defaultValue={num} /></span>
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginTop: 4 }}>
                 <EditableText contentKey={labelKey} defaultValue={label} />
               </div>
             </div>
@@ -466,10 +478,14 @@ export default function Hero() {
       {/* Right: Server Rack Animation — hidden on small screens */}
       {mounted && (
         <div ref={rackRef} style={{
-          flex: '1 1 0', minWidth: 0, minHeight: 500,
+          flex: '1 1 min(420px, 100%)', minWidth: 0,
           alignSelf: 'stretch',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           position: 'relative',
+          // Own stacking context so globe chrome can't paint over hero-left badges
+          zIndex: 1,
+          isolation: 'isolate',
+          boxSizing: 'border-box',
         }} className="hero-rack-panel">
           <ServerRackAnimation />
         </div>

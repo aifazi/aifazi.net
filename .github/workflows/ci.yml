@@ -39,6 +39,9 @@ jobs:
       - name: Run TypeScript typecheck
         run: npm run typecheck
 
+      - name: Run unit tests (vitest)
+        run: npm test
+
   frontend-build:
     name: Frontend - Build
     runs-on: ubuntu-latest
@@ -124,9 +127,8 @@ jobs:
         run: pip-audit
 
       - name: Run Bandit (static analysis)
-        # TODO(bandit-debt): HIGH findings pre-date this change; triage the
-        # bandit-report.json artifact and fix or scope-exclude. This step is
-        # blocking (do NOT re-add continue-on-error).
+        # HIGH findings are currently 0 (triaged 2026-09-24). Keep this step
+        # blocking; any new HIGH fails CI.
         continue-on-error: false
         run: bandit -r routers/ -f json -o bandit-report.json --severity-level high
 

@@ -4,8 +4,9 @@ import dynamic from 'next/dynamic'
 import { Link, useLocation, useNavigate } from '@/lib/router-compat'
 import { useForum } from '../context/ForumContext'
 import { useTheme } from '@/app/providers'
-import CommandPalette from './CommandPalette'
+const CommandPalette = dynamic(() => import('./CommandPalette'), { ssr: false })
 import Terminal from './Terminal'
+
 // ThemePicker is ~113KB (theme catalog + admin global panel). It only matters
 // when the drawer opens, so load it lazily instead of shipping it to every
 // visitor on every page.
@@ -195,7 +196,7 @@ export default function Navbar() {
   const registerRoute       = isFiveM
     ? `/login?tab=register&next=${encodeURIComponent(fivemRoute('/connect'))}`
     : '/login?tab=register'
-  const profileRoute        = isFiveM ? fiveMProfileRoute : '/profile'
+  const profileRoute        = '/profile'
 
   // Load header style from site settings (user package override wins for this browser)
   useEffect(() => {
@@ -260,7 +261,7 @@ export default function Navbar() {
     'neon-band': { bg: 'var(--bg2)',             accent: 'var(--green)', secondary: 'var(--cyan)',  logoColor: 'var(--text)',  linkColor: 'var(--muted)', activeLinkColor: 'var(--green)', borderColor: 'var(--border)', progressGrad: 'linear-gradient(to right, var(--green), var(--cyan))' },
     terminal:    { bg: 'var(--bg)',              accent: 'var(--green)', secondary: 'var(--cyan)',  logoColor: 'var(--green)', linkColor: 'var(--muted)', activeLinkColor: 'var(--green)', borderColor: 'var(--border)', progressGrad: 'linear-gradient(to right, var(--green), var(--cyan))' },
     command:     { bg: '#070b12',                accent: '#38bdf8',      secondary: '#94a3b8',      logoColor: 'var(--text)',  linkColor: '#94a3b8',     activeLinkColor: '#38bdf8',      borderColor: 'rgba(56,189,248,0.24)', progressGrad: 'linear-gradient(to right, #38bdf8, #a78bfa)' },
-    dashboard:   { bg: '#07111a',                accent: '#38bdf8',      secondary: '#00ff88',      logoColor: 'var(--text)',  linkColor: '#6b8296',     activeLinkColor: '#38bdf8',      borderColor: 'rgba(56,189,248,0.16)', progressGrad: 'linear-gradient(to right, #38bdf8, #00ff88)' },
+    dashboard:   { bg: '#07111a',                accent: '#38bdf8',      secondary: 'var(--green)',      logoColor: 'var(--text)',  linkColor: '#6b8296',     activeLinkColor: '#38bdf8',      borderColor: 'rgba(56,189,248,0.16)', progressGrad: 'linear-gradient(to right, #38bdf8, var(--green))' },
     magazine:    { bg: '#f7f1e8',                accent: '#111111',      secondary: '#b91c1c',      logoColor: '#111111',      linkColor: '#4b5563',     activeLinkColor: '#111111',      borderColor: 'rgba(17,17,17,0.28)', progressGrad: 'linear-gradient(to right, #111, #b91c1c)' },
     brutal:      { bg: '#f2f0ec',                accent: '#111111',      secondary: '#111111',      logoColor: '#111111',      linkColor: '#111111',     activeLinkColor: '#111111',      borderColor: '#111111', progressGrad: 'linear-gradient(to right, #111, #111)' },
     'mobile-dock': { bg: 'var(--bg2)',           accent: 'var(--cyan)',  secondary: 'var(--green)', logoColor: 'var(--text)',  linkColor: 'var(--muted)', activeLinkColor: 'var(--cyan)',  borderColor: 'var(--border)', progressGrad: 'linear-gradient(to right, var(--cyan), var(--green))' },
@@ -316,7 +317,7 @@ export default function Navbar() {
   const ADMIN_ROLE_COLORS = {
     admin:     'var(--green)',
     moderator: 'var(--cyan)',
-    editor:    '#ff6b35',
+    editor:    'var(--orange)',
     chat:      '#ffd700',
   }
 
@@ -545,14 +546,14 @@ export default function Navbar() {
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700,
                     letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>AIFAZI</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 4,
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4,
                     color: hs.accent, marginTop: 3, opacity: 0.75 }}>NEON OPS</span>
                 </div>
               </>
             ) : headerStyle === 'editorial' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 18, height: 18, background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--bg)' }}>T</span>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--bg)' }}>T</span>
                 </div>
                 <span style={{ fontFamily: 'Georgia, serif', fontSize: 18, fontWeight: 900, color: 'var(--text)', letterSpacing: -0.5 }}>AIFAZI</span>
               </div>
@@ -563,7 +564,7 @@ export default function Navbar() {
               </div>
             ) : headerStyle === 'terminal' ? (
               <div>
-                <div style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1 }}>root@aifazi:~$</div>
+                <div style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, lineHeight: 1 }}>root@aifazi:~$</div>
                 <div style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: 'var(--green)', letterSpacing: 2, lineHeight: 1.4, textShadow: '0 0 8px var(--green)' }}>AIFAZI.NET</div>
               </div>
             ) : headerStyle === 'neon-band' ? (
@@ -571,14 +572,14 @@ export default function Navbar() {
                 <div style={{ padding: '4px 12px', borderRadius: 20, background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: 'var(--green)', letterSpacing: 2 }}>AF</span>
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--muted)' }}>AIFAZI.NET</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>AIFAZI.NET</div>
               </div>
             ) : headerStyle === 'retro' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 34, height: 34, background: '#00e5ff', color: '#0b0b13', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontWeight: 900, fontSize: 14, boxShadow: '3px 3px 0 #ff2d8b' }}>AF</div>
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
                   <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, letterSpacing: 3, color: '#00e5ff', textShadow: '0 0 8px rgba(0,229,255,0.55)' }}>AIFAZI</span>
-                  <span style={{ fontFamily: 'monospace', fontSize: 8, letterSpacing: 4, color: '#ff2d8b', marginTop: 3 }}>ARCADE</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: 11, letterSpacing: 4, color: '#ff2d8b', marginTop: 3 }}>ARCADE</span>
                 </div>
               </div>
             ) : (
@@ -598,7 +599,7 @@ export default function Navbar() {
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700,
                     letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>TANVIR</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 4,
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4,
                     color: hs.accent, marginTop: 3, opacity: 0.75 }}>.DEV</span>
                 </div>
               </>
@@ -616,7 +617,7 @@ export default function Navbar() {
                 border: '1px solid color-mix(in srgb, var(--green) 22%, transparent)',
               }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)', display: 'inline-block' }} />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--green)', fontWeight: 700 }}>ADMIN PORTAL</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--green)', fontWeight: 700 }}>ADMIN PORTAL</span>
               </div>
             </div>
           )}
@@ -700,12 +701,12 @@ export default function Navbar() {
                     {adminAuth.role === 'admin' ? '⚡' : adminAuth.role === 'moderator' ? '🛡️' : adminAuth.role === 'chat' ? '💬' : '✏️'}
                   </div>
                   <div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: ADMIN_ROLE_COLORS[adminAuth.role] || 'var(--green)', letterSpacing: 1, lineHeight: 1 }}>{adminAuth.username}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', letterSpacing: 2, lineHeight: 1.5 }}>{adminAuth.role.toUpperCase()}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: ADMIN_ROLE_COLORS[adminAuth.role] || 'var(--green)', letterSpacing: 1, lineHeight: 1 }}>{adminAuth.username}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, lineHeight: 1.5 }}>{adminAuth.role.toUpperCase()}</div>
                   </div>
                 </Link>
-                <button onClick={handleAdminLogout} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,71,87,0.4)'; e.currentTarget.style.color = '#ff4757' }}
+                <button onClick={handleAdminLogout} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--red) 40%, transparent)'; e.currentTarget.style.color = 'var(--red)' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
                 >OUT</button>
               </div>
@@ -719,13 +720,13 @@ export default function Navbar() {
                   <UserAvatar avatar={forumUser.avatar} name={forumUser.username} size={28}
                     fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${forumUser.username}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`}
                     imgStyle={{ border: '1px solid var(--green)' }} />
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
-                <button onClick={async () => { await forumLogout(); window.location.replace(loginRoute) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
+                <button onClick={async () => { await forumLogout(); window.location.replace(loginRoute) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
               </div>
             ) : (
               <Link to={loginRoute} style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
                 padding: '6px 14px', color: hs.accent,
                 border: `1px solid ${hs.accent}55`, textDecoration: 'none',
                 background: 'transparent', transition: 'all 0.2s',
@@ -788,7 +789,7 @@ export default function Navbar() {
 
         {/* Mobile menu — always in DOM for aria-controls, hidden when closed */}
         {isMobileNav && menuOpen && (
-          <div className="nav-mobile-backdrop" onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 110 }} aria-hidden="true" />
+          <div className="nav-mobile-backdrop" onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 110 }} aria-hidden="true"  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
         )}
         {isMobileNav && (
           <div id="site-mobile-menu" className="nav-mobile-menu" hidden={!menuOpen} aria-hidden={!menuOpen} style={{ background: 'var(--bg)', backgroundImage: 'linear-gradient(180deg, color-mix(in srgb, var(--bg2) 88%, var(--bg) 12%), var(--bg))', backdropFilter: 'none', WebkitBackdropFilter: 'none', borderTop: '1px solid var(--border)', borderBottom: '1px solid color-mix(in srgb, var(--cyan) 22%, transparent)', display: menuOpen ? 'flex' : 'none', flexDirection: 'column', maxHeight: headerStyle === 'pill' ? 'calc(100dvh - 72px - env(safe-area-inset-top, 0px))' : 'calc(100dvh - 68px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', animation: menuOpen ? 'mobileMenuIn var(--motion-normal) var(--ease-spring)' : 'none', paddingBottom: 'env(safe-area-inset-bottom, 8px)', position: 'fixed', top: headerStyle === 'pill' ? 'calc(68px + env(safe-area-inset-top, 0px))' : 68, left: 0, right: 0, width: '100vw', zIndex: 120, boxShadow: '0 24px 90px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
@@ -823,10 +824,10 @@ export default function Navbar() {
                   </div>
                   <div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: ADMIN_ROLE_COLORS[adminAuth.role], letterSpacing: 1 }}>{adminAuth.username}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>{adminAuth.role.toUpperCase()}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>{adminAuth.role.toUpperCase()}</div>
                   </div>
                 </Link>
-                <button onClick={() => { handleAdminLogout(); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>
+                <button onClick={() => { handleAdminLogout(); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>
               </div>
             ) : forumUser ? (
               <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -836,7 +837,7 @@ export default function Navbar() {
                     imgStyle={{ border: '1px solid var(--green)' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
-                <button onClick={async () => { await forumLogout(); window.location.replace(loginRoute); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>
+                <button onClick={async () => { await forumLogout(); window.location.replace(loginRoute); setMenuOpen(false) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>SIGN OUT</button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 10, margin: '8px 24px 12px' }}>
@@ -849,7 +850,7 @@ export default function Navbar() {
                 {['light','cyber-light','midnight-light','crimson-light','ocean-light','amber-light','rose-light','forest-light','glass-light','synthwave-light','terminal-light','neon-noir-light','aurora-light','brutalist','paper','neumorph','macos','pastel','win95'].includes(theme) ? '☾ Dark Mode' : '☀ Light Mode'}
               </span>
               {isThemeLocked
-                ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 1, opacity: 0.5 }}>LOCKED</span>
+                ? <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, opacity: 0.5 }}>LOCKED</span>
                 : <ThemeToggle theme={theme} onToggle={toggleTheme} />
               }
             </div>

@@ -9,44 +9,44 @@ import api from '@/lib/api'
 
 const DEFAULT_SKILLS = [
   {
-    icon: '🌐', title: 'Networking & Infrastructure', tagline: 'Router, switch, server, and wireless deployment across enterprise environments',
+    icon: '🧰', title: 'IT & Infrastructure', tagline: 'Windows Server, Microsoft 365, security, backup & compliance',
     items: [
-      { name: 'Router / Switch / Server Config', pct: 90 },
-      { name: 'Wireless AP & Controller', pct: 85 },
-      { name: 'NAS Storage Management', pct: 82 },
-      { name: 'Network Fault Diagnosis', pct: 88 },
+      { name: 'Windows Server & Active Directory', pct: 90 },
+      { name: 'Microsoft 365 / Entra ID', pct: 88 },
+      { name: 'Network Security (WatchGuard)', pct: 85 },
+      { name: 'Backup & DR (Veeam)', pct: 85 },
     ],
-    proven: 'Multi-site deployments · Wireless controller setups · NAS configuration',
+    proven: 'IT policy suite · Zero Trust · Vendor/AMC management',
   },
   {
-    icon: '🧠', title: 'Systems & Hardware', tagline: 'End-to-end hardware troubleshooting, OS deployment, and server administration',
+    icon: '💻', title: 'Web Development', tagline: 'Full-stack web apps with modern JS/Python stacks',
     items: [
-      { name: 'Hardware Troubleshooting', pct: 92 },
-      { name: 'OS & Application Install', pct: 90 },
-      { name: 'Server Backup & Restore', pct: 85 },
-      { name: 'System Failure Recovery', pct: 86 },
+      { name: 'React / Next.js', pct: 92 },
+      { name: 'Node.js / Express', pct: 88 },
+      { name: 'FastAPI (Python)', pct: 86 },
+      { name: 'Supabase / MongoDB', pct: 85 },
     ],
-    proven: 'Server backup/restore · Desktop/Laptop setup · OS deployments',
+    proven: 'aifazi.net platform · CMS builder · Vercel + Railway deploys',
   },
   {
-    icon: '🔒', title: 'Security & User Management', tagline: 'Account provisioning, access control, and endpoint security enforcement',
+    icon: '📱', title: 'Mobile & Game Scripting', tagline: 'React Native / Expo and FiveM commercial scripts',
     items: [
-      { name: 'Antivirus / Anti-Malware', pct: 88 },
-      { name: 'User Account Management', pct: 90 },
-      { name: 'Password Management', pct: 88 },
-      { name: 'Etisalat Account Admin', pct: 85 },
+      { name: 'React Native / Expo / EAS', pct: 85 },
+      { name: 'Lua / FiveM (QB-Core / QBX / ESX)', pct: 90 },
+      { name: 'ox_lib / Tebex', pct: 85 },
+      { name: 'Play Store & OTA delivery', pct: 80 },
     ],
-    proven: 'Etisalat accounts · Role-based provisioning · Security enforcement',
+    proven: 'Play Store app shipped · Tebex marketplace scripts',
   },
   {
-    icon: '🛠️', title: 'IT Support & Operations', tagline: '24×7 helpdesk, service request management, and end-user support',
+    icon: '☁️', title: 'Cloud & DevOps', tagline: 'Vercel, Cloudflare, Docker, and self-hosted infrastructure',
     items: [
-      { name: '24×7 Helpdesk Support', pct: 90 },
-      { name: 'Service Request Management', pct: 88 },
-      { name: 'End-User Training', pct: 82 },
-      { name: 'Vendor Communication', pct: 80 },
+      { name: 'Vercel / Railway', pct: 88 },
+      { name: 'Cloudflare Workers', pct: 82 },
+      { name: 'Docker / Self-hosted / Home lab', pct: 85 },
+      { name: 'CI & OTA update delivery', pct: 80 },
     ],
-    proven: '24/7 incident response · Store & office setups · Supplier coordination',
+    proven: 'CDN Worker · home lab · production deploys',
   },
 ]
 
@@ -170,19 +170,19 @@ function SkillList({ catIdx, items, isAdmin, onUpdate }) {
       {isAdmin && (
         <button
           onClick={() => openEdit(-1)}
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, padding: '7px 14px', marginTop: 8, background: 'color-mix(in srgb, var(--green) 7%, transparent)', border: '1px dashed color-mix(in srgb, var(--green) 40%, transparent)', color: 'var(--green)', cursor: 'pointer', width: '100%', transition: 'all 0.2s', borderRadius: 2 }}
+          style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '7px 14px', marginTop: 8, background: 'color-mix(in srgb, var(--green) 7%, transparent)', border: '1px dashed color-mix(in srgb, var(--green) 40%, transparent)', color: 'var(--green)', cursor: 'pointer', width: '100%', transition: 'all 0.2s', borderRadius: 2 }}
           onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 14%, transparent)'}
           onMouseLeave={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 7%, transparent)'}
         >+ Add Skill</button>
       )}
       {editIdx !== null && (
         <>
-          <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} />
+          <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px color-mix(in srgb, var(--green) 15%, transparent)', padding: 32, width: '100%', maxWidth: 420, zIndex: 99996 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD SKILL' : '✎ EDIT SKILL'}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD SKILL' : '✎ EDIT SKILL'}</div>
             {SKILL_FIELDS.map(f => (
               <div key={f.key} style={{ marginBottom: 16 }}>
-                <label style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{f.label}</label>
+                <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{f.label}</label>
                 <input type={f.type || 'text'} value={draft[f.key] ?? ''} onChange={e => setDraft(d => ({ ...d, [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value }))} style={modalInput} />
               </div>
             ))}
@@ -293,15 +293,15 @@ function CatEditModal({ cat, onSave, onClose }) {
   const [iconOpen, setIconOpen] = useState(false)
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
       <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px color-mix(in srgb, var(--green) 15%, transparent)', padding: 32, width: '100%', maxWidth: 520, zIndex: 99996, maxHeight: '85vh', overflowY: 'auto' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{cat ? '✎ EDIT CATEGORY' : '+ ADD CATEGORY'}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{cat ? '✎ EDIT CATEGORY' : '+ ADD CATEGORY'}</div>
 
         {/* Icon */}
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>ICON</label>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div onClick={() => setIconOpen(true)} style={{ width: 52, height: 52, fontSize: 28, background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: 4 }}>
+            <div onClick={() => setIconOpen(true)} style={{ width: 52, height: 52, fontSize: 28, background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: 4 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
               <IconDisplay value={draft.icon} size={36} />
             </div>
             <input value={draft.icon || ''} onChange={e => setDraft(d => ({ ...d, icon: e.target.value }))} placeholder="or paste emoji / lordicon URL" style={{ ...modalInput, marginBottom: 0, flex: 1 }} />
@@ -409,7 +409,7 @@ export default function Skills() {
           <div className="sk-add-cell">
             <button onClick={openAddCat} className="sk-add-btn">
               <span style={{ fontSize: 22, marginBottom: 8, display: 'block' }}>+</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2 }}>ADD CATEGORY</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2 }}>ADD CATEGORY</span>
             </button>
           </div>
         )}
@@ -525,7 +525,7 @@ export default function Skills() {
 }
 
 const toolBtn      = { fontFamily:'monospace',fontSize:11,padding:'4px 8px',background:'rgba(0,0,0,0.85)',border:'1px solid var(--border)',color:'var(--muted)',cursor:'pointer',backdropFilter:'blur(4px)',borderRadius:2 }
-const labelStyle   = { fontFamily:'var(--font-mono)',fontSize:10,letterSpacing:2,color:'var(--muted)',display:'block',marginBottom:6 }
+const labelStyle   = { fontFamily:'var(--font-mono)',fontSize: 11,letterSpacing:2,color:'var(--muted)',display:'block',marginBottom:6 }
 const modalInput   = { width:'100%',background:'var(--bg3)',border:'1px solid var(--border)',color:'var(--text)',fontFamily:'var(--font-display)',fontSize:15,padding:'10px 14px',outline:'none',boxSizing:'border-box' }
 const modalSaveBtn   = { flex:1,padding:'12px',background:'color-mix(in srgb, var(--green) 15%, transparent)',border:'1px solid color-mix(in srgb, var(--green) 40%, transparent)',color:'var(--green)',fontFamily:'var(--font-mono)',fontSize:11,letterSpacing:2,cursor:'pointer' }
 const modalCancelBtn = { flex:1,padding:'12px',background:'transparent',border:'1px solid var(--border)',color:'var(--muted)',fontFamily:'var(--font-mono)',fontSize:11,letterSpacing:2,cursor:'pointer' }

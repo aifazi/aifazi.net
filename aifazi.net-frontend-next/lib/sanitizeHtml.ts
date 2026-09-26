@@ -33,6 +33,10 @@ const FORBIDDEN_TAGS = new Set([
   'applet', 'meta', 'base', 'link', 'form', 'input', 'button', 'textarea',
   'select', 'option', 'body', 'html', 'head', 'title', 'noscript',
   'plaintext', 'xmp', 'noembed', 'noframes',
+  // SVG/MathML first-paint scrubber: these containers can smuggle script,
+  // foreignObject, or use/animate hrefs. Client DOMPurify re-sanitizes properly.
+  'svg', 'math', 'foreignobject', 'use', 'animate', 'animatetransform',
+  'set', 'mtext', 'annotation-xml',
 ])
 
 const URL_ATTRS = new Set([
@@ -221,11 +225,13 @@ function scrubServer(dirty: string, config?: Record<string, any>): string {
   let out = String(dirty ?? '')
   // Strip comments to a fixpoint so nested/overlapping openers cannot leave
   // a comment behind, then drop any unterminated trailing comment (no `-->`)
-  // so `<!--` cannot survive sanitization (fail closed).
+  // so `<!--` cannot survive sanitization (fail closed). Orphaned `-->` left
+  // by `<!-- <!-- x --> -->` is inert text but stripped for cleanliness.
   let prevComment = ''
   while (prevComment !== out) {
     prevComment = out
     out = out.replace(/<!--[\s\S]*?-->/g, '')
+    out = out.replace(/-->/g, '')
   }
   out = out.replace(/<!--[\s\S]*$/g, '')
   return tokenize(out)

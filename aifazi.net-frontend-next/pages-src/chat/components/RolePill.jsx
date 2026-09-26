@@ -7,7 +7,7 @@ export function RolePill({ role }) {
   const c = roleColor(r)
   return (
     <span style={{
-      fontSize: 8, fontFamily: T.mono, letterSpacing: 1, padding: '1px 5px', borderRadius: 4,
+      fontSize: 11, fontFamily: T.mono, letterSpacing: 1, padding: '1px 5px', borderRadius: 4,
       background: `${c}1f`, color: c, border: `1px solid ${c}35`, textTransform: 'uppercase', lineHeight: 1.4,
     }}>{r}</span>
   )

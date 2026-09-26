@@ -251,11 +251,11 @@ export default function DMPanel({ me, onClose }) {
       {/* Thread list */}
       <div style={{ width: 230, flexShrink: 0, background: T.sidebar, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: '12px 14px 10px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 3, color: T.muted }}>DIRECT MESSAGES</span>
-          <button onClick={onClose} style={{ padding: '2px 7px', border: `1px solid ${T.border}`, borderRadius: 6, background: 'transparent', color: T.muted, cursor: 'pointer', fontSize: 12 }}>✕</button>
+          <span style={{ fontFamily: T.mono, fontSize: 11, letterSpacing: 3, color: T.muted }}>DIRECT MESSAGES</span>
+          <button onClick={onClose} style={{ padding: '2px 7px', border: `1px solid ${T.border}`, borderRadius: 6, background: 'transparent', color: T.muted, cursor: 'pointer', fontSize: 12 }} aria-label="Close">✕</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
-          {threads.length === 0 && <div style={{ padding: 14, fontFamily: T.mono, fontSize: 10, color: T.muted, textAlign: 'center' }}>No conversations yet.</div>}
+          {threads.length === 0 && <div style={{ padding: 14, fontFamily: T.mono, fontSize: 11, color: T.muted, textAlign: 'center' }}>No conversations yet.</div>}
           {threads.map(t => {
             const act = t.id === threadId
             const on = online(t.peer_last_seen)
@@ -274,11 +274,11 @@ export default function DMPanel({ me, onClose }) {
                     <span style={{ fontSize: 12, fontWeight: 600, color: act ? T.text : T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.peer}</span>
                     {t.peer_role && t.peer_role !== 'member' && <RolePill role={t.peer_role} />}
                   </div>
-                  <div style={{ fontSize: 10, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
+                  <div style={{ fontSize: 11, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
                     {t.last_message || ''}
                   </div>
                 </div>
-                {t.unread > 0 && <span style={{ background: T.accent, color: 'var(--bg)', fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 10, fontFamily: T.mono, flexShrink: 0 }}>{t.unread}</span>}
+                {t.unread > 0 && <span style={{ background: T.accent, color: 'var(--bg)', fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 10, fontFamily: T.mono, flexShrink: 0 }}>{t.unread}</span>}
               </button>
             )
           })}
@@ -303,7 +303,7 @@ export default function DMPanel({ me, onClose }) {
                   {thread?.peer_role && thread.peer_role !== 'member' && <RolePill role={thread.peer_role} />}
                   {key && <span title="Messages encrypted at rest" style={{ color: T.accent, fontSize: 11 }}>🔒</span>}
                 </div>
-                <div style={{ fontSize: 10, color: online(thread?.peer_last_seen) ? 'var(--green)' : T.muted }}>
+                <div style={{ fontSize: 11, color: online(thread?.peer_last_seen) ? 'var(--green)' : T.muted }}>
                   {online(thread?.peer_last_seen) ? 'Online' : 'Offline'}
                 </div>
               </div>
@@ -337,7 +337,7 @@ export default function DMPanel({ me, onClose }) {
                           padding: '7px 11px', fontSize: 13, color: T.text, wordBreak: 'break-word', minWidth: 60,
                         }}>
                           {replyTo && m.reply_to && (
-                            <div style={{ fontSize: 10, color: T.muted, fontStyle: 'italic', marginBottom: 3, fontFamily: T.mono }}>
+                            <div style={{ fontSize: 11, color: T.muted, fontStyle: 'italic', marginBottom: 3, fontFamily: T.mono }}>
                               ↪ {m.reply_to.sender}: {m.reply_to.content}
                             </div>
                           )}
@@ -351,7 +351,7 @@ export default function DMPanel({ me, onClose }) {
                               <div style={{ height: 4, width: 120, borderRadius: 2, background: 'var(--border2)', overflow: 'hidden' }}>
                                 <div style={{ width: 0, height: '100%', background: T.link }} />
                               </div>
-                              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>{m.duration ? `${Math.round(m.duration)}s` : '♪'}</span>
+                              <span style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>{m.duration ? `${Math.round(m.duration)}s` : '♪'}</span>
                               <audio id={`voice-${m.id}`} src={m.content} preload="none" />
                             </div>
                           )}
@@ -380,17 +380,17 @@ export default function DMPanel({ me, onClose }) {
                           )}
                           {m.type === 'text' && <Markdown text={m.content} />}
                           {m.type === 'text' && <MediaPreviews text={m.content} onMediaClick={setMediaViewer} right={isMine} />}
-                          <div style={{ marginTop: 2, fontSize: 9, color: T.muted, fontFamily: T.mono, textAlign: 'right' }}>
+                          <div style={{ marginTop: 2, fontSize: 11, color: T.muted, fontFamily: T.mono, textAlign: 'right' }}>
                             {fmt(m.created_at)}{m.edited ? ' · edited' : ''}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10, marginTop: 2, fontFamily: T.mono, fontSize: 9, color: T.muted, opacity: 0 }}>
-                          <button onClick={() => { setReplyTo(m); setInput(i => i + '@' + m.sender + ' ') }} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 9 }}>Reply</button>
-                          <button onClick={() => react(m.id, '👍')} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 9 }}>React</button>
-                          {isMine && <button onClick={() => setEditing(m)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 9 }}>Edit</button>}
-                          {isMine && <button onClick={() => delMsg(m.id)} style={{ background: 'none', border: 'none', color: T.danger, cursor: 'pointer', fontSize: 9 }}>Delete</button>}
+                        <div style={{ display: 'flex', gap: 10, marginTop: 2, fontFamily: T.mono, fontSize: 11, color: T.muted, opacity: 0 }}>
+                          <button onClick={() => { setReplyTo(m); setInput(i => i + '@' + m.sender + ' ') }} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 11 }}>Reply</button>
+                          <button onClick={() => react(m.id, '👍')} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 11 }}>React</button>
+                          {isMine && <button onClick={() => setEditing(m)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: 11 }}>Edit</button>}
+                          {isMine && <button onClick={() => delMsg(m.id)} style={{ background: 'none', border: 'none', color: T.danger, cursor: 'pointer', fontSize: 11 }}>Delete</button>}
                         </div>
-                        {seen && <div style={{ fontSize: 9, color: T.muted, fontFamily: T.mono }}>✓ seen</div>}
+                        {seen && <div style={{ fontSize: 11, color: T.muted, fontFamily: T.mono }}>✓ seen</div>}
                       </div>
                     </div>
                   </React.Fragment>
@@ -398,10 +398,10 @@ export default function DMPanel({ me, onClose }) {
               })}
             </div>
 
-            {typLabel && <div style={{ padding: '2px 18px 4px', fontFamily: T.mono, fontSize: 10, color: T.muted, flexShrink: 0, fontStyle: 'italic' }}>{typLabel}</div>}
+            {typLabel && <div style={{ padding: '2px 18px 4px', fontFamily: T.mono, fontSize: 11, color: T.muted, flexShrink: 0, fontStyle: 'italic' }}>{typLabel}</div>}
             {replyTo && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', borderTop: `1px solid ${T.border}`, flexShrink: 0 }}>
-                <div style={{ flex: 1, fontFamily: T.mono, fontSize: 10, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ flex: 1, fontFamily: T.mono, fontSize: 11, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   <span style={{ color: T.link }}>@{replyTo.sender}</span> {replyTo.content}
                 </div>
                 <button onClick={() => setReplyTo(null)} style={{ padding: '2px 7px', border: `1px solid ${T.border}`, borderRadius: 6, background: 'transparent', color: T.muted, cursor: 'pointer', fontSize: 12 }}>✕</button>

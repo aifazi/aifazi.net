@@ -1,4 +1,4 @@
-﻿"""routers/fivem.py  v5.1 â€” Bidirectional txAdmin sync, full history, real-time.
+"""routers/fivem.py  v5.1 â€” Bidirectional txAdmin sync, full history, real-time.
 
 Fixes in v5.1:
   â€¢ pending-sync returns a LIST (not dict) â€” Lua expects an array
@@ -33,6 +33,31 @@ import logging
 import os
 import secrets
 
+from utils.fivem_ids import (
+    _player_identifiers, _submission_identifiers, _identifier_update_fields,
+    _normalize_identifier_list, _first_identifier, _primary_ban_identifier,
+    _find_whitelist_by_identifiers, _answer_identifiers, _player_ids_from_fields,
+)
+
+
+from utils.fivem_bans import (
+    _parse_datetime, _duration_seconds, _ban_expires_at, _ban_expire_epoch,
+    _ban_duration_txadmin, _resolve_net_id,
+)
+
+from routers.fivem_models import (
+    _check_token,
+    WhitelistApply, WhitelistReview, WhitelistManualAdd, WhitelistPriorityUpdate,
+    BanCreate, BanUpdate, BanSyncAck, StatusUpdate, DevOverride, MarkSynced,
+    ApplicationActionSyncBody, ServerSyncRefresh, TxAdminEvent,
+    PlayerJoinBody, PlayerLeaveBody, PlayerHeartbeatBody, WhitelistIdentifiersBody,
+    BulkWhitelistApproveBody, TxAdminActionBody,
+    ConnectTokenResponse, VerifyTokenRequest, ConnectSessionRequest,
+    _compute_status, _uptime_str, _last_seen_str,
+    ONLINE_THRESHOLD_S, DEGRADED_THRESHOLD_S,
+)
+
+
 # H19 â€” escape helper. The f-string email templates below previously inlined
 # raw `reason`, `note`, `name`, and `char` straight into HTML email bodies. A
 # staff member (or a txAdmin event payload) containing <script>...</script> or
@@ -52,6 +77,14 @@ from utils.email_queue import queue_email
 
 log = logging.getLogger("fivem")
 router = APIRouter()
+# Ban + whitelist routes register first via dedicated modules (thin wrappers
+# over the handlers below — same pattern as auth_staff.py).
+from routers.fivem_bans_api import router as _bans_router
+from routers.fivem_whitelist_api import router as _whitelist_router
+from routers.fivem_status_api import router as _status_router
+router.include_router(_bans_router)
+router.include_router(_whitelist_router)
+router.include_router(_status_router)
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 FRONTEND_HOST = FRONTEND_URL.replace("https://", "").replace("http://", "")
@@ -94,74 +127,8 @@ def _effective_whitelist_status(app: dict | None) -> dict | None:
     return app
 
 
-def _player_identifiers(player: dict) -> dict[str, Any]:
-    raw_ids = player.get("identifiers")
-    identifiers = list(raw_ids) if isinstance(raw_ids, list) else []
-    out: dict[str, Any] = {"all": []}
-
-    for raw in identifiers:
-        ident = str(raw or "").strip()
-        if not ident:
-            continue
-        out["all"].append(ident)
-        low = ident.lower()
-        if low.startswith("discord:"):
-            out["discord_id"] = ident.split(":", 1)[1]
-        elif low.startswith("steam:"):
-            out["steam_hex"] = ident
-        elif low.startswith("fivem:"):
-            out["fivem_id"] = ident
-        elif low.startswith("license2:"):
-            out["license2"] = ident
-            out.setdefault("fivem_license", ident)
-        elif low.startswith("license:"):
-            out["license"] = ident
-            out.setdefault("fivem_license", ident)
-
-    for key, aliases in {
-        "license": ("license",),
-        "license2": ("license2",),
-        "fivem_license": ("fivem_license", "license"),
-        "discord_id": ("discord", "discord_id"),
-        "steam_hex": ("steam", "steam_hex"),
-        "fivem_id": ("fivem", "fivem_id"),
-    }.items():
-        for alias in aliases:
-            val = str(player.get(alias) or "").strip()
-            if val:
-                if key == "discord_id" and val.startswith("discord:"):
-                    val = val.split(":", 1)[1]
-                out[key] = val
-                prefixed = val
-                if key == "discord_id" and not prefixed.startswith("discord:"):
-                    prefixed = f"discord:{prefixed}"
-                elif key == "fivem_id" and not prefixed.startswith("fivem:"):
-                    prefixed = f"fivem:{prefixed}"
-                if prefixed not in out["all"]:
-                    out["all"].append(prefixed)
-                break
-
-    return out
 
 
-def _submission_identifiers(answers: dict) -> set[str]:
-    ids: set[str] = set()
-    for key in ("license", "fivem_license", "license2", "steam_hex", "steam", "fivem_id", "discord_id"):
-        val = str((answers or {}).get(key) or "").strip()
-        if not val:
-            continue
-        low = val.lower()
-        if key == "discord_id":
-            ids.add(val[8:] if low.startswith("discord:") else val)
-            ids.add(val if low.startswith("discord:") else f"discord:{val}")
-        elif key == "fivem_id":
-            ids.add(val)
-            ids.add(val if low.startswith("fivem:") else f"fivem:{val}")
-        elif key in ("steam_hex", "steam") and not low.startswith("steam:") and low.startswith("110000"):
-            ids.add(f"steam:{val}")
-        else:
-            ids.add(val)
-    return {i.lower() for i in ids if i}
 
 
 def _stamp_application_activity(player_ids: dict[str, Any], player_name: str, now_iso: str) -> None:
@@ -234,209 +201,12 @@ def _stamp_whitelist_activity(players: list[Any] | None, now_iso: str) -> None:
             log.warning("Could not stamp whitelist activity for player %s: %s", player_name or license_id or discord_id, exc)
 
 # â”€â”€â”€ Email templates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-def _email_approved(name: str, char: str, note: str | None) -> tuple[str, str]:
-    subject = "ðŸŽ® Your AIFAZI RP Whitelist Application â€” APPROVED"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:linear-gradient(135deg,#00FF88,#00D4FF);padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#00FF88;font-size:24px;margin:0 0 8px">âœ… Whitelist Approved!</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Your application to AIFAZI RP has been reviewed.</p>
-    <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:24px">
-      <div style="font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Character</div>
-      <div style="font-size:18px;font-weight:700;color:#00FF88">{_e(char)}</div>
-      <div style="font-size:13px;color:#8b949e;margin-top:4px">Applied by {_e(name)}</div>
-    </div>
-    {f'<div style="background:#161b22;border-left:3px solid #00D4FF;padding:12px 16px;border-radius:4px;margin-bottom:24px"><div style="font-size:11px;color:#8b949e;margin-bottom:4px">NOTE FROM ADMIN</div><div style="color:#e6edf3">{_e(note)}</div></div>' if note else ''}
-    <p style="color:#e6edf3;line-height:1.7">You can now join the server. Connect to <strong style="color:#00FF88">aifazi.net</strong> via FiveM and start your roleplay journey!</p>
-    <div style="background:#0d1117;border:1px solid #00FF8830;border-radius:8px;padding:16px;margin-top:24px;text-align:center">
-      <div style="font-size:11px;color:#8b949e;margin-bottom:8px;font-family:monospace;letter-spacing:2px">CONNECT NOW</div>
-      <div style="font-size:18px;font-weight:700;color:#00FF88;font-family:monospace">connect fivem://connect/127.0.0.1:30120</div>
-    </div>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">
-    AIFAZI RP Â· aifazi.net Â· This email was sent because you applied for whitelist.
-  </div>
-</div>"""
-    return subject, html
+from utils.fivem_emails import (
+    _email_approved, _email_denied, _email_reset, _email_applied,
+    _email_priority, _email_banned, _email_unbanned, _send_whitelist_email,
+)
 
-def _email_denied(name: str, char: str, note: str | None) -> tuple[str, str]:
-    subject = "Your AIFAZI RP Whitelist Application â€” Decision"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:linear-gradient(135deg,#ff4757,#ff6b81);padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#ff4757;font-size:24px;margin:0 0 8px">âŒ Application Not Approved</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Thank you for applying to AIFAZI RP, {_e(name)}.</p>
-    <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:24px">
-      <div style="font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Character</div>
-      <div style="font-size:18px;font-weight:700;color:#ff4757">{_e(char)}</div>
-    </div>
-    {f'<div style="background:#161b22;border-left:3px solid #ff4757;padding:12px 16px;border-radius:4px;margin-bottom:24px"><div style="font-size:11px;color:#8b949e;margin-bottom:4px">REASON</div><div style="color:#e6edf3">{_e(note)}</div></div>' if note else '<div style="background:#161b22;border-left:3px solid #ff4757;padding:12px 16px;border-radius:4px;margin-bottom:24px"><div style="color:#e6edf3">No specific reason provided.</div></div>'}
-    <p style="color:#e6edf3;line-height:1.7">You are welcome to reapply after improving your character backstory. Visit <a href="{FRONTEND_URL}/whitelist" style="color:#00D4FF">{FRONTEND_HOST}/whitelist</a> to submit a new application.</p>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">
-    AIFAZI RP Â· aifazi.net
-  </div>
-</div>"""
-    return subject, html
-
-def _email_reset(name: str, char: str) -> tuple[str, str]:
-    subject = "Your AIFAZI RP Application â€” Reset to Pending"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:#facc15;padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#facc15;font-size:24px;margin:0 0 8px">â³ Application Reset</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Hi {_e(name)}, your application for <strong style="color:#facc15">{_e(char)}</strong> has been reset to pending for re-review. No action is needed â€” our team will review it shortly.</p>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">AIFAZI RP Â· aifazi.net</div>
-</div>"""
-    return subject, html
-
-def _email_applied(name: str, char: str) -> tuple[str, str]:
-    subject = "Your AIFAZI RP Whitelist Application Was Received"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:#00D4FF;padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#00D4FF;font-size:24px;margin:0 0 8px">Application Received</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Hi {_e(name)}, your whitelist application is now waiting for staff review.</p>
-    <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px">
-      <div style="font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Character</div>
-      <div style="font-size:18px;font-weight:700;color:#00D4FF">{_e(char)}</div>
-    </div>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">AIFAZI RP Â· aifazi.net</div>
-</div>"""
-    return subject, html
-
-def _email_priority(name: str, char: str, tier: str, level: int, expires_at: str | None) -> tuple[str, str]:
-    expiry = expires_at or "Permanent"
-    subject = "Your AIFAZI RP Queue Priority Was Updated"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:#facc15;padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#facc15;font-size:24px;margin:0 0 8px">Queue Priority Updated</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Hi {_e(name)}, your queue priority for <strong style="color:#e6edf3">{_e(char)}</strong> has been updated.</p>
-    <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px">
-      <div style="font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Priority</div>
-      <div style="font-size:18px;font-weight:700;color:#facc15">{_e(tier)} Â· {_e(level)}</div>
-      <div style="font-size:13px;color:#8b949e;margin-top:6px">Expires: {_e(expiry)}</div>
-    </div>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">AIFAZI RP Â· aifazi.net</div>
-</div>"""
-    return subject, html
-
-def _email_banned(name: str, char: str, reason: str | None, expires_at: str | None) -> tuple[str, str]:
-    expiry = expires_at or "Permanent"
-    subject = "AIFAZI RP Server Ban Notice"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:#ff4757;padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#ff4757;font-size:24px;margin:0 0 8px">Server Ban Applied</h1>
-    <p style="color:#8b949e;margin:0 0 24px">Hi {_e(name)}, a ban has been applied to your AIFAZI RP access.</p>
-    <div style="background:#161b22;border-left:3px solid #ff4757;padding:12px 16px;border-radius:4px;margin-bottom:18px">
-      <div style="font-size:11px;color:#8b949e;margin-bottom:4px">CHARACTER</div>
-      <div style="color:#e6edf3">{_e(char)}</div>
-    </div>
-    <div style="background:#161b22;border-left:3px solid #ff4757;padding:12px 16px;border-radius:4px">
-      <div style="font-size:11px;color:#8b949e;margin-bottom:4px">REASON</div>
-      <div style="color:#e6edf3">{_e(reason or 'No reason provided.')}</div>
-      <div style="font-size:12px;color:#8b949e;margin-top:10px">Expires: {_e(expiry)}</div>
-    </div>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">AIFAZI RP Â· aifazi.net</div>
-</div>"""
-    return subject, html
-
-def _email_unbanned(name: str, char: str) -> tuple[str, str]:
-    subject = "AIFAZI RP Server Ban Lifted"
-    html = f"""
-<div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0d1117;color:#e6edf3;border-radius:12px;overflow:hidden">
-  <div style="background:#00FF88;padding:3px"></div>
-  <div style="padding:32px">
-    <h1 style="color:#00FF88;font-size:24px;margin:0 0 8px">Ban Lifted</h1>
-    <p style="color:#8b949e;margin:0">Hi {_e(name)}, the server ban for <strong style="color:#e6edf3">{_e(char)}</strong> has been lifted and is queued for server sync.</p>
-  </div>
-  <div style="background:#161b22;padding:16px;text-align:center;font-size:11px;color:#8b949e">AIFAZI RP Â· aifazi.net</div>
-</div>"""
-    return subject, html
-
-async def _send_whitelist_email(app: dict, status: str, note: str | None = None, extra: dict | None = None) -> None:
-    """
-    Send email to the player.
-    Priority: email stored on the application row > discord_users > forum_users.
-    """
-    extra = extra or {}
-    discord_id = app.get("discord_id", "")
-
-    # 1. Use email stored directly on the application (added in v5.2)
-    to_email = (app.get("email") or "").strip()
-
-    # 2. Fall back to discord_users table
-    if not to_email or "@" not in to_email:
-        try:
-            eu = supabase.table("discord_users").select("email").eq("discord_id", discord_id).execute()
-            to_email = ((eu.data or [{}])[0].get("email") or "").strip()
-        except Exception:
-            to_email = ""
-
-    # 3. Fall back to forum_users table
-    if not to_email or "@" not in to_email:
-        try:
-            fu = supabase.table("users").select("email").eq("discord_id", discord_id).execute()
-            to_email = ((fu.data or [{}])[0].get("email") or "").strip()
-        except Exception:
-            to_email = ""
-
-    if not to_email or "@" not in to_email:
-        log.info("No email found for discord_id=%s â€” skipping notification", discord_id)
-        return
-
-    name = app.get("discord_name", "Player")
-    char = app.get("character_name", "your character")
-    purpose = f"fivem_{status}"
-    if status == "applied":
-        fallback_subject, fallback_html = _email_applied(name, char)
-    elif status == "approved":
-        fallback_subject, fallback_html = _email_approved(name, char, note)
-    elif status == "denied":
-        fallback_subject, fallback_html = _email_denied(name, char, note)
-    elif status == "priority":
-        fallback_subject, fallback_html = _email_priority(
-            name,
-            char,
-            extra.get("tier") or "None",
-            int(extra.get("level") or 0),
-            extra.get("expires_at"),
-        )
-    elif status == "banned":
-        fallback_subject, fallback_html = _email_banned(name, char, note, extra.get("expires_at"))
-    elif status == "unbanned":
-        fallback_subject, fallback_html = _email_unbanned(name, char)
-    else:
-        purpose = "fivem_reset"
-        fallback_subject, fallback_html = _email_reset(name, char)
-
-    subject, html = render_template(purpose, {
-        "site_name": "aifazi.net",
-        "name": name,
-        "character_name": char,
-        "note": note or "",
-        "tier": extra.get("tier") or "None",
-        "level": int(extra.get("level") or 0),
-        "expires_at": extra.get("expires_at") or "",
-        "status_url": f"{FRONTEND_URL}/profile?tab=fivem",
-    })
-
-    await queue_email(to_email, subject or fallback_subject, html or fallback_html, "", purpose)
-    log.info("Whitelist email queued to %s status=%s", to_email, status)
-
-# â”€â”€â”€ Discord Bot Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Discord Bot Config (role sync)
 _DISCORD_TOKEN    = os.getenv("DISCORD_BOT_TOKEN", "")
 _DISCORD_GUILD    = os.getenv("DISCORD_GUILD_ID", "")
 _DISCORD_WL_ROLE  = os.getenv("DISCORD_WHITELIST_ROLE_ID", "")
@@ -480,121 +250,28 @@ async def _discord_remove_whitelist_role(discord_id: str) -> tuple[bool, str]:
     return False, f"Discord API {r.status_code}: {r.text[:200]}"
 
 # â”€â”€â”€ Thresholds â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-ONLINE_THRESHOLD_S   = int(os.getenv("FIVEM_STATUS_ONLINE_THRESHOLD", "900"))
-DEGRADED_THRESHOLD_S = int(os.getenv("FIVEM_STATUS_DEGRADED_THRESHOLD", "1800"))
+# status thresholds + helpers imported from routers.fivem_models
 
-def _compute_status(updated_at_str):
-    if not updated_at_str:
-        return "offline", float("inf")
-    try:
-        updated = datetime.fromisoformat(updated_at_str.replace("Z", "+00:00"))
-        age = (datetime.now(timezone.utc) - updated).total_seconds()
-    except Exception:
-        return "offline", float("inf")
-    if age < ONLINE_THRESHOLD_S:    return "online",   age
-    if age < DEGRADED_THRESHOLD_S:  return "degraded", age
-    return "offline", age
 
-def _check_token(request: Request):
-    secret = os.getenv("FIVEM_SERVER_SECRET", "")
-    token  = request.headers.get("X-FiveM-Token", "")
-    if not secret:
-        raise HTTPException(503, "FiveM server token is not configured")
-    if not token or not hmac.compare_digest(token, secret):
-        raise HTTPException(403, "Invalid server token")
+# _check_token imported from routers.fivem_models
 
-def _uptime_str(s):
-    if not s or s <= 0: return "0m"
-    d, r = divmod(int(s), 86400); h, r = divmod(r, 3600); m, _ = divmod(r, 60)
-    if d: return f"{d}d {h}h"
-    if h: return f"{h}h {m}m"
-    return f"{m}m"
 
-def _last_seen_str(age):
-    if age == float("inf"): return "Never"
-    if age < 60:    return "Just now"
-    if age < 3600:  return f"{int(age//60)} min ago"
-    if age < 86400: return f"{int(age//3600)}h ago"
-    return f"{int(age//86400)}d ago"
 
 # _now() and _push_realtime() imported from utils.fivem_shared
 
 # â”€â”€â”€ Pydantic models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class WhitelistApply(BaseModel):
-    discord_id: str | None = None; discord_name: str | None = None; steam_hex: str | None = None
-    fivem_id: str | None = None; character_name: str; character_backstory: str
-    age: int; rp_experience: str; why_join: str; rules_accepted: bool
-    email: str | None = None   # collected on the apply form so we can email results
-    extra_answers: dict | None = None
 
-class WhitelistReview(BaseModel):
-    status: str; reviewer_note: str | None = None
-    priority_tier: str | None = None
-    priority_level: int | None = None
-    priority_expires_at: str | None = None
 
-class WhitelistManualAdd(BaseModel):
-    discord_id: str; discord_name: str; character_name: str
-    steam_hex: str | None = None; fivem_license: str | None = None; fivem_id: str | None = None
-    reviewer_note: str | None = None
-    priority_tier: str | None = None
-    priority_level: int | None = None
-    priority_expires_at: str | None = None
 
-class WhitelistPriorityUpdate(BaseModel):
-    priority_tier: str | None = None
-    priority_level: int | None = None
-    priority_expires_at: str | None = None
 
-class BanCreate(BaseModel):
-    # identifiers can be a comma-separated string OR a list (from frontend player picker)
-    identifier:  str | None = None          # single steam hex / fivem id
-    identifiers: list[str] | None = None    # multiple ids (all player identifiers)
-    net_id:      int | None = None          # server netId (if player is online)
-    player_name: str
-    reason:      str
-    duration:    str = "permanent"
-    expires_at:  str | None = None          # ISO datetime (kept for DB compat)
 
-class BanUpdate(BaseModel):
-    reason: str | None = None; expires_at: str | None = None; active: bool | None = None
 
-class BanSyncAck(BaseModel):
-    ban_id: str
-    ok: bool = True
-    message: str | None = None
 
-class StatusUpdate(BaseModel):
-    players_online: int
-    max_players: int
-    server_name: str | None = None
-    server_version: str | None = None
-    uptime_seconds: int = 0
-    resource_count: int = 0
-    force_offline: bool = False
-    # FIX: accept 'players' list sent by Lua heartbeat (was silently ignored)
-    players: list[Any] | None = None
 
-class DevOverride(BaseModel):
-    override: Literal["force_online", "maintenance"] | None = None
 
-class MarkSynced(BaseModel):
-    license: str | None = None   # kept for Lua compat
-    app_id:  str | None = None
-    success: bool = True
-    error:   str | None = None
 
-class ApplicationActionSyncBody(BaseModel):
-    submission_id: str
-    status: Literal["synced", "failed", "skipped"] = "synced"
-    message: str | None = None
 
-class ServerSyncRefresh(BaseModel):
-    app_id: str | None = None
-    reason: str | None = None
 
-class TxAdminEvent(BaseModel):
-    event: str; data: dict = {}; ts: int | None = None
 
 # _active_priority imported from utils.fivem_shared
 
@@ -609,142 +286,14 @@ def _priority_update_fields(priority_tier: str | None, priority_level: int | Non
         "priority_expires_at": priority_expires_at or None if level > 0 else None,
     }
 
-def _identifier_update_fields(identifier: str | None, existing: dict | None = None) -> dict:
-    ident = (identifier or "").strip()
-    if not ident:
-        return {}
 
-    existing = existing or {}
-    updates: dict = {}
-    if ident.startswith("license:"):
-        if not existing.get("fivem_license"):
-            updates["fivem_license"] = ident
-    elif ident.startswith("steam:"):
-        if not existing.get("steam_hex"):
-            updates["steam_hex"] = ident
-    elif ident.startswith("fivem:"):
-        if not existing.get("fivem_id"):
-            updates["fivem_id"] = ident
-    return updates
 
-def _normalize_identifier_list(values: Any) -> list[str]:
-    if not values:
-        return []
-    if isinstance(values, str):
-        value = values.strip()
-        return [value] if value else []
-    if not isinstance(values, list):
-        return []
-    out: list[str] = []
-    for value in values:
-        if value is None:
-            continue
-        text = str(value).strip()
-        if text and text not in out:
-            out.append(text)
-    return out
 
-def _first_identifier(ids: list[str], prefixes: tuple[str, ...]) -> str | None:
-    for ident in ids:
-        low = ident.lower()
-        if any(low.startswith(prefix) for prefix in prefixes):
-            return ident
-    return None
 
-def _primary_ban_identifier(ids: list[str]) -> str | None:
-    return (
-        _first_identifier(ids, ("license:", "license2:"))
-        or _first_identifier(ids, ("steam:",))
-        or _first_identifier(ids, ("discord:",))
-        or _first_identifier(ids, ("fivem:",))
-        or (ids[0] if ids else None)
-    )
 
-def _find_whitelist_by_identifiers(ids: list[str]) -> dict | None:
-    filters: list[str] = []
-    for ident in ids:
-        value = (ident or "").strip()
-        if not value:
-            continue
-        low = value.lower()
-        if low.startswith(("license:", "license2:")):
-            filters.append(f"fivem_license.eq.{value}")
-        elif low.startswith("steam:"):
-            filters.append(f"steam_hex.eq.{value}")
-        elif low.startswith("fivem:"):
-            filters.append(f"fivem_id.eq.{value}")
-            filters.append(f"fivem_id.eq.{value.split(':', 1)[1]}")
-        elif low.startswith("discord:"):
-            filters.append(f"discord_id.eq.{value.split(':', 1)[1]}")
-        else:
-            filters.append(f"discord_id.eq.{value}")
-            filters.append(f"fivem_id.eq.{value}")
 
-    if not filters:
-        return None
 
-    try:
-        res = (
-            supabase.table("fivem_whitelist")
-            .select("*")
-            .eq("status", "approved")
-            .or_(",".join(filters))
-            .order("approved_at", desc=True)
-            .limit(1)
-            .execute()
-        )
-        return (res.data or [None])[0]
-    except Exception as exc:
-        log.warning("Could not match whitelist app for ban identifiers: %s", exc)
-        return None
 
-def _parse_datetime(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    text = value.strip()
-    if not text:
-        return None
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    parsed = datetime.fromisoformat(text)
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
-
-def _duration_seconds(duration: str | None) -> int | None:
-    text = (duration or "permanent").strip().lower()
-    if text in {"", "permanent", "perm", "never", "custom"}:
-        return None
-    mapping = {
-        "2 hours": 2 * 60 * 60,
-        "12 hours": 12 * 60 * 60,
-        "1 day": 24 * 60 * 60,
-        "2 days": 2 * 24 * 60 * 60,
-        "1 week": 7 * 24 * 60 * 60,
-        "2 weeks": 14 * 24 * 60 * 60,
-        "1 month": 30 * 24 * 60 * 60,
-    }
-    return mapping.get(text)
-
-def _ban_expires_at(duration: str | None, expires_at: str | None) -> str | None:
-    parsed = _parse_datetime(expires_at)
-    if parsed:
-        return parsed.isoformat()
-    seconds = _duration_seconds(duration)
-    if seconds is None:
-        return None
-    return (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat()
-
-def _ban_expire_epoch(expires_at: str | None) -> int:
-    try:
-        parsed = _parse_datetime(expires_at)
-    except ValueError:
-        parsed = None
-    if not parsed:
-        return 2147483647
-    return max(int(parsed.timestamp()), int(datetime.now(timezone.utc).timestamp()) + 60)
-
-# â”€â”€â”€ Internal: push one approval to txAdmin + update DB row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async def _sync_to_txadmin(app: dict, approved_by: str, source: str) -> dict:
     """
     Push a whitelist approval to txAdmin (direct HTTPS via txadmin_service).
@@ -807,7 +356,6 @@ async def _sync_to_txadmin(app: dict, approved_by: str, source: str) -> dict:
     return upd
 
 # â”€â”€â”€ Whitelist â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.get("/whitelist/my-application")
 async def my_whitelist_application(user: dict = Depends(get_current_user)):
     """
     Return the logged-in forum user's latest whitelist application.
@@ -856,7 +404,6 @@ async def my_whitelist_application(user: dict = Depends(get_current_user)):
 
     return _effective_whitelist_status(app_res.data[0])
 
-@router.post("/whitelist/apply")
 async def apply_whitelist(body: WhitelistApply, user: dict = Depends(get_current_user)):
     if not body.rules_accepted:
         raise HTTPException(400, "You must accept the server rules.")
@@ -904,124 +451,6 @@ async def apply_whitelist(body: WhitelistApply, user: dict = Depends(get_current
     notify_admin('🎮', 'New Whitelist Application', f"{app.get('discord_name') or body.discord_name or user.get('username', 'Someone')} applied to whitelist")
     return {"message": "Application submitted!", "id": app.get("id")}
 
-@router.get("/whitelist/check/{identifier}")
-async def check_whitelist(request: Request, identifier: str):
-    _check_token(request)
-    q = supabase.table("fivem_whitelist").select("status,steam_hex,fivem_id,fivem_license,character_name,priority_tier,priority_level,priority_expires_at").eq("status", "approved")
-    if identifier.startswith("license:"):             q = q.eq("fivem_license", identifier)
-    elif identifier.startswith("steam:"):             q = q.eq("steam_hex", identifier)
-    elif identifier.startswith("fivem:"):             q = q.eq("fivem_id", identifier)
-    else:                                              q = q.eq("discord_id", identifier)
-    res = q.execute()
-    if not res.data: return {"whitelisted": False}
-    app = res.data[0]
-    # Do NOT echo the matched row's other identifiers back to an unauthenticated
-    # caller — that lets anyone enumerate steam_hex/fivem_license/fivem_id by
-    # probing identifiers. The caller already knows the identifier it queried.
-    return {
-        "whitelisted": True,
-        "status": app.get("status"),
-        "character_name": app.get("character_name"),
-        "priority": _active_priority(app),
-    }
-
-@router.get("/whitelist/search")
-async def search_whitelist(
-    q: str = "",
-    status: str | None = None,
-    limit: int = 50,
-    _: dict = Depends(require_staff),
-):
-    """
-    Search whitelist applications by name, discord ID, fivem ID, steam hex, or character name.
-    email column is optional â€” gracefully excluded if the column doesn't exist yet.
-    """
-    query = supabase.table("fivem_whitelist").select("*", count="exact")
-    if status:
-        query = query.eq("status", status)
-
-    if q and q.strip():
-        t = safe_search_term(q.strip())
-        if not t:
-            return {"applications": [], "total": 0, "query": q}
-        # Try with email first; fall back without it if column missing
-        try:
-            res = query.or_(
-                f"discord_name.ilike.%{t}%,"
-                f"discord_id.ilike.%{t}%,"
-                f"character_name.ilike.%{t}%,"
-                f"fivem_id.ilike.%{t}%,"
-                f"fivem_license.ilike.%{t}%,"
-                f"steam_hex.ilike.%{t}%,"
-                f"email.ilike.%{t}%"
-            ).order("applied_at", desc=True).limit(limit).execute()
-            return {"applications": res.data or [], "total": res.count or 0, "query": q}
-        except Exception as e:
-            if "email" in str(e).lower():
-                # email column not migrated yet â€” search without it
-                log.warning("email column missing in fivem_whitelist â€” run migration. Searching without it.")
-                query2 = supabase.table("fivem_whitelist").select("*", count="exact")
-                if status:
-                    query2 = query2.eq("status", status)
-                res2 = query2.or_(
-                    f"discord_name.ilike.%{t}%,"
-                    f"discord_id.ilike.%{t}%,"
-                    f"character_name.ilike.%{t}%,"
-                    f"fivem_id.ilike.%{t}%,"
-                    f"fivem_license.ilike.%{t}%,"
-                    f"steam_hex.ilike.%{t}%"
-                ).order("applied_at", desc=True).limit(limit).execute()
-                return {"applications": res2.data or [], "total": res2.count or 0, "query": q}
-            raise
-
-    res = query.order("applied_at", desc=True).limit(limit).execute()
-    return {"applications": res.data or [], "total": res.count or 0, "query": q}
-
-
-@router.get("/whitelist")
-async def list_whitelist(
-    status: str | None = None, limit: int = 50, offset: int = 0,
-    since_seconds: int | None = None, _: dict = Depends(require_staff)
-):
-    q = supabase.table("fivem_whitelist").select("*", count="exact")
-    if status: q = q.eq("status", status)
-    if since_seconds:
-        since_iso = (datetime.now(timezone.utc) - timedelta(seconds=since_seconds)).isoformat()
-        q = q.gte("reviewed_at", since_iso)
-    res = q.order("applied_at", desc=True).range(offset, offset + limit - 1).execute()
-    return {"applications": res.data or [], "total": res.count or 0}
-
-@router.get("/whitelist/history")
-async def whitelist_history(limit: int = 100, _: dict = Depends(require_staff)):
-    """Full approval history with source label and txAdmin sync status."""
-    res = (supabase.table("fivem_whitelist")
-           .select("id,discord_name,character_name,status,reviewed_by,reviewed_at,"
-                   "approved_at,sync_source,txadmin_synced,steam_hex,fivem_license,fivem_id,"
-                   "priority_tier,priority_level,priority_expires_at")
-           .eq("status", "approved")
-           .order("approved_at", desc=True)
-           .limit(limit)
-           .execute())
-    rows = res.data or []
-
-    SOURCE_LABELS = {
-        "website_approved":  ("ðŸŒ Approved on website",          "#00D4FF"),
-        "website_manual":    ("âœï¸ Manual add (website)",          "#a78bfa"),
-        "txadmin":           ("ðŸŽ® Approved in txAdmin panel",     "#facc15"),
-        "txadmin_join":      ("ðŸšª Auto-approved on join",         "#00FF88"),
-        "txadmin_removed":   ("âŒ Removed in txAdmin",            "#ff4757"),
-        "website":           ("ðŸŒ Website",                       "#00D4FF"),
-        "pre_v4_migration":  ("ðŸ“¦ Pre-v4 migration",              "#6b7280"),
-    }
-    for r in rows:
-        src = r.get("sync_source") or "website"
-        label, color = SOURCE_LABELS.get(src, (f"ðŸ“‹ {src}", "#6b7280"))
-        r["source_label"] = label
-        r["source_color"] = color
-
-    return {"history": rows, "total": len(rows)}
-
-@router.get("/whitelist/pending-sync")
 async def pending_sync(request: Request):
     """
     Static route must be declared before /whitelist/{app_id}; Lua expects a bare
@@ -1054,7 +483,6 @@ def _pending_count(table: str, filters: dict[str, Any], in_filters: dict[str, li
     res = q.limit(1).execute()
     return int(res.count or 0)
 
-@router.post("/sync/refresh")
 async def refresh_server_sync(
     body: ServerSyncRefresh | None = None,
     user: dict = Depends(require_staff),
@@ -1116,13 +544,6 @@ async def refresh_server_sync(
         "pending": pending,
     }
 
-@router.get("/whitelist/{app_id}")
-async def get_whitelist_app(app_id: str, _: dict = Depends(require_staff)):
-    res = supabase.table("fivem_whitelist").select("*").eq("id", app_id).execute()
-    if not res.data: raise HTTPException(404, "Application not found")
-    return res.data[0]
-
-@router.patch("/whitelist/{app_id}/priority")
 async def update_whitelist_priority(
     app_id: str,
     body: WhitelistPriorityUpdate,
@@ -1148,7 +569,6 @@ async def update_whitelist_priority(
     })
     return {"message": "Priority updated.", "app": updated_app}
 
-@router.patch("/whitelist/{app_id}")
 async def review_whitelist(
     app_id: str, body: WhitelistReview,
     background_tasks: BackgroundTasks,
@@ -1287,12 +707,6 @@ async def get_discord_member(discord_id: str, _: dict = Depends(require_staff)):
     }
 
 
-@router.delete("/whitelist/{app_id}")
-async def delete_whitelist_app(app_id: str, _: dict = Depends(require_admin)):
-    supabase.table("fivem_whitelist").delete().eq("id", app_id).execute()
-    return {"message": "Application deleted."}
-
-@router.post("/whitelist/manual")
 async def manual_add_whitelist(
     body: WhitelistManualAdd,
     background_tasks: BackgroundTasks,
@@ -1356,7 +770,6 @@ async def manual_add_whitelist(
     return {"message": "Player manually whitelisted â€” syncing to server in background.", "app": app}
 
 # â”€â”€â”€ Fallback Lua polling endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.post("/whitelist/mark-synced")
 async def mark_synced(body: MarkSynced, request: Request):
     """Lua calls this after successfully adding a player to txAdmin."""
     _check_token(request)
@@ -1373,23 +786,7 @@ async def mark_synced(body: MarkSynced, request: Request):
 
 
 
-def _answer_identifiers(answers: dict) -> list[str]:
-    ids: list[str] = []
-    for key in ("license", "fivem_license", "license2", "steam_hex", "steam", "fivem_id", "discord_id"):
-        val = str((answers or {}).get(key) or "").strip()
-        if not val:
-            continue
-        low = val.lower()
-        if key == "discord_id" and not low.startswith("discord:"):
-            val = f"discord:{val}"
-        elif key == "fivem_id" and not low.startswith("fivem:"):
-            val = f"fivem:{val}"
-        elif key in ("steam_hex", "steam") and low.startswith("110000"):
-            val = f"steam:{val}"
-        ids.append(val)
-    return list(dict.fromkeys(ids))
 
-@router.get("/application-actions/pending")
 async def pending_application_actions(request: Request):
     _check_token(request)
     res = (
@@ -1418,7 +815,6 @@ async def pending_application_actions(request: Request):
         })
     return out
 
-@router.post("/application-actions/mark-synced")
 async def mark_application_action_synced(body: ApplicationActionSyncBody, request: Request):
     _check_token(request)
     current = supabase.table("application_form_submissions").select("action_attempts").eq("id", body.submission_id).limit(1).execute()
@@ -1644,327 +1040,6 @@ async def receive_txadmin_event(
     return {"ok": True, "event": event}
 
 # â”€â”€â”€ Bans â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.get("/bans")
-async def list_bans(active: bool | None = None, limit: int = 50, offset: int = 0,
-                    _: dict = Depends(require_staff)):
-    q = supabase.table("fivem_bans").select("*", count="exact")
-    if active is not None: q = q.eq("active", active)
-    res = q.order("banned_at", desc=True).range(offset, offset + limit - 1).execute()
-    return {"bans": res.data or [], "total": res.count or 0}
-
-@router.get("/bans/pending-sync")
-async def pending_ban_sync(request: Request, limit: int = 25):
-    _check_token(request)
-    res = (supabase.table("fivem_bans").select("*")
-           .eq("active", True)
-           .eq("txadmin_synced", False)
-           .order("banned_at", desc=False)
-           .limit(limit)
-           .execute())
-    rows: list[dict] = []
-    for ban in res.data or []:
-        ids = _normalize_identifier_list(ban.get("all_ids"))
-        ident = (ban.get("identifier") or "").strip()
-        if ident and ident not in ids:
-            ids.insert(0, ident)
-        license_id = _first_identifier(ids, ("license:", "license2:"))
-        discord_id = _first_identifier(ids, ("discord:",))
-        rows.append({
-            "id": ban.get("id"),
-            "identifier": ident or _primary_ban_identifier(ids),
-            "identifiers": ids,
-            "license": license_id,
-            "discord": discord_id,
-            "player_name": ban.get("player_name") or "Unknown",
-            "reason": ban.get("reason") or "Banned",
-            "duration": _ban_duration_txadmin(ban),
-            "banned_by": ban.get("banned_by") or "website",
-            "expires_at": ban.get("expires_at"),
-            "expire": _ban_expire_epoch(ban.get("expires_at")),
-        })
-    return rows
-
-@router.get("/bans/pending-unban")
-async def pending_unban_sync(request: Request, limit: int = 25):
-    _check_token(request)
-    res = (supabase.table("fivem_bans").select("*")
-           .eq("active", False)
-           .eq("txadmin_synced", False)
-           .in_("source", ("qbx_unban_pending", "txadmin_unban_pending", "txadmin_revoke_failed"))
-           .order("unbanned_at", desc=False)
-           .limit(limit)
-           .execute())
-    rows: list[dict] = []
-    for ban in res.data or []:
-        ids = _normalize_identifier_list(ban.get("all_ids"))
-        ident = (ban.get("identifier") or "").strip()
-        if ident and ident not in ids:
-            ids.insert(0, ident)
-        rows.append({
-            "id": ban.get("id"),
-            "identifier": ident or _primary_ban_identifier(ids),
-            "identifiers": ids,
-            "license": _first_identifier(ids, ("license:", "license2:")),
-            "discord": _first_identifier(ids, ("discord:",)),
-        })
-    return rows
-
-@router.post("/bans/mark-synced")
-async def mark_ban_synced(body: BanSyncAck, request: Request):
-    _check_token(request)
-    ban_res = supabase.table("fivem_bans").select("id,active,source").eq("id", body.ban_id).execute()
-    if not ban_res.data:
-        raise HTTPException(404, "Ban not found")
-    ban = ban_res.data[0]
-    active = bool(ban.get("active"))
-    updates = {
-        "txadmin_synced": body.ok,
-        "source": "qbx_core" if body.ok and active else "qbx_core_unbanned" if body.ok else ban.get("source") or "qbx_sync_failed",
-    }
-    supabase.table("fivem_bans").update(updates).eq("id", body.ban_id).execute()
-    return {"ok": True, "synced": body.ok}
-
-
-# ── Ban application via txAdmin (website → game server) ───────────────────────
-def _ban_duration_txadmin(ban: dict) -> str:
-    dur = (ban.get("duration") or "").strip().lower()
-    return dur if dur in {"permanent", "2 hours", "12 hours", "1 day", "2 days", "1 week", "2 weeks", "1 month"} else "permanent"
-
-
-def _resolve_net_id(ids: list[str]) -> int | None:
-    """Find the current netId of an online player from the latest fivem_players snapshot."""
-    try:
-        res = supabase.table("fivem_players").select("players").eq("id", "main").execute()
-        if not res.data:
-            return None
-        for p in res.data[0].get("players") or []:
-            if not isinstance(p, dict):
-                continue
-            pids = _player_identifiers(p)
-            known = {str(x).lower() for x in pids.get("all", [])}
-            for ident in ids:
-                if str(ident or "").lower() in known:
-                    return p.get("server_id")
-    except Exception as exc:
-        log.warning("Could not resolve netId for ban: %s", exc)
-    return None
-
-
-async def _push_ban_to_txadmin(ban_id: str) -> dict:
-    """Apply a website ban through txAdmin; marks the row synced on success."""
-    try:
-        res = supabase.table("fivem_bans").select("*").eq("id", ban_id).execute()
-        ban = (res.data or [None])[0]
-        if not ban or not ban.get("active"):
-            return {"ok": False, "skipped": True}
-        ids = _normalize_identifier_list(ban.get("all_ids"))
-        ident = (ban.get("identifier") or "").strip()
-        if ident and ident not in ids:
-            ids.insert(0, ident)
-        reason = ban.get("reason") or "Banned via aifazi.net"
-        duration = _ban_duration_txadmin(ban)
-        action_id: str | None = None
-        net_id = _resolve_net_id(ids)
-        if net_id:
-            ok, result = await txa.ban_online_player(int(net_id), reason, duration)
-            action_id = result if ok else None
-        else:
-            ok, result = await txa.ban_by_identifiers(ids, ban.get("player_name") or "Unknown", reason, duration)
-            action_id = result if ok else None
-        if ok:
-            supabase.table("fivem_bans").update({
-                "txadmin_synced": True,
-                "source": "txadmin",
-                "txadmin_action_id": action_id,
-            }).eq("id", ban_id).execute()
-            await _push_realtime("player_banned_synced", {
-                "ban_id": ban_id,
-                "identifier": ident or (ids[0] if ids else None),
-            })
-            return {"ok": True}
-        supabase.table("fivem_bans").update({
-            "txadmin_synced": False,
-            "source": "txadmin_failed",
-            "txadmin_action_id": None,
-        }).eq("id", ban_id).execute()
-        await _push_realtime("player_ban_sync_failed", {
-            "ban_id": ban_id,
-            "error": str(action_id)[:200],
-        })
-        return {"ok": False, "error": action_id}
-    except Exception as exc:
-        log.warning("txAdmin ban push failed for %s: %s", ban_id, exc)
-        return {"ok": False, "error": str(exc)}
-
-
-async def _push_unban_to_txadmin(ban_id: str) -> dict:
-    """Revoke a txAdmin ban by its stored actionId; marks the row synced on success."""
-    try:
-        res = supabase.table("fivem_bans").select("*").eq("id", ban_id).execute()
-        ban = (res.data or [None])[0]
-        if not ban or ban.get("active"):
-            return {"ok": False, "skipped": True}
-        action_id = (ban.get("txadmin_action_id") or "").strip()
-        if not action_id:
-            supabase.table("fivem_bans").update({
-                "txadmin_synced": False,
-                "source": "txadmin_revoke_failed",
-            }).eq("id", ban_id).execute()
-            return {"ok": False, "error": "no_action_id"}
-        ok, msg = await txa.revoke_ban(action_id)
-        if ok:
-            supabase.table("fivem_bans").update({
-                "txadmin_synced": True,
-                "source": "txadmin_revoked",
-            }).eq("id", ban_id).execute()
-            await _push_realtime("player_unbanned_synced", {"ban_id": ban_id})
-            return {"ok": True}
-        supabase.table("fivem_bans").update({
-            "txadmin_synced": False,
-            "source": "txadmin_revoke_failed",
-        }).eq("id", ban_id).execute()
-        await _push_realtime("player_unban_sync_failed", {
-            "ban_id": ban_id,
-            "error": str(msg)[:200],
-        })
-        return {"ok": False, "error": msg}
-    except Exception as exc:
-        log.warning("txAdmin unban push failed for %s: %s", ban_id, exc)
-        return {"ok": False, "error": str(exc)}
-
-
-@router.post("/bans")
-async def create_ban(
-    body: BanCreate,
-    background_tasks: BackgroundTasks,
-    user: dict = Depends(require_staff)
-):
-    """
-    Create a website ban and queue it for the FiveM/qbx_core resource to sync.
-    """
-    username = user.get("username", "admin")
-
-    ids = _normalize_identifier_list(body.identifiers)
-    if body.identifier and body.identifier.strip() not in ids:
-        ids.append(body.identifier.strip())
-    if not ids:
-        raise HTTPException(400, "At least one identifier is required")
-
-    primary_id = _primary_ban_identifier(ids)
-    if not primary_id:
-        raise HTTPException(400, "At least one identifier is required")
-
-    try:
-        expires_at = _ban_expires_at(body.duration, body.expires_at)
-    except ValueError:
-        raise HTTPException(400, "Invalid ban expiry time")
-    if (body.duration or "").strip().lower() == "custom" and not expires_at:
-        raise HTTPException(400, "Custom duration requires an expiry time")
-    parsed_expiry = _parse_datetime(expires_at)
-    if parsed_expiry and parsed_expiry <= datetime.now(timezone.utc):
-        raise HTTPException(400, "Ban expiry must be in the future")
-
-    for ident in ids:
-        existing = (supabase.table("fivem_bans").select("id")
-                    .eq("identifier", ident).eq("active", True).execute())
-        if existing.data:
-            raise HTTPException(409, "Player already has an active ban")
-
-    ban_row = {
-        "identifier":  primary_id,
-        "all_ids":     ids,
-        "player_name": body.player_name,
-        "reason":      body.reason,
-        "duration":    body.duration,
-        "expires_at":  expires_at,
-        "banned_by":   username,
-        "banned_at":   _now(),
-        "active":      True,
-        "source":      "website",
-        "txadmin_synced": False,
-        "txadmin_action_id": None,
-    }
-    res = supabase.table("fivem_bans").insert(ban_row).execute()
-    ban = (res.data or [{}])[0]
-    ban_id = ban.get("id")
-
-    background_tasks.add_task(_push_ban_to_txadmin, ban_id)
-
-    await _push_realtime("player_banned_website", {
-        "ban_id":      ban_id,
-        "identifier":  primary_id,
-        "player_name": body.player_name,
-        "reason":      body.reason,
-        "duration":    body.duration,
-        "banned_by":   username,
-        "core_sync":   False,
-    })
-
-    matched_app = _find_whitelist_by_identifiers(ids)
-    if matched_app:
-        await _send_whitelist_email(matched_app, "banned", body.reason, {
-            "expires_at": expires_at,
-            "duration": body.duration,
-        })
-
-    return {"message": "Player banned â€” queued for server sync.", "ban": ban}
-
-
-@router.patch("/bans/{ban_id}")
-async def update_ban(ban_id: str, body: BanUpdate, _: dict = Depends(require_staff)):
-    updates = {k: v for k, v in body.model_dump().items() if v is not None}
-    if not updates: raise HTTPException(400, "No fields to update")
-    res = supabase.table("fivem_bans").update(updates).eq("id", ban_id).execute()
-    return {"message": "Ban updated.", "ban": (res.data or [{}])[0]}
-
-@router.delete("/bans/{ban_id}")
-async def delete_ban(ban_id: str, _: dict = Depends(require_admin)):
-    supabase.table("fivem_bans").delete().eq("id", ban_id).execute()
-    return {"message": "Ban removed."}
-
-@router.post("/bans/{ban_id}/unban")
-async def unban_player(
-    ban_id: str,
-    background_tasks: BackgroundTasks,
-    user: dict = Depends(require_staff)
-):
-    """
-    Lift a ban on the website and revoke it via txAdmin in the background.
-    """
-    ban_res = supabase.table("fivem_bans").select("*").eq("id", ban_id).execute()
-    if not ban_res.data: raise HTTPException(404, "Ban not found")
-    ban = ban_res.data[0]
-    username = user.get("username", "admin")
-
-    # Update DB immediately
-    supabase.table("fivem_bans").update({
-        "active":       False,
-        "unbanned_by":  username,
-        "unbanned_at":  _now(),
-        "source":       "txadmin_unban_pending",
-        "txadmin_synced": False,
-    }).eq("id", ban_id).execute()
-
-    background_tasks.add_task(_push_unban_to_txadmin, ban_id)
-
-    await _push_realtime("player_unbanned_website", {
-        "ban_id":     ban_id,
-        "identifier": ban.get("identifier"),
-        "unbanned_by": username,
-        "core_sync": False,
-    })
-
-    ids = _normalize_identifier_list(ban.get("all_ids"))
-    ident = (ban.get("identifier") or "").strip()
-    if ident and ident not in ids:
-        ids.insert(0, ident)
-    matched_app = _find_whitelist_by_identifiers(ids)
-    if matched_app:
-        await _send_whitelist_email(matched_app, "unbanned")
-
-    return {"message": "Player unbanned â€” queued for server sync.", "ban": ban}
-
-@router.post("/status")
 async def update_server_status(body: StatusUpdate, request: Request):
     _check_token(request)
     now_iso      = _now()
@@ -2010,53 +1085,6 @@ async def update_server_status(body: StatusUpdate, request: Request):
 
     return {"ok": True}
 
-@router.get("/status")
-async def get_server_status():
-    res = supabase.table("fivem_status").select("*").eq("id", "main").execute()
-    if not res.data:
-        return {
-            "status": "offline", "players_online": 0, "max_players": 48,
-            "last_seen": None, "last_seen_label": "No heartbeat received",
-            "uptime_seconds": 0, "uptime_label": "0m", "resource_count": 0,
-            "server_name": "AIFAZI RP", "peak_players": 0,
-            "dev_override": None, "display_message": "No heartbeat received", "fake_data": False,
-        }
-    d  = res.data[0]
-    ov = d.get("dev_override")
-    uptime = d.get("uptime_seconds", 0)
-
-    if ov == "maintenance":
-        return {"status": "maintenance", "players_online": 0, "max_players": d.get("max_players", 48),
-                "display_message": "Server is under maintenance",
-                **{k: d.get(k) for k in ("server_name","peak_players","resource_count","updated_at")},
-                "dev_override": "maintenance", "uptime_seconds": 0, "uptime_label": "0m",
-                "last_seen": d.get("updated_at"), "last_seen_label": "Maintenance Mode", "fake_data": False}
-
-    if ov == "force_online":
-        return {"status": "online", "players_online": d.get("players_online", 0),
-                "max_players": d.get("max_players", 48),
-                "display_message": "Force Online override active", "dev_override": "force_online",
-                "uptime_seconds": uptime, "uptime_label": _uptime_str(uptime),
-                "server_name": d.get("server_name"), "peak_players": d.get("peak_players", 0),
-                "resource_count": d.get("resource_count", 0),
-                "last_seen": d.get("updated_at"), "last_seen_label": "Force Online (dev)", "fake_data": False}
-
-    status, age = _compute_status(d.get("updated_at"))
-    players = d.get("players_online", 0) if status != "offline" else 0
-    if status == "online":     msg = f"Online â€” {players}/{d.get('max_players',48)} players"
-    elif status == "degraded": msg = f"Starting upâ€¦ (last seen {_last_seen_str(age)})"
-    else:                      msg = f"Offline (last seen {_last_seen_str(age)})"
-
-    return {
-        "status": status, "players_online": players, "max_players": d.get("max_players", 48),
-        "last_seen": d.get("updated_at"), "last_seen_label": _last_seen_str(age),
-        "uptime_seconds": uptime, "uptime_label": _uptime_str(uptime),
-        "resource_count": d.get("resource_count", 0), "server_name": d.get("server_name", "AIFAZI RP"),
-        "peak_players": d.get("peak_players", 0), "dev_override": None,
-        "display_message": msg, "fake_data": False,
-    }
-
-@router.get("/status/overview")
 async def get_public_status_overview(hours: int = 24):
     """Public, visitor-safe server overview: status summary + sanitized online
     player list (names/ping only — all identifiers stripped) + history series.
@@ -2129,13 +1157,13 @@ async def get_public_status_overview(hours: int = 24):
 
     return {"status": status, "players": players, "history": hist_res.data or [], "hours": hours}
 
-@router.post("/status/refresh")
 async def refresh_status_timestamp(user: dict = Depends(require_staff)):
     """
     Reload the current status for the admin panel without changing the heartbeat
     timestamp. FiveM itself must report online/offline so this endpoint cannot
     accidentally make a stopped server look online.
     """
+    from routers.fivem_status_api import get_server_status
     status = await get_server_status()
     await _push_realtime("server_status_refresh", {
         "requested_by": user.get("username", "admin"),
@@ -2143,21 +1171,7 @@ async def refresh_status_timestamp(user: dict = Depends(require_staff)):
     })
     return {"ok": True, **status}
 
-@router.patch("/dev-override")
-async def set_dev_override(body: DevOverride, _: dict = Depends(require_admin)):
-    supabase.table("fivem_status").update({"dev_override": body.override}).eq("id", "main").execute()
-    return {"ok": True, "override": body.override}
-
-@router.get("/history")
-async def get_status_history(hours: int = 24, _: dict = Depends(require_staff)):
-    since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
-    res = (supabase.table("server_status_history")
-           .select("recorded_at,players_online,max_players,uptime_seconds,status")
-           .gte("recorded_at", since).order("recorded_at", desc=False).execute())
-    return {"history": res.data or [], "hours": hours}
-
 # â”€â”€â”€ Players â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.post("/players")
 async def update_players(request: Request, background_tasks: BackgroundTasks):
     """Accepts {players: [...]} from Lua. Also handles bare array for compat."""
     _check_token(request)
@@ -2178,50 +1192,8 @@ async def update_players(request: Request, background_tasks: BackgroundTasks):
     _stamp_whitelist_activity(players, _now())
     return {"ok": True, "count": len(players)}
 
-@router.get("/players")
-async def get_players(_: dict = Depends(require_staff)):
-    res = supabase.table("fivem_players").select("*").eq("id", "main").execute()
-    def _recent(ts, w=120):
-        try:
-            return (datetime.now(timezone.utc) -
-                    datetime.fromisoformat(ts.replace("Z", "+00:00"))).total_seconds() < w
-        except (TypeError, ValueError):
-            return False
-    if res.data:
-        d = res.data[0]
-        online = _recent(d.get("updated_at", ""))
-        return {"players": d.get("players", []) if online else [], "updated_at": d.get("updated_at"), "online": online}
-    return {"players": [], "updated_at": None, "online": False}
-
 # â”€â”€â”€ Cron â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.post("/cron/cleanup")
-async def cron_cleanup(request: Request):
-    """
-    Called by Vercel cron (see vercel.json). Cleans up old realtime events.
-    Secured by CRON_SECRET env var matching the Authorization header.
-
-    H6 â€” uses `hmac.compare_digest` instead of `!=` for constant-time comparison
-    (avoids remote timing-oracle recovery of the cron secret).
-    """
-    cron_secret = os.getenv("CRON_SECRET", "")
-    auth_header = request.headers.get("Authorization", "")
-    if not cron_secret:
-        raise HTTPException(503, "Cron secret is not configured")
-    expected = f"Bearer {cron_secret}"
-    if not hmac.compare_digest(auth_header, expected):
-        raise HTTPException(403, "Invalid cron secret")
-
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
-    try:
-        supabase.table("fivem_realtime_events").delete().lt("created_at", cutoff).execute()
-        log.info("Cron: cleaned realtime events older than 1h")
-    except Exception as e:
-        log.warning("Cron cleanup failed: %s", e)
-
-    return {"ok": True, "cutoff": cutoff}
-
 # â”€â”€â”€ Stats tile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.get("/stats")
 async def fivem_stats(_: dict = Depends(require_staff)):
     pending  = supabase.table("fivem_whitelist").select("id", count="exact").eq("status", "pending").execute()
     approved = supabase.table("fivem_whitelist").select("id", count="exact").eq("status", "approved").execute()
@@ -2251,97 +1223,9 @@ async def fivem_stats(_: dict = Depends(require_staff)):
     }
 
 # â”€â”€â”€ Player Records â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@router.get("/players/records")
-async def list_player_records(
-    q: str = "", limit: int = 50, offset: int = 0,
-    _: dict = Depends(require_staff),
-):
-    query = supabase.table("player_records").select("*", count="exact")
-    if q and q.strip():
-        t = safe_search_term(q.strip())
-        query = query.or_(
-            f"player_name.ilike.%{t}%,"
-            f"license_key.ilike.%{t}%,"
-            f"license_hex.ilike.%{t}%,"
-            f"license2_hex.ilike.%{t}%,"
-            f"discord_id.ilike.%{t}%,"
-            f"steam_hex.ilike.%{t}%,"
-            f"forum_username.ilike.%{t}%"
-        )
-    res = query.order("last_seen_at", desc=True).range(offset, offset + limit - 1).execute()
-    return {"records": res.data or [], "total": res.count or 0}
-
-
-@router.get("/players/records/{license_key}")
-async def get_player_record(license_key: str, _: dict = Depends(require_staff)):
-    res = supabase.table("player_records").select("*").eq("license_key", license_key).limit(1).execute()
-    if not res.data:
-        raise HTTPException(404, "Player record not found")
-    return res.data[0]
-
-
-@router.get("/players/sessions")
-async def list_player_sessions(
-    license_key: str = "", limit: int = 50, offset: int = 0,
-    _: dict = Depends(require_staff),
-):
-    query = supabase.table("player_sessions").select("*", count="exact")
-    if license_key:
-        query = query.eq("license_key", license_key)
-    res = query.order("joined_at", desc=True).range(offset, offset + limit - 1).execute()
-    return {"sessions": res.data or [], "total": res.count or 0}
-
-
 # ── Player data sync (Lua → website) ──────────────────────────────────────────
-class PlayerJoinBody(BaseModel):
-    server_id: int
-    player_name: str
-    license: str | None = None
-    license2: str | None = None
-    steam_hex: str | None = None
-    fivem_id: str | None = None
-    discord_id: str | None = None
-    identifiers: list[str] = []
 
 
-class PlayerLeaveBody(BaseModel):
-    server_id: int
-    player_name: str | None = None
-    license: str | None = None
-    license2: str | None = None
-    steam_hex: str | None = None
-    identifiers: list[str] = []
-    disconnect_reason: str | None = None
-
-
-class PlayerHeartbeatBody(BaseModel):
-    players: list[dict] = []
-
-
-class WhitelistIdentifiersBody(BaseModel):
-    discord_id: str | None = None
-    license: str | None = None
-    license2: str | None = None
-    steam_hex: str | None = None
-    fivem_id: str | None = None
-    identifiers: list[str] = []
-
-
-def _player_ids_from_fields(
-    license_: str | None, license2: str | None, steam_hex: str | None,
-    fivem_id: str | None, discord_id: str | None, identifiers: list[str],
-) -> dict:
-    raw = [str(x or "").strip() for x in (identifiers or []) if str(x or "").strip()]
-    ids = _player_identifiers({
-        "identifiers": raw,
-        "license": license_,
-        "license2": license2,
-        "steam_hex": steam_hex,
-        "fivem_id": fivem_id,
-        "discord": discord_id,
-    })
-    ids["license_key"] = (ids.get("license") or ids.get("license2") or ids.get("fivem_license") or "").strip() or None
-    return ids
 
 
 def _build_player_record_row(ids: dict, player_name: str, server_id: Any, now_iso: str) -> dict | None:
@@ -2375,7 +1259,6 @@ def _upsert_player_record(ids: dict, player_name: str, server_id: Any, now_iso: 
     return (res.data or [None])[0]
 
 
-@router.post("/players/join")
 async def record_player_join(body: PlayerJoinBody, request: Request):
     """Lua fires on successful join — creates/updates player record + opens a session."""
     _check_token(request)
@@ -2397,7 +1280,6 @@ async def record_player_join(body: PlayerJoinBody, request: Request):
     return {"ok": True, "record_id": record["id"], "session_id": (sess.data or [{}])[0].get("id")}
 
 
-@router.post("/players/leave")
 async def record_player_leave(body: PlayerLeaveBody, request: Request):
     """Lua fires on playerDropped — closes the open session and bumps totals."""
     _check_token(request)
@@ -2436,7 +1318,6 @@ async def record_player_leave(body: PlayerLeaveBody, request: Request):
     return {"ok": True, "closed": closed, "license_key": license_key}
 
 
-@router.post("/players/heartbeat-sync")
 async def heartbeat_sync_players(body: PlayerHeartbeatBody, request: Request):
     """Lua sends with each heartbeat — keeps player_records.last_seen fresh."""
     _check_token(request)
@@ -2459,7 +1340,6 @@ async def heartbeat_sync_players(body: PlayerHeartbeatBody, request: Request):
     return {"ok": True, "synced": synced}
 
 
-@router.post("/whitelist/update-identifiers")
 async def update_whitelist_identifiers(body: WhitelistIdentifiersBody, request: Request):
     """Lua patches license/steam/fivem identifiers onto the approved whitelist row on connect."""
     _check_token(request)
@@ -2499,15 +1379,9 @@ async def update_whitelist_identifiers(body: WhitelistIdentifiersBody, request: 
 
 
 # â”€â”€â”€ Bulk whitelist approve â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class BulkWhitelistApproveBody(BaseModel):
-    app_ids: list[str]
-    reviewer_note: str | None = None
-    priority_tier: str | None = None
-    priority_level: int | None = None
-    priority_expires_at: str | None = None
+# BulkWhitelistApproveBody imported from routers.fivem_models
 
 
-@router.post("/whitelist/bulk-approve")
 async def bulk_approve_whitelist(
     body: BulkWhitelistApproveBody,
     background_tasks: BackgroundTasks,
@@ -2590,12 +1464,6 @@ async def txadmin_status(_: dict = Depends(require_staff)):
 # ─── txAdmin live actions ────────────────────────────────────────────────────
 _TXADMIN_ACTIONS = ("kick", "ban", "stop-resource", "start-resource")
 
-
-class TxAdminActionBody(BaseModel):
-    action: str
-    target: str = ""
-    reason: str | None = None
-    confirm: bool = False
 
 
 def _resolve_live_netid(target: str) -> str | None:
@@ -2684,25 +1552,7 @@ _CONNECT_COOLDOWN_S = 30
 _STAFF_DIRECT_ROLES = {"admin", "moderator", "editor", "chat", "fivem", "staff"}
 
 
-class ConnectTokenResponse(BaseModel):
-    token: str
-    expires_in: int
-    username: str
-    connect_url: str
 
-
-class VerifyTokenRequest(BaseModel):
-    token: str
-
-
-class ConnectSessionRequest(BaseModel):
-    player_name: str | None = None
-    fivem_license: str | None = None
-    license2: str | None = None
-    steam_hex: str | None = None
-    fivem_id: str | None = None
-    discord_id: str | None = None
-    identifiers: list[str] = []
 
 
 def _jwt_secret() -> str:

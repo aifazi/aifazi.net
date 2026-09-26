@@ -1,0 +1,206 @@
+'use client'
+import { useState } from 'react'
+
+// ── Framework preview tokens ──────────────────────────────────────────────────
+const _G   = 'var(--green)', _CY = 'var(--cyan)'
+const _BG  = 'var(--bg)',    _BG2 = 'var(--bg2)', _BG3 = 'var(--bg3)'
+const _BD  = 'var(--border)',_TX  = 'var(--text)', _MT  = 'var(--muted)'
+const _FM  = 'var(--font-mono)', _FD = 'var(--font-display)'
+const _tag = c => ({ fontFamily: _FM, fontSize: 11, letterSpacing: 2, padding: '2px 8px', borderRadius: 3, border: `1px solid ${c}44`, color: c, background: `${c}12` })
+
+function FwMenuPreview({ id }) {
+  const items = ['Dashboard','Settings','Logout']
+  const conf = {
+    cyber:    { bg: _BG2, border:`1px solid color-mix(in srgb, var(--green) 30%, transparent)`, color:_G,  hover:'color-mix(in srgb, var(--green) 6%, transparent)', r:4 },
+    glass:    { bg:'rgba(10,20,35,0.8)', border:'1px solid rgba(255,255,255,0.1)', color:_TX, hover:'rgba(255,255,255,0.07)', r:10, bd:'blur(16px)' },
+    terminal: { bg:'#060a06', border:'1px solid #00ff8833', color:'#33ff33', hover:'color-mix(in srgb, var(--green) 8%, transparent)', r:0 },
+    minimal:  { bg:_BG2, border:`1px solid ${_BD}`, color:_TX, hover:'rgba(255,255,255,0.04)', r:6 },
+    neon:     { bg:_BG,  border:'1px solid color-mix(in srgb, var(--cyan) 60%, transparent)', color:_CY, hover:'color-mix(in srgb, var(--cyan) 8%, transparent)', r:5, sh:'0 0 12px color-mix(in srgb, var(--cyan) 15%, transparent)' },
+    floating: { bg:_BG2, border:'none', color:_TX, hover:'rgba(255,255,255,0.06)', r:14, sh:'0 12px 32px rgba(0,0,0,0.5)' },
+    holo:     { bg:'rgba(8,20,32,0.85)', border:'1px solid rgba(0,229,255,0.45)', color:_CY, hover:'rgba(0,229,255,0.12)', r:14, sh:'0 0 18px rgba(0,229,255,0.18), inset 0 0 14px rgba(0,229,255,0.06)' },
+    matrix:   { bg:'#020604', border:'1px solid #22ff2244', color:'#33ff33', hover:'rgba(0,255,0,0.08)', r:0, sh:'0 0 14px rgba(0,255,0,0.1)' },
+  }
+  const s = conf[id] || conf.cyber
+  return <div style={{ width:'100%', padding:'5px 3px', background:s.bg, border:s.border, borderRadius:s.r, backdropFilter:s.bd, boxShadow:s.sh, overflow:'hidden' }}>
+    {items.map((item,i) => <div key={i} style={{ fontFamily:_FM, fontSize: 11, color:s.color, padding:'5px 8px', borderRadius:Math.max(0,s.r-2), background:i===0?s.hover:'transparent', display:'flex', alignItems:'center', gap:5 }}><span style={{ opacity:0.5, fontSize: 11 }}>›</span>{item}</div>)}
+  </div>
+}
+function FwNotifyPreview({ id }) {
+  const p = { cyber:<div style={{ background:'color-mix(in srgb, var(--green) 7%, transparent)', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)', padding:'9px 10px 9px 34px', position:'relative', overflow:'hidden', width:'100%' }}><div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:_G }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontFamily:_FM, fontSize:11, color:_G }}>✓</div><div style={{ fontFamily:_FM, fontSize: 11, color:_G, marginBottom:1 }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, pill:<div style={{ background:'color-mix(in srgb, var(--green) 8%, transparent)', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)', borderRadius:999, padding:'7px 14px 7px 10px', display:'flex', alignItems:'center', gap:7 }}><span style={{ fontSize:12, color:_G }}>✓</span><span style={{ fontFamily:_FM, fontSize: 11, color:_TX }}>Changes saved!</span></div>, minimal:<div style={{ background:_BG2, border:`1px solid ${_BD}`, borderRadius:7, padding:'9px 12px', width:'100%' }}><div style={{ fontFamily:_FM, fontSize: 11, color:_G, letterSpacing:1, marginBottom:2 }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, terminal:<div style={{ background:'#0a0f0a', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', padding:'7px 10px', width:'100%' }}><span style={{ fontFamily:_FM, fontSize: 11, color:_G, fontWeight:700, marginRight:6 }}>[SUCCESS]</span><span style={{ fontFamily:_FM, fontSize: 11, color:'#a0d0a0' }}>Saved!</span></div>, glass:<div style={{ background:'rgba(10,20,30,0.7)', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', borderRadius:9, padding:'9px 10px 9px 34px', backdropFilter:'blur(16px)', position:'relative', width:'100%' }}><div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:_G, borderRadius:'9px 0 0 9px' }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', fontSize:12, color:_G }}>✓</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>, banner:<div style={{ background:'color-mix(in srgb, var(--green) 7%, transparent)', borderLeft:'3px solid '+_G, padding:'8px 12px', display:'flex', alignItems:'center', gap:7, width:'100%' }}><span style={{ fontSize: 11, color:_G }}>✓</span><span style={{ fontFamily:_FM, fontSize: 11, color:_TX }}>Site updated.</span></div> }
+  p.float = <div style={{ background:_BG2, border:`1px solid ${_BD}`, borderRadius:8, padding:9, width:'100%', boxShadow:'0 10px 22px rgba(0,0,0,.35)' }}><div style={{ display:'flex', gap:7, alignItems:'center' }}><span style={{ width:18, height:18, borderRadius:5, background:'color-mix(in srgb, var(--green) 12%, transparent)', color:_G, display:'grid', placeItems:'center', fontSize: 11 }}>✓</span><div><div style={{ fontFamily:_FM, fontSize: 11, color:_G }}>Saved</div><div style={{ fontFamily:_FM, fontSize: 11, color:_MT }}>12:04 · aifazi.net</div></div></div></div>
+  p.glitch = <div style={{ background:'rgba(255,71,87,.08)', border:'1px solid var(--red)', padding:'9px 10px', width:'100%', position:'relative', overflow:'hidden' }}><div style={{ fontFamily:_FM, fontSize: 11, color:'var(--red)', letterSpacing:2 }}>[ALERT]</div><div style={{ fontFamily:_FM, fontSize: 11, color:'var(--red)', textShadow:`2px 0 ${_CY}` }}>SYNC COMPLETE</div></div>
+  p.inbox = <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:3 }}>{[0,1,2].map(i=><div key={i} style={{ display:'flex', gap:5, alignItems:'center', background:i===0?'color-mix(in srgb, var(--green) 8%, transparent)':_BG2, border:`1px solid ${_BD}`, borderRadius:5, padding:'4px 6px' }}><span style={{ width:5, height:5, borderRadius:'50%', background:i===0?_G:_MT }}/><span style={{ fontFamily:_FM, fontSize: 11, color:i===0?_TX:_MT }}>Message {i+1}</span></div>)}</div>
+  p.hud = <div style={{ marginLeft:'auto', width:92, background:'color-mix(in srgb, var(--cyan) 6%, transparent)', border:`1px solid ${_CY}55`, padding:'6px 7px', clipPath:'polygon(0 0,100% 0,100% 75%,88% 100%,0 100%)' }}><div style={{ fontFamily:_FM, fontSize: 11, color:_CY, letterSpacing:2 }}>HUD</div><div style={{ fontFamily:_FM, fontSize: 11, color:_TX }}>ONLINE</div></div>
+  p.holo = <div style={{ background:'rgba(8,20,32,0.85)', border:'1px solid rgba(0,229,255,0.45)', borderRadius:14, padding:'9px 10px 9px 34px', position:'relative', boxShadow:'0 0 16px rgba(0,229,255,0.15)', width:'100%' }}><div style={{ position:'absolute', left:5, top:5, width:7, height:7, borderLeft:'1px solid rgba(0,229,255,0.5)', borderTop:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', right:5, bottom:5, width:7, height:7, borderRight:'1px solid rgba(0,229,255,0.5)', borderBottom:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', width:14, height:14, borderRadius:'50%', border:`1px solid ${_CY}88`, display:'flex', alignItems:'center', justifyContent:'center', fontSize: 11, color:_CY }}>✓</div><div style={{ fontFamily:_FM, fontSize: 11, color:_CY }}>SUCCESS</div><div style={{ fontFamily:_FD, fontSize:11, color:_TX }}>Changes saved!</div></div>
+  p.chip = <div style={{ display:'flex', alignItems:'center', gap:7, background:_BG2, border:`1px solid ${_BD}`, borderRadius:5, padding:'6px 9px', width:'100%' }}><span style={{ width:7, height:7, borderRadius:'50%', background:_G }}/><span style={{ fontFamily:_FM, fontSize: 11, color:_MT }}>12:04</span><span style={{ fontFamily:_FM, fontSize: 11, color:_TX, flex:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>Changes saved!</span><span style={{ fontFamily:_FM, fontSize: 11, color:_G }}>▶</span></div>
+  return <div style={{ width:'100%' }}>{p[id]||p.cyber}</div>
+}
+function FwDialogPreview({ id }) {
+  const red='var(--red)', confs={ cyber:{bg:_BG2, border:'1px solid rgba(255,71,87,0.5)', r:0, topBar:true}, glass:{bg:'rgba(10,20,30,0.82)', border:'1px solid rgba(255,71,87,0.3)', r:12, bd:'blur(20px)'}, terminal:{bg:'#0a0f0a', border:'1px solid rgba(255,71,87,0.5)', r:4, titleBar:true}, sheet:{bg:_BG2, border:`1px solid ${_BD}`, r:'12px 12px 0 0', handle:true}, minimal:{bg:_BG2, border:`1px solid ${_BD}`, r:10}, brutal:{bg:_BG, border:'3px solid rgba(255,71,87,0.8)', r:0, sh:'4px 4px 0 rgba(255,71,87,0.7)'}, command:{bg:'#080d16', border:'1px solid rgba(56,189,248,0.35)', r:10, topBar:true}, split:{bg:_BG2, border:`1px solid ${_BD}`, r:8, side:true}, drawer:{bg:_BG2, border:`1px solid ${_BD}`, r:'8px 0 0 8px', drawer:true}, paper:{bg:'#f7f1e8', border:'1px solid #d5c8b8', r:2, paper:true}, holo:{bg:'rgba(8,20,32,0.85)', border:'1px solid rgba(0,229,255,0.45)', r:16, holo:true, sh:'0 0 18px rgba(0,229,255,0.15)'}, crt:{bg:'#020604', border:'1px solid #33ff3366', r:4, crt:true, sh:'0 0 16px rgba(0,255,0,0.12)'} }, s=confs[id]||confs.cyber
+  if (s.side) return <div style={{ width:'100%', display:'grid', gridTemplateColumns:'36px 1fr', background:s.bg, border:s.border, borderRadius:s.r, overflow:'hidden' }}><div style={{ background:'rgba(255,71,87,0.12)', display:'flex', alignItems:'center', justifyContent:'center', color:red, fontSize:18 }}>!</div><div style={{ padding:9 }}><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:_TX }}>Review change</div><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, marginTop:3 }}>Split info + actions</div><div style={{ height:1, background:_BD, margin:'8px 0' }}/><div style={{ display:'flex', gap:5 }}><span style={{ flex:1, height:14, border:`1px solid ${_BD}` }}/><span style={{ flex:1, height:14, background:red }}/></div></div></div>
+  if (s.drawer) return <div style={{ width:'74%', marginLeft:'auto', height:'100%', background:s.bg, border:s.border, borderRadius:s.r, padding:10, boxShadow:'-12px 0 30px rgba(0,0,0,0.35)' }}><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, letterSpacing:2 }}>INSPECTOR</div><div style={{ fontFamily:_FD, fontSize:13, color:_TX, fontWeight:700, margin:'5px 0 8px' }}>Publish?</div><div style={{ height:4, width:'70%', background:red, borderRadius:2 }}/><div style={{ height:4, width:'45%', background:_BD, marginTop:5, borderRadius:2 }}/></div>
+  if (s.paper) return <div style={{ width:'100%', background:s.bg, border:s.border, borderRadius:s.r, color:'#1a1a1a', padding:10, boxShadow:'0 2px 8px rgba(0,0,0,0.18)' }}><div style={{ fontFamily:'serif', fontSize:15, fontWeight:900 }}>Delete draft?</div><div style={{ height:1, background:'#1a1a1a', opacity:0.25, margin:'6px 0' }}/><div style={{ display:'flex', justifyContent:'space-between', fontFamily:_FM, fontSize: 11 }}><span>CANCEL</span><span style={{ color:'#b91c1c' }}>CONFIRM</span></div></div>
+  if (s.crt) return <div style={{ width:'100%', background:s.bg, border:s.border, borderRadius:s.r, boxShadow:s.sh, overflow:'hidden', position:'relative' }}><div style={{ position:'absolute', inset:0, pointerEvents:'none', background:'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.25) 2px,rgba(0,0,0,0.25) 4px)' }}/><div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 8px', borderBottom:'1px solid rgba(51,255,51,0.2)', fontFamily:_FM, fontSize: 11, color:'#33ff33', letterSpacing:2 }}><span style={{ width:6, height:6, borderRadius:'50%', background:'#33ff33' }}/>PHOSPHOR.DIALOG</div><div style={{ padding:'9px 11px 7px' }}><div style={{ fontFamily:_FM, fontSize: 11, color:'#33ff33', letterSpacing:2, marginBottom:3 }}>⚠ DANGER</div><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:'#33ff33', marginBottom:6 }}>Delete post?</div><div style={{ display:'flex', borderTop:'1px solid rgba(51,255,51,0.2)' }}><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize: 11, color:'rgba(51,255,51,0.6)', textAlign:'center', borderRight:'1px solid rgba(51,255,51,0.2)' }}>CANCEL</div><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize: 11, color:'#33ff33', textAlign:'center', fontWeight:700, background:'rgba(51,255,51,0.08)' }}>CONFIRM</div></div></div></div>
+  if (s.holo) return <div style={{ width:'100%', position:'relative', background:s.bg, border:s.border, borderRadius:s.r, boxShadow:s.sh, overflow:'hidden' }}><div style={{ position:'absolute', top:8, left:8, width:9, height:9, borderLeft:'1px solid rgba(0,229,255,0.5)', borderTop:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', top:8, right:8, width:9, height:9, borderRight:'1px solid rgba(0,229,255,0.5)', borderTop:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', bottom:8, left:8, width:9, height:9, borderLeft:'1px solid rgba(0,229,255,0.5)', borderBottom:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ position:'absolute', bottom:8, right:8, width:9, height:9, borderRight:'1px solid rgba(0,229,255,0.5)', borderBottom:'1px solid rgba(0,229,255,0.5)' }}/><div style={{ padding:'10px 12px' }}><div style={{ fontFamily:_FM, fontSize: 11, color:_CY, letterSpacing:2, marginBottom:3 }}>⚠ DANGER</div><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:_TX, marginBottom:6 }}>Delete post?</div><div style={{ display:'flex', borderTop:'1px solid rgba(0,229,255,0.2)' }}><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize: 11, color:_MT, textAlign:'center', borderRight:'1px solid rgba(0,229,255,0.2)' }}>CANCEL</div><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize: 11, color:_CY, textAlign:'center', fontWeight:700, background:'rgba(0,229,255,0.08)' }}>CONFIRM</div></div></div></div>
+  return <div style={{ width:'100%', background:s.bg, border:s.border, borderRadius:s.r, backdropFilter:s.bd, boxShadow:s.sh, overflow:'hidden' }}>{s.topBar&&<div style={{ height:2, background:`linear-gradient(90deg,${red},transparent)` }}/>}{s.titleBar&&<div style={{ background:'rgba(255,71,87,0.1)', borderBottom:'1px solid rgba(255,71,87,0.2)', padding:'4px 8px', display:'flex', gap:4 }}>{['#ff5f56','#ffbd2e','#27c93f'].map(c=><div key={c} style={{ width:7, height:7, borderRadius:'50%', background:c }}/>)}</div>}{s.handle&&<div style={{ width:24, height:3, borderRadius:3, background:_MT, margin:'6px auto', opacity:0.4 }}/>}<div style={{ padding:'9px 11px 7px' }}><div style={{ fontFamily:_FM, fontSize: 11, color:red, letterSpacing:2, marginBottom:3 }}>⚠ DANGER</div><div style={{ fontFamily:_FD, fontSize:12, fontWeight:700, color:_TX, marginBottom:6 }}>Delete post?</div><div style={{ display:'flex', borderTop:`1px solid ${_BD}` }}><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize: 11, color:_MT, textAlign:'center', borderRight:`1px solid ${_BD}` }}>CANCEL</div><div style={{ flex:1, padding:'6px 0', fontFamily:_FM, fontSize: 11, color:red, textAlign:'center', fontWeight:700, background:'rgba(255,71,87,0.08)' }}>CONFIRM</div></div></div></div>
+}
+function FwInputPreview({ id }) {
+  const c={ cyber:{bg:_BG3,b:`1px solid ${_CY}55`,r:0,sh:`inset 3px 0 0 ${_CY}`}, glass:{bg:'rgba(255,255,255,0.06)',b:'1px solid rgba(255,255,255,0.16)',r:12,bd:'blur(14px)'}, terminal:{bg:'#050805',b:'1px solid #33ff3355',r:2,fg:'#33ff33',prompt:'>'}, minimal:{bg:'transparent',b:'0 solid transparent',r:0,under:true}, brutal:{bg:'#fff',b:'3px solid #111',r:0,fg:'#111',sh:'4px 4px 0 #111'}, paper:{bg:'#fbf5ea',b:'1px solid #d8c7b3',r:2,fg:'#2b241f',paper:true}, pill:{bg:_BG3,b:`1px solid ${_BD}`,r:999}, command:{bg:'#070b12',b:`1px solid ${_CY}44`,r:8,cmd:true}, holo:{bg:'rgba(8,20,32,0.85)',b:'1px solid rgba(0,229,255,0.4)',r:12,fg:'#e6faff',bd:'blur(14px)',sh:'0 0 12px rgba(0,229,255,0.08)'}, crt:{bg:'#020604',b:'1px solid #33ff3344',r:2,fg:'#33ff33',prompt:'$'} }[id] || {}
+  if (c.cmd) return <div style={{ width:'100%', background:c.bg, border:c.b, borderRadius:c.r, padding:8 }}><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, marginBottom:6 }}>⌘ Search actions</div><div style={{ display:'flex', gap:5 }}>{['deploy','theme','user'].map(x=><span key={x} style={{ fontFamily:_FM, fontSize: 11, color:_CY, border:`1px solid ${_CY}33`, padding:'2px 5px', borderRadius:4 }}>{x}</span>)}</div></div>
+  return <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:6 }}><div style={{ fontFamily:_FM, fontSize: 11, color:c.paper?'#6f5d4c':_MT, letterSpacing:2 }}>EMAIL</div><div style={{ height:28, display:'flex', alignItems:'center', gap:6, padding:'0 10px', color:c.fg||_TX, background:c.bg, border:c.under?'none':c.b, borderBottom:c.under?`1px solid ${_BD}`:undefined, borderRadius:c.r, boxShadow:c.sh, backdropFilter:c.bd, fontFamily:_FM, fontSize: 11 }}><span style={{ color:c.fg||_CY }}>{c.prompt||'@'}</span><span style={{ opacity:.75 }}>hello@aifazi.net</span></div><div style={{ height:20, border:c.under?`1px solid ${_BD}`:c.b, borderRadius:c.r, background:c.paper?'#fff8ef':c.bg, opacity:.65 }}/></div>
+}
+function FwSurfacePreview({ id }) {
+  const map={
+    'cyber-grid':{bg:_BG, card:_BG2, line:_CY, grid:true},
+    'clean-app':{bg:'#f6f8fb', card:'#ffffff', line:'#2563eb', light:true},
+    'glass-dock':{bg:'#07111f', card:'rgba(255,255,255,0.08)', line:'#7b61ff', glass:true},
+    'paper-doc':{bg:'#f4eadc', card:'#fffaf1', line:'#1f2937', paper:true},
+    terminal:{bg:'#050805', card:'#091009', line:'#33ff33', term:true},
+    'neon-stage':{bg:'#10071c', card:'#180a30', line:'#ff2d8b', stage:true},
+    brutalist:{bg:'#f2f0ec', card:'#fff', line:'#000', brutal:true},
+    dashboard:{bg:'#07111a', card:'#0d1722', line:'#38bdf8', dash:true},
+    holo:{bg:'#08121c', card:'rgba(8,24,40,0.7)', line:'#00e5ff', glass:true, hololine:true},
+    void:{bg:'#04050a', card:'#0a0d16', line:'#1e2740', voidline:true},
+  }
+  const s=map[id]||map['cyber-grid']
+  return <div style={{ width:'100%', height:'100%', background:s.bg, position:'relative', padding:8, overflow:'hidden', color:s.light||s.paper||s.brutal?'#111':_TX }}>{s.grid&&<div style={{ position:'absolute', inset:0, backgroundImage:`linear-gradient(${_BD} 1px,transparent 1px),linear-gradient(90deg,${_BD} 1px,transparent 1px)`, backgroundSize:'14px 14px', opacity:.45 }}/>} {s.stage&&<div style={{ position:'absolute', left:0, right:0, bottom:0, height:28, background:'linear-gradient(180deg,transparent,rgba(255,45,139,.22))' }}/>}<div style={{ position:'relative', height:'100%', display:'grid', gridTemplateColumns:s.dash?'34px 1fr':'1fr 1fr', gap:6 }}><div style={{ background:s.card, border:`${s.brutal?2:1}px solid ${s.line}${s.brutal?'':'55'}`, borderRadius:s.glass?12:s.brutal?0:5, backdropFilter:s.glass?'blur(14px)':undefined, boxShadow:s.brutal?'4px 4px 0 #000':undefined }}/><div style={{ background:s.card, border:`1px solid ${s.line}${s.brutal?'':'44'}`, borderRadius:s.paper?2:s.glass?12:s.brutal?0:5, padding:6 }}><div style={{ height:4, width:'70%', background:s.line, marginBottom:6 }}/><div style={{ height:3, width:'90%', background:s.line, opacity:.35, marginBottom:4 }}/><div style={{ height:3, width:'52%', background:s.line, opacity:.25 }}/></div></div></div>
+}
+function FwLoadingPreview({ id }) {
+  const g='#00ff88', cy='var(--cyan)'
+  const p={ terminal:<div style={{ fontFamily:_FM, fontSize: 11, color:g, textAlign:'left', padding:'5px 7px', background:'#060a06', border:'1px solid color-mix(in srgb, var(--green) 20%, transparent)', borderRadius:3, width:'100%' }}><div style={{ color:_MT, marginBottom:1 }}>{'>'} Initializing...</div><div>{'>'} <span style={{ color:g }}>eth0: connected [OK]</span></div><div style={{ display:'flex', gap:3, marginTop:4, height:2 }}><div style={{ flex:3, background:`linear-gradient(90deg,${g},${cy})`, borderRadius:2 }}/><div style={{ flex:2, background:'rgba(255,255,255,0.06)', borderRadius:2 }}/></div></div>, minimal:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7 }}><div style={{ width:26, height:26, borderRadius:'50%', border:`1.5px solid transparent`, borderTopColor:g, borderBottomColor:cy, animation:'fwSpin 1s linear infinite' }}/><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, letterSpacing:2 }}>LOADING</div></div>, glitch:<div style={{ position:'relative', fontFamily:_FD, fontSize:20, fontWeight:700, letterSpacing:-1, textAlign:'center' }}>TANVIR<span style={{ color:g }}>.</span><span style={{ position:'absolute', inset:0, color:cy, clipPath:'polygon(0 0,100% 0,100% 40%,0 40%)', animation:'fwGlitch 2s infinite', opacity:0.6 }}>TANVIR.</span></div>, splash:<div style={{ textAlign:'center' }}><div style={{ fontFamily:_FD, fontSize:20, fontWeight:700, letterSpacing:-1 }}>T<span style={{ color:g }}>.</span>TANVIR</div><div style={{ display:'flex', justifyContent:'center', gap:4, marginTop:5 }}>{[0,1,2].map(i=><div key={i} style={{ width:4, height:4, borderRadius:'50%', background:g, animation:`fwBounce 0.8s ${i*0.15}s ease-in-out infinite alternate` }}/>)}</div></div>, matrix:<div style={{ fontFamily:_FM, fontSize: 11, color:g, textAlign:'center', lineHeight:1.5 }}>{['ＡＢＣＤ','ＨＩＪＫ','ＱＲＳＴ'].map((r,i)=><div key={i} style={{ opacity:1-i*0.25 }}>{r}</div>)}</div>, pulse:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7 }}><div style={{ position:'relative', width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center' }}>{[0,1].map(i=><div key={i} style={{ position:'absolute', inset:i*7, borderRadius:'50%', border:`1px solid ${i===0?g:cy}`, animation:`fwPulse ${1.4+i*0.3}s ${i*0.2}s ease-in-out infinite` }}/>)}<div style={{ width:5, height:5, borderRadius:'50%', background:g }}/></div><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, letterSpacing:2 }}>CONNECTING</div></div>, cyber:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5 }}><div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:2 }}>{Array.from({length:18},(_,i)=><div key={i} style={{ width:7, height:7, borderRadius:1, background:i<11?cy:'color-mix(in srgb, var(--cyan) 8%, transparent)', border:`1px solid ${i<11?'color-mix(in srgb, var(--cyan) 70%, transparent)':'color-mix(in srgb, var(--cyan) 12%, transparent)'}` }}/>)}</div><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, letterSpacing:2 }}>BOOT SEQUENCE</div></div>, bars:<div style={{ width:'100%', display:'flex', flexDirection:'column', gap:4 }}>{[['KERNEL',100,g],['NETWORK',72,cy],['ASSETS',45,g]].map(([l,p,c])=><div key={l}><div style={{ display:'flex', justifyContent:'space-between', fontFamily:_FM, fontSize: 11, color:_MT, marginBottom:2 }}><span>{l}</span><span style={{ color:c }}>{p}%</span></div><div style={{ height:2, background:'rgba(255,255,255,0.06)', borderRadius:1 }}><div style={{ height:'100%', width:`${p}%`, background:`linear-gradient(90deg,${c},color-mix(in srgb, var(--green) 30%, transparent))`, borderRadius:1 }}/></div></div>)}</div>, wave:<div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5 }}><div style={{ display:'flex', alignItems:'flex-end', gap:2, height:22 }}>{Array.from({length:8},(_,i)=><div key={i} style={{ width:4, borderRadius:2, background:i%2===0?g:cy, animation:`fwWave ${0.8+i*0.06}s ${i*0.06}s ease-in-out infinite` }}/>)}</div><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, letterSpacing:2 }}>LOADING</div></div>, neon:<div style={{ textAlign:'center', fontFamily:_FD, fontSize:18, fontWeight:900, letterSpacing:3, color:'#fff', animation:'fwNeon 3s infinite', textShadow:`0 0 8px ${g},0 0 20px ${g}` }}>TANVIR</div>, orbit:<div style={{ position:'relative', width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ position:'absolute', width:32, height:32, borderRadius:'50%', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)' }}/><div style={{ position:'absolute', inset:1, animation:'fwSpin 1.2s linear infinite' }}><div style={{ position:'absolute', top:0, left:'50%', width:5, height:5, marginLeft:-2, borderRadius:'50%', background:g }}/></div><div style={{ width:5, height:5, borderRadius:'50%', background:cy }}/></div>, typewriter:<div style={{ fontFamily:_FM, fontSize:13, fontWeight:700, color:_TX }}>T<span style={{ display:'inline-block', width:6, height:12, background:g, marginLeft:2, verticalAlign:'text-bottom', animation:'fwBlink 0.7s steps(1) infinite' }}/></div>, dna:<div style={{ display:'flex', flexDirection:'column', gap:3, alignItems:'center' }}>{[0,1,2].map(i=><div key={i} style={{ display:'flex', alignItems:'center', width:44, justifyContent:'center' }}><div style={{ width:5, height:5, borderRadius:'50%', background:g, animation:`fwPulse 0.7s ${i*0.14}s ease-in-out infinite` }}/><div style={{ flex:1, height:1, background:'color-mix(in srgb, var(--cyan) 40%, transparent)' }}/><div style={{ width:5, height:5, borderRadius:'50%', background:cy, animation:`fwPulse 0.7s ${i*0.14}s ease-in-out infinite` }}/></div>)}</div>, countdown:<div style={{ fontFamily:_FM, fontWeight:900, fontSize:20, color:cy, animation:'fwPulse 1.28s ease-in-out infinite' }}>3</div> }
+  p.holo = <div style={{ position:'relative', width:44, height:44, display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ position:'absolute', inset:0, borderRadius:'50%', border:'1px solid rgba(0,229,255,0.4)', borderTop:'1px solid var(--cyan)', animation:'fwSpin 0.9s linear infinite' }}/><div style={{ position:'absolute', inset:6, borderRadius:'50%', border:'1px dashed rgba(0,229,255,0.35)' }}/><div style={{ width:7, height:7, borderRadius:'50%', background:'var(--cyan)', boxShadow:'0 0 10px var(--cyan)' }}/></div>
+  p.crt = <div style={{ fontFamily:_FM, fontSize: 11, color:g, textAlign:'left', padding:'5px 7px', background:'#020604', border:'1px solid rgba(0,255,0,0.25)', borderRadius:3, width:'100%', position:'relative' }}>{['> BIOS ok','> GRID ready','> NET eth0 UP'].map((l,i)=><div key={i} style={{ opacity:1-i*0.25, lineHeight:1.7, textShadow:'0 0 4px rgba(0,255,0,0.5)' }}>{l}</div>)}<div style={{ position:'absolute', inset:0, pointerEvents:'none', background:'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.25) 2px,rgba(0,0,0,0.25) 4px)' }}/><span style={{ position:'absolute', bottom:2, left:7, width:5, height:9, background:g, animation:'fwBlink 0.8s steps(2) infinite' }}/></div>
+  return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'100%', height:'100%' }}>{p[id]||p.terminal}</div>
+}
+function FwAnimPreview({ id }) {
+  const [ping,setPing]=useState(false)
+  const map={ smooth:{d:'0.35s',e:'cubic-bezier(0.16,1,0.3,1)',info:'0.35s · elastic'}, snappy:{d:'0.12s',e:'cubic-bezier(0.4,0,0.2,1)',info:'0.12s · crisp'}, bouncy:{d:'0.45s',e:'cubic-bezier(0.34,1.56,0.64,1)',info:'0.45s · spring'}, expressive:{d:'0.5s',e:'cubic-bezier(0.22,1.5,0.36,1)',info:'0.5s · dramatic'}, reduced:{d:'0.2s',e:'cubic-bezier(0.4,0,0.2,1)',info:'0.2s · subtle'}, elastic:{d:'0.5s',e:'cubic-bezier(0.68,-0.55,0.27,1.55)',info:'0.5s · overshoot'}, cinematic:{d:'1.2s',e:'cubic-bezier(0.25,0.1,0.25,1)',info:'1.2s · dramatic'}, none:{d:'0s',e:'linear',info:'instant'} }
+  const p=map[id]||map.smooth
+  return <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:7, width:'100%', cursor:'pointer' }} title="Click to preview" onClick={()=>{setPing(false);requestAnimationFrame(()=>requestAnimationFrame(()=>setPing(true)))}} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}><div style={{ width:26, height:26, borderRadius:'50%', background:'color-mix(in srgb, var(--cyan) 18%, transparent)', border:'2px solid var(--cyan)', transform:ping?'scale(1.5) translateY(-10px)':'scale(1) translateY(0)', opacity:id==='none'?(ping?0:1):1, transition:`transform ${p.d} ${p.e}, opacity ${p.d} ${p.e}`, boxShadow:'0 0 8px color-mix(in srgb, var(--cyan) 30%, transparent)' }} onTransitionEnd={()=>setPing(false)}/><div style={{ fontFamily:_FM, fontSize: 11, color:_MT, letterSpacing:1, textAlign:'center' }}>{p.info}</div></div>
+}
+
+// ── Button previews (previously empty on the Cards/Buttons/Tables/Badges tabs) ─
+function FwButtonPreview({ id }) {
+  const conf = {
+    cyber:     { bg:_G, color:'#000', border:'none', r:2, clip:'polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))', label:'EXECUTE' },
+    pill:      { bg:_G, color:'#000', border:'none', r:999, label:'Continue' },
+    brutalist: { bg:_G, color:'#000', border:'2px solid #000', r:0, sh:'3px 3px 0 #000', label:'SUBMIT' },
+    ghost:     { bg:'transparent', color:_CY, border:`1px solid ${_CY}66`, r:6, label:'Cancel' },
+    neon:      { bg:'transparent', color:_CY, border:`1px solid ${_CY}`, r:4, sh:`0 0 12px ${_CY}55`, label:'LAUNCH' },
+    terminal:  { bg:'transparent', color:_G, border:`1px solid ${_G}55`, r:0, label:'> run' },
+    minimal:   { bg:'transparent', color:_MT, border:'none', r:4, label:'Edit' },
+    holo:      { bg:'rgba(8,20,32,0.85)', color:'#e6faff', border:'1px solid rgba(0,229,255,0.5)', r:8, sh:'0 0 14px rgba(0,229,255,0.25)', label:'ACTIVATE' },
+  }
+  const s = conf[id] || conf.cyber
+  return (
+    <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:7, alignItems:'center', padding:'6px 0' }}>
+      <div style={{
+        fontFamily:_FM, fontSize:11, fontWeight:700, letterSpacing:1.5,
+        padding:'7px 14px', background:s.bg, color:s.color, border:s.border,
+        borderRadius:s.r, boxShadow:s.sh, clipPath:s.clip, whiteSpace:'nowrap',
+      }}>{s.label}</div>
+      <div style={{ display:'flex', gap:6 }}>
+        <div style={{ width:36, height:14, borderRadius:s.r, background:s.bg, opacity:.45, border:s.border }} />
+        <div style={{ width:22, height:14, borderRadius:s.r, background:'transparent', border:s.border, opacity:.55 }} />
+      </div>
+    </div>
+  )
+}
+
+function FwCardPreview({ id }) {
+  const conf = {
+    cyber:     { bg:_BG2, border:`1px solid ${_CY}44`, r:4, accent:_CY, sh:'none', bar:true },
+    glass:     { bg:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.14)', r:10, accent:_CY, bd:'blur(12px)', sh:'0 8px 24px rgba(0,0,0,0.3)' },
+    brutalist: { bg:'#fff', border:'2px solid #000', r:0, accent:'#000', sh:'4px 4px 0 #000', dark:true },
+    paper:     { bg:'#faf6ef', border:'1px solid #d9cbb8', r:2, accent:'#b45309', sh:'0 2px 6px rgba(0,0,0,0.12)', dark:true },
+    minimal:   { bg:_BG2, border:`1px solid ${_BD}`, r:8, accent:_MT, sh:'none' },
+    neon:      { bg:_BG, border:`1px solid ${_CY}`, r:6, accent:_CY, sh:`0 0 14px ${_CY}44` },
+    terminal:  { bg:'#060a06', border:'1px solid #33ff3355', r:2, accent:'#33ff33', sh:'none' },
+  }
+  const s = conf[id] || conf.cyber
+  const line = s.dark ? '#111' : _TX
+  const meta = s.dark ? '#6b7280' : _MT
+  return (
+    <div style={{
+      width:'100%', height:'100%', padding:8, boxSizing:'border-box',
+      background:s.bg, border:s.border, borderRadius:s.r, boxShadow:s.sh,
+      backdropFilter:s.bd, display:'flex', flexDirection:'column', gap:5,
+    }}>
+      {s.bar && <div style={{ width:28, height:3, borderRadius:2, background:s.accent }} />}
+      <div style={{ height:6, width:'72%', borderRadius:2, background:line, opacity:.85 }} />
+      <div style={{ height:4, width:'92%', borderRadius:2, background:meta, opacity:.45 }} />
+      <div style={{ height:4, width:'58%', borderRadius:2, background:meta, opacity:.3 }} />
+      <div style={{ marginTop:'auto', display:'flex', gap:4 }}>
+        <div style={{ width:22, height:8, borderRadius:2, background:s.accent, opacity:.7 }} />
+        <div style={{ width:16, height:8, borderRadius:2, background:meta, opacity:.3 }} />
+      </div>
+    </div>
+  )
+}
+
+function FwTablePreview({ id }) {
+  const conf = {
+    cyber:     { head:_BG3, row:_BG2, line:_BD, r:3, stripe:false, accent:_CY },
+    minimal:   { head:'transparent', row:'transparent', line:'transparent', r:0, accent:_MT, underline:true },
+    brutalist: { head:'#fff', row:'#fff', line:'#000', r:0, thick:true, dark:true, accent:'#000' },
+    glass:     { head:'rgba(255,255,255,0.08)', row:'rgba(255,255,255,0.04)', line:'rgba(255,255,255,0.12)', r:6, bd:'blur(10px)', accent:_CY },
+    striped:   { head:_BG3, row:_BG2, line:'transparent', r:3, stripe:true, accent:_G },
+  }
+  const s = conf[id] || conf.cyber
+  const txt = s.dark ? '#111' : _TX
+  const mut = s.dark ? '#6b7280' : _MT
+  return (
+    <div style={{
+      width:'100%', height:'100%', padding:7, boxSizing:'border-box',
+      display:'flex', flexDirection:'column', gap:3, backdropFilter:s.bd,
+    }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 0.7fr', gap:4, padding:'4px 5px', background:s.head, borderRadius:s.r, borderBottom:s.underline?`1px solid ${s.line}`:undefined, borderTop:s.thick?`2px solid ${s.line}`:undefined, borderLeft:s.thick?`2px solid ${s.line}`:undefined, borderRight:s.thick?`2px solid ${s.line}`:undefined }}>
+        {['HOST','ROLE','PING'].map(h => <div key={h} style={{ fontFamily:_FM, fontSize:11, color:s.accent, letterSpacing:1 }}>{h}</div>)}
+      </div>
+      {[0,1,2].map(i => (
+        <div key={i} style={{
+          display:'grid', gridTemplateColumns:'1.2fr 1fr 0.7fr', gap:4,
+          padding:'3px 5px', borderRadius:s.r,
+          background: s.stripe && i%2 ? 'color-mix(in srgb, var(--green) 6%, transparent)' : s.row,
+          borderBottom:s.underline?`1px solid ${s.line}`:(s.thick?undefined:`1px solid ${s.line}44`),
+          borderLeft:s.thick?`2px solid ${s.line}`:undefined,
+          borderRight:s.thick?`2px solid ${s.line}`:undefined,
+        }}>
+          <div style={{ height:4, borderRadius:2, background:txt, opacity:.75 }} />
+          <div style={{ height:4, borderRadius:2, background:mut, opacity:.45 }} />
+          <div style={{ height:4, borderRadius:2, background:s.accent, opacity:.55 }} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function FwBadgePreview({ id }) {
+  const conf = {
+    pill:      { r:999, bg:'color-mix(in srgb, var(--green) 14%, transparent)', color:_G, border:'none' },
+    square:    { r:2, bg:'color-mix(in srgb, var(--cyan) 12%, transparent)', color:_CY, border:`1px solid ${_CY}44` },
+    neon:      { r:3, bg:'transparent', color:_CY, border:`1px solid ${_CY}`, sh:`0 0 10px ${_CY}55` },
+    minimal:   { r:0, bg:'transparent', color:_MT, border:'none' },
+    brutalist: { r:0, bg:_G, color:'#000', border:'2px solid #000', sh:'2px 2px 0 #000' },
+  }
+  const s = conf[id] || conf.pill
+  return (
+    <div style={{ width:'100%', display:'flex', flexWrap:'wrap', gap:6, alignItems:'center', justifyContent:'center', padding:'4px 0' }}>
+      {['ONLINE','v2.0','PRO'].map((t,i) => (
+        <span key={t} style={{
+          fontFamily:_FM, fontSize:11, fontWeight:700, letterSpacing:1.5,
+          padding:'3px 8px', borderRadius:s.r, background:s.bg, color:s.color,
+          border:s.border, boxShadow:s.sh, opacity: i===2 ? .65 : 1,
+        }}>{t}</span>
+      ))}
+    </div>
+  )
+}
+
+export {
+  // Style tokens — also consumed by ThemeLibrary.jsx cards/sections
+  _G, _CY, _BG, _BG2, _BG3, _BD, _TX, _MT, _FM, _FD, _tag,
+  FwMenuPreview, FwNotifyPreview, FwDialogPreview,
+  FwInputPreview, FwSurfacePreview, FwLoadingPreview, FwAnimPreview,
+  FwButtonPreview, FwCardPreview, FwTablePreview, FwBadgePreview,
+}
