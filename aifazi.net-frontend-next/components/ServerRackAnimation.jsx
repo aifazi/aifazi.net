@@ -1075,6 +1075,75 @@ function GlobeMode({ visibleRef }) {
     return () => { clearTimeout(t); ro.disconnect() }
   }, [])
 
+  // ── Browser zoom (ctrl+wheel) — resync dpr/size so chrome stays aligned ──
+  useEffect(() => {
+    let t = 0
+    let lastDpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio
+    const resync = () => {
+      clearTimeout(t)
+      t = setTimeout(() => {
+        const dpr = window.devicePixelRatio || 1
+        const wrap = wrapRef.current
+        const g = globeRef.current
+        const width = Math.max(240, Math.floor(wrap?.clientWidth || 480))
+        const height = Math.max(240, Math.floor(wrap?.clientHeight || 360))
+        if (g) {
+          try {
+            // COBE multiplies by devicePixelRatio — pass CSS pixels again
+            g.update({ width, height, devicePixelRatio: Math.min(dpr, 2) })
+          } catch { /* ignore */ }
+        }
+        // Force CSS anchor labels / chrome to re-measure after zoom
+        wrap?.dispatchEvent(new Event('resize'))
+        lastDpr = dpr
+      }, 180)
+    }
+    window.addEventListener('resize', resync)
+    const vv = window.visualViewport
+    vv?.addEventListener('resize', resync)
+    vv?.addEventListener('scroll', resync)
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('resize', resync)
+      vv?.removeEventListener('resize', resync)
+      vv?.removeEventListener('scroll', resync)
+    }
+  }, [])
+
+  // ── City label collision: hide stacked labels (keep hub / focused) ──
+  useEffect(() => {
+    const resolveCollisions = () => {
+      const wrap = wrapRef.current
+      if (!wrap) return
+      const els = Array.from(wrap.querySelectorAll('.globe-city-label'))
+      els.forEach((el) => el.removeAttribute('data-collide'))
+      const rank = (el) =>
+        el.classList.contains('is-focus') ? 0 : el.classList.contains('is-hub') ? 1 : 2
+      const candidates = els
+        .filter((el) => (el.style.opacity || '1') !== '0')
+        .sort((a, b) => rank(a) - rank(b))
+      const kept = []
+      for (const el of candidates) {
+        const r = el.getBoundingClientRect()
+        if (r.width === 0) continue
+        const overlap = kept.some((k) => {
+          const kr = k.getBoundingClientRect()
+          return !(
+            r.right < kr.left - 6 ||
+            r.left > kr.right + 6 ||
+            r.bottom < kr.top - 6 ||
+            r.top > kr.bottom + 6
+          )
+        })
+        if (overlap) el.setAttribute('data-collide', '')
+        else kept.push(el)
+      }
+    }
+    const id = setInterval(resolveCollisions, 350)
+    resolveCollisions()
+    return () => clearInterval(id)
+  }, [focusCity])
+
   // ── Pointer + keyboard (drag-rotate XYZ, pinch/wheel zoom, arrows) ──
   useEffect(() => {
     const canvas = canvasRef.current
@@ -1447,6 +1516,11 @@ function GlobeMode({ visibleRef }) {
           color: var(--green);
           border-color: color-mix(in srgb, var(--green) 35%, transparent);
           font-weight: 700;
+        }
+        .globe-city-label[data-collide] {
+          opacity: 0 !important;
+          pointer-events: none !important;
+          filter: none !important;
         }
         .globe-city-hub-dot {
           display: inline-block;
