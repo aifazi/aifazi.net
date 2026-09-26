@@ -105,9 +105,9 @@ export default function About() {
         {/* Right: bio text */}
         <div ref={textRef} className="fade-up">
           {[
-            { key: 'about.p1', def: "I'm Tanvir, a dedicated Network Engineer and IT Specialist with a passion for building robust, scalable, and secure infrastructure. I thrive at the intersection of complex systems and practical problem-solving." },
-            { key: 'about.p2', def: "With hands-on experience in enterprise networking, server administration, cloud infrastructure, and cybersecurity, I deliver end-to-end IT solutions that businesses rely on." },
-            { key: 'about.p3', def: "Whether it's architecting a multi-site VPN, hardening firewalls, or migrating workloads to the cloud — I bring precision and reliability to every project." },
+            { key: 'about.p1', def: "I'm Tanvir — IT Systems Administrator and Full-Stack Developer based in Al Ain, UAE. I work across enterprise infrastructure (Windows Server, Microsoft 365, networking) and ship production web and mobile apps." },
+            { key: 'about.p2', def: "From IT policy and Zero Trust for a vendor-hosted ERP, to aifazi.net (forum, chat, blog, admin, theming) and a Play Store mobile app — I own projects end-to-end." },
+            { key: 'about.p3', def: "I also build commercial FiveM scripts (QB-Core, QBX, ESX) and keep a self-hosted lab for live testing. Open to remote freelance: web/app development, IT consulting, network support, and custom scripting." },
           ].map(({ key, def }, i) => (
             <p key={key} style={{ color: 'var(--muted)', lineHeight: 1.8, marginBottom: 20, fontSize: i === 0 ? 19 : 17, opacity: i === 0 ? 1 : 0.85 }}>
               <EditableText contentKey={key} defaultValue={def} multiline />
