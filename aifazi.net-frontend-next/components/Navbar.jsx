@@ -196,7 +196,7 @@ export default function Navbar() {
   const registerRoute       = isFiveM
     ? `/login?tab=register&next=${encodeURIComponent(fivemRoute('/connect'))}`
     : '/login?tab=register'
-  const profileRoute        = isFiveM ? fiveMProfileRoute : '/profile'
+  const profileRoute        = '/profile'
 
   // Load header style from site settings (user package override wins for this browser)
   useEffect(() => {

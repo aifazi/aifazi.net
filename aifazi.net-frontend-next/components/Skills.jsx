@@ -9,44 +9,44 @@ import api from '@/lib/api'
 
 const DEFAULT_SKILLS = [
   {
-    icon: '🌐', title: 'Networking & Infrastructure', tagline: 'Router, switch, server, and wireless deployment across enterprise environments',
+    icon: '🧰', title: 'IT & Infrastructure', tagline: 'Windows Server, Microsoft 365, security, backup & compliance',
     items: [
-      { name: 'Router / Switch / Server Config', pct: 90 },
-      { name: 'Wireless AP & Controller', pct: 85 },
-      { name: 'NAS Storage Management', pct: 82 },
-      { name: 'Network Fault Diagnosis', pct: 88 },
+      { name: 'Windows Server & Active Directory', pct: 90 },
+      { name: 'Microsoft 365 / Entra ID', pct: 88 },
+      { name: 'Network Security (WatchGuard)', pct: 85 },
+      { name: 'Backup & DR (Veeam)', pct: 85 },
     ],
-    proven: 'Multi-site deployments · Wireless controller setups · NAS configuration',
+    proven: 'IT policy suite · Zero Trust · Vendor/AMC management',
   },
   {
-    icon: '🧠', title: 'Systems & Hardware', tagline: 'End-to-end hardware troubleshooting, OS deployment, and server administration',
+    icon: '💻', title: 'Web Development', tagline: 'Full-stack web apps with modern JS/Python stacks',
     items: [
-      { name: 'Hardware Troubleshooting', pct: 92 },
-      { name: 'OS & Application Install', pct: 90 },
-      { name: 'Server Backup & Restore', pct: 85 },
-      { name: 'System Failure Recovery', pct: 86 },
+      { name: 'React / Next.js', pct: 92 },
+      { name: 'Node.js / Express', pct: 88 },
+      { name: 'FastAPI (Python)', pct: 86 },
+      { name: 'Supabase / MongoDB', pct: 85 },
     ],
-    proven: 'Server backup/restore · Desktop/Laptop setup · OS deployments',
+    proven: 'aifazi.net platform · CMS builder · Vercel + Railway deploys',
   },
   {
-    icon: '🔒', title: 'Security & User Management', tagline: 'Account provisioning, access control, and endpoint security enforcement',
+    icon: '📱', title: 'Mobile & Game Scripting', tagline: 'React Native / Expo and FiveM commercial scripts',
     items: [
-      { name: 'Antivirus / Anti-Malware', pct: 88 },
-      { name: 'User Account Management', pct: 90 },
-      { name: 'Password Management', pct: 88 },
-      { name: 'Etisalat Account Admin', pct: 85 },
+      { name: 'React Native / Expo / EAS', pct: 85 },
+      { name: 'Lua / FiveM (QB-Core / QBX / ESX)', pct: 90 },
+      { name: 'ox_lib / Tebex', pct: 85 },
+      { name: 'Play Store & OTA delivery', pct: 80 },
     ],
-    proven: 'Etisalat accounts · Role-based provisioning · Security enforcement',
+    proven: 'Play Store app shipped · Tebex marketplace scripts',
   },
   {
-    icon: '🛠️', title: 'IT Support & Operations', tagline: '24×7 helpdesk, service request management, and end-user support',
+    icon: '☁️', title: 'Cloud & DevOps', tagline: 'Vercel, Cloudflare, Docker, and self-hosted infrastructure',
     items: [
-      { name: '24×7 Helpdesk Support', pct: 90 },
-      { name: 'Service Request Management', pct: 88 },
-      { name: 'End-User Training', pct: 82 },
-      { name: 'Vendor Communication', pct: 80 },
+      { name: 'Vercel / Railway', pct: 88 },
+      { name: 'Cloudflare Workers', pct: 82 },
+      { name: 'Docker / Self-hosted / Home lab', pct: 85 },
+      { name: 'CI & OTA update delivery', pct: 80 },
     ],
-    proven: '24/7 incident response · Store & office setups · Supplier coordination',
+    proven: 'CDN Worker · home lab · production deploys',
   },
 ]
 
