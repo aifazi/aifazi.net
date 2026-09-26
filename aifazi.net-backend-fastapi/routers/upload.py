@@ -168,9 +168,8 @@ _MAGIC_BYTES = [
     (b"OggS", "audio/ogg"),
     (b"RIFF", "audio/wav"),
     (b"%PDF", "application/pdf"),
-    (b"PK\x03\x04", "application/zip"),
-    (b"PK\x03\x04", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-    (b"PK\x03\x04", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    # NOTE: PK zip / Office container is handled in _sniff_mimetype (not here) so
+    # a claimed .docx/.xlsx fallback can win over the generic application/zip.
 ]
 
 
@@ -192,12 +191,14 @@ def _sniff_mimetype(content: bytes, fallback: str) -> str:
                 if fourcc == b"WAVE":
                     return "audio/wav"
             return mime
-    # Office formats (docx/xlsx) share the .zip container; we can't distinguish
-    # them by magic bytes alone, so let the allow-list decide — but never let an
-    # arbitrary claimed MIME through without a matching signature.
-    if fallback in ("application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") and content.startswith(b"PK\x03\x04"):
-        return fallback
+    # PK zip container: Office OOXML shares this header. Prefer an allow-listed
+    # Office claimed type; otherwise report application/zip (not in the public
+    # bucket allowlist — zipped payloads stay rejected).
+    if content.startswith(b"PK\x03\x04"):
+        if fallback in ("application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
+            return fallback
+        return "application/zip"
     return "application/octet-stream"
 
 

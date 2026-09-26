@@ -42,7 +42,7 @@ try:
 except ImportError:
     _httpx = None  # type: ignore[assignment]  # optional dep; guarded at use sites
 
-from database import supabase
+from database import _escape_ilike, supabase
 from dependencies import CookieHTTPBearer
 from jwt_compat import JWTError, jwt
 from utils.oauth_state import (
@@ -176,7 +176,7 @@ def _find_user_by_ci(field: str, value: str) -> dict | None:
     value = (value or "").strip()
     if not value:
         return None
-    res = supabase.table("users").select("id").ilike(field, value).limit(5).execute()
+    res = supabase.table("users").select("id").ilike(field, _escape_ilike(value)).limit(5).execute()
     needle = value.lower()
     return next((row for row in (res.data or []) if str(row.get(field, "")).lower() == needle), None)
 

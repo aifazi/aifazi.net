@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && apt-get clean
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wireguard-tools iptables iproute2 gosu curl \
+    wireguard-tools iptables iproute2 gosu curl wget \
     libjpeg62-turbo zlib1g \
     && rm -rf /var/lib/apt/lists/*
 

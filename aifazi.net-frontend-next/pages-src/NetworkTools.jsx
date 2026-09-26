@@ -23,7 +23,7 @@ function isValidIp(ip) {
 // ── Small presentational components ───────────────────────────────────────────
 const Row = ({ label, value, mono = true, color }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', flexShrink: 0 }}>{label}</span>
+    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', flexShrink: 0 }}>{label}</span>
     <span style={{ fontFamily: mono ? 'var(--font-mono)' : 'var(--font-display)', fontSize: 13, color: color || 'var(--green)', letterSpacing: mono ? 1 : 0, wordBreak: 'break-all', textAlign: 'right' }}>{value}</span>
   </div>
 )
@@ -39,8 +39,8 @@ const InfoCard = ({ icon, label, value, color, onClick }) => (
     }}
     onMouseEnter={e => onClick && (e.currentTarget.style.borderColor = 'var(--green)')}
     onMouseLeave={e => onClick && (e.currentTarget.style.borderColor = 'var(--border)')}
-  >
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
+   role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
       {icon} {label}
     </div>
     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: color || 'var(--text)', wordBreak: 'break-all', letterSpacing: 1 }}>
@@ -51,7 +51,7 @@ const InfoCard = ({ icon, label, value, color, onClick }) => (
 
 const Field = ({ label, value, onChange, placeholder, color }) => (
   <div style={{ marginBottom: 12 }}>
-    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{label}</label>
+    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{label}</label>
     <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
       style={{ ...S.input, color: color || 'var(--text)', fontFamily: 'var(--font-mono)' }} />
   </div>
@@ -126,7 +126,7 @@ function SubnetCalc() {
           <Row label="USABLE HOSTS"      value={result.hosts} color="var(--green)" />
           <Row label="IP CLASS"          value={`Class ${result.ipClass}`} color="var(--muted)" />
           <div style={{ padding: '12px 0' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>BINARY BREAKDOWN</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>BINARY BREAKDOWN</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1 }}>
               IP:  {result.ipBin.split('.').map((b, i) => (
                 <span key={i}>{i > 0 && <span style={{ color: 'var(--border)' }}>.</span>}
@@ -157,7 +157,7 @@ function CidrTable() {
         <thead>
           <tr style={{ borderBottom: '1px solid var(--green)' }}>
             {['CIDR','SUBNET MASK','USABLE HOSTS','/16 SUBNETS'].map(h => (
-              <th key={h} style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--green)', fontSize: 9, letterSpacing: 2 }}>{h}</th>
+              <th key={h} style={{ padding: '8px 16px', textAlign: 'left', color: 'var(--green)', fontSize: 11, letterSpacing: 2 }}>{h}</th>
             ))}
           </tr>
         </thead>
@@ -265,7 +265,7 @@ function GlobeMap({ lat, lon, city, mapId }) {
   return (
     <div style={{ position: 'relative', marginTop: 24 }}>
       <div style={{
-        fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3,
+        fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3,
         color: 'var(--green)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8
       }}>
         <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
@@ -297,7 +297,12 @@ function IpInfo() {
     setError(''); setResult(null)
     setLoading(true)
     try {
-      const url = target ? `https://ipapi.co/${target}/json/` : 'https://ipapi.co/json/'
+      // Only allow IPv4/IPv6 literals or hostname-safe lookups — never raw path input.
+      const q = String(target || '').trim()
+      if (q && !/^[0-9a-fA-F.:]{2,45}$/.test(q)) {
+        throw new Error('Enter a valid IP address')
+      }
+      const url = q ? `https://ipapi.co/${encodeURIComponent(q)}/json/` : 'https://ipapi.co/json/'
       const res = await fetch(url)
       const data = await res.json()
       if (data.error) throw new Error(data.reason || 'Lookup failed')
@@ -332,7 +337,7 @@ function IpInfo() {
           {loading ? '…' : 'LOOKUP'}
         </button>
       </div>
-      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 20 }}>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 20 }}>
         Leave blank to auto-detect your public IP address
       </p>
 
@@ -355,7 +360,7 @@ function IpInfo() {
             display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
           }}>
             <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 4 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 4 }}>
                 {ip.trim() ? 'QUERIED IP ADDRESS' : 'YOUR PUBLIC IP ADDRESS'}
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 32, color: 'var(--green)', letterSpacing: 3, fontWeight: 700 }}>
@@ -367,7 +372,7 @@ function IpInfo() {
             </div>
             <button
               onClick={() => copy(result.ip)}
-              style={{ ...S.btn, marginLeft: 'auto', fontSize: 9, padding: '8px 14px' }}
+              style={{ ...S.btn, marginLeft: 'auto', fontSize: 11, padding: '8px 14px' }}
             >COPY IP</button>
           </div>
 
@@ -488,11 +493,11 @@ function WildcardCalc() {
             { label: 'OSPF STATEMENT', value: result.ospf,    color: 'var(--cyan)' },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '12px 16px' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 6 }}>{label}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 6 }}>{label}</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color, letterSpacing: 1, cursor: 'pointer' }}
                 onClick={() => navigator.clipboard.writeText(value).then(() => notify.success('Copied!'))}
                 title="Click to copy"
-              >{value}</div>
+               role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>{value}</div>
             </div>
           ))}
         </div>
@@ -568,7 +573,7 @@ export default function NetworkTools() {
         <div className="nt-tabs">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
-              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
               padding: '10px 14px', whiteSpace: 'nowrap',
               background: tab === t.id ? 'var(--green)' : 'var(--bg2)',
               color: tab === t.id ? '#000' : 'var(--muted)',

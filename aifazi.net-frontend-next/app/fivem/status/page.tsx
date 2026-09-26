@@ -51,15 +51,15 @@ export default function FiveMStatus() {
         {/* Stats grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginTop: 24 }}>
           <div style={{ padding: 20, borderRadius: 10, background: 'color-mix(in srgb, var(--text) 3%, transparent)', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>PLAYERS</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>PLAYERS</div>
             <div style={{ fontSize: 28, fontWeight: 800, color: C, marginTop: 4 }}>{playerCount}/{status?.max_players || 128}</div>
           </div>
           <div style={{ padding: 20, borderRadius: 10, background: 'color-mix(in srgb, var(--text) 3%, transparent)', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>UPTIME</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>UPTIME</div>
             <div style={{ fontSize: 28, fontWeight: 800, color: G, marginTop: 4 }}>{status?.uptime_label || '—'}</div>
           </div>
           <div style={{ padding: 20, borderRadius: 10, background: 'color-mix(in srgb, var(--text) 3%, transparent)', border: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>LAST HEARTBEAT</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>LAST HEARTBEAT</div>
             <div style={{ fontSize: 14, color: 'var(--text)', marginTop: 8 }}>{status?.last_seen_label || (status?.last_seen ? new Date(status.last_seen).toLocaleTimeString() : '—')}</div>
           </div>
         </div>

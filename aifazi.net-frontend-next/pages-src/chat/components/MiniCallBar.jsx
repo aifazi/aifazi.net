@@ -8,10 +8,10 @@ export function MiniCallBar({ room, muted, camOff, deafened, onMute, onDeafen, o
         onMouseLeave={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 6%, transparent)'}>
         <span style={{ fontSize: 14 }}>{room.type === 'video' ? '📹' : '🔊'}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: T.mono, fontSize: 10, color: T.accent, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontFamily: T.mono, fontSize: 11, color: T.accent, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {room.name}
           </div>
-          <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted }}>
+          <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>
             {participants.length + 1} connected · Click to return
           </div>
         </div>

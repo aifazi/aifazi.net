@@ -327,13 +327,13 @@ export default function Terminal({ onClose }) {
           <div style={{ display: 'flex', gap: 6 }}>
             {['#ff5f57','#ffbd2e','#28c840'].map((c,i) => (
               <div key={i} onClick={i === 2 ? onClose : undefined}
-                style={{ width: 12, height: 12, borderRadius: '50%', background: c, cursor: i === 2 ? 'pointer' : 'default' }} />
+                style={{ width: 12, height: 12, borderRadius: '50%', background: c, cursor: i === 2 ? 'pointer' : 'default' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
             ))}
           </div>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>
             visitor@t.tanvir — bash
           </span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 12 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 12 }} aria-label="Close">✕</button>
         </div>
 
         {/* Output */}
@@ -344,7 +344,7 @@ export default function Terminal({ onClose }) {
             fontFamily: 'var(--font-mono)', fontSize: 13, lineHeight: 1.7,
             color: 'var(--green)', cursor: 'text',
           }}
-        >
+         role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           {lines.map((line, i) => (
             <div key={i} style={{
               whiteSpace: 'pre',
