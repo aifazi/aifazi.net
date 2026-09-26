@@ -2,8 +2,8 @@
 // forumProfileParts.jsx — shared profile widgets (extracted).
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
-import api from '@/lib/api'
-import { UserAvatar } from '@/lib/avatar'
+import api, { ensureAdminGate } from '@/lib/api'
+import { builtinAvatarEmoji, avatarUrl, UserAvatar, BUILTIN_AVATARS } from '@/lib/avatar'
 import { Select } from '../core/ui.jsx'
 import { useToast } from '../components/Toast'
 import { useNow } from '../hooks/useNow'
