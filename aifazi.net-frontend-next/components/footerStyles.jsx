@@ -1,6 +1,6 @@
 'use client'
 // footerStyles.jsx — footer visual variants (extracted for size).
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from '@/lib/router-compat'
 import api from '@/lib/api'
 import LiveVisitorBadge from './LiveVisitorBadge'

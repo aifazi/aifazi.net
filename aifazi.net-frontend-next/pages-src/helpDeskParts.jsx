@@ -1,6 +1,6 @@
 'use client'
 // helpDeskParts.jsx — ticket widgets & forms (extracted).
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import api from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { Select } from '../core/ui.jsx'
