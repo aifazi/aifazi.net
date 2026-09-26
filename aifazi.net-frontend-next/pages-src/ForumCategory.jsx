@@ -96,7 +96,7 @@ export default function ForumCategory() {
       <div className="community-shell">
 
         {/* Breadcrumb */}
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 22, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 22, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <Link to="/forum" style={{ color: 'var(--muted)', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--green)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}>FORUM</Link>
           <span>/</span>
           <span style={{ color: cat?.color || 'var(--cyan)' }}>{cat?.icon} {cat?.name?.toUpperCase()}</span>
@@ -126,7 +126,7 @@ export default function ForumCategory() {
             {cats.map(c => (
               <Link key={c.id || c._id} to={`/forum/category/${c.slug || c.id}`}
                 style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1.2,
+                  fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.2,
                   padding: '6px 12px', borderRadius: 999,
                   border: `1px solid ${c.slug === slug ? (c.color || 'var(--cyan)') : 'var(--border)'}`,
                   color: c.slug === slug ? (c.color || 'var(--cyan)') : 'var(--muted)',
@@ -146,7 +146,7 @@ export default function ForumCategory() {
             {cats.length > 1 && (
               <Card style={{ padding: 22 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>ALL CATEGORIES</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>ALL CATEGORIES</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {cats.map(c => (
@@ -165,7 +165,7 @@ export default function ForumCategory() {
                       <span style={{ fontSize: 20, flexShrink: 0 }}>{c.icon || '💬'}</span>
                       <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
                       <span style={{
-                        fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)',
+                        fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)',
                         background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 18%, transparent)',
                         borderRadius: 999, padding: '2px 8px', flexShrink: 0,
                       }}>{c.threadCount || 0}</span>
@@ -205,7 +205,7 @@ export default function ForumCategory() {
               </div>
             ) : (
               <>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 12, letterSpacing: 1.5 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 12, letterSpacing: 1.5 }}>
                   {total} THREAD{total !== 1 ? 'S' : ''}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -219,7 +219,7 @@ export default function ForumCategory() {
                             {t.locked && <Badge tone="red">🔒</Badge>}
                             <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--text)', wordBreak: 'break-word' }}>{t.title}</span>
                           </div>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                             <span style={{ color: 'var(--text)' }}>{t.author?.username || t.author_name}</span>
                             <span>·</span>
                             <span>{timeAgo(t.createdAt || t.created_at)}</span>

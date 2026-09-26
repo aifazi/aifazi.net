@@ -66,7 +66,7 @@ export default function OrderTrackingPage() {
           {/* Header */}
           <Card accent style={{ padding: 'clamp(24px, 4vw, 40px)', marginBottom: 24, textAlign: 'center' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>📦</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 8 }}>
               ORDER #{order.order_number}
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 3vw, 32px)', fontWeight: 700, color: 'var(--text)', margin: '0 0 14px' }}>
@@ -76,7 +76,7 @@ export default function OrderTrackingPage() {
               <Badge tone={st === 'delivered' ? 'green' : st === 'cancelled' ? 'red' : 'cyan'} glow>
                 {st.toUpperCase()}
               </Badge>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }} title={order.created_at ? formatDateTime(order.created_at) : ''}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }} title={order.created_at ? formatDateTime(order.created_at) : ''}>
                 Placed {order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
               </span>
             </div>
@@ -84,7 +84,7 @@ export default function OrderTrackingPage() {
 
           {/* Progress */}
           <Card style={{ padding: 24, marginBottom: 24 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DELIVERY PROGRESS</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DELIVERY PROGRESS</div>
             <div style={{ height: 8, background: 'var(--bg3)', borderRadius: 4, overflow: 'hidden', marginBottom: 16 }}>
               <div style={{ height: '100%', width: `${progress}%`, background: `linear-gradient(90deg, ${G}, ${C})`, borderRadius: 4, transition: 'width 0.6s ease', boxShadow: progress > 0 ? `0 0 12px ${color}` : 'none' }} />
             </div>
@@ -99,9 +99,9 @@ export default function OrderTrackingPage() {
                       background: done || current ? (done ? G : color) : 'var(--bg3)',
                       border: `3px solid ${done || current ? (done ? G : color) : 'var(--border)'}`,
                       boxShadow: done || current ? `0 0 10px ${done ? G : color}` : 'none',
-                    }}>{done && <span style={{ fontSize: 8, lineHeight: '14px', color: '#000' }}>✓</span>}</div>
+                    }}>{done && <span style={{ fontSize: 11, lineHeight: '14px', color: '#000' }}>✓</span>}</div>
                     <div style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 1.5,
+                      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5,
                       color: done || current ? G : 'var(--muted)',
                       textTransform: 'uppercase', fontWeight: current ? 700 : 400,
                     }}>
@@ -116,7 +116,7 @@ export default function OrderTrackingPage() {
           {/* Tracking info */}
           {(order.carrier || order.tracking_number) && (
             <Card style={{ padding: 24, marginBottom: 24 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: G, marginBottom: 8 }}>TRACKING NUMBER</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: G, marginBottom: 8 }}>TRACKING NUMBER</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: 2, marginBottom: 6 }}>
                 {order.tracking_number}
               </div>
@@ -124,7 +124,7 @@ export default function OrderTrackingPage() {
                 {order.carrier || 'Standard Shipping'}
                 {order.tracking_url && (
                   <a href={order.tracking_url} target="_blank" rel="noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 12, color: C, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1 }}>
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 12, color: C, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1 }}>
                     TRACK WITH CARRIER ↗
                   </a>
                 )}
@@ -135,21 +135,21 @@ export default function OrderTrackingPage() {
           {/* Delivery Agent */}
           {delivery?.agent && (
             <Card style={{ padding: 24, marginBottom: 24 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: C, marginBottom: 14 }}>DELIVERY AGENT</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: C, marginBottom: 14 }}>DELIVERY AGENT</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ width: 48, height: 48, borderRadius: '50%', background: `linear-gradient(135deg, ${C}, ${G})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#000', flexShrink: 0 }}>
                   {(delivery.agent.display_name || 'A')[0].toUpperCase()}
                 </div>
                 <div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{delivery.agent.display_name}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 3 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
                     {delivery.agent.vehicle && <span>{delivery.agent.vehicle} · </span>}
                     <Badge tone={delivery.agent.status === 'available' ? 'green' : delivery.agent.status === 'busy' ? 'orange' : 'red'}>
                       {delivery.agent.status.toUpperCase()}
                     </Badge>
                   </div>
                   {delivery.assignment && (
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                       {delivery.assignment.picked_up_at && <>Picked up {new Date(delivery.assignment.picked_up_at).toLocaleString()} · </>}
                       Status: {delivery.assignment.status.toUpperCase().replace('_', ' ')}
                     </div>
@@ -162,7 +162,7 @@ export default function OrderTrackingPage() {
           {/* Timeline */}
           {(order.events || []).length > 0 && (
             <Card style={{ padding: 24, marginBottom: 24 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>STATUS TIMELINE</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>STATUS TIMELINE</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {order.events.map((ev, i) => (
                   <div key={i} style={{ display: 'flex', gap: 12 }}>
@@ -173,7 +173,7 @@ export default function OrderTrackingPage() {
                     <div style={{ paddingBottom: 16 }}>
                       <div style={{ color: 'var(--text)', fontWeight: 600, fontSize: 13 }}>{(ev.status || '').toUpperCase()}</div>
                       {ev.note && <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 3 }}>{ev.note}</div>}
-                      <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)', fontSize: 10, marginTop: 4 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)', fontSize: 11, marginTop: 4 }}>
                         <span title={ev.created_at ? formatDateTime(ev.created_at) : ''}>{ev.created_at ? new Date(ev.created_at).toLocaleString() : ''}</span>
                       </div>
                     </div>
@@ -185,7 +185,7 @@ export default function OrderTrackingPage() {
 
           {/* Items */}
           <Card style={{ padding: 24, marginBottom: 24 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>ORDER ITEMS</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>ORDER ITEMS</div>
             {(order.items || []).map((it, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, padding: '8px 0', borderBottom: i < (order.items || []).length - 1 ? '1px solid var(--border)' : 'none' }}>
                 <span>
@@ -204,7 +204,7 @@ export default function OrderTrackingPage() {
           {/* Downloads */}
           {(order.downloads || []).length > 0 && (
             <Card style={{ padding: 24, marginBottom: 24 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DIGITAL DOWNLOADS</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>DIGITAL DOWNLOADS</div>
               <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6 }}>
                 Download links are only shown to the account owner. Sign in to your account and open this order to get your downloads.
               </div>

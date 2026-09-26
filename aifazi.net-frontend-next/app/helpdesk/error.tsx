@@ -45,7 +45,7 @@ export default function HelpDeskError({
           {isChunkError ? '🔄' : '⚠️'}
         </div>
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3,
+          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3,
           color: isChunkError ? 'var(--cyan)' : '#ff4757', marginBottom: 12,
         }}>
           {isChunkError ? 'NEW VERSION AVAILABLE' : 'PAGE ERROR'}
@@ -90,7 +90,7 @@ export default function HelpDeskError({
         </div>
         {error?.digest && (
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--border)',
+            fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--border)',
             marginTop: 20, letterSpacing: 1,
           }}>
             Error ID: {error.digest}

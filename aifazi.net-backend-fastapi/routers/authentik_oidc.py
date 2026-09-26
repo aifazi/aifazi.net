@@ -285,7 +285,14 @@ async def authentik_callback(
     _set_auth_cookies(response, token, refresh)
 
     if st.get("mobile"):
-        return _Redir(front + "?token=" + quote(str(token), safe=''))
+        # Tokens go in the URL fragment (never the query string) so they are
+        # not written to proxy/server access logs. Matches steam/github/discord.
+        safe_dest = _safe_relative_path(dest if isinstance(dest, str) else "/profile", default="/profile")
+        return _Redir(
+            front + "#token=" + quote(str(token), safe='')
+            + "&refresh=" + quote(str(refresh), safe='')
+            + "&dest=" + quote(safe_dest, safe='/')
+        )
     safe_dest = _safe_relative_path(dest if isinstance(dest, str) else "/profile", default="/profile")
     sep = "&" if "?" in safe_dest else "?"
     return _Redir(SITE_URL + safe_dest + sep + "authentik=1")

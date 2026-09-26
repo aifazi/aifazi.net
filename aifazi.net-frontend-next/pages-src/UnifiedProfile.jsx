@@ -185,15 +185,15 @@ function VpnSection({ user }) {
       {/* QR + Config modal */}
       {selectedPeer && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-          onClick={handleCloseConfig}>
+          onClick={handleCloseConfig} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, maxWidth: 420, width: '90%', maxHeight: '85vh', overflow: 'auto' }}
-            onClick={(e) => e.stopPropagation()}>
+            onClick={(e) => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{selectedPeer.device_name}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{selectedPeer.allocated_ip}</div>
               </div>
-              <button onClick={handleCloseConfig} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 20, cursor: 'pointer' }}>×</button>
+              <button onClick={handleCloseConfig} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 20, cursor: 'pointer' }} aria-label="Close">×</button>
             </div>
 
             {qrCode ? (

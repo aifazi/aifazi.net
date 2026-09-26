@@ -140,7 +140,7 @@ function PreviewCard({ anim, selected, onSelect }) {
           {anim.icon}
         </div>
       </div>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, color: isSelected ? 'var(--green)' : 'var(--muted)', lineHeight: 1.3 }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: isSelected ? 'var(--green)' : 'var(--muted)', lineHeight: 1.3 }}>
         {anim.label}
       </span>
       {anim.engine === 'gsap' && (
@@ -249,7 +249,7 @@ export default function AnimationPicker() {
           background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(3px)',
           opacity: open ? 1 : 0, transition: 'opacity 0.3s ease',
         }}
-      />
+       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
 
       {/* Drawer — inline CSS vars override any data-theme cascade */}
       <div style={{
@@ -287,7 +287,7 @@ export default function AnimationPicker() {
             >✕</button>
           </div>
           {target && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginTop: 2 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginTop: 2 }}>
               TARGET: <span style={{ color: 'var(--cyan)' }}>{target.label?.toUpperCase() || target.key}</span>
               <span style={{ color: 'var(--green)', marginLeft: 8 }}>LIVE PREVIEW CANVAS</span>
             </div>
@@ -296,16 +296,16 @@ export default function AnimationPicker() {
 
         {/* ── Live Preview ── */}
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0, background: 'var(--bg3)' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>LIVE PREVIEW</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>LIVE PREVIEW</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 80, height: 48, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
               <LivePreviewElement animationValue={finalCSS} label={target?.label || 'ELEM'} replayKey={previewKey} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: selected ? 'var(--green)' : 'var(--muted)', letterSpacing: 1, marginBottom: 4 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: selected ? 'var(--green)' : 'var(--muted)', letterSpacing: 1, marginBottom: 4 }}>
                 {selected?.label || 'No animation selected'}
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', letterSpacing: 1, wordBreak: 'break-all', lineHeight: 1.6, opacity: 0.7 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, wordBreak: 'break-all', lineHeight: 1.6, opacity: 0.7 }}>
                 {finalLabel}
               </div>
             </div>
@@ -321,11 +321,11 @@ export default function AnimationPicker() {
 
         {/* ── Params ── */}
         <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>PARAMETERS</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>PARAMETERS</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
             {/* Duration */}
             <div>
-              <label style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>DURATION</label>
+              <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>DURATION</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <input
                   type="range" min="0.1" max="10" step="0.1"
@@ -333,12 +333,12 @@ export default function AnimationPicker() {
                   onChange={e => { setParams(p => ({ ...p, duration: parseFloat(e.target.value) })); setPreviewKey(k => k + 1) }}
                   style={{ flex: 1, accentColor: 'var(--green)', height: 2 }}
                 />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--green)', minWidth: 24 }}>{params.duration}s</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', minWidth: 24 }}>{params.duration}s</span>
               </div>
             </div>
             {/* Delay */}
             <div>
-              <label style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>DELAY</label>
+              <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>DELAY</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <input
                   type="range" min="0" max="5" step="0.1"
@@ -346,16 +346,16 @@ export default function AnimationPicker() {
                   onChange={e => { setParams(p => ({ ...p, delay: parseFloat(e.target.value) })); setPreviewKey(k => k + 1) }}
                   style={{ flex: 1, accentColor: 'var(--green)', height: 2 }}
                 />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--cyan)', minWidth: 24 }}>{params.delay}s</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', minWidth: 24 }}>{params.delay}s</span>
               </div>
             </div>
             {/* Easing */}
             <div>
-              <label style={{ fontFamily: 'var(--font-mono)', fontSize: 7, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>EASING</label>
+              <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>EASING</label>
               <select
                 value={params.easing}
                 onChange={e => { setParams(p => ({ ...p, easing: e.target.value })); setPreviewKey(k => k + 1) }}
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 8, padding: '3px 5px', borderRadius: 4, outline: 'none', cursor: 'pointer' }}
+                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '3px 5px', borderRadius: 4, outline: 'none', cursor: 'pointer' }}
               >
                 {easingOptions.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
               </select>
@@ -373,7 +373,7 @@ export default function AnimationPicker() {
                   onClick={() => setCategory(cat)}
                   style={{
                     flexShrink: 0, padding: '4px 10px',
-                    fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+                    fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                     background: active ? 'var(--green)' : 'var(--bg3)',
                     border: `1px solid ${active ? 'var(--green)' : 'var(--border)'}`,
                     borderRadius: 6, cursor: 'pointer', transition: 'all 0.15s',
@@ -418,7 +418,7 @@ export default function AnimationPicker() {
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             <button
               onClick={onClose}
-              style={{ flex: '0 0 80px', padding: '10px 0', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', cursor: 'pointer', transition: 'all 0.15s' }}
+              style={{ flex: '0 0 80px', padding: '10px 0', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', cursor: 'pointer', transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--text)'; e.currentTarget.style.color = 'var(--text)' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
             >CANCEL</button>
@@ -434,13 +434,13 @@ export default function AnimationPicker() {
                 flex: 1, padding: '10px 0',
                 background: selected ? 'var(--green)' : 'var(--bg3)',
                 border: `1px solid ${selected ? 'var(--green)' : 'var(--border)'}`,
-                borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+                borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
                 color: selected ? '#000' : 'var(--muted)', fontWeight: 700, cursor: selected ? 'pointer' : 'default',
                 transition: 'all 0.2s', boxShadow: selected ? '0 0 16px color-mix(in srgb, var(--green) 30%, transparent)' : 'none',
               }}
             >APPLY ANIMATION</button>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', letterSpacing: 1, textAlign: 'center', opacity: 0.6 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1, textAlign: 'center', opacity: 0.6 }}>
             CHANGES STAGED — SAVE WITH DONE ↵
           </div>
         </div>

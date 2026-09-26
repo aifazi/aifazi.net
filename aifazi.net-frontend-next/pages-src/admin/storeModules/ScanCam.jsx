@@ -64,18 +64,18 @@ export default function ScanCam({ onScan, label = 'SCAN BARCODE', placeholder = 
   return (
     <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: C }}>{label}</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: C }}>{label}</span>
         <div style={{ display: 'flex', gap: 6 }}>
           {!active ? (
-            <button onClick={() => { setErr(''); setActive(true); start() }} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '5px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>▶ START CAMERA</button>
+            <button onClick={() => { setErr(''); setActive(true); start() }} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '5px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>▶ START CAMERA</button>
           ) : (
-            <button onClick={() => { stop(); setActive(false) }} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '5px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>■ STOP</button>
+            <button onClick={() => { stop(); setActive(false) }} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '5px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>■ STOP</button>
           )}
         </div>
       </div>
 
       {active && <div id="aifazi-scan-region" style={{ borderRadius: 8, overflow: 'hidden', background: '#000', minHeight: 150 }} />}
-      {err && <div style={{ fontFamily: MONO, fontSize: 9, color: Y, marginTop: 8 }}>{err}</div>}
+      {err && <div style={{ fontFamily: MONO, fontSize: 11, color: Y, marginTop: 8 }}>{err}</div>}
 
       <form onSubmit={submitManual} style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <input
@@ -85,7 +85,7 @@ export default function ScanCam({ onScan, label = 'SCAN BARCODE', placeholder = 
           autoComplete="off"
           style={{ flex: 1, fontFamily: MONO, fontSize: 12, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 12px', letterSpacing: 1 }}
         />
-        <button type="submit" style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, padding: '8px 16px', background: `${G}14`, border: `1px solid ${G}44`, color: G, borderRadius: 6, cursor: 'pointer' }}>LOOKUP</button>
+        <button type="submit" style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 16px', background: `${G}14`, border: `1px solid ${G}44`, color: G, borderRadius: 6, cursor: 'pointer' }}>LOOKUP</button>
       </form>
     </div>
   )

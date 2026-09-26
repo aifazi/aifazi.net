@@ -36,8 +36,8 @@ function StatBar({ label, value, max, color }: { label: string; value: number; m
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>{label}</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color, fontWeight: 700 }}>{value}/{max}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>{label}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color, fontWeight: 700 }}>{value}/{max}</span>
       </div>
       <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 2, transition: 'width 0.6s ease' }} />
@@ -84,7 +84,7 @@ export default function FiveMLanding() {
 
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
           {/* Badge */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 20, border: `1px solid ${G}33`, background: `${G}0a`, fontSize: 10, letterSpacing: 2, color: G, fontWeight: 700, marginBottom: 24, fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 20, border: `1px solid ${G}33`, background: `${G}0a`, fontSize: 11, letterSpacing: 2, color: G, fontWeight: 700, marginBottom: 24, fontFamily: 'var(--font-mono)' }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: online ? G : R, boxShadow: online ? `0 0 8px ${G}` : 'none', animation: online ? 'fivem-pulse 2s infinite' : 'none' }} />
             {loading ? 'CHECKING STATUS...' : online ? `ONLINE — ${players}/${maxPlayers} PLAYERS` : 'OFFLINE'}
           </div>
@@ -156,21 +156,21 @@ export default function FiveMLanding() {
           background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(8px)',
         }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>STATUS</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>STATUS</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: online ? G : R }}>
               {online ? '● ONLINE' : '● OFFLINE'}
             </div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>PLAYERS</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>PLAYERS</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: C }}>{players}<span style={{ fontSize: 12, color: 'var(--muted)' }}>/{maxPlayers}</span></div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>UPTIME</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>UPTIME</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{uptime}</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>SLOTS</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 4 }}>SLOTS</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: G }}>{Math.max(0, maxPlayers - players)}<span style={{ fontSize: 12, color: 'var(--muted)' }}> free</span></div>
           </div>
         </div>
