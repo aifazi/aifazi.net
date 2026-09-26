@@ -62,7 +62,7 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
 | Database | [Supabase](https://supabase.com/) (PostgreSQL via REST/SDK) |
 | Auth | JWT (HS256) via `python-jose` + bcrypt |
 | 2FA | TOTP via `pyotp` + QR via `qrcode` |
-| AI | OpenAI (`gpt-4o-mini`, `gpt-4o`, `gpt-3.5-turbo`) |
+| AI | Disabled — `chat_ai.py` is a stub (OpenAI removed) |
 | Email | `aiosmtplib` (async SMTP) |
 | Scheduler | APScheduler (AsyncIOScheduler) |
 | File Storage | AWS S3 / S3-compatible CDN via `boto3` |
@@ -91,7 +91,7 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
 │   ├── forum.py            # Forum threads & replies
 │   ├── notifications.py    # Forum notifications
 │   ├── chat.py             # Chat rooms & messages (Supabase Realtime)
-│   ├── chat_ai.py          # OpenAI chat (public widget + authenticated)
+│   ├── chat_ai.py          # AI chat stub (OpenAI removed; endpoints 503)
 │   ├── search.py           # Full-text search
 │   ├── newsletter.py       # Subscriber management & sending
 │   ├── contact.py          # Contact form → email
@@ -134,7 +134,6 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
 
 - Python 3.11+
 - A [Supabase](https://supabase.com/) project (PostgreSQL)
-- (Optional) OpenAI API key for AI chat
 - (Optional) SMTP credentials for email features
 - (Optional) AWS S3 or compatible bucket for file uploads
 
@@ -659,7 +658,6 @@ daily cron (`/api/cron/cleanup`) stops firing against production.
 | `apscheduler` | Background job scheduler |
 | `aiosmtplib` | Async SMTP email sending |
 | `email-validator` | Email address validation |
-| `openai` | OpenAI API client |
 | `sentry-sdk[fastapi]` | Error monitoring |
 | `pillow` | Image processing |
 | `aiofiles` | Async file I/O |
