@@ -13,6 +13,7 @@ import Terminal from './Terminal'
 const ThemePicker = dynamic(() => import('./ThemePicker'), { ssr: false })
 import api, { clearAuthTokens } from '@/lib/api'
 import NotificationBell from './NotificationBell'
+import StatusBadge from './StatusBadge'
 import { getUsername, getRole, getAuthToken } from '@/lib/api'
 import { getSiteSettings } from '@/lib/siteSettings'
 import { UserAvatar } from '@/lib/avatar'
@@ -681,6 +682,11 @@ export default function Navbar() {
           {/* Right side controls — hidden on admin routes */}
           {showDesktopNav && (
           <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Live availability chip */}
+            <div className="nav-status-chip" style={{ display: 'flex', alignItems: 'center' }}>
+              <StatusBadge size="sm" />
+            </div>
+
             {/* Command Palette — terminal accessible via ⌘K → "Open Terminal" command */}
             <CommandPalette onToggleTheme={toggleTheme} onOpenTerminal={() => setTerminalOpen(true)} />
 
