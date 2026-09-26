@@ -10,6 +10,9 @@ HOOKS = {
     "useRouter": r"useRouter\s*\(",
     "useNavigate": r"useNavigate\s*\(",
     "useSearchParams": r"useSearchParams\s*\(",
+    "useFiveMRoute": r"useFiveMRoute\s*\(",
+    "useFiveMLoginRoute": r"useFiveMLoginRoute\s*\(",
+    "fivemRoute": r"fivemRoute\s*\(",
 }
 failed = 0
 for p in ROOT.rglob("*"):
@@ -22,6 +25,9 @@ for p in ROOT.rglob("*"):
     text = "\n".join(re.sub(r"//.*$", "", ln) for ln in text.splitlines())
     for name, call in HOOKS.items():
         if not re.search(call, text):
+            continue
+        # skip modules that define the helper
+        if re.search(r"function\s+" + name + r"\b|const\s+" + name + r"\s*=", text):
             continue
         if re.search(r"import\s*\{[^}]*\b" + name + r"\b", text) or re.search(r"import\s+" + name + r"\b", text):
             continue

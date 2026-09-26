@@ -2,14 +2,18 @@
 // forumProfileParts.jsx — shared profile widgets (extracted).
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
-import api from '@/lib/api'
-import { UserAvatar } from '@/lib/avatar'
+import api, { ensureAdminGate } from '@/lib/api'
+import { builtinAvatarEmoji, avatarUrl, UserAvatar, BUILTIN_AVATARS } from '@/lib/avatar'
 import { Select } from '../core/ui.jsx'
 import { useToast } from '../components/Toast'
 import { useNow } from '../hooks/useNow'
 
 const M = { fontFamily: 'var(--font-mono)' }
 const D = { fontFamily: 'var(--font-display)' }
+const DISCORD_PURPLE = '#5865F2'
+const STEAM_BLUE = '#1b2838'
+const STEAM_LIGHT = '#00b4ff'
+const GITHUB_COLOR = '#e6edf3'
 const CLRS = {
   green:  'var(--green)',  cyan:  'var(--cyan)',
   red:    '#ff4757',       yellow:'#ffd700',
@@ -184,4 +188,5 @@ export {
   M, D, CLRS, Badge, SectionCard, Inp, Btn, StatusMsg, ago, Avatar,
   STATUS_CFG, PRIORITY_CFG,
   STAFF_PORTAL_ROLES, canAccessAdminPortal, AdminPortalLink,
+  DISCORD_PURPLE, STEAM_BLUE, STEAM_LIGHT, GITHUB_COLOR,
 }
