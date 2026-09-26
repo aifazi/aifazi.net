@@ -148,8 +148,8 @@ function DraggableBadge({ badge, style, onMouseEnter, onMouseLeave, 'data-ha-bad
   )
 }
 
-const DEFAULT_WORDS = ['Network Specialist', 'IT Specialist', 'Infrastructure Architect', 'Security Specialist']
-const DEFAULT_BADGES = ['Cisco', 'FortiGate', 'pfSense', 'Cyber Security', 'Docker', 'Linux']
+const DEFAULT_WORDS = ['Systems Administrator', 'Full-Stack Developer', 'IT Consultant', 'FiveM Script Dev']
+const DEFAULT_BADGES = ['React', 'Next.js', 'FastAPI', 'Supabase', 'Docker', 'FiveM', 'Lua', 'React Native', 'Microsoft 365']
 const DEFAULT_STATS = [
   { num: '5+', label: 'YEARS EXP', color: 'var(--green)',  numKey: 'hero.stat0.num', labelKey: 'hero.stat0.label' },
   { num: '20+', label: 'PROJECTS', color: 'var(--cyan)',   numKey: 'hero.stat1.num', labelKey: 'hero.stat1.label' },
@@ -422,7 +422,7 @@ export default function Hero() {
           boxShadow: 'inset 0 0 30px color-mix(in srgb, var(--green) 2%, transparent)',
           letterSpacing: '0.01em',
         }}>
-          <EditableText contentKey="hero.desc" defaultValue="Designing, deploying, and securing enterprise-grade network infrastructure. From routing protocols to zero-trust architecture — I keep systems connected and protected." multiline />
+          <EditableText contentKey="hero.desc" defaultValue="IT professional and self-taught developer with hands-on experience across enterprise network & systems administration, Microsoft 365, and full-stack software. I own projects end-to-end — from server infrastructure to shipping production web and mobile apps." multiline />
         </p>
         </AnimatableWrapper>
 
