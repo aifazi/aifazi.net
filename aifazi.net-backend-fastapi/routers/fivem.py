@@ -1379,12 +1379,7 @@ async def update_whitelist_identifiers(body: WhitelistIdentifiersBody, request: 
 
 
 # â”€â”€â”€ Bulk whitelist approve â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class BulkWhitelistApproveBody(BaseModel):
-    app_ids: list[str]
-    reviewer_note: str | None = None
-    priority_tier: str | None = None
-    priority_level: int | None = None
-    priority_expires_at: str | None = None
+# BulkWhitelistApproveBody imported from routers.fivem_models
 
 
 async def bulk_approve_whitelist(
