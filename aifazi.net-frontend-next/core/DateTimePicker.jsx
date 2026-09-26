@@ -168,18 +168,18 @@ export default function DateTimePicker({
             {/* Month nav */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
               <button type="button" onClick={prevMonth}
-                style={{ background:'none', border:'none', color:'var(--cyan)', cursor:'pointer', fontSize:18, padding:'2px 8px', lineHeight:1 }}>‹</button>
-              <span style={{ ...mono, fontSize:10, letterSpacing:1.5, color:'var(--text)' }}>
+                style={{ background:'none', border:'none', color:'var(--cyan)', cursor:'pointer', fontSize:18, padding:'2px 8px', lineHeight:1 }} aria-label="Previous">‹</button>
+              <span style={{ ...mono, fontSize: 11, letterSpacing:1.5, color:'var(--text)' }}>
                 {MONTHS[month]} {year}
               </span>
               <button type="button" onClick={nextMonth}
-                style={{ background:'none', border:'none', color:'var(--cyan)', cursor:'pointer', fontSize:18, padding:'2px 8px', lineHeight:1 }}>›</button>
+                style={{ background:'none', border:'none', color:'var(--cyan)', cursor:'pointer', fontSize:18, padding:'2px 8px', lineHeight:1 }} aria-label="Next">›</button>
             </div>
 
             {/* Day headers */}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', marginBottom:4 }}>
               {DAYS.map(d => (
-                <div key={d} style={{ ...mono, fontSize:8, letterSpacing:1, color:'var(--muted)', textAlign:'center', padding:'2px 0' }}>{d}</div>
+                <div key={d} style={{ ...mono, fontSize: 11, letterSpacing:1, color:'var(--muted)', textAlign:'center', padding:'2px 0' }}>{d}</div>
               ))}
             </div>
 
@@ -205,11 +205,11 @@ export default function DateTimePicker({
             {/* Footer actions */}
             <div style={{ display:'flex', justifyContent:'space-between', marginTop:12, gap:6 }}>
               <button type="button" onClick={clear} style={{
-                ...mono, fontSize:8, letterSpacing:1, padding:'5px 10px', borderRadius:4, cursor:'pointer',
+                ...mono, fontSize: 11, letterSpacing:1, padding:'5px 10px', borderRadius:4, cursor:'pointer',
                 background:'transparent', border:'1px solid rgba(255,71,87,0.35)', color:'#ff4757',
               }}>CLEAR</button>
               <button type="button" onClick={jumpToday} style={{
-                ...mono, fontSize:8, letterSpacing:1, padding:'5px 10px', borderRadius:4, cursor:'pointer',
+                ...mono, fontSize: 11, letterSpacing:1, padding:'5px 10px', borderRadius:4, cursor:'pointer',
                 background:'rgba(0,212,255,0.08)', border:'1px solid rgba(0,212,255,0.3)', color:'var(--cyan)',
               }}>TODAY</button>
             </div>
@@ -220,7 +220,7 @@ export default function DateTimePicker({
 
           {/* ── Time picker ── */}
           <div style={{ padding:'14px 12px', display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
-            <div style={{ ...mono, fontSize:7, letterSpacing:2, color:'var(--muted)' }}>TIME</div>
+            <div style={{ ...mono, fontSize: 11, letterSpacing:2, color:'var(--muted)' }}>TIME</div>
 
             <div style={{ display:'flex', gap:4, alignItems:'flex-start' }}>
               {/* Hours */}
@@ -253,7 +253,7 @@ export default function DateTimePicker({
                   <button key={ap} type="button"
                     onClick={() => { setAmpm(ap); emit(selDate, hour, min, ap) }}
                     style={{
-                      ...mono, fontSize:9, padding:'6px 7px', borderRadius:5, cursor:'pointer',
+                      ...mono, fontSize: 11, padding:'6px 7px', borderRadius:5, cursor:'pointer',
                       background: ampm===ap ? 'rgba(0,212,255,0.12)' : 'transparent',
                       color:      ampm===ap ? 'var(--cyan)' : 'var(--muted)',
                       fontWeight: ampm===ap ? 700 : 400,

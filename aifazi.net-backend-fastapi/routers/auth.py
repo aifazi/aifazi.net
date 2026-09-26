@@ -755,7 +755,6 @@ class ChangePasswordBody(BaseModel):
 #       ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN DEFAULT FALSE;
 
 
-@router.post("/login")
 async def login(body: LoginBody, request: Request, response: Response):
     client_ip = request.client.host if request.client else ""
     user_agent = request.headers.get("user-agent", "")
@@ -901,7 +900,6 @@ async def login(body: LoginBody, request: Request, response: Response):
     }
 
 # ── Refresh token ── FIX #4: validate against DB ────────────────────────────────
-@router.post("/refresh")
 async def refresh(request: Request, response: Response, body: RefreshBody = RefreshBody()):
     # #2 — prefer HttpOnly cookie; fall back to body for older clients
     token_str = request.cookies.get("refresh_token") or body.refreshToken or ""
@@ -970,7 +968,6 @@ async def refresh(request: Request, response: Response, body: RefreshBody = Refr
     return {"token": new_access, "refreshToken": new_refresh}
 
 # ── Logout ──────────────────────────────────────────────────────────────────────
-@router.post("/logout")
 async def logout(request: Request, response: Response):
     auth_header = request.headers.get("authorization", "")
     token_str = auth_header.replace("Bearer ", "", 1) if auth_header.startswith("Bearer ") else ""
@@ -1095,7 +1092,6 @@ async def session_migrate(request: Request, response: Response, creds: HTTPAutho
     _set_auth_cookies(response, token, refresh)
     return {"ok": True}
 
-@router.get("/admin-gate-token")
 async def admin_gate_token(response: Response, user: dict = Depends(require_staff)):
     """Issue a signed admin shell gate for already-authenticated staff accounts.
 
@@ -1113,17 +1109,14 @@ async def admin_gate_token(response: Response, user: dict = Depends(require_staf
     _set_admin_gate_cookie(response, token)
     return {"message": "Admin portal access ready"}
 
-@router.get("/permissions")
 async def permissions_catalog(_: dict = Depends(require_admin)):
     return {"modules": MODULES, "actions": list(ACTIONS), "presets": {k: normalize_permissions(v) for k, v in ROLE_PERMISSION_PRESETS.items()}}
 
 # ── Get all staff ───────────────────────────────────────────────────────────────
-@router.get("/staff")
 async def get_staff(_: dict = Depends(require_admin)):
     res = supabase.table("users").select("id,username,email,role,created_at,last_seen,staff_permissions").in_("role", ["admin","moderator","editor","chat"]).limit(500).execute()
     return [_staff_public(r) for r in (res.data or [])]
 
-@router.get("/staff/search-users")
 async def search_staff_users(q: str = "", _: dict = Depends(require_admin)):
     query = safe_search_term(q)
     if len(query) < 2:
@@ -1138,7 +1131,6 @@ async def search_staff_users(q: str = "", _: dict = Depends(require_admin)):
     return {"users": users}
 
 # ── Create staff ────────────────────────────────────────────────────────────────
-@router.post("/staff")
 async def create_staff(body: StaffCreateBody, request: Request, admin: dict = Depends(require_admin)):
     if body.role not in ("moderator", "editor", "chat"):
         raise HTTPException(400, "Invalid role")
@@ -1149,7 +1141,7 @@ async def create_staff(body: StaffCreateBody, request: Request, admin: dict = De
         raise HTTPException(400, "Username is required")
     if email:
         _ensure_email_available(email)
-    existing = supabase.table("users").select("id").ilike("username", username).limit(5).execute()
+    existing = supabase.table("users").select("id").ilike("username", _escape_ilike(username)).limit(5).execute()
     if any((r.get("username") or "").lower() == username.lower() for r in (existing.data or [])):
         raise HTTPException(409, "Username already exists")
     payload = {"username": username, "email": email, "email_verified": False, "role": body.role, "created_by": "admin", "staff_permissions": perms}
@@ -1165,7 +1157,6 @@ async def create_staff(body: StaffCreateBody, request: Request, admin: dict = De
     return _staff_public(res.data[0])
 
 # ── Update staff ────────────────────────────────────────────────────────────────
-@router.put("/staff/{staff_id}")
 async def update_staff(staff_id: str, body: StaffUpdateBody, _: dict = Depends(require_admin)):
     updates: dict = {}
     if body.username:  updates["username"]      = _clean_username(body.username)
@@ -1197,7 +1188,6 @@ async def update_staff(staff_id: str, body: StaffUpdateBody, _: dict = Depends(r
     return _staff_public(row)
 
 # ── Delete staff ────────────────────────────────────────────────────────────────
-@router.delete("/staff/{staff_id}")
 async def delete_staff(staff_id: str, request: Request, admin: dict = Depends(require_admin)):
     row = supabase.table("users").select("username,role").eq("id", staff_id).execute()
     target_name = row.data[0]["username"] if row.data else staff_id
@@ -1207,7 +1197,6 @@ async def delete_staff(staff_id: str, request: Request, admin: dict = Depends(re
     return {"message": "Deleted"}
 
 # ── Admin self-update ── FIX #3: use _check_admin_password() ───────────────────
-@router.put("/me")
 async def update_self(body: AdminSelfUpdateBody, request: Request, user: dict = Depends(get_current_user)):
     if user.get("role") != "admin":
         raise HTTPException(403, "Admin only")
@@ -1267,7 +1256,6 @@ def _session_id_from_token(token_str: str) -> str | None:
         return None
 
 
-@router.get("/sessions")
 async def list_sessions(request: Request, user: dict = Depends(get_current_user)):
     """Return all active sessions for the current user."""
     username = user.get("username")
@@ -1291,7 +1279,6 @@ async def list_sessions(request: Request, user: dict = Depends(get_current_user)
         return {"sessions": [], "total": 0, "error": "Internal error"}
 
 
-@router.post("/sessions/heartbeat")
 async def session_heartbeat(request: Request, user: dict = Depends(get_current_user)):
     """Called periodically to keep session alive and detect conflicts."""
     username = user.get("username")
@@ -1344,7 +1331,6 @@ async def session_heartbeat(request: Request, user: dict = Depends(get_current_u
         return {"ok": False, "error": "Internal error"}
 
 
-@router.delete("/sessions/{session_id}")
 async def revoke_session(session_id: str, user: dict = Depends(get_current_user)):
     """Revoke a specific session by ID."""
     username = user.get("username")
@@ -1357,7 +1343,6 @@ async def revoke_session(session_id: str, user: dict = Depends(get_current_user)
     return {"revoked": True}
 
 
-@router.delete("/sessions")
 async def revoke_all_other_sessions(request: Request, user: dict = Depends(get_current_user)):
     """Revoke all sessions except the current one."""
     username = user.get("username")
@@ -1376,7 +1361,6 @@ async def revoke_all_other_sessions(request: Request, user: dict = Depends(get_c
     return {"revoked": len(to_delete)}
 
 # ── 2FA routes ─────────────────────────────────────────────────────────────────
-@router.get("/2fa/status")
 async def tfa_status(user: dict = Depends(get_current_user)):
     if user.get("role") == "admin":
         row = _get_admin_2fa()
@@ -1390,7 +1374,6 @@ async def tfa_status(user: dict = Depends(get_current_user)):
         "recovery_codes": _has_recovery_codes("user", user["id"]),
     }
 
-@router.post("/2fa/setup")
 async def tfa_setup(user: dict = Depends(get_current_user)):
     secret = pyotp.random_base32()
     label  = user.get("username", ADMIN_USERNAME)
@@ -1403,7 +1386,6 @@ async def tfa_setup(user: dict = Depends(get_current_user)):
         ).eq("id", user["id"]).execute()
     return {"secret": secret, "otpauth_uri": uri, "qr_image": _make_qr_b64(uri)}
 
-@router.post("/2fa/enable")
 async def tfa_enable(body: TwoFAEnableBody, user: dict = Depends(get_current_user)):
     if user.get("role") == "admin":
         row = _get_admin_2fa()
@@ -1425,11 +1407,9 @@ async def tfa_enable(body: TwoFAEnableBody, user: dict = Depends(get_current_use
     return {"enabled": True, "recovery_codes": recovery}
 
 # Alias: frontend calls /2fa/confirm → same logic as /2fa/enable
-@router.post("/2fa/confirm")
 async def tfa_confirm(body: TwoFAEnableBody, user: dict = Depends(get_current_user)):
     return await tfa_enable(body, user)
 
-@router.post("/2fa/disable")
 async def tfa_disable(body: TwoFADisableBody, user: dict = Depends(get_current_user)):
     if user.get("role") == "admin":
         if not _check_admin_password(body.password):
@@ -1461,7 +1441,6 @@ class RecoveryCodesBody(BaseModel):
     password: str = ""
     code: str = ""
 
-@router.post("/2fa/recovery-codes")
 async def tfa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get_current_user)):
     """Regenerate recovery codes. Requires the account password AND a valid 2FA
     entry (TOTP or an existing recovery code) so a stolen session alone can't
@@ -1502,7 +1481,6 @@ from utils.rate_limit import (
 )
 
 
-@router.post("/2fa/verify")
 async def tfa_verify(body: TwoFAVerifyBody, request: Request, response: Response):
     try:
         payload = _paseto_decode_token(body.partial_token, purpose="auth")
@@ -1599,7 +1577,6 @@ async def config_check(request: Request, _=Depends(require_admin)):
 
 # ── Forum auth endpoints ────────────────────────────────────────────────────────
 
-@router.get("/check-username")
 async def check_username(username: str):
     username = (username or "").strip()
     if not username or len(username) < 3:
@@ -1623,7 +1600,6 @@ async def check_username(username: str):
             return {"available": False, "suggestion": candidate}
     return {"available": False, "suggestion": None}
 
-@router.get("/check-email")
 async def check_email(email: EmailStr, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     payload = _get_forum_user(creds)
     if not payload:
@@ -1637,7 +1613,6 @@ async def check_email(email: EmailStr, creds: HTTPAuthorizationCredentials | Non
     )
     return {"available": owner is None}
 
-@router.post("/resend-verification")
 async def resend_verification(body: ResendBody):
     identifier = body.email.strip()
     if "@" in identifier:
@@ -1657,7 +1632,6 @@ async def resend_verification(body: ResendBody):
     return {"message": "If that account exists, a verification link was sent"}
 
 # ── Verify status (used by the "waiting for activation" screen on /login) ──────
-@router.get("/verify-status")
 async def verify_status(email: str):
     """Return whether the account for this email has been verified yet.
     The /login VerifyWaiting screen polls this every 3s after registration and
@@ -1666,7 +1640,6 @@ async def verify_status(email: str):
     verified = bool(res.data and res.data[0].get("email_verified"))
     return {"verified": verified}
 
-@router.post("/register")
 async def register(body: RegisterBody):
     pw = body.password
     if len(pw) < 8:
@@ -1706,7 +1679,6 @@ async def register(body: RegisterBody):
     await _queue_activation_email(email, verify_url, username)
     return {"message": "Registered — check your email to verify"}
 
-@router.post("/forgot")
 async def forgot(body: ForgotBody):
     identifier = body.identifier.strip()
     if not identifier:
@@ -1731,7 +1703,6 @@ async def forgot(body: ForgotBody):
                       html or _reset_email_html(reset_url), f"Reset your aifazi.net password: {reset_url}", "password_reset")
     return {"message": "If that account exists, a reset link was sent"}
 
-@router.post("/find-username")
 async def find_username(body: FindUsernameBody):
     res = supabase.table("users").select("id,email,username").eq("email", body.email.strip()).execute()
     if res.data:
@@ -1739,7 +1710,6 @@ async def find_username(body: FindUsernameBody):
         await queue_email(user["email"], "Your username - aifazi.net", _find_username_email_html(user["username"]), f"Your aifazi.net username is: {user['username']}")
     return {"message": "If that email is registered, your username has been sent to your inbox."}
 
-@router.post("/reset")
 async def reset(body: ResetBody):
     res = supabase.table("users").select("*").eq("reset_token", body.token).execute()
     if not res.data:
@@ -1757,7 +1727,6 @@ async def reset(body: ResetBody):
     }).eq("id", user["id"]).execute()
     return {"message": "Password reset successfully"}
 
-@router.get("/me")
 async def get_current_user_profile(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     if not creds:
         raise HTTPException(401, "Not authenticated")
@@ -1806,7 +1775,6 @@ async def get_current_user_profile(creds: HTTPAuthorizationCredentials | None = 
         "account_source": "linked_staff" if staff_access else "forum",
     }
 
-@router.put("/profile")
 async def update_profile(body: ProfileBody, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     payload = _get_forum_user(creds)
     if not payload:
@@ -1892,7 +1860,6 @@ _AVATAR_MAGIC = [
     (b"RIFF", "image/webp"),
 ]
 
-@router.post("/avatar")
 async def upload_avatar(
     file: UploadFile = File(...),
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),
@@ -1956,7 +1923,6 @@ async def upload_avatar(
         "user": {"_id": res.data[0]["id"], "id": res.data[0]["id"], "username": res.data[0].get("username"), "avatar": res.data[0].get("avatar") or ""},
     }
 
-@router.post("/change-password")
 async def change_password(body: ChangePasswordBody, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     payload = _get_forum_user(creds)
     if not payload:
@@ -1996,7 +1962,6 @@ async def change_password(body: ChangePasswordBody, creds: HTTPAuthorizationCred
     _record_user_activity(user_id, payload.get("username", ""), "password_change")
     return {"message": "Password updated"}
 
-@router.delete("/account")
 async def delete_own_account(body: DeleteAccountBody, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     """Delete the authenticated user's account. Requires password re-confirmation
     for password-based accounts. OAuth-only accounts (no password) require the
@@ -2059,22 +2024,18 @@ async def _verify_email_token(token: str):
     supabase.table("users").update(update_patch).eq("id", user["id"]).execute()
     return {"message": "Email verified"}
 
-@router.post("/forgot-password")
 async def forgot_password_alias(body: ForgotBody):
     return await forgot(body)
 
-@router.post("/reset-password/{token}")
 async def reset_password_alias(token: str, body: dict):
     password = body.get("password", "")
     if not password or len(password) < 8:
         raise HTTPException(400, "Password must be at least 8 characters")
     return await reset(ResetBody(token=token, password=password))
 
-@router.get("/verify-email")
 async def verify_email_query(token: str):
     return await _verify_email_token(token)
 
-@router.get("/verify-email/{token}")
 async def verify_email_alias(token: str):
     return await _verify_email_token(token)
 
@@ -2148,7 +2109,6 @@ async def user_my_tickets(creds: HTTPAuthorizationCredentials | None = Depends(b
         t.pop("user_id", None)
     return tickets
 
-@router.get("/discord/login")
 async def discord_login(dest: str = "/forum/profile", mobile: int = 0):
     _d = _discord_cfg()
     if not _d.get("client_id") or not _d.get("enabled", True):
@@ -2160,7 +2120,6 @@ async def discord_login(dest: str = "/forum/profile", mobile: int = 0):
     state = make_oauth_state("discord", safe_dest, mobile=bool(mobile))
     return _Redir(_discord_oauth_url(state))
 
-@router.get("/discord/connect-url")
 async def discord_connect_url(dest: str = "/profile", creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     _d = _discord_cfg()
     if not _d.get("client_id") or not _d.get("enabled", True):
@@ -2177,7 +2136,6 @@ async def discord_connect_url(dest: str = "/profile", creds: HTTPAuthorizationCr
     state = f"connect:{link_token}:{safe_dest}"
     return {"url": _discord_oauth_url(state)}
 
-@router.get("/discord/callback")
 async def discord_callback(code: str | None = None, state: str | None = None, error: str | None = None):
     _d = _discord_cfg()
     _DISCORD_CLIENT_ID = _d.get("client_id") or ""
@@ -2347,7 +2305,6 @@ async def discord_callback(code: str | None = None, state: str | None = None, er
     _set_auth_cookies(resp, token, refresh)
     return resp
 
-@router.post("/discord/connect")
 async def discord_connect(request: Request, creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     # H3 — linking a Discord account by a client-supplied discord_id is an
     # unauthenticated identity claim (a user could claim a victim's Discord ID
@@ -2356,7 +2313,6 @@ async def discord_connect(request: Request, creds: HTTPAuthorizationCredentials 
     # This legacy raw endpoint is disabled — fail closed.
     raise HTTPException(400, "Direct Discord linking is disabled. Use the Discord OAuth connect flow (GET /discord/connect-url).")
 
-@router.delete("/discord/disconnect")
 async def discord_disconnect(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     payload = _get_forum_user(creds)
     if not payload:
@@ -2373,7 +2329,6 @@ async def discord_disconnect(creds: HTTPAuthorizationCredentials | None = Depend
     _record_user_activity(user_id, payload.get("username", ""), "discord_disconnect")
     return {"ok": True}
 
-@router.get("/discord/whitelist-status")
 async def discord_whitelist_status(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
     payload = _get_forum_user(creds)
     if not payload:

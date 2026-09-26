@@ -20,7 +20,7 @@ const inputStyle = {
 const labelStyle = {
   display: 'block',
   fontFamily: 'var(--font-mono, monospace)',
-  fontSize: 10,
+  fontSize: 11,
   letterSpacing: 1.5,
   textTransform: 'uppercase',
   color: 'var(--muted, #8b949e)',
@@ -291,7 +291,7 @@ function OAuthSettings() {
             background: 'var(--bg2)', border: '1px solid var(--border)',
             borderRadius: 12, padding: '14px 16px',
           }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)' }}>{s.label}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>{s.label}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: s.color, marginTop: 4 }}>{s.value}</div>
           </div>
         ))}
@@ -306,7 +306,7 @@ function OAuthSettings() {
           <Icon name="users" size={18} style={{ color: '#b56cff' }} />
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>LLDAP Directory</h3>
           <span style={{
-            marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 10,
+            marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11,
             padding: '4px 10px', borderRadius: 20,
             background: ldap.enabled ? 'rgba(63,185,80,.15)' : 'rgba(139,148,158,.15)',
             color: ldap.enabled ? 'var(--green)' : 'var(--muted)',
@@ -398,12 +398,12 @@ function OAuthSettings() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                   <strong style={{ fontSize: 14 }}>{p.label}</strong>
                   <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 10, padding: '3px 10px', borderRadius: 20,
+                    fontFamily: 'var(--font-mono)', fontSize: 11, padding: '3px 10px', borderRadius: 20,
                     background: p.configured ? 'rgba(63,185,80,.15)' : 'rgba(248,81,73,.15)',
                     color: p.configured ? 'var(--green)' : 'var(--red)',
                   }}>{p.configured ? 'Configured' : 'Not configured'}</span>
                   {p.from_env && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>from env</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>from env</span>
                   )}
                   <a href={p.docs} target="_blank" rel="noreferrer"
                     style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--cyan, #22d3ee)' }}>
@@ -482,7 +482,7 @@ function OAuthSettings() {
           <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Identity Users</h3>
           {idUsers && !idUsers.authentik_admin && (
             <span style={{
-              fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+              fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
               padding: '3px 10px', borderRadius: 8,
               background: 'rgba(210,153,34,.12)', border: '1px solid rgba(210,153,34,.4)',
               color: 'var(--yellow, #d29922)',
@@ -558,7 +558,7 @@ function OAuthSettings() {
                 <div style={{ flex: 1, minWidth: 160 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{c.name}</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{c.client_id}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 4 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                     {(c.redirect_uris || []).join(' · ') || 'no redirect URIs'}
                     {c.public ? ' · public' : ''}
                   </div>
@@ -590,7 +590,7 @@ function OAuthSettings() {
         )}
 
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>NEW CLIENT</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>NEW CLIENT</div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
               <label style={labelStyle}>Client ID</label>

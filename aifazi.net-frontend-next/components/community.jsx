@@ -41,7 +41,7 @@ export function Card({ children, hover = false, accent, style = {}, onClick, cla
       data-accent={accent || ''}
       onClick={onClick}
       style={style}
-    >
+     role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       {children}
     </div>
   )

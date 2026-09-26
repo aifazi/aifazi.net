@@ -55,16 +55,16 @@ function StatsGrid({ dashStats, isMobile, setView }) {
           background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14,
           padding: isMobile ? '14px' : '18px 20px', cursor: card.action ? 'pointer' : 'default',
           position: 'relative', overflow: 'hidden',
-        }}>
+        }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${card.color}, transparent)`, borderRadius: '14px 14px 0 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--muted)' }}>{card.label}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>{card.label}</div>
             <div style={{ width: 32, height: 32, borderRadius: 10, background: `${card.color}15`, border: `1px solid ${card.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
               <Icon name={NAV_ICONS[card.navKey] || 'activity'} size={16} style={{ color: card.color }} />
             </div>
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 28 : 36, fontWeight: 800, color: card.color, lineHeight: 1, marginBottom: 6 }}>{card.value}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{card.sub}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{card.sub}</div>
         </div>
       ))}
     </div>
@@ -165,8 +165,8 @@ function AbuseBanModal({ target, onClose }) {
 
   const resultRows = obj => Object.entries(obj?.results || {}).map(([k, v]) => (
     <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', alignItems: 'baseline' }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', textTransform: 'uppercase' }}>{k}</span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, textAlign: 'right', color: v?.ok ? 'var(--green)' : '#ff4757' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', textTransform: 'uppercase' }}>{k}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, textAlign: 'right', color: v?.ok ? 'var(--green)' : '#ff4757' }}>
         {v?.ok ? 'OK' : 'FAIL'} — {v?.detail || v?.error || ''}
       </span>
     </div>
@@ -175,14 +175,14 @@ function AbuseBanModal({ target, onClose }) {
   return (
     <Modal open onClose={onClose} width={560} title="Ban Everywhere">
       <div style={{ padding: 24 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: '#ff4757', marginBottom: 6 }}>🚫 ABUSE KILL-SWITCH — {target.username}</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: '#ff4757', marginBottom: 6 }}>🚫 ABUSE KILL-SWITCH — {target.username}</div>
         {!result ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
               <label style={S.label}>Surfaces</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {ABUSE_SURFACES.map(([k, label]) => (
-                  <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: surfaces[k] ? 'var(--text)' : 'var(--muted)', border: `1px solid ${surfaces[k] ? 'var(--green)' : 'var(--border)'}`, borderRadius: 6, padding: '7px 10px', cursor: 'pointer' }}>
+                  <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: surfaces[k] ? 'var(--text)' : 'var(--muted)', border: `1px solid ${surfaces[k] ? 'var(--green)' : 'var(--border)'}`, borderRadius: 6, padding: '7px 10px', cursor: 'pointer' }}>
                     <input type="checkbox" checked={!!surfaces[k]} onChange={() => toggle(k)} />{label}
                   </label>
                 ))}
@@ -190,7 +190,7 @@ function AbuseBanModal({ target, onClose }) {
             </div>
             <div><label style={S.label}>Reason (required, min 3 chars)</label><input value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Spam, abuse, ban evasion..." style={S.input} /></div>
             <div><label style={S.label}>Explicit IP <span style={{ textTransform: 'none', letterSpacing: 0 }}>(optional — else last known IP is used)</span></label><input value={ip} onChange={e => setIp(e.target.value)} placeholder="1.2.3.4" style={S.input} /></div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', cursor: 'pointer' }}>
               <input type="checkbox" checked={understand} onChange={e => setUnderstand(e.target.checked)} />I understand this bans the user everywhere
             </label>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -200,23 +200,23 @@ function AbuseBanModal({ target, onClose }) {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: result.ok ? 'var(--green)' : '#ff4757' }}>{result.ok ? 'BANNED EVERYWHERE' : 'PARTIAL FAILURE — REVIEW BELOW'}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: result.ok ? 'var(--green)' : '#ff4757' }}>{result.ok ? 'BANNED EVERYWHERE' : 'PARTIAL FAILURE — REVIEW BELOW'}</div>
             {/* P1-4 — copyable undo token (also persisted to sessionStorage);
                 no audit-log link: the modal has no setView route to the audit
                 tab, so the token itself is the recovery path. */}
             {result.undo_token && (
               <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>UNDO TOKEN — KEEP TO REVERSE THIS BAN</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>UNDO TOKEN — KEEP TO REVERSE THIS BAN</div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <code style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)' }}>{result.undo_token}</code>
-                  <button type="button" onClick={copyUndoToken} style={{ ...S.btn('var(--bg3)', 'var(--cyan)'), border: '1px solid var(--border)', fontSize: 9, padding: '6px 10px', flexShrink: 0 }}>COPY TOKEN</button>
+                  <code style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>{result.undo_token}</code>
+                  <button type="button" onClick={copyUndoToken} style={{ ...S.btn('var(--bg3)', 'var(--cyan)'), border: '1px solid var(--border)', fontSize: 11, padding: '6px 10px', flexShrink: 0 }}>COPY TOKEN</button>
                 </div>
               </div>
             )}
             <div>{resultRows(result)}</div>
             {undone && (
               <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: undone.ok ? 'var(--green)' : '#ff4757', marginBottom: 4 }}>UNDO RESULT</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: undone.ok ? 'var(--green)' : '#ff4757', marginBottom: 4 }}>UNDO RESULT</div>
                 {resultRows(undone)}
               </div>
             )}
@@ -245,16 +245,16 @@ function PermissionEditor({ value = {}, onChange }) {
   return (
     <div style={{ border:'1px solid var(--border)', background:'rgba(255,255,255,0.025)', borderRadius:8, padding:12, display:'grid', gap:10 }}>
       <div style={{ display:'flex', justifyContent:'space-between', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-        <div style={{ fontFamily:'var(--font-mono)', fontSize:9, letterSpacing:2, color:'var(--muted)' }}>MODULE ACCESS</div>
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>{['editor','moderator','chat','fivem'].map(k => <button type="button" key={k} onClick={() => applyPreset(k)} style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--cyan)', background:'transparent', border:'1px solid var(--border)', borderRadius:6, padding:'4px 8px', cursor:'pointer' }}>{k}</button>)}</div>
+        <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, color:'var(--muted)' }}>MODULE ACCESS</div>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>{['editor','moderator','chat','fivem'].map(k => <button type="button" key={k} onClick={() => applyPreset(k)} style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--cyan)', background:'transparent', border:'1px solid var(--border)', borderRadius:6, padding:'4px 8px', cursor:'pointer' }}>{k}</button>)}</div>
       </div>
       <div style={{ maxHeight:240, overflowY:'auto', display:'grid', gap:8 }}>
         {PERMISSION_MODULES.map(([module,label]) => (
           <div key={module} style={{ display:'grid', gridTemplateColumns:'155px 1fr', gap:8, alignItems:'start', borderBottom:'1px solid rgba(255,255,255,0.04)', paddingBottom:7 }}>
-            <div style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--text)' }}>{label}<div style={{ color:'var(--muted)', fontSize:8, marginTop:2 }}>{module}</div></div>
+            <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--text)' }}>{label}<div style={{ color:'var(--muted)', fontSize: 11, marginTop:2 }}>{module}</div></div>
             <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
               {PERMISSION_ACTIONS.map(action => (
-                <button type="button" key={action} onClick={() => toggle(module, action)} style={{ fontFamily:'var(--font-mono)', fontSize:8, letterSpacing:.5, border:`1px solid ${(value?.[module]||[]).includes(action)?'color-mix(in srgb, var(--green) 55%, transparent)':'var(--border)'}`, background:(value?.[module]||[]).includes(action)?'color-mix(in srgb, var(--green) 12%, transparent)':'transparent', color:(value?.[module]||[]).includes(action)?'var(--green)':'var(--muted)', borderRadius:5, padding:'3px 6px', cursor:'pointer' }}>{action}</button>
+                <button type="button" key={action} onClick={() => toggle(module, action)} style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:.5, border:`1px solid ${(value?.[module]||[]).includes(action)?'color-mix(in srgb, var(--green) 55%, transparent)':'var(--border)'}`, background:(value?.[module]||[]).includes(action)?'color-mix(in srgb, var(--green) 12%, transparent)':'transparent', color:(value?.[module]||[]).includes(action)?'var(--green)':'var(--muted)', borderRadius:5, padding:'3px 6px', cursor:'pointer' }}>{action}</button>
               ))}
             </div>
           </div>
@@ -773,7 +773,7 @@ function Dashboard({ onLogout }) {
             <Icon name="panelOpen" size={20} />
           </button>
           <Icon name={NAV_ICONS[view] || 'grid'} size={16} style={{ color: 'var(--green)' }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', flex: 1 }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', flex: 1 }}>
             {navItems.find(n => n.key === view || n.aliases?.includes(view))?.label || 'ADMIN'}
           </span>
         </div>
@@ -847,11 +847,11 @@ function Dashboard({ onLogout }) {
                 title={`Welcome back, ${username} `}
                 subtitle={new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                 actions={<>
-                  <button onClick={fetchDashStats} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> REFRESH</button>
+                  <button onClick={fetchDashStats} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> REFRESH</button>
                   {canView('db') && (
-                  <button onClick={() => goView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 14px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer', borderRadius: 6 }}> DB MONITOR</button>
+                  <button onClick={() => goView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '7px 14px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer', borderRadius: 6 }}> DB MONITOR</button>
                   )}
-                  <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> ⌨</button>
+                  <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '7px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> ⌨</button>
                 </>}
               />
 
@@ -863,14 +863,14 @@ function Dashboard({ onLogout }) {
 
                   {/* Post breakdown bar */}
                   <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '16px 20px', marginBottom: 20, borderRadius: 14 }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>POST BREAKDOWN</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 }}>POST BREAKDOWN</div>
                     <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                       {[
                         { label: 'Published', value: dashStats.publishedPosts, total: dashStats.totalPosts, color: 'var(--green)' },
                         { label: 'Drafts', value: dashStats.draftPosts, total: dashStats.totalPosts, color: '#ffd700' },
                       ].map(b => (
                         <div key={b.label} style={{ flex: 1, minWidth: 180 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 10, marginBottom: 6 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11, marginBottom: 6 }}>
                             <span style={{ color: b.color }}>{b.label}</span>
                             <span style={{ color: 'var(--muted)' }}>{b.value}/{b.total}</span>
                           </div>
@@ -886,7 +886,7 @@ function Dashboard({ onLogout }) {
                   <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 20 }}>
                     {/* Quick actions */}
                     <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px', borderRadius: 14 }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>QUICK ACTIONS</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>QUICK ACTIONS</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                         {[
                           { label: '[+] New Post', view: 'editor', action: () => goView('editor'), color: 'var(--green)' },
@@ -897,7 +897,7 @@ function Dashboard({ onLogout }) {
                 { label: 'CDN', view: 'cdn', action: () => goView('cdn'), color: '#00d4ff' },
                         ].filter((btn) => canView(btn.view)).map(btn => (
                           <button key={btn.label} onClick={btn.action} className="admin-quick-action" style={{
-                            fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+                            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                             padding: '10px 12px', background: 'var(--bg3)',
                             border: '1px solid var(--border)', color: 'var(--text)',
                             cursor: 'pointer', textAlign: 'left', borderRadius: 8,
@@ -909,7 +909,7 @@ function Dashboard({ onLogout }) {
                     {/* System health — live from API */}
                     <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px', borderRadius: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>SYSTEM STATUS</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>SYSTEM STATUS</div>
                         <button onClick={fetchDashStats} title="Refresh" aria-label="Refresh stats" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 12, padding: 0 }}>↻</button>
                       </div>
                       {Object.entries(
@@ -925,10 +925,10 @@ function Dashboard({ onLogout }) {
                             }
                       ).map(([label, s]) => (
                         <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{label}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{label}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.color, boxShadow: `0 0 6px ${s.color}` }} />
-                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: s.color, letterSpacing: 1 }}>{s.status.toUpperCase()}</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: s.color, letterSpacing: 1 }}>{s.status.toUpperCase()}</span>
                           </div>
                         </div>
                       ))}
@@ -938,15 +938,15 @@ function Dashboard({ onLogout }) {
                     {activityFeed.length > 0 && (
                       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px', borderRadius: 14 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>RECENT ACTIVITY</div>
-                          <button onClick={() => setView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>AUDIT LOG </button>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>RECENT ACTIVITY</div>
+                          <button onClick={() => setView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>AUDIT LOG </button>
                         </div>
                         {activityFeed.map(item => (
                           <div key={item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                             <span style={{ fontSize: 13, flexShrink: 0 }}>{item.icon}</span>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.text}</div>
-                              {item.time && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{new Date(item.time).toLocaleString()}</div>}
+                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.text}</div>
+                              {item.time && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{new Date(item.time).toLocaleString()}</div>}
                             </div>
                           </div>
                         ))}
@@ -958,17 +958,17 @@ function Dashboard({ onLogout }) {
                   {dashStats.recentPosts?.length > 0 && (
                     <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: '18px 20px', borderRadius: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--muted)' }}>RECENT POSTS</div>
-                        <button onClick={() => setView('content')} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL </button>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>RECENT POSTS</div>
+                        <button onClick={() => setView('content')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL </button>
                       </div>
                       {dashStats.recentPosts.map(post => (
                         <div key={post.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '11px 14px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, padding: '2px 6px', border: '1px solid', borderColor: post.published ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)', color: post.published ? 'var(--green)' : 'var(--muted)', background: post.published ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent', flexShrink: 0 }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '2px 6px', border: '1px solid', borderColor: post.published ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)', color: post.published ? 'var(--green)' : 'var(--muted)', background: post.published ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent', flexShrink: 0 }}>
                             {post.published ? 'LIVE' : 'DRAFT'}
                           </span>
                           <div style={{ flex: 1, fontFamily: 'var(--font-display)', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</div>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', flexShrink: 0 }}>{post.views || 0} views</span>
-                          <button onClick={() => { setEditingPost(post); setView('editor') }} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', background: 'none', border: '1px solid var(--border)', padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>EDIT</button>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>{post.views || 0} views</span>
+                          <button onClick={() => { setEditingPost(post); setView('editor') }} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', background: 'none', border: '1px solid var(--border)', padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>EDIT</button>
                         </div>
                       ))}
                     </div>
@@ -983,14 +983,14 @@ function Dashboard({ onLogout }) {
                 eyebrow="CONTENT"
                 title="Content Hub"
                 actions={<>
-                  <button onClick={() => setView('content')} style={{ ...S.btn('color-mix(in srgb, var(--green) 8%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', fontSize: 10, padding: '8px 14px' }}>POSTS</button>
-                  <button onClick={() => { setEditingPost(null); setView('editor') }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', fontSize: 10, padding: '8px 14px' }}>NEW POST</button>
-                  <button onClick={() => setView('forum')} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '8px 14px' }}>FORUM ADMIN</button>
+                  <button onClick={() => setView('content')} style={{ ...S.btn('color-mix(in srgb, var(--green) 8%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', fontSize: 11, padding: '8px 14px' }}>POSTS</button>
+                  <button onClick={() => { setEditingPost(null); setView('editor') }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', fontSize: 11, padding: '8px 14px' }}>NEW POST</button>
+                  <button onClick={() => setView('forum')} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '8px 14px' }}>FORUM ADMIN</button>
                   {selectedPosts.size > 0 && (
                     <>
-                      <button onClick={() => bulkPublishPosts(true)} style={{ ...S.btn('transparent', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', fontSize: 10, padding: '8px 14px' }}> PUBLISH ({selectedPosts.size})</button>
-                      <button onClick={() => bulkPublishPosts(false)} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 10, padding: '8px 14px' }}> UNPUBLISH ({selectedPosts.size})</button>
-                      <button onClick={bulkDeletePosts} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.4)', fontSize: 10, padding: '8px 14px' }}> DELETE ({selectedPosts.size})</button>
+                      <button onClick={() => bulkPublishPosts(true)} style={{ ...S.btn('transparent', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', fontSize: 11, padding: '8px 14px' }}> PUBLISH ({selectedPosts.size})</button>
+                      <button onClick={() => bulkPublishPosts(false)} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '8px 14px' }}> UNPUBLISH ({selectedPosts.size})</button>
+                      <button onClick={bulkDeletePosts} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.4)', fontSize: 11, padding: '8px 14px' }}> DELETE ({selectedPosts.size})</button>
                     </>
                   )}
                 </>}
@@ -1010,7 +1010,7 @@ function Dashboard({ onLogout }) {
                 <div style={{ display: 'flex', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, overflow: 'hidden' }}>
                   {[['all','All'],['live','Live'],['draft','Draft']].map(([v, l]) => (
                     <button key={v} onClick={() => setPostFilter(v)} style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '7px 12px', cursor: 'pointer',
+                      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '7px 12px', cursor: 'pointer',
                       background: postFilter === v ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
                       color: postFilter === v ? 'var(--green)' : 'var(--muted)', border: 'none',
                       borderRight: '1px solid var(--border)',
@@ -1032,9 +1032,9 @@ function Dashboard({ onLogout }) {
               </div>
 
               {(postSearch || postFilter !== 'all') && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 12, letterSpacing: 1 }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 12, letterSpacing: 1 }}>
                   {filteredPosts.length} result{filteredPosts.length !== 1 ? 's' : ''} {postSearch ? `for "${postSearch}"` : ''} {postFilter !== 'all' ? `· ${postFilter}` : ''}
-                  <button onClick={() => { setPostSearch(''); setPostFilter('all'); setPostSort('newest') }} style={{ marginLeft: 10, background: 'none', border: 'none', color: 'var(--cyan)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 9 }}>CLEAR</button>
+                  <button onClick={() => { setPostSearch(''); setPostFilter('all'); setPostSort('newest') }} style={{ marginLeft: 10, background: 'none', border: 'none', color: 'var(--cyan)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11 }}>CLEAR</button>
                 </div>
               )}
 
@@ -1062,7 +1062,7 @@ function Dashboard({ onLogout }) {
                         <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 15 : 17, fontWeight: 600, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {post.title}
                         </div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 1 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
                           {post.category} · {formatDate(post.created_at)} · {post.views} views
                           {post.publish_at && !post.published && <span style={{ color: 'var(--cyan)', marginLeft: 8 }}> {new Date(post.publish_at).toLocaleDateString()}</span>}
                         </div>
@@ -1075,21 +1075,21 @@ function Dashboard({ onLogout }) {
                               <div style={{ flex: 1, maxWidth: 120, height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2 }}>
                                 <div style={{ height: '100%', width: `${pct}%`, background: 'var(--green)', borderRadius: 2 }} />
                               </div>
-                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--green)' }}>{(post.views || 0).toLocaleString()} views</span>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)' }}>{(post.views || 0).toLocaleString()} views</span>
                             </div>
                           )
                         })()}
                       </div>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, padding: '3px 8px', border: '1px solid', borderColor: post.published ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)', color: post.published ? 'var(--green)' : 'var(--muted)', background: post.published ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent', flexShrink: 0 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '3px 8px', border: '1px solid', borderColor: post.published ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)', color: post.published ? 'var(--green)' : 'var(--muted)', background: post.published ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent', flexShrink: 0 }}>
                         {post.published ? 'LIVE' : 'DRAFT'}
                       </span>
                     </div>
                     <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
-                      <button onClick={() => togglePublish(post)} style={{ ...S.btn('var(--bg3)', 'var(--cyan)'), fontSize: 9, padding: '6px 10px', border: '1px solid var(--border)', flex: isMobile ? 1 : 'unset' }}>
+                      <button onClick={() => togglePublish(post)} style={{ ...S.btn('var(--bg3)', 'var(--cyan)'), fontSize: 11, padding: '6px 10px', border: '1px solid var(--border)', flex: isMobile ? 1 : 'unset' }}>
                         {post.published ? 'UNPUBLISH' : 'PUBLISH'}
                       </button>
-                      <button onClick={() => { setEditingPost(post); goView('editor') }} style={{ ...S.btn('var(--bg3)', 'var(--text)'), fontSize: 9, padding: '6px 10px', border: '1px solid var(--border)', flex: isMobile ? 1 : 'unset' }}>EDIT</button>
-                      <button onClick={() => handleDeletePost(post.id)} style={{ ...S.btn('transparent', 'var(--red)'), fontSize: 9, padding: '6px 10px', border: '1px solid rgba(255,71,87,0.3)', flex: isMobile ? 1 : 'unset' }}>DEL</button>
+                      <button onClick={() => { setEditingPost(post); goView('editor') }} style={{ ...S.btn('var(--bg3)', 'var(--text)'), fontSize: 11, padding: '6px 10px', border: '1px solid var(--border)', flex: isMobile ? 1 : 'unset' }}>EDIT</button>
+                      <button onClick={() => handleDeletePost(post.id)} style={{ ...S.btn('transparent', 'var(--red)'), fontSize: 11, padding: '6px 10px', border: '1px solid rgba(255,71,87,0.3)', flex: isMobile ? 1 : 'unset' }}>DEL</button>
                     </div>
                   </div>
                 ))}
@@ -1117,15 +1117,15 @@ function Dashboard({ onLogout }) {
                 eyebrow="COMMUNITY"
                 title="Communications"
                 actions={<>
-                  <button onClick={() => setView('communications')} style={{ ...S.btn('color-mix(in srgb, var(--green) 8%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', fontSize: 10, padding: '8px 14px' }}>CONTACTS</button>
-                  <button onClick={() => setView('newsletter')} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', fontSize: 10, padding: '8px 14px' }}>NEWSLETTER</button>
+                  <button onClick={() => setView('communications')} style={{ ...S.btn('color-mix(in srgb, var(--green) 8%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 35%, transparent)', fontSize: 11, padding: '8px 14px' }}>CONTACTS</button>
+                  <button onClick={() => setView('newsletter')} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', fontSize: 11, padding: '8px 14px' }}>NEWSLETTER</button>
                   {selectedContacts.size > 0 && (
                     <>
                       <button onClick={() => { setReplyModal('bulk'); setReplySubject('Re: Your message'); setReplyBody('') }}
-                        style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', fontSize: 10, padding: '8px 14px' }}>
+                        style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', fontSize: 11, padding: '8px 14px' }}>
                         📨 BULK REPLY ({selectedContacts.size})
                       </button>
-                      <button onClick={bulkDeleteContacts} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.4)', fontSize: 10, padding: '8px 14px' }}> DELETE ({selectedContacts.size})</button>
+                      <button onClick={bulkDeleteContacts} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.4)', fontSize: 11, padding: '8px 14px' }}> DELETE ({selectedContacts.size})</button>
                     </>
                   )}
                 </> }
@@ -1138,7 +1138,7 @@ function Dashboard({ onLogout }) {
                   ['replied', `Replied (${contacts.filter(c => c.replied).length})`],
                 ].map(([v, l]) => (
                   <button key={v} onClick={() => setContactFilter(v)} style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+                    fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                     padding: '8px 16px', cursor: 'pointer', border: 'none',
                     background: contactFilter === v ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
                     color: contactFilter === v ? 'var(--green)' : 'var(--muted)',
@@ -1163,19 +1163,19 @@ function Dashboard({ onLogout }) {
                       />
                       <div>
                         <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600 }}>{c.name}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)' }}>{c.email}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)' }}>{c.email}</div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{formatDate(c.created_at)}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{formatDate(c.created_at)}</span>
                       {c.replied && (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, padding: '3px 7px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', borderRadius: 3 }}> REPLIED</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '3px 7px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', borderRadius: 3 }}> REPLIED</span>
                       )}
                       <button onClick={() => { setReplyModal(c); setReplySubject(`Re: ${c.subject || 'Your message'}`); setReplyBody('') }}
-                        style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 10, padding: '4px 10px' }}>
+                        style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 11, padding: '4px 10px' }}>
                          REPLY
                       </button>
-                      <button onClick={() => handleDeleteContact(c.id)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 10, padding: '4px 10px' }}>DEL</button>
+                      <button onClick={() => handleDeleteContact(c.id)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 11, padding: '4px 10px' }}>DEL</button>
                     </div>
                   </div>
                   {c.subject && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', marginBottom: 6 }}>RE: {c.subject}</div>}
@@ -1193,17 +1193,17 @@ function Dashboard({ onLogout }) {
                 {/* Header (single — Modal adds no title bar here) */}
                 <div style={{ padding: '16px 20px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 4 }}>
                       {replyModal === 'bulk' ? `BULK REPLY — ${selectedContacts.size} CONTACTS` : 'REPLY TO CONTACT'}
                     </div>
                     {replyModal !== 'bulk' && (
                       <>
                         <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600 }}>{replyModal.name}</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--cyan)' }}>{replyModal.email}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)' }}>{replyModal.email}</div>
                       </>
                     )}
                     {replyModal === 'bulk' && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
                         Sends one email to each selected contact
                       </div>
                     )}
@@ -1213,11 +1213,11 @@ function Dashboard({ onLogout }) {
 
                 {/* Templates */}
                 <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'color-mix(in srgb, var(--cyan) 2%, transparent)' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>QUICK TEMPLATES</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>QUICK TEMPLATES</div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {REPLY_TEMPLATES.map(tpl => (
                       <button key={tpl.label} onClick={() => applyTemplate(tpl, replyModal !== 'bulk' ? replyModal : null)} className="admin-quick-action"
-                        style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1, padding: '5px 12px', cursor: 'pointer',
+                        style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '5px 12px', cursor: 'pointer',
                           background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--cyan)', borderRadius: 4 }}>
                         {tpl.label}
                       </button>
@@ -1228,8 +1228,8 @@ function Dashboard({ onLogout }) {
                 {/* Original message preview — single only */}
                 {replyModal !== 'bulk' && (
                   <div style={{ padding: '12px 20px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>ORIGINAL MESSAGE</div>
-                    {replyModal.subject && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--green)', marginBottom: 4 }}>{replyModal.subject}</div>}
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>ORIGINAL MESSAGE</div>
+                    {replyModal.subject && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', marginBottom: 4 }}>{replyModal.subject}</div>}
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.6, margin: 0, maxHeight: 60, overflow: 'hidden' }}>{replyModal.message}</p>
                   </div>
                 )}
@@ -1237,24 +1237,24 @@ function Dashboard({ onLogout }) {
                 {/* Compose */}
                 <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
-                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>SUBJECT</label>
+                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>SUBJECT</label>
                     <input value={replySubject} onChange={e => setReplySubject(e.target.value)}
                       style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, padding: '10px 12px', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                   <div>
-                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>MESSAGE</label>
+                    <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>MESSAGE</label>
                     <textarea value={replyBody} onChange={e => setReplyBody(e.target.value)} rows={7}
                       placeholder={replyModal !== 'bulk' ? `Hi ${replyModal.name},\n\nThank you for reaching out...` : 'Hi there,\n\nThank you for reaching out...'}
                       style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, padding: '10px 12px', outline: 'none', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.7 }} />
                     {replyModal === 'bulk' && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', marginTop: 4, letterSpacing: 1 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4, letterSpacing: 1 }}>
                         TIP: Use <span style={{ color: 'var(--cyan)' }}>{'{{name}}'}</span> to personalise — it will be replaced with each contact&apos;s name.
                       </div>
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                     <button onClick={() => setReplyModal(null)}
-                      style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '8px 18px', fontSize: 10 }}>
+                      style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', padding: '8px 18px', fontSize: 11 }}>
                       CANCEL
                     </button>
                     <button disabled={replySending || !replyBody.trim() || !replySubject.trim()}
@@ -1286,7 +1286,7 @@ function Dashboard({ onLogout }) {
                           toast.error(e.response?.data?.error || 'Failed to send reply', { title: 'Error' })
                         } finally { setReplySending(false) }
                       }}
-                      style={{ ...S.btn(), padding: '8px 18px', fontSize: 10, opacity: (replySending || !replyBody.trim() || !replySubject.trim()) ? 0.4 : 1 }}>
+                      style={{ ...S.btn(), padding: '8px 18px', fontSize: 11, opacity: (replySending || !replyBody.trim() || !replySubject.trim()) ? 0.4 : 1 }}>
                       {replySending ? 'SENDING…' : replyModal === 'bulk' ? `📨 SEND TO ${selectedContacts.size}` : '[>] SEND REPLY'}
                     </button>
                   </div>
@@ -1301,14 +1301,14 @@ function Dashboard({ onLogout }) {
                 eyebrow="COMMUNITY"
                 title="Staff Management"
                 subtitle="Manage moderators and editors."
-                actions={<button onClick={() => setShowNewStaff(true)} style={{ ...S.btn(), padding: '8px 16px', fontSize: 10 }}>+ ADD STAFF</button>}
+                actions={<button onClick={() => setShowNewStaff(true)} style={{ ...S.btn(), padding: '8px 16px', fontSize: 11 }}>+ ADD STAFF</button>}
               />
 
               {/* Role legend — wraps on mobile */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
                 {[['admin', 'Full'], ['moderator', 'Forum + Chat'], ['editor', 'Blog'], ['chat', 'Chat only']].map(([r, desc]) => (
                   <div key={r} style={{ padding: '6px 12px', background: ROLE_COLORS[r]?.bg, border: `1px solid ${ROLE_COLORS[r]?.border}`, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: ROLE_COLORS[r]?.color }}>{r.toUpperCase()}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: ROLE_COLORS[r]?.color }}>{r.toUpperCase()}</span>
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>{desc}</span>
                   </div>
                 ))}
@@ -1323,26 +1323,26 @@ function Dashboard({ onLogout }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{s.username}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{s.email}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{s.email}</div>
                   </div>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, padding: '4px 10px', background: ROLE_COLORS[s.role]?.bg, border: `1px solid ${ROLE_COLORS[s.role]?.border}`, color: ROLE_COLORS[s.role]?.color, flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '4px 10px', background: ROLE_COLORS[s.role]?.bg, border: `1px solid ${ROLE_COLORS[s.role]?.border}`, color: ROLE_COLORS[s.role]?.color, flexShrink: 0 }}>
                     {s.role.toUpperCase()}
                   </span>
                   {!isMobile && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 }}>
                       {s.lastSeen ? (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: (() => { const mins = (Date.now() - new Date(s.lastSeen)) / 60000; return mins < 5 ? 'var(--green)' : mins < 60 ? '#ffd700' : 'var(--muted)' })() }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: (() => { const mins = (Date.now() - new Date(s.lastSeen)) / 60000; return mins < 5 ? 'var(--green)' : mins < 60 ? '#ffd700' : 'var(--muted)' })() }}>
                           {(() => { const mins = (Date.now() - new Date(s.lastSeen)) / 60000; return mins < 1 ? ' online now' : mins < 60 ? ` ${Math.floor(mins)}m ago` : mins < 1440 ? ` ${Math.floor(mins/60)}h ago` : ` ${Math.floor(mins/1440)}d ago` })()}
                         </span>
                       ) : (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--border)' }}> never seen</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--border)' }}> never seen</span>
                       )}
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--border)' }}>joined {formatDate(s.createdAt)}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--border)' }}>joined {formatDate(s.createdAt)}</span>
                     </div>
                   )}
-                  <button onClick={() => { setEditingStaff(s); setEditStaffForm({ username: s.username, email: s.email, role: s.role, password: '', forum_user_id: s.forum_user_id || '', module_permissions: s.module_permissions || s.permissions || permissionForRole(s.role) }) }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 10, padding: '6px 12px', flexShrink: 0 }}>EDIT</button>
-                  <button onClick={() => startImpersonate(s)} disabled={impersonateBusy} style={{ ...S.btn('transparent', '#fbbf24'), border: '1px solid rgba(251,191,36,0.3)', fontSize: 10, padding: '6px 12px', flexShrink: 0 }}>VIEW AS</button>
-                  <button onClick={() => handleDeleteStaff(s._id, s.username)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 10, padding: '6px 12px', flexShrink: 0 }}>REMOVE</button>
+                  <button onClick={() => { setEditingStaff(s); setEditStaffForm({ username: s.username, email: s.email, role: s.role, password: '', forum_user_id: s.forum_user_id || '', module_permissions: s.module_permissions || s.permissions || permissionForRole(s.role) }) }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 11, padding: '6px 12px', flexShrink: 0 }}>EDIT</button>
+                  <button onClick={() => startImpersonate(s)} disabled={impersonateBusy} style={{ ...S.btn('transparent', '#fbbf24'), border: '1px solid rgba(251,191,36,0.3)', fontSize: 11, padding: '6px 12px', flexShrink: 0 }}>VIEW AS</button>
+                  <button onClick={() => handleDeleteStaff(s._id, s.username)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 11, padding: '6px 12px', flexShrink: 0 }}>REMOVE</button>
                 </div>
               ))}
 
@@ -1354,23 +1354,23 @@ function Dashboard({ onLogout }) {
                       <div>
                         <label style={S.label}>Account type</label>
                         <div style={{ display:'flex', gap:8 }}>
-                          {['standalone','existing'].map(m => <button key={m} type="button" onClick={() => setNewStaff(p => ({ ...p, mode:m, forum_user_id: m === 'standalone' ? '' : p.forum_user_id, password: m === 'existing' ? '' : p.password }))} style={{ flex:1, padding:'9px', fontFamily:'var(--font-mono)', fontSize:10, letterSpacing:1.5, background:newStaff.mode===m?'color-mix(in srgb, var(--green) 10%, transparent)':'transparent', color:newStaff.mode===m?'var(--green)':'var(--muted)', border:`1px solid ${newStaff.mode===m?'color-mix(in srgb, var(--green) 40%, transparent)':'var(--border)'}`, cursor:'pointer' }}>{m === 'existing' ? 'SELECT USER' : 'STANDALONE'}</button>)}
+                          {['standalone','existing'].map(m => <button key={m} type="button" onClick={() => setNewStaff(p => ({ ...p, mode:m, forum_user_id: m === 'standalone' ? '' : p.forum_user_id, password: m === 'existing' ? '' : p.password }))} style={{ flex:1, padding:'9px', fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:1.5, background:newStaff.mode===m?'color-mix(in srgb, var(--green) 10%, transparent)':'transparent', color:newStaff.mode===m?'var(--green)':'var(--muted)', border:`1px solid ${newStaff.mode===m?'color-mix(in srgb, var(--green) 40%, transparent)':'var(--border)'}`, cursor:'pointer' }}>{m === 'existing' ? 'SELECT USER' : 'STANDALONE'}</button>)}
                         </div>
                       </div>
                       {newStaff.mode === 'existing' && (
                         <div>
                           <label style={S.label}>Search existing user</label>
                           <input value={staffUserQuery} onChange={e => searchStaffUsers(e.target.value)} placeholder="username, email, Discord, Steam" style={S.input} />
-                          {staffUserLoading && <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--muted)', marginTop:6 }}>Searching...</div>}
+                          {staffUserLoading && <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', marginTop:6 }}>Searching...</div>}
                           {staffUserResults.length > 0 && <div style={{ border:'1px solid var(--border)', borderRadius:6, marginTop:6, maxHeight:150, overflowY:'auto' }}>{staffUserResults.map(u => <button key={u.id} type="button" onClick={() => selectStaffUser(u)} style={{ width:'100%', textAlign:'left', padding:'8px 10px', background:'transparent', border:'none', borderBottom:'1px solid rgba(255,255,255,.05)', color:'var(--text)', fontFamily:'var(--font-mono)', cursor:'pointer' }}>{u.username}<span style={{ color:'var(--muted)' }}> · {u.email || u.discord_username || u.steam_username || u.id}</span></button>)}</div>}
-                          {newStaff.forum_user_id && <div style={{ fontFamily:'var(--font-mono)', fontSize:9, color:'var(--green)', marginTop:6 }}>Selected user ID: {newStaff.forum_user_id}</div>}
+                          {newStaff.forum_user_id && <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--green)', marginTop:6 }}>Selected user ID: {newStaff.forum_user_id}</div>}
                         </div>
                       )}
                       <div>
                         <label style={S.label}>Role</label>
                         <div style={{ display: 'flex', gap: 8 }}>
                           {['editor', 'moderator', 'chat'].map(r => (
-                            <button key={r} type="button" onClick={() => setNewStaff(p => ({ ...p, role: r, module_permissions: permissionForRole(r) }))} style={{ flex: 1, padding: '9px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, background: newStaff.role === r ? ROLE_COLORS[r]?.bg : 'transparent', color: newStaff.role === r ? ROLE_COLORS[r]?.color : 'var(--muted)', border: `1px solid ${newStaff.role === r ? ROLE_COLORS[r]?.border : 'var(--border)'}`, cursor: 'pointer' }}>
+                            <button key={r} type="button" onClick={() => setNewStaff(p => ({ ...p, role: r, module_permissions: permissionForRole(r) }))} style={{ flex: 1, padding: '9px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, background: newStaff.role === r ? ROLE_COLORS[r]?.bg : 'transparent', color: newStaff.role === r ? ROLE_COLORS[r]?.color : 'var(--muted)', border: `1px solid ${newStaff.role === r ? ROLE_COLORS[r]?.border : 'var(--border)'}`, cursor: 'pointer' }}>
                               {r === 'editor' ? '[E] EDITOR' : r === 'chat' ? '[C] CHAT' : '[M] MOD'}
                             </button>
                           ))}
@@ -1399,7 +1399,7 @@ function Dashboard({ onLogout }) {
                         <label style={S.label}>Role</label>
                         <div style={{ display: 'flex', gap: 8 }}>
                           {['editor', 'moderator', 'chat'].map(r => (
-                            <button key={r} type="button" onClick={() => setEditStaffForm(p => ({ ...p, role: r, module_permissions: permissionForRole(r) }))} style={{ flex: 1, padding: '9px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, background: editStaffForm.role === r ? ROLE_COLORS[r]?.bg : 'transparent', color: editStaffForm.role === r ? ROLE_COLORS[r]?.color : 'var(--muted)', border: `1px solid ${editStaffForm.role === r ? ROLE_COLORS[r]?.border : 'var(--border)'}`, cursor: 'pointer' }}>
+                            <button key={r} type="button" onClick={() => setEditStaffForm(p => ({ ...p, role: r, module_permissions: permissionForRole(r) }))} style={{ flex: 1, padding: '9px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, background: editStaffForm.role === r ? ROLE_COLORS[r]?.bg : 'transparent', color: editStaffForm.role === r ? ROLE_COLORS[r]?.color : 'var(--muted)', border: `1px solid ${editStaffForm.role === r ? ROLE_COLORS[r]?.border : 'var(--border)'}`, cursor: 'pointer' }}>
                               {r === 'editor' ? '[E] EDITOR' : r === 'chat' ? '[C] CHAT' : '[M] MOD'}
                             </button>
                           ))}
@@ -1410,9 +1410,9 @@ function Dashboard({ onLogout }) {
                       <div><label style={S.label}>New Password <span style={{ color: 'var(--muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(leave blank to keep current)</span></label><input type="password" value={editStaffForm.password} onChange={e => setEditStaffForm(p => ({ ...p, password: e.target.value }))} placeholder="" style={S.input} minLength={8} /></div>
                       <PermissionEditor value={editStaffForm.module_permissions} onChange={module_permissions => setEditStaffForm(p => ({ ...p, module_permissions }))} />
                       <div style={{ border: '1px solid rgba(255,71,87,0.35)', background: 'rgba(255,71,87,0.06)', borderRadius: 8, padding: 12 }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 2, color: '#ff4757', marginBottom: 8 }}>DANGER ZONE</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: '#ff4757', marginBottom: 8 }}>DANGER ZONE</div>
                         <button type="button" onClick={() => setAbuseTarget(editingStaff)} style={{ ...S.btn('rgba(255,71,87,0.15)', '#ff4757'), border: '1px solid rgba(255,71,87,0.4)', width: '100%' }}>🚫 BAN EVERYWHERE</button>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 8 }}>Suspends chat, forum, VPN, FiveM + IP in one action. Undo available.</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>Suspends chat, forum, VPN, FiveM + IP in one action. Undo available.</div>
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button type="submit" disabled={staffSaving} style={{ ...S.btn(), flex: 1, opacity: staffSaving ? 0.7 : 1 }}>{staffSaving ? 'SAVING...' : ' SAVE'}</button>
@@ -1493,7 +1493,7 @@ function Dashboard({ onLogout }) {
             <div style={{ height: 2, background: 'linear-gradient(90deg, var(--green), var(--cyan))' }} />
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 2 }}>KEYBOARD SHORTCUTS</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 2 }}>KEYBOARD SHORTCUTS</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700 }}>Quick Navigation</div>
               </div>
               <button onClick={() => setShowShortcuts(false)} aria-label="Close shortcuts" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18 }}>✕</button>
@@ -1510,13 +1510,13 @@ function Dashboard({ onLogout }) {
                 ['ESC', 'Close modals'],
               ].map(([key, desc]) => (
                 <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <kbd style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, padding: '3px 8px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--green)', flexShrink: 0, minWidth: 36, textAlign: 'center' }}>{key}</kbd>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{desc}</span>
+                  <kbd style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, padding: '3px 8px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--green)', flexShrink: 0, minWidth: 36, textAlign: 'center' }}>{key}</kbd>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{desc}</span>
                 </div>
               ))}
             </div>
             <div style={{ padding: '10px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>Shortcuts are disabled when typing in input fields.</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Shortcuts are disabled when typing in input fields.</span>
             </div>
         </Modal>
       )}

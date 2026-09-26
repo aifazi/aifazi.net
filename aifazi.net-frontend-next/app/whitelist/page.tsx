@@ -1,9 +1,7 @@
 import WhitelistApply from '@/pages-src/WhitelistApply'
+import { whitelistMetadata } from '@/lib/routeMeta'
 
-export const metadata = {
-  title: 'Whitelist Application — AIFAZI RP',
-  description: 'Apply for whitelist access to AIFAZI RP — Neon Ops City, a serious QBX FiveM roleplay server.',
-}
+export const metadata = whitelistMetadata
 
 export default function WhitelistPage() {
   return <WhitelistApply />

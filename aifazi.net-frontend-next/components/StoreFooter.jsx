@@ -54,14 +54,14 @@ export default function StoreFooter() {
                   {icon}
                 </div>
               ))}
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: MUTED, letterSpacing: 1 }}>STRIPE</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: MUTED, letterSpacing: 1 }}>STRIPE</span>
             </div>
           </div>
 
           {/* Link columns */}
           {FOOTER_LINKS.map(col => (
             <div key={col.title}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: S, marginBottom: 14, textTransform: 'uppercase' }}>{col.title}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: S, marginBottom: 14, textTransform: 'uppercase' }}>{col.title}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {col.links.map(([to, label, external]) => (
                   external ? (
@@ -86,7 +86,7 @@ export default function StoreFooter() {
 
           {/* Newsletter */}
           <div style={{ minWidth: 200 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 3, color: S, marginBottom: 14, textTransform: 'uppercase' }}>STAY UPDATED</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: S, marginBottom: 14, textTransform: 'uppercase' }}>STAY UPDATED</div>
             <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.7, margin: '0 0 14px' }}>
               New products, VIP perks, and exclusive deals.
             </p>
@@ -99,23 +99,23 @@ export default function StoreFooter() {
                 }} />
               <button type="submit" style={{
                 background: S, color: '#000', border: 'none', borderRadius: '0 8px 8px 0',
-                padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1,
+                padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                 fontWeight: 700, cursor: 'pointer',
-              }}>→</button>
+              }} aria-label="Next">→</button>
             </form>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: MUTED }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: MUTED }}>
             © {new Date().getFullYear()} AIFAZI. All rights reserved.
           </span>
           <div style={{ display: 'flex', gap: 16 }}>
-            <a href={`${SITE_URL}/privacy`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: MUTED, textDecoration: 'none' }}
+            <a href={`${SITE_URL}/privacy`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: MUTED, textDecoration: 'none' }}
               onMouseEnter={e => e.currentTarget.style.color = S}
               onMouseLeave={e => e.currentTarget.style.color = MUTED}>Privacy</a>
-            <a href={`${SITE_URL}/contact`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: MUTED, textDecoration: 'none' }}
+            <a href={`${SITE_URL}/contact`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: MUTED, textDecoration: 'none' }}
               onMouseEnter={e => e.currentTarget.style.color = S}
               onMouseLeave={e => e.currentTarget.style.color = MUTED}>Contact</a>
           </div>

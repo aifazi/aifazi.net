@@ -105,7 +105,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
   return createPortal(
     <>
       {/* Backdrop */}
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', zIndex: 999997 }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)', zIndex: 999997 }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
 
       {/* Modal — 3-part flex: header (pinned) | content (scrolls) | footer (pinned) */}
       <div style={{
@@ -119,11 +119,11 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
 
         {/* ── HEADER + TABS (pinned top, never scrolls) ── */}
         <div style={{ flexShrink: 0, padding: '20px 24px 0', borderBottom: '1px solid color-mix(in srgb, var(--cyan) 10%, transparent)', position: 'relative', zIndex: 2 }}>
-          <div style={{ fontSize: 10, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14 }}>EDIT ICON</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14 }}>EDIT ICON</div>
           <div style={{ display: 'flex', gap: 0 }}>
             {tabs.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)} style={{
-                flex: 1, padding: '8px 4px', fontSize: 10, letterSpacing: 1,
+                flex: 1, padding: '8px 4px', fontSize: 11, letterSpacing: 1,
                 background: tab === t.key ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
                 border: 'none', borderBottom: `2px solid ${tab === t.key ? 'var(--cyan)' : 'transparent'}`,
                 color: tab === t.key ? 'var(--cyan)' : '#4a6070',
@@ -142,7 +142,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
               <IconDisplay value={selected} size={36} />
             </div>
             <div style={{ overflow: 'hidden', minWidth: 0 }}>
-              <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 2 }}>PREVIEW</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>PREVIEW</div>
               <div style={{ fontSize: 11, color: 'var(--text)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected || 'No icon selected'}</div>
             </div>
           </div>
@@ -165,7 +165,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
           {/* Animated tab */}
           {tab === 'animated' && (
             <div>
-              <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 12 }}>HOVER TO PREVIEW</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 12 }}>HOVER TO PREVIEW</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
                 {LORDICON_ICONS.map(icon => (
                   <button key={icon.url} onClick={() => setSelected(icon.url)} style={{
@@ -178,11 +178,11 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
                   }}>
                     {/* pointerEvents:none prevents lord-icon shadow DOM from stealing clicks */}
                     <lord-icon src={icon.url} trigger="hover" colors="primary:#00d4ff,secondary:#00ff88" style={{ width: 32, height: 32, pointerEvents: 'none' }} />
-                    <span style={{ fontSize: 8, color: '#4a6070', letterSpacing: 1 }}>{icon.label.toUpperCase()}</span>
+                    <span style={{ fontSize: 11, color: '#4a6070', letterSpacing: 1 }}>{icon.label.toUpperCase()}</span>
                   </button>
                 ))}
               </div>
-              <div style={{ marginTop: 10, fontSize: 9, color: '#2a3a48', lineHeight: 1.8 }}>
+              <div style={{ marginTop: 10, fontSize: 11, color: '#2a3a48', lineHeight: 1.8 }}>
                 💡 More at <a href="https://lordicon.com" target="_blank" rel="noopener" style={{ color: 'var(--green)' }}>lordicon.com</a> — paste .json URL in Custom URL tab
               </div>
             </div>
@@ -191,7 +191,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
           {/* Custom URL tab */}
           {tab === 'custom' && (
             <div>
-              <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>IMAGE OR LORDICON URL</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>IMAGE OR LORDICON URL</div>
               <input
                 value={customUrl}
                 onChange={e => { setCustomUrl(e.target.value); setSelected(e.target.value) }}
@@ -202,7 +202,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
                   fontSize: 12, padding: '10px 14px', outline: 'none', boxSizing: 'border-box',
                 }}
               />
-              <div style={{ fontSize: 9, color: '#2a3a48', marginTop: 8 }}>Supports: PNG, SVG, WebP, GIF, Lordicon .json</div>
+              <div style={{ fontSize: 11, color: '#2a3a48', marginTop: 8 }}>Supports: PNG, SVG, WebP, GIF, Lordicon .json</div>
             </div>
           )}
         </div>

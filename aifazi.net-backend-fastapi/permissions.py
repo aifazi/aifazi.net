@@ -11,6 +11,8 @@ from typing import Any
 
 from fastapi import Depends, HTTPException
 
+from database import _escape_ilike
+
 STAFF_ROLES = {"admin", "moderator", "editor", "chat"}
 ACTIONS = ("view", "create", "edit", "delete", "approve", "sync", "manage", "export")
 MODULES = {
@@ -142,7 +144,7 @@ def _verify_admin_role(user_id: str, username: str) -> bool:
             res = sb.table("users").select("id,role,banned").eq("id", user_id).limit(1).execute()
             row = (res.data or [None])[0]
         if not row and username:
-            res = sb.table("users").select("id,username,role,banned").ilike("username", username).limit(5).execute()
+            res = sb.table("users").select("id,username,role,banned").ilike("username", _escape_ilike(username)).limit(5).execute()
             row = next((r for r in (res.data or []) if str(r.get("username", "")).lower() == username.lower()), None)
     except HTTPException:
         raise
@@ -180,7 +182,7 @@ def resolve_staff_access(user: dict | None) -> dict | None:
             db_ok = True
             row = (res.data or [None])[0]
         if not row and username:
-            res = sb.table("users").select("id,username,email,role,staff_permissions,banned,last_seen,created_at,profile_bio,profile_avatar,email_verified").ilike("username", username).limit(5).execute()
+            res = sb.table("users").select("id,username,email,role,staff_permissions,banned,last_seen,created_at,profile_bio,profile_avatar,email_verified").ilike("username", _escape_ilike(username)).limit(5).execute()
             db_ok = True
             row = next((r for r in (res.data or []) if str(r.get("username", "")).lower() == username.lower() and r.get("role") in STAFF_ROLES), None)
     except HTTPException:

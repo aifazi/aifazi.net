@@ -71,7 +71,7 @@ function NavItem({ item, active, accentDot, onClick, collapsed }) {
 
       {/* Badge */}
       {!collapsed && item.badge != null && (
-        <span style={{ fontSize:10, padding:'2px 6px', borderRadius:20,
+        <span style={{ fontSize: 11, padding:'2px 6px', borderRadius:20,
           background: active ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(255,255,255,0.06)',
           color: active ? 'var(--green)' : C.muted, fontFamily:C.fontMono,
           border:`1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : C.border}`, flexShrink:0 }}>
@@ -112,7 +112,7 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
       {/* Mobile backdrop */}
       {isMobile && open && (
         <div onClick={onClose}
-          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:98, backdropFilter:'blur(2px)' }} />
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:98, backdropFilter:'blur(2px)' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
       )}
 
       <aside style={{
@@ -153,7 +153,7 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
                   padding:'2px 8px', borderRadius:20, background:meta.bg, border:`1px solid ${meta.border}` }}>
                   <span style={{ width:5, height:5, borderRadius:'50%', background:meta.dot,
                     flexShrink:0, boxShadow:`0 0 5px ${meta.dot}` }} />
-                  <span style={{ fontSize:10, fontWeight:500, color:meta.dot,
+                  <span style={{ fontSize: 11, fontWeight:500, color:meta.dot,
                     fontFamily:C.fontMono, letterSpacing:0.5 }}>{meta.label}</span>
                 </div>
               </div>
@@ -167,7 +167,7 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
           {Object.entries(grouped).map(([groupName, items]) => (
             <div key={groupName} style={{ marginBottom:6 }}>
               {!collapsed && (
-                <div style={{ padding:'8px 10px 4px', fontSize:10, fontWeight:600, letterSpacing:0.8,
+                <div style={{ padding:'8px 10px 4px', fontSize: 11, fontWeight:600, letterSpacing:0.8,
                   color:'rgba(255,255,255,0.2)', textTransform:'uppercase',
                   userSelect:'none', fontFamily:C.fontMono }}>
                   {GROUP_LABELS[groupName] || groupName}
@@ -188,8 +188,8 @@ export default function Sidebar({ view, setView, navItems, username, role, onLog
         <div style={{ borderTop:`1px solid ${C.border}`, padding:'6px 8px' }}>
           {!collapsed && (
             <div style={{ padding:'4px 10px 8px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-              <span style={{ fontSize:10, color:'rgba(255,255,255,0.18)', fontFamily:C.fontMono }}>aifazi.net</span>
-              <span style={{ fontSize:10, color:'rgba(255,255,255,0.12)', fontFamily:C.fontMono }}>v2.0</span>
+              <span style={{ fontSize: 11, color:'rgba(255,255,255,0.18)', fontFamily:C.fontMono }}>aifazi.net</span>
+              <span style={{ fontSize: 11, color:'rgba(255,255,255,0.12)', fontFamily:C.fontMono }}>v2.0</span>
             </div>
           )}
           <button onClick={onLogout}

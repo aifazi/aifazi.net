@@ -48,14 +48,14 @@ export default function ForumNewThread() {
   }
 
   const field = { fontFamily: 'var(--font-display)', fontSize: 15, width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', padding: '12px 16px', outline: 'none' }
-  const label = { fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }
+  const label = { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 8 }
 
   return (
     <div className="page-container community-page" style={{ position: 'relative', zIndex: 1 }}>
       <div style={{ maxWidth: 820, margin: '0 auto', paddingBottom: 80 }}>
 
         <div style={{ marginBottom: 28 }}>
-          <Link to="/forum" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO FORUM</Link>
+          <Link to="/forum" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', letterSpacing: 2 }}>← BACK TO FORUM</Link>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px,4vw,40px)', fontWeight: 700, margin: '14px 0 0', color: 'var(--text)' }}>New Thread</h1>
         </div>
 

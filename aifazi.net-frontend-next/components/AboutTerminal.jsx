@@ -212,7 +212,7 @@ export default function AboutTerminal() {
           padding: 24, fontSize: 13, lineHeight: 1.8,
           maxHeight: 320, overflowY: 'auto', cursor: 'text',
         }}
-      >
+       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         {lines.map((line, i) => (
           <div key={i} style={{
             whiteSpace: 'pre',

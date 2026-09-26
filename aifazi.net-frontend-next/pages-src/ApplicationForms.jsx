@@ -51,13 +51,13 @@ function Input({ field, value, onChange, disabled }) {
 function Field({ field, value, onChange, error, disabled }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
-      <label style={{ fontFamily:M, fontSize:10, letterSpacing:1.8, color:error ? R : 'var(--muted)', textTransform:'uppercase' }}>
+      <label style={{ fontFamily:M, fontSize: 11, letterSpacing:1.8, color:error ? R : 'var(--muted)', textTransform:'uppercase' }}>
         {field.label || field.id} {field.required && <span style={{ color:R }}>*</span>}
       </label>
       <Input field={field} value={value} onChange={onChange} disabled={disabled} />
       {field.help && !error && <span style={{ color:'var(--muted)', fontSize:11, lineHeight:1.6 }}>{field.help}</span>}
       {field.min_length > 0 && !error && (
-        <span style={{ color:(value || '').length < field.min_length ? R : G, fontSize:10, fontFamily:M, textAlign:'right' }}>
+        <span style={{ color:(value || '').length < field.min_length ? R : G, fontSize: 11, fontFamily:M, textAlign:'right' }}>
           {(value || '').length} / {field.min_length} min
         </span>
       )}
@@ -100,7 +100,7 @@ export function ApplicationFormsIndex() {
   return (
     <Shell>
       <div style={{ marginBottom:28 }}>
-        <div style={{ fontFamily:M, color:G, fontSize:10, letterSpacing:4, marginBottom:8 }}>AIFAZI RP · APPLICATIONS</div>
+        <div style={{ fontFamily:M, color:G, fontSize: 11, letterSpacing:4, marginBottom:8 }}>AIFAZI RP · APPLICATIONS</div>
         <h1 style={{ color:'var(--text)', fontFamily:M, fontSize:30, margin:'0 0 8px' }}>Community Applications</h1>
         <p style={{ color:'var(--muted)', margin:0, lineHeight:1.7 }}>
           Apply for staff, departments, and specialist RP roles. You must already be whitelisted, and only one community application can be pending or approved at a time.
@@ -119,7 +119,7 @@ export function ApplicationFormsIndex() {
             }}>
               <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'center' }}>
                 <strong style={{ color:'var(--text)', fontFamily:M, fontSize:15 }}>{form.title}</strong>
-                <span style={{ color:C, border:`1px solid ${C}40`, borderRadius:20, padding:'2px 8px', fontSize:10, fontFamily:M }}>{form.category}</span>
+                <span style={{ color:C, border:`1px solid ${C}40`, borderRadius:20, padding:'2px 8px', fontSize: 11, fontFamily:M }}>{form.category}</span>
               </div>
               <p style={{ color:'var(--muted)', fontSize:13, lineHeight:1.7, margin:0 }}>{form.description}</p>
               <span style={{ color:G, fontSize:11, fontFamily:M, letterSpacing:1.4 }}>OPEN FORM →</span>
@@ -270,12 +270,12 @@ export function ApplicationFormPage({ slug }) {
       <Shell narrow>
         <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
           <div>
-            <div style={{ color:G, fontFamily:M, fontSize:10, letterSpacing:4, marginBottom:8 }}>{formDef.category?.toUpperCase()} APPLICATION</div>
+            <div style={{ color:G, fontFamily:M, fontSize: 11, letterSpacing:4, marginBottom:8 }}>{formDef.category?.toUpperCase()} APPLICATION</div>
             <h1 style={{ color:'var(--text)', fontFamily:M, fontSize:28, margin:'0 0 8px' }}>{formDef.title}</h1>
             <p style={{ color:'var(--muted)', lineHeight:1.75, margin:0 }}>{formDef.intro || formDef.description}</p>
           </div>
           <div style={{ border:`1px solid ${R}55`, background:`${R}10`, borderRadius:12, padding:24 }}>
-            <div style={{ color:R, fontFamily:M, fontSize:10, letterSpacing:3, marginBottom:10 }}>WHITELIST REQUIRED</div>
+            <div style={{ color:R, fontFamily:M, fontSize: 11, letterSpacing:3, marginBottom:10 }}>WHITELIST REQUIRED</div>
             <h2 style={{ color:'var(--text)', fontFamily:M, margin:'0 0 10px', fontSize:20 }}>You must be whitelisted</h2>
             <p style={{ color:'var(--muted)', lineHeight:1.75, margin:'0 0 18px' }}>
               {gate.message || 'You must be whitelisted before applying for this form.'}
@@ -300,7 +300,7 @@ export function ApplicationFormPage({ slug }) {
     <Shell narrow>
       <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
         <div>
-          <div style={{ color:G, fontFamily:M, fontSize:10, letterSpacing:4, marginBottom:8 }}>{formDef.category?.toUpperCase()} APPLICATION</div>
+          <div style={{ color:G, fontFamily:M, fontSize: 11, letterSpacing:4, marginBottom:8 }}>{formDef.category?.toUpperCase()} APPLICATION</div>
           <h1 style={{ color:'var(--text)', fontFamily:M, fontSize:28, margin:'0 0 8px' }}>{formDef.title}</h1>
           <p style={{ color:'var(--muted)', lineHeight:1.75, margin:0 }}>{formDef.intro || formDef.description}</p>
         </div>

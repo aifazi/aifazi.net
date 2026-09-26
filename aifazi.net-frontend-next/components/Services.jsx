@@ -6,10 +6,10 @@ import { AnimatableWrapper, EditableList, EditableText } from '../context/EditCo
 import { IconDisplay, useLordiconScript } from './IconPicker'
 
 const DEFAULT_SERVICES = [
-  { icon: '🌐', title: 'Network Design & Architecture', desc: 'End-to-end design of enterprise LAN/WAN infrastructure. From IP addressing and routing protocols to redundancy planning and documentation.', features: ['OSPF / BGP / EIGRP', 'VLAN & QoS Design', 'Redundancy & Failover', 'Network Documentation'], accent: 'var(--green)' },
-  { icon: '🔒', title: 'Security & Firewall', desc: 'Hardening your perimeter with enterprise-grade firewall deployment, VPN solutions, IDS/IPS configuration, and ongoing security audits.', features: ['Firewall Rule Optimization', 'IPSec / SSL VPN', 'IDS/IPS Deployment', 'Zero Trust Architecture'], accent: 'var(--red)' },
-  { icon: '☁️', title: 'Cloud & Hybrid Infrastructure', desc: 'Seamless migration to cloud-hybrid models with AWS and Azure. Direct Connect, VPC design, and cloud-native security controls.', features: ['AWS / Azure Setup', 'Cloud Migration Planning', 'Hybrid Connectivity', 'Cost Optimization'], accent: 'var(--cyan)' },
-  { icon: '🖥️', title: 'Server & Systems Administration', desc: 'Linux and Windows server deployment, Active Directory, virtualization stacks, and containerized application environments.', features: ['Linux / Windows Server', 'Docker & Virtualization', 'Active Directory', 'Backup & Recovery'], accent: 'var(--orange)' },
+  { icon: '🌐', title: 'Website & Web Apps', desc: 'Custom sites and web apps — React/Next.js, FastAPI, Supabase, deployed to Vercel.', features: ['React / Next.js', 'FastAPI / Node', 'Supabase / MongoDB', 'CMS & Landing Pages'], accent: 'var(--green)' },
+  { icon: '📱', title: 'Mobile Apps', desc: 'React Native apps shipped to the Play Store with OTA updates.', features: ['React Native / Expo', 'EAS Build & OTA', 'Play Store Deploy', 'App Maintenance'], accent: 'var(--cyan)' },
+  { icon: '🎮', title: 'FiveM Scripting', desc: 'Commercial game scripts for QB-Core, QBX, ESX, and standalone servers.', features: ['Lua / JS Scripts', 'ox_lib UIs', 'Server-Authoritative Logic', 'Tebex Delivery'], accent: 'var(--purple)' },
+  { icon: '🖥️', title: 'Network & M365 Support', desc: 'Microsoft 365, AD, networking, and IT policy & security documentation.', features: ['Microsoft 365 / Entra', 'Active Directory', 'Firewall & VPN', 'IT Policy & Compliance'], accent: 'var(--orange)' },
 ]
 
 const SERVICE_FIELDS = [
@@ -72,7 +72,7 @@ function ServiceCard({ svc, i }) {
               <IconDisplay value={svc.icon} size={30} />
               <span style={{ position: 'absolute', bottom: -1, right: -1, width: 8, height: 8, background: accent, boxShadow: `0 0 10px ${accent}`, borderRadius: '50%' }} />
             </div>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{String(i + 1).padStart(2, '0')}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, opacity: 0.5 }}>{String(i + 1).padStart(2, '0')}</span>
           </div>
 
           {/* Title — admin-editable inline */}
@@ -88,7 +88,7 @@ function ServiceCard({ svc, i }) {
           {/* Feature terminal list */}
           <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 16, position: 'relative', zIndex: 1 }}>
             {(svc.features || []).map((f, fi) => (
-              <div key={fi} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--text)', lineHeight: 1.9 }}>
+              <div key={fi} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text)', lineHeight: 1.9 }}>
                 <span style={{ color: accent, fontSize: 12, flexShrink: 0 }}>›</span>
                 <EditableText contentKey={`service.${i}.feature.${fi}`} defaultValue={f} />
               </div>
@@ -127,12 +127,12 @@ export default function Services() {
       <style>{`
         .services-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 360px));
-          gap: 24px;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+          gap: clamp(20px, 2.2vw, 36px);
           align-items: stretch;
           justify-content: center;
-          width: min(100%, 1500px);
-          margin: 48px auto 0;
+          width: min(100%, 1480px);
+          margin: 56px auto 0;
         }
 
         .svc-card-wrapper { display: flex; flex-direction: column; flex: 1; height: 100%; }
@@ -143,10 +143,10 @@ export default function Services() {
           flex-direction: column;
           flex: 1;
           height: 100%;
-          padding: 32px;
+          padding: clamp(28px, 2.4vw, 40px);
           background: var(--bg2);
           border: 1px solid var(--border);
-          border-radius: 4px;
+          border-radius: 8px;
           overflow: hidden;
           transition: border-color .35s ease, transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s ease;
           --mx: 50%; --my: 50%;

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import BlogPostClient from '@/pages-src/BlogPost'
+import { SITE_URL } from '@/lib/config'
+import { articleJsonLd, jsonLdScript } from '@/lib/seo'
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -38,12 +40,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: post.title,
       description: post.excerpt || post.title,
+      alternates: { canonical: `/blog/${slug}` },
       openGraph: {
         title: post.title,
         description: post.excerpt,
         images: post.cover_image ? [post.cover_image] : [],
         type: 'article',
         publishedTime: post.created_at,
+        url: `${SITE_URL}/blog/${slug}`,
       },
       twitter: { card: 'summary_large_image', title: post.title, description: post.excerpt },
     }
@@ -55,5 +59,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const { slug } = await params
   const post = await getPost(slug)
-  return <BlogPostClient initialPost={post} />
+  const ld = post
+    ? articleJsonLd({
+        siteUrl: SITE_URL,
+        path: `/blog/${slug}`,
+        title: post.title,
+        description: post.excerpt,
+        datePublished: post.created_at,
+        dateModified: post.updated_at || post.created_at,
+      })
+    : null
+  return (
+    <>
+      {ld ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(ld) }}
+        />
+      ) : null}
+      <BlogPostClient initialPost={post} />
+    </>
+  )
 }
