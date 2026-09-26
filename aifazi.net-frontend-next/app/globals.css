@@ -4166,3 +4166,43 @@ html, body {
 @media (max-width: 1100px) {
   .nav-status-chip { display: none !important; }
 }
+
+/* ── Edit-mode toolbars: readable, not clipped by card overflow ── */
+body.editing-mode .svc-card,
+body.editing-mode .prj-card,
+body.editing-mode .sk-cell,
+body.editing-mode .editable-list-item {
+  overflow: visible !important;
+}
+
+body.editing-mode .edit-toolbar,
+body.editing-mode .sk-cat-toolbar,
+body.editing-mode .sk-item-toolbar,
+body.editing-mode [class*="toolbar"] {
+  z-index: 30 !important;
+  opacity: 0.85 !important;
+  background: color-mix(in srgb, var(--bg) 92%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--green) 35%, transparent) !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35) !important;
+  top: 10px !important;
+  right: 10px !important;
+}
+
+body.editing-mode .edit-toolbar button,
+body.editing-mode .sk-cat-toolbar button,
+body.editing-mode .sk-item-toolbar button,
+body.editing-mode [class*="toolbar"] button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  line-height: 1;
+}
+
+body.editing-mode .edit-toolbar:hover,
+body.editing-mode .sk-cat-toolbar:hover,
+body.editing-mode .sk-item-toolbar:hover {
+  opacity: 1 !important;
+}

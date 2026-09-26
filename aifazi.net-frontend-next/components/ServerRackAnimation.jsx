@@ -750,6 +750,17 @@ function GlobeMode({ visibleRef }) {
     } catch { /* tainted canvas or unsupported */ }
   }
 
+  // ── Recenter / reset view (chip + double-click) ──
+  const recenterGlobe = () => {
+    const s = stateRef.current
+    s.focusAnim = { fromPhi: s.phi, fromTheta: s.theta, toPhi: 0.55, toTheta: 0.18, t0: 0, dur: 700 }
+    s.zoom = 1
+    s.velPhi = 0.0022
+    s.velPhiDamp = 0
+    setFocusCity(null)
+    setSelectedNode(null)
+  }
+
   // ── Animate to a city (focus recipe) ──
   const focusOnCity = (city) => {
     const s = stateRef.current
@@ -1166,6 +1177,7 @@ function GlobeMode({ visibleRef }) {
       className="globe-network-shell"
       ref={wrapRef}
       data-globe-tone={themeTone}
+      onDoubleClick={recenterGlobe}
       style={{
         width: '100%', height: '100%',
         position: 'relative', overflow: 'hidden',
@@ -1207,6 +1219,15 @@ function GlobeMode({ visibleRef }) {
           >
             <span className="globe-mode-chip-dot" aria-hidden />
             PNG
+          </button>
+          <button
+            type="button"
+            className="globe-mode-chip"
+            onClick={recenterGlobe}
+            title="Recenter globe (or double-click)"
+          >
+            <span className="globe-mode-chip-dot" aria-hidden />
+            RECON
           </button>
         </div>
 
