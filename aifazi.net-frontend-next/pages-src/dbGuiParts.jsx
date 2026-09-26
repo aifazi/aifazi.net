@@ -1,6 +1,6 @@
 'use client'
 // dbGuiParts.jsx — DatabaseGUI shared widgets + admin panels (extracted).
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useDialog } from '../core/dialog.jsx'
 import { useNotify } from '../core/notify.jsx'
 import { Checkbox, Select } from '../core/ui.jsx'

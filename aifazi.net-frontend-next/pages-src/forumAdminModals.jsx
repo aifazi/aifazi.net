@@ -1,6 +1,6 @@
 'use client'
 // forumAdminModals.jsx — admin modals & chrome (extracted).
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from '@/lib/router-compat'
 import api, { getAuthToken, getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess } from '@/lib/api'
 import { notify } from '../core/notify.jsx'
