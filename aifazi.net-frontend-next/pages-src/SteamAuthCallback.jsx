@@ -119,7 +119,7 @@ export default function SteamAuthCallback() {
           }}>
             {error}
           </div>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 2 }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>
             Redirecting to login…
           </p>
         </>

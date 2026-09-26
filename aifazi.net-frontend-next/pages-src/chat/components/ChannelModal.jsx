@@ -20,19 +20,19 @@ export function RoleSelect({ label, value, onChange, roles }) {
   const list = roles || ROLES
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginBottom: 6 }}>{label}</div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {list.map(role => (
           <button key={role} onClick={() => toggle(role)}
             style={{ padding: '5px 12px', border: `1px solid ${value.includes(role) ? 'color-mix(in srgb, var(--green) 50%, transparent)' : T.border}`,
               borderRadius: 7, background: value.includes(role) ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent',
-              color: value.includes(role) ? T.accent : T.muted, fontFamily: T.mono, fontSize: 10,
+              color: value.includes(role) ? T.accent : T.muted, fontFamily: T.mono, fontSize: 11,
               cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>
             {role}
           </button>
         ))}
       </div>
-      {value.length === 0 && <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginTop: 4 }}>Empty = not restricted by this</div>}
+      {value.length === 0 && <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginTop: 4 }}>Empty = not restricted by this</div>}
     </div>
   )
 }
@@ -117,11 +117,11 @@ export function ChannelModal({ initial, onSave, onClose }) {
         <h3 style={{ fontFamily: T.display, fontSize: 16, color: T.text, margin: '0 0 18px' }}>{editing ? 'Edit Channel' : 'Create Channel'}</h3>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
-          <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginBottom: 4 }}>CHANNEL TYPE</div>
+          <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginBottom: 4 }}>CHANNEL TYPE</div>
           <div style={{ display: 'flex', gap: 6 }}>
             {['text', 'voice', 'video'].map(t => (
               <button key={t} onClick={() => setCtype(t)}
-                style={{ flex: 1, padding: '8px', border: `1px solid ${ctype === t ? 'color-mix(in srgb, var(--green) 40%, transparent)' : T.border}`, borderRadius: 8, background: ctype === t ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'transparent', color: ctype === t ? T.accent : T.muted, fontFamily: T.mono, fontSize: 10, cursor: 'pointer', textTransform: 'uppercase' }}>
+                style={{ flex: 1, padding: '8px', border: `1px solid ${ctype === t ? 'color-mix(in srgb, var(--green) 40%, transparent)' : T.border}`, borderRadius: 8, background: ctype === t ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'transparent', color: ctype === t ? T.accent : T.muted, fontFamily: T.mono, fontSize: 11, cursor: 'pointer', textTransform: 'uppercase' }}>
                 {t === 'voice' ? '🔊' : t === 'video' ? '📹' : '📝'} {t}
               </button>
             ))}
@@ -129,32 +129,32 @@ export function ChannelModal({ initial, onSave, onClose }) {
         </label>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
-          <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginBottom: 4 }}>NAME</div>
+          <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginBottom: 4 }}>NAME</div>
           <input value={name} onChange={e => setName(e.target.value)} placeholder='channel-name' autoFocus style={inputStyle} />
         </label>
 
         <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
           <label style={{ flex: 'none' }}>
-            <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginBottom: 4 }}>EMOJI</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginBottom: 4 }}>EMOJI</div>
             <input value={emoji} onChange={e => setEmoji(e.target.value)} placeholder='#' style={{ ...inputStyle, width: 60, textAlign: 'center', fontSize: 18 }} />
           </label>
           <label style={{ flex: 1 }}>
-            <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginBottom: 4 }}>COLOR</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginBottom: 4 }}>COLOR</div>
             <input value={color} onChange={e => setColor(e.target.value)} placeholder='#00ff88' style={inputStyle} />
           </label>
         </div>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
-          <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginBottom: 4 }}>DESCRIPTION</div>
+          <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginBottom: 4 }}>DESCRIPTION</div>
           <input value={desc} onChange={e => setDesc(e.target.value)} placeholder='Optional description' style={inputStyle} />
         </label>
 
         <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 14, marginBottom: 12 }}>
-          <div style={{ fontFamily: T.mono, fontSize: 9, color: T.accent, letterSpacing: 2, marginBottom: 10 }}>ACCESS — WHO CAN OPEN</div>
+          <div style={{ fontFamily: T.mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 10 }}>ACCESS — WHO CAN OPEN</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
             {MODES.map(m => (
               <button key={m.key} onClick={() => changeMode(m.key)}
-                style={{ padding: '6px 12px', border: `1px solid ${mode === m.key ? 'color-mix(in srgb, var(--green) 50%, transparent)' : T.border}`, borderRadius: 16, background: mode === m.key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent', color: mode === m.key ? T.accent : T.muted, fontFamily: T.mono, fontSize: 10, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>
+                style={{ padding: '6px 12px', border: `1px solid ${mode === m.key ? 'color-mix(in srgb, var(--green) 50%, transparent)' : T.border}`, borderRadius: 16, background: mode === m.key ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'transparent', color: mode === m.key ? T.accent : T.muted, fontFamily: T.mono, fontSize: 11, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>
                 {m.label}
               </button>
             ))}
@@ -166,20 +166,20 @@ export function ChannelModal({ initial, onSave, onClose }) {
 
           {(mode === 'users' || mode === 'mixed') && (
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginBottom: 6 }}>ALLOWED USERS</div>
+              <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginBottom: 6 }}>ALLOWED USERS</div>
               <input value={userQ} onChange={e => searchUsers(e.target.value)} placeholder='Search users…' style={inputStyle} />
-              {userBusy && <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 4 }}>searching…</div>}
+              {userBusy && <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginTop: 4 }}>searching…</div>}
               {userRes.map(u => (
                 <button key={u.username} onClick={() => addUser(u)} disabled={allowedUsers.includes(u.username)}
                   style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginTop: 4, background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.border}`, borderRadius: 7, color: allowedUsers.includes(u.username) ? T.muted : T.text, fontFamily: T.display, fontSize: 12, cursor: 'pointer' }}>
-                  {u.username} {u.role ? <span style={{ color: T.muted, fontSize: 10 }}>· {u.role}</span> : null} <span style={{ color: T.accent }}>＋</span>
+                  {u.username} {u.role ? <span style={{ color: T.muted, fontSize: 11 }}>· {u.role}</span> : null} <span style={{ color: T.accent }}>＋</span>
                 </button>
               ))}
               {allowedUsers.length > 0 && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
                   {allowedUsers.map(u => (
                     <button key={u} onClick={() => setAllowedUsers(allowedUsers.filter(x => x !== u))}
-                      style={{ padding: '5px 10px', border: `1px solid ${T.border}`, borderRadius: 14, background: 'rgba(255,255,255,0.06)', color: T.text, fontFamily: T.mono, fontSize: 10, cursor: 'pointer' }}>
+                      style={{ padding: '5px 10px', border: `1px solid ${T.border}`, borderRadius: 14, background: 'rgba(255,255,255,0.06)', color: T.text, fontFamily: T.mono, fontSize: 11, cursor: 'pointer' }}>
                       ✕ {u}
                     </button>
                   ))}
@@ -189,16 +189,16 @@ export function ChannelModal({ initial, onSave, onClose }) {
           )}
 
           {mode === 'closed' && (
-            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.warn, marginBottom: 8 }}>CLOSED — only staff can see this channel.</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.warn, marginBottom: 8 }}>CLOSED — only staff can see this channel.</div>
           )}
 
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
               <input type="checkbox" checked={readOnly} onChange={e => setReadOnly(e.target.checked)} />
-              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>READ-ONLY</span>
+              <span style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>READ-ONLY</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>SLOW MODE (s)</span>
+              <span style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>SLOW MODE (s)</span>
               <input value={slowMode} onChange={e => setSlowMode(e.target.value)} type="number" min="0" style={{ ...inputStyle, width: 70, padding: '6px 8px', textAlign: 'center' }} />
             </label>
           </div>
@@ -206,7 +206,7 @@ export function ChannelModal({ initial, onSave, onClose }) {
 
         {(ctype === 'voice' || ctype === 'video') && (
           <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 14 }}>
-            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>VOICE PERMISSIONS</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.accent, letterSpacing: 2, marginBottom: 12 }}>VOICE PERMISSIONS</div>
             <RoleSelect label="CAN SPEAK" value={speakRoles} onChange={setSpeakRoles} />
             <RoleSelect label="CAN SCREEN SHARE" value={screenRoles} onChange={setScreenRoles} />
           </div>

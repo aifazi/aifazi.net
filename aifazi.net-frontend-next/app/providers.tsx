@@ -27,6 +27,7 @@ import { loadFontForTheme as loadThemeFont } from '@/core/fonts'
 import { applyThemeCustom, resolveThemeCustom } from '@/core/themeCustom'
 import { applyComponentTokens } from '@/core/componentTokens'
 import { VALID_THEMES, LIGHT_THEMES, THEME_PAIRS } from '@/core/themeCatalog'
+import { applyThemeDesign, resolveFrameworkPatterns } from '@/core/themeDesign'
 import { applyThemeFramework } from '@/core/framework-styles'
 import { isAdmin as checkIsAdmin, getAuthToken, getImpersonationUsername } from '@/lib/api'
 import { exitImpersonation } from '@/lib/impersonation'
@@ -101,7 +102,7 @@ function ImpersonationBanner() {
   return (
     <div style={{ background: '#f59e0b', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '8px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, fontWeight: 700, flexShrink: 0, zIndex: 2000, flexWrap: 'wrap' }}>
       <span>👁 VIEWING AS {user} — actions are audited · admin session preserved</span>
-      <button onClick={onExit} disabled={busy} style={{ background: '#000', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '5px 14px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1.5, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1 }}>EXIT IMPERSONATION</button>
+      <button onClick={onExit} disabled={busy} style={{ background: '#000', color: '#f59e0b', border: 'none', borderRadius: 6, padding: '5px 14px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1.5, fontWeight: 700, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1 }}>EXIT IMPERSONATION</button>
     </div>
   )
 }
@@ -290,14 +291,14 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     })()
   }, [])
 
-  // Local-only personality write: resolves THEME_FRAMEWORK for the theme id
-  // and merges the 9 framework keys into siteConfig state (no backend write,
-  // no event dispatch — purely this browser's preview). Unmapped ids no-op.
+  // Local-only personality write: applies the theme's LOOK layer (component
+  // design tokens as scoped CSS vars). The PATTERN layer (menu/dialog/notify
+  // style ids) is resolved at eff time via resolveFrameworkPatterns — never
+  // written into siteConfig — so global admin framework settings stay pinned
+  // and themes cannot clash with them.
   function applyFrameworkForTheme(id: string) {
     try {
-      applyThemeFramework(id, (k: string, v: string) =>
-        setSiteConfig(prev => (prev && (prev as Record<string, any>)[k] === v ? prev : { ...prev, [k]: v }))
-      )
+      applyThemeDesign(id)
     } catch {}
   }
 
@@ -420,35 +421,46 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
 
   // Per-family component tokens (buttons/cards/inputs/badges/bubbles) — writes
   // the active theme's --comp-* variables so shared primitives follow the
-  // theme family instead of one generic default look.
+  // theme family instead of one generic default look. applyThemeDesign adds
+  // the full look layer (menu/dialog/notify/alert design tokens) on top.
   useEffect(() => {
     applyComponentTokens(theme)
+    applyThemeDesign(theme)
   }, [theme])
 
   // Effective framework config = site-wide admin settings, layered with the
   // user's locally-applied package (per-user override wins for this browser).
   // A locked site design wins over everything — ignore any stale stored
   // package while lockTheme is on (applyUserPackage already blocks new ones).
+  //
+  // THEME-SCOPED PATTERN LAYER: resolveFrameworkPatterns fills gaps with the
+  // active theme's preferred patterns only where admin/package have not
+  // pinned a value. siteConfig itself is never mutated by theme switches.
   const pkgSettings = siteConfig.lockTheme ? {} : (userPackage?.settings || {})
+  const themePatterns = resolveFrameworkPatterns(theme, {
+    globalFramework: siteConfig,
+    userPackage: pkgSettings,
+    locked: !!siteConfig.lockTheme,
+  })
   const eff = {
     ...siteConfig,
-    inputStyle:          pkgSettings.inputStyle          || siteConfig.inputStyle,
-    surfaceStyle:        pkgSettings.surfaceStyle        || siteConfig.surfaceStyle,
+    inputStyle:          pkgSettings.inputStyle          || themePatterns.inputStyle,
+    surfaceStyle:        pkgSettings.surfaceStyle        || themePatterns.surfaceStyle,
     bgAnimation:         pkgSettings.bgAnimation         || siteConfig.bgAnimation,
     gridPattern:         pkgSettings.gridPattern         || siteConfig.gridPattern,
     backgroundPattern:   pkgSettings.backgroundPattern   || siteConfig.backgroundPattern,
     animationPreset:     pkgSettings.animationPreset     || siteConfig.animationPreset,
-    loadingScreenStyle:  pkgSettings.loadingScreenStyle  || siteConfig.loadingScreenStyle,
-    menuStyle:           pkgSettings.menuStyle           || siteConfig.menuStyle,
-    notifyStyle:         pkgSettings.notifyStyle         || siteConfig.notifyStyle,
+    loadingScreenStyle:  pkgSettings.loadingScreenStyle  || themePatterns.loadingScreenStyle,
+    menuStyle:           pkgSettings.menuStyle           || themePatterns.menuStyle,
+    notifyStyle:         pkgSettings.notifyStyle         || themePatterns.notifyStyle,
     notifyPosition:      pkgSettings.notifyPosition      || siteConfig.notifyPosition,
-    dialogStyle:         pkgSettings.dialogStyle         || siteConfig.dialogStyle,
-    buttonStyle:         pkgSettings.buttonStyle         || siteConfig.buttonStyle,
-    cardStyle:           pkgSettings.cardStyle           || siteConfig.cardStyle,
-    tableStyle:          pkgSettings.tableStyle          || siteConfig.tableStyle,
-    badgeStyle:          pkgSettings.badgeStyle          || siteConfig.badgeStyle,
-    headerStyle:         pkgSettings.headerStyle         || siteConfig.headerStyle,
-    footerStyle:         pkgSettings.footerStyle         || siteConfig.footerStyle,
+    dialogStyle:         pkgSettings.dialogStyle         || themePatterns.dialogStyle,
+    buttonStyle:         pkgSettings.buttonStyle         || themePatterns.buttonStyle,
+    cardStyle:           pkgSettings.cardStyle           || themePatterns.cardStyle,
+    tableStyle:          pkgSettings.tableStyle          || themePatterns.tableStyle,
+    badgeStyle:          pkgSettings.badgeStyle          || themePatterns.badgeStyle,
+    headerStyle:         pkgSettings.headerStyle         || themePatterns.headerStyle,
+    footerStyle:         pkgSettings.footerStyle         || themePatterns.footerStyle,
   }
 
   useEffect(() => {
@@ -512,7 +524,11 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
         // picked a theme. In incognito (empty localStorage) the built-in default
         // 'cyber-dark' was already written by the [theme] effect, so we can't use
         // site-theme as the signal — we use the dedicated user-set flag instead.
-        else if (!localStorage.getItem('site-theme-user-set')) { setThemeState(data.globalTheme); applyFrameworkForTheme(data.globalTheme) }
+        // The flag is mirrored to a cross-domain cookie so store/fivem hosts
+        // honor the same client's choice.
+        else if (!localStorage.getItem('site-theme-user-set') && !getCrossDomainCookie('site-theme-user-set')) {
+          setThemeState(data.globalTheme); applyFrameworkForTheme(data.globalTheme)
+        }
       }
     } finally {
       setSiteConfigReady(true)
@@ -521,6 +537,38 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
 
   // FIX #9: Include refreshSiteConfig in dependency array (satisfies exhaustive-deps)
   useEffect(() => { refreshSiteConfig() }, [refreshSiteConfig])
+
+  // Near-realtime settings sync (maintenance toggles, theme lock, etc.).
+  // Socket.IO is disabled on the backend, so poll gently — especially important
+  // for store.aifazi.net / fivem.aifazi.net when admin flips subdomain maintenance.
+  useEffect(() => {
+    const id = setInterval(() => {
+      // Skip when the tab is hidden to save battery / bandwidth
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+      void refreshSiteConfig()
+    }, 25000)
+    return () => clearInterval(id)
+  }, [refreshSiteConfig])
+
+  // Cross-tab / cross-subdomain: when another host writes a site-config change
+  // to localStorage it won't fire here (different origin) — but the cookie
+  // mirror does. Re-read the theme cookie on focus so aifazi.net → store
+  // hops stay in sync for the same client when admin has not pinned a theme.
+  useEffect(() => {
+    const onFocus = () => {
+      if (siteConfig.lockTheme) return
+      if (localStorage.getItem('site-theme-user-set') || getCrossDomainCookie('site-theme-user-set')) {
+        const saved = localStorage.getItem('site-theme') || getCrossDomainCookie('site-theme')
+        if (saved && VALID_THEMES.includes(saved) && saved !== theme) {
+          loadFontForTheme(saved)
+          setThemeState(saved)
+          applyFrameworkForTheme(saved)
+        }
+      }
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [theme, siteConfig.lockTheme])
 
   useEffect(() => {
     const refresh = () => { setUserIsAdmin(checkIsAdmin()); setAuthEpoch(e => e + 1) }
@@ -879,8 +927,14 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
             [data-surface-style="clean-app"] body::after { display:none; }
             [data-surface-style="void"] body::after { display:none; }
             [data-surface-style="holo"] body::after { display:none; }
-            [data-surface-style="holo"] body { background: linear-gradient(180deg, rgba(0,229,255,0.03), transparent 40%) !important; }
-            [data-surface-style="void"] body { background: #04050a !important; }
+            /* Surface styles decorate ON TOP of the theme --bg — never replace it,
+               so switching themes still recolors the page. */
+            [data-surface-style="holo"] body {
+              background: linear-gradient(180deg, rgba(0,229,255,0.03), transparent 40%), var(--bg) !important;
+            }
+            [data-surface-style="void"] body {
+              background: color-mix(in srgb, #04050a 55%, var(--bg)) !important;
+            }
             [data-surface-style="cyber-grid"] body { background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) !important; background-size: 60px 60px !important; }
             [data-surface-style="glass-dock"] body { background: radial-gradient(1200px 600px at 20% -10%, color-mix(in srgb, var(--cyan) 8%, transparent), transparent 60%), var(--bg) !important; }
             [data-surface-style="paper-doc"] body { background-color: var(--bg2) !important; background-image: linear-gradient(color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px) !important; background-size: 100% 32px !important; }

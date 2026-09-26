@@ -101,7 +101,7 @@ export function Badge({ children, color = 'var(--green)', tone, style }) {
   }[badgeStyle] || {}
   return (
     <span style={{
-      fontFamily: MONO, fontSize: 8, letterSpacing: 1.5, padding: '3px 9px', borderRadius: 'var(--comp-badge-radius, 999px)',
+      fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, padding: '3px 9px', borderRadius: 'var(--comp-badge-radius, 999px)',
       background: `color-mix(in srgb, ${c} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${c} 40%, transparent)`,
       color: c, whiteSpace: 'nowrap', ...fwBase, ...(style || {}),
     }}>{children}</span>
@@ -129,11 +129,11 @@ export function StatCard({ label, value, color = 'var(--green)', sub, onClick, s
       ...(style || {}),
     }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = color; if (onClick) e.currentTarget.style.transform = 'translateY(-2px)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }}>
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${color}, transparent)` }} />
-      <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>{label}</div>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 6 }}>{sub}</div>}
+      {sub && <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>{sub}</div>}
     </div>
   )
 }
@@ -144,7 +144,7 @@ export function EmptyState({ icon = '📭', title = 'Nothing here yet', hint }) 
     <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--muted)', fontFamily: MONO }}>
       <div style={{ fontSize: 34, marginBottom: 12 }}>{icon}</div>
       <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{title}</div>
-      {hint && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 8, opacity: 0.8 }}>{hint}</div>}
+      {hint && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, opacity: 0.8 }}>{hint}</div>}
     </div>
   )
 }
@@ -195,9 +195,9 @@ export function Pagination({ page, total, pageSize = 50, onChange, label }) {
   if (pages <= 1 && shown <= 1) return null
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end', padding: '10px 4px', flexWrap: 'wrap' }}>
-      {label && <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginRight: 'auto' }}>{label}</span>}
+      {label && <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginRight: 'auto' }}>{label}</span>}
       <Btn variant="outline" small disabled={shown <= 1} onClick={() => onChange(shown - 1)}>← PREV</Btn>
-      <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{shown} / {pages}</span>
+      <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{shown} / {pages}</span>
       <Btn variant="outline" small disabled={shown >= pages} onClick={() => onChange(shown + 1)}>NEXT →</Btn>
     </div>
   )
@@ -281,7 +281,7 @@ export function Modal({ open, onClose, title, width = 560, noBackdropClose, chil
     <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-label={titleId ? undefined : name}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div onClick={noBackdropClose ? undefined : onClose} aria-hidden="true"
-        style={{ position: 'absolute', inset: 0, background: 'rgba(3,8,14,0.72)', backdropFilter: 'blur(3px)' }} />
+        style={{ position: 'absolute', inset: 0, background: 'rgba(3,8,14,0.72)', backdropFilter: 'blur(3px)' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
       <div ref={panelRef} tabIndex={-1} style={{
         position: 'relative', width: '100%', maxWidth: width, maxHeight: '88vh', overflowY: 'auto',
         background: 'var(--comp-card-bg, var(--bg2))', border: 'var(--comp-card-border, 1px solid var(--border))', borderRadius: 'var(--comp-card-radius, 14px)',

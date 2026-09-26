@@ -164,7 +164,7 @@ export default function TerminalTab() {
   const totalSales = summary?.total_sales_cents || 0
   const riskBadge = level => {
     const cfg = RISK[level] || { c: 'var(--muted)' }
-    return <span style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, padding: '2px 8px', borderRadius: 10, background: `${cfg.c}14`, border: `1px solid ${cfg.c}44`, color: cfg.c }}>{level?.toUpperCase() || 'UNKNOWN'}</span>
+    return <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 10, background: `${cfg.c}14`, border: `1px solid ${cfg.c}44`, color: cfg.c }}>{level?.toUpperCase() || 'UNKNOWN'}</span>
   }
 
   return (
@@ -173,10 +173,10 @@ export default function TerminalTab() {
         <div style={{ background: 'rgba(255,71,87,.07)', border: '1px solid rgba(255,71,87,.4)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <span style={{ fontSize: 18 }}>⚠️</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 1, color: R, marginBottom: 4 }}>STRIPE TERMINAL NOT READY</div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--text)', lineHeight: 1.6 }}>{terminalErr}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: R, marginBottom: 4 }}>STRIPE TERMINAL NOT READY</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)', lineHeight: 1.6 }}>{terminalErr}</div>
           </div>
-          <button onClick={load} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>↻ RETRY</button>
+          <button onClick={load} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>↻ RETRY</button>
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10, marginBottom: 16 }}>
@@ -187,7 +187,7 @@ export default function TerminalTab() {
           { label: 'PAIRED READERS', value: readers.length, color: C },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
-            <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>{s.label}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>{s.label}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: s.color, marginTop: 4 }}>{s.value}</div>
           </div>
         ))}
@@ -196,26 +196,26 @@ export default function TerminalTab() {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px,420px) 1fr', gap: 16, alignItems: 'start', marginBottom: 18 }}>
         {/* New NFC sale */}
         <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: C, marginBottom: 10 }}>NEW IN-PERSON SALE (NFC TAP)</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: C, marginBottom: 10 }}>NEW IN-PERSON SALE (NFC TAP)</div>
 
           <ScanCam onScan={scan} label="SCAN ITEMS" placeholder="Scan a barcode to add" />
 
           <div style={{ display: 'flex', gap: 8, margin: 10, marginTop: 12 }}>
-            <select onChange={pickProduct} style={{ flex: 1, fontFamily: MONO, fontSize: 10, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }}>
+            <select onChange={pickProduct} style={{ flex: 1, fontFamily: MONO, fontSize: 11, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }}>
               <option value="">Add from catalog…</option>
               {products.map(p => <option key={p.id} value={p.id}>{p.name} · {money(p.price_cents)}</option>)}
             </select>
-            <input value={custName} onChange={e => setCustName(e.target.value)} placeholder="Customer (optional)" style={{ width: 140, fontFamily: MONO, fontSize: 10, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
+            <input value={custName} onChange={e => setCustName(e.target.value)} placeholder="Customer (optional)" style={{ width: 140, fontFamily: MONO, fontSize: 11, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
           </div>
 
           {lines.length === 0 ? (
-            <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', padding: '20px 0', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No items — scan or add.</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', padding: '20px 0', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No items — scan or add.</div>
           ) : (
             lines.map(l => (
               <div key={`${l.kind}-${l.id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ flex: 1, minWidth: 120 }}>
                   <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>{l.name}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 1, color: 'var(--muted)' }}>{l.kind.toUpperCase()}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: 'var(--muted)' }}>{l.kind.toUpperCase()}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <button onClick={() => setLines(lines.map(x => x.id === l.id ? { ...x, qty: Math.max(1, x.qty - 1) } : x))} style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', background: 'none', border: '1px solid var(--border)', borderRadius: 4, width: 24, cursor: 'pointer' }}>−</button>
@@ -230,7 +230,7 @@ export default function TerminalTab() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
             <div>
-              <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: 2, color: 'var(--muted)' }}>TOTAL</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>TOTAL</div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: G }}>{money(subtotal)}</div>
             </div>
             <button onClick={createOrder} disabled={paying || !lines.length} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, padding: '12px 22px', background: `${G}16`, border: `1px solid ${G}55`, color: G, borderRadius: 8, cursor: paying || !lines.length ? 'not-allowed' : 'pointer', opacity: lines.length ? 1 : 0.4 }}>
@@ -245,10 +245,10 @@ export default function TerminalTab() {
             <div style={{ background: 'var(--bg2)', border: `1px solid ${piInfo?.status === 'succeeded' ? G : C}55`, borderRadius: 10, padding: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <div>
-                  <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)' }}>ACTIVE ORDER</div>
+                  <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>ACTIVE ORDER</div>
                   <div style={{ fontFamily: MONO, fontSize: 14, color: C, marginTop: 2 }}>{order.order_number} · {money(order.total_cents)}</div>
                 </div>
-                <button onClick={voidOrder} style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '6px 12px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>VOID</button>
+                <button onClick={voidOrder} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 12px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>VOID</button>
               </div>
 
               <div style={{ marginTop: 14, border: '1px dashed var(--border)', borderRadius: 10, padding: 20, textAlign: 'center' }}>
@@ -256,17 +256,17 @@ export default function TerminalTab() {
                   <>
                     <div style={{ fontSize: 34 }}>💳</div>
                     <div style={{ fontFamily: MONO, fontSize: 12, color: G, marginTop: 8 }}>NFC CARD PRESENTED — READY TO CAPTURE</div>
-                    <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>{piInfo.payment_intent_id}</div>
+                    <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{piInfo.payment_intent_id}</div>
                     <button onClick={capture} disabled={paying} style={{ marginTop: 14, fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, padding: '12px 30px', background: `${G}16`, border: `1px solid ${G}55`, color: G, borderRadius: 8, cursor: paying ? 'wait' : 'pointer' }}>{paying ? 'CAPTURING…' : 'CAPTURE PAYMENT'}</button>
                   </>
                 ) : (
                   <>
                     <div style={{ fontSize: 34 }}>📲</div>
                     <div style={{ fontFamily: MONO, fontSize: 12, color: C, marginTop: 8 }}>WAITING FOR NFC TAP</div>
-                    <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)', marginTop: 6, wordBreak: 'break-all' }}>
+                    <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 6, wordBreak: 'break-all' }}>
                       {connToken ? `connection token: ${connToken.slice(0, 40)}…` : 'requesting terminal…'}
                     </div>
-                    <div style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>Open the Stripe Reader app on the phone and present the card.</div>
+                    <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>Open the Stripe Reader app on the phone and present the card.</div>
                   </>
                 )}
               </div>
@@ -283,13 +283,13 @@ export default function TerminalTab() {
 
           {readers.length > 0 && (
             <div style={{ marginTop: 12, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
-              <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>PAIRED READERS</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>PAIRED READERS</div>
               {readers.map(r => (
                 <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                  <span style={{ fontFamily: MONO, fontSize: 10 }}>{r.label || r.id}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 1, padding: '1px 6px', borderRadius: 10, background: `${G}14`, border: `1px solid ${G}44`, color: G }}>{r.status?.toUpperCase()}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 11 }}>{r.label || r.id}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '1px 6px', borderRadius: 10, background: `${G}14`, border: `1px solid ${G}44`, color: G }}>{r.status?.toUpperCase()}</span>
                   <div style={{ flex: 1 }} />
-                  <span style={{ fontFamily: MONO, fontSize: 9, color: 'var(--muted)' }}>{r.device_type || r.serial_number || ''}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{r.device_type || r.serial_number || ''}</span>
                 </div>
               ))}
             </div>
@@ -300,15 +300,15 @@ export default function TerminalTab() {
       {/* POS history with Radar */}
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: 2, color: 'var(--muted)' }}>IN-PERSON TRANSACTIONS · STRIPE RADAR</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>IN-PERSON TRANSACTIONS · STRIPE RADAR</span>
         </div>
         {loading ? <div className="loader" /> : payments.length === 0 ? (
-          <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>No card-present transactions yet.</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>No card-present transactions yet.</div>
         ) : (
           payments.map(t => (
             <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
               <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>{fmt(t.created_at)}</span>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--muted)' }}>{t.order_id?.slice(0, 8)}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{t.order_id?.slice(0, 8)}</span>
               {riskBadge(t.risk_level)}
               <div style={{ flex: 1 }} />
               <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: G }}>{money(t.amount_cents)}</span>

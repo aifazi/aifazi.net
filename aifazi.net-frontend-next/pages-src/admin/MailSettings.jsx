@@ -134,19 +134,19 @@ function MailSettings() {
   if (loading) return (
     <div style={{ padding: '60px 40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
       <div style={{ width: 32, height: 32, border: '2px solid var(--border)', borderTopColor: 'var(--cyan)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: 3 }}>LOADING MAIL CONFIG...</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3 }}>LOADING MAIL CONFIG...</div>
     </div>
   )
   if (!cfg) return null
 
   // -- Shared style tokens ----------------------------------------------------
   const T = {
-    label:    { display: 'block', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' },
+    label:    { display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6, textTransform: 'uppercase' },
     inp:      { width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', boxSizing: 'border-box', borderRadius: 10, transition: 'border-color 0.15s, box-shadow 0.15s' },
     inpFocus: { borderColor: 'var(--cyan)' },
     card:     { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '22px' },
     btn:      (variant = 'primary') => ({
-      padding: '11px 22px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+      padding: '11px 22px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
       cursor: testing || saving ? 'not-allowed' : 'pointer', border: 'none', borderRadius: 8,
       background: variant === 'primary' ? 'var(--cyan)' : variant === 'danger' ? '#ff4757' : variant === 'ghost' ? 'transparent' : '#1e2d45',
       color: variant === 'ghost' ? 'var(--muted)' : variant === 'secondary' ? 'var(--text)' : '#000',
@@ -156,7 +156,7 @@ function MailSettings() {
       whiteSpace: 'nowrap',
     }),
     tabBtn:   (active) => ({
-      padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 2,
+      padding: '10px 18px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2,
       cursor: 'pointer', border: 'none', borderRadius: 8,
       background: active ? 'var(--cyan)' : 'transparent',
       color: active ? '#000' : 'var(--muted)',
@@ -194,12 +194,12 @@ function MailSettings() {
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {verifyStatus && (
-              <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 1, color: verifyStatus === 'ok' ? '#00ff88' : '#ff4757' }}>
+              <div style={{ display: 'flex', alignItems: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: verifyStatus === 'ok' ? '#00ff88' : '#ff4757' }}>
                 <span style={T.statusDot(verifyStatus)} />
                 {verifyStatus === 'ok' ? 'VERIFIED' : 'FAILED'}
               </div>
             )}
-            <button onClick={() => setShowLog(p => !p)} style={{ ...T.btn('ghost'), fontSize: 9 }}>
+            <button onClick={() => setShowLog(p => !p)} style={{ ...T.btn('ghost'), fontSize: 11 }}>
               {showLog ? 'HIDE LOG' : `📋 LOG${emailLog.length ? ` (${emailLog.length})` : ''}`}
             </button>
           </div>
@@ -209,16 +209,16 @@ function MailSettings() {
       {/* -- Email send log ---------------------------------------------------- */}
       {showLog && (
         <div style={{ ...T.card, marginBottom: 20, background: 'var(--bg)' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>RECENT ACTIVITY LOG</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>RECENT ACTIVITY LOG</div>
           {emailLog.length === 0 ? (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', textAlign: 'center', padding: '20px 0' }}>No activity yet this session.</div>
           ) : emailLog.map((entry, i) => (
             <div key={i} style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: i < emailLog.length - 1 ? '1px solid var(--border)' : 'none', alignItems: 'flex-start' }}>
               <span style={T.statusDot(entry.status)} />
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', minWidth: 60 }}>{entry.time}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--cyan)', minWidth: 50, letterSpacing: 1 }}>{entry.type.toUpperCase()}</span>
-              {entry.to && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', minWidth: 100 }}>{entry.to}</span>}
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: entry.status === 'ok' ? '#64748b' : '#ff475788', flex: 1, lineHeight: 1.5 }}>{entry.msg}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', minWidth: 60 }}>{entry.time}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', minWidth: 50, letterSpacing: 1 }}>{entry.type.toUpperCase()}</span>
+              {entry.to && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', minWidth: 100 }}>{entry.to}</span>}
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: entry.status === 'ok' ? '#64748b' : '#ff475788', flex: 1, lineHeight: 1.5 }}>{entry.msg}</span>
             </div>
           ))}
         </div>
@@ -242,7 +242,7 @@ function MailSettings() {
       {/* -- SMTP blocked banner ----------------------------------------------- */}
       {smtpBlocked && (
         <div style={{ marginBottom: 20, padding: '18px 20px', background: 'var(--bg2)', border: '1px solid #ffd70033', borderLeft: '3px solid #ffd700' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ffd700', letterSpacing: 2, marginBottom: 8 }}>⚠️ HOST BLOCKS ALL SMTP PORTS</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ffd700', letterSpacing: 2, marginBottom: 8 }}>⚠️ HOST BLOCKS ALL SMTP PORTS</div>
           <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7, marginBottom: 14 }}>
             Your server cannot reach the SMTP host on any port  this is a hosting firewall restriction, not a credentials issue.<br/>
             <strong style={{ color: '#94a3b8' }}>Brevo and Resend both use HTTPS (port 443)  never blocked.</strong> Both have generous free tiers.
@@ -254,7 +254,7 @@ function MailSettings() {
             <button onClick={() => { setOutTab('resend'); setSmtpBlocked(false) }} style={{ ...T.btn('secondary') }}>
               ? SWITCH TO RESEND
             </button>
-            <a href="https://resend.com" target="_blank" rel="noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ffd700', letterSpacing: 1, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <a href="https://resend.com" target="_blank" rel="noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ffd700', letterSpacing: 1, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
               resend.com (free) ?
             </a>
           </div>
@@ -292,12 +292,12 @@ function MailSettings() {
                   background: active ? `${info.color}11` : 'var(--bg3)',
                   border: `1px solid ${active ? info.color : 'var(--border)'}`,
                   transition: 'all 0.15s', position: 'relative',
-                }}>
+                }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
                   {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: info.color }} />}
                   <div style={{ fontSize: 20, marginBottom: 8 }}>{info.icon}</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: active ? info.color : 'var(--text)', marginBottom: 4, letterSpacing: 1 }}>{info.name}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', lineHeight: 1.6 }}>{info.desc}</div>
-                  {info.link && <a href={info.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: info.color, textDecoration: 'none', display: 'block', marginTop: 6 }}>Get free key ?</a>}
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', lineHeight: 1.6 }}>{info.desc}</div>
+                  {info.link && <a href={info.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: info.color, textDecoration: 'none', display: 'block', marginTop: 6 }}>Get free key ?</a>}
                 </div>
               )
             })}
@@ -306,11 +306,11 @@ function MailSettings() {
           {/* -- BREVO -------------------------------------------------------- */}
           {outTab === 'brevo' && (
             <div style={T.card}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#0082ff', letterSpacing: 3, marginBottom: 16 }}>ℹ️ BREVO API CONFIGURATION</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#0082ff', letterSpacing: 3, marginBottom: 16 }}>ℹ️ BREVO API CONFIGURATION</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#0082ff08', border: '1px solid #0082ff22' }}>
                 Brevo sends via their HTTP API  no SMTP port required. Works on all cloud hosts.<br/>
                 <strong style={{ color: '#64748b' }}>Free tier:</strong> 300 emails/day  Unlimited contacts
-                <a href="https://app.brevo.com" target="_blank" rel="noreferrer" style={{ color: '#0082ff', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Sign up free ↗</a>
+                <a href="https://app.brevo.com" target="_blank" rel="noreferrer" style={{ color: '#0082ff', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 11 }}>Sign up free ↗</a>
               </div>
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
@@ -318,11 +318,11 @@ function MailSettings() {
                   {cfg.brevoApiKey && cfg.brevoApiKey.includes('') ? (
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <div style={{ ...T.inp, flex: 1, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ color: '#00ff88', fontSize: 10 }}>✓</span>
+                        <span style={{ color: '#00ff88', fontSize: 11 }}>✓</span>
                         <span style={{ letterSpacing: 2 }}>{cfg.brevoApiKey}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', marginLeft: 4 }}>SAVED</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', marginLeft: 4 }}>SAVED</span>
                       </div>
-                      <button type="button" onClick={() => set('brevoApiKey', '')} style={{ ...T.btn('ghost'), padding: '11px 14px', fontSize: 9 }}>
+                      <button type="button" onClick={() => set('brevoApiKey', '')} style={{ ...T.btn('ghost'), padding: '11px 14px', fontSize: 11 }}>
                         CHANGE
                       </button>
                     </div>
@@ -331,7 +331,7 @@ function MailSettings() {
                       placeholder="xkeysib-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                       style={T.inp} autoComplete="new-password" autoFocus />
                   )}
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>
                     Brevo Dashboard 🖥️ SMTP &amp; API ? API Keys ? Create a new API key (not SMTP credentials)
                   </div>
                 </div>
@@ -342,12 +342,12 @@ function MailSettings() {
                       placeholder="noreply@yourdomain.com"
                       style={{ ...T.inp, borderColor: isBrevoRelayAddress(cfg.brevoFromEmail) ? '#ff4757' : undefined }} />
                     {isBrevoRelayAddress(cfg.brevoFromEmail) && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', marginTop: 5, lineHeight: 1.5 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff4757', marginTop: 5, lineHeight: 1.5 }}>
                         ? This is a Brevo relay address, not a sender. Use your real email e.g. noreply@yourdomain.com or your own Gmail.
                       </div>
                     )}
                     {!isBrevoRelayAddress(cfg.brevoFromEmail) && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Must be verified in Brevo ? Senders &amp; Domains</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Must be verified in Brevo ? Senders &amp; Domains</div>
                     )}
                   </div>
                   <div>
@@ -358,7 +358,7 @@ function MailSettings() {
                 </div>
               </div>
               <div style={{ marginTop: 16, padding: '12px 14px', background: '#ff475708', border: '1px solid #ff475722' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#ff4757', letterSpacing: 2, marginBottom: 4 }}>⚠️ SENDER VERIFICATION REQUIRED</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff4757', letterSpacing: 2, marginBottom: 4 }}>⚠️ SENDER VERIFICATION REQUIRED</div>
                 <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.6 }}>
                   Brevo requires your From Email to be a verified sender. Go to{' '}
                   <a href="https://app.brevo.com/senders" target="_blank" rel="noreferrer" style={{ color: '#0082ff', textDecoration: 'none' }}>Brevo ? Senders &amp; Domains</a>
@@ -371,11 +371,11 @@ function MailSettings() {
           {/* -- RESEND ------------------------------------------------------- */}
           {outTab === 'resend' && (
             <div style={T.card}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#00ff88', letterSpacing: 3, marginBottom: 16 }}>ℹ️ RESEND API CONFIGURATION</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#00ff88', letterSpacing: 3, marginBottom: 16 }}>ℹ️ RESEND API CONFIGURATION</div>
               <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.7, marginBottom: 20, padding: '12px 14px', background: '#00ff8808', border: '1px solid #00ff8822' }}>
                 Resend is a modern email API built for developers. Uses HTTPS  works on all hosts.<br/>
                 <strong style={{ color: '#64748b' }}>Free tier:</strong> 3,000 emails/month  100/day  1 custom domain
-                <a href="https://resend.com" target="_blank" rel="noreferrer" style={{ color: '#00ff88', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 10 }}>Sign up free ↗</a>
+                <a href="https://resend.com" target="_blank" rel="noreferrer" style={{ color: '#00ff88', marginLeft: 8, textDecoration: 'none', fontFamily: 'var(--font-mono)', fontSize: 11 }}>Sign up free ↗</a>
               </div>
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
@@ -383,11 +383,11 @@ function MailSettings() {
                   {cfg.resendApiKey && cfg.resendApiKey.includes('') ? (
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <div style={{ ...T.inp, flex: 1, color: '#475569', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ color: '#00ff88', fontSize: 10 }}>✓</span>
+                        <span style={{ color: '#00ff88', fontSize: 11 }}>✓</span>
                         <span style={{ letterSpacing: 2 }}>{cfg.resendApiKey}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#475569', marginLeft: 4 }}>SAVED</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', marginLeft: 4 }}>SAVED</span>
                       </div>
-                      <button type="button" onClick={() => set('resendApiKey', '')} style={{ ...T.btn('ghost'), padding: '11px 14px', fontSize: 9 }}>
+                      <button type="button" onClick={() => set('resendApiKey', '')} style={{ ...T.btn('ghost'), padding: '11px 14px', fontSize: 11 }}>
                         CHANGE
                       </button>
                     </div>
@@ -396,7 +396,7 @@ function MailSettings() {
                       placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                       style={T.inp} autoComplete="new-password" autoFocus />
                   )}
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>
                     resend.com ? API Keys ? Create API Key
                   </div>
                 </div>
@@ -405,7 +405,7 @@ function MailSettings() {
                     <label style={T.label}>From Email <span style={{ color: '#ff4757' }}>*</span></label>
                     <input type="email" value={cfg.resendFromEmail || ''} onChange={e => set('resendFromEmail', e.target.value)}
                       placeholder="noreply@yourdomain.com" style={T.inp} />
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Must match a verified domain in Resend</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Must match a verified domain in Resend</div>
                   </div>
                   <div>
                     <label style={T.label}>From Name</label>
@@ -420,7 +420,7 @@ function MailSettings() {
           {/* -- SMTP --------------------------------------------------------- */}
           {outTab === 'smtp' && (
             <div style={T.card}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#94a3b8', letterSpacing: 3, marginBottom: 16 }}>?🖥️ SMTP CONFIGURATION</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#94a3b8', letterSpacing: 3, marginBottom: 16 }}>?🖥️ SMTP CONFIGURATION</div>
               <div style={{ padding: '10px 14px', background: '#ffd70008', border: '1px solid #ffd70022', marginBottom: 20, fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>
                 ℹ️ Most cloud hosts (Render, Railway, Vercel, etc.) block outbound SMTP ports 587 &amp; 465. If Test Connection fails, switch to Brevo or Resend.
               </div>
@@ -431,7 +431,7 @@ function MailSettings() {
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
                   {Object.keys(SMTP_PRESETS).map(k => (
                     <button key={k} onClick={() => applyPreset(k)} style={{
-                      padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: 1,
+                      padding: '6px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                       cursor: 'pointer', transition: 'all 0.1s',
                       background: preset === k ? '#1e2d45' : 'transparent',
                       color: preset === k ? 'var(--text)' : '#334155',
@@ -505,7 +505,7 @@ function MailSettings() {
               {saving ? 'SAVING...' : 'SAVE OUTGOING SETTINGS'}
             </button>
             {verifyStatus === 'ok' && (
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#00ff88', letterSpacing: 2 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#00ff88', letterSpacing: 2 }}>
                 ? CONNECTED
               </span>
             )}
@@ -513,7 +513,7 @@ function MailSettings() {
 
           {/* -- Send test email ----------------------------------------------- */}
           <div style={{ marginTop: 16, ...T.card, background: 'var(--bg)' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>SEND TEST EMAIL</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>SEND TEST EMAIL</div>
             <div style={{ display: 'flex', gap: 8 }}>
               <input value={testTo} onChange={e => setTestTo(e.target.value)} type="email"
                 placeholder="Send a test email to..." style={{ ...T.inp, flex: 1 }} />
@@ -521,7 +521,7 @@ function MailSettings() {
                 📤 SEND TEST
               </button>
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 8 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 8 }}>
               Uses your saved provider config to send a real test email.
             </div>
           </div>
@@ -533,7 +533,7 @@ function MailSettings() {
       ------------------------------------------------------------------------ */}
       {activeSection === 'incoming' && (
         <div style={T.card}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 4 }}>INCOMING MAIL SERVER (IMAP / POP3)</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 4 }}>INCOMING MAIL SERVER (IMAP / POP3)</div>
           <div style={{ fontSize: 12, color: '#475569', marginBottom: 20, lineHeight: 1.6 }}>
             Fetch replies and contact messages from your mailbox. Optional  only needed if you want to read emails in the admin panel.
           </div>
@@ -543,7 +543,7 @@ function MailSettings() {
             <div style={{
               width: 36, height: 20, borderRadius: 10, position: 'relative', cursor: 'pointer',
               background: cfg.incomingEnabled ? 'var(--cyan)' : '#1e2d45', transition: 'background 0.2s',
-            }} onClick={() => set('incomingEnabled', !cfg.incomingEnabled)}>
+            }} onClick={() => set('incomingEnabled', !cfg.incomingEnabled)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
               <div style={{
                 position: 'absolute', top: 3, left: cfg.incomingEnabled ? 18 : 3,
                 width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
@@ -551,7 +551,7 @@ function MailSettings() {
             </div>
             <div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', letterSpacing: 1 }}>ENABLE INCOMING MAIL</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>Fetch emails via IMAP/POP3</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Fetch emails via IMAP/POP3</div>
             </div>
           </label>
 
@@ -610,7 +610,7 @@ function MailSettings() {
                     checked={!!cfg.incomingDeleteAfterFetch}
                     onChange={v => set('incomingDeleteAfterFetch', v)}
                     label="DELETE AFTER FETCH"
-                    style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: 1 }}
+                    style={{ color: 'var(--muted)', fontSize: 11, letterSpacing: 1 }}
                   />
                 </div>
               </div>
@@ -634,35 +634,35 @@ function MailSettings() {
       {activeSection === 'identity' && (
         <div style={{ display: 'grid', gap: 16 }}>
           <div style={T.card}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 16 }}>SITE IDENTITY</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 16 }}>SITE IDENTITY</div>
             <div style={{ display: 'grid', gap: 16 }}>
               <div>
                 <label style={T.label}>Site Name</label>
                 <input value={cfg.siteName || ''} onChange={e => set('siteName', e.target.value)}
                   placeholder="T.Tanvir Community" style={T.inp} />
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Appears in email subject lines and footers</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Appears in email subject lines and footers</div>
               </div>
               <div>
                 <label style={T.label}>Site URL</label>
                 <input value={cfg.siteUrl || ''} onChange={e => set('siteUrl', e.target.value)}
                   placeholder={SITE_URL} style={T.inp} />
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Used to generate links in verification and reset emails</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Used to generate links in verification and reset emails</div>
               </div>
               <div>
                 <label style={T.label}>Global Reply-To Address</label>
                 <input type="email" value={cfg.replyTo || ''} onChange={e => set('replyTo', e.target.value)}
                   placeholder="support@yourdomain.com" style={T.inp} />
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>When set, all emails include this Reply-To header</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>When set, all emails include this Reply-To header</div>
               </div>
             </div>
           </div>
           <div style={T.card}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 16 }}>ADMIN NOTIFICATIONS EMAIL</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 16 }}>ADMIN NOTIFICATIONS EMAIL</div>
             <div>
               <label style={T.label}>Send Admin Alerts To</label>
               <input type="email" value={cfg.adminNotifyEmail || ''} onChange={e => set('adminNotifyEmail', e.target.value)}
                 placeholder="admin@yourdomain.com" style={T.inp} />
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#334155', marginTop: 5 }}>Receives all system alerts  contact form submissions, new users, login alerts etc.</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Receives all system alerts  contact form submissions, new users, login alerts etc.</div>
             </div>
           </div>
           <button onClick={save} disabled={saving} style={{ ...T.btn('primary'), alignSelf: 'flex-start' }}>
@@ -677,7 +677,7 @@ function MailSettings() {
       {activeSection === 'notifications' && (
         <div style={{ display: 'grid', gap: 16 }}>
           <div style={T.card}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 16 }}>USER EMAIL TRIGGERS</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 16 }}>USER EMAIL TRIGGERS</div>
             <div style={{ display: 'grid', gap: 2 }}>
               {[
                 ['notifyNewForumUser',   '○', 'Welcome email on new forum registration',  'Sends welcome + verification email to new members'],
@@ -693,7 +693,7 @@ function MailSettings() {
                   </div>
                   <div>
                     <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 2 }}>{icon} {label}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#475569', lineHeight: 1.5 }}>{desc}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', lineHeight: 1.5 }}>{desc}</div>
                   </div>
                 </label>
               ))}
@@ -701,7 +701,7 @@ function MailSettings() {
           </div>
 
           <div style={T.card}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: 3, marginBottom: 16 }}>ADMIN ALERT TRIGGERS</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 16 }}>ADMIN ALERT TRIGGERS</div>
             <div style={{ display: 'grid', gap: 2 }}>
               {[
                 ['notifyContactForm',    '○', 'Contact form submission alert',    'Admin receives an email when someone submits the contact form'],
@@ -719,7 +719,7 @@ function MailSettings() {
                   </div>
                   <div>
                     <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 2 }}>{icon} {label}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#475569', lineHeight: 1.5 }}>{desc}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', lineHeight: 1.5 }}>{desc}</div>
                   </div>
                 </label>
               ))}

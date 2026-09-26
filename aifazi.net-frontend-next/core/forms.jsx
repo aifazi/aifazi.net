@@ -295,7 +295,7 @@ export function Checkbox({ checked, onChange, disabled, label, style = {} }) {
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 10,
+        fontSize: 11,
         flexShrink: 0,
       }}>✓</span>
       {label && <span>{label}</span>}

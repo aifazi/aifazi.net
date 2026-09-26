@@ -40,11 +40,11 @@ function PlainLinkChip({ url }) {
         <div style={{ fontSize: 11, color: T.link, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {domain}
         </div>
-        <div style={{ fontSize: 10, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: 11, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {url.length > 60 ? url.slice(0, 60) + '…' : url}
         </div>
       </div>
-      <span style={{ marginLeft: 'auto', fontSize: 10, color: T.muted, flexShrink: 0 }}>↗</span>
+      <span style={{ marginLeft: 'auto', fontSize: 11, color: T.muted, flexShrink: 0 }}>↗</span>
     </a>
   )
 }
