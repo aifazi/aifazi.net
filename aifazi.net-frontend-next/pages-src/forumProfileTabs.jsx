@@ -9,6 +9,7 @@ import { useToast } from '../components/Toast'
 import { useNow } from '../hooks/useNow'
 import FiveMStatus from '@/components/FiveMStatus'
 import { getSupabase } from '@/lib/supabase'
+import { useForum } from '../context/ForumContext'
 import {
   M, D, CLRS, Badge, SectionCard, Inp, Btn, StatusMsg, ago, Avatar,
   STATUS_CFG, PRIORITY_CFG,

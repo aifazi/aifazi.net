@@ -6,6 +6,8 @@ import { notify } from '../core/notify.jsx'
 import { Select } from '../core/ui.jsx'
 import Clickable from '@/core/Clickable.jsx'
 import { SkeletonList } from '@/core/Feedback'
+import { useForum } from '../context/ForumContext'
+import { getSupabase } from '@/lib/supabase'
 
 function StatusBadge({ status }) {
   const map = {
