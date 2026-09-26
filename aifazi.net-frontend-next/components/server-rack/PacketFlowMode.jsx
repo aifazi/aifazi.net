@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { SvgWrap } from './shared'
+import { SvgWrap, SHARED_CSS } from './shared'
 
 const PF_NODES = [
   { id: 'client',  x: 80,  y: 240, label: 'CLIENT',   icon: '▣', color: 'var(--cyan)'   },

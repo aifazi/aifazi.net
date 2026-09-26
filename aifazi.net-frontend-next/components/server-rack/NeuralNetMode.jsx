@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { SvgWrap } from './shared'
+import { SvgWrap, SHARED_CSS } from './shared'
 
 const NEURAL_NODES = [
   // Input layer

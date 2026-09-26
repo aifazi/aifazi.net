@@ -1128,6 +1128,6 @@ function TwoFAStep({ challenge, onBack, shake }) {
 
 export {
   loadGsap, AuthCheck, PassToggle, PasswordStrength, errorText, apiErrorText,
-  ErrorBox, SuccessBox, FieldWrap, ADMIN_ROLES,
+  ErrorBox, SuccessBox, FieldWrap, ADMIN_ROLES, reducedMotion,
   SignIn, VerifyWaiting, SignUp, ForgotPassword, TwoFAStep,
 }
