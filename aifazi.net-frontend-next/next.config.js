@@ -39,21 +39,14 @@ const nextConfig = {
   // ── Webpack ────────────────────────────────────────────────
   // Vercel runs `npm run build`, which passes `--webpack`. The empty
   // Turbopack config prevents plain `next build` from failing if it is used.
-  turbopack: {
-    transpilePackages: ['@fazi/shared'],
-  },
+  turbopack: {},
 
-  // Shared @fazi/shared package (symlinked via file:) — transpile its TS source.
-  transpilePackages: ['@fazi/shared'],
   experimental: {
     optimizePackageImports: ['gsap'],
   },
 
   webpack: (config, { isServer }) => {
     config.resolve.alias['@'] = path.resolve(__dirname)
-    // Resolve the symlinked @fazi/shared from its node_modules location so its
-    // @noble/ciphers import resolves against this app's node_modules.
-    config.resolve.symlinks = false
     // Drop Sentry traces from client bundle to save ~40KB
     if (!isServer) {
       config.resolve.alias['@sentry/tracing'] = false
