@@ -5,7 +5,7 @@ import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { Screen } from '@/src/components/Screen'
-import { Card, Title, Muted, EmptyState, Chip } from '@/src/components/ui'
+import { Card, Title, Muted, EmptyState, Chip, FLAT_LIST_PRESET } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
@@ -169,6 +169,7 @@ export default function StoreScreen() {
         <FlatList
           data={products}
           keyExtractor={(p) => p.id}
+          {...FLAT_LIST_PRESET}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />

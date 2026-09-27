@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, FlatList, ScrollView } from 'react-native
 import { Image as ExpoImage } from 'expo-image'
 import { useFocusEffect } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
-import { Card, Title, Muted } from '@/src/components/ui'
+import { Card, Title, Muted, FLAT_LIST_PRESET } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Loader } from '@/src/components/Loader'
@@ -95,6 +95,7 @@ export default function ProjectsScreen() {
       contentContainerStyle={{ padding: SPACE.xxxl, paddingBottom: SPACE.colossal }}
       data={projects}
       keyExtractor={(p) => p.id}
+      {...FLAT_LIST_PRESET}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <Reveal dir="up" delay={120} duration={520}>

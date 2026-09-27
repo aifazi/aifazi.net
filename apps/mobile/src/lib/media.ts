@@ -45,6 +45,32 @@ function mimeFromName(name: string, fallback: string): string {
 export interface PickOptions {
   allowsEditing?: boolean
   aspect?: [number, number]
+  /**
+   * Reject picks larger than this with an overlay alert. No
+   * expo-image-manipulator in package.json, so no client-side
+   * compress/downscale — oversize picks are rejected with an error instead.
+   */
+  maxBytes?: number
+}
+
+// Client-side caps mirror the backend limits (routers/upload.py 10 MB,
+// routers/auth.py avatar 5 MB, routers/documents.py 20 MB) so oversize files
+// fail fast with a readable message instead of a 413 after upload.
+export const AVATAR_MAX_BYTES = 5 * 1024 * 1024
+export const DOCUMENT_MAX_BYTES = 20 * 1024 * 1024
+
+/**
+ * Max-bytes check with a user-facing error. Returns true when the file may
+ * proceed. Unknown sizes pass (the backend 413 is the backstop).
+ */
+export function checkPickedFileSize(file: PickedFile, maxBytes: number, overlay?: OverlayApi): boolean {
+  if (typeof file.size === 'number' && file.size > maxBytes) {
+    overlay?.alert({
+      message: `That file is ${(file.size / 1024 / 1024).toFixed(1)} MB — the limit is ${maxBytes / 1024 / 1024} MB. Pick a smaller file.`,
+    })
+    return false
+  }
+  return true
 }
 
 export async function pickLibraryImage(opts: PickOptions = {}, overlay?: OverlayApi): Promise<PickedFile | null> {
@@ -62,12 +88,14 @@ export async function pickLibraryImage(opts: PickOptions = {}, overlay?: Overlay
   })
   if (res.canceled || !res.assets?.length) return null
   const a = res.assets[0]
-  return {
+  const file: PickedFile = {
     uri: a.uri,
     name: a.fileName ?? 'photo.jpg',
     mimeType: a.mimeType ?? mimeFromName(a.fileName ?? 'photo.jpg', 'image/jpeg'),
     size: a.fileSize ?? undefined,
   }
+  if (opts.maxBytes !== undefined && !checkPickedFileSize(file, opts.maxBytes, overlay)) return null
+  return file
 }
 
 export async function takeCameraPhoto(opts: PickOptions = {}, overlay?: OverlayApi): Promise<PickedFile | null> {
@@ -84,15 +112,17 @@ export async function takeCameraPhoto(opts: PickOptions = {}, overlay?: OverlayA
   })
   if (res.canceled || !res.assets?.length) return null
   const a = res.assets[0]
-  return {
+  const file: PickedFile = {
     uri: a.uri,
     name: a.fileName ?? 'camera.jpg',
     mimeType: a.mimeType ?? 'image/jpeg',
     size: a.fileSize ?? undefined,
   }
+  if (opts.maxBytes !== undefined && !checkPickedFileSize(file, opts.maxBytes, overlay)) return null
+  return file
 }
 
-export async function pickDocument(): Promise<PickedFile | null> {
+export async function pickDocument(overlay?: OverlayApi, maxBytes?: number): Promise<PickedFile | null> {
   const res = await DocumentPicker.getDocumentAsync({
     copyToCacheDirectory: true,
     multiple: false,
@@ -100,19 +130,21 @@ export async function pickDocument(): Promise<PickedFile | null> {
   })
   if (res.canceled || !res.assets?.length) return null
   const a = res.assets[0]
-  return {
+  const file: PickedFile = {
     uri: a.uri,
     name: a.name,
     mimeType: a.mimeType ?? mimeFromName(a.name, 'application/octet-stream'),
     size: a.size ?? undefined,
   }
+  if (maxBytes !== undefined && !checkPickedFileSize(file, maxBytes, overlay)) return null
+  return file
 }
 
 /**
  * Asks the user via the overlay menu for an image source (camera or library)
  * and returns the picked file, or null if cancelled/denied.
  */
-export async function askImageSourceAsync(overlay: OverlayApi): Promise<PickedFile | null> {
+export async function askImageSourceAsync(overlay: OverlayApi, opts: PickOptions = {}): Promise<PickedFile | null> {
   const source = await overlay.menu({
     title: 'Add image',
     options: [
@@ -120,7 +152,7 @@ export async function askImageSourceAsync(overlay: OverlayApi): Promise<PickedFi
       { value: 'library', label: '🖼 Photo library' },
     ],
   })
-  if (source === 'camera') return takeCameraPhoto({}, overlay)
-  if (source === 'library') return pickLibraryImage({}, overlay)
+  if (source === 'camera') return takeCameraPhoto(opts, overlay)
+  if (source === 'library') return pickLibraryImage(opts, overlay)
   return null
 }

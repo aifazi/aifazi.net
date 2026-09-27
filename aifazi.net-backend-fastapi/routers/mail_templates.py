@@ -70,7 +70,14 @@ async def update_template(template_id: str, body: TemplateUpdateBody, _: dict = 
         "variables": body.variables, "active": body.active,
         "updated_at": now,
     }
-    res = supabase.table("mail_templates").update(payload).or_(f"id.eq.{template_id},purpose.eq.{template_id}").execute()
+    # No or_(): resolve the row by PK first, then by purpose, then update by PK.
+    existing = supabase.table("mail_templates").select("id").eq("id", template_id).limit(1).execute()
+    if not existing.data:
+        existing = supabase.table("mail_templates").select("id").eq("purpose", template_id).limit(1).execute()
+    if existing.data:
+        res = supabase.table("mail_templates").update(payload).eq("id", existing.data[0]["id"]).execute()
+    else:
+        res = supabase.table("mail_templates").update(payload).eq("id", template_id).execute()
     if not res.data:
         res = supabase.table("mail_templates").insert({
             **payload,
