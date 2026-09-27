@@ -5,7 +5,7 @@ import { useRouter , useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { Screen } from '@/src/components/Screen'
-import { Card, Title, Muted, EmptyState } from '@/src/components/ui'
+import { Card, Title, Muted, EmptyState, FLAT_LIST_PRESET } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { Icon } from '@/src/components/icon'
@@ -129,6 +129,7 @@ export default function BlogScreen() {
       <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
+        {...FLAT_LIST_PRESET}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />

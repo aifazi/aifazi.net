@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import LiveVisitorBadge from './LiveVisitorBadge'
 import api from '@/lib/api'
 import { getSiteSettings } from '@/lib/siteSettings'
+import { talkUrl } from '@/lib/talk'
 import { isFiveMHost, fivemRoute, useFiveMRoute } from '@/lib/fivemRoutes'
 import {
   GitHubIcon, LinkedInIcon, TwitterIcon, SystemStatus, TechBadge, FooterLogo, MiniNewsletter,
@@ -106,7 +107,7 @@ export default function Footer() {
     { label: 'Network Tools', to: '/tools/network'  },
     { label: 'File Tools',    to: '/tools/files'    },
     { label: 'SEO Tools',     to: '/tools/seo'      },
-    { label: 'Live Chat',     to: '/chat'           },
+    { label: 'Live Chat',     to: talkUrl(), external: true },
   ]
 
   const socialLinks = [
@@ -265,8 +266,8 @@ export default function Footer() {
         {/* COL 3 – Platform ────────────────────────────────────────────── */}
         <div>
           <span className="ft-colhead" style={colHead}>PLATFORM</span>
-          {platformLinks.map(({ label, to }) => (
-            <Link key={to} to={to} className="ft-link"
+          {platformLinks.map(({ label, to, external }) => (
+            <Link key={to} to={to} className="ft-link" {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               style={{ ...monoLink, transition: 'color 0.2s, padding-left 0.2s' }}
             >{label}</Link>
           ))}

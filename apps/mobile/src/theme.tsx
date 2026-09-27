@@ -36,6 +36,12 @@ const Ctx = createContext<ThemeCtx>({
 const STORE_KEY = 'aifazi_mobile_theme'
 const REFRESH_MS = 90_000
 
+// Theme id is not a secret, but keep the same device-only storage posture as
+// auth tokens (see lib/api.ts) so it never migrates via backup/restore.
+const SECURE_STORE_OPTIONS = {
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+} as const
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [userTheme, setUserTheme] = useState<ThemeId | null>(null)
   const [userSet, setUserSet] = useState(false)
@@ -52,7 +58,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true
-    SecureStore.getItemAsync(STORE_KEY).then((v) => {
+    SecureStore.getItemAsync(STORE_KEY, SECURE_STORE_OPTIONS).then((v) => {
       if (!active) return
       if (v && (THEME_IDS as string[]).includes(v)) {
         setUserTheme(v as ThemeId)
@@ -97,7 +103,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const persist = useCallback((next: ThemeId) => {
     setUserTheme(next)
     setUserSet(true)
-    SecureStore.setItemAsync(STORE_KEY, next).catch(() => {})
+    SecureStore.setItemAsync(STORE_KEY, next, SECURE_STORE_OPTIONS).catch(() => {})
   }, [])
 
   const setTheme = useCallback(
@@ -123,9 +129,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const reload = useCallback(() => loadSite(true), [loadSite])
 
   const value = useMemo<ThemeCtx>(
-    () => ({
-      theme: resolveTheme(id),
-      framework: resolveFramework(THEMES[id], siteConfig),
+    () => {
+      // resolveTheme falls back to cyber-dark for unknown ids — reuse the
+      // resolved theme for the framework so a stray id can never pass
+      // undefined into resolveFramework.
+      const theme = resolveTheme(id)
+      return {
+        theme,
+        framework: resolveFramework(theme, siteConfig),
       setTheme,
       cycleTheme,
       toggleTheme,
@@ -134,7 +145,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       globalThemeId: typeof siteConfig?.globalTheme === 'string' ? webThemeToMobile(siteConfig.globalTheme) : null,
       siteConfig,
       reload,
-    }),
+      }
+    },
     [id, siteConfig, setTheme, cycleTheme, toggleTheme, source, isLocked, reload],
   )
 

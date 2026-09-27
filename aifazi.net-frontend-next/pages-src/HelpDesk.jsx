@@ -7,6 +7,7 @@ import { Select } from '../core/ui.jsx'
 import Clickable from '@/core/Clickable.jsx'
 import { SkeletonList } from '@/core/Feedback'
 import { getSupabase } from '@/lib/supabase'
+import { talkUrl } from '@/lib/talk'
 import {
   StatusBadge, PriorityDot, PriorityBadge, MessageBubble, TicketDetail, SubmitTicket, CheckStatus, FAQS, FAQ,
 } from './helpDeskParts'
@@ -122,11 +123,11 @@ export default function HelpDesk() {
               <div style={card}>
                 <div style={{ ...mono, fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 14 }}>OTHER CHANNELS</div>
                 {[
-                  { icon: '💬', label: 'Live Chat', desc: 'Instant support', to: '/chat' },
+                  { icon: '💬', label: 'Live Chat', desc: 'Nextcloud Talk', href: talkUrl() },
                   { icon: '📧', label: 'Email', desc: 'contact@aifazi.net', href: 'mailto:contact@aifazi.net' },
                 ].map(c => (
                   c.href ? (
-                    <a key={c.label} href={c.href} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', textDecoration: 'none' }}>
+                    <a key={c.label} href={c.href} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', textDecoration: 'none' }}>
                       <span style={{ fontSize: 18, flexShrink: 0 }}>{c.icon}</span>
                       <div>
                         <div style={{ ...mono, fontSize: 11, color: 'var(--text)', fontWeight: 600 }}>{c.label}</div>

@@ -4,13 +4,14 @@ const { withGradleProperties, withAppBuildGradle } = require('@expo/config-plugi
 // 2-core / 7 GB GitHub Actions runner. The Expo prebuild template sets
 // org.gradle.jvmargs=-Xmx2048m with org.gradle.parallel=true and no
 // kotlin.daemon.jvmargs, so the Kotlin compiler daemon inherits the Gradle
-// heap and, with the heavy LiveKit/WebRTC native modules, the two JVMs plus
+// heap and, with the heavy native modules (WebRTC was removed with the
+// in-house chat/calls move to Nextcloud Talk), the two JVMs plus
 // parallel workers exceed the cgroup and the kernel OOM-killer aborts
 // :app:compileReleaseKotlin with "The operation was canceled."
 //
 // Gradle gets 4 GB heap + 1 GB metaspace: it must host R8
 // (:app:minifyReleaseWithR8) and every :<module>:lintVitalAnalyzeRelease
-// in-process, and on this codebase (LiveKit/WebRTC/reanimated) a 2 GB heap
+// in-process, and on this codebase a 2 GB heap
 // OOMs R8 ("GC overhead limit exceeded") while a 512 MB metaspace OOMs the
 // daemon during class loading ("OutOfMemoryError: Metaspace"). Kotlin stays
 // in a separate 1.5 GB daemon, and with parallel=false + workers.max=1 the
