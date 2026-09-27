@@ -7,7 +7,6 @@ from pydantic import BaseModel
 
 from database import _escape_ilike, supabase
 from dependencies import require_admin, require_staff
-from permissions import require_permission
 from utils.audit import record as _audit
 from utils.rate_limit import invalidate_ip_bans_cache
 
@@ -18,8 +17,6 @@ import secrets
 log = logging.getLogger("admin_actions")
 
 router = APIRouter()
-
-CHAT_MANAGE = require_permission("community.chat", "manage")
 
 
 def _actor(user: dict) -> str:
@@ -300,23 +297,6 @@ async def recalculate_views(request: Request, user: dict = Depends(require_staff
     _audit(_actor(user), "admin_recalculate_views", target="posts", ip=_ip(request))
     return {"message": "View counts are stored directly — no recalculation needed"}
 
-class ChatClearBody(BaseModel):
-    confirm: bool = False
-
-
-@router.post("/actions/chat/clear-all")
-async def clear_chat(request: Request, body: ChatClearBody | None = None, user: dict = Depends(CHAT_MANAGE)):
-    # Destructive chat wipe — requires community.chat.manage (NOT bare staff)
-    # plus an explicit {"confirm": true} body so a stray POST can't nuke history.
-    if not body or not body.confirm:
-        raise HTTPException(status_code=400, detail="Confirmation required: pass {\"confirm\": true}")
-    supabase.table("chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
-    from routers.chat import clear_history_cache
-    await clear_history_cache()
-    _audit(_actor(user), "admin_chat_clear_all", target="chat_messages",
-           details={"confirm": True}, ip=_ip(request))
-    return {"message": "All chat messages deleted"}
-
 @router.post("/actions/search/rebuild")
 async def rebuild_search(request: Request, user: dict = Depends(require_staff)):
     _audit(_actor(user), "admin_rebuild_search", target="search", ip=_ip(request))
@@ -437,7 +417,7 @@ async def remove_ip_ban(ban_id: str, request: Request, user: dict = Depends(requ
 # audit row's details JSON alongside the undo_token. Undo looks the row up
 # by scanning recent admin_abuse_ban rows for a matching undo_token.
 
-ABUSE_SURFACES = ("chat", "forum", "vpn", "fivem", "ip")
+ABUSE_SURFACES = ("forum", "vpn", "fivem", "ip")
 
 
 class AbuseBanBody(BaseModel):
@@ -655,38 +635,6 @@ async def abuse_ban(body: AbuseBanBody, request: Request, user: dict = Depends(r
     results: dict = {}
     prior: dict = {"target_user_id": target_id, "target_username": target_name}
 
-    # ── chat: ban from every room (skip rooms already banned; undo only removes ours)
-    if "chat" in surfaces:
-        try:
-            rooms = supabase.table("chat_rooms").select("id").limit(500).execute()
-            room_ids = [r.get("id") for r in (rooms.data or []) if r.get("id")]
-            existing = supabase.table("chat_bans").select("room_id").eq("username", target_name).execute()
-            already = {r.get("room_id") for r in (existing.data or []) if r.get("room_id")}
-            created, failed = [], []
-            for room_id in room_ids:
-                if room_id in already:
-                    continue
-                try:
-                    row = {"room_id": room_id, "username": target_name, "banned_by": actor,
-                           "reason": reason, "created_at": now}
-                    if target_id:
-                        row["user_id"] = target_id
-                    supabase.table("chat_bans").upsert(row, on_conflict="room_id,username").execute()
-                    # Lose access immediately, mirroring POST /chat/rooms/{id}/ban.
-                    supabase.table("chat_members").delete().eq("room_id", room_id).eq("username", target_name).execute()
-                    created.append(room_id)
-                except Exception as exc:
-                    failed.append(room_id)
-                    log.warning("abuse-ban chat failed room %s: %s", room_id, exc)
-            prior["chat_created"] = created
-            prior["chat_preexisting"] = sorted(already)
-            results["chat"] = {"ok": not failed, "detail": f"banned in {len(created)} rooms ({len(already)} already banned)" + (f"; {len(failed)} failed" if failed else "")}
-            if failed:
-                results["chat"]["error"] = f"{len(failed)} rooms failed"
-        except Exception as exc:
-            log.warning("abuse-ban chat surface failed: %s", exc, exc_info=True)
-            results["chat"] = {"ok": False, "error": "Chat ban failed"}
-
     # ── forum: users.banned + ban_reason direct update (pattern from routers/forum.py)
     if "forum" in surfaces:
         try:
@@ -820,21 +768,6 @@ async def abuse_unban(body: AbuseUnbanBody, request: Request, user: dict = Depen
         except Exception as exc:
             log.warning("abuse-unban forum failed: %s", exc)
             results["forum"] = {"ok": False, "error": "Forum restore failed"}
-
-    # chat: remove only the bans this kill-switch created
-    if prior.get("chat_created") or "chat" in (details.get("surfaces") or []):
-        try:
-            removed = 0
-            for room_id in (prior.get("chat_created") or []):
-                try:
-                    supabase.table("chat_bans").delete().eq("room_id", room_id).eq("username", target_name).execute()
-                    removed += 1
-                except Exception as exc:
-                    log.warning("abuse-unban chat failed room %s: %s", room_id, exc)
-            results["chat"] = {"ok": True, "detail": f"removed {removed} bans (pre-existing left intact)"}
-        except Exception as exc:
-            log.warning("abuse-unban chat failed: %s", exc)
-            results["chat"] = {"ok": False, "error": "Chat restore failed"}
 
     # vpn: restore each peer's prior status (unsuspend re-adds on next sync)
     if "vpn_peers" in prior:

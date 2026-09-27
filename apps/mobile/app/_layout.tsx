@@ -18,7 +18,7 @@ import { AuthProvider, useAuth } from '@/src/lib/auth'
 import { OverlayProvider } from '@/src/components/overlay'
 import { BootScreen } from '@/src/components/BootScreen'
 import { AmbientBackground } from '@/src/components/motion'
-import { configurePushNotifications, registerPushToken, unregisterPushToken } from '@/src/lib/push'
+import { configurePushNotifications } from '@/src/lib/push'
 import * as Notifications from 'expo-notifications'
 
 export { ErrorBoundary } from '@/src/components/ErrorBoundary'
@@ -36,26 +36,14 @@ export const unstable_settings = {
 const ROUTE_ID_RE = /^[A-Za-z0-9_-]{1,128}$/
 
 /**
- * Route a push payload to the right screen. Handles chat rooms, DM threads
- * (call invites + DM text), forum threads, and blog posts — never oauth.
+ * Route a push payload to the right screen. Handles forum threads and blog
+ * posts — never oauth. In-house chat/calls were removed (Nextcloud Talk is
+ * external), so chat room / DM thread / call payloads are ignored.
  * Returns true when a navigation was performed.
  */
 function routePushData(data: Record<string, any>, push: (href: Href) => void): boolean {
   if (!data || typeof data !== 'object') return false
   const s = (v: unknown) => (typeof v === 'string' ? v : undefined)
-  const room = s(data.room)
-  if (room && ROUTE_ID_RE.test(room)) {
-    push(`/chat-room?room=${encodeURIComponent(room)}` as Href)
-    return true
-  }
-  // DM text or incoming call invite — land on the thread where the call card
-  // (type: 'call') renders with an Accept button.
-  const threadId = s(data.thread_id)
-  if (threadId && ROUTE_ID_RE.test(threadId)) {
-    push(`/dm-thread?thread_id=${encodeURIComponent(threadId)}` as Href)
-    return true
-  }
-  if (data.call) return false
   const forumId = s(data.forum_id) ?? s(data.threadId) ?? (data.type === 'forum' ? s(data.id) : undefined)
   if (forumId && ROUTE_ID_RE.test(forumId)) {
     push(`/forum-thread?id=${encodeURIComponent(forumId)}` as Href)
@@ -137,33 +125,24 @@ function ThemeTransitionOverlay() {
 function RootNav() {
   const { theme } = useTheme()
   const c = theme.colors
-  const { loading: authLoading, isAuthed, user } = useAuth()
+  const { loading: authLoading } = useAuth()
   const router = useRouter()
-  // Push token held for this session, keyed by user id so an account switch
-  // never unregisters (or leaks) another user's registration.
-  const pushTokenRef = useRef<{ userId: string; token: string } | null>(null)
 
   // NOTE: runtime integrity checks were removed — src/lib/integrity.js was a
   // no-op stub (always-true) with no real-check dep installed, so wiring it at
   // boot provided only a false sense of security.
 
-  // Native push (expo-notifications). Configure the foreground handler + Android
-  // channel once; register the Expo push token with the backend once the user is
-  // authed; on notification tap, deep-link into the room carried in the payload.
+  // Native push (expo-notifications), mount-once. The foreground handler +
+  // Android channel setup never prompts, so this is safe on cold start — but
+  // still deferred off the boot critical path. Token registration lives in the
+  // AuthProvider (first login success only — never cold start), and logout
+  // unregister lives there too. This effect only routes notification taps
+  // into the room/thread carried in the payload.
   useEffect(() => {
-    configurePushNotifications()
-    let tokenRegistered = false
-    let sub: ReturnType<typeof Notifications.addNotificationResponseReceivedListener> | undefined
-    const userId = user?.id ?? user?._id
-    if (isAuthed && userId) {
-      registerPushToken(userId).then((token) => {
-        if (token) {
-          pushTokenRef.current = { userId, token }
-          tokenRegistered = true
-        }
-      })
-    }
-    sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    const t = setTimeout(() => {
+      void configurePushNotifications()
+    }, 0)
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = (response.notification.request.content.data ?? {}) as Record<string, any>
       routePushData(data, (href) => router.push(href))
     })
@@ -176,23 +155,19 @@ function RootNav() {
       })
       .catch(() => {})
     return () => {
-      if (sub) sub.remove()
-      if (tokenRegistered && pushTokenRef.current) {
-        unregisterPushToken(pushTokenRef.current.token)
-        pushTokenRef.current = null
-      }
+      clearTimeout(t)
+      sub.remove()
     }
-  }, [isAuthed, user?.id, user?._id, router])
+  }, [router])
 
   // EAS Update OTA wiring: native side is configured with checkAutomatically
   // "NEVER", so this is the single place that checks for a newer bundle for the
-  // current runtime. If one exists it is downloaded and applied by reloading —
-  // but never while a call is in progress (it would then apply on next launch).
+  // current runtime. If one exists it is downloaded and applied by reloading.
   // Best-effort only; a failed check must never block boot. Skipped in __DEV__.
   const segments = useSegments()
   const segmentsRef = useRef(segments)
   segmentsRef.current = segments
-  // Set when an update was downloaded while the user was on a call/auth route
+  // Set when an update was downloaded while the user was on an auth route
   // and the reload had to be deferred — retried once they navigate away.
   const otaPendingRef = useRef(false)
   useEffect(() => {
@@ -206,9 +181,9 @@ function RootNav() {
         if (!active) return
         const route = segmentsRef.current.join('/')
         // Never hot-reload mid-flow: the access token is memory-only (H4), so a
-        // reload while signing in / verifying 2FA / calling wipes it and the app
+        // reload while signing in / verifying 2FA wipes it and the app
         // lands back on the boot screen mid-auth. Defer until the route clears.
-        if (route.startsWith('call') || route.startsWith('auth')) {
+        if (route.startsWith('auth')) {
           otaPendingRef.current = true
           return
         }
@@ -232,11 +207,11 @@ function RootNav() {
     }
   }, [])
 
-  // Retry a deferred OTA reload after leaving call/auth routes.
+  // Retry a deferred OTA reload after leaving auth routes.
   useEffect(() => {
     if (!otaPendingRef.current || __DEV__ || !Updates.isEnabled) return
     const route = segments.join('/')
-    if (route.startsWith('call') || route.startsWith('auth')) return
+    if (route.startsWith('auth')) return
     otaPendingRef.current = false
     Updates.reloadAsync().catch(() => {})
   }, [segments])
@@ -252,8 +227,6 @@ function RootNav() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
-        <Stack.Screen name="call" options={{ headerShown: false }} />
-        <Stack.Screen name="chat-room" options={{ headerShown: false }} />
         <Stack.Screen name="store" options={{ headerShown: false }} />
         <Stack.Screen name="store-item" options={{ headerShown: false }} />
         <Stack.Screen name="projects" options={{ headerShown: false }} />
@@ -267,17 +240,6 @@ function RootNav() {
         <Stack.Screen name="verify-email" options={{ headerShown: false }} />
         <Stack.Screen name="status" options={{ headerShown: false }} />
         <Stack.Screen name="notifications" options={{ headerShown: false }} />
-        <Stack.Screen name="dm-thread" options={{ headerShown: false }} />
-        <Stack.Screen name="dm-requests" options={{ headerShown: false }} />
-        <Stack.Screen name="dm-new" options={{ headerShown: false }} />
-        <Stack.Screen name="channel-manage" options={{ headerShown: false }} />
-        <Stack.Screen name="channel-edit" options={{ headerShown: false }} />
-        <Stack.Screen name="chat-admin" options={{ headerShown: false }} />
-        <Stack.Screen name="chat-admin-recent" options={{ headerShown: false }} />
-        <Stack.Screen name="chat-admin-members" options={{ headerShown: false }} />
-        <Stack.Screen name="chat-admin-mutes" options={{ headerShown: false }} />
-        <Stack.Screen name="chat-admin-bans" options={{ headerShown: false }} />
-        <Stack.Screen name="chat-admin-dm" options={{ headerShown: false }} />
         <Stack.Screen name="forum-new" options={{ headerShown: false }} />
         <Stack.Screen name="helpdesk-new" options={{ headerShown: false }} />
         <Stack.Screen name="helpdesk-detail" options={{ headerShown: false }} />

@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from database import supabase
+from database import safe_or_in, supabase
 from permissions import require_any_permission
 from routers.store_inventory import (
     change_quant,
@@ -159,7 +159,7 @@ async def lookup_barcode(code: str, _: dict = Depends(CATALOG)):
         raise HTTPException(400, "Code is required")
     variant = (supabase.table("store_product_variants")
                .select("*,store_products(name,sku,image_url,price_cents)")
-               .or_(f"barcode.eq.{c},sku.eq.{c}").limit(1).execute()).data or [{}]
+               .or_(",".join([safe_or_in("barcode", [c]), safe_or_in("sku", [c])])).limit(1).execute()).data or [{}]
     if variant[0].get("id"):
         v = variant[0]
         prod = (v.get("store_products") or {}) if isinstance(v.get("store_products"), dict) else {}
@@ -177,7 +177,7 @@ async def lookup_barcode(code: str, _: dict = Depends(CATALOG)):
             "locations": _location_stock(v.get("product_id"), v.get("id")),
         }
     product = (supabase.table("store_products")
-               .or_(f"barcode.eq.{c},sku.eq.{c}").limit(1).execute()).data or [{}]
+               .or_(",".join([safe_or_in("barcode", [c]), safe_or_in("sku", [c])])).limit(1).execute()).data or [{}]
     if product[0].get("id"):
         p = product[0]
         return {
