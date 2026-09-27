@@ -29,7 +29,7 @@ def _is_env_admin(user: dict) -> bool:
     """True only for the env-configured admin (ADMIN_USERNAME). Other
     role=admin rows are staff accounts with their OWN users-row TOTP —
     they must never touch the shared admin_2fa slot."""
-    from routers.auth import ADMIN_USERNAME
+    from utils.auth_tokens import ADMIN_USERNAME
 
     return (user.get("username") or "") == ADMIN_USERNAME
 
@@ -74,7 +74,8 @@ async def twofa_status(user: dict = Depends(get_current_user)):
 
 @router.post("/2fa/setup")
 async def twofa_setup(user: dict = Depends(get_current_user)):
-    from routers.auth import ADMIN_USERNAME, _make_qr_b64, _upsert_admin_2fa
+    from routers.auth import _make_qr_b64, _upsert_admin_2fa
+    from utils.auth_tokens import ADMIN_USERNAME
 
     secret = pyotp.random_base32()
     label = user.get("username", ADMIN_USERNAME)
@@ -198,9 +199,11 @@ async def twofa_verify(body: TwoFAVerifyBody, request: Request, response: Respon
     from routers.auth import (
         _get_admin_2fa,
         _send_new_device_alert,
-        _set_auth_cookies,
         _upsert_forum_session,
         _verify_2fa_entry,
+    )
+    from utils.auth_tokens import (
+        _set_auth_cookies,
         make_refresh_token,
         make_token,
     )
@@ -219,7 +222,7 @@ async def twofa_verify(body: TwoFAVerifyBody, request: Request, response: Respon
     ip = request.client.host if request.client else ""
     if await _2fa_locked(username, ip):
         raise HTTPException(429, "Too many failed 2FA attempts. Try again later.")
-    from routers.auth import ADMIN_USERNAME as _ADMIN_USERNAME
+    from utils.auth_tokens import ADMIN_USERNAME as _ADMIN_USERNAME
 
     if username == _ADMIN_USERNAME:
         row = _get_admin_2fa()

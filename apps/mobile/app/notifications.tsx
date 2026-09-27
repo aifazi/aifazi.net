@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, FlatList, RefreshControl } from 'react-na
 import { useRouter, useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Btn, Muted } from '@/src/components/ui'
+import { Btn, Muted, FLAT_LIST_PRESET } from '@/src/components/ui'
 import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
@@ -108,16 +108,19 @@ export default function NotificationsScreen() {
       if (lowered.includes('oauth/callback')) return
       // Normalize custom-scheme deep links (aifazi://…) to paths so the
       // allowlist below applies to them too; other schemes are never pushed.
-      const candidate = n.link.startsWith('aifazi://')
-        ? lowered.replace(/^aifazi:\/\/[^/]*/, '') || '/'
+      // The allowlist match is case-insensitive, but the original-case URL
+      // is pushed so route/query casing survives.
+      const rawCandidate = lowered.startsWith('aifazi://')
+        ? n.link.replace(/^aifazi:\/\/[^/]*/i, '') || '/'
         : n.link
       // Only allowlisted in-app routes may be pushed; http(s) links open
       // externally; anything else is ignored.
+      const loweredCandidate = rawCandidate.toLowerCase()
       const isAllowedRoute = ALLOWED_LINK_ROUTES.some(
-        (r) => candidate === r || candidate.startsWith(`${r}?`) || candidate.startsWith(`${r}/`),
+        (r) => loweredCandidate === r || loweredCandidate.startsWith(`${r}?`) || loweredCandidate.startsWith(`${r}/`),
       )
       if (isAllowedRoute) {
-        router.push(candidate as Href)
+        router.push(rawCandidate as Href)
         return
       }
       if (isSafeHttpUrl(n.link)) safeOpenURL(n.link)
@@ -174,6 +177,7 @@ export default function NotificationsScreen() {
         <FlatList
           data={notifs}
           keyExtractor={(n) => n.id || n._id || `${n.created_at}-${n.message}`}
+          {...FLAT_LIST_PRESET}
           contentContainerStyle={{ padding: SPACE.xxl, paddingBottom: SPACE.jumbo }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load() }} tintColor={c.accent} colors={[c.accent]} progressBackgroundColor={c.bg2} />

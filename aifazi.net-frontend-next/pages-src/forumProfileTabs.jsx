@@ -499,22 +499,26 @@ function ProfileEditTab({ user, onUpdate }) {
     : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
       ? 'invalid'
       : 'checking'
-  const [prevEmailState, setPrevEmailState] = useState(emailState)
-  if (prevEmailState !== emailState) {
-    setPrevEmailState(emailState)
-    if (emailState === 'idle') setEmailCheck({ state: 'idle', msg: '' })
-    else if (emailState === 'invalid') setEmailCheck({ state: 'error', msg: 'Enter a valid email address.' })
-    else setEmailCheck({ state: 'checking', msg: 'Checking email...' })
-  }
+  // Derived sync message lives in an effect (never setState during render);
+  // deferred via setTimeout so there is no sync setState in the effect body.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (emailState === 'idle') setEmailCheck({ state: 'idle', msg: '' })
+      else if (emailState === 'invalid') setEmailCheck({ state: 'error', msg: 'Enter a valid email address.' })
+      else setEmailCheck({ state: 'checking', msg: 'Checking email...' })
+    })
+    return () => clearTimeout(t)
+  }, [email])
 
   useEffect(() => {
     if (emailState === 'idle' || emailState === 'invalid') return
     const timer = setTimeout(() => {
-      api.get(`/auth/check-email?email=${encodeURIComponent(email)}`)
-        .then(r => {
-          setEmailCheck(r.data?.available
-            ? { state: 'ok', msg: 'Email is available. Verification will be required.' }
-            : { state: 'error', msg: 'Email is already in use.' })
+      // POST keeps the address out of URLs/logs; the endpoint is
+      // anti-enumeration by design ({ok:true}), so a 200 only means
+      // "format valid" — never "available".
+      api.post('/auth/check-email', { email })
+        .then(() => {
+          setEmailCheck({ state: 'ok', msg: 'Email format valid.' })
         })
         .catch(err => setEmailCheck({ state: 'error', msg: err?.response?.data?.detail || 'Could not check email.' }))
     }, 350)

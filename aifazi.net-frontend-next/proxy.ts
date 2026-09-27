@@ -607,7 +607,7 @@ export async function proxy(request: NextRequest) {
     if (!sessionCookie || !(await isAdminSessionValid(sessionCookie, hostname))) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('tab', 'signin')
-      loginUrl.searchParams.set('next', pathname)
+      loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
       return NextResponse.redirect(loginUrl)
     }
   }
