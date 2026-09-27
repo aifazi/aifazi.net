@@ -491,8 +491,7 @@ def _invoice_totals(order_id: str | None, subtotal_cents: Any,
         subtotal = sum(_clamp_cents(ln.get("line_total_cents")) for ln in lines)
     else:
         subtotal = _clamp_cents(subtotal_cents)
-    if discount > subtotal:
-        discount = subtotal
+    discount = min(discount, subtotal)
     return subtotal, discount, max(0, subtotal - discount + tax)
 
 
