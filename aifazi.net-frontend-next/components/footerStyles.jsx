@@ -228,8 +228,8 @@ function FooterMagazine({ siteConfig, sectionLinks, platformLinks, socialLinks, 
           </div>
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>PLATFORM</div>
-            {platformLinks.map(({ label, to }) => (
-              <Link key={to} to={to}
+            {platformLinks.map(({ label, to, external }) => (
+              <Link key={to} to={to} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 style={{ display: 'block', fontFamily: 'Georgia, serif', fontSize: 13, color: 'var(--muted)', textDecoration: 'none', lineHeight: 2.4, transition: 'color 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
@@ -295,8 +295,8 @@ function FooterGlass({ siteConfig, sectionLinks, platformLinks, socialLinks, has
           </div>
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>PLATFORM</div>
-            {platformLinks.map(({ label, to }) => (
-              <Link key={to} to={to}
+            {platformLinks.map(({ label, to, external }) => (
+              <Link key={to} to={to} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', lineHeight: 2.4, letterSpacing: 1, transition: 'color 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--green)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
@@ -354,8 +354,8 @@ function FooterSynthwave({ siteConfig, sectionLinks, platformLinks, socialLinks,
           </div>
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>PLATFORM</div>
-            {platformLinks.map(({ label, to }) => (
-              <Link key={to} to={to}
+            {platformLinks.map(({ label, to, external }) => (
+              <Link key={to} to={to} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textDecoration: 'none', lineHeight: 2.4, letterSpacing: 1, transition: 'color 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--green)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}

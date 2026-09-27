@@ -1,6 +1,6 @@
 /**
  * components/AuthGate.tsx — Redirects to login if not authenticated.
- * Wraps sensitive screens (chat, profile, store cart, etc.)
+ * Wraps sensitive screens (profile, store cart, etc.)
  */
 import { useEffect } from 'react'
 import { useRouter } from 'expo-router'

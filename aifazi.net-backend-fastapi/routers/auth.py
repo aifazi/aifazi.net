@@ -63,6 +63,7 @@ log = logging.getLogger("auth")
 router = APIRouter()
 
 from utils.auth_tokens import (
+    ADMIN_USERNAME,
     make_token, make_refresh_token, make_admin_gate_token,
     make_forum_token, make_forum_2fa_token, _set_auth_cookies, _set_admin_gate_cookie,
 )
@@ -118,7 +119,9 @@ _REFRESH_ROTATION_GRACE = 30
 # Admin gate secret — must be explicitly set. Never falls back to INTERNAL_API_SECRET
 # (which would let any internal service forge admin gate tokens).
 ADMIN_GATE_SECRET = os.getenv("ADMIN_GATE_SECRET") or ""
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+# ADMIN_USERNAME lives in utils.auth_tokens (single source); re-exported here
+# via the module-level import above so external `from routers.auth import ...`
+# importers keep working.
 ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 _IS_PRODUCTION_AUTH = os.getenv("ENV") == "production" or os.getenv("VERCEL", "") == "1"
@@ -755,244 +758,6 @@ class ChangePasswordBody(BaseModel):
 #       ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN DEFAULT FALSE;
 
 
-async def login(body: LoginBody, request: Request, response: Response):
-    client_ip = request.client.host if request.client else ""
-    user_agent = request.headers.get("user-agent", "")
-
-    # ── 1. Admin login ──────────────────────────────────────────────────────────
-    if body.username and body.username == ADMIN_USERNAME:
-        if not _check_admin_password(body.password):
-            _audit("unknown", "login_failed", target=body.username, ip=client_ip)
-            _auth_log(body.username, success=False, ip=client_ip, user_agent=user_agent,
-                      role="admin", reason="wrong_password")
-            raise HTTPException(400, "Invalid credentials")
-        fu = supabase.table("users").select("id").eq("username", ADMIN_USERNAME).limit(1).execute()
-        if fu.data:
-            forum_id = fu.data[0]["id"]
-        else:
-            now = datetime.now(timezone.utc).isoformat()
-            fu2 = supabase.table("users").insert({
-                "username": ADMIN_USERNAME, "email": f"{ADMIN_USERNAME}@aifazi.net",
-                "email_verified": True, "role": "admin", "password_hash": "",
-                "created_at": now, "last_seen": now,
-            }).execute()
-            forum_id = fu2.data[0]["id"] if fu2.data else None
-        token = make_token({"username": ADMIN_USERNAME, "role": "admin", "id": forum_id})
-        refresh = make_refresh_token({"username": ADMIN_USERNAME, "role": "admin", "id": forum_id}, 60 * 24 * 7)
-        # H4 — persist the admin refresh token so /refresh can validate + rotate it.
-        # (The admin token carries id=forum_id, so without this the refresh check
-        # hits the users row, finds no stored token, and 401s after 24h.)
-        if forum_id:
-            supabase.table("users").update({
-                "refresh_token": refresh,
-                "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
-                "last_seen": datetime.now(timezone.utc).isoformat(),
-            }).eq("id", forum_id).execute()
-        _audit(ADMIN_USERNAME, "admin_login", target="admin_panel",
-               details={"role": "admin"}, ip=client_ip)
-        _auth_log(ADMIN_USERNAME, success=True, ip=client_ip, user_agent=user_agent, role="admin")
-        row = _get_admin_2fa()
-        if row and row.get("enabled") and row.get("totp_secret"):
-            partial = make_token({"username": ADMIN_USERNAME, "role": "admin", "id": forum_id, "tfa_pending": True}, 5)
-            return {"requires_2fa": True, "partial_token": partial}
-        if forum_id and _upsert_forum_session(forum_id, ADMIN_USERNAME, client_ip, user_agent):
-            _send_new_device_alert(ADMIN_USERNAME, (row or {}).get("email") or f"{ADMIN_USERNAME}@aifazi.net", client_ip, user_agent)
-        _set_auth_cookies(response, token, refresh)
-        return {"token": token, "refreshToken": refresh, "user": {"username": ADMIN_USERNAME, "role": "admin"}}
-
-    # ── 2. Staff login (by username) ──────────────────────────────────────────
-    if body.username:
-        res = supabase.table("users").select("*").eq("username", body.username).execute()
-        staff = res.data[0] if res.data else None
-        if staff and staff.get("role") in ("admin", "moderator", "editor", "chat"):
-            if not _verify(body.password, staff["password_hash"]):
-                _audit("unknown", "login_failed", target=body.username, ip=client_ip)
-                _auth_log(body.username, success=False, ip=client_ip, user_agent=user_agent,
-                          role="", reason="wrong_password")
-                raise HTTPException(400, "Invalid credentials")
-            if staff.get("banned"):
-                _auth_log(body.username, success=False, ip=client_ip, user_agent=user_agent,
-                          role=staff.get("role", ""), reason="account_suspended")
-                raise HTTPException(403, "Account suspended")
-
-            perms = normalize_permissions(staff.get("staff_permissions") or role_permissions(staff.get("role")))
-            token   = make_token({"username": staff["username"], "role": staff["role"], "id": staff["id"], "permissions": perms})
-            refresh = make_refresh_token({"username": staff["username"], "role": staff["role"], "id": staff["id"], "permissions": perms}, 60 * 24 * 7)
-
-            supabase.table("users").update({
-                "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
-            }).eq("id", staff["id"]).execute()
-            _audit(staff["username"], "staff_login", target="admin_panel",
-                   details={"role": staff["role"]}, ip=client_ip)
-            _auth_log(staff["username"], success=True, ip=client_ip, user_agent=user_agent,
-                      role=staff.get("role", ""))
-            if staff.get("totp_enabled") and staff.get("totp_secret"):
-                partial = make_token({"username": staff["username"], "role": staff["role"], "id": staff["id"], "tfa_pending": True}, 5)
-                return {"requires_2fa": True, "partial_token": partial}
-            if _upsert_forum_session(staff["id"], staff["username"], client_ip, user_agent):
-                _send_new_device_alert(staff["username"], staff.get("email") or "", client_ip, user_agent)
-            _set_auth_cookies(response, token, refresh)
-            return {"token": token, "refreshToken": refresh, "user": {"username": staff["username"], "role": staff["role"], "permissions": perms}}
-
-    # ── 3. Forum login (by email or username) ─────────────────────────────────
-    identifier = body.email or body.username or ""
-    if not identifier:
-        raise HTTPException(400, "Email or username is required")
-
-    if "@" in identifier:
-        user = _find_user_by_ci("email", identifier, "*")
-    else:
-        user = _find_user_by_ci("username", identifier, "*")
-        if not user:
-            user = _find_user_by_ci("email", identifier, "*")
-
-    if not user:
-        raise HTTPException(400, "Invalid credentials")
-    if not _verify(body.password, user["password_hash"]):
-        _auth_log(user["username"], success=False, ip=client_ip, user_agent=user_agent,
-                  role=user.get("role", ""), reason="wrong_password")
-        raise HTTPException(400, "Invalid credentials")
-    if user.get("banned"):
-        _auth_log(user["username"], success=False, ip=client_ip, user_agent=user_agent,
-                  role=user.get("role", ""), reason="account_suspended")
-        raise HTTPException(403, f"Account suspended: {user.get('ban_reason', '')}")
-    if not user.get("email_verified"):
-        raise HTTPException(403, "Email not verified")
-
-    # C3 — enforce 2FA for forum users too. The TOTP check was previously only
-    # in the staff branch (and historically in the parallel forum_auth.py, since
-    # retired and folded into this router), so a user who enabled 2FA could
-    # still log in with password-only via this endpoint —
-    # the primary login path used by the web app.
-    if user.get("totp_enabled") and user.get("totp_secret"):
-        _auth_log(user["username"], success=True, ip=client_ip, user_agent=user_agent,
-                  role=user.get("role", ""), reason="2fa_required")
-        return {
-            "requires_2fa": True,
-            "partial_token": make_token({
-                "username": user["username"], "role": user.get("role", "user"),
-                "id": user["id"], "tfa_pending": True,
-            }, 5),
-            "verify_path": "/auth/2fa/verify",
-            "user_type": "forum",
-        }
-
-    _auth_log(user["username"], success=True, ip=client_ip, user_agent=user_agent,
-              role=user.get("role", ""), reason="login_success")
-    _record_user_activity(user["id"], user["username"], "login", f"IP: {client_ip}", client_ip)
-    if _upsert_forum_session(user["id"], user["username"], client_ip, user_agent):
-        _send_new_device_alert(user["username"], user.get("email") or "", client_ip, user_agent)
-    token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
-    refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
-    # H4 — persist the refresh token so /refresh can validate + rotate it.
-    supabase.table("users").update({
-        "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(), "last_seen": datetime.now(timezone.utc).isoformat()
-    }).eq("id", user["id"]).execute()
-    _set_auth_cookies(response, token, refresh)
-    return {
-        "token": token,
-        "refreshToken": refresh,
-        "user": {
-            "id": user["id"], "username": user["username"],
-            "email": user["email"], "role": user.get("role", "user"),
-            "avatar": user.get("avatar", ""), "bio": user.get("bio", ""),
-        },
-    }
-
-# ── Refresh token ── FIX #4: validate against DB ────────────────────────────────
-async def refresh(request: Request, response: Response, body: RefreshBody = RefreshBody()):
-    # #2 — prefer HttpOnly cookie; fall back to body for older clients
-    token_str = request.cookies.get("refresh_token") or body.refreshToken or ""
-    if not token_str:
-        raise HTTPException(401, "No refresh token provided")
-    try:
-        payload = _paseto_decode_token(token_str, purpose="auth")
-        if not payload:
-            raise HTTPException(401, "Invalid refresh token")
-    except Exception:
-        raise HTTPException(401, "Invalid refresh token")
-    if payload.get("purpose") not in ("auth",) or payload.get("tfa_pending"):
-        raise HTTPException(401, "Invalid refresh token")
-    # H4 — access tokens must never be replayed as refresh tokens.
-    if payload.get("token_type") == "access":
-        raise HTTPException(401, "Access token cannot be used as a refresh token")
-
-    user_id = payload.get("id")
-    username = payload.get("username")
-
-    if not user_id:
-        if username != ADMIN_USERNAME:
-            raise HTTPException(401, "Invalid refresh token")
-    else:
-        row = supabase.table("users").select("refresh_token,previous_refresh_token,refresh_rotated_at").eq("id", user_id).execute()
-        stored = (row.data[0].get("refresh_token") if row.data else None) or ""
-        previous = (row.data[0].get("previous_refresh_token") if row.data else None) or ""
-        rotated_at = (row.data[0].get("refresh_rotated_at") if row.data else None) or None
-        # Explicit revocation (logout / password reset) sets the stored token to
-        # NULL — the session must stay dead.
-        if not stored:
-            raise HTTPException(401, "Refresh token revoked or invalid")
-        # H4/020 — timing-safe compare against the CURRENT token. A matching
-        # current token rotates normally (current -> previous, issue fresh).
-        # A token matching the PREVIOUS generation is accepted ONLY within a
-        # short grace window after the rotation — this keeps the two-tab
-        # concurrent-refresh race working while bounding replay of a stolen,
-        # rotated-out token to seconds instead of its full 7-day lifetime.
-        refresh_accepted = _hmac.compare_digest(stored, token_str)
-        if not refresh_accepted and previous:
-            refresh_accepted = _hmac.compare_digest(previous, token_str)
-            age_s: float = _REFRESH_ROTATION_GRACE + 1
-            if rotated_at:
-                try:
-                    age_s = (datetime.now(timezone.utc) - datetime.fromisoformat(str(rotated_at))).total_seconds()
-                except Exception:
-                    age_s = _REFRESH_ROTATION_GRACE + 1
-            if age_s > _REFRESH_ROTATION_GRACE:
-                log.warning("auth refresh: rejecting rotated-out refresh token for user=%s (age=%.0fs)", user_id, age_s)
-                refresh_accepted = False
-            else:
-                log.info("auth refresh: accepting previous-generation token within grace window (rotation race) for user=%s", user_id)
-        if not refresh_accepted:
-            raise HTTPException(401, "Invalid refresh token")
-
-    new_access = make_token({k: v for k, v in payload.items() if k != "exp"})
-    new_refresh = make_refresh_token({k: v for k, v in payload.items() if k != "exp"}, 60 * 24 * 7)
-    # H4/020 — rotate server-side so a leaked/stolen token is invalid after one use.
-    if user_id:
-        supabase.table("users").update({
-            "previous_refresh_token": token_str,
-            "refresh_token": new_refresh,
-            "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", user_id).execute()
-    _set_auth_cookies(response, new_access, new_refresh)  # rotate both cookies
-    return {"token": new_access, "refreshToken": new_refresh}
-
-# ── Logout ──────────────────────────────────────────────────────────────────────
-async def logout(request: Request, response: Response):
-    auth_header = request.headers.get("authorization", "")
-    token_str = auth_header.replace("Bearer ", "", 1) if auth_header.startswith("Bearer ") else ""
-    if not token_str:
-        # Cookie-authenticated sessions (the norm) send no Authorization
-        # header — resolve the user from the HttpOnly auth cookie instead,
-        # so logout actually revokes the server-side session.
-        token_str = request.cookies.get("auth_token") or ""
-    try:
-        user = _paseto_decode_token(token_str, purpose="auth") if token_str else {}
-    except Exception:
-        user = {}
-    if user and user.get("id"):
-        supabase.table("users").update({
-            "refresh_token": None,
-            "previous_refresh_token": None,
-        }).eq("id", user["id"]).execute()
-    # M8 — the Set-Cookie used domain=COOKIE_DOMAIN (.aifazi.net); deletion MUST
-    # match it, otherwise the browser treats the delete as a host-only cookie and
-    # the domain-scoped auth_token/admin_session/refresh_token survive logout.
-    response.delete_cookie("auth_token", path="/", domain=COOKIE_DOMAIN or None)
-    response.delete_cookie("admin_session", path="/", domain=COOKIE_DOMAIN or None)
-    response.delete_cookie("refresh_token", path="/", domain=COOKIE_DOMAIN or None)
-    return {"message": "Logged out"}
-
 # ── Verify token ───────────────────────────────────────────────────────────────
 @router.get("/verify")
 async def verify_token(user: dict = Depends(get_current_user)):
@@ -1026,6 +791,8 @@ async def wg_login(request: Request, response: Response):
     Only works from the 10.8.0.0/24 subnet. IP-to-user mapping is configured
     in _WG_IP_MAP above.
     """
+    if os.getenv("WG_LOGIN_ENABLED", "").lower() not in ("1", "true", "yes"):
+        raise HTTPException(404, "Not found")
     client_ip = request.client.host if request.client else ""
     if not client_ip.startswith(_WG_SUBNET):
         raise HTTPException(403, "WireGuard login only available from VPN subnet")

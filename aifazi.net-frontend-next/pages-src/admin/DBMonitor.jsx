@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api, { getAuthToken } from '@/lib/api'
 import { useNotify } from '../../core/notify.jsx'
 import { useDialog } from '../../core/dialog.jsx'
-import { CollectionBrowser, SessionsTab, MaintenancePanel, AuditLogTab, DbHealthTab } from '../DatabaseGUI'
+import { CollectionBrowser, SessionsTab, MaintenancePanel, ExportPanel, QueryPanel, MiniChart, FeedRow } from '../dbGuiParts'
+import { AuditLogTab, DbHealthTab } from '../dbGuiTabs'
 
 const ago = (d) => {
   if (!d) return ''
@@ -229,6 +230,35 @@ function DbOverview() {
             {c.sub && <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', marginTop:6 }}>{c.sub}</div>}
           </div>
         ))}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:10, marginTop:10 }}>
+        <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:20 }}>
+          <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:14 }}>TOP POSTS BY VIEWS</div>
+          {(stats.topPosts||[]).length===0
+            ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No posts yet</div>
+            : (stats.topPosts||[]).map((p,i) => (
+              <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid #0a1016', gap:12 }}>
+                <div style={{ flex:1, overflow:'hidden' }}>
+                  <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:12, color:'var(--muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.title}</div>
+                  <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', marginTop:2 }}>{p.category}</div>
+                </div>
+                <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--green,#00ff88)', flexShrink:0 }}>{fmt(p.views)}v</span>
+              </div>
+            ))
+          }
+        </div>
+        <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:20 }}>
+          <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:14 }}>FORUM CATEGORIES</div>
+          {(stats.categories||[]).length===0
+            ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No categories yet</div>
+            : (stats.categories||[]).map((c,i) => (
+              <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid #0a1016' }}>
+                <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:12, color:'var(--muted)' }}>{c.icon} {c.name}</span>
+                <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--cyan,#00d4ff)' }}>{fmt(c.threadCount)} threads</span>
+              </div>
+            ))
+          }
+        </div>
       </div>
     </div>
   )
@@ -502,6 +532,92 @@ function BackupTab() {
   )
 }
 
+function useAdminStats() {
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    api.get('/admin/stats').then(r => { if (active) setStats(r.data) }).catch(() => {}).finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [])
+
+  return { stats, loading }
+}
+
+function ActivityTab() {
+  const { stats: s, loading } = useAdminStats()
+
+  if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
+  if (!s) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No data available</div>
+
+  return (
+    <div>
+      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:20 }}>RECENT ACTIVITY</div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
+        {[
+          {title:"LATEST POSTS",     key:"posts",      render:p=><FeedRow icon="[P]" title={p.title} sub={`${p.published?"YES":"DRAFT"} · ${p.views||0}v · ${p.category||""}`} time={ago(p.createdAt)} color="var(--green,#00ff88)" />},
+          {title:"NEW USERS",        key:"users",      render:u=><FeedRow icon="[U]" title={u.username} sub={`${u.email} · ${u.role} · ${u.emailVerified?"YES":"NO"}`} time={ago(u.createdAt)} color="var(--cyan,#00d4ff)" />},
+          {title:"LATEST THREADS",   key:"threads",    render:t=><FeedRow icon="[T]" title={t.title} sub={`by ${t.author?.username||"?"} · ${t.views||0}v · ${t.replyCount||0} replies`} time={ago(t.createdAt)} color="var(--orange,#ff6b35)" />},
+          {title:"CHAT MESSAGES",    key:"messages",   render:m=><FeedRow icon="[C]" title={`${m.sender}: ${(m.content||"[file]").slice(0,50)}`} sub={`in ${m.room?.name||"?"}`} time={ago(m.createdAt)} color="var(--yellow,#ffd700)" />},
+          {title:"CONTACT FORMS",    key:"contacts",   render:c=><FeedRow icon="[@]" title={`${c.name} - ${c.subject||"No subject"}`} sub={c.email} time={ago(c.createdAt)} color="var(--purple,#a78bfa)" />},
+          {title:"NEWSLETTER SUBS",  key:"newsletter", render:n=><FeedRow icon="[N]" title={n.email} sub={n.active?"YES Active":"NO Unsubscribed"} time={ago(n.createdAt)} color="var(--green,#00ff88)" />},
+        ].map(({title, key, render}) => (
+          <div key={key} style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:'18px 16px' }}>
+            <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:12 }}>{title}</div>
+            {(s.recent?.[key]||[]).length===0
+              ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', padding:'12px 0' }}>NO DATA YET</div>
+              : (s.recent?.[key]||[]).map((item, i) => <div key={i}>{render(item)}</div>)
+            }
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ChartsTab() {
+  const { stats: s, loading } = useAdminStats()
+
+  if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
+  if (!s) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No data available</div>
+
+  return (
+    <div>
+      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:20 }}>CHARTS</div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:14 }}>
+        <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:24 }}>
+          <MiniChart data={s.charts?.dailyPosts||[]} color="var(--green,#00ff88)" label="POSTS - LAST 30 DAYS" />
+        </div>
+        <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:24 }}>
+          <MiniChart data={s.charts?.dailyUsers||[]} color="var(--cyan,#00d4ff)" label="NEW USERS - LAST 30 DAYS" />
+        </div>
+        <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:24, gridColumn:'1/-1' }}>
+          <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:16 }}>THIS WEEK</div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))', gap:12 }}>
+            {[
+              {label:"POSTS",    value:s.week?.posts,    color:"var(--green,#00ff88)"},
+              {label:"NEW USERS",value:s.week?.users,    color:"var(--cyan,#00d4ff)"},
+              {label:"THREADS",  value:s.week?.threads,  color:"var(--orange,#ff6b35)"},
+              {label:"CHAT MSG", value:s.week?.messages, color:"var(--yellow,#ffd700)"},
+            ].map(({label,value,color}) => (
+              <div key={label} style={{ textAlign:'center', padding:'20px 12px', background:'var(--bg)', border:`1px solid ${color}18` }}>
+                <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:32, fontWeight:900, color, marginBottom:6 }}>{fmt(value)}</div>
+                <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:2 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ExportTab({ token, toast }) {
+  const { stats } = useAdminStats()
+  return <ExportPanel token={token} toast={toast} stats={stats} />
+}
+
 export default function DBMonitor({ initialTab = 'overview' }) {
   const [activeTab, setActiveTab] = useState(initialTab)
   const token = getToken()
@@ -510,7 +626,11 @@ export default function DBMonitor({ initialTab = 'overview' }) {
 
   const tabs = [
     { id:'overview',    label:'OVERVIEW', icon:'OV' },
+    { id:'activity',    label:'ACTIVITY', icon:'AC' },
     { id:'tables',      label:'TABLES', icon:'TB' },
+    { id:'charts',      label:'CHARTS', icon:'CH' },
+    { id:'export',      label:'EXPORT', icon:'EX' },
+    { id:'query',       label:'QUERY', icon:'QY' },
     { id:'console',     label:'SQL CONSOLE', icon:'SQL', dev: true },
     { id:'backup',      label:'BACKUP', icon:'BK' },
     { id:'audit',       label:'AUDIT LOG', icon:'AU' },
@@ -533,7 +653,11 @@ export default function DBMonitor({ initialTab = 'overview' }) {
       </div>
       <div style={{ flex:1, overflowY:'auto', padding:24 }}>
         {activeTab === 'overview' && <DbOverview />}
+        {activeTab === 'activity' && <ActivityTab />}
         {activeTab === 'tables' && <CollectionBrowser token={token} toast={toast} />}
+        {activeTab === 'charts' && <ChartsTab />}
+        {activeTab === 'export' && <ExportTab token={token} toast={toast} />}
+        {activeTab === 'query' && <QueryPanel token={token} toast={toast} />}
         {activeTab === 'console' && <SqlConsoleTab />}
         {activeTab === 'backup' && <BackupTab />}
         {activeTab === 'audit' && <AuditLogTab token={token} />}

@@ -17,6 +17,7 @@ import { Loader } from '@/src/components/Loader'
 import { AmbientGlow, PulsingDot } from '@/src/components/glow'
 import { Screen } from '@/src/components/Screen'
 import { Reveal, stagger } from '@/src/components/motion'
+import { TALK_URL, openInApp } from '@/src/lib/url'
 
 interface Product {
   id: string
@@ -157,7 +158,7 @@ export default function HomeScreen() {
     { label: 'Projects', icon: 'rocket' as IconName, href: '/projects' as Href, tint: c.accent2 },
     { label: 'Forum', icon: 'forum' as IconName, href: '/forum' as Href, tint: c.accent },
     { label: 'Blog', icon: 'blog' as IconName, href: '/blog' as Href, tint: c.star },
-    { label: 'Chat', icon: 'chat' as IconName, href: '/chat' as Href, tint: c.info },
+    { label: 'Talk', icon: 'video' as IconName, href: undefined, external: TALK_URL, tint: c.info },
     { label: 'Profile', icon: 'profile' as IconName, href: '/profile' as Href, tint: c.warning },
   ]
 
@@ -220,7 +221,7 @@ export default function HomeScreen() {
           <View style={[styles.grid, { marginBottom: SPACE.huge }]}>
             {tiles.map((t, i) => (
               <Reveal key={t.label} dir="scale" delay={stagger(i)} duration={420} style={styles.tileWrap}>
-                <PressTile onPress={() => router.push(t.href)} style={{ width: '100%' }}>
+                <PressTile onPress={() => { if (t.external) void openInApp(t.external); else if (t.href) router.push(t.href) }} style={{ width: '100%' }}>
                   <View style={[styles.tile, { borderColor: withAlpha(t.tint, 0.35), backgroundColor: withAlpha(c.bg2, 0.9), borderRadius: radius }]}>
                     <View
                       style={{

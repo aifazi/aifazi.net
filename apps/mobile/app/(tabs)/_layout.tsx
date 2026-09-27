@@ -75,9 +75,8 @@ function TabNavigator() {
   const { isAuthed } = useAuth()
   const [unread, setUnread] = useState(0)
 
-  // Tab badge: reuse the same unread sources the Chat screen already polls
-  // (DM thread unread + forum notifications). Same 15s cadence, negligible
-  // extra cost — two light GETs alongside the existing message polling.
+  // Tab badge: unread forum notifications, polled on a light 15s cadence —
+  // one light GET, never breaks the tab bar on error.
   useEffect(() => {
     if (!isAuthed) {
       setUnread(0)
@@ -86,14 +85,10 @@ function TabNavigator() {
     let live = true
     const poll = async () => {
       try {
-        const [dms, notifs] = await Promise.all([
-          api.get('/chat/dm/threads').catch(() => ({ data: [] })),
-          api.get('/forum/notifications').catch(() => ({ data: [] })),
-        ])
+        const notifs = await api.get('/forum/notifications').catch(() => ({ data: [] }))
         if (!live) return
-        const dmUnread = ((dms.data ?? []) as { unread?: number }[]).reduce((n, t) => n + (t.unread ?? 0), 0)
         const notifUnread = (Array.isArray(notifs.data) ? notifs.data : []).filter((n: any) => !n.read).length
-        setUnread(dmUnread + notifUnread)
+        setUnread(notifUnread)
       } catch {
         /* badge stays stale on error — never break the tab bar */
       }
@@ -142,17 +137,16 @@ function TabNavigator() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: (p) => <TabIcon name="home" {...p} /> }} />
-      <Tabs.Screen name="forum" options={{ title: 'Forum', tabBarIcon: (p) => <TabIcon name="forum" {...p} /> }} />
-      <Tabs.Screen name="blog" options={{ title: 'Blog', tabBarIcon: (p) => <TabIcon name="blog" {...p} /> }} />
       <Tabs.Screen
-        name="chat"
+        name="forum"
         options={{
-          title: 'Chat',
-          tabBarIcon: (p) => <TabIcon name="chat" {...p} />,
+          title: 'Forum',
+          tabBarIcon: (p) => <TabIcon name="forum" {...p} />,
           tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,
           tabBarBadgeStyle: { backgroundColor: c.danger, color: '#fff', fontSize: 10, fontWeight: '800' },
         }}
       />
+      <Tabs.Screen name="blog" options={{ title: 'Blog', tabBarIcon: (p) => <TabIcon name="blog" {...p} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: (p) => <TabIcon name="profile" {...p} /> }} />
     </Tabs>
   )

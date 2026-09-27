@@ -18,7 +18,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 import txadmin_service as txa
-from database import safe_search_term, supabase
+from database import safe_or_in, safe_search_term, supabase
 from dependencies import get_current_user, require_admin, require_staff
 from utils.audit import record as _audit
 from utils.fivem_shared import active_priority as shared_active_priority
@@ -145,7 +145,9 @@ def _stamp_application_activity(player_ids: dict[str, Any], player_name: str, no
     try:
         filters = []
         for val in player_values:
-            clean = val.replace("'", "''")
+            clean = safe_search_term(val, max_len=64)
+            if not clean:
+                continue
             for key in ("license", "fivem_license", "license2", "steam_hex", "steam", "fivem_id", "discord_id"):
                 filters.append(f"answers->>'{key}' ilike.%{clean}%")
         if not filters:
@@ -188,10 +190,10 @@ def _stamp_whitelist_activity(players: list[Any] | None, now_iso: str) -> None:
             patch["last_played_name"] = player_name
 
         conds = []
-        if license_id: conds.append(f"fivem_license.eq.{license_id}")
-        if steam_hex:  conds.append(f"steam_hex.eq.{steam_hex}")
-        if fivem_id:   conds.append(f"fivem_id.eq.{fivem_id}")
-        if discord_id: conds.append(f"discord_id.eq.{discord_id}")
+        if license_id: conds.append(safe_or_in("fivem_license", [license_id]))
+        if steam_hex:  conds.append(safe_or_in("steam_hex", [steam_hex]))
+        if fivem_id:   conds.append(safe_or_in("fivem_id", [fivem_id]))
+        if discord_id: conds.append(safe_or_in("discord_id", [discord_id]))
 
         try:
             if conds:
@@ -719,11 +721,11 @@ async def manual_add_whitelist(
 
     identifier_filters = []
     if body.fivem_license:
-        identifier_filters.append(f"fivem_license.eq.{body.fivem_license}")
+        identifier_filters.append(safe_or_in("fivem_license", [body.fivem_license]))
     if body.steam_hex:
-        identifier_filters.append(f"steam_hex.eq.{body.steam_hex}")
+        identifier_filters.append(safe_or_in("steam_hex", [body.steam_hex]))
     if body.fivem_id:
-        identifier_filters.append(f"fivem_id.eq.{body.fivem_id}")
+        identifier_filters.append(safe_or_in("fivem_id", [body.fivem_id]))
     if identifier_filters:
         id_existing = (supabase.table("fivem_whitelist")
                        .select("id,status,discord_id")
@@ -778,7 +780,7 @@ async def mark_synced(body: MarkSynced, request: Request):
         supabase.table("fivem_whitelist").update(upd).eq("id", body.app_id).execute()
     elif body.license:
         supabase.table("fivem_whitelist").update(upd).or_(
-            f"steam_hex.eq.{body.license},fivem_id.eq.{body.license}"
+            ",".join([safe_or_in("steam_hex", [body.license]), safe_or_in("fivem_id", [body.license])])
         ).execute()
     else:
         raise HTTPException(400, "Provide app_id or license")
@@ -863,7 +865,7 @@ async def receive_txadmin_event(
         if action == "added" and identifier:
             # Try to find existing application by identifier first.
             matched = (supabase.table("fivem_whitelist").select("id,status,discord_name")
-                       .or_(f"steam_hex.eq.{identifier},fivem_license.eq.{identifier},fivem_id.eq.{identifier}")
+                       .or_(",".join([safe_or_in("steam_hex", [identifier]), safe_or_in("fivem_license", [identifier]), safe_or_in("fivem_id", [identifier])]))
                        .limit(1).execute())
 
             matched_app = (matched.data or [None])[0]
@@ -957,7 +959,7 @@ async def receive_txadmin_event(
             supabase.table("fivem_whitelist").update({
                 "txadmin_synced": False,
                 "sync_source":    "txadmin",
-            }).or_(f"steam_hex.eq.{identifier},fivem_license.eq.{identifier},fivem_id.eq.{identifier}").execute()
+            }).or_(",".join([safe_or_in("steam_hex", [identifier]), safe_or_in("fivem_license", [identifier]), safe_or_in("fivem_id", [identifier])])).execute()
             background_tasks.add_task(_push_realtime, "whitelist_txadmin_removed", {
                 "identifier": identifier, "removed_by": data.get("adminName"),
             })
@@ -968,7 +970,7 @@ async def receive_txadmin_event(
         if identifier:
             (supabase.table("fivem_whitelist")
              .update({"txadmin_synced": True, "sync_source": "txadmin"})
-             .or_(f"steam_hex.eq.{identifier},fivem_license.eq.{identifier},fivem_id.eq.{identifier}")
+             .or_(",".join([safe_or_in("steam_hex", [identifier]), safe_or_in("fivem_license", [identifier]), safe_or_in("fivem_id", [identifier])]))
              .eq("status", "approved").execute())
             background_tasks.add_task(_push_realtime, "player_joined_whitelist", {
                 "identifier": identifier,
@@ -1347,11 +1349,11 @@ async def update_whitelist_identifiers(body: WhitelistIdentifiersBody, request: 
     filters: list[str] = []
     discord = (ids.get("discord_id") or "").strip()
     if discord:
-        filters.append(f"discord_id.eq.{discord}")
+        filters.append(safe_or_in("discord_id", [discord]))
     for field in ("fivem_license", "steam_hex", "fivem_id"):
         val = str(ids.get(field) or "").strip()
         if val:
-            filters.append(f"{field}.eq.{val}")
+            filters.append(safe_or_in(field, [val]))
     if not filters:
         return {"ok": False, "reason": "no_identifiers"}
     res = (supabase.table("fivem_whitelist")
@@ -1595,16 +1597,16 @@ def _connect_ban_filters(forum_user: dict, whitelist_row: dict | None = None) ->
     filters: list[str] = []
     discord_id = (forum_user.get("discord_id") or "").strip()
     if discord_id:
-        filters.append(f"identifier.eq.discord:{discord_id}")
-        filters.append(f"identifier.eq.{discord_id}")
+        filters.append(safe_or_in("identifier", [f"discord:{discord_id}"]))
+        filters.append(safe_or_in("identifier", [discord_id]))
     steam_id = (forum_user.get("steam_id") or "").strip()
     if steam_id:
-        filters.append(f"identifier.eq.{steam_id}")
+        filters.append(safe_or_in("identifier", [steam_id]))
     if whitelist_row:
         for key in ("fivem_license", "license_hex", "license2_hex", "steam_hex", "fivem_id"):
             value = (whitelist_row.get(key) or "").strip()
             if value:
-                filters.append(f"identifier.eq.{value}")
+                filters.append(safe_or_in("identifier", [value]))
     return filters
 
 
@@ -1637,15 +1639,15 @@ def _session_identifier_filters(body: ConnectSessionRequest) -> list[str]:
             values["discord_id"] = ident.split(":", 1)[1]
 
     if values["fivem_license"]:
-        filters.append(f"fivem_license.eq.{values['fivem_license']}")
+        filters.append(safe_or_in("fivem_license", [values["fivem_license"]]))
     if values["license2_hex"]:
-        filters.append(f"license2_hex.eq.{values['license2_hex']}")
+        filters.append(safe_or_in("license2_hex", [values["license2_hex"]]))
     if values["steam_hex"]:
-        filters.append(f"steam_hex.eq.{values['steam_hex']}")
+        filters.append(safe_or_in("steam_hex", [values["steam_hex"]]))
     if values["fivem_id"]:
-        filters.append(f"fivem_id.eq.{values['fivem_id']}")
+        filters.append(safe_or_in("fivem_id", [values["fivem_id"]]))
     if values["discord_id"]:
-        filters.append(f"discord_id.eq.{values['discord_id']}")
+        filters.append(safe_or_in("discord_id", [values["discord_id"]]))
     return filters
 
 
@@ -1673,15 +1675,15 @@ def _direct_staff_user(body: ConnectSessionRequest) -> dict | None:
     identifiers = {str(i or "").strip() for i in (body.identifiers or []) if str(i or "").strip()}
     filters: list[str] = []
     if discord_id:
-        filters.append(f"discord_id.eq.{discord_id}")
+        filters.append(safe_or_in("discord_id", [discord_id]))
     if steam_hex:
-        filters.append(f"steam_id.eq.{steam_hex}")
+        filters.append(safe_or_in("steam_id", [steam_hex]))
     for ident in identifiers:
         low = ident.lower()
         if low.startswith("discord:"):
-            filters.append(f"discord_id.eq.{ident.split(':', 1)[1]}")
+            filters.append(safe_or_in("discord_id", [ident.split(":", 1)[1]]))
         elif low.startswith("steam:"):
-            filters.append(f"steam_id.eq.{ident}")
+            filters.append(safe_or_in("steam_id", [ident]))
     if not filters:
         return None
     res = (

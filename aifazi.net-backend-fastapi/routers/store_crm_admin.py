@@ -223,17 +223,35 @@ async def refund_order(order_id: str, body: RefundBody, request: Request, staff:
     payment_intent_id = order.get("payment_intent_id") or order.get("stripe_payment_intent_id")
 
     # Partial-refund support: body.amount_cents (when set) must not exceed the
-    # order total / remaining refundable amount. Full refund when omitted.
+    # REMAINING refundable amount (order total minus prior refunds), not just
+    # the order total — otherwise two partial refunds could pay out more than
+    # was ever charged. Full refund (omitted) covers the remaining balance.
     total_cents = int(order.get("total_cents") or 0)
-    refund_cents = total_cents
+    try:
+        prior = (supabase.table("store_transactions")
+                 .select("amount_cents").eq("order_id", order_id).eq("kind", "refund")
+                 .limit(100).execute()).data or []
+        refunded_before = sum(max(0, int(r.get("amount_cents") or 0)) for r in prior)
+    except Exception as exc:
+        log.warning("refund prior-sum lookup failed for %s: %s", order_id, exc)
+        refunded_before = 0
+    remaining_cents = total_cents - refunded_before
+
+    def _revert_claim() -> None:
+        try:
+            supabase.table("store_orders").update({"status": "paid", "updated_at": now}).eq("id", order_id).execute()
+        except Exception:
+            pass
+
+    refund_cents = remaining_cents
     if body.amount_cents is not None:
-        if body.amount_cents <= 0 or body.amount_cents > total_cents:
-            try:
-                supabase.table("store_orders").update({"status": "paid", "updated_at": now}).eq("id", order_id).execute()
-            except Exception:
-                pass
-            raise HTTPException(400, "Refund amount must be between 1 and the order total")
+        if body.amount_cents <= 0 or body.amount_cents > remaining_cents:
+            _revert_claim()
+            raise HTTPException(400, "Refund amount must be between 1 and the remaining refundable balance")
         refund_cents = int(body.amount_cents)
+    elif remaining_cents <= 0:
+        _revert_claim()
+        raise HTTPException(400, "Order has no remaining refundable balance")
 
     # Reverse the payment at Stripe FIRST. Only if that succeeds (or there is
     # nothing to reverse) do we keep the local 'refunded' state — otherwise the
@@ -247,6 +265,11 @@ async def refund_order(order_id: str, body: RefundBody, request: Request, staff:
                 "idempotency_key": f"refund_{order_id}",
             }
             if body.amount_cents is not None:
+                refund_kw["amount"] = refund_cents
+            elif refunded_before > 0:
+                # Prior partial refunds exist (e.g. order re-paid after a
+                # partial): an amount-less Stripe refund would return the FULL
+                # PI amount, over-refunding the customer. Cap at remaining.
                 refund_kw["amount"] = refund_cents
             _stripe_client().Refund.create(**refund_kw)
         except Exception as exc:
