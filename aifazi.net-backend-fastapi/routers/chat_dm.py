@@ -16,6 +16,7 @@ the caller is one of the two parties before reading/writing anything.
 """
 import base64
 import json
+import logging
 import secrets
 import time
 from datetime import datetime, timezone
@@ -30,6 +31,7 @@ from utils.link_safety import schedule_scan
 from routers.push import send_push
 
 router = APIRouter()
+log = logging.getLogger("chat.dm")
 
 # ── Per-user DM throttle (Redis-backed with in-memory fallback) ─────────────
 _DM_WINDOW = 20.0
@@ -554,6 +556,20 @@ async def send_dm_message(thread_id: str, body: DMMessageBody, user: dict = Depe
     _bump_thread(thread_id)
     _touch_read(thread_id, user["username"])
     schedule_scan(content)
+    # Native push to the peer (best-effort, never blocks the request).
+    # Payload key matches the mobile deep-link handler (data.thread_id).
+    try:
+        peer_row = supabase.table("users").select("id").eq("username", peer).limit(1).execute()
+        if peer_row.data and peer_row.data[0].get("id"):
+            snippet = content if body.type == "text" else f"sent a {body.type}"
+            await send_push(
+                [str(peer_row.data[0]["id"])],
+                f"New message from {user['username']}",
+                snippet[:200],
+                {"thread_id": thread_id},
+            )
+    except Exception as e:
+        log.warning("dm: push fan-out failed for thread=%s: %s", thread_id, e)
     return row.data[0]
 
 

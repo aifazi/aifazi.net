@@ -16,6 +16,9 @@ import {
   DISCORD_PURPLE, STEAM_BLUE, STEAM_LIGHT, GITHUB_COLOR,
 } from './forumProfileParts'
 
+// Dismissal flag for the Day-0 onboarding checklist (per account).
+const GET_STARTED_KEY = 'aifazi_getstarted_dismissed_v1'
+
 function TicketCard({ t, onClick }) {
   const sc = STATUS_CFG[t.status]   || STATUS_CFG.open
   const pc = PRIORITY_CFG[t.priority] || PRIORITY_CFG.medium
@@ -606,7 +609,7 @@ function ProfileEditTab({ user, onUpdate }) {
             ) : (
               <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', ...M, fontSize: 20, color: 'var(--muted)', flexShrink: 0 }}>?</div>
             )}
-            <label htmlFor="pf-avatar-file" style={{ ...M, fontSize: 11, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: '#000', background: 'var(--green)', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <label htmlFor="pf-avatar-file" style={{ ...M, fontSize: 11, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: 'var(--comp-btn-text, #000)', background: 'var(--green)', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {avatarUploading ? 'UPLOADING…' : '⤒ UPLOAD IMAGE'}
             </label>
             <span style={{ ...M, fontSize: 11, color: 'var(--muted)' }}>JPEG · PNG · GIF · WebP, max 5 MB,<br />or paste a URL below</span>
@@ -1027,7 +1030,7 @@ function SecurityTab({ user }) {
 }
 
 /* ─── Overview tab ───────────────────────────────────────────────────────── */
-function OverviewTab({ user, tickets, onOpenTicket }) {
+function OverviewTab({ user, tickets, onOpenTicket, onSelectTab }) {
   const ticketStats = {
     total: tickets.length,
     open:  tickets.filter(t => t.status === 'open').length,
@@ -1035,8 +1038,65 @@ function OverviewTab({ user, tickets, onOpenTicket }) {
   }
   const recentTickets = tickets.slice(0, 3)
 
+  // Day-0 onboarding checklist — visible only for fresh accounts until dismissed.
+  const [getStartedDismissed, setGetStartedDismissed] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try { return localStorage.getItem(`${GET_STARTED_KEY}:${user?.id || user?._id || 'anon'}`) === '1' } catch { return false }
+  })
+  const createdMs = user?.created_at ? new Date(user.created_at).getTime() : NaN
+  // Render stays pure (react-hooks/purity): the clock is read once in the
+  // state initializer, never during render.
+  const [freshAtMount] = useState(() => Number.isFinite(createdMs)
+    ? (Date.now() - createdMs) < 7 * 24 * 3600 * 1000
+    : null)
+  const isFreshAccount = freshAtMount ?? tickets.length === 0
+  const getStartedSteps = [
+    { key: 'intro',   done: !!user?.bio,                 icon: '👋', label: 'Introduce yourself', sub: user?.bio ? 'Bio added' : 'Tell the community who you are', to: '/forum' },
+    // No forum stats are fetched here, so support activity is the proxy for joining in.
+    { key: 'discuss', done: tickets.length > 0,          icon: '💬', label: 'Join a discussion',  sub: tickets.length > 0 ? 'You have support activity' : 'Say hi in the forum', to: '/forum' },
+    { key: 'avatar',  done: !!user?.avatar,              icon: '🖼️', label: 'Set up your avatar',   sub: user?.avatar ? 'Avatar set' : 'Upload an image or pick an icon', tab: 'edit' },
+    { key: '2fa',     done: !!user?.two_factor_enabled,  icon: '🔒', label: 'Enable 2FA',           sub: user?.two_factor_enabled ? '2FA active' : 'Protect your account', tab: 'security' },
+  ]
+  const getStartedDone = getStartedSteps.filter(s => s.done).length
+  const dismissGetStarted = () => {
+    try { localStorage.setItem(`${GET_STARTED_KEY}:${user?.id || user?._id || 'anon'}`, '1') } catch {}
+    setGetStartedDismissed(true)
+  }
+
   return (
     <div>
+      {!getStartedDismissed && isFreshAccount && (
+        <SectionCard title="Get started" tag="WELCOME" action={
+          <button onClick={dismissGetStarted} aria-label="Dismiss getting-started checklist"
+            style={{ ...M, fontSize: 11, letterSpacing: 2, background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', padding: '4px 8px' }}>
+            ✕ DISMISS
+          </button>
+        }>
+          <div style={{ ...M, fontSize: 11, letterSpacing: 1, color: 'var(--muted)', marginBottom: 12 }}>
+            {getStartedDone} OF {getStartedSteps.length} COMPLETE — QUICK WINS FOR YOUR NEW ACCOUNT
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {getStartedSteps.map(s => {
+              const inner = (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8 }}>
+                  <span style={{ width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0,
+                    background: s.done ? 'color-mix(in srgb, var(--green) 18%, transparent)' : 'transparent',
+                    border: s.done ? '1px solid var(--green)' : '1px solid var(--border)',
+                    color: s.done ? 'var(--green)' : 'var(--muted)' }}>{s.done ? '✓' : s.icon}</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{s.label}</span>
+                    <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{s.sub}</span>
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--cyan)', flexShrink: 0 }}>→</span>
+                </span>
+              )
+              if (s.to) return <Link key={s.key} to={s.to} style={{ textDecoration: 'none' }}>{inner}</Link>
+              if (onSelectTab) return <button key={s.key} onClick={() => onSelectTab(s.tab)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', width: '100%' }}>{inner}</button>
+              return <Link key={s.key} to={`/profile?tab=${s.tab}`} style={{ textDecoration: 'none' }}>{inner}</Link>
+            })}
+          </div>
+        </SectionCard>
+      )}
       {/* Account info */}
       <SectionCard title="Account Info" tag="PROFILE">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }} className="profile-grid-2">

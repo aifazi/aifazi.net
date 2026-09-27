@@ -18,7 +18,7 @@ import { AuthProvider, useAuth } from '@/src/lib/auth'
 import { OverlayProvider } from '@/src/components/overlay'
 import { BootScreen } from '@/src/components/BootScreen'
 import { AmbientBackground } from '@/src/components/motion'
-import { configurePushNotifications, registerPushToken, unregisterPushToken } from '@/src/lib/push'
+import { configurePushNotifications } from '@/src/lib/push'
 import * as Notifications from 'expo-notifications'
 
 export { ErrorBoundary } from '@/src/components/ErrorBoundary'
@@ -137,33 +137,24 @@ function ThemeTransitionOverlay() {
 function RootNav() {
   const { theme } = useTheme()
   const c = theme.colors
-  const { loading: authLoading, isAuthed, user } = useAuth()
+  const { loading: authLoading } = useAuth()
   const router = useRouter()
-  // Push token held for this session, keyed by user id so an account switch
-  // never unregisters (or leaks) another user's registration.
-  const pushTokenRef = useRef<{ userId: string; token: string } | null>(null)
 
   // NOTE: runtime integrity checks were removed — src/lib/integrity.js was a
   // no-op stub (always-true) with no real-check dep installed, so wiring it at
   // boot provided only a false sense of security.
 
-  // Native push (expo-notifications). Configure the foreground handler + Android
-  // channel once; register the Expo push token with the backend once the user is
-  // authed; on notification tap, deep-link into the room carried in the payload.
+  // Native push (expo-notifications), mount-once. The foreground handler +
+  // Android channel setup never prompts, so this is safe on cold start — but
+  // still deferred off the boot critical path. Token registration lives in the
+  // AuthProvider (first login success only — never cold start), and logout
+  // unregister lives there too. This effect only routes notification taps
+  // into the room/thread carried in the payload.
   useEffect(() => {
-    configurePushNotifications()
-    let tokenRegistered = false
-    let sub: ReturnType<typeof Notifications.addNotificationResponseReceivedListener> | undefined
-    const userId = user?.id ?? user?._id
-    if (isAuthed && userId) {
-      registerPushToken(userId).then((token) => {
-        if (token) {
-          pushTokenRef.current = { userId, token }
-          tokenRegistered = true
-        }
-      })
-    }
-    sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    const t = setTimeout(() => {
+      void configurePushNotifications()
+    }, 0)
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = (response.notification.request.content.data ?? {}) as Record<string, any>
       routePushData(data, (href) => router.push(href))
     })
@@ -176,13 +167,10 @@ function RootNav() {
       })
       .catch(() => {})
     return () => {
-      if (sub) sub.remove()
-      if (tokenRegistered && pushTokenRef.current) {
-        unregisterPushToken(pushTokenRef.current.token)
-        pushTokenRef.current = null
-      }
+      clearTimeout(t)
+      sub.remove()
     }
-  }, [isAuthed, user?.id, user?._id, router])
+  }, [router])
 
   // EAS Update OTA wiring: native side is configured with checkAutomatically
   // "NEVER", so this is the single place that checks for a newer bundle for the
