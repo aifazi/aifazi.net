@@ -7,7 +7,7 @@ import { useTheme } from '@/src/theme'
 import { useOverlay } from '@/src/components/overlay'
 import { api } from '@/src/lib/api'
 import { safeOpenURL } from '@/src/lib/url'
-import { pickLibraryImage, takeCameraPhoto, pickDocument, type PickedFile } from '@/src/lib/media'
+import { pickLibraryImage, takeCameraPhoto, pickDocument, DOCUMENT_MAX_BYTES, type PickedFile } from '@/src/lib/media'
 import { fmtBytes, fmtDate } from './helpers'
 
 interface Doc {
@@ -42,9 +42,9 @@ export function DocumentsTab() {
         { value: 'file', label: 'File (PDF, DOCX, ZIP…)' },
       ],
     })
-    if (source === 'camera') { const f = await takeCameraPhoto({}, overlay); if (f) upload(f) }
-    else if (source === 'library') { const f = await pickLibraryImage({}, overlay); if (f) upload(f) }
-    else if (source === 'file') { const f = await pickDocument(); if (f) upload(f) }
+    if (source === 'camera') { const f = await takeCameraPhoto({ maxBytes: DOCUMENT_MAX_BYTES }, overlay); if (f) upload(f) }
+    else if (source === 'library') { const f = await pickLibraryImage({ maxBytes: DOCUMENT_MAX_BYTES }, overlay); if (f) upload(f) }
+    else if (source === 'file') { const f = await pickDocument(overlay, DOCUMENT_MAX_BYTES); if (f) upload(f) }
   }
 
   const upload = async (file: PickedFile) => {

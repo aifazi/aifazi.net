@@ -126,7 +126,7 @@ async def discord_callback(request: Request):
     # URL, where they would leak via history, logs, and Referer headers.
     from datetime import datetime, timezone
 
-    from routers.auth import _set_auth_cookies, make_forum_token, make_refresh_token
+    from utils.auth_tokens import _set_auth_cookies, make_forum_token, make_refresh_token
     avatar_url = f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar}.png" if avatar else ""
     if existing.data:
         # User exists — issue forum-style tokens (id included for /refresh).

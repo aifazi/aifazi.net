@@ -697,7 +697,7 @@ function OrdersDocumentsTab({ user }) {
       )}
 
       <SectionCard title="Documents" tag="PROFILE FILES" action={
-        <label style={{ ...M, fontSize: 11, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: '#000', background: 'var(--green)', borderRadius: 6, cursor: 'pointer' }}>
+        <label style={{ ...M, fontSize: 11, letterSpacing: 2, fontWeight: 800, padding: '8px 14px', color: 'var(--comp-btn-text, #000)', background: 'var(--green)', borderRadius: 6, cursor: 'pointer' }}>
           {uploading ? 'UPLOADING…' : '+ UPLOAD'}
           <input type="file" hidden onChange={onUpload} />
         </label>
@@ -904,7 +904,7 @@ export default function ForumProfile() {
 
       {/* ── Body ── */}
       <div className="profile-body">
-        {tab === 'overview'  && <OverviewTab user={user} tickets={tickets} onOpenTicket={openTicket} />}
+        {tab === 'overview'  && <OverviewTab user={user} tickets={tickets} onOpenTicket={openTicket} onSelectTab={selectTab} />}
         {tab === 'tickets'   && <MyTicketsTab user={user} initialTicketId={profileTicketId} onTicketViewChange={openTicket} />}
         {tab === 'orders'    && <OrdersDocumentsTab user={user} />}
         {tab === 'activity'  && <ActivityTab user={user} />}

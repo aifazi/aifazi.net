@@ -445,8 +445,8 @@ function HudToast({ toast, v, leaving, progress, dismiss }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function TerminalWindow({ toasts, onRemove }) {
   return (
-    <div style={{ background:'#030810', border:'1px solid rgba(0,255,136,0.2)', borderRadius:4, padding:'12px 14px', minWidth:320, maxWidth:440, marginBottom:8 }}>
-      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:10, paddingBottom:8, borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:4, padding:'12px 14px', minWidth:320, maxWidth:440, marginBottom:8 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:10, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>
         <div style={{ width:8, height:8, borderRadius:'50%', background:'#ff5f57' }} />
         <div style={{ width:8, height:8, borderRadius:'50%', background:'#febc2e' }} />
         <div style={{ width:8, height:8, borderRadius:'50%', background:'#28c840' }} />

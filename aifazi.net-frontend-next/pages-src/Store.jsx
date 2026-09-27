@@ -79,10 +79,14 @@ export default function StorePage({ fivem = false }) {
   const [cart, setCart] = useState({ items: [], subtotal: 0, count: 0 })
   const [cartLoading, setCartLoading] = useState(false)
   const [checkoutCartLoading, setCheckoutCartLoading] = useState(false)
-  const [cartOpen, setCartOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(() => searchParams?.get('cart') === 'open')
 
   const storeHref = typeof window !== 'undefined' && window.location.hostname === hostOf(STORE_URL) ? '/' : '/store'
   const loginHref = fivem ? `/login?next=${encodeURIComponent('/fivem/store')}` : `/login?next=${encodeURIComponent(storeHref)}`
+  // Guest add-to-cart stash: preserved across the login redirect, then
+  // restored (added + drawer reopened) once the session is back.
+  const PENDING_CART_KEY = 'aifazi_pending_cart_v1'
+  const storeBase = fivem ? '/fivem/store' : '/store'
   const dispatchCartUpdate = () => window.dispatchEvent(new CustomEvent('store-cart-updated'))
 
   useEffect(() => {
@@ -107,6 +111,34 @@ export default function StorePage({ fivem = false }) {
 
   useEffect(() => { void (async () => { await loadCart() })() }, [user])
 
+  // Restore a guest add-to-cart stashed before the login redirect (?next=
+  // brings the session back here, covering both /store and /fivem/store
+  // since this file renders both). Fires when auth resolves, so it also
+  // covers the ForumContext 'auth-change' dispatch on login.
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    void (async () => {
+      let pending = null
+      try { pending = JSON.parse(sessionStorage.getItem(PENDING_CART_KEY) || 'null') } catch { pending = null }
+      if (!pending?.product_id) return
+      try { sessionStorage.removeItem(PENDING_CART_KEY) } catch {}
+      try {
+        await api.post('/store/cart', { product_id: pending.product_id, quantity: pending.qty || 1 })
+        if (cancelled) return
+        await loadCart()
+        if (cancelled) return
+        setCartOpen(true)
+        dispatchCartUpdate()
+        setNotice('Picked up where you left off — item restored to your cart.')
+        setTimeout(() => { if (!cancelled) setNotice('') }, 3500)
+      } catch {
+        if (!cancelled) fail('Could not restore your saved cart item.', null)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [user])
+
   // Open cart drawer when item added
   const openCartAfterAdd = () => {
     setCartOpen(true)
@@ -114,7 +146,11 @@ export default function StorePage({ fivem = false }) {
   }
 
   const addToCart = async (product) => {
-    if (!user) { navigate(loginHref); return }
+    if (!user) {
+      try { sessionStorage.setItem(PENDING_CART_KEY, JSON.stringify({ product_id: product.id, qty: 1 })) } catch {}
+      navigate(loginHref)
+      return
+    }
     setCartLoading(true)
     try {
       await api.post('/store/cart', { product_id: product.id, quantity: 1 })
@@ -151,7 +187,7 @@ export default function StorePage({ fivem = false }) {
     try {
       const r = await api.post('/store/checkout/cart', {
         success_url: `${origin}/store/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${origin}/store`,
+        cancel_url: `${origin}${storeBase}?cart=open`,
       })
       if (r.data?.url) safeCheckoutRedirect(r.data.url)
       else fail('Checkout could not be started.', () => checkoutCart())
@@ -166,7 +202,7 @@ export default function StorePage({ fivem = false }) {
       const r = await api.post('/store/checkout', {
         plan_slug: plan.slug,
         success_url: `${origin}/store/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${origin}/store`,
+        cancel_url: `${origin}${storeBase}?cart=open`,
       })
       if (r.data?.url) safeCheckoutRedirect(r.data.url)
     } catch (err) { fail(err?.response?.data?.detail || 'Checkout failed.', () => handleSubscribe(plan)) }

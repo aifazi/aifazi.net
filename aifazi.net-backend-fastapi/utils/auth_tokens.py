@@ -10,6 +10,7 @@ from paseto_token import decode_token as _paseto_decode_token
 SECRET = os.environ.get("PASETO_SECRET", "")
 COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN", "")
 ADMIN_GATE_SECRET = os.getenv("ADMIN_GATE_SECRET", "")
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 
 
 def make_token(payload: dict, expires_minutes: int = 60 * 24) -> str:

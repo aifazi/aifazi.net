@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useParams, Link } from '@/lib/router-compat'
+import { useParams, Link, useNavigate } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useForum } from '../../context/ForumContext'
 import { Card, NeonButton, Badge, EmptyState } from '../../components/community'
@@ -9,8 +9,12 @@ import { formatPrice } from '@/lib/format'
 const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)'
 const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
 
+// Shared with Store.jsx — guest add-to-cart stash restored after login.
+const PENDING_CART_KEY = 'aifazi_pending_cart_v1'
+
 export default function ProductDetail() {
   const { user } = useForum()
+  const navigate = useNavigate()
   const { slug } = useParams()
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -47,10 +51,35 @@ export default function ProductDetail() {
     }).finally(() => setLoading(false))
   }, [slug])
 
+  // Pick up a guest add-to-cart stashed before the login redirect when the
+  // user lands back on this product (?next= preserved above). Only consumes
+  // the stash when it belongs to this product; anything else is left for
+  // the store page to restore with its cart drawer.
+  useEffect(() => {
+    if (!user || !product?.id) return
+    let cancelled = false
+    void (async () => {
+      let pending = null
+      try { pending = JSON.parse(sessionStorage.getItem(PENDING_CART_KEY) || 'null') } catch { pending = null }
+      if (!pending || pending.product_id !== product.id) return
+      try { sessionStorage.removeItem(PENDING_CART_KEY) } catch {}
+      try {
+        await api.post('/store/cart', { product_id: pending.product_id, quantity: pending.qty || quantity })
+        if (cancelled) return
+        setAdded(true)
+        setTimeout(() => { if (!cancelled) setAdded(false) }, 2500)
+      } catch (err) {
+        if (!cancelled) setError(err?.response?.data?.detail || 'Could not add to cart.')
+      }
+    })()
+    return () => { cancelled = true }
+  }, [user, product, quantity])
+
   const addToCart = async () => {
     if (!user) {
-      const storeHref = typeof window !== 'undefined' && window.location.hostname === 'store.aifazi.net' ? '/' : '/store'
-      window.location.href = `/login?next=${encodeURIComponent(storeHref)}`
+      try { sessionStorage.setItem(PENDING_CART_KEY, JSON.stringify({ product_id: product?.id, qty: quantity })) } catch {}
+      const next = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/store'
+      navigate(`/login?next=${encodeURIComponent(next)}`)
       return
     }
     setAdding(true)
