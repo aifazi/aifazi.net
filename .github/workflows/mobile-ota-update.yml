@@ -1,13 +1,15 @@
 name: Mobile OTA Update
 
-# Runtime version is the static string "1.0.0", and the client sends the
+# Runtime version follows `runtimeVersion.policy: appVersion` in app.json, so the
+# runtime equals the app version (e.g. "1.0.39"), and the client sends the
 # "expo-channel-name: production" request header baked from app.json
 # (updates.requestHeaders), so a raw-Gradle APK fetches the "production" channel
 # exactly like an EAS-built binary. OTA updates therefore reach every installed
-# binary whose runtime is "1.0.0" — no native rebuild is needed for JS-only fixes.
+# binary whose runtime matches the published version — no native rebuild is
+# needed for JS-only fixes.
 #
 # When a change touches native code/config (app.json, android/**, ios/**,
-# plugins/**), bump runtimeVersion in app.json to a new string so old binaries
+# plugins/**), bump the app version in app.json to a new string so old binaries
 # stop receiving OTAs that require the new native layer.
 #
 # The version-match guard below still protects against publishing an OTA from a
