@@ -9,7 +9,6 @@ Monorepo for [aifazi.net](https://aifazi.net) — personal platform with portfol
 | `aifazi.net-frontend-next/` | Next.js 14 App Router frontend (Vercel) |
 | `aifazi.net-backend-fastapi/` | FastAPI backend (Coolify on VPS) |
 | `apps/mobile/` | Expo React Native app (EAS) |
-| `packages/shared/` | Shared contracts & crypto utilities |
 | `docker/` | Dev Dockerfiles |
 | `supabase/` | Database migrations (self-hosted Supabase) |
 | `scripts/` | Ops, deploy, and migration helpers |
