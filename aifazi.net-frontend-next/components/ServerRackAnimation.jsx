@@ -317,12 +317,12 @@ function maskIp(ip) {
 }
 
 /** HUD telemetry callout — reticle frame, location headline, fact chips, hover details. */
-function VisitorHud({ visitor }) {
+function VisitorHud({ visitor, shellRef }) {
   const [open, setOpen] = useState(false)
 
   if (!visitor) {
     return (
-      <div className="globe-visitor-shell" style={{
+      <div ref={shellRef} className="globe-visitor-shell" style={{
         position: 'absolute', bottom: 12, left: 14, zIndex: 3,
         pointerEvents: 'none',
       }}>
@@ -359,6 +359,7 @@ function VisitorHud({ visitor }) {
 
   return (
     <div
+      ref={shellRef}
       className="globe-visitor-shell"
       data-anchored={hasCoords ? 'true' : undefined}
       style={{
@@ -497,20 +498,11 @@ function VisitorHud({ visitor }) {
           outline: 2px solid var(--green);
           outline-offset: 2px;
         }
-        /* CSS Anchor Positioning — lock the HUD to the COBE visitor marker when
-           the browser supports it; otherwise the shell stays bottom-left.
-           !important beats the inline corner placement on the shell. */
+        /* Visitor HUD pin — owned by pinVisitorShell() (per-frame JS projection,
+           works in every browser). Shell bottom edge sits exactly 10px above
+           the live marker; the stem + target dot bridge the gap. */
         @supports (anchor-name: --cobe-visitor) {
           .globe-visitor-shell[data-anchored='true'] {
-            position: absolute !important;
-            position-anchor: --cobe-visitor;
-            bottom: calc(anchor(top) + 10px) !important;
-            left: anchor(center) !important;
-            right: auto !important;
-            top: auto !important;
-            translate: -50% 0;
-            opacity: var(--cobe-visible-visitor, 1);
-            transition: opacity 0.3s ease;
             max-width: min(320px, calc(100% - 28px)) !important;
           }
           /* Pointer stem — the shell is horizontally centered on the marker
@@ -565,6 +557,11 @@ function GlobeMode({ visibleRef }) {
   const globeRef  = useRef(null)
   const [visitor, setVisitor] = useState(null)
   const visitorRef = useRef(null)
+  // Ref to the VisitorHud shell — pinned to the live marker every frame via
+  // pinVisitorShell() (no CSS-anchor dependency, works in every browser).
+  const visitorShellRef = useRef(null)
+  // Live globe CSS-pixel geometry (creation + resize + zoom resync keep it fresh).
+  const geomRef = useRef({ w: 0, h: 0 })
   const [visitorTrail, setVisitorTrail] = useState([])
   const visitorTrailRef = useRef([])
   const [themeKey, setThemeKey] = useState(0)
@@ -911,6 +908,46 @@ function GlobeMode({ visibleRef }) {
     const width = Math.max(240, Math.floor(wrapW || rect.width || 480))
     const height = Math.max(240, Math.floor(wrapH || rect.height || 360))
     syncGlobeGeom(width, height)
+    geomRef.current = { w: width, h: height }
+
+    // ── Visitor HUD pin — project the visitor marker with COBE's own math
+    // (orthographic disc radius 0.8 + markerElevation 0.012, offset [0,0])
+    // so the card tracks the live coordinates every frame in any browser.
+    // Card bottom lands exactly 10px above the marker; the CSS stem bridges it.
+    const pinVisitorShell = () => {
+      const shell = visitorShellRef.current
+      if (!shell) return
+      const st8 = stateRef.current
+      if (!hasVisitor) {
+        shell.style.left = '14px'; shell.style.top = 'auto'
+        shell.style.bottom = '12px'; shell.style.right = 'auto'
+        shell.style.translate = ''; shell.style.opacity = ''; shell.style.pointerEvents = ''
+        return
+      }
+      const { w, h } = geomRef.current
+      if (!w || !h) return
+      const B = Math.min(st8.zoom * fitBaseRef.current, maxScaleRef.current)
+      const latR = (+v.lat) * Math.PI / 180
+      const lngA = (+v.lon) * Math.PI / 180 - Math.PI
+      const R = 0.8 + 0.012
+      const px = -Math.cos(latR) * Math.cos(lngA) * R
+      const py = Math.sin(latR) * R
+      const pz = Math.cos(latR) * Math.sin(lngA) * R
+      const cf = Math.cos(st8.phi), sf = Math.sin(st8.phi)
+      const ct = Math.cos(st8.theta), st = Math.sin(st8.theta)
+      const c = cf * px + sf * pz
+      const q = sf * st * px + ct * py - cf * st * pz
+      const xF = (c / (w / h) * B + 1) / 2
+      const yF = (-q * B + 1) / 2
+      // Same occlusion rule as the WebGL marker: behind the disc → fade out.
+      const vis = (-sf * ct * px + st * py + cf * ct * pz >= 0) || (c * c + q * q >= 0.64)
+      shell.style.left = `${xF * w}px`
+      shell.style.top = `${yF * h}px`
+      shell.style.bottom = 'auto'; shell.style.right = 'auto'
+      shell.style.translate = '-50% calc(-100% - 10px)'
+      shell.style.opacity = vis ? '' : '0'
+      shell.style.pointerEvents = vis ? '' : 'none'
+    }
 
     const cyan   = rgbToArr(theme.cyanRgb,  '0,212,255')
     const green  = rgbToArr(theme.greenRgb, '0,255,136')
@@ -1027,6 +1064,7 @@ function GlobeMode({ visibleRef }) {
           opacity: 1,
           markers,
         })
+        pinVisitorShell()
       } catch { /* globe destroyed */ }
       return () => {
         try { globe.destroy() } catch { /* already torn down */ }
@@ -1181,6 +1219,7 @@ function GlobeMode({ visibleRef }) {
           offset: GLOBE_CENTER_OFFSET,
           markers: nextMarkers,
         })
+        pinVisitorShell()
       } catch { /* globe destroyed */ }
     }
     frameRef.current = frame
@@ -1211,6 +1250,7 @@ function GlobeMode({ visibleRef }) {
         const width = Math.max(240, Math.floor(wrap.clientWidth || r.width || 480))
         const height = Math.max(240, Math.floor(wrap.clientHeight || r.height || 360))
         syncGlobeGeom(width, height)
+        geomRef.current = { w: width, h: height }
         const g = globeRef.current
         if (g) {
           try {
@@ -1268,6 +1308,7 @@ function GlobeMode({ visibleRef }) {
         const width = Math.max(240, Math.floor(wrap?.clientWidth || 480))
         const height = Math.max(240, Math.floor(wrap?.clientHeight || 360))
         syncGlobeGeom(width, height)
+        geomRef.current = { w: width, h: height }
         if (g) {
           try {
             // COBE multiplies by devicePixelRatio — pass CSS pixels again
@@ -1683,8 +1724,8 @@ function GlobeMode({ visibleRef }) {
         </div>
       )}
 
-      {/* Visitor HUD — bottom-left (anchored to marker when CSS anchor positioning is available) */}
-      <VisitorHud visitor={visitor} />
+      {/* Visitor HUD — pinned to the live marker coordinates every frame */}
+      <VisitorHud visitor={visitor} shellRef={visitorShellRef} />
 
       <style>{`
         .globe-label-layer {
