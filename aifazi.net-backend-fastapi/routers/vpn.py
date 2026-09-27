@@ -50,6 +50,14 @@ class PeerCreate(BaseModel):
     device_name: str
     device_os: str = ""  # ios, android, windows, macos, linux
     expires_in_hours: int | None = None  # guest peer: auto-removed after N hours
+    # Client-side keygen (protocol change): the creating client generates its
+    # own keypair + optional preshared key and sends ONLY the public parts
+    # over TLS. When public_key is set the server never sees or stores the
+    # private key (stored as "" — see _is_client_keyed); preshared_key is
+    # stored (encrypted) only when provided, and peers without a PSK work
+    # fine. Omit both for the legacy server-generated flow (unchanged).
+    public_key: str | None = None
+    preshared_key: str | None = None
 
 
 class PeerResponse(BaseModel):
@@ -73,6 +81,38 @@ class StatsResponse(BaseModel):
     peers: list[PeerResponse]
     total_rx: int
     total_tx: int
+
+
+# ---------------------------------------------------------------------------
+# Key-ownership convention (client-side keygen protocol change).
+#
+# Legacy rows carry an encrypted server-generated private_key. Rows whose
+# private_key is "" (empty string) are CLIENT-KEYED: the creating client
+# generated the keypair locally, the server only ever received the public
+# key, and no migration was needed — emptiness IS the marker. Client-keyed
+# peers store an encrypted preshared_key only when the client supplied one;
+# peers without a PSK work fine (add_peer simply omits it). Server config /
+# QR output requires the private key, so client-keyed peers never get
+# config/QR from the server — the creating client renders its own QR from
+# its locally stored copy.
+# ---------------------------------------------------------------------------
+
+def _is_client_keyed(peer: dict) -> bool:
+    """True when the row holds no server-side private key (client-side keygen)."""
+    return not (peer.get("private_key") or "").strip()
+
+
+# Sentinel distinguishing "keep the stored PSK" from "store this value" in
+# the client-keyed rotate path (where None is a storable value, not "skip").
+_UNCHANGED: object = object()
+
+
+def _clean_wireguard_key(value: str | None, *, what: str) -> str:
+    """Strip + validate a client-supplied WireGuard key (44 base64 chars)."""
+    cleaned = (value or "").strip()
+    if len(cleaned) != 44:
+        raise HTTPException(400, f"{what} must be a 44-character base64 WireGuard key")
+    return cleaned
 
 
 # ---------------------------------------------------------------------------
@@ -633,7 +673,19 @@ async def list_peers(user: dict = Depends(get_current_user)):
 
 @router.post("/peers")
 async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
-    """Create a new WireGuard peer (VPN device) and return its config + QR."""
+    """Create a new WireGuard peer (VPN device).
+
+    Legacy flow (no public_key in the request): the server generates the
+    keypair + PSK, stores them encrypted, and returns config + QR —
+    response shape unchanged.
+
+    Client-keyed flow (public_key set): the client generated its own keys
+    and sends only the public key (+ optional client-generated preshared
+    key, once, over TLS). The server stores "" as private_key (the
+    client-keyed marker — see _is_client_keyed), stores the PSK only when
+    provided, and returns {id, public_key, ...} with NO config/QR — the
+    creating client renders its own QR from its locally stored copy.
+    """
     user_id = _get_user_id(user)
 
     # Check device limit (max 5 per user)
@@ -648,18 +700,37 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
     # Get or create server config
     server_pub = await _require_server_pub()
 
-    # Generate keys
-    client_priv, client_pub = generate_keypair()
-    psk = generate_preshared_key()
+    client_keyed = body.public_key is not None and str(body.public_key).strip() != ""
+    if client_keyed:
+        client_pub = _clean_wireguard_key(body.public_key, what="public_key")
+        # A duplicate public key would collide on the WireGuard host (and may
+        # indicate a client retrying with a stale key) — reject explicitly.
+        dup = supabase.table("vpn_peers").select("id").eq("public_key", client_pub).limit(1).execute()
+        if dup.data:
+            raise HTTPException(409, "This public key is already registered")
+        client_priv = ""  # never received — stays "" in the row (marker)
+        psk: str | None = None
+        stored_psk: str | None = None
+        if body.preshared_key is not None and str(body.preshared_key).strip() != "":
+            psk = _clean_wireguard_key(body.preshared_key, what="preshared_key")
+            try:
+                stored_psk = encrypt_peer_secret(psk)
+            except RuntimeError as e:
+                raise HTTPException(503, str(e))
+        stored_priv = ""  # client-keyed marker (see _is_client_keyed)
+    else:
+        # Legacy server-generated flow (unchanged).
+        client_priv, client_pub = generate_keypair()
+        psk = generate_preshared_key()
 
-    # Encrypt client secrets before storage — a DB row read must never
-    # yield a usable tunnel identity on its own. Fail closed when the
-    # encryption secret is unavailable.
-    try:
-        stored_priv = encrypt_peer_secret(client_priv)
-        stored_psk = encrypt_peer_secret(psk)
-    except RuntimeError as e:
-        raise HTTPException(503, str(e))
+        # Encrypt client secrets before storage — a DB row read must never
+        # yield a usable tunnel identity on its own. Fail closed when the
+        # encryption secret is unavailable.
+        try:
+            stored_priv = encrypt_peer_secret(client_priv)
+            stored_psk = encrypt_peer_secret(psk)
+        except RuntimeError as e:
+            raise HTTPException(503, str(e))
 
     # Guest peers expire automatically (sync enforces + mails on expiry).
     expires_at = None
@@ -684,8 +755,8 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
                 "id": peer_id,
                 "user_id": user_id,
                 "public_key": client_pub,
-                "private_key": stored_priv,  # Fernet enc1: (see utils/wireguard)
-                "preshared_key": stored_psk,
+                "private_key": stored_priv,  # Fernet enc1: legacy; "" = client-keyed (see _is_client_keyed)
+                "preshared_key": stored_psk,  # encrypted when supplied; None when the client sent none
                 "allocated_ip": allocated_ip,
                 "device_name": body.device_name,
                 "device_os": body.device_os,
@@ -696,6 +767,11 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
             break
         except Exception as e:
             msg = str(e).lower()
+            if "public_key" in msg and ("unique" in msg or "duplicate" in msg or "23505" in msg):
+                # Race lost on the public_key unique constraint (or a client
+                # retry slipped past the pre-check) — report the conflict,
+                # don't misclassify it as an IP-allocation race.
+                raise HTTPException(409, "This public key is already registered")
             if ("unique" in msg or "duplicate" in msg or "23505" in msg) and attempt < 2:
                 log.warning("create_peer: IP %s raced, retrying (%d/3)", allocated_ip, attempt + 1)
                 continue
@@ -703,6 +779,7 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
 
     # Add peer to WireGuard (live). On failure, roll back the DB row so a
     # device that can never connect doesn't linger in the peer list.
+    # Client-keyed peers without a PSK are added without one (works fine).
     try:
         await add_peer(
             public_key=client_pub,
@@ -717,7 +794,19 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
             pass
         raise HTTPException(503, "WireGuard server is not reachable")
 
-    # Generate client config
+    if client_keyed:
+        # No server config/QR: the server never saw the private key. The
+        # creating client renders its own QR from its locally stored copy.
+        return {
+            "id": peer_id,
+            "device_name": body.device_name,
+            "allocated_ip": allocated_ip,
+            "public_key": client_pub,
+            "status": "active",
+            "expires_at": expires_at,
+        }
+
+    # Generate client config (legacy server-generated flow only)
     config = generate_client_config(
         client_private_key=client_priv,
         client_address=allocated_ip,
@@ -744,11 +833,28 @@ async def get_peer(
     format: str = "json",
     user: dict = Depends(get_current_user),
 ):
-    """Get peer details. Use ?format=qr for QR code image, ?format=conf for config file."""
+    """Get peer details. Use ?format=qr for QR code image, ?format=conf for config file.
+
+    Client-keyed peers (no server-side private key) return metadata only —
+    no config/QR can be built server-side. ?format=conf/qr on such a peer
+    is a 404 (nothing to render); the owning client holds the config."""
     user_id = _get_user_id(user)
     peer = _get_peer_by_id(peer_id, user_id)
     if not peer:
         raise HTTPException(404, "Peer not found")
+
+    if _is_client_keyed(peer):
+        if format in ("conf", "qr"):
+            raise HTTPException(404, "No server config for client-keyed peer")
+        return {
+            "id": peer["id"],
+            "device_name": peer["device_name"],
+            "device_os": peer.get("device_os", ""),
+            "allocated_ip": peer["allocated_ip"],
+            "public_key": peer.get("public_key", ""),
+            "status": peer.get("status", "active"),
+            "created_at": peer.get("created_at", ""),
+        }
 
     server_pub = await _require_server_pub()
 
@@ -832,6 +938,17 @@ class PeerUpdate(BaseModel):
     notify_events: bool | None = None
 
 
+class PeerRotateBody(BaseModel):
+    """Optional body for POST /peers/{id}/rotate.
+
+    Only used for client-keyed peers: the reissuing client supplies its new
+    public_key (+ optional new preshared_key). Legacy peers ignore this —
+    the server generates the replacement keypair itself.
+    """
+    public_key: str | None = None
+    preshared_key: str | None = None
+
+
 @router.patch("/peers/{peer_id}")
 async def update_peer(peer_id: str, body: PeerUpdate, user: dict = Depends(get_current_user)):
     """Rename a peer, correct its OS tag, toggle connect alerts. Scoped to the caller's peers."""
@@ -856,8 +973,21 @@ async def update_peer(peer_id: str, body: PeerUpdate, user: dict = Depends(get_c
 
 
 @router.post("/peers/{peer_id}/rotate")
-async def rotate_keys(peer_id: str, user: dict = Depends(get_current_user)):
-    """Rotate a peer's WireGuard keypair. Returns new config + QR.
+async def rotate_keys(
+    peer_id: str,
+    user: dict = Depends(get_current_user),
+    body: PeerRotateBody | None = None,
+):
+    """Rotate a peer's WireGuard keypair.
+
+    Legacy peers (server-held private key): generates a new keypair + PSK
+    server-side and returns new config + QR — response shape unchanged.
+
+    Client-keyed peers (no server-side private key): the caller supplies the
+    new `public_key` (+ optional new `preshared_key`, once, over TLS) and
+    the server returns {id, public_key} with NO config/QR — the reissuing
+    client renders its own QR from its locally stored copy. The existing
+    PSK is kept when no new one is supplied.
 
     Owners rotate their own peers; staff (e.g. from the admin panel's
     one-click reissue) may rotate any peer.
@@ -876,6 +1006,46 @@ async def rotate_keys(peer_id: str, user: dict = Depends(get_current_user)):
         peer = (res.data or [None])[0]
     if not peer:
         raise HTTPException(404, "Peer not found")
+
+    if _is_client_keyed(peer):
+        raw_pub = (body.public_key if body and body.public_key else "") or ""
+        if not raw_pub.strip():
+            raise HTTPException(400, "Client-keyed peers rotate by supplying a new public_key")
+        new_pub = _clean_wireguard_key(raw_pub, what="public_key")
+        dup = supabase.table("vpn_peers").select("id").eq("public_key", new_pub).limit(1).execute()
+        if dup.data and any(r.get("id") != peer_id for r in dup.data):
+            raise HTTPException(409, "This public key is already registered")
+        new_psk: str | None = None
+        stored_psk_update: str | None | object = _UNCHANGED
+        raw_psk = (body.preshared_key if body and body.preshared_key else "") or ""
+        if raw_psk.strip():
+            new_psk = _clean_wireguard_key(raw_psk, what="preshared_key")
+            try:
+                stored_psk_update = encrypt_peer_secret(new_psk)
+            except RuntimeError as e:
+                raise HTTPException(503, str(e))
+        else:
+            try:
+                new_psk = decrypt_peer_secret(peer.get("preshared_key")) or None
+            except RuntimeError as e:
+                raise HTTPException(503, str(e))
+
+        # Remove old peer from WireGuard
+        await remove_peer(peer["public_key"], peer["allocated_ip"])
+
+        # Add replacement peer (same IP)
+        await add_peer(
+            public_key=new_pub,
+            allowed_ips=f"{peer['allocated_ip']}/32",
+            preshared_key=new_psk,
+        )
+
+        updates: dict = {"public_key": new_pub}
+        if stored_psk_update is not _UNCHANGED:
+            updates["preshared_key"] = stored_psk_update
+        supabase.table("vpn_peers").update(updates).eq("id", peer_id).execute()
+
+        return {"id": peer_id, "public_key": new_pub}
 
     server_pub = await _require_server_pub()
 
@@ -923,10 +1093,15 @@ async def rotate_keys(peer_id: str, user: dict = Depends(get_current_user)):
 
 
 @router.post("/admin/peers/{peer_id}/rotate")
-async def admin_rotate_keys(peer_id: str, user: dict = Depends(require_staff)):
+async def admin_rotate_keys(
+    peer_id: str,
+    user: dict = Depends(require_staff),
+    body: PeerRotateBody | None = None,
+):
     """Admin alias for one-click reissue (VpnPanel). rotate_keys already
-    enforces owner-or-manage internally; this gate keeps it staff-only."""
-    return await rotate_keys(peer_id, user)
+    enforces owner-or-manage internally; this gate keeps it staff-only.
+    Forwards the optional client-keyed reissue body (new public_key)."""
+    return await rotate_keys(peer_id, user, body)
 
 
 @router.get("/stats")

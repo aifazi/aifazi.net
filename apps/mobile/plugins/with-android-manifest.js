@@ -6,12 +6,13 @@ const { withAndroidManifest } = require('@expo/config-plugins');
 // runs last in app.json `plugins` (after all Expo plugins) and requires a
 // fresh `expo prebuild` to take effect.
 //
-// - Backup rules (audit P0-3): the generated manifest sets
-//   android:allowBackup="true" while referencing @xml/secure_store_* rules
-//   that don't exist under res/xml. Force allowBackup="false" /
-//   fullBackupOnly="false" and drop the dangling dataExtractionRules /
-//   fullBackupContent references so backups (and their unrestored-token
-//   footguns) are off entirely.
+// - Backup rules (audit P0-3): app.json sets expo-secure-store
+//   configureAndroidBackup:false so its plugin deletes its own
+//   @xml/secure_store_* references instead of re-adding them. This plugin
+//   additionally forces allowBackup="false" / fullBackupOnly="false" and
+//   drops any residual dataExtractionRules / fullBackupContent references
+//   (belt-and-braces) so backups (and their unrestored-token footguns)
+//   are off entirely.
 // - Dev scheme (audit P1-6): drop the exp+fazi:// <data> entry from the
 //   exported MainActivity intent-filter; only the `aifazi` scheme (app.json
 //   `scheme`) remains.

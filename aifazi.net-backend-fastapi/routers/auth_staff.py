@@ -46,6 +46,40 @@ async def search_staff_users(q: str = Query("", min_length=1), admin: dict = Dep
     return await _mono_search(q, admin)
 
 
+# Staff presence/feed allowlist. The users table has NO display_name column
+# (display name IS username — see auth_profile.py) and NO website_url column;
+# avatar lives in avatar/profile_avatar (auth code reads both, preferring
+# profile_avatar). Only these safe columns are ever selected/returned here —
+# NEVER password_hash, refresh_token/tokens, totp_secret, staff_permissions
+# or other secrets.
+_STAFF_FEED_COLUMNS = "id,username,avatar,profile_avatar,role"
+_STAFF_FEED_ROLES = ("admin", "moderator", "editor", "chat")
+
+
+@router.get("/staff/feed")
+async def staff_feed(user: dict = Depends(get_current_user)):
+    """Authenticated staff presence feed (replaces the anon `staff_users`
+    Realtime/SELECT feed).
+
+    Any logged-in user may read it (the old anon feed was world-readable;
+    now auth is required and only safe presence columns are returned).
+    Returns [{id, username, display_name, avatar, role}] for staff-role
+    users rows. The legacy anon `staff_users` SELECT policy is dropped by
+    migration 20260927000000 — anonymous callers now get 401 here instead.
+    """
+    res = supabase.table("users").select(_STAFF_FEED_COLUMNS).in_("role", list(_STAFF_FEED_ROLES)).limit(500).execute()
+    out = []
+    for r in (res.data or []):
+        out.append({
+            "id": r.get("id"),
+            "username": r.get("username") or "",
+            "display_name": r.get("username") or "",
+            "avatar": r.get("profile_avatar") or r.get("avatar") or "",
+            "role": r.get("role") or "",
+        })
+    return {"staff": out}
+
+
 @router.post("/staff")
 async def create_staff(payload: dict, request: Request, admin: dict = Depends(require_admin)):
     """Create a staff user. Accepts the monolith's StaffCreateBody shape."""
