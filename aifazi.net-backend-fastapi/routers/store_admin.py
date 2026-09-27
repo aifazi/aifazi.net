@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
 from database import supabase
+from dependencies import require_admin
 from permissions import require_any_permission
 from routers.cdn_upload import upload_media
 from routers.store_ledger import log_stock_change
@@ -427,6 +428,74 @@ async def admin_invoices(_: dict = Depends(INVOICES)):
     return [{**i, "total": (i.get("total_cents") or 0) / 100} for i in res.data or []]
 
 
+def _clamp_cents(value: Any) -> int:
+    """Coerce to a non-negative int (client money components are untrusted)."""
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _quote_totals(items: list[dict] | None, tax_cents: Any) -> tuple[int, int]:
+    """Server-recompute a quote's subtotal/total from its line items.
+
+    Never trusts client totals: each line is priced from the DB product row
+    when a product_id is given, else from the line's own snapshot price
+    (clamped ≥ 0). total = subtotal + clamped tax.
+    """
+    subtotal = 0
+    for it in (items or [])[:200]:
+        if not isinstance(it, dict):
+            continue
+        try:
+            qty = max(1, int(it.get("qty") or it.get("quantity") or 1))
+        except (TypeError, ValueError):
+            qty = 1
+        unit = 0
+        pid = it.get("product_id")
+        if pid:
+            try:
+                prow = supabase.table("store_products").select("price_cents").eq("id", pid).limit(1).execute()
+                if not (prow.data or []):
+                    raise HTTPException(404, f"Product not found: {pid}")
+                unit = _clamp_cents(prow.data[0].get("price_cents"))
+            except HTTPException:
+                raise
+            except Exception as exc:
+                log.warning("quote totals: product lookup failed: %s", exc)
+                raise HTTPException(502, "Could not price quote items")
+        else:
+            unit = _clamp_cents(it.get("price_cents", it.get("unit_price_cents", it.get("price", 0))))
+        subtotal += unit * qty
+    tax = _clamp_cents(tax_cents)
+    return subtotal, subtotal + tax
+
+
+def _invoice_totals(order_id: str | None, subtotal_cents: Any,
+                    discount_cents: Any, tax_cents: Any) -> tuple[int, int, int]:
+    """Server-recompute an invoice's subtotal/discount/total.
+
+    When order_id is set, the subtotal is the sum of the order's
+    store_order_items line_total_cents (the order must exist). Without an
+    order, the client components are clamped and the total is derived —
+    the client-supplied total_cents is never trusted in either case.
+    Returns (subtotal, discount, total)."""
+    discount = _clamp_cents(discount_cents)
+    tax = _clamp_cents(tax_cents)
+    if order_id:
+        order = supabase.table("store_orders").select("id").eq("id", order_id).limit(1).execute()
+        if not (order.data or []):
+            raise HTTPException(404, "Order not found")
+        lines = (supabase.table("store_order_items")
+                 .select("line_total_cents").eq("order_id", order_id).limit(5000).execute()).data or []
+        subtotal = sum(_clamp_cents(ln.get("line_total_cents")) for ln in lines)
+    else:
+        subtotal = _clamp_cents(subtotal_cents)
+    if discount > subtotal:
+        discount = subtotal
+    return subtotal, discount, max(0, subtotal - discount + tax)
+
+
 class InvoiceBody(BaseModel):
     order_id: str | None = None
     user_id: str | None = None
@@ -445,9 +514,23 @@ class InvoiceBody(BaseModel):
 async def create_invoice(body: InvoiceBody, request: Request, user: dict = Depends(INVOICES)):
     if body.status not in INVOICE_STATUSES:
         raise HTTPException(400, "Invalid invoice status")
+    if body.status == "paid":
+        # Paid is never set at creation: it comes from the Stripe webhook
+        # confirmation, or from the admin manual override on PATCH (reason +
+        # require_admin + audit). Creating a paid invoice outright would let
+        # a staff client mark money received without any Stripe event.
+        raise HTTPException(400, "Invoice cannot be created as paid. Use the manual paid override after creation.")
+    subtotal, discount, total = _invoice_totals(body.order_id, body.subtotal_cents,
+                                                body.discount_cents, body.tax_cents)
     try:
         res = supabase.table("store_invoices").insert({
-            **body.dict(), "invoice_number": _number("INV"),
+            **body.dict(exclude={"subtotal_cents", "discount_cents", "tax_cents", "total_cents", "status"}),
+            "status": body.status,
+            "subtotal_cents": subtotal,
+            "discount_cents": discount,
+            "tax_cents": _clamp_cents(body.tax_cents),
+            "total_cents": total,
+            "invoice_number": _number("INV"),
         }).execute()
     except Exception as exc:
         log.warning("invoice create failed: %s", exc)
@@ -461,20 +544,34 @@ class InvoicePatchBody(BaseModel):
     paid_at: str | None = None
     due_at: str | None = None
     notes: str | None = None
+    # Required (non-empty) when marking an invoice paid manually — records
+    # WHY the override happened; webhook-driven paid never carries one.
+    reason: str | None = None
 
 
 @router.patch("/invoices/{invoice_id}")
 async def update_invoice(invoice_id: str, body: InvoicePatchBody, request: Request, user: dict = Depends(INVOICES)):
-    patch = {k: v for k, v in body.dict().items() if v is not None}
+    patch = {k: v for k, v in body.dict().items() if v is not None and k != "reason"}
     if patch.get("status") is not None and patch["status"] not in INVOICE_STATUSES:
         raise HTTPException(400, "Invalid invoice status")
+    if body.status == "paid":
+        # Manual paid override (the ONLY non-webhook path to paid):
+        # admin-only, non-empty reason, audited with the reason. Anything
+        # else is blocked — safer to hold the invoice in draft/sent than to
+        # record money that Stripe never confirmed.
+        require_admin(user)
+        if not (body.reason or "").strip():
+            raise HTTPException(400, "Marking an invoice paid manually requires a non-empty reason")
     if body.status == "paid" and not patch.get("paid_at"):
         patch["paid_at"] = _now()
     res = supabase.table("store_invoices").update({**patch, "updated_at": _now()}).eq("id", invoice_id).execute()
     if not res.data:
         raise HTTPException(404, "Invoice not found")
+    details: dict = {"fields": sorted(patch.keys())}
+    if body.status == "paid":
+        details["manual_paid_reason"] = (body.reason or "").strip()[:500]
     _audit(_actor(user), "store_invoice_update", target=f"store_invoices:{invoice_id}",
-           details={"fields": sorted(patch.keys())}, ip=_ip(request))
+           details=details, ip=_ip(request))
     return res.data[0]
 
 
@@ -496,10 +593,15 @@ async def admin_quotes(_: dict = Depends(INVOICES)):
 
 class QuoteBody(BaseModel):
     status: str | None = None
-    items: list[dict] = []
-    subtotal_cents: int = 0
-    tax_cents: int = 0
-    total_cents: int = 0
+    # None = "not supplied" (PATCH leaves the field alone). Totals are
+    # ALWAYS server-recomputed from items — these client components are
+    # inputs to the recompute (tax) or ignored (subtotal/total), never
+    # trusted. (Before: these defaulted to 0/[], so any PATCH that omitted
+    # them silently zeroed the quote's totals.)
+    items: list[dict] | None = None
+    subtotal_cents: int | None = None
+    tax_cents: int | None = None
+    total_cents: int | None = None
     customer_name: str = ""
     customer_email: str = ""
     notes: str = ""
@@ -511,14 +613,17 @@ async def create_quote(body: QuoteBody, request: Request, user: dict = Depends(I
     status = body.status or "pending"
     if status not in QUOTE_STATUSES:
         raise HTTPException(400, "Invalid quote status")
+    # Server-recomputed totals — client subtotal/total are ignored so a staff
+    # client can never book a quote for less than its line items price.
+    subtotal, total = _quote_totals(body.items, body.tax_cents)
     try:
         res = supabase.table("store_quotes").insert({
             "quote_number": _number("QT"),
             "status": status,
             "items": body.items or [],
-            "subtotal_cents": body.subtotal_cents,
-            "tax_cents": body.tax_cents,
-            "total_cents": body.total_cents or body.subtotal_cents,
+            "subtotal_cents": subtotal,
+            "tax_cents": _clamp_cents(body.tax_cents),
+            "total_cents": total,
             "currency": "usd",
             "customer_name": body.customer_name,
             "customer_email": body.customer_email,
@@ -537,6 +642,23 @@ async def update_quote(quote_id: str, body: QuoteBody, request: Request, user: d
     patch = {k: v for k, v in body.dict().items() if v is not None}
     if patch.get("status") is not None and patch["status"] not in QUOTE_STATUSES:
         raise HTTPException(400, "Invalid quote status")
+    # Totals follow the line items, not the client: recompute whenever items
+    # or tax are patched, and drop any client-supplied totals otherwise.
+    if body.items is not None or body.tax_cents is not None:
+        current = supabase.table("store_quotes").select("items,tax_cents").eq("id", quote_id).limit(1).execute()
+        if not (current.data or []):
+            raise HTTPException(404, "Quote not found")
+        items = body.items if body.items is not None else (current.data[0].get("items") or [])
+        tax = body.tax_cents if body.tax_cents is not None else current.data[0].get("tax_cents")
+        subtotal, total = _quote_totals(items, tax)
+        patch["items"] = items
+        patch["subtotal_cents"] = subtotal
+        patch["tax_cents"] = _clamp_cents(tax)
+        patch["total_cents"] = total
+    else:
+        patch.pop("subtotal_cents", None)
+        patch.pop("total_cents", None)
+        patch.pop("tax_cents", None)
     patch["updated_at"] = _now()
     res = supabase.table("store_quotes").update(patch).eq("id", quote_id).execute()
     if not res.data:

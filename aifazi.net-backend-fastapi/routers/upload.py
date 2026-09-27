@@ -162,7 +162,10 @@ _MAGIC_BYTES = [
     (b"GIF87a", "image/gif"),
     (b"GIF89a", "image/gif"),
     (b"RIFF", "image/webp"),       # WebP starts with RIFF....WEBP
-    (b"\x00\x00\x00", "video/mp4"),
+    # NOTE: MP4 is NOT a fixed magic prefix — it is an ISO-BMFF ftyp box
+    # parsed in _is_mp4_box() below. The old b"\x00\x00\x00" prefix matched
+    # any box size with a zero high byte (nearly every MP4, but also
+    # arbitrary non-MP4 payloads starting with three zero bytes).
     (b"\x1a\x45\xdf\xa3", "video/webm"),  # Matroska/WebM EBML header
     (b"ID3", "audio/mpeg"),
     (b"OggS", "audio/ogg"),
@@ -173,6 +176,34 @@ _MAGIC_BYTES = [
 ]
 
 
+def _is_mp4_box(content: bytes) -> bool:
+    """Validate an ISO-BMFF `ftyp` box at offset 0 (MP4/M4V/MOV-style).
+
+    Layout: [0:4] box size (big-endian uint32), [4:8] == b"ftyp",
+    [8:12] major brand (e.g. isom, iso2, mp41, mp42, M4V, qt). Checks:
+    - at least 12 bytes so the major brand is present;
+    - the box type at bytes 4:8 is exactly b"ftyp";
+    - the major brand (bytes 8:12) is ASCII alphanumeric (real brands are,
+      e.g. b"isom", b"mp41"); arbitrary binary there is rejected;
+    - box-size sanity: size == 0 means "extends to EOF" (valid); size == 1
+      means largesize follows (needs 16 bytes — valid); otherwise the size
+      must be >= 8 (header) and <= len(content) (the box must fit).
+    """
+    if len(content) < 12:
+        return False
+    if content[4:8] != b"ftyp":
+        return False
+    brand = content[8:12]
+    if not all(32 <= b < 127 for b in brand):
+        return False
+    size = int.from_bytes(content[0:4], "big")
+    if size == 0:
+        return True
+    if size == 1:
+        return len(content) >= 16
+    return 8 <= size <= len(content)
+
+
 def _sniff_mimetype(content: bytes, fallback: str) -> str:
     """Detect actual file type via magic bytes rather than trusting the client
     Content-Type. H11 — the previous validation passed the attacker's own
@@ -181,6 +212,8 @@ def _sniff_mimetype(content: bytes, fallback: str) -> str:
     H6 (audit) — if NO magic signature matches, return 'application/octet-stream'
     instead of the caller-supplied fallback, so a client-claimed allow-listed
     MIME can never smuggle arbitrary content through."""
+    if _is_mp4_box(content):
+        return "video/mp4"
     for magic, mime in _MAGIC_BYTES:
         if content.startswith(magic):
             # Disambiguate WebP (RIFF....WEBP) from WAV (RIFF....WAVE)
