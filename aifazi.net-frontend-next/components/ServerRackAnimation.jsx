@@ -252,6 +252,40 @@ function clampGlobeZoom(value) {
   return Math.max(GLOBE_MIN_ZOOM, Math.min(safeMax, value))
 }
 
+// Low-end guard: 1× backing store when the low tier is active or the device
+// reports few cores / little RAM (guarded — these APIs don't exist everywhere).
+function pickGlobeDpr(tier) {
+  if (typeof window === 'undefined') return 1
+  if (tier === 'low') return 1
+  const nav = typeof navigator !== 'undefined' ? navigator : {}
+  const cores = nav.hardwareConcurrency
+  const mem = nav.deviceMemory
+  if ((typeof cores === 'number' && cores <= 4) || (typeof mem === 'number' && mem <= 4)) return 1
+  return Math.min(window.devicePixelRatio || 1, 2)
+}
+
+// Fit-with-margin: COBE's sphere spans ~0.8 world units and NDC-x scales with
+// H/W, so tall/narrow shells clip left+right. Shrink the base scale to fit;
+// landscape shells keep the exact 0.92 look (never upscale).
+function globeFitBase(width, height) {
+  if (!width || !height) return 0.92
+  return Math.min(0.92, (width / height) * 1.02)
+}
+
+let _cachedWebglOk = null
+// Probe WebGL on a throwaway canvas so the real canvas context is untouched.
+function hasWebGL() {
+  if (_cachedWebglOk !== null) return _cachedWebglOk
+  if (typeof document === 'undefined') return true
+  try {
+    const probe = document.createElement('canvas')
+    _cachedWebglOk = !!(probe.getContext('webgl2') || probe.getContext('webgl'))
+  } catch {
+    _cachedWebglOk = false
+  }
+  return _cachedWebglOk
+}
+
 function firstGeoValue(...values) {
   const found = values.find(v => v !== undefined && v !== null && String(v).trim() !== '')
   return found === undefined ? '—' : String(found).trim()
@@ -487,9 +521,10 @@ function GlobeMode({ visibleRef }) {
   const [selectedNode, setSelectedNode] = useState(null)
   const [anchorsOk] = useState(() => supportsCssAnchors())
   const [latencyMs, setLatencyMs] = useState(12)
-  const [autoRotate, setAutoRotate] = useState(true)
+  // prefers-reduced-motion: start paused with no packets (static frame below).
+  const [autoRotate, setAutoRotate] = useState(() => !prefersReducedMotion())
   const autoRotateRef = useRef(true)
-  const [packetsOn, setPacketsOn] = useState(true)
+  const [packetsOn, setPacketsOn] = useState(() => !prefersReducedMotion())
   const packetsOnRef = useRef(true)
   const [routeLog, setRouteLog] = useState([])
   const routeLogRef = useRef([])
@@ -506,6 +541,17 @@ function GlobeMode({ visibleRef }) {
   })
   const perfTierRef = useRef(perfTier)
   useEffect(() => { perfTierRef.current = perfTier }, [perfTier])
+  // Aspect-aware base globe scale (≤0.92, never upscale) — recomputed on create/resize.
+  const fitBaseRef = useRef(0.92)
+  // rAF parking: hidden tab / offscreen globe stops scheduling frames entirely.
+  const offscreenRef = useRef(false)
+  const docHiddenRef = useRef(typeof document !== 'undefined' && document.hidden)
+  const sleepingRef = useRef(false)
+  const frameRef = useRef(null)
+  const rafRef = useRef(0)
+  // WebGL unavailable → static fallback (COBE returns a no-op stub otherwise).
+  const [glFailed, setGlFailed] = useState(false)
+  const glFailedRef = useRef(false)
   const [themeTone, setThemeTone] = useState('dark')
   const [monitor, setMonitor] = useState(null)
   const radarRef = useRef()
@@ -785,15 +831,27 @@ function GlobeMode({ visibleRef }) {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || typeof createGlobe !== 'function') return
+    if (glFailedRef.current) return
+    // WebGL unavailable (broken drivers / disabled) — COBE would return a
+    // no-op stub and paint nothing. Defer setState per react-compiler rules.
+    if (!hasWebGL()) {
+      glFailedRef.current = true
+      const t = setTimeout(() => setGlFailed(true), 0)
+      return () => clearTimeout(t)
+    }
     if (!themeRef.current) themeRef.current = readGlobeTheme()
 
     const theme = themeRef.current
     const v = visitorRef.current
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const dpr = pickGlobeDpr(perfTierRef.current)
     // COBE multiplies width/height by devicePixelRatio internally — pass CSS pixels.
+    // Prefer the wrap (layout box); the canvas rect can lag during entrance/resize.
+    const wrapW = wrapRef.current?.clientWidth || 0
+    const wrapH = wrapRef.current?.clientHeight || 0
     const rect = canvas.getBoundingClientRect()
-    const width = Math.max(240, Math.floor(rect.width || wrapRef.current?.clientWidth || 480))
-    const height = Math.max(240, Math.floor(rect.height || wrapRef.current?.clientHeight || 360))
+    const width = Math.max(240, Math.floor(wrapW || rect.width || 480))
+    const height = Math.max(240, Math.floor(wrapH || rect.height || 360))
+    fitBaseRef.current = globeFitBase(width, height)
 
     const cyan   = rgbToArr(theme.cyanRgb,  '0,212,255')
     const green  = rgbToArr(theme.greenRgb, '0,255,136')
@@ -867,7 +925,7 @@ function GlobeMode({ visibleRef }) {
           Math.max(0.24, mix(bg[2] * 0.4 + 0.2, cyan[2], 0.3)),
         ]
 
-    const mapSamples = perfTier === 'low' ? 8000 : perfTier === 'med' ? 12000 : 16000
+    const mapSamples = perfTier === 'low' ? 2500 : perfTier === 'med' ? 12000 : 16000
 
     const globe = createGlobe(canvas, {
       devicePixelRatio: dpr,
@@ -877,7 +935,7 @@ function GlobeMode({ visibleRef }) {
       theta: stateRef.current.theta,
       dark: theme.isLight ? 0 : 1,
       diffuse: 1.15,
-      scale: stateRef.current.zoom * 0.92,
+      scale: stateRef.current.zoom * fitBaseRef.current,
       opacity: 1,
       mapSamples,
       mapBrightness: theme.isLight ? 4.2 : 5.6,
@@ -900,6 +958,23 @@ function GlobeMode({ visibleRef }) {
 
     globeRef.current = globe
 
+    // prefers-reduced-motion: paint ONE static frame — no rAF loop, no packets, no spin.
+    if (prefersReducedMotion()) {
+      try {
+        globe.update({
+          phi: stateRef.current.phi,
+          theta: stateRef.current.theta,
+          scale: fitBaseRef.current,
+          opacity: 1,
+          markers,
+        })
+      } catch { /* globe destroyed */ }
+      return () => {
+        try { globe.destroy() } catch { /* already torn down */ }
+        globeRef.current = null
+      }
+    }
+
     // Flight packets — great-circle interp along hub routes, live-updated markers.
     // Two directions per route: req (client→hub, orange/cyan) and res (hub→client, green).
     const baseMarkers = markers
@@ -919,7 +994,7 @@ function GlobeMode({ visibleRef }) {
       })
     }
     const allRoutes = [...clientRoutes, ...hubRoutes]
-    const packetCount = perfTier === 'low' ? 4 : 8
+    const packetCount = perfTier === 'low' ? 2 : 8
     const REQ_KINDS = ['GET /api', 'POST /auth', 'WS SYNC', 'GET /cdn', 'RPC CALL', 'GET /status']
     const packetSeeds = Array.from({ length: packetCount }, (_, i) => ({
       route: i % Math.max(1, allRoutes.length),
@@ -932,11 +1007,18 @@ function GlobeMode({ visibleRef }) {
     }))
 
     // COBE v2 has no onRender — drive phi/theta/scale via globe.update() each frame.
-    // Pause when the panel is off-screen (visibleRef) to save GPU.
-    let raf = 0
+    // Parked while the tab is hidden or the globe is offscreen: stop scheduling
+    // rAF entirely (the wrap IO / visibilitychange effect restarts us).
+    sleepingRef.current = false
     const frame = (now) => {
-      raf = requestAnimationFrame(frame)
-      if (visibleRef && visibleRef.current === false) return
+      frameRef.current = frame
+      if (docHiddenRef.current || offscreenRef.current || (visibleRef && visibleRef.current === false)) {
+        sleepingRef.current = true
+        rafRef.current = 0
+        return
+      }
+      sleepingRef.current = false
+      rafRef.current = requestAnimationFrame(frame)
 
       // ── FPS guard: rolling average, auto-downgrade quality if we drop ──
       const fr = fpsRef.current
@@ -952,8 +1034,9 @@ function GlobeMode({ visibleRef }) {
       if (fr.samples === 30 || fr.samples === 60) {
         const rounded = Math.round(fr.avg)
         setFps(rounded)
-        // Sustained < 40fps → step down a tier (high → med → low)
-        if (rounded < 40 && perfTierRef.current === 'high') setPerfTier('med')
+        // Critically slow (< 20fps) → jump straight to low; otherwise step down.
+        if (rounded < 20 && perfTierRef.current !== 'low') setPerfTier('low')
+        else if (rounded < 40 && perfTierRef.current === 'high') setPerfTier('med')
         else if (rounded < 28 && perfTierRef.current === 'med') setPerfTier('low')
       }
 
@@ -988,23 +1071,25 @@ function GlobeMode({ visibleRef }) {
           p.t += p.speed
           if (p.t > 1) {
             p.t -= 1
-            // Log a completed hop to the live routing ticker
+            // Log a completed hop to the live routing ticker (skip placeholder rows)
             const r = allRoutes[p.route]
-            const fromName = p.dir === 1 ? r.from.name : r.to.name
-            const toName   = p.dir === 1 ? r.to.name : r.from.name
-            const entry = {
-              id: `${i}-${Date.now()}`,
-              kind: p.dir === 1 ? p.kind : '200 OK',
-              from: fromName,
-              to: toName,
-              dir: p.dir,
-              ms: 8 + Math.floor(Math.random() * 40),
-            }
-            routeLogRef.current = [entry, ...routeLogRef.current].slice(0, 6)
-            // Throttle React state sync — the rAF loop owns the log; UI polls it
-            if (now - routeSyncRef.current > 400) {
-              routeSyncRef.current = now
-              setRouteLog(routeLogRef.current)
+            const fromName = p.dir === 1 ? r.from?.name : r.to?.name
+            const toName   = p.dir === 1 ? r.to?.name : r.from?.name
+            if (fromName && toName && fromName !== '—' && toName !== '—') {
+              const entry = {
+                id: `${i}-${Date.now()}`,
+                kind: p.dir === 1 ? p.kind : '200 OK',
+                from: fromName,
+                to: toName,
+                dir: p.dir,
+                ms: 8 + Math.floor(Math.random() * 40),
+              }
+              routeLogRef.current = [entry, ...routeLogRef.current].slice(0, 6)
+              // Throttle React state sync — the rAF loop owns the log; UI polls it
+              if (now - routeSyncRef.current > 400) {
+                routeSyncRef.current = now
+                setRouteLog(routeLogRef.current)
+              }
             }
           }
           const r = allRoutes[p.route]
@@ -1030,16 +1115,19 @@ function GlobeMode({ visibleRef }) {
         globe.update({
           phi: s.phi,
           theta: s.theta,
-          scale: s.zoom * 0.92,
+          scale: s.zoom * fitBaseRef.current,
           opacity: 1,
           markers: nextMarkers,
         })
       } catch { /* globe destroyed */ }
     }
-    raf = requestAnimationFrame(frame)
+    frameRef.current = frame
+    rafRef.current = requestAnimationFrame(frame)
 
     return () => {
-      cancelAnimationFrame(raf)
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = 0
+      frameRef.current = null
       try { globe.destroy() } catch { /* already torn down */ }
       globeRef.current = null
     }
@@ -1058,8 +1146,9 @@ function GlobeMode({ visibleRef }) {
       lastW = r.width; lastH = r.height
       clearTimeout(t)
       t = setTimeout(() => {
-        const width = Math.max(240, Math.floor(r.width || wrap.clientWidth || 480))
-        const height = Math.max(240, Math.floor(r.height || wrap.clientHeight || 360))
+        const width = Math.max(240, Math.floor(wrap.clientWidth || r.width || 480))
+        const height = Math.max(240, Math.floor(wrap.clientHeight || r.height || 360))
+        fitBaseRef.current = globeFitBase(width, height)
         const g = globeRef.current
         if (g) {
           try {
@@ -1075,6 +1164,35 @@ function GlobeMode({ visibleRef }) {
     return () => { clearTimeout(t); ro.disconnect() }
   }, [])
 
+  // ── Offscreen / hidden-tab pause — park the globe rAF loop, restart on visible ──
+  useEffect(() => {
+    const wrap = wrapRef.current
+    docHiddenRef.current = typeof document !== 'undefined' && document.hidden
+    const kick = () => {
+      docHiddenRef.current = typeof document !== 'undefined' && document.hidden
+      if (!docHiddenRef.current && !offscreenRef.current && sleepingRef.current && frameRef.current) {
+        sleepingRef.current = false
+        try { cancelAnimationFrame(rafRef.current) } catch { /* noop */ }
+        rafRef.current = requestAnimationFrame(frameRef.current)
+      }
+    }
+    const onVis = () => kick()
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVis)
+    let obs = null
+    if (wrap && typeof IntersectionObserver !== 'undefined') {
+      offscreenRef.current = false
+      obs = new IntersectionObserver(([e]) => {
+        offscreenRef.current = !e.isIntersecting
+        if (e.isIntersecting) kick()
+      }, { threshold: 0 })
+      obs.observe(wrap)
+    }
+    return () => {
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVis)
+      if (obs) obs.disconnect()
+    }
+  }, [])
+
   // ── Browser zoom (ctrl+wheel) — resync dpr/size so chrome stays aligned ──
   useEffect(() => {
     let t = 0
@@ -1087,10 +1205,11 @@ function GlobeMode({ visibleRef }) {
         const g = globeRef.current
         const width = Math.max(240, Math.floor(wrap?.clientWidth || 480))
         const height = Math.max(240, Math.floor(wrap?.clientHeight || 360))
+        fitBaseRef.current = globeFitBase(width, height)
         if (g) {
           try {
             // COBE multiplies by devicePixelRatio — pass CSS pixels again
-            g.update({ width, height, devicePixelRatio: Math.min(dpr, 2) })
+            g.update({ width, height, devicePixelRatio: pickGlobeDpr(perfTierRef.current) })
           } catch { /* ignore */ }
         }
         // Force CSS anchor labels / chrome to re-measure after zoom
@@ -1237,6 +1356,10 @@ function GlobeMode({ visibleRef }) {
   }, [])
 
   const hasVisitorCoords = visitor && Number.isFinite(+visitor.lat) && visitor.lat !== '—'
+  // Never render empty/placeholder routing rows (a clipped row reads as a stray "• 000" chip).
+  const validRouteLog = routeLog.filter(e =>
+    e && e.kind && e.from && e.to && e.from !== '—' && e.to !== '—' && Number.isFinite(e.ms)
+  )
   const arcCount = GLOBE_CONNECTIONS.length + (hasVisitorCoords ? 1 : 0)
   const nodeCount = GLOBE_CITIES.length + (hasVisitorCoords ? 1 : 0)
   const hubLinks = GLOBE_CONNECTIONS.filter(e => e.hub).length
@@ -1320,7 +1443,7 @@ function GlobeMode({ visibleRef }) {
       <div className="globe-radar" title="Node radar">
         <canvas ref={radarRef} width={64} height={64} aria-hidden />
         <div className="globe-radar-label">
-          {monitor ? `${monitor.up}/${monitor.total} UP` : 'RADAR'}
+          {monitor && monitor.total > 0 ? `${monitor.up}/${monitor.total} UP` : 'RADAR'}
         </div>
       </div>
 
@@ -1331,8 +1454,20 @@ function GlobeMode({ visibleRef }) {
         <span className="globe-sat s3" />
       </div>
 
-      {/* COBE canvas — fills entire panel */}
-      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+      {/* COBE canvas — fills entire panel (static fallback when WebGL is unavailable) */}
+      {glFailed ? (
+        <div className="globe-static-fallback" role="img" aria-label="Static network map (WebGL unavailable)">
+          <div className="globe-static-fallback-title">GLOBAL NETWORK · STATIC MAP</div>
+          <div className="globe-static-fallback-sub">WEBGL UNAVAILABLE — LIVE DATA BELOW</div>
+          <div className="globe-static-fallback-nodes">
+            {GLOBE_CITIES.map(c => (
+              <span key={c.id} className={`globe-static-fallback-node${c.hub ? ' is-hub' : ''}`}>{c.name}</span>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+      )}
 
       {/* Hub live-badge pulse ring — anchored to Riyadh when CSS anchors exist */}
       {anchorsOk && (
@@ -1460,9 +1595,9 @@ function GlobeMode({ visibleRef }) {
       )}
 
       {/* Live routing ticker — client ⇄ server hops */}
-      {routeLog.length > 0 && (
+      {validRouteLog.length > 0 && (
         <div className="globe-route-log" role="log" aria-live="polite" aria-label="Live routing hops">
-          {routeLog.map((e, i) => (
+          {validRouteLog.map((e, i) => (
             <div key={e.id} className="globe-route-log-row" style={{ opacity: 1 - i * 0.14 }}>
               <span className="globe-route-log-dir" data-dir={e.dir === 1 ? 'up' : 'down'}>
                 {e.dir === 1 ? '▲' : '▼'}
@@ -1573,6 +1708,7 @@ function GlobeMode({ visibleRef }) {
           top: 0; left: 0; right: 0;
           z-index: 5;
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
           gap: 12px;
           padding: 12px 16px;
@@ -1596,8 +1732,10 @@ function GlobeMode({ visibleRef }) {
         .globe-top-bar .globe-mode-chips {
           position: static;
           display: flex;
+          flex-wrap: wrap;
           gap: 6px;
-          flex: 0 0 auto;
+          flex: 0 1 auto;
+          min-width: 0;
         }
         .globe-top-bar .globe-network-stats {
           flex: 0 0 auto;
@@ -1899,6 +2037,8 @@ function GlobeMode({ visibleRef }) {
           gap: 3px;
           pointer-events: none;
           max-width: min(340px, calc(100% - 28px));
+          max-height: calc(100% - 160px);
+          overflow: hidden;
         }
         .globe-route-log-row {
           display: flex;
@@ -1915,6 +2055,8 @@ function GlobeMode({ visibleRef }) {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          max-width: 100%;
+          box-sizing: border-box;
           animation: routeIn 0.28s ease;
         }
         @keyframes routeIn {
@@ -1954,6 +2096,56 @@ function GlobeMode({ visibleRef }) {
         }
         .globe-network-shell[data-globe-tone="light"] .globe-hub-ring {
           box-shadow: 0 0 12px color-mix(in srgb, var(--green) 40%, transparent);
+        }
+        /* Static fallback — WebGL unavailable (styled div + node list, no canvas) */
+        .globe-static-fallback {
+          position: absolute;
+          inset: 52px 14px 46px;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          border-radius: 8px;
+          border: 1px dashed color-mix(in srgb, var(--cyan) 30%, transparent);
+          background: color-mix(in srgb, var(--bg) 55%, transparent);
+          padding: 16px;
+          text-align: center;
+          overflow: hidden;
+        }
+        .globe-static-fallback-title {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 2.5px;
+          color: var(--cyan);
+        }
+        .globe-static-fallback-sub {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 1.5px;
+          color: var(--muted);
+        }
+        .globe-static-fallback-nodes {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 6px;
+          max-width: 100%;
+        }
+        .globe-static-fallback-node {
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 1.2px;
+          color: var(--muted);
+          border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+          border-radius: 4px;
+          padding: 2px 8px;
+          white-space: nowrap;
+        }
+        .globe-static-fallback-node.is-hub {
+          color: var(--green);
+          border-color: color-mix(in srgb, var(--green) 38%, transparent);
         }
         @media (max-width: 720px) {
           .globe-top-bar {
