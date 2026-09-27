@@ -3990,6 +3990,9 @@ html, body {
   min-width: min(320px, 100%) !important;
   min-height: clamp(380px, 58vh, 720px) !important;
   box-sizing: border-box;
+  /* Globe-column guard: zoomed canvas/chrome can never cause page-level
+     horizontal overflow (clip keeps vertical overflow visible). */
+  overflow-x: clip;
 }
 
 /* Type scales with the frame */

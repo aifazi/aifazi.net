@@ -252,6 +252,21 @@ function clampGlobeZoom(value) {
   return Math.max(GLOBE_MIN_ZOOM, Math.min(safeMax, value))
 }
 
+// Shell-margin-aware zoom cap — COBE renders the disc with diameter ≈ scale ×
+// canvas height, centered for offset [0, 0]. Clamp the effective scale so the
+// disc stays inside the live shell (minus margin) instead of clipping one edge
+// before the others at max scroll-zoom.
+const GLOBE_SHELL_MARGIN_PX = 12
+const GLOBE_CENTER_OFFSET = [0, 0]
+
+function globeMaxScaleForDims(width, height) {
+  if (!width || !height) return GLOBE_MAX_ZOOM * 0.92
+  return Math.max(0.2, Math.min(
+    (width - GLOBE_SHELL_MARGIN_PX * 2) / height,
+    (height - GLOBE_SHELL_MARGIN_PX * 2) / height,
+  ))
+}
+
 // Low-end guard: 1× backing store when the low tier is active or the device
 // reports few cores / little RAM (guarded — these APIs don't exist everywhere).
 function pickGlobeDpr(tier) {
@@ -419,7 +434,8 @@ function VisitorHud({ visitor }) {
           {maskIp(visitor.ip)}{visitor.ipType && visitor.ipType !== '—' ? ` · ${visitor.ipType}` : ''}
         </div>
 
-        {/* Fact chips */}
+        {/* Fact chips — never render a content-less box */}
+        {chips.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
           {chips.map(c => (
             <span key={c} style={{
@@ -432,6 +448,7 @@ function VisitorHud({ visitor }) {
             }}>{c}</span>
           ))}
         </div>
+        )}
 
         {/* Expanded details — hover / focus */}
         <div style={{
@@ -442,6 +459,8 @@ function VisitorHud({ visitor }) {
           marginTop: open ? 9 : 0,
         }}>
           <div style={{ overflow: 'hidden' }}>
+            {/* Never render a content-less details box */}
+            {details.length > 0 && (
             <div style={{
               borderTop: '1px solid color-mix(in srgb, var(--cyan) 18%, transparent)',
               paddingTop: 8,
@@ -462,6 +481,7 @@ function VisitorHud({ visitor }) {
                 </div>
               ))}
             </div>
+            )}
           </div>
         </div>
       </div>
@@ -543,6 +563,13 @@ function GlobeMode({ visibleRef }) {
   useEffect(() => { perfTierRef.current = perfTier }, [perfTier])
   // Aspect-aware base globe scale (≤0.92, never upscale) — recomputed on create/resize.
   const fitBaseRef = useRef(0.92)
+  // Effective-scale ceiling for the live shell aspect (never below the fitted
+  // base look, so default zoom is pixel-identical). Recomputed with fitBase.
+  const maxScaleRef = useRef(GLOBE_MAX_ZOOM * 0.92)
+  const syncGlobeGeom = (width, height) => {
+    fitBaseRef.current = globeFitBase(width, height)
+    maxScaleRef.current = Math.max(fitBaseRef.current, globeMaxScaleForDims(width, height))
+  }
   // rAF parking: hidden tab / offscreen globe stops scheduling frames entirely.
   const offscreenRef = useRef(false)
   const docHiddenRef = useRef(typeof document !== 'undefined' && document.hidden)
@@ -851,7 +878,7 @@ function GlobeMode({ visibleRef }) {
     const rect = canvas.getBoundingClientRect()
     const width = Math.max(240, Math.floor(wrapW || rect.width || 480))
     const height = Math.max(240, Math.floor(wrapH || rect.height || 360))
-    fitBaseRef.current = globeFitBase(width, height)
+    syncGlobeGeom(width, height)
 
     const cyan   = rgbToArr(theme.cyanRgb,  '0,212,255')
     const green  = rgbToArr(theme.greenRgb, '0,255,136')
@@ -935,7 +962,7 @@ function GlobeMode({ visibleRef }) {
       theta: stateRef.current.theta,
       dark: theme.isLight ? 0 : 1,
       diffuse: 1.15,
-      scale: stateRef.current.zoom * fitBaseRef.current,
+      scale: Math.min(stateRef.current.zoom * fitBaseRef.current, maxScaleRef.current),
       opacity: 1,
       mapSamples,
       mapBrightness: theme.isLight ? 4.2 : 5.6,
@@ -1115,8 +1142,11 @@ function GlobeMode({ visibleRef }) {
         globe.update({
           phi: s.phi,
           theta: s.theta,
-          scale: s.zoom * fitBaseRef.current,
+          // Centered exactly (offset [0, 0]) and capped so the disc stays
+          // inside the live shell instead of clipping one edge at max zoom.
+          scale: Math.min(s.zoom * fitBaseRef.current, maxScaleRef.current),
           opacity: 1,
+          offset: GLOBE_CENTER_OFFSET,
           markers: nextMarkers,
         })
       } catch { /* globe destroyed */ }
@@ -1148,7 +1178,7 @@ function GlobeMode({ visibleRef }) {
       t = setTimeout(() => {
         const width = Math.max(240, Math.floor(wrap.clientWidth || r.width || 480))
         const height = Math.max(240, Math.floor(wrap.clientHeight || r.height || 360))
-        fitBaseRef.current = globeFitBase(width, height)
+        syncGlobeGeom(width, height)
         const g = globeRef.current
         if (g) {
           try {
@@ -1205,7 +1235,7 @@ function GlobeMode({ visibleRef }) {
         const g = globeRef.current
         const width = Math.max(240, Math.floor(wrap?.clientWidth || 480))
         const height = Math.max(240, Math.floor(wrap?.clientHeight || 360))
-        fitBaseRef.current = globeFitBase(width, height)
+        syncGlobeGeom(width, height)
         if (g) {
           try {
             // COBE multiplies by devicePixelRatio — pass CSS pixels again
@@ -1234,17 +1264,26 @@ function GlobeMode({ visibleRef }) {
     const resolveCollisions = () => {
       const wrap = wrapRef.current
       if (!wrap) return
-      const els = Array.from(wrap.querySelectorAll('.globe-city-label'))
+      const els = Array.from(wrap.querySelectorAll('.globe-city-label, .globe-arc-label'))
       els.forEach((el) => el.removeAttribute('data-collide'))
       const rank = (el) =>
         el.classList.contains('is-focus') ? 0 : el.classList.contains('is-hub') ? 1 : 2
       const candidates = els
         .filter((el) => (el.style.opacity || '1') !== '0')
         .sort((a, b) => rank(a) - rank(b))
+      // Floating labels must never drift over the top-bar chips row.
+      const topRect = wrap.querySelector('.globe-top-bar')?.getBoundingClientRect() || null
+      const hitsTopBar = (r) => topRect && !(
+        r.right < topRect.left ||
+        r.left > topRect.right ||
+        r.bottom < topRect.top ||
+        r.top > topRect.bottom
+      )
       const kept = []
       for (const el of candidates) {
         const r = el.getBoundingClientRect()
         if (r.width === 0) continue
+        if (hitsTopBar(r)) { el.setAttribute('data-collide', ''); continue }
         const overlap = kept.some((k) => {
           const kr = k.getBoundingClientRect()
           return !(
@@ -1466,7 +1505,7 @@ function GlobeMode({ visibleRef }) {
           </div>
         </div>
       ) : (
-        <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+        <canvas ref={canvasRef} style={{ display: 'block', position: 'absolute', inset: 0, width: '100%', height: '100%', margin: 'auto' }} />
       )}
 
       {/* Hub live-badge pulse ring — anchored to Riyadh when CSS anchors exist */}
@@ -1620,6 +1659,7 @@ function GlobeMode({ visibleRef }) {
           position: absolute; inset: 0;
           pointer-events: none;
           z-index: 2;
+          overflow: hidden;
         }
         .globe-city-label {
           position: absolute;
@@ -1632,13 +1672,16 @@ function GlobeMode({ visibleRef }) {
           letter-spacing: 1.5px;
           color: var(--cyan);
           white-space: nowrap;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
           pointer-events: auto;
           cursor: pointer;
           padding: 2px 6px;
           border-radius: 3px;
           background: color-mix(in srgb, var(--bg) 55%, transparent);
           border: 1px solid color-mix(in srgb, var(--cyan) 18%, transparent);
-          transition: opacity 0.35s ease, filter 0.35s ease, transform 0.2s ease, color 0.2s ease;
+          transition: opacity 0.18s ease-out, filter 0.18s ease-out, transform 0.2s ease, color 0.2s ease;
           user-select: none;
         }
         .globe-city-label:hover,
@@ -1652,7 +1695,8 @@ function GlobeMode({ visibleRef }) {
           border-color: color-mix(in srgb, var(--green) 35%, transparent);
           font-weight: 700;
         }
-        .globe-city-label[data-collide] {
+        .globe-city-label[data-collide],
+        .globe-arc-label[data-collide] {
           opacity: 0 !important;
           pointer-events: none !important;
           filter: none !important;
@@ -1681,11 +1725,12 @@ function GlobeMode({ visibleRef }) {
           pointer-events: none;
           z-index: 2;
           animation: hubRing 2.2s ease-out infinite;
+          transition: opacity 0.18s ease-out;
         }
         @keyframes hubRing {
-          0%   { transform: translate(-50%,-50%) scale(0.75); opacity: 0.9; }
-          70%  { transform: translate(-50%,-50%) scale(1.55); opacity: 0; }
-          100% { transform: translate(-50%,-50%) scale(0.75); opacity: 0; }
+          0%   { transform: translate(-50%,-50%) scale(0.75); }
+          70%  { transform: translate(-50%,-50%) scale(1.55); }
+          100% { transform: translate(-50%,-50%) scale(0.75); }
         }
         .globe-arc-label {
           position: absolute;
@@ -1698,9 +1743,12 @@ function GlobeMode({ visibleRef }) {
           color: var(--green);
           opacity: 0.7;
           white-space: nowrap;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
           pointer-events: none;
           text-shadow: 0 0 8px color-mix(in srgb, var(--green) 40%, transparent);
-          transition: opacity 0.35s ease;
+          transition: opacity 0.18s ease-out;
         }
         /* ── Top chrome: flex row, title | controls | stats ── */
         .globe-top-bar {
