@@ -7,7 +7,7 @@ import { Avatar, BUILTIN_AVATARS, BUILTIN_AVATAR_ICONS } from '@/src/components/
 import { useTheme } from '@/src/theme'
 import { useAuth } from '@/src/lib/auth'
 import { useOverlay } from '@/src/components/overlay'
-import { askImageSourceAsync, type PickedFile } from '@/src/lib/media'
+import { askImageSourceAsync, AVATAR_MAX_BYTES, type PickedFile } from '@/src/lib/media'
 
 export function EditTab() {
   const { theme } = useTheme()
@@ -41,7 +41,7 @@ export function EditTab() {
       ],
     })
     if (picked === 'upload') {
-      const f = await askImageSourceAsync(overlay)
+      const f = await askImageSourceAsync(overlay, { maxBytes: AVATAR_MAX_BYTES })
       if (f) uploadAvatarPhoto(f)
     } else if (picked === 'builtin') {
       chooseBuiltinAvatar()

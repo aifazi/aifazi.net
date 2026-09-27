@@ -15,10 +15,11 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { askImageSourceAsync, pickDocument, type PickedFile } from '@/src/lib/media'
+import { askImageSourceAsync, pickDocument, CHAT_UPLOAD_MAX_BYTES, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
 import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
+import { FLAT_LIST_PRESET } from '@/src/components/ui'
 import { useAuth } from '@/src/lib/auth'
 import { api } from '@/src/lib/api'
 import { encryptText, decryptIfEncrypted } from '@/src/lib/chat-encryption'
@@ -664,13 +665,13 @@ export default function DMThreadScreen() {
 
   const pickImage = async () => {
     heartbeatTyping('image')
-    const f = await askImageSourceAsync(overlay)
+    const f = await askImageSourceAsync(overlay, { maxBytes: CHAT_UPLOAD_MAX_BYTES })
     if (f) uploadFile(f, 'image')
   }
 
   const pickDoc = () => {
     heartbeatTyping('file')
-    pickDocument().then((f) => f && uploadFile(f, 'file'))
+    pickDocument(overlay, CHAT_UPLOAD_MAX_BYTES).then((f) => f && uploadFile(f, 'file'))
   }
 
   const uploadFile = async (file: PickedFile, type: 'image' | 'file') => {
@@ -815,6 +816,7 @@ export default function DMThreadScreen() {
             ref={listRef}
             data={searchText.trim() ? messages.filter(m => (m.content || '').toLowerCase().includes(searchText.trim().toLowerCase())) : messages}
             keyExtractor={(m) => m.id}
+            {...FLAT_LIST_PRESET}
             contentContainerStyle={{ padding: SPACE.xl, paddingBottom: SPACE.giant }}
             onContentSizeChange={() => {
               if (stick.current) listRef.current?.scrollToEnd({ animated: true })

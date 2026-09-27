@@ -14,6 +14,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from database import _escape_ilike, supabase
+from utils.email import render_template
+from utils.email_queue import queue_email
 from utils.timezone import utc_now
 
 router = APIRouter()
@@ -25,6 +27,41 @@ def _hash(pw: str) -> str:
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://aifazi.net")
 MAIL_FROM = os.getenv("MAIL_FROM", "noreply@aifazi.net")
+SITE_URL = FRONTEND_URL.rstrip("/")
+
+
+def _email_layout(title: str, body_html: str) -> str:
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>{title}</title>
+</head>
+<body>
+<div>{body_html}</div>
+</body>
+</html>"""
+
+
+def _verify_email_html(verify_url: str) -> str:
+    body = f"""
+    <h1>Verify your email</h1>
+    <p>Thanks for joining <strong>aifazi.net</strong>. Click below to activate your account.
+      This link expires in <strong>24 hours</strong>.</p>
+    <a href="{verify_url}">VERIFY EMAIL →</a>
+    <p>Or copy: <span>{verify_url}</span></p>"""
+    return _email_layout("Verify your email — aifazi.net", body)
+
+
+def _reset_email_html(reset_url: str) -> str:
+    body = f"""
+    <h1>Reset your password</h1>
+    <p>We received a request to reset your <strong>aifazi.net</strong> password.
+      This link expires in <strong>1 hour</strong>.</p>
+    <a href="{reset_url}">RESET PASSWORD →</a>
+    <p>Or copy: <span>{reset_url}</span></p>"""
+    return _email_layout("Reset your password — aifazi.net", body)
 
 
 def _token_expired(expires_at: str | None) -> bool:
@@ -115,6 +152,16 @@ async def check_email(email: str):
     return {"ok": True}
 
 
+class CheckEmailBody(BaseModel):
+    email: str = ""
+
+
+@router.post("/check-email")
+async def check_email_post(body: CheckEmailBody):
+    """POST twin (keeps emails out of query strings/proxy logs)."""
+    return await check_email(body.email or "")
+
+
 @router.post("/register")
 async def register(body: RegisterBody):
     """Register a new user account."""
@@ -195,6 +242,19 @@ async def resend_verification(body: ForgotBody):
         "verify_token": token,
         "verify_expires": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
     }).eq("username", user["username"]).execute()
+    verify_url = f"{SITE_URL}/forum/verify?token={token}"
+    try:
+        subject, html = render_template("account_activation", {
+            "site_name": "aifazi.net",
+            "username": user.get("username") or "",
+            "activation_link": verify_url,
+            "expires_in": "24 hours",
+        })
+        await queue_email(user["email"], subject or "Verify your email - aifazi.net",
+                          html or _verify_email_html(verify_url),
+                          f"Verify your aifazi.net account: {verify_url}", "account_activation")
+    except Exception:
+        log.warning("resend-verification email failed for %s", user.get("username"), exc_info=True)
     return {"ok": True}
 
 
@@ -238,7 +298,21 @@ async def forgot_password(body: ForgotBody):
         "reset_token": token,
         "reset_expires": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
     }).eq("username", username).execute()
-    # TODO: Send reset email via mail queue
+    email = (user_res.data[0].get("email") or "") if user_res.data else ""
+    if email and "@" in email:
+        reset_url = f"{SITE_URL}/forum/reset?token={token}"
+        try:
+            subject, html = render_template("password_reset", {
+                "site_name": "aifazi.net",
+                "username": username,
+                "reset_link": reset_url,
+                "expires_in": "1 hour",
+            })
+            await queue_email(email, subject or "Reset your password - aifazi.net",
+                              html or _reset_email_html(reset_url),
+                              f"Reset your aifazi.net password: {reset_url}", "password_reset")
+        except Exception:
+            log.warning("forgot-password email failed for %s", username, exc_info=True)
     return {"ok": True}
 
 

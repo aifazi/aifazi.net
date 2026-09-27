@@ -73,7 +73,7 @@ async def delete_staff(staff_id: str, request: Request, admin: dict = Depends(re
 @router.get("/admin-gate-token")
 async def admin_gate_token(user: dict = Depends(require_staff)):
     """Short-lived admin gate token for sensitive operations."""
-    from routers.auth import make_admin_gate_token
+    from utils.auth_tokens import make_admin_gate_token
 
     return {"token": make_admin_gate_token({"username": user.get("username") or ""})}
 
@@ -112,7 +112,7 @@ async def impersonate(body: ImpersonateBody, request: Request, admin: dict = Dep
     /refresh (DB-validated) rejects it and the session dies at access expiry.
     """
     # Lazy import: routers/auth.py imports this module at load time.
-    from routers.auth import ADMIN_USERNAME, make_refresh_token, make_token
+    from utils.auth_tokens import ADMIN_USERNAME, make_refresh_token, make_token
 
     if not body.confirm:
         raise HTTPException(400, "Impersonation requires confirm:true")

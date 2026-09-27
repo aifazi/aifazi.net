@@ -16,7 +16,7 @@ import {
 } from 'react-native'
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { askImageSourceAsync, pickDocument, type PickedFile } from '@/src/lib/media'
+import { askImageSourceAsync, pickDocument, CHAT_UPLOAD_MAX_BYTES, type PickedFile } from '@/src/lib/media'
 import { Image as ExpoImage } from 'expo-image'
 import { Icon } from '@/src/components/icon'
 import { Avatar } from '@/src/components/Avatar'
@@ -453,13 +453,13 @@ export default function ChatRoomScreen() {
 
   const pickImage = async () => {
     sendActivity('image')
-    const f = await askImageSourceAsync(overlay)
+    const f = await askImageSourceAsync(overlay, { maxBytes: CHAT_UPLOAD_MAX_BYTES })
     if (f) uploadFile(f, 'image')
   }
 
   const pickDoc = () => {
     sendActivity('file')
-    pickDocument().then((f) => f && uploadFile(f, 'file'))
+    pickDocument(overlay, CHAT_UPLOAD_MAX_BYTES).then((f) => f && uploadFile(f, 'file'))
   }
 
   const uploadFile = async (file: PickedFile, type: 'image' | 'file') => {

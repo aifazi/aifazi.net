@@ -718,7 +718,7 @@ export default function Navbar() {
                   title="Account"
                 >
                   <UserAvatar avatar={forumUser.avatar} name={forumUser.username} size={28}
-                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${forumUser.username}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`}
+                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(forumUser.username)}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`}
                     imgStyle={{ border: '1px solid var(--green)' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
@@ -833,7 +833,7 @@ export default function Navbar() {
               <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Link to={profileRoute} onClick={() => setMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
                   <UserAvatar avatar={forumUser.avatar} name={forumUser.username} size={32}
-                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${forumUser.username}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`}
+                    fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(forumUser.username)}&backgroundColor=${theme === 'dark' ? '0b1118' : 'e8f4f0'}&textColor=00ff88`}
                     imgStyle={{ border: '1px solid var(--green)' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
