@@ -2,7 +2,7 @@
 # for reproducible builds. Keep httpx/PyMuPDF pinned for security (see audit).
 httpx==0.28.1
 fastapi==0.141.1
-uvicorn[standard]==0.52.4
+uvicorn[standard]==0.53.0
 supabase==2.31.0
 cryptography==50.0.1
 PyNaCl==1.6.2
