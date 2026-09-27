@@ -15,7 +15,6 @@ os.environ.setdefault("SUPABASE_SERVICE_ROLE_KEY", "service-role-test-only")
 
 from routers.upload import (
     ALLOWED_MIMETYPES,
-    CHAT_ALLOWED_MIMETYPES,
     MAX_UPLOAD_BYTES,
     _is_cloudinary_url,
     _safe_storage_filename,
@@ -84,18 +83,13 @@ class TestSniffMimetype:
 class TestAllowlists:
     def test_svg_excluded(self):
         assert "image/svg+xml" not in ALLOWED_MIMETYPES
-        assert "image/svg+xml" not in CHAT_ALLOWED_MIMETYPES
 
     def test_text_and_zip_excluded_from_public_bucket(self):
         assert "text/html" not in ALLOWED_MIMETYPES
         assert "text/plain" not in ALLOWED_MIMETYPES
         assert "application/zip" not in ALLOWED_MIMETYPES
         assert "application/x-msdownload" not in ALLOWED_MIMETYPES
-
-    def test_chat_is_stricter_than_library(self):
-        assert CHAT_ALLOWED_MIMETYPES <= ALLOWED_MIMETYPES
         assert "application/pdf" in ALLOWED_MIMETYPES
-        assert "application/pdf" not in CHAT_ALLOWED_MIMETYPES
 
     def test_upload_cap(self):
         assert MAX_UPLOAD_BYTES == 50 * 1024 * 1024

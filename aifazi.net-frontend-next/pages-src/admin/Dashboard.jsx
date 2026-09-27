@@ -19,7 +19,6 @@ import { useFadeUp, useStaggerIn } from '@/lib/animate'
 // Heavy admin panels are lazy-loaded so the initial admin bundle stays small —
 // each loads only when its tab is opened.
 const ForumAdmin = dynamic(() => import('../ForumAdmin').then(m => m.default || m), { ssr: false })
-const AdminChat = dynamic(() => import('../chat/AdminChat').then(m => m.default || m), { ssr: false })
 const DBMonitor = dynamic(() => import('./DBMonitor').then(m => m.default || m), { ssr: false })
 const PostEditor = dynamic(() => import('./PostEditor').then(m => m.PostEditor), { ssr: false })
 const MediaLibrary = dynamic(() => import('./PostEditor').then(m => m.MediaLibrary), { ssr: false })
@@ -37,7 +36,6 @@ const StoreCenter = dynamic(() => import('./storeModules/StoreCenter').then(m =>
 const MonitoringPanel = dynamic(() => import('./MonitoringPanel').then(m => m.default || m), { ssr: false })
 const VpnPanel = dynamic(() => import('./VpnPanel').then(m => m.default || m), { ssr: false })
 const OAuthSettings = dynamic(() => import('./OAuthSettings').then(m => m.default || m), { ssr: false })
-const ChatPanel = dynamic(() => import('./ChatPanel').then(m => m.default || m), { ssr: false })
 
 const STAT_CARD_VIEWS = { content: 'content', activity: 'db', communications: 'communications', staff: 'staff' }
 function StatsGrid({ dashStats, isMobile, setView }) {
@@ -418,7 +416,6 @@ function Dashboard({ onLogout }) {
         'Database':     health?.db === false    ? { status: 'degraded', color: '#ff4757' }    : health ? { status: 'operational', color: '#00ff88' } : { status: 'unknown', color: '#888' },
         'Mail Service': { status: 'unknown',  color: '#888' },
         'CDN Storage':  { status: 'unknown',  color: '#888' },
-        'Chat Server':  health?.status === 'OK' ? { status: 'operational', color: '#00ff88' } : health ? { status: 'unknown', color: '#888' } : { status: 'unknown', color: '#888' },
         'Forum':        { status: 'unknown', color: '#888' },
       })
 
@@ -684,8 +681,6 @@ function Dashboard({ onLogout }) {
     { key: 'themes',       label: 'Theme Library', group: 'CONTENT',    icon: '🎨',    badge: null },
     { key: 'communications', label: 'Communications', group: 'COMMUNITY', icon: '📧',  badge: null, aliases: ['contacts', 'newsletter'] },
     { key: 'staff',        label: 'Staff',         group: 'COMMUNITY',  icon: '👥',  badge: null },
-    { key: 'chat',         label: 'Chat',          group: 'COMMUNITY',  icon: '🗨️',  badge: null },
-    { key: 'chat-admin',   label: 'Chat Mgmt',     group: 'COMMUNITY',  icon: '🛠️',  badge: null },
     { key: 'db',           label: 'DB Monitor',    group: 'SYSTEM',     icon: '🗄️',     badge: null },
     { key: 'stats',        label: 'Analytics',     group: 'SYSTEM',     icon: '📈', badge: null },
     { key: 'audit',        label: 'Audit Log',     group: 'SYSTEM',     icon: '🛡️', badge: null },
@@ -756,7 +751,7 @@ function Dashboard({ onLogout }) {
   }
 
   const mainPad = isMobile ? '16px 12px' : '48px'
-  const fullScreen = ['forum','chat','db'].includes(view)
+  const fullScreen = ['forum','db'].includes(view)
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', zIndex: 10 }}>
@@ -920,7 +915,6 @@ function Dashboard({ onLogout }) {
                               'Database':    { status: 'unknown', color: '#888' },
                               'Mail Service':{ status: 'unknown', color: '#888' },
                               'CDN Storage': { status: 'unknown', color: '#888' },
-                              'Chat Server': { status: 'unknown', color: '#888' },
                               'Forum':       { status: 'unknown', color: '#888' },
                             }
                       ).map(([label, s]) => (
@@ -1435,13 +1429,6 @@ function Dashboard({ onLogout }) {
             </PanelErrorBoundary>
           )}
 
-          {/* CHAT MANAGEMENT */}
-          {view === 'chat-admin' && canView(view) && (
-            <PanelErrorBoundary label="Chat Management">
-              <ChatPanel />
-            </PanelErrorBoundary>
-          )}
-
           {/* NEWSLETTER SUBSCRIBERS */}
           {view === 'newsletter' && canView(view) && <PanelErrorBoundary label="Newsletter"><NewsletterPanel /></PanelErrorBoundary>}
 
@@ -1476,13 +1463,6 @@ function Dashboard({ onLogout }) {
         {view === 'forum' && canView(view) && (
           <div style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
             <ForumAdmin embedded />
-          </div>
-        )}
-        {view === 'chat' && canView(view) && (
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', minHeight: 0, overflow: 'hidden', alignItems: 'stretch', height: '100%' }}>
-            <PanelErrorBoundary label="Chat">
-              <AdminChat embedded />
-            </PanelErrorBoundary>
           </div>
         )}
       </div>

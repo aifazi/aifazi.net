@@ -30,7 +30,7 @@ const CDN_ENABLED      = CDN_HOSTNAME !== SITE_HOST && isPublicDomain(CDN_HOSTNA
 const FIVEM_ENABLED    = FIVEM_HOSTNAME !== SITE_HOST && isPublicDomain(FIVEM_HOSTNAME)
 const STORE_ENABLED    = STORE_HOSTNAME !== SITE_HOST && isPublicDomain(STORE_HOSTNAME)
 const STATUS_ENABLED   = STATUS_HOSTNAME !== SITE_HOST && isPublicDomain(STATUS_HOSTNAME)
-const FIVEM_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/forms', '/chat', '/profile', '/login']
+const FIVEM_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/forms', '/profile', '/login']
 const FIVEM_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/sw.js', '/favicon.ico', '/logo.svg'])
 const STORE_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/login', '/profile', '/forms', '/blog', '/contact', '/privacy', '/tools']
 const STORE_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico', '/logo.svg', '/manifest.webmanifest', '/sw.js'])
@@ -607,7 +607,7 @@ export async function proxy(request: NextRequest) {
     if (!sessionCookie || !(await isAdminSessionValid(sessionCookie, hostname))) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('tab', 'signin')
-      loginUrl.searchParams.set('next', pathname)
+      loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
       return NextResponse.redirect(loginUrl)
     }
   }

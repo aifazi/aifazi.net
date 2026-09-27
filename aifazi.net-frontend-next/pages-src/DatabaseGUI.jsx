@@ -415,4 +415,3 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
     </div>
   );
 }
-export { CollectionBrowser, SessionsTab, MaintenancePanel, AuditLogTab, DbHealthTab }

@@ -50,14 +50,16 @@ class RefreshBody(BaseModel):
 @router.post("/login")
 async def login(body: LoginBody, request: Request, response: Response):
     from routers.auth import (
-        ADMIN_USERNAME,
         _check_admin_password,
         _find_user_by_ci,
         _get_admin_2fa,
         _record_user_activity,
         _send_new_device_alert,
-        _set_auth_cookies,
         _upsert_forum_session,
+    )
+    from utils.auth_tokens import (
+        ADMIN_USERNAME,
+        _set_auth_cookies,
         make_forum_token,
         make_refresh_token,
         make_token,
@@ -202,7 +204,8 @@ async def refresh_token(request: Request, response: Response, body: RefreshBody 
     import hmac as _hmac
 
     from paseto_token import decode_token as _paseto_decode
-    from routers.auth import _REFRESH_ROTATION_GRACE, _set_auth_cookies, make_refresh_token, make_token
+    from routers.auth import _REFRESH_ROTATION_GRACE
+    from utils.auth_tokens import _set_auth_cookies, make_refresh_token, make_token
 
     token_str = request.cookies.get("refresh_token") or body.refreshToken or ""
     if not token_str:
@@ -251,7 +254,7 @@ async def refresh_token(request: Request, response: Response, body: RefreshBody 
         return {"token": new_access, "refreshToken": new_refresh}
 
     # Tokens without a users-row id (legacy admin) validate by username only.
-    from routers.auth import ADMIN_USERNAME
+    from utils.auth_tokens import ADMIN_USERNAME
     if username != ADMIN_USERNAME:
         raise HTTPException(401, "Invalid refresh token")
     new_access = make_token({k: v for k, v in payload.items() if k != "exp"})
@@ -264,7 +267,7 @@ async def refresh_token(request: Request, response: Response, body: RefreshBody 
 async def logout(request: Request, response: Response):
     """Revoke server-side refresh + clear cookies (mirrors monolith M8)."""
     from paseto_token import decode_token as _paseto_decode
-    from routers.auth import COOKIE_DOMAIN
+    from utils.auth_tokens import COOKIE_DOMAIN
 
     auth_header = request.headers.get("authorization", "")
     token_str = auth_header.replace("Bearer ", "", 1) if auth_header.startswith("Bearer ") else ""
