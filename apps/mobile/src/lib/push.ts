@@ -1,6 +1,7 @@
 import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import Constants from 'expo-constants'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { api } from './api'
 
 /**
@@ -56,18 +57,75 @@ export async function configurePushNotifications() {
 let currentPush: { userId: string; token: string } | null = null
 
 /** Acquire the Expo push token for this install and register it with the
- * backend so the chat fan-out can reach this device. */
+ * backend so the chat fan-out can reach this device.
+ *
+ * Ordering matters: the EAS projectId guard runs BEFORE any permission
+ * request, so a dev/Expo-Go build without EAS config logs + skips without
+ * ever showing a pointless OS prompt. A denial is remembered per user id
+ * (non-secret AsyncStorage flag) so we never nag: a second call skips the
+ * request silently — but if the user later grants permission in OS settings,
+ * getPermissionsAsync reports granted and we register normally (self-heal).
+ * Never throws — returns the token string or null. */
+const deniedCache = new Set<string>()
+const deniedKey = (userId?: string) => `pushPermDenied:${userId ?? 'anon'}`
+
+async function wasDenied(userId?: string): Promise<boolean> {
+  const key = deniedKey(userId)
+  if (deniedCache.has(key)) return true
+  try {
+    if ((await AsyncStorage.getItem(key)) === '1') {
+      deniedCache.add(key)
+      return true
+    }
+  } catch {
+    // Storage failure — fall through and ask; the OS prompt is the backstop.
+  }
+  return false
+}
+
+async function rememberDenied(userId?: string) {
+  const key = deniedKey(userId)
+  deniedCache.add(key)
+  try {
+    await AsyncStorage.setItem(key, '1')
+  } catch {
+    // Non-fatal — the in-memory entry still covers this session.
+  }
+}
+
+async function clearDenied(userId?: string) {
+  const key = deniedKey(userId)
+  deniedCache.delete(key)
+  try {
+    await AsyncStorage.removeItem(key)
+  } catch {
+    // Non-fatal.
+  }
+}
+
 export async function registerPushToken(userId?: string) {
   try {
-    const perms = await Notifications.getPermissionsAsync()
-    let granted = perms.granted
-    if (!granted) {
-      const asked = await Notifications.requestPermissionsAsync()
-      granted = asked.granted
+    // v57 docs: projectId lives under extra.eas (app.json) with an easConfig
+    // fallback. Without it getExpoPushTokenAsync cannot work — skip before
+    // touching permissions so there is no prompt loop and no crash.
+    const extra = Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined
+    const easConfig = (Constants as { easConfig?: { projectId?: string } }).easConfig
+    const projectId = extra?.eas?.projectId ?? easConfig?.projectId
+    if (!projectId) {
+      console.warn('[push] skipping registration: missing EAS projectId (extra.eas.projectId)')
+      return null
     }
-    if (!granted) return null
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId
-    if (!projectId) return null
+    const perms = await Notifications.getPermissionsAsync()
+    if (perms.granted) {
+      await clearDenied(userId)
+    } else {
+      if (await wasDenied(userId)) return null // Asked before, denied — never nag.
+      const asked = await Notifications.requestPermissionsAsync()
+      if (!asked.granted) {
+        await rememberDenied(userId)
+        return null
+      }
+    }
     const token = await Notifications.getExpoPushTokenAsync({ projectId })
     if (!token?.data) return null
     await api.post('/push/register', { token: token.data })

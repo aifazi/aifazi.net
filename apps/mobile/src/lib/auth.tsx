@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useCallback, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useCallback, useState, useRef, ReactNode } from 'react'
 import { api, setAuthTokens, clearAuthTokens, ensureSession, onAuthCleared, RefreshFailedError } from './api'
 import { loginWithOAuth as oauthLogin, OAuthProvider } from './oauth'
-import { unregisterCurrentPushToken } from './push'
+import { unregisterCurrentPushToken, registerPushToken } from './push'
 
 export interface AuthUser {
   id?: string
@@ -44,7 +44,7 @@ interface AuthCtx {
   verify2FA: (partialToken: string, code: string) => Promise<void>
   register: (username: string, email: string, password: string) => Promise<string>
   logout: () => Promise<void>
-  refresh: () => Promise<void>
+  refresh: () => Promise<AuthUser | null>
   updateProfile: (patch: { username?: string; bio?: string; avatar?: string; email?: string }) => Promise<void>
   uploadAvatar: (file: UploadAvatarFile) => Promise<string>
   changePassword: (currentPassword: string, newPassword: string, code?: string) => Promise<void>
@@ -68,7 +68,7 @@ const Ctx = createContext<AuthCtx>({
   verify2FA: async () => {},
   register: async () => '',
   logout: async () => {},
-  refresh: async () => {},
+  refresh: async () => null,
   updateProfile: async () => {},
   uploadAvatar: async () => '',
   changePassword: async () => {},
@@ -103,29 +103,39 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
+  // Mirror of `user` for use inside callbacks without re-creating them (e.g.
+  // refresh() must report the kept user on a network blip, not null).
+  const userRef = useRef<AuthUser | null>(null)
+  const setAuthUser = useCallback((u: AuthUser | null) => {
+    userRef.current = u
+    setUser(u)
+  }, [])
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<AuthUser | null> => {
     try {
       // H4 — cold start: access token is memory-only. ensureSession() reissues
       // one from the SecureStore refresh token when present; otherwise logged out.
       const tok = await ensureSession()
       if (!tok) {
-        setUser(null)
-        return
+        setAuthUser(null)
+        return null
       }
       const res = await api.get('/auth/me')
       const data = res.data
-      setUser((data?.user ?? data) as AuthUser)
+      const u = (data?.user ?? data) as AuthUser
+      setAuthUser(u)
+      return u
     } catch (e) {
       // Network failure during hydration is not a logout: keep any existing
       // user and the stored refresh token so the next attempt can retry.
       // Only revoked/missing credentials drop the session.
-      if (e instanceof RefreshFailedError && e.kind === 'network') return
-      setUser(null)
+      if (e instanceof RefreshFailedError && e.kind === 'network') return userRef.current
+      setAuthUser(null)
+      return null
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [setAuthUser])
 
   useEffect(() => {
     refresh()
@@ -134,7 +144,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // If the token store is cleared while we're "logged in" (401 → refresh failed
     // → interceptor cleared storage), drop the stale user so screens route to login.
-    return onAuthCleared(() => setUser(null))
+    return onAuthCleared(() => setAuthUser(null))
+  }, [setAuthUser])
+
+  /**
+   * Push registration — first login success ONLY (password, OAuth, 2FA).
+   * Deferred off the auth critical path so navigation completes before any OS
+   * permission prompt; cold-start session restore and biometric unlock never
+   * trigger it. Best-effort: registerPushToken never throws.
+   */
+  const queuePushRegistration = useCallback((u: AuthUser | null) => {
+    const uid = u?.id ?? u?._id
+    if (!uid) return
+    setTimeout(() => {
+      void registerPushToken(uid)
+    }, 0)
   }, [])
 
   const login = useCallback(
@@ -153,10 +177,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { token, refreshToken } = data
       if (!token) throw new Error('Login failed — no token returned')
       await setAuthTokens(token, refreshToken ?? '')
-      await refresh()
+      queuePushRegistration(await refresh())
       return { requires2fa: false }
     },
-    [refresh],
+    [refresh, queuePushRegistration],
   )
 
   const loginWithOAuth = useCallback(
@@ -170,10 +194,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { requires2fa: true, partialToken: res.partialToken, username: res.username }
       }
       await setAuthTokens(res.token, res.refreshToken)
-      await refresh()
+      queuePushRegistration(await refresh())
       return { requires2fa: false }
     },
-    [refresh],
+    [refresh, queuePushRegistration],
   )
 
   const verify2FA = useCallback(
@@ -185,9 +209,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { token, refreshToken } = res.data ?? {}
       if (!token) throw new Error('2FA verification failed — no token returned')
       await setAuthTokens(token, refreshToken ?? '')
-      await refresh()
+      queuePushRegistration(await refresh())
     },
-    [refresh],
+    [refresh, queuePushRegistration],
   )
 
   const register = useCallback(async (username: string, email: string, password: string) => {
@@ -205,16 +229,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api.post('/auth/logout')
     } catch {}
     await clearAuthTokens()
-    setUser(null)
-  }, [])
+    setAuthUser(null)
+  }, [setAuthUser])
 
   const updateProfile = useCallback(
     async (patch: { username?: string; bio?: string; avatar?: string; email?: string }) => {
       const res = await api.put('/auth/profile', patch)
       const data = res.data
-      setUser((data?.user ?? data) as AuthUser)
+      setAuthUser((data?.user ?? data) as AuthUser)
     },
-    [],
+    [setAuthUser],
   )
 
   const uploadAvatar = useCallback(
@@ -224,10 +248,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await api.post('/auth/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
       const url = res.data?.url
       if (!url) throw new Error('Upload failed — no URL returned')
-      setUser((u) => (u ? { ...u, avatar: url } : u))
+      const cur = userRef.current
+      setAuthUser(cur ? { ...cur, avatar: url } : cur)
       return url
     },
-    [],
+    [setAuthUser],
   )
 
   const changePassword = useCallback(async (currentPassword: string, newPassword: string, code?: string) => {
@@ -235,10 +260,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const deleteAccount = useCallback(async (password: string) => {
+    // Like logout: the backend must forget this device's Expo token, otherwise
+    // the push_tokens row outlives the deleted user and fan-out keeps targeting it.
+    try {
+      await unregisterCurrentPushToken()
+    } catch {}
     await api.delete('/auth/account', { data: { password } })
     await clearAuthTokens()
-    setUser(null)
-  }, [])
+    setAuthUser(null)
+  }, [setAuthUser])
 
   const listSessions = useCallback(async () => {
     const res = await api.get('/auth/sessions')

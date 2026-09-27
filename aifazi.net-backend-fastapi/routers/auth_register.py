@@ -189,14 +189,27 @@ async def register(body: RegisterBody):
         "created_at": datetime.now(timezone.utc).isoformat(),
     }).execute()
 
-    # Stash a verification token on the users row (mirrors monolith register).
-    # NOTE: the verification email itself is sent by the mail-queue flow.
+    # Stash a verification token on the users row (mirrors monolith register)
+    # and queue the activation email right away (best-effort, never blocks).
     if email and "@" in email:
         token = secrets.token_urlsafe(32)
         supabase.table("users").update({
             "verify_token": token,
             "verify_expires": (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
         }).eq("username", username).execute()
+        verify_url = f"{SITE_URL}/forum/verify?token={token}"
+        try:
+            subject, html = render_template("account_activation", {
+                "site_name": "aifazi.net",
+                "username": username,
+                "activation_link": verify_url,
+                "expires_in": "24 hours",
+            })
+            await queue_email(email, subject or "Verify your email - aifazi.net",
+                              html or _verify_email_html(verify_url),
+                              f"Verify your aifazi.net account: {verify_url}", "account_activation")
+        except Exception:
+            log.warning("register activation email failed for %s", username, exc_info=True)
 
     return {"ok": True, "message": "Account created. Please check your email for verification."}
 
