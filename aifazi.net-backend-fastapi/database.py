@@ -137,3 +137,33 @@ def _escape_ilike(value: str) -> str:
     wildcards.
     """
     return (value or "").replace("%", "\\%").replace("_", "\\_")
+
+
+# PostgREST `or=(...)` exact-match helper. Interpolating raw user input into
+# `.or_(f"col.eq.{value}")` lets a caller break out with `,`, `(`, `)`, `"`,
+# `\` or whitespace and inject arbitrary predicates. Exact-match identifiers
+# (FiveM licenses, barcodes, SKUs, template ids) only need `[A-Za-z0-9:_-]`,
+# so anything else is rejected with 400 instead of being interpolated.
+_OR_IN_VALUE_RE = re.compile(r"^[A-Za-z0-9:_-]{1,64}$")
+_OR_IN_COL_RE = re.compile(r"^[A-Za-z0-9_]{1,64}$")
+
+
+def safe_or_in(col: str, values: list[str] | tuple[str, ...]) -> str:
+    """Build a PostgREST `or_` clause of `col.eq.value` predicates.
+
+    Every value must match `^[A-Za-z0-9:_-]{1,64}$` (and the column name
+    `^[A-Za-z0-9_]{1,64}$`); anything else raises HTTPException(400) so a
+    malicious value can never break out of its predicate. The fastapi import
+    is lazy so database.py stays import-cycle free.
+    """
+    from fastapi import HTTPException as _HTTPException
+
+    if not _OR_IN_COL_RE.match(col or ""):
+        raise _HTTPException(400, "Invalid filter column")
+    vals = list(values or [])
+    if not vals:
+        raise _HTTPException(400, "No filter values")
+    for v in vals:
+        if not _OR_IN_VALUE_RE.match(str(v or "")):
+            raise _HTTPException(400, "Invalid identifier")
+    return ",".join(f"{col}.eq.{v}" for v in vals)

@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, FlatList, RefreshControl, TextInput } fro
 import { useRouter, useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Screen } from '@/src/components/Screen'
-import { Card, Title, Muted, CategoryPills, EmptyState } from '@/src/components/ui'
+import { Card, Title, Muted, CategoryPills, EmptyState, FLAT_LIST_PRESET } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
 import { useAuth } from '@/src/lib/auth'
@@ -168,6 +168,7 @@ export default function ForumScreen() {
       <FlatList
         data={threads}
         keyExtractor={(t) => t.id || t._id}
+        {...FLAT_LIST_PRESET}
         showsVerticalScrollIndicator={false}
         onEndReached={loadMore}
         onEndReachedThreshold={0.4}

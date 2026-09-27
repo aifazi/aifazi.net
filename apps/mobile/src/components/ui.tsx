@@ -415,6 +415,19 @@ export function Toggle({
 }
 
 /**
+ * Shared FlatList windowing preset for feed-style lists (store, blog, forum,
+ * projects, notifications). Rows are variable height, so no
+ * getItemLayout — windowSize + removeClippedSubviews alone trim the render
+ * window.
+ */
+export const FLAT_LIST_PRESET = {
+  windowSize: 10,
+  initialNumToRender: 15,
+  maxToRenderPerBatch: 10,
+  removeClippedSubviews: true,
+} as const
+
+/**
  * Single tappable list row ("row"): left icon + title/subtitle, optional
  * chevron. Consolidates the per-screen list-row markup used across the app.
  */

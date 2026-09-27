@@ -47,7 +47,7 @@ function AdminPortalLink({ compact = false }) {
       ...M, fontSize: compact ? 8 : 10, letterSpacing: 2, fontWeight: 800,
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
       padding: compact ? '8px 12px' : '10px 16px',
-      color: '#000', background: 'var(--green)', border: '1px solid var(--green)',
+      color: 'var(--comp-btn-text, #000)', background: 'var(--green)', border: '1px solid var(--green)',
       borderRadius: 10, textDecoration: 'none', whiteSpace: 'nowrap',
       boxShadow: '0 0 18px color-mix(in srgb, var(--green) 22%, transparent)',
       transition: 'box-shadow 0.2s, transform 0.2s',
