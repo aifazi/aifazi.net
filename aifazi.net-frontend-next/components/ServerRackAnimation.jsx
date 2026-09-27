@@ -229,9 +229,11 @@ const GLOBE_CONNECTIONS = [
 ]
 
 // Progressive-enhancement gate for CSS Anchor Positioning labels.
+// NOTE: single-arg CSS.supports() requires a full supports-condition —
+// the declaration must be wrapped in parens, otherwise it always fails.
 function supportsCssAnchors() {
   if (typeof CSS === 'undefined' || !CSS.supports) return false
-  return CSS.supports('anchor-name: --cobe-probe') || CSS.supports('position-anchor: --cobe-probe')
+  return CSS.supports('(anchor-name: --cobe-probe)') || CSS.supports('(position-anchor: --cobe-probe)')
 }
 
 // Center a lat/lng in COBE's view (phi = longitude spin, theta = latitude tilt).
@@ -510,6 +512,36 @@ function VisitorHud({ visitor }) {
             opacity: var(--cobe-visible-visitor, 1);
             transition: opacity 0.3s ease;
             max-width: min(320px, calc(100% - 28px)) !important;
+          }
+          /* Pointer stem — the shell is horizontally centered on the marker
+             with its bottom edge exactly 10px above the anchor, so a centered
+             10px stem + target dot lands precisely on the visitor marker. */
+          .globe-visitor-shell[data-anchored='true'] .globe-visitor-card {
+            position: relative;
+          }
+          .globe-visitor-shell[data-anchored='true'] .globe-visitor-card::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            width: 1px;
+            height: 10px;
+            translate: -50% 0;
+            background: linear-gradient(to bottom, var(--cyan), color-mix(in srgb, var(--cyan) 30%, transparent));
+            pointer-events: none;
+          }
+          .globe-visitor-shell[data-anchored='true'] .globe-visitor-card::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: calc(100% + 8px);
+            width: 5px;
+            height: 5px;
+            translate: -50% -50%;
+            border-radius: 50%;
+            background: var(--orange, #ff6b35);
+            box-shadow: 0 0 7px var(--orange, #ff6b35);
+            pointer-events: none;
           }
         }
         @media (prefers-reduced-motion: reduce) {
