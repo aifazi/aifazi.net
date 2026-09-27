@@ -53,10 +53,9 @@ export interface PickOptions {
   maxBytes?: number
 }
 
-// Client-side caps mirror the backend limits (routers/upload.py chat 10 MB,
+// Client-side caps mirror the backend limits (routers/upload.py 10 MB,
 // routers/auth.py avatar 5 MB, routers/documents.py 20 MB) so oversize files
 // fail fast with a readable message instead of a 413 after upload.
-export const CHAT_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
 export const AVATAR_MAX_BYTES = 5 * 1024 * 1024
 export const DOCUMENT_MAX_BYTES = 20 * 1024 * 1024
 

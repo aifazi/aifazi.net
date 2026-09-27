@@ -416,9 +416,9 @@ export function Toggle({
 
 /**
  * Shared FlatList windowing preset for feed-style lists (store, blog, forum,
- * projects, notifications, dm-thread). Rows are variable height, so no
+ * projects, notifications). Rows are variable height, so no
  * getItemLayout — windowSize + removeClippedSubviews alone trim the render
- * window (same pattern as the chat-room list).
+ * window.
  */
 export const FLAT_LIST_PRESET = {
   windowSize: 10,

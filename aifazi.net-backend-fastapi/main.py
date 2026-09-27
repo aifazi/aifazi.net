@@ -411,7 +411,6 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/file-tools/",          120,  60),
     ("/seo-proxy",            10,   60),
     ("/helpdesk/tickets",     10,   60),
-    ("/chat/link-preview",    10,   60),
     ("/forms",                10,   60),
     ("/forms/",               10,   60),
     ("/store/checkout",       5,   60),
@@ -422,7 +421,6 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/monitor/ping",         10,   60),
     ("/monitor/run",          5,    60),
     ("/store/track/",         10,   60),
-    ("/chat/admin/",          20,   60),
     ("/actions/abuse-ban",     5,   60),
     ("/actions/abuse-unban",   5,   60),
 ]
@@ -700,11 +698,6 @@ from routers import (
     banners,
     blog,
     cdn_settings,
-    chat,
-    chat_admin,
-    chat_ai,
-    chat_dm,
-    chat_url_preview,
     contact,
     content,
     content_aggregator,
@@ -767,11 +760,6 @@ app.include_router(notifications.router,  prefix="/api/forum/notifications")
 app.include_router(push.router,           prefix="/api/push")
 app.include_router(forum.router,          prefix="/api/forum")
 
-app.include_router(chat_ai.router,        prefix="/api/chat/ai")
-app.include_router(chat.router,           prefix="/api/chat")
-app.include_router(chat_dm.router,        prefix="/api/chat")
-app.include_router(chat_admin.router,     prefix="/api/chat")
-app.include_router(chat_url_preview.router, prefix="/api/chat")
 app.include_router(audit.router,          prefix="/api/admin/audit")
 app.include_router(stats.router,          prefix="/api/admin/stats")
 app.include_router(stats.router,          prefix="/api/stats")
@@ -858,5 +846,4 @@ async def global_exception_handler(request: Request, exc: Exception):
     # Never leak internal details to clients — generic message in all envs.
     return JSONResponse(status_code=500, content={"error": "An unexpected error occurred."})
 
-# Socket.IO removed — chat is now handled by Supabase Realtime.
 # Entry point: uvicorn main:app --host 0.0.0.0 --port 8000

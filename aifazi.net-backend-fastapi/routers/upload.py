@@ -17,7 +17,7 @@ import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from database import supabase
-from dependencies import get_current_user, require_staff
+from dependencies import require_staff
 from routers.cdn_upload import _delete_r2, _upload_r2
 from routers.cdn_upload import get_cdn_config as _get_cdn_config
 
@@ -124,15 +124,6 @@ def scan_for_malware(content: bytes, filename: str) -> None:
     except Exception as exc:
         log.warning("Malware scan error for %s: %s", filename, exc)
         _scan_unavailable(filename, f"unexpected error: {exc}")
-
-# Member-facing chat/media uploads are more conservative than the staff library:
-# images + short-form media only, capped at 10 MB.
-CHAT_UPLOAD_MAX_BYTES = 10 * 1024 * 1024
-CHAT_ALLOWED_MIMETYPES = {
-    "image/jpeg", "image/png", "image/gif", "image/webp",
-    "video/mp4", "video/webm",
-    "audio/mpeg", "audio/ogg", "audio/wav",
-}
 
 ALLOWED_MIMETYPES = {
     "image/jpeg", "image/png", "image/gif", "image/webp",
@@ -515,7 +506,7 @@ async def _upload_supabase(content: bytes, filename: str, mimetype: str) -> tupl
 # ── routes ────────────────────────────────────────────────────────────────────
 
 @router.post("")
-@router.post("/single")   # alias — chat frontend calls /upload/single
+@router.post("/single")   # alias
 async def upload_file(
     file: UploadFile = File(...),
     _: dict = Depends(require_staff),
@@ -607,74 +598,6 @@ async def upload_multiple(
             "provider": provider, "id": media.get("id"),
         })
     return results
-
-
-@router.post("/chat")
-async def upload_chat_media(
-    file: UploadFile = File(...),
-    room_id: str = "",
-    thread_id: str = "",
-    user: dict = Depends(get_current_user),
-):
-    """Member-facing media upload for chat rooms and DMs.
-
-    Unlike the staff library upload, this only requires that the caller can
-    actually post in the target conversation:
-      * room_id    → must pass _ensure_room_access + have `send_messages`
-      * thread_id  → must be a participant of that DM thread
-    The file is validated (magic bytes + allow-list) and routed to the same
-    active CDN provider; the media row is tagged with the conversation for
-    later cleanup/audit.
-    """
-    if not room_id and not thread_id:
-        raise HTTPException(400, "room_id or thread_id required")
-
-    if room_id:
-        from routers.chat import _ensure_room_access, _require_room_perm
-        room = _ensure_room_access(room_id, user)
-        _require_room_perm(room, user, "send_messages")
-    else:
-        from routers.chat_dm import _get_thread
-        _get_thread(thread_id, user)
-
-    content = await file.read()
-    if len(content) > CHAT_UPLOAD_MAX_BYTES:
-        raise HTTPException(413, f"Chat media limit is {CHAT_UPLOAD_MAX_BYTES // 1024 // 1024} MB")
-
-    mimetype = file.content_type or mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
-    sniffed = _sniff_mimetype(content, mimetype)
-    if sniffed not in CHAT_ALLOWED_MIMETYPES:
-        raise HTTPException(415, f"File type '{sniffed}' is not allowed in chat")
-    mimetype = sniffed
-
-    # Malware scan (fail-open)
-    scan_for_malware(content, file.filename or "chat")
-
-    filename = _safe_storage_filename(file.filename or f"chat_{uuid.uuid4()}")
-
-    cfg = _get_cdn_config()
-    public_url, storage_path, provider = await _upload_to_provider(content, filename, mimetype, cfg)
-
-    media = _save_media(
-        filename=filename,
-        original_name=file.filename or filename,
-        mimetype=mimetype,
-        size=len(content),
-        url=public_url,
-        storage_path=storage_path,
-        provider=provider,
-    )
-
-    return {
-        "url": public_url,
-        "filename": filename,
-        "size": len(content),
-        "mimetype": mimetype,
-        "provider": provider,
-        "id": media.get("id"),
-        "room_id": room_id,
-        "thread_id": thread_id,
-    }
 
 
 @router.delete("/media/{media_id}")   # alias: frontend calls DELETE /upload/media/{id}

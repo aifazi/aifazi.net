@@ -13,6 +13,7 @@ import { useOverlay } from '@/src/components/overlay'
 import { ThemeToggle } from '@/src/components/ThemeToggle'
 import { fmtDate, fmtWhen } from './helpers'
 import { AppUpdatesCard } from './AppUpdates'
+import { openTalk } from '@/src/lib/url'
 
 export function OverviewTab({ goEdit }: { goEdit: () => void }) {
   const { theme, setTheme, source, isLocked } = useTheme()
@@ -120,7 +121,7 @@ export function OverviewTab({ goEdit }: { goEdit: () => void }) {
         <View style={{ marginTop: SPACE.xxl, gap: SPACE.lg }}>
           <Btn title="VPN" variant="ghost" onPress={() => router.push('/vpn' as Href)} />
           <Btn title="Calendar" variant="ghost" onPress={() => router.push('/calendar' as Href)} />
-          <Btn title="My chat" variant="ghost" onPress={() => router.push('/chat')} />
+          <Btn title="Talk" variant="ghost" onPress={() => { void openTalk() }} />
           <Btn title="Log out" variant="danger" onPress={logOut} />
         </View>
       </Card>
