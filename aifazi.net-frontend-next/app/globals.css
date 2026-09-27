@@ -465,6 +465,12 @@ input.terminal-command-input:focus-visible {
 
 .globe-network-shell {
   isolation:isolate;
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.globe-network-shell canvas {
+  max-width:100%;
 }
 .globe-network-title {
   text-shadow:0 0 10px rgba(0,212,255,0.22);
@@ -3980,7 +3986,8 @@ html, body {
 
 .hero-rack-panel {
   flex: 1 1 min(420px, 100%) !important;
-  min-width: 0 !important;
+  /* Stack instead of squeezing: never shrink the globe column below 320px */
+  min-width: min(320px, 100%) !important;
   min-height: clamp(380px, 58vh, 720px) !important;
   box-sizing: border-box;
 }
