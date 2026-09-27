@@ -6,6 +6,7 @@ import type { Href } from 'expo-router'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
 import { useReducedMotion } from '@/src/lib/motion'
+import { openInApp, TALK_URL } from '@/src/lib/url'
 import { Icon } from '@/src/components/icon'
 import type { IconName } from '@/src/components/icon'
 import { api } from '@/src/lib/api'
@@ -14,7 +15,8 @@ interface Command {
   label: string
   hint: string
   icon: IconName
-  href: Href
+  href?: Href
+  external?: string
 }
 
 interface SearchResult {
@@ -29,7 +31,7 @@ const COMMANDS: Command[] = [
   { label: 'Store', hint: 'Browse the shop', icon: 'store', href: '/store' },
   { label: 'Forum', hint: 'Threads & discussions', icon: 'forum', href: '/forum' },
   { label: 'Blog', hint: 'Latest posts', icon: 'blog', href: '/blog' },
-  { label: 'Chat', hint: 'Rooms & DMs', icon: 'chat', href: '/chat' },
+  { label: 'Talk', hint: 'Chat & calls in Nextcloud Talk', icon: 'video', external: TALK_URL },
   { label: 'Profile', hint: 'Account, orders, tickets', icon: 'profile', href: '/profile' },
   { label: 'Projects', hint: 'Our projects', icon: 'rocket', href: '/projects' },
   { label: 'Status', hint: 'Server & service status', icon: 'status', href: '/status' as Href },
@@ -100,20 +102,25 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
 
   const select = (cmd: Command) => {
     doClose()
-    setTimeout(() => router.push(cmd.href), reduced ? 0 : 30)
+    if (cmd.external) {
+      setTimeout(() => { void openInApp(cmd.external) }, reduced ? 0 : 30)
+      return
+    }
+    if (!cmd.href) return
+    setTimeout(() => router.push(cmd.href as Href), reduced ? 0 : 30)
   }
 
   const filtered = query.trim()
     ? COMMANDS.filter((cmd) => `${cmd.label} ${cmd.hint}`.toLowerCase().includes(query.trim().toLowerCase()))
     : COMMANDS
 
-  interface PaletteItem { key: string; label: string; hint: string; icon: IconName; href: Href; section: string }
+  interface PaletteItem { key: string; label: string; hint: string; icon: IconName; href?: Href; external?: string; section: string }
   const searchItems: PaletteItem[] = results.map(r => ({
     key: `search-${r.id}`, label: r.title, hint: r.meta || '',
     icon: r.type === 'product' ? 'store' : r.type === 'post' ? 'blog' : 'forum',
     href: r.url as Href, section: r.type === 'product' ? '🛒 Products' : r.type === 'post' ? '📝 Blog' : '💬 Forum',
   }))
-  const commandItems: PaletteItem[] = filtered.map(c => ({ key: c.href as string, ...c, section: 'Navigate' }))
+  const commandItems: PaletteItem[] = filtered.map(c => ({ key: (c.href ?? c.external ?? c.label) as string, ...c, section: 'Navigate' }))
   const allItems = [...searchItems, ...commandItems]
 
   return (

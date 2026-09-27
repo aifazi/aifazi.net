@@ -9,9 +9,10 @@ import { api } from './api'
  *
  * The app's notifications are styled like the in-app cyber theme: the default
  * Android channel uses the brand accent (#00ff88) as the light color, and the
- * chat fan-out sends a title of "New message in <room>" with the sender + a
- * snippet as the body (same copy the in-app notifications list uses). Tapping a
- * push deep-links into the native chat-room via the `room` id carried in data.
+ * backend fan-out sends a title with the sender + a snippet as the body (same
+ * copy the in-app notifications list uses). Tapping a push deep-links via the
+ * ids carried in data (see routePushData in app/_layout.tsx); chat/call
+ * payloads are ignored since in-house chat moved to Nextcloud Talk.
  */
 
 let channelConfigured = false
@@ -57,7 +58,7 @@ export async function configurePushNotifications() {
 let currentPush: { userId: string; token: string } | null = null
 
 /** Acquire the Expo push token for this install and register it with the
- * backend so the chat fan-out can reach this device.
+ * backend so notifications can reach this device.
  *
  * Ordering matters: the EAS projectId guard runs BEFORE any permission
  * request, so a dev/Expo-Go build without EAS config logs + skips without

@@ -2,8 +2,19 @@ import { Linking } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
 
 /**
+ * Nextcloud Talk — the replacement for the removed in-house chat/calls.
+ * Opened in an in-app browser tab via openTalk() so the user stays in context.
+ */
+export const TALK_URL = 'https://cloud.aifazi.net/apps/spreed/'
+
+/** Open Nextcloud Talk in an in-app browser tab. Returns true when opened. */
+export async function openTalk(): Promise<boolean> {
+  return openInApp(TALK_URL)
+}
+
+/**
  * Allow only http(s) URLs for Linking.openURL. Blocks file://, tel:, javascript:,
- * custom schemes, and scheme-less strings so server/chat-supplied URLs can never
+ * custom schemes, and scheme-less strings so server-supplied URLs can never
  * trigger non-web handlers or dangerous protocols.
  */
 export function isSafeHttpUrl(url: string | undefined | null): boolean {

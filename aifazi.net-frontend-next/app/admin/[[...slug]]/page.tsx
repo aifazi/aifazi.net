@@ -64,8 +64,9 @@ function escapeJsonForInline(value: unknown): string {
 export default async function AdminPage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { valid, user } = await verifyAdminSession()
 
-  // 'chat' included: chat staff land on the Live Chat section via the
-  // dashboard's first-permitted redirect instead of a login loop.
+  // 'chat' included: chat staff land on the dashboard's first-permitted
+  // section via the redirect instead of a login loop (in-house chat UI
+  // was removed; chat + calls live in Nextcloud Talk).
   const allowedRoles = ['admin', 'moderator', 'editor', 'chat']
   const isStaff = valid && user && allowedRoles.includes(user.role)
 

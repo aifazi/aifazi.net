@@ -325,7 +325,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
         saveTokens({ token })
         window.dispatchEvent(new Event('auth-change'))
         clearFailures(identifier)
-        router.push(nextPath || (role === 'chat' ? '/chat' : ADMIN_ROLES.includes(role) ? '/admin' : '/profile'))
+        router.push(nextPath || (ADMIN_ROLES.includes(role) ? '/admin' : '/profile'))
       } else {
         setError('Login failed — no token received.')
         shake?.(formRef.current)
@@ -392,7 +392,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
         saveTokens({ token })
         window.dispatchEvent(new Event('auth-change'))
         clearFailures(identifier)
-        router.push(nextPath || (role === 'chat' ? '/chat' : ADMIN_ROLES.includes(role) ? '/admin' : '/profile'))
+        router.push(nextPath || (ADMIN_ROLES.includes(role) ? '/admin' : '/profile'))
       } else {
         setError('LLDAP login failed — no token received.')
         shake?.(formRef.current)
