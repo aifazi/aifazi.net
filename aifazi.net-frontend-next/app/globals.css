@@ -4216,3 +4216,30 @@ body.editing-mode .sk-cat-toolbar:hover,
 body.editing-mode .sk-item-toolbar:hover {
   opacity: 1 !important;
 }
+
+/* ── UI-adjustment pass: page containment, sane word breaks, explicit
+   newsletter grid (replaces competing auto-fit/1fr overrides) ── */
+html {
+  overflow-x: clip;
+}
+body {
+  /* overflow-wrap breaks only unbreakable strings (URLs, hashes);
+     the old word-break: break-word split normal words mid-word. */
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+.newsletter-grid {
+  grid-template-columns: 1fr 1fr !important;
+}
+.newsletter-terminal {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+@media (max-width: 900px) {
+  .newsletter-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .newsletter-section {
+    padding: 80px 20px !important;
+  }
+}

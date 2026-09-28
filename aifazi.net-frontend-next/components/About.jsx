@@ -109,7 +109,7 @@ export default function About() {
             { key: 'about.p2', def: "From IT policy and Zero Trust for a vendor-hosted ERP, to aifazi.net (forum, chat, blog, admin, theming) and a Play Store mobile app — I own projects end-to-end." },
             { key: 'about.p3', def: "I also build commercial FiveM scripts (QB-Core, QBX, ESX) and keep a self-hosted lab for live testing. Open to remote freelance: web/app development, IT consulting, network support, and custom scripting." },
           ].map(({ key, def }, i) => (
-            <p key={key} style={{ color: 'var(--muted)', lineHeight: 1.8, marginBottom: 20, fontSize: i === 0 ? 19 : 17, opacity: i === 0 ? 1 : 0.85 }}>
+            <p key={key} style={{ color: i === 0 ? 'var(--text)' : 'color-mix(in srgb, var(--text) 80%, var(--muted))', lineHeight: 1.8, marginBottom: 20, fontSize: i === 0 ? 19 : 17 }}>
               <EditableText contentKey={key} defaultValue={def} multiline />
             </p>
           ))}

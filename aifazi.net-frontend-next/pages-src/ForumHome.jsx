@@ -130,7 +130,7 @@ export default function ForumHome() {
                       }}
                     >
                       <span style={{ fontSize: 20, flexShrink: 0 }}>{cat.icon || '💬'}</span>
-                      <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</span>
+                      <span title={cat.name} style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{cat.name}</span>
                       {cat.locked && <span style={{ fontSize: 11, opacity: 0.5 }}>🔒</span>}
                       <span style={{
                         fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)',
@@ -170,7 +170,7 @@ export default function ForumHome() {
                           fontWeight: 700, width: 18, textAlign: 'center', flexShrink: 0,
                         }}>#{i + 1}</span>
                         <Avatar user={{ username: name, avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=00ff88,00d4ff&fontSize=36` }} size={28} />
-                        <span style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                        <span title={name} style={{ flex: 1, minWidth: 0, fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>{score} pts</span>
                       </div>
                     ))}
