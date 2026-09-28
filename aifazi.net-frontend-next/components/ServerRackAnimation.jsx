@@ -1138,7 +1138,7 @@ function GlobeMode({ visibleRef }) {
     sleepingRef.current = false
     const frame = (now) => {
       frameRef.current = frame
-      if (docHiddenRef.current || offscreenRef.current || (visibleRef && visibleRef.current === false)) {
+      if (docHiddenRef.current || offscreenRef.current || glLostRef.current || (visibleRef && visibleRef.current === false)) {
         sleepingRef.current = true
         rafRef.current = 0
         return
@@ -1513,6 +1513,23 @@ function GlobeMode({ visibleRef }) {
       window.removeEventListener('touchend',   onUp)
       canvas.removeEventListener('wheel',      onWheel)
       window.removeEventListener('keydown',    onKey)
+    }
+  }, [])
+
+  // ── WebGL context loss — park the loop, rebuild on restore ──
+  // A lost context makes every drawArrays fail (console spam); preventDefault
+  // allows restoration, then the globe is recreated on the same canvas.
+  const glLostRef = useRef(false)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const onLost = (e) => { e.preventDefault(); glLostRef.current = true }
+    const onRestored = () => { glLostRef.current = false; setThemeKey(k => k + 1) }
+    canvas.addEventListener('webglcontextlost', onLost, false)
+    canvas.addEventListener('webglcontextrestored', onRestored, false)
+    return () => {
+      canvas.removeEventListener('webglcontextlost', onLost, false)
+      canvas.removeEventListener('webglcontextrestored', onRestored, false)
     }
   }, [])
 

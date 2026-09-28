@@ -1,7 +1,12 @@
 // Minimal offline cache — same-origin GET only
 // Bump CACHE on deploy to invalidate stale chunks
-const CACHE = 'aifazi-v4'
+const CACHE = 'aifazi-v5'
 const OFFLINE_URLS = ['/', '/blog', '/forum']
+
+// Every respondWith path MUST resolve a Response — resolving undefined throws
+// "Failed to convert value to 'Response'" and surfaces as net::ERR_FAILED.
+const offlineFallback = () =>
+  caches.match('/').then((cached) => cached || Response.error());
 
 self.addEventListener('install', (e) => {
   // Never fail install because one URL is unavailable (403 / redirect).
@@ -28,7 +33,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url)
   if (url.origin !== location.origin) return
   if (url.pathname.startsWith('/api/')) {
-    e.respondWith(fetch(req).catch(() => caches.match(req)))
+    // API is network-only; on failure reject cleanly (never undefined).
+    e.respondWith(fetch(req).then((res) => res).catch(() => Response.error()))
     return
   }
   if (req.mode === 'navigate' || req.destination === 'document') {
@@ -36,7 +42,7 @@ self.addEventListener('fetch', (e) => {
       const clone = res.clone()
       caches.open(CACHE).then((c) => c.put(req, clone))
       return res
-    }).catch(() => caches.match(req).then((cached) => cached || caches.match('/'))))
+    }).catch(() => caches.match(req).then((cached) => cached || offlineFallback())))
     return
   }
   e.respondWith(
@@ -46,6 +52,6 @@ self.addEventListener('fetch', (e) => {
         caches.open(CACHE).then((c) => c.put(req, clone))
       }
       return res
-    }).catch(() => caches.match('/')))
+    }).catch(() => offlineFallback()))
   )
 })

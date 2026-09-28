@@ -89,8 +89,22 @@ export function ForumProvider({ children }) {
   // legacy localStorage tokens are removed. Pre-migration Bearer-only sessions
   // fall back to the stored token and are migrated to cookies via
   // /auth/session-migrate.
+  // Quiet-guest optimization: once a cookieless probe 401s, remember it for
+  // this tab (sessionStorage) so repeat mounts don't re-fire /auth/me and spam
+  // the console for logged-out visitors. Any auth signal clears the flag.
   const hydrate = useCallback(async () => {
     const token = getStoredToken()
+
+    if (!token && typeof window !== 'undefined' && window.sessionStorage?.getItem('aifazi:no-session') === '1') {
+      // Defer setState per react-compiler rules (no sync setState in effect path).
+      setTimeout(() => {
+        clearCachedUser()
+        setUser(null)
+        setLoading(false)
+        setProfileLoading(false)
+      }, 0)
+      return
+    }
 
     const cached = readCachedUser()
     const optimistic = cached || (token ? userFromToken(token) : null)
@@ -152,11 +166,17 @@ export function ForumProvider({ children }) {
           if (status === 401 || status === 403 || !optimistic) {
             clearCachedUser()
             setUser(null)
+            // Dead token: the server rejected it, so drop it — otherwise every
+            // mount re-probes with the same invalid token (401 console spam).
+            // With no token left, remember the logged-out state for this tab.
+            clearAuthTokens({ revoke: false })
+            try { window.sessionStorage?.setItem('aifazi:no-session', '1') } catch {}
           }
         }
       } else {
         clearCachedUser()
         setUser(null)
+        try { window.sessionStorage?.setItem('aifazi:no-session', '1') } catch {}
       }
 
       setLoading(false)
@@ -170,7 +190,10 @@ export function ForumProvider({ children }) {
   useEffect(() => { hydrate() }, [hydrate])
 
   useEffect(() => {
-    const onAuthChange = () => hydrate()
+    const onAuthChange = () => {
+      try { window.sessionStorage?.removeItem('aifazi:no-session') } catch {}
+      hydrate()
+    }
     window.addEventListener('auth-change', onAuthChange)
     window.addEventListener('storage', onAuthChange)
     window.addEventListener('auth:expired', onAuthChange)
@@ -186,6 +209,7 @@ export function ForumProvider({ children }) {
     setAccessToken(token)
     clearLegacyTokens()
     clearCachedUser()
+    try { window.sessionStorage?.removeItem('aifazi:no-session') } catch {}
     setUser(userData || userFromToken(token))
     setLoading(false)
     window.dispatchEvent(new Event('auth-change'))
@@ -202,6 +226,7 @@ export function ForumProvider({ children }) {
     // revoke:false — the backend logout above already nulled the server-side
     // refresh token; don't fire a second /auth/logout.
     clearAuthTokens({ revoke: false })
+    try { window.sessionStorage?.setItem('aifazi:no-session', '1') } catch {}
     window.dispatchEvent(new Event('auth-change'))
     setUser(null)
     setLoading(false)
