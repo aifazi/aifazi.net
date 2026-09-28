@@ -4235,11 +4235,22 @@ body {
   min-width: 0 !important;
   max-width: 100% !important;
 }
+/* Wide breathing room between the two columns of the paired sections. */
+.about-grid,
+.newsletter-grid,
+.contact-grid {
+  gap: clamp(48px, 6vw, 110px) !important;
+}
 @media (max-width: 900px) {
   .newsletter-grid {
     grid-template-columns: 1fr !important;
   }
   .newsletter-section {
     padding: 80px 20px !important;
+  }
+  .about-grid,
+  .newsletter-grid,
+  .contact-grid {
+    gap: 40px !important;
   }
 }
