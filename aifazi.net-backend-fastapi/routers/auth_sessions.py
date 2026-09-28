@@ -16,14 +16,18 @@ router = APIRouter()
 log = logging.getLogger("auth.sessions")
 
 
+# P1-6 — explicit safe columns only (never select(*): the table may gain
+# token/secret columns later that must not leak to the client).
+_SESSION_COLUMNS = "id,username,user_id,role,ip,user_agent,last_active"
+
+
 @router.get("/sessions")
 async def list_sessions(request: Request, user: dict = Depends(get_current_user)):
     """Return all active sessions for the current user."""
     username = user.get("username")
-    token_str = (request.headers.get("Authorization") or "").replace("Bearer ", "")
     try:
         rows = supabase.table("admin_sessions") \
-            .select("*") \
+            .select(_SESSION_COLUMNS) \
             .eq("username", username) \
             .order("last_active", desc=True) \
             .execute()
@@ -34,7 +38,8 @@ async def list_sessions(request: Request, user: dict = Depends(get_current_user)
             s["current"] = (s.get("ip") == client_ip and s.get("user_agent") == ua)
         return {"sessions": sessions, "total": len(sessions)}
     except Exception as exc:
-        return {"sessions": [], "total": 0, "error": str(exc)}
+        log.error("list_sessions failed: %s", exc)
+        return {"sessions": [], "total": 0, "error": "Could not load sessions"}
 
 
 @router.post("/sessions/heartbeat")
@@ -83,7 +88,8 @@ async def session_heartbeat(request: Request, user: dict = Depends(get_current_u
             "others": [{"ip": s["ip"], "last_active": s["last_active"]} for s in active_others],
         }
     except Exception as exc:
-        return {"ok": False, "error": str(exc)}
+        log.error("session_heartbeat failed: %s", exc)
+        return {"ok": False, "error": "Could not update session"}
 
 
 @router.delete("/sessions/{session_id}")

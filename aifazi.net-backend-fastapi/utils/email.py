@@ -212,7 +212,7 @@ def _email_shell(palette: dict, title: str, body_html: str,
 _VAR_ALIASES = {
     "name":       ["username", "name", "recipient_name"],
     "link":       ["activation_link", "reset_link", "verify_url", "reset_url",
-                   "chat_url", "track_url", "login_url", "status_url", "post_url"],
+                   "track_url", "login_url", "status_url", "post_url"],
     "verify_url": ["activation_link", "verify_url", "reset_link", "reset_url"],
     "reset_url":  ["reset_link", "reset_url", "activation_link"],
     "message":    ["message", "reply_message", "description", "body"],
@@ -316,20 +316,6 @@ def _default_template(purpose: str, v: dict, p: dict) -> tuple[str, str]:
                 f'<blockquote style="margin:0 0 16px;padding:14px 18px;background:{p["bg3"]};border-left:3px solid {p["primary"]};color:{p["text"]};font-size:13px;line-height:1.7;">{_esc(v.get("reply_message", ""))}</blockquote>'
                 f'<p style="color:{p["muted"]};font-size:13px;">— The {v.get("site_name", "aifazi.net")} team</p>')
         return subject, _email_shell(p, "A reply from our team", body, icon="💬")
-
-    if purpose == "chat_message":
-        subject = f"New message in {_esc(v.get('room_name', 'chat'))} — {v.get('site_name', 'aifazi.net')}"
-        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'<strong>{_esc(v.get("sender_name", ""))}</strong> sent a message in <strong>{_esc(v.get("room_name", ""))}</strong>:</p>'
-                f'<blockquote style="margin:0 0 16px;padding:14px 18px;background:{p["bg3"]};border-left:3px solid {p["primary"]};color:{p["text"]};font-size:13px;line-height:1.7;">{_esc(v.get("message_preview", ""))}</blockquote>')
-        return subject, _email_shell(p, "New chat message", body, "OPEN CHAT", v.get("chat_url") or "#", icon="💬")
-
-    if purpose == "chat_invite":
-        subject = f"You've been invited to {_esc(v.get('room_name', 'a room'))} — {v.get('site_name', 'aifazi.net')}"
-        body = (f'<p style="color:{p["text"]};font-size:14px;line-height:1.75;margin:0 0 16px;">'
-                f'Hi {_esc(v.get("username") or "there")}, <strong>{_esc(v.get("sender_name", ""))}</strong> invited you to join '
-                f'<strong>{_esc(v.get("room_name", ""))}</strong>.</p>')
-        return subject, _email_shell(p, "You're invited", body, "JOIN THE CHAT", v.get("chat_url") or "#", icon="➕")
 
     if purpose == "mail_test":
         subject = f"Test email — {v.get('site_name', 'aifazi.net')}"

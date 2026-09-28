@@ -34,7 +34,7 @@ def _ip(request: Request | None) -> str:
 # (users, staff_users, auth_sessions, ip_bans, permission tables) are DENIED
 # here — anything outside this allowlist requires require_admin.
 ALLOWED_COLLECTIONS = frozenset({
-    "posts", "threads", "replies", "contacts", "messages", "media", "newsletter",
+    "posts", "threads", "replies", "contacts", "media", "newsletter",
 })
 
 COLL_TABLE = {
@@ -43,7 +43,6 @@ COLL_TABLE = {
     "threads":    "forum_threads",
     "replies":    "forum_replies",
     "contacts":   "contacts",
-    "messages":   "chat_messages",
     "media":      "media",
     # NOTE 2026-09: the legacy coll="staff" alias for the users table was
     # removed — read-only grep of aifazi.net-frontend-next showed no usage of
@@ -154,13 +153,6 @@ COLL_FIELD_ALLOWLISTS = {
     "contacts": frozenset({
         "id", "_id",
         "name", "email", "subject", "message", "replied", "replied_at",
-        "created_at", "createdat", "updated_at", "updatedat",
-    }),
-    "messages": frozenset({
-        "id", "_id",
-        "room_id", "sender", "role", "type", "content",
-        "file_name", "file_size", "duration", "reply_to",
-        "edited", "edited_at", "reactions",
         "created_at", "createdat", "updated_at", "updatedat",
     }),
     "media": frozenset({

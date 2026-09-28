@@ -11,7 +11,7 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 
 from database import safe_search_term, supabase
 from dependencies import require_admin, require_staff
@@ -140,8 +140,8 @@ async def cron_cleanup(request: Request):
 @router.get("/players/records")
 async def list_player_records(
     q: str = "",
-    limit: int = 50,
-    offset: int = 0,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0, le=10000),
     _: dict = Depends(require_staff),
 ):
     query = supabase.table("player_records").select("*", count="exact")
@@ -171,8 +171,8 @@ async def get_player_record(license_key: str, _: dict = Depends(require_staff)):
 @router.get("/players/sessions")
 async def list_player_sessions(
     license_key: str = "",
-    limit: int = 50,
-    offset: int = 0,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0, le=10000),
     _: dict = Depends(require_staff),
 ):
     query = supabase.table("player_sessions").select("*", count="exact")

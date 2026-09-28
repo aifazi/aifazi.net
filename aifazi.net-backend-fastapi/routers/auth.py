@@ -899,7 +899,9 @@ async def search_staff_users(q: str = "", _: dict = Depends(require_admin)):
 
 # ── Create staff ────────────────────────────────────────────────────────────────
 async def create_staff(body: StaffCreateBody, request: Request, admin: dict = Depends(require_admin)):
-    if body.role not in ("moderator", "editor", "chat"):
+    # P2-10 — the `chat` role is dead (community.chat module removed); new
+    # staff can only be moderator/editor.
+    if body.role not in ("moderator", "editor"):
         raise HTTPException(400, "Invalid role")
     perms = normalize_permissions(body.module_permissions or role_permissions(body.role))
     username = _clean_username(body.username or "")
@@ -935,7 +937,7 @@ async def update_staff(staff_id: str, body: StaffUpdateBody, _: dict = Depends(r
         updates["email"] = email
         updates["email_verified"] = bool(current_row.get("email_verified")) if email == _normalized_email(current_row.get("email") or "") else False
     if body.role:
-        if body.role not in ("moderator", "editor", "chat"):
+        if body.role not in ("moderator", "editor"):
             raise HTTPException(400, "Invalid role")
         updates["role"] = body.role
     if body.module_permissions is not None:

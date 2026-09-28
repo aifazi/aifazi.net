@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 import uuid
 
 import httpx
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from database import supabase
 from dependencies import require_staff
@@ -554,9 +554,18 @@ async def upload_file(
 
 @router.get("")
 @router.get("/media")          # alias: frontend calls GET /upload/media
-async def list_files(_: dict = Depends(require_staff)):
-    res = supabase.table("media").select("*").order("created_at", desc=True).execute()
+async def list_files(
+    _: dict = Depends(require_staff),
+    limit: int = Query(50, ge=1, le=100),
+):
+    res = supabase.table("media").select("*").order("created_at", desc=True).range(0, limit - 1).execute()
     return res.data or []
+
+
+# P1-3 — multi-upload batch caps: at most 10 files and 100 MB total per
+# request so one call can't fan out into unbounded provider uploads / DB rows.
+_MAX_MULTI_FILES = 10
+_MAX_MULTI_TOTAL_BYTES = 100 * 1024 * 1024
 
 
 @router.post("/multiple")      # alias: frontend calls POST /upload/multiple
@@ -565,10 +574,16 @@ async def upload_multiple(
     staff: dict = Depends(require_staff),
 ):
     """Upload multiple files at once. Delegates to single-file logic for each."""
+    if len(files) > _MAX_MULTI_FILES:
+        raise HTTPException(400, f"Too many files (max {_MAX_MULTI_FILES} per request)")
     results = []
-    cfg = _get_cdn_config()   # Fetch CDN config ONCE for all files
+    total_bytes = 0
+    cfg = _get_cdn_config()   # Fetch CDN config ONCE for all files (hoisted out of the loop)
     for file in files:
         content  = await file.read()
+        total_bytes += len(content)
+        if total_bytes > _MAX_MULTI_TOTAL_BYTES:
+            raise HTTPException(413, f"Batch exceeds the {_MAX_MULTI_TOTAL_BYTES // 1024 // 1024} MB total size limit")
         if len(content) > MAX_UPLOAD_BYTES:
             raise HTTPException(413, f"File '{file.filename}' exceeds {MAX_UPLOAD_BYTES // 1024 // 1024} MB limit")
 
@@ -584,7 +599,6 @@ async def upload_multiple(
 
         filename = file.filename or f"upload_{uuid.uuid4()}"
         filename = _safe_storage_filename(filename)  # M11 — strip traversal/separators
-        cfg = _get_cdn_config()
         public_url, storage_path, provider = await _upload_to_provider(content, filename, mimetype, cfg)
 
         media = _save_media(
