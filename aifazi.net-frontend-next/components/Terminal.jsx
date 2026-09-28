@@ -41,7 +41,7 @@ const COMMANDS = {
       '  ping          Ping the server',
       '  ls            List site sections',
       '  date          Current date/time',
-      '  cv            Download Tanvir\'s CV',
+      '  cv            Request Tanvir\'s CV (via contact)',
       '  fortune       Get a random fortune',
       '  clear         Clear terminal',
       '  exit          Close terminal',
@@ -194,11 +194,8 @@ const COMMANDS = {
     },
   },
   cv: {
-    desc: 'Download CV',
-    run: () => {
-      setTimeout(() => { const a = document.createElement('a'); a.href = '/resume.pdf'; a.download = 'Tanvir_Aifazi_CV.pdf'; a.click() }, 500)
-      return ['', '  📄 Downloading CV...', '  Tanvir_Aifazi_CV.pdf', '']
-    },
+    desc: 'Request CV (via contact)',
+    run: () => '__nav:/contact',
   },
 }
 

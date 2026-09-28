@@ -15,18 +15,30 @@ function bytesToBase64Url(bytes: Uint8Array): string {
 // P2 — mint the same per-request HMAC X-Internal-Token that proxy.ts stamps
 // on /api/* traffic (method + path + sorted-query + timestamp, ~5 min TTL),
 // so the SSR verify call passes the backend gate exactly like a proxied
-// browser request. Minimal duplicate of proxy.ts makeInternalToken for the
-// single path this page calls.
-async function makeInternalToken(method: string, pathname: string): Promise<string> {
+// browser request. The canonical-query encoding below mirrors proxy.ts
+// makeInternalToken EXACTLY (sort decoded pairs by code point, then
+// percent-encode with Python quote(safe='') semantics); searchParams are
+// threaded through so a future query string can't silently mint a token for
+// the wrong canonical query and break the gate.
+const _rfcencode = (s: string) =>
+  encodeURIComponent(s).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase())
+function canonicalQuery(searchParams?: URLSearchParams): string {
+  return [...(searchParams?.entries() ?? [])]
+    .sort(([ak, av], [bk, bv]) => (ak < bk ? -1 : ak > bk ? 1 : av < bv ? -1 : av > bv ? 1 : 0))
+    .map(([k, v]) => `${_rfcencode(k)}=${_rfcencode(v)}`)
+    .join('&')
+}
+async function makeInternalToken(method: string, pathname: string, searchParams?: URLSearchParams): Promise<string> {
   if (!INTERNAL_API_SECRET) return ''
   const ts = String(Math.floor(Date.now() / 1000))
-  const msg = `${method}:${pathname}::${ts}`
+  const query = canonicalQuery(searchParams)
+  const msg = `${method}:${pathname}:${query}:${ts}`
   const { createHmac } = await import('crypto')
   const sig = createHmac('sha256', INTERNAL_API_SECRET).update(msg).digest()
   return `${bytesToBase64Url(new TextEncoder().encode(ts))}.${bytesToBase64Url(sig)}`
 }
 
-async function verifyAdminSession(): Promise<{ valid: boolean; user?: any }> {
+async function verifyAdminSession(searchParams?: URLSearchParams): Promise<{ valid: boolean; user?: any }> {
   const cookieStore = await cookies()
   const cookieHeader = cookieStore.toString()
   // NOTE: client X-Forwarded-For / X-Real-IP are deliberately NOT forwarded.
@@ -35,9 +47,10 @@ async function verifyAdminSession(): Promise<{ valid: boolean; user?: any }> {
 
   try {
     const headers: Record<string, string> = { Cookie: cookieHeader }
-    const internalToken = await makeInternalToken('GET', '/api/auth/verify')
+    const internalToken = await makeInternalToken('GET', '/api/auth/verify', searchParams)
     if (internalToken) headers['X-Internal-Token'] = internalToken
-    const res = await fetch(`${BACKEND_URL}/api/auth/verify`, {
+    const url = `${BACKEND_URL}/api/auth/verify${searchParams?.size ? `?${searchParams.toString()}` : ''}`
+    const res = await fetch(url, {
       method: 'GET',
       headers,
       cache: 'no-store',
@@ -61,8 +74,13 @@ function escapeJsonForInline(value: unknown): string {
     .replace(/&/g, '\\u0026')
 }
 
-export default async function AdminPage({ params }: { params: Promise<{ slug?: string[] }> }) {
-  const { valid, user } = await verifyAdminSession()
+export default async function AdminPage({ params, searchParams }: { params: Promise<{ slug?: string[] }>; searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
+  const sp = new URLSearchParams()
+  for (const [k, v] of Object.entries((await searchParams) ?? {})) {
+    if (Array.isArray(v)) v.forEach(item => { if (item !== undefined) sp.append(k, item) })
+    else if (v !== undefined) sp.append(k, v)
+  }
+  const { valid, user } = await verifyAdminSession(sp)
 
   // 'chat' included: chat staff land on the dashboard's first-permitted
   // section via the redirect instead of a login loop (in-house chat UI

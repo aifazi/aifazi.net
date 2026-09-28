@@ -50,8 +50,6 @@
           "INTERNET",
           "ACCESS_NETWORK_STATE",
           "CAMERA",
-          "FOREGROUND_SERVICE",
-          "WAKE_LOCK",
           "POST_NOTIFICATIONS"
         ],
       "adaptiveIcon": {

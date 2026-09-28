@@ -489,8 +489,8 @@ function FooterCommand({ sectionLinks, platformLinks, socialLinks, hasAdminAcces
       <div style={{ padding: '12px clamp(16px,5vw,60px)', borderTop: '1px solid rgba(56,189,248,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted, letterSpacing: 1 }}>© {year} <span style={{ color: P.accent }}>tanvir@aifazi.net</span> · All rights reserved</span>
         <div style={{ display: 'flex', gap: 16 }}>
-          {['Privacy', 'Terms', 'Contact'].map(label => (
-            <Link key={label} to="/contact" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted, letterSpacing: 1, textDecoration: 'none' }}>{label}</Link>
+          {[['Privacy', '/privacy'], ['Terms', '/terms'], ['Contact', '/contact']].map(([label, to]) => (
+            <Link key={label} to={to} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted, letterSpacing: 1, textDecoration: 'none' }}>{label}</Link>
           ))}
         </div>
       </div>
@@ -591,7 +591,7 @@ function FooterBrutal({ sectionLinks, platformLinks, handleHashLink, year }) {
   const blocks = [
     { no: '01', label: 'NAVIGATE', items: sectionLinks.map(l => ({ label: l.label, href: `/#${l.hash}`, hash: l.hash })) },
     { no: '02', label: 'PLATFORM', items: platformLinks.slice(0, 5).map(l => ({ label: l.label, href: l.to })) },
-    { no: '03', label: 'SYSTEM',   items: [['API', '/contact'], ['STATUS', '/contact'], ['ADMIN', '/admin']].map(([label, to]) => ({ label, href: to })) },
+    { no: '03', label: 'SYSTEM',   items: [['API', '/status'], ['STATUS', '/status'], ['ADMIN', '/admin']].map(([label, to]) => ({ label, href: to })) },
   ]
   return (
     <footer data-footer-style="brutal" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>

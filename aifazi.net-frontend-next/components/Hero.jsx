@@ -430,14 +430,14 @@ export default function Hero() {
         <div className="hero-cta-row" style={{ display: 'flex', gap: 20, flexWrap: 'wrap', width: '100%', maxWidth: '100%' }}>
           <MagneticBtn href="#projects" className="btn-primary" strength={0.4}><EditableText contentKey="hero.btn.projects" defaultValue="View Projects" /></MagneticBtn>
           <MagneticBtn href="/contact"  className="btn-outline"  strength={0.4}><EditableText contentKey="hero.btn.contact" defaultValue="Get In Touch" /></MagneticBtn>
-          <MagneticBtn href="/resume.pdf" download="Tanvir_Aifazi_CV.pdf" className="btn-outline" strength={0.3}
+          <MagneticBtn href="/contact" className="btn-outline" strength={0.3}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            <EditableText contentKey="hero.btn.cv" defaultValue="DOWNLOAD CV" />
+            <EditableText contentKey="hero.btn.cv" defaultValue="Request CV" />
           </MagneticBtn>
         </div>
         </AnimatableWrapper>
