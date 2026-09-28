@@ -3,7 +3,6 @@
 Extracted from auth.py. Handles Discord OAuth flow for user authentication
 and account linking.
 """
-import hmac
 import logging
 import os
 import secrets
@@ -14,6 +13,11 @@ from fastapi.responses import RedirectResponse
 
 from database import supabase
 from dependencies import get_current_user
+from utils.oauth_state import (
+    _safe_relative_path,
+    make_oauth_state,
+    verify_oauth_state_full,
+)
 
 router = APIRouter()
 log = logging.getLogger("auth.discord")
@@ -51,19 +55,28 @@ WHITELIST_ROLE_ID = os.getenv("DISCORD_WHITELIST_ROLE_ID", "")
 
 @router.get("/discord/login")
 async def discord_login(request: Request):
-    """Initiate Discord OAuth2 login flow."""
-    state = secrets.token_urlsafe(32)
-    # Store state in cookie for CSRF protection
-    response = RedirectResponse(
+    """Initiate Discord OAuth2 login flow.
+
+    P1-2 — state is now a HMAC-signed, time-bound token (TTL + provider
+    binding via utils/oauth_state), matching routers/discord_auth.py. The old
+    cookie-compared random state had no expiry binding and broke whenever the
+    cookie was missing (cross-site / blocked third-party cookies).
+    """
+    dest = _safe_relative_path(
+        request.query_params.get("redirect") or request.query_params.get("dest") or "/profile"
+    )
+    try:
+        state = make_oauth_state("discord", dest)
+    except RuntimeError:
+        raise HTTPException(503, "OAuth state signing is not configured")
+    return RedirectResponse(
         url=f"https://discord.com/api/oauth2/authorize?"
             f"client_id={DISCORD_CLIENT_ID}&"
             f"redirect_uri={urllib.parse.quote(DISCORD_REDIRECT_URI)}&"
             f"response_type=code&"
             f"scope=identify%20email%20guilds.members.read&"
-            f"state={state}"
+            f"state={urllib.parse.quote(state)}"
     )
-    response.set_cookie("discord_oauth_state", state, httponly=True, secure=True, samesite="lax", max_age=600)
-    return response
 
 
 @router.get("/discord/callback")
@@ -71,15 +84,15 @@ async def discord_callback(request: Request):
     """Handle Discord OAuth2 callback."""
     code = request.query_params.get("code")
     state = request.query_params.get("state")
-    stored_state = request.cookies.get("discord_oauth_state")
 
     if not code:
         raise HTTPException(400, "Missing authorization code")
 
-    # Validate state — fail CLOSED: a missing state (or missing stored cookie)
-    # must reject, otherwise an attacker can strip the state param to bypass
-    # the CSRF check entirely (previous code only compared when both present).
-    if not state or not stored_state or not hmac.compare_digest(state, stored_state):
+    # Validate signed state — fail CLOSED on missing/mismatched/expired state
+    # so an attacker can't strip or forge the param to bypass the CSRF check.
+    try:
+        verify_oauth_state_full(state or "", "discord")
+    except ValueError:
         raise HTTPException(403, "Invalid OAuth state")
 
     # Exchange code for access token

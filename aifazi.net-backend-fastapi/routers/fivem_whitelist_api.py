@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 
 from database import safe_search_term, supabase
 from dependencies import get_current_user, require_admin, require_staff
@@ -49,7 +49,7 @@ async def check_whitelist(request: Request, identifier: str):
 async def search_whitelist(
     q: str = "",
     status: str | None = None,
-    limit: int = 50,
+    limit: int = Query(50, ge=1, le=100),
     _: dict = Depends(require_staff),
 ):
     query = supabase.table("fivem_whitelist").select("*", count="exact")
@@ -95,9 +95,9 @@ async def search_whitelist(
 @router.get("/whitelist")
 async def list_whitelist(
     status: str | None = None,
-    limit: int = 50,
-    offset: int = 0,
-    since_seconds: int | None = None,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0, le=10000),
+    since_seconds: int | None = Query(None, ge=1, le=7776000),
     _: dict = Depends(require_staff),
 ):
     q = supabase.table("fivem_whitelist").select("*", count="exact")
@@ -111,7 +111,7 @@ async def list_whitelist(
 
 
 @router.get("/whitelist/history")
-async def whitelist_history(limit: int = 100, _: dict = Depends(require_staff)):
+async def whitelist_history(limit: int = Query(100, ge=1, le=100), _: dict = Depends(require_staff)):
     res = (supabase.table("fivem_whitelist")
            .select("id,discord_name,character_name,status,reviewed_by,reviewed_at,"
                    "approved_at,sync_source,txadmin_synced,steam_hex,fivem_license,fivem_id,"

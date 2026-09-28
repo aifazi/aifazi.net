@@ -22,8 +22,6 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
   - [Forum Auth](#forum-auth)
   - [Forum](#forum)
   - [Notifications](#notifications)
-  - [Chat (Supabase Realtime)](#chat-supabase-realtime)
-  - [AI Chat](#ai-chat)
   - [Search](#search)
   - [Newsletter](#newsletter)
   - [Contact](#contact)
@@ -62,7 +60,6 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
 | Database | [Supabase](https://supabase.com/) (PostgreSQL via REST/SDK) |
 | Auth | JWT (HS256) via `python-jose` + bcrypt |
 | 2FA | TOTP via `pyotp` + QR via `qrcode` |
-| AI | Disabled — `chat_ai.py` is a stub (OpenAI removed) |
 | Email | `aiosmtplib` (async SMTP) |
 | Scheduler | APScheduler (AsyncIOScheduler) |
 | File Storage | AWS S3 / S3-compatible CDN via `boto3` |
@@ -90,8 +87,6 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
 │   ├── portfolio.py        # Portfolio items CRUD
 │   ├── forum.py            # Forum threads & replies
 │   ├── notifications.py    # Forum notifications
-│   ├── chat.py             # Chat rooms & messages (Supabase Realtime)
-│   ├── chat_ai.py          # AI chat stub (OpenAI removed; endpoints 503)
 │   ├── search.py           # Full-text search
 │   ├── newsletter.py       # Subscriber management & sending
 │   ├── contact.py          # Contact form → email
@@ -121,9 +116,6 @@ The Python/FastAPI backend powering [aifazi.net](https://aifazi.net). It provide
 │
 ├── api/
 │   └── index.py            # Vercel serverless entry point
-│
-└── websocket/
-    └── chat_ws.py          # (legacy; chat now uses Supabase Realtime)
 ```
 
 ---
@@ -205,7 +197,6 @@ docker run -p 8000:8000 --env-file .env aifazi-backend
 | `POST /api/auth/login` | 5 / min |
 | `POST /api/auth/register` | 10 / min |
 | `POST /api/auth/2fa/verify` | 10 / min |
-| `POST /api/chat/ai/public` | 10 / min |
 | All other endpoints | 100 / min |
 
 ---
@@ -329,44 +320,6 @@ Discord OAuth for forum login/connect is served at `/api/auth/discord/*`; Steam 
 | `GET` | `` | Forum JWT | List notifications for current user |
 | `POST` | `/read` | Forum JWT | Mark all as read |
 | `POST` | `/{id}/read` | Forum JWT | Mark one as read |
-
----
-
-### Chat (Supabase Realtime)
-
-**Prefix:** `/api/chat`
-
-Real-time messaging is handled by **Supabase Realtime** on the frontend. The REST endpoints manage rooms and message history.
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `GET` | `/rooms` | Staff | List chat rooms |
-| `POST` | `/rooms` | Staff | Create room |
-| `GET` | `/rooms/{id}/messages` | Staff | Fetch message history |
-
----
-
-### AI Chat
-
-**Prefix:** `/api/chat/ai`
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/public` | None | Public ChatWidget endpoint (rate-limited; uses `gpt-4o-mini`, max 400 tokens) |
-| `POST` | `` | JWT | Authenticated AI chat; supports streaming (`stream: true`) and model selection |
-
-**Request body:**
-
-```json
-{
-  "messages": [{"role": "user", "content": "Hello"}],
-  "system": "You are a helpful assistant.",
-  "model": "gpt-4o-mini",
-  "stream": false
-}
-```
-
-Allowed models: `gpt-4o-mini`, `gpt-4o`, `gpt-3.5-turbo`
 
 ---
 

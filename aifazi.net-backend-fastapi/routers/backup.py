@@ -23,16 +23,19 @@ router = APIRouter()
 
 RESTORE_TEST_PREFIX = "restore_test_"
 
+# P2-11 — dropped legacy chat tables (chat_rooms/chat_messages/chat_members/
+# chat_mutes/chat_bans/chat_room_roles) removed from the probe list so backup
+# stats/export no longer probe tables that don't exist.
 FALLBACK_TABLES = [
     "posts", "media", "contacts", "users", "forum_categories",
-    "forum_threads", "forum_replies", "chat_rooms", "chat_messages", "chat_members",
+    "forum_threads", "forum_replies",
     "newsletter_subs", "notifications", "helpdesk_tickets", "banners",
     "site_config", "email_config", "cdn_config",
     "projects", "skill_categories", "certifications", "audit_logs",
     "auth_logs", "forum_sessions", "user_activity_logs", "admin_sessions",
     "fivem_whitelist", "fivem_realtime_events", "fivem_bans", "fivem_connect_tokens",
     "mail_queue", "mail_templates", "application_forms", "form_submissions",
-    "helpdesk_messages", "helpdesk_settings", "chat_mutes", "chat_bans", "chat_room_roles",
+    "helpdesk_messages", "helpdesk_settings",
     "visitor_sessions", "push_subscriptions", "discord_users", "steam_users", "admin_2fa",
 ]
 
