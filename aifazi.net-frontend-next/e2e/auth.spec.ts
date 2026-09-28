@@ -35,6 +35,16 @@ test('profile route redirects or prompts auth when logged out', async ({ page })
   expect(url.includes('/login') || hasAuthCta).toBeTruthy()
 })
 
+test('admin route denies anonymous visitors (SSR gate)', async ({ page }) => {
+  const res = await page.goto('/admin')
+  expect(res?.status()).toBeLessThan(500)
+  const url = page.url()
+  const body = await page.locator('body').innerText().catch(() => '')
+  // Either redirected to login, or renders an access-denied state — never the admin dashboard
+  const denied = /sign in|log in|login|denied|forbidden|not authorized|no access/i.test(body)
+  expect(url.includes('/login') || url.includes('/auth') || denied).toBeTruthy()
+})
+
 test('optional: login with E2E_USER / E2E_PASS', async ({ page }) => {
   const user = process.env.E2E_USER
   const pass = process.env.E2E_PASS

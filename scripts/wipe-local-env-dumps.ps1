@@ -12,7 +12,14 @@ $targets = @(
     (Join-Path $root 'aifazi.net-backend-fastapi\.env.pulled'),
     (Join-Path $root 'aifazi.net-backend-fastapi\.env.pull'),
     (Join-Path $root 'aifazi.net-frontend-next\.env.local'),
-    (Join-Path $root 'apps\mobile\.env.local')
+    (Join-Path $root 'aifazi.net-frontend-next\.env.prod-pull'),
+    (Join-Path $root 'aifazi.net-frontend-next\.env.pulled'),
+    (Join-Path $root 'aifazi.net-frontend-next\.env.pull'),
+    (Join-Path $root 'apps\mobile\.env.local'),
+    (Join-Path $root '.env.local'),
+    (Join-Path $root '.env.prod-pull'),
+    (Join-Path $root '.env.pulled'),
+    (Join-Path $root '.env.pull')
 )
 
 $found = $targets | Where-Object { Test-Path $_ }

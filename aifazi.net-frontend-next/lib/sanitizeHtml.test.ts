@@ -110,6 +110,17 @@ describe('sanitizeHtml — server scrubber (SSR / fail-closed)', () => {
     expect(out.toLowerCase()).not.toContain('<link')
   })
 
+  it('rejects math / foreignobject / use / animate vectors', () => {
+    const out = server(
+      '<math><mi>x</mi></math><svg><foreignobject><body xmlns="http://www.w3.org/1999/xhtml">x</body></foreignobject>' +
+        '<use href="x"></use><animate onbegin="alert(1)" /></svg>',
+    )
+    expect(out.toLowerCase()).not.toContain('<math')
+    expect(out.toLowerCase()).not.toContain('<foreignobject')
+    expect(out.toLowerCase()).not.toContain('<use')
+    expect(out.toLowerCase()).not.toContain('<animate')
+  })
+
   it('keeps relative and fragment hrefs', () => {
     const out = server('<a href="/forum">f</a><a href="#sec">s</a>')
     expect(out).toContain('href="/forum"')

@@ -12,6 +12,7 @@
 #   NEXT_PUBLIC_SUPABASE_ANON_KEY=<staging anon>
 # Production keys in local .env.local risk accidental data mutation.
 # If you must use prod (legacy), treat every local mutation as production.
+# Guard: powershell -File scripts/check_compose_env.ps1 (blocks prod unless COMPOSE_ALLOW_PROD=1).
 
 services:
   clamav:

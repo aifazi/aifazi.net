@@ -237,7 +237,7 @@ async def upload_font(
     if not ok:
         raise HTTPException(415, "File does not match the declared font type")
 
-    # Malware scan (fail-open)
+    # Malware scan (fail-closed by default — see scan_for_malware)
     scan_for_malware(content, filename or "font")
 
     family_name = _css_escape((family or "").strip() or _auto_family(content, filename))

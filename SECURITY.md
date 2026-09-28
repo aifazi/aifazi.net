@@ -34,16 +34,16 @@ This repo was private and is now public. Source alone does **not** give access t
 
 If you run your own deploy, copy `.env.example` → `.env` and fill real values. Do **not** set `ADMIN_PASSWORD` to a plaintext committed value — generate a bcrypt hash with `reset_password.py`.
 
-## Branch Protection (recommended)
+## Branch Protection (verified 2026-09-28)
 
-`main` should require:
+`main` is protected (verified via `gh api .../branches/main/protection`):
 
-- Require PR, 1 approval
-- Require status checks: `CI` (frontend-lint, frontend-build, backend-lint, backend-security/mypy, pip-audit, bandit, mobile-lint)
-- Require secret scanning + push protection
-- No force-push
+- Enforce admins: true, strict status checks: true
+- Required checks: Frontend Lint & Typecheck, Backend Lint & Typecheck, Mobile Lint & Typecheck, Backend Security Scan, Secret Scan, Frontend Build
+- No force-push / no deletions (allow_force_pushes: false, allow_deletions: false)
+- `owner-automerge.yml` waits for checks and is owner-only
 
-Apply via **Settings → Branches → Add rule** or `gh api repos/aifazi/aifazi.net/branches/main/protection -X PUT -f ...` (see `.github/branch-protection.json` if present).
+Note: `required_approving_review_count` reports 0 — consider raising to 1 for human review on top of the required checks.
 
 ## Past History
 

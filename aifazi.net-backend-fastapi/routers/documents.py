@@ -62,7 +62,7 @@ async def upload_document(
     if sniffed not in ALLOWED_MIMETYPES:
         raise HTTPException(415, f"File type '{sniffed}' is not allowed")
 
-    # Malware scan (fail-open)
+    # Malware scan (fail-closed by default — see scan_for_malware)
     scan_for_malware(content, file.filename or name or "document")
 
     filename = _safe_filename(file.filename or name or "document")

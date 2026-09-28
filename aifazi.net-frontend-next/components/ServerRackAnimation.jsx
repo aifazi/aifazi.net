@@ -580,6 +580,24 @@ function GlobeMode({ visibleRef }) {
   const routeSyncRef = useRef(0)
   const [fps, setFps] = useState(60)
   const fpsRef = useRef({ samples: 0, last: 0, avg: 60 })
+  // Mobile stats popover (desktop shows the inline strip instead).
+  const [showStats, setShowStats] = useState(false)
+  // Transient toast for chip actions (PNG export, recenter).
+  const [toast, setToast] = useState('')
+  const toastTimer = useRef(null)
+  const flashToast = (msg) => {
+    setToast(msg)
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(''), 2600)
+  }
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current) }, [])
+  // Escape closes the stats popover.
+  useEffect(() => {
+    if (!showStats) return
+    const onKey = (e) => { if (e.key === 'Escape') setShowStats(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showStats])
   const [perfTier, setPerfTier] = useState(() => {
     const cores = navigator.hardwareConcurrency || 4
     const dpr = window.devicePixelRatio || 1
@@ -777,9 +795,18 @@ function GlobeMode({ visibleRef }) {
     const ctx = cv.getContext('2d')
     if (!ctx) return
     let raf = 0
-    let sweep = 0
+    let sweep = -0.6
+    const reduceMotion = prefersReducedMotion()
+    // Canvas can't read CSS vars — mirror the shell tone per frame (cheap
+    // dataset read, no layout) so blips stay legible on light themes.
+    const toneColors = () => (
+      cv.closest('.globe-network-shell')?.dataset.globeTone === 'light'
+        ? { ring: 'rgba(0,90,140,0.4)', sweep: 'rgba(0,150,80,0.35)', sweepLine: 'rgba(0,150,80,0.7)', hub: '#009e57', node: '#0077b6' }
+        : { ring: 'rgba(0,212,255,0.18)', sweep: 'rgba(0,255,136,0.35)', sweepLine: 'rgba(0,255,136,0.55)', hub: '#00ff88', node: '#00d4ff' }
+    )
     const draw = () => {
-      raf = requestAnimationFrame(draw)
+      if (!reduceMotion) raf = requestAnimationFrame(draw)
+      const pal = toneColors()
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       const w = 64, h = 64
       if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr }
@@ -788,7 +815,7 @@ function GlobeMode({ visibleRef }) {
       const cx = w / 2, cy = h / 2, r = 26
 
       // Rings
-      ctx.strokeStyle = 'rgba(0,212,255,0.18)'
+      ctx.strokeStyle = pal.ring
       ctx.lineWidth = 1
       for (const rr of [r * 0.33, r * 0.66, r]) {
         ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.stroke()
@@ -799,20 +826,20 @@ function GlobeMode({ visibleRef }) {
       ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r)
       ctx.stroke()
 
-      // Sweep
-      sweep = (sweep + 0.025) % (Math.PI * 2)
+      // Sweep (frozen when reduced motion is requested)
+      if (!reduceMotion) sweep = (sweep + 0.025) % (Math.PI * 2)
       const grad = ctx.createConicGradient
         ? ctx.createConicGradient(sweep, cx, cy)
         : null
       if (grad) {
-        grad.addColorStop(0, 'rgba(0,255,136,0.35)')
+        grad.addColorStop(0, pal.sweep)
         grad.addColorStop(0.12, 'rgba(0,255,136,0)')
         grad.addColorStop(1, 'rgba(0,255,136,0)')
         ctx.fillStyle = grad
         ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
       }
       // Sweep line
-      ctx.strokeStyle = 'rgba(0,255,136,0.55)'
+      ctx.strokeStyle = pal.sweepLine
       ctx.beginPath()
       ctx.moveTo(cx, cy)
       ctx.lineTo(cx + Math.cos(sweep) * r, cy + Math.sin(sweep) * r)
@@ -827,20 +854,21 @@ function GlobeMode({ visibleRef }) {
         const y = cy + Math.sin(az) * rad * 0.7
         const d = Math.hypot(x - cx, y - cy)
         if (d > r) return
-        ctx.fillStyle = c.hub ? '#00ff88' : '#00d4ff'
+        ctx.fillStyle = c.hub ? pal.hub : pal.node
         ctx.globalAlpha = c.hub ? 0.95 : 0.7
         ctx.beginPath(); ctx.arc(x, y, c.hub ? 2.4 : 1.5, 0, Math.PI * 2); ctx.fill()
         ctx.globalAlpha = 1
       })
     }
-    raf = requestAnimationFrame(draw)
+    if (reduceMotion) draw()
+    else raf = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(raf)
   }, [])
 
   // ── Export node map as PNG ──
   const exportPng = () => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas) { flashToast('Export unavailable'); return }
     try {
       const url = canvas.toDataURL('image/png')
       const a = document.createElement('a')
@@ -849,7 +877,8 @@ function GlobeMode({ visibleRef }) {
       document.body.appendChild(a)
       a.click()
       a.remove()
-    } catch { /* tainted canvas or unsupported */ }
+      flashToast('Map exported as PNG')
+    } catch { flashToast('Export failed — canvas unavailable') }
   }
 
   // ── Recenter / reset view (chip + double-click) ──
@@ -1375,6 +1404,26 @@ function GlobeMode({ visibleRef }) {
     return () => clearInterval(id)
   }, [focusCity])
 
+  // ── Radar clearance: the top bar wraps (title 100% + chips + stats) on
+  // narrow shells, so a fixed radar top ends up underneath the stats panel
+  // (stats z-5 paints over radar z-4). Track the bar height instead.
+  useEffect(() => {
+    const wrap = wrapRef.current
+    const bar = wrap?.querySelector('.globe-top-bar')
+    if (!wrap || !bar) return
+    const sync = () => {
+      wrap.style.setProperty('--globe-chrome-h', `${Math.ceil(bar.getBoundingClientRect().height)}px`)
+    }
+    sync()
+    const obs = new ResizeObserver(sync)
+    obs.observe(bar)
+    window.addEventListener('resize', sync)
+    return () => {
+      obs.disconnect()
+      window.removeEventListener('resize', sync)
+    }
+  }, [])
+
   // ── Pointer + keyboard (drag-rotate XYZ, pinch/wheel zoom, arrows) ──
   useEffect(() => {
     const canvas = canvasRef.current
@@ -1475,6 +1524,19 @@ function GlobeMode({ visibleRef }) {
   const arcCount = GLOBE_CONNECTIONS.length + (hasVisitorCoords ? 1 : 0)
   const nodeCount = GLOBE_CITIES.length + (hasVisitorCoords ? 1 : 0)
   const hubLinks = GLOBE_CONNECTIONS.filter(e => e.hub).length
+  // Threshold-colored telemetry (green <150ms, amber <400ms, red above).
+  const latencyColor = latencyMs < 150 ? 'var(--green)' : latencyMs < 400 ? 'var(--orange)' : 'var(--red)'
+  const latencyHint = monitor?.avgMs != null
+    ? `Live average across ${monitor.up} monitored services (/api/monitor/status)`
+    : 'Simulated link latency — the live average appears once /api/monitor/status responds'
+  const statItems = [
+    { label: 'NODES',   value: `${nodeCount}`, color: 'var(--cyan)',  hint: `${hubLinks} hub-linked routes` },
+    { label: 'ARCS',    value: `${arcCount}`,  color: 'var(--green)', hint: 'Active connection arcs on the globe' },
+    { label: 'LATENCY', value: `${latencyMs}ms`, color: latencyColor, hint: latencyHint },
+    { label: 'UPTIME',  value: monitor?.uptime ? `${monitor.uptime}%` : '99.99%', color: 'var(--green)',
+      hint: monitor ? `Services up: ${monitor.up}/${monitor.total}` : 'Service uptime — live once the monitor responds' },
+    { label: 'FPS',     value: `${fps}`,       color: fps < 30 ? 'var(--orange)' : 'var(--cyan)', hint: `Render tier: ${perfTier}` },
+  ]
 
   return (
     <div
@@ -1488,7 +1550,7 @@ function GlobeMode({ visibleRef }) {
         background: 'transparent',
       }}
     >
-      {/* Top chrome — single flex row: title · controls · stats (collision-proof) */}
+      {/* Top chrome — title · controls · stats strip (INFO popover on mobile) */}
       <div className="globe-top-bar">
         <div className="globe-network-title" title="GLOBAL NETWORK · LIVE CONNECTION MAP">
           GLOBAL NETWORK · LIVE CONNECTION MAP
@@ -1527,23 +1589,29 @@ function GlobeMode({ visibleRef }) {
           <button
             type="button"
             className="globe-mode-chip"
-            onClick={recenterGlobe}
+            onClick={() => { recenterGlobe(); flashToast('View recentered') }}
             title="Recenter globe (or double-click)"
           >
             <span className="globe-mode-chip-dot" aria-hidden />
-            RECON
+            CENTER
+          </button>
+          <button
+            type="button"
+            className={`globe-mode-chip globe-info-chip${showStats ? ' is-on' : ''}`}
+            onClick={() => setShowStats(v => !v)}
+            aria-expanded={showStats}
+            aria-controls="globe-stats-popover"
+            title="Toggle network statistics"
+          >
+            <span className="globe-mode-chip-dot" aria-hidden />
+            INFO
           </button>
         </div>
 
-        <div className="globe-network-stats">
-          {[
-            { label: 'NODES',   value: `${nodeCount}`,   color: 'var(--cyan)'  },
-            { label: 'ARCS',    value: `${arcCount}`,    color: 'var(--green)' },
-            { label: 'LATENCY', value: `${latencyMs}ms`, color: 'var(--cyan)'  },
-            { label: 'UPTIME',  value: monitor?.uptime ? `${monitor.uptime}%` : '99.99%', color: 'var(--green)' },
-            { label: 'FPS',     value: `${fps}`,         color: fps < 30 ? 'var(--orange)' : 'var(--cyan)' },
-          ].map(s => (
-            <div key={s.label} className="globe-stat-row">
+        {/* Desktop strip — horizontal stat row with dividers */}
+        <div className="globe-network-stats" aria-label="Network statistics">
+          {statItems.map(s => (
+            <div key={s.label} className="globe-stat-row" title={s.hint}>
               <span className="globe-stat-label">{s.label}</span>
               <span className="globe-stat-value" style={{ color: s.color }}>{s.value}</span>
             </div>
@@ -1551,10 +1619,48 @@ function GlobeMode({ visibleRef }) {
         </div>
       </div>
 
-      {/* Mini radar inset — node azimuths + sweep */}
-      <div className="globe-radar" title="Node radar">
+      {/* Mobile stats popover (desktop uses the inline strip) */}
+      {showStats && (
+        <div id="globe-stats-popover" className="globe-stats-popover" role="region" aria-label="Network statistics">
+          {statItems.map(s => (
+            <div key={s.label} className="globe-stat-row" title={s.hint}>
+              <span className="globe-stat-label">{s.label}</span>
+              <span className="globe-stat-value" style={{ color: s.color }}>{s.value}</span>
+            </div>
+          ))}
+          <button type="button" className="globe-stats-close" onClick={() => setShowStats(false)}>
+            CLOSE
+          </button>
+        </div>
+      )}
+
+      {/* Action toast (PNG export, recenter) */}
+      {toast && (
+        <div className="globe-toast" role="status">
+          {toast}
+        </div>
+      )}
+
+      {/* Mini radar inset — node azimuths + sweep. Focusable: Enter centers the hub. */}
+      <div
+        className="globe-radar"
+        role="button"
+        tabIndex={0}
+        aria-label={monitor && monitor.total > 0
+          ? `Node radar: ${monitor.up} of ${monitor.total} services up. Each dot is a network node, green dots are hubs. Press Enter to focus the hub.`
+          : 'Node radar: each dot is a network node, green dots are hubs. Press Enter to focus the hub.'}
+        title="Node radar — each dot is a network node (green = hub); the sweep marks live tracking. Enter focuses the hub."
+        onClick={() => { const hub = GLOBE_CITIES.find(c => c.hub); if (hub) focusOnCity(hub) }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            const hub = GLOBE_CITIES.find(c => c.hub)
+            if (hub) focusOnCity(hub)
+          }
+        }}
+      >
         <canvas ref={radarRef} width={64} height={64} aria-hidden />
-        <div className="globe-radar-label">
+        <div className="globe-radar-label" aria-hidden>
           {monitor && monitor.total > 0 ? `${monitor.up}/${monitor.total} UP` : 'RADAR'}
         </div>
       </div>
@@ -1843,7 +1949,7 @@ function GlobeMode({ visibleRef }) {
           font-size: 11px;
           letter-spacing: 2.5px;
           color: var(--cyan);
-          opacity: 0.62;
+          opacity: 0.8;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -1861,15 +1967,84 @@ function GlobeMode({ visibleRef }) {
         .globe-top-bar .globe-network-stats {
           flex: 0 0 auto;
           display: flex;
-          flex-direction: column;
-          gap: 3px;
-          align-items: flex-end;
-          padding: 6px 8px;
+          flex-direction: row;
+          align-items: center;
+          gap: 0;
+          padding: 6px 10px;
           border-radius: 6px;
           background: rgba(0,0,0,0.08);
           border: 1px solid rgba(0,212,255,0.08);
           backdrop-filter: blur(6px);
           -webkit-backdrop-filter: blur(6px);
+          pointer-events: none;
+        }
+        .globe-top-bar .globe-stat-row + .globe-stat-row {
+          border-left: 1px solid color-mix(in srgb, var(--cyan) 16%, transparent);
+          padding-left: 10px;
+          margin-left: 10px;
+        }
+        /* Brighten muted chrome text on dark shells (WCAG small-text contrast). */
+        .globe-top-bar .globe-stat-label,
+        .globe-radar-label,
+        .globe-top-bar .globe-mode-chip {
+          color: color-mix(in srgb, var(--muted) 50%, #ffffff);
+        }
+        .globe-top-bar .globe-mode-chip.is-on { color: var(--green); }
+        /* Mobile stats live in the INFO popover — the toolbar chip is desktop-hidden. */
+        .globe-info-chip { display: none; }
+        .globe-stats-popover {
+          position: absolute;
+          top: calc(var(--globe-chrome-h, 72px) + 8px);
+          right: 12px;
+          z-index: 6;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          min-width: 190px;
+          padding: 10px 12px;
+          border-radius: 8px;
+          background: color-mix(in srgb, var(--bg) 78%, transparent);
+          border: 1px solid color-mix(in srgb, var(--cyan) 24%, transparent);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+        }
+        .globe-stats-popover .globe-stat-row + .globe-stat-row {
+          border-left: 0;
+          padding-left: 0;
+          margin-left: 0;
+          border-top: 1px solid color-mix(in srgb, var(--cyan) 12%, transparent);
+          padding-top: 6px;
+        }
+        .globe-stats-close {
+          margin-top: 4px;
+          align-self: flex-end;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 1.6px;
+          color: var(--cyan);
+          background: transparent;
+          border: 1px solid color-mix(in srgb, var(--cyan) 32%, transparent);
+          border-radius: 4px;
+          padding: 4px 10px;
+          cursor: pointer;
+        }
+        .globe-stats-close:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+        .globe-toast {
+          position: absolute;
+          bottom: 64px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 6;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 1.4px;
+          color: var(--green);
+          background: color-mix(in srgb, var(--bg) 78%, transparent);
+          border: 1px solid color-mix(in srgb, var(--green) 36%, transparent);
+          border-radius: 4px;
+          padding: 6px 12px;
+          white-space: nowrap;
           pointer-events: none;
         }
         .globe-stat-row {
@@ -1879,9 +2054,9 @@ function GlobeMode({ visibleRef }) {
         }
         .globe-stat-label {
           font-family: var(--font-mono);
-          font-size: 10px;
-          color: var(--muted);
+          font-size: 11px;
           letter-spacing: 2px;
+          color: color-mix(in srgb, var(--muted) 50%, #ffffff);
         }
         .globe-stat-value {
           font-family: var(--font-mono);
@@ -1895,10 +2070,9 @@ function GlobeMode({ visibleRef }) {
           height: 26px;
           padding: 0 10px;
           font-family: var(--font-mono);
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 600;
           letter-spacing: 1.6px;
-          color: var(--muted);
           background: color-mix(in srgb, var(--bg) 62%, transparent);
           border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
           border-radius: 4px;
@@ -1943,15 +2117,20 @@ function GlobeMode({ visibleRef }) {
         /* Mini radar inset */
         .globe-radar {
           position: absolute;
-          left: 16px; top: 72px;
+          left: 16px; top: calc(var(--globe-chrome-h, 72px) + 12px);
           z-index: 4;
           width: 64px;
           display: flex;
           flex-direction: column;
           align-items: center;
           gap: 4px;
-          pointer-events: none;
           opacity: 0.9;
+          cursor: pointer;
+          border-radius: 8px;
+        }
+        .globe-radar:focus-visible {
+          outline: 2px solid var(--cyan);
+          outline-offset: 3px;
         }
         .globe-radar canvas {
           display: block;
@@ -1964,9 +2143,8 @@ function GlobeMode({ visibleRef }) {
         }
         .globe-radar-label {
           font-family: var(--font-mono);
-          font-size: 9px;
+          font-size: 11px;
           letter-spacing: 1.2px;
-          color: var(--muted);
           white-space: nowrap;
         }
         .globe-network-shell[data-globe-tone="light"] .globe-radar canvas {
@@ -2280,10 +2458,11 @@ function GlobeMode({ visibleRef }) {
             font-size: 10px;
           }
           .globe-top-bar .globe-network-stats {
-            margin-left: auto;
+            display: none;
           }
+          .globe-info-chip { display: inline-flex; }
           .globe-arc-label { display: none; }
-          .globe-city-label { font-size: 9px; letter-spacing: 1px; }
+          .globe-city-label { font-size: 11px; letter-spacing: 1px; }
           .globe-node-panel { width: min(200px, calc(100% - 28px)); }
           .globe-sat-ring { display: none; }
           .globe-route-log { bottom: 52px; max-width: calc(100% - 28px); }

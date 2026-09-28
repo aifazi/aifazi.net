@@ -26,6 +26,7 @@
 | `JWT_SECRET` | New random (if still used) | Coolify |
 | `FIVEM_CONNECT_SECRET` / `FIVEM_SERVER_SECRET` | New random | Coolify + FiveM resource config |
 | `VERCEL_OIDC_TOKEN` | Vercel dashboard → regenerate | Local only; do not store long-term |
+| `COOLIFY_TOKEN` (was hardcoded in `opencode.json`) | Coolify → regenerate API token | Set as `COOLIFY_TOKEN` env var locally; `opencode.json` now reads `$COOLIFY_TOKEN` and fails closed if unset. File stays gitignored. |
 
 After rotating `PASETO_SECRET` / `INTERNAL_API_SECRET`: **restart backend and redeploy frontend**. All sessions and HMAC tokens become invalid (expected).
 
