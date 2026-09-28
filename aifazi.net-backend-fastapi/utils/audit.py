@@ -185,6 +185,10 @@ def migrate() -> dict:
     """
     Idempotent: create audit_logs + auth_logs tables if they don't exist.
     Called by GET /api/admin/audit/migrate at startup and on demand.
+    H4 note: exec_sql here is intentional and admin-gated
+    (routers/audit.py requires system.audit.manage). The DB console remains
+    the other allowed caller; backup.py and email_settings.py no longer use
+    exec_sql (typed probes only).
     """
     try:
         supabase.rpc("exec_sql", {"sql_text": _MIGRATION_SQL}).execute()

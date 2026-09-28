@@ -1282,7 +1282,7 @@
 [data-theme="terminal"] .section-line { background: linear-gradient(to right, rgba(51,255,51,0.5), transparent); }
 [data-theme="terminal"] .section-line::after { background: linear-gradient(to right, transparent, #33ff33, transparent); }
 
-[data-theme="synthwave"] .section-tag { color: #00f0ff; font-size: 9px; letter-spacing: 6px; }
+[data-theme="synthwave"] .section-tag { color: #00f0ff; font-size: 11px; letter-spacing: 6px; }
 [data-theme="synthwave"] .section-title {
   font-family: 'Orbitron', sans-serif;
   font-size: clamp(22px, 3.5vw, 42px);
@@ -1525,7 +1525,7 @@
 [data-theme="terminal"] .tag::after  { content: ']'; }
 
 [data-theme="paper"] .tag    { border-radius: 3px; border: 1px solid rgba(196,26,26,0.4); color: #c41a1a; font-family: 'Courier Prime', monospace; background: rgba(196,26,26,0.04); }
-[data-theme="neon-noir"] .tag { border-radius: 2px; border-color: rgba(204,68,255,0.35); color: #cc44ff; font-family: 'JetBrains Mono', monospace; font-size: 9px; }
+[data-theme="neon-noir"] .tag { border-radius: 2px; border-color: rgba(204,68,255,0.35); color: #cc44ff; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
 
 [data-theme="synthwave"] .tag { border-radius: 0; border-color: rgba(255,45,139,0.4); color: #ff2d8b; font-family: 'Share Tech Mono', monospace; box-shadow: 0 0 8px rgba(255,45,139,0.2); }
 [data-theme="aurora"] .tag   { border-radius: 8px; border-color: rgba(100,255,218,0.35); color: #64ffda; font-family: 'Fira Code', monospace; }
@@ -1598,7 +1598,7 @@
 [data-theme="terminal"] footer::before {
   content: '> EOF — ALL SYSTEMS NOMINAL — UPTIME 99.99%';
   display: block; text-align: center;
-  font-family: 'Courier New', monospace; font-size: 9px;
+  font-family: 'Courier New', monospace; font-size: 11px;
   letter-spacing: 3px; color: rgba(51,255,51,0.35);
   padding: 10px; border-bottom: 1px solid rgba(51,255,51,0.1);
 }
@@ -3430,16 +3430,16 @@
 [data-theme="rose-light"] .tag { border-radius: 999px; border-color: rgba(244,114,182,0.4); color: #f9a8d4; font-family: 'DM Mono', monospace; background: rgba(244,114,182,0.07); }
 [data-theme="mario"] .tag,
 
-[data-theme="mario-light"] .tag { border-radius: 0; border: 1px solid #000; background: #e52521; color: #fff; font-family: 'Press Start 2P', monospace; font-size: 8px; box-shadow: 2px 2px 0 #000; }
+[data-theme="mario-light"] .tag { border-radius: 0; border: 1px solid #000; background: #e52521; color: #fff; font-family: 'Press Start 2P', monospace; font-size: 11px; box-shadow: 2px 2px 0 #000; }
 [data-theme="minecraft"] .tag,
 
 [data-theme="minecraft-light"] .tag { border-radius: 0; border: 1px solid #000; background: #5ad427; color: #141210; font-family: 'Silkscreen', monospace; font-size: 11px; box-shadow: 2px 2px 0 #000; }
 [data-theme="sonic"] .tag,
 
-[data-theme="sonic-light"] .tag { border-radius: 0; border: 1px solid #ffd700; background: #ffd700; color: #1e3a8a; font-family: 'Bungee', sans-serif; font-size: 9px; }
+[data-theme="sonic-light"] .tag { border-radius: 0; border: 1px solid #ffd700; background: #ffd700; color: #1e3a8a; font-family: 'Bungee', sans-serif; font-size: 11px; }
 [data-theme="pacman"] .tag,
 
-[data-theme="pacman-light"] .tag { border-radius: 0; border: 1px solid #000; background: #ffe000; color: #1a0b00; font-family: 'Press Start 2P', monospace; font-size: 8px; box-shadow: 2px 2px 0 #000; }
+[data-theme="pacman-light"] .tag { border-radius: 0; border: 1px solid #000; background: #ffe000; color: #1a0b00; font-family: 'Press Start 2P', monospace; font-size: 11px; box-shadow: 2px 2px 0 #000; }
 [data-theme="terminal-light"] .tag { border-radius: 0; border-color: rgba(21,128,61,0.5); color: #15803d; font-family: 'Courier New', monospace; }
 
 [data-theme="lava"] .section-tag,
@@ -3530,7 +3530,7 @@
 [data-theme="rose-light"] .section-line { background: linear-gradient(to right, rgba(244,114,182,0.4), transparent); }
 
 [data-theme="mario"] .section-tag,
-[data-theme="mario-light"] .section-tag { color: #ffd700; font-family: 'Press Start 2P', monospace; font-size: 9px; letter-spacing: 2px; }
+[data-theme="mario-light"] .section-tag { color: #ffd700; font-family: 'Press Start 2P', monospace; font-size: 11px; letter-spacing: 2px; }
 
 [data-theme="mario"] .section-title,
 [data-theme="mario-light"] .section-title { font-family: 'Press Start 2P', monospace; font-size: clamp(20px, 3vw, 32px); text-transform: uppercase; letter-spacing: 1px; font-weight: 400; line-height: 1.4; }
@@ -3563,7 +3563,7 @@
 [data-theme="sonic-light"] .section-line { background: linear-gradient(to right, rgba(30,111,217,0.5), rgba(245,210,0,0.5)); }
 
 [data-theme="pacman"] .section-tag,
-[data-theme="pacman-light"] .section-tag { color: #ffe000; font-family: 'Press Start 2P', monospace; font-size: 9px; letter-spacing: 3px; }
+[data-theme="pacman-light"] .section-tag { color: #ffe000; font-family: 'Press Start 2P', monospace; font-size: 11px; letter-spacing: 3px; }
 
 [data-theme="pacman"] .section-title,
 [data-theme="pacman-light"] .section-title { font-family: 'Press Start 2P', monospace; font-size: clamp(20px, 3vw, 32px); text-transform: uppercase; letter-spacing: 1px; font-weight: 400; line-height: 1.4; }

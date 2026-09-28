@@ -51,6 +51,9 @@ def _client_secret() -> str:
 FRONTEND_URL          = os.getenv("FRONTEND_URL", "https://aifazi.net").rstrip("/")
 API_URL               = os.getenv("API_URL", "https://api.aifazi.net").rstrip("/")
 REDIRECT_URI          = f"{API_URL}/api/discord/callback"
+COOKIE_DOMAIN         = os.getenv("COOKIE_DOMAIN", "")
+_ENV_NAME             = (os.getenv("ENVIRONMENT") or os.getenv("ENV") or "production").lower()
+_IS_PROD              = _ENV_NAME == "production"
 
 # Signing key for short-lived Discord mobile deep-link JWTs. Historically named
 # JWT_SECRET locally but always read from PASETO_SECRET — keep that mapping.
@@ -209,14 +212,23 @@ async def discord_callback(code: str = "", error: str = "", state: str = ""):
     # Issue JWT
     jwt_token = _make_player_token(db_user)
 
-    # Mobile deep link — return token in fragment for app to capture
+    # Mobile deep link — token in fragment (never query) so OS intent logs /
+    # proxy access logs do not capture it. Matches authentik/github/steam.
     if mobile:
-        return RedirectResponse("aifazi://auth/discord?token=" + jwt_token + "&dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/'))
+        return RedirectResponse(
+            "aifazi://auth/discord#token=" + _urlparse.quote(jwt_token, safe='')
+            + "&dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/')
+        )
 
     # Web — set HttpOnly cookie (primary) + keep hash for legacy clients; frontend
     # prefers cookie via /auth/me and clears hash immediately. Token never in query.
     resp = RedirectResponse(FRONTEND_URL + "/auth/discord#dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/'))
-    resp.set_cookie(key="auth_token", value=jwt_token, httponly=True, secure=True, samesite="lax", max_age=JWT_EXPIRE*60, path="/")
+    resp.set_cookie(
+        key="auth_token", value=jwt_token, httponly=True,
+        secure=_IS_PROD, samesite="lax",
+        domain=COOKIE_DOMAIN or None,
+        max_age=JWT_EXPIRE * 60, path="/",
+    )
     return resp
 
 @router.get("/me")

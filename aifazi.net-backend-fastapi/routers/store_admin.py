@@ -830,7 +830,7 @@ async def upload_store_file(file: UploadFile = File(...), _: dict = Depends(CATA
     if sniffed not in STAFF_ALLOWED_MIMETYPES:
         raise HTTPException(415, f"File type '{sniffed}' is not allowed for digital products")
 
-    # Malware scan (fail-open)
+    # Malware scan (fail-closed by default — see scan_for_malware)
     scan_for_malware(content, file.filename or "store_file")
 
     filename = (file.filename or "file").replace("\\", "/").rsplit("/", 1)[-1]

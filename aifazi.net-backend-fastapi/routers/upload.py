@@ -522,7 +522,7 @@ async def upload_file(
         raise HTTPException(415, f"File type '{sniffed}' is not allowed")
     mimetype = sniffed
 
-    # Malware scan (fail-open)
+    # Malware scan (fail-closed by default — see scan_for_malware)
     scan_for_malware(content, file.filename or "upload")
 
     filename = file.filename or f"upload_{uuid.uuid4()}"
@@ -579,7 +579,7 @@ async def upload_multiple(
             raise HTTPException(415, f"File type '{sniffed}' is not allowed")
         mimetype = sniffed
 
-        # Malware scan (fail-open)
+        # Malware scan (fail-closed by default — see scan_for_malware)
         scan_for_malware(content, file.filename or "upload")
 
         filename = file.filename or f"upload_{uuid.uuid4()}"

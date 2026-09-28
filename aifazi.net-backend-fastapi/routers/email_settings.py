@@ -44,12 +44,10 @@ INSERT INTO email_config (key, settings)
 """
 
 def _ensure_email_config_table():
-    """Idempotent: create the email_config table + global row if missing."""
-    try:
-        supabase.rpc("exec_sql", {"sql_text": _EMAIL_CONFIG_MIGRATION_SQL}).execute()
-        return True
-    except Exception as rpc_exc:
-        logger.warning("email_settings: exec_sql RPC unavailable (%s) — trying probe", rpc_exc)
+    # H4 — typed probe only (no exec_sql). If the table is missing, return
+    # False and let callers fail closed; the operator runs
+    # _EMAIL_CONFIG_MIGRATION_SQL in the Supabase SQL editor (see module
+    # docstring). The DB console remains the only exec_sql caller.
     try:
         supabase.table("email_config").select("key").limit(1).execute()
         return True

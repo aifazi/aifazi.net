@@ -79,18 +79,18 @@ def _redact_row(row: dict) -> dict:
 
 
 def _discover_tables() -> list[str]:
-    sql = (
-        "SELECT table_name FROM information_schema.tables "
-        "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' "
-        "ORDER BY table_name"
-    )
-    try:
-        result = supabase.rpc("exec_sql", {"sql_text": sql}).execute()
-        tables = [r.get("table_name") for r in (result.data or []) if r.get("table_name")]
-        return tables or FALLBACK_TABLES
-    except Exception as e:
-        log.warning("exec_sql RPC failed for table discovery, using fallback list: %s", e)
-        return FALLBACK_TABLES
+    # H4 — typed path only (no exec_sql): probe the known allowlist via the
+    # PostgREST client. Arbitrary information_schema SQL would make a
+    # service-role compromise into arbitrary SQL; the fallback list + probe
+    # keeps this read-only and typed.
+    out: list[str] = []
+    for table in FALLBACK_TABLES:
+        try:
+            supabase.table(table).select("id").limit(1).execute()
+            out.append(table)
+        except Exception:
+            continue
+    return out or list(FALLBACK_TABLES)
 
 
 def _safe_table_filter(tables: str) -> list[str] | None:
@@ -124,32 +124,11 @@ def _sql_escape(val) -> str:
 
 
 def _fetch_schema_via_rpc() -> dict[str, list[dict]]:
-    """Fetch table schemas by querying information_schema via exec_sql RPC."""
-    cols_sql = (
-        "SELECT table_name, column_name, data_type, is_nullable, column_default "
-        "FROM information_schema.columns "
-        "WHERE table_schema = 'public' "
-        "ORDER BY table_name, ordinal_position"
-    )
-    try:
-        result = supabase.rpc("exec_sql", {"sql_text": cols_sql}).execute()
-        rows = result.data or []
-    except Exception as e:
-        log.warning("exec_sql RPC failed for schema query, will fall back to sample: %s", e)
-        return {}
-
-    schema: dict[str, list[dict]] = {}
-    for row in rows:
-        tname = row.get("table_name", "")
-        if tname not in schema:
-            schema[tname] = []
-        schema[tname].append({
-            "name": row.get("column_name", ""),
-            "type": row.get("data_type", ""),
-            "nullable": row.get("is_nullable", "YES") == "YES",
-            "default": row.get("column_default"),
-        })
-    return schema
+    # H4 — exec_sql removed here: schema is inferred per-table via
+    # _fetch_schema_via_sample (typed SELECT limit 1). Callers already fall
+    # back to sampling when this returns {}. Kept as a stub for call-site
+    # compatibility; the DB console remains the only exec_sql caller.
+    return {}
 
 
 def _fetch_schema_via_sample(table: str) -> list[dict]:

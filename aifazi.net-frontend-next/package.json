@@ -10,6 +10,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint . --max-warnings=150",
+    "lint:strict": "eslint . --max-warnings=50",
     "lint:hooks": "python ../scripts/check_hook_imports.py",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
