@@ -25,7 +25,6 @@ MODULES = {
     "community.contacts": "Contacts",
     "community.staff": "Staff",
     "community.forum": "Forum",
-    "community.chat": "Chat",
     "community.newsletter": "Newsletter",
     "system.db": "DB monitor",
     "system.mail": "Mail",
@@ -66,7 +65,7 @@ ROLE_PERMISSION_PRESETS: dict[str, dict[str, list[str]]] = {
     "admin": {"*": ["manage"]},
     "moderator": {
         "home": ["view"], "community.forum": ["view", "edit", "delete", "manage"],
-        "community.chat": ["view", "edit", "delete", "manage"], "support.helpdesk": ["view", "edit"],
+        "support.helpdesk": ["view", "edit"],
         "content.media": ["view", "create", "edit", "delete"],
         # Operational store access only — NOT financial. Refunds/payouts/POS
         # (store.payments) and store settings/coupons/deals are admin-only.
@@ -84,7 +83,7 @@ ROLE_PERMISSION_PRESETS: dict[str, dict[str, list[str]]] = {
         "content.pages": ["view", "edit"], "content.themes": ["view", "edit"],
         "system.announcements": ["view", "create", "edit", "delete"], "profile": ["view", "edit"], "changelog": ["view"],
     },
-    "chat": {"community.chat": ["view", "create", "edit"], "profile": ["view", "edit"]},
+    "chat": {"profile": ["view", "edit"]},
 }
 
 

@@ -138,7 +138,11 @@ async def upload_avatar(request: Request, user: dict = Depends(get_current_user)
     # Normalize the stored extension from the sniffed type so a mismatched
     # client extension can never be persisted.
     ext = _AVATAR_ALLOWED_MIMES[sniffed]
-    path = f"avatars/{username}/{uuid.uuid4().hex[:8]}.{ext}"
+    # P1-8 — sanitize the username path segment so a hostile username
+    # (e.g. `../../x`) can never escape its prefix inside the bucket.
+    from routers.upload import _safe_storage_filename as _safe_path_seg
+    safe_username = _safe_path_seg(username) or "user"
+    path = f"avatars/{safe_username}/{uuid.uuid4().hex[:8]}.{ext}"
     supabase.storage.from_("uploads").upload(path, file_bytes, {"content_type": sniffed})
     public_url = f"{supabase.storage.get_public_url(path)}"
     supabase.table("users").update({"profile_avatar": public_url, "avatar": public_url}).eq("username", username).execute()
@@ -155,7 +159,13 @@ async def change_password(body: ChangePasswordBody, user: dict = Depends(get_cur
     if not _verify(body.current_password, res.data[0]["password_hash"]):
         raise HTTPException(400, "Current password is incorrect.")
     new_hash = _hash(body.new_password)
-    supabase.table("users").update({"password_hash": new_hash}).eq("username", username).execute()
+    # P1-1 — revoke sessions on password change so a stolen/old refresh cookie
+    # can't silently re-login (mirrors routers/auth.py revoke-on-reset).
+    supabase.table("users").update({
+        "password_hash": new_hash,
+        "refresh_token": None, "previous_refresh_token": None,
+        "reset_token": None, "reset_expires": None,
+    }).eq("username", username).execute()
     return {"ok": True}
 
 
@@ -173,6 +183,7 @@ async def delete_account(body: DeleteAccountBody, user: dict = Depends(get_curre
         raise HTTPException(400, "This account uses social login and has no password — contact support to delete your account.")
     if not _verify(body.current_password, res.data[0]["password_hash"]):
         raise HTTPException(400, "Current password is incorrect.")
+    # P1-1 — revoke sessions on account deletion (mirrors revoke-on-reset).
     supabase.table("users").update({
         "username": f"deleted_{uuid.uuid4().hex[:8]}",
         "profile_bio": "",
@@ -180,6 +191,8 @@ async def delete_account(body: DeleteAccountBody, user: dict = Depends(get_curre
         "profile_avatar": "",
         "avatar": "",
         "password_hash": "",
+        "refresh_token": None, "previous_refresh_token": None,
+        "reset_token": None, "reset_expires": None,
         "banned": True,
     }).eq("username", username).execute()
     return {"ok": True}

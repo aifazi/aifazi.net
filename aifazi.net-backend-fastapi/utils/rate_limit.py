@@ -136,6 +136,86 @@ async def clear_2fa_failures(username: str, ip: str = "") -> None:
     await asyncio.to_thread(_2fa_clear_fails_redis, username, ip)
 
 
+# Login (password-guessing) lockout — mirrors the 2FA pattern above, but keyed
+# per-username ONLY (no IP) so guessing against one account from many IPs still
+# trips the lockout. No schema change: Redis with in-memory fallback, same as 2FA.
+_LOGIN_LOCKOUT_WINDOW_S = 900
+_LOGIN_MAX_FAILURES = 5
+_login_failures_local: dict[str, list[float]] = {}
+
+
+def _login_redis_key(username: str) -> str:
+    return f"login:lockout:{(username or '').strip().lower()}"
+
+
+def _login_locked_redis(username: str) -> bool:
+    """Check if username is locked out via Redis (distributed)."""
+    redis = _get_redis()
+    if redis and _redis_available:
+        try:
+            count = redis.get(_login_redis_key(username))
+            if count and int(count) >= _LOGIN_MAX_FAILURES:
+                return True
+        except Exception as e:
+            log.warning("Redis login lockout check failed: %s — falling back to in-memory", e)
+
+    # Fallback to in-memory
+    now = time.time()
+    key = _login_redis_key(username)
+    recent = [t for t in _login_failures_local.get(key, []) if now - t < _LOGIN_LOCKOUT_WINDOW_S]
+    _login_failures_local[key] = recent
+    return len(recent) >= _LOGIN_MAX_FAILURES
+
+
+def _login_record_fail_redis(username: str) -> None:
+    """Record a failed login attempt via Redis (distributed)."""
+    redis = _get_redis()
+    if redis and _redis_available:
+        try:
+            key = _login_redis_key(username)
+            pipe = redis.pipeline()
+            pipe.incr(key)
+            pipe.expire(key, _LOGIN_LOCKOUT_WINDOW_S)
+            pipe.execute()
+            return
+        except Exception as e:
+            log.warning("Redis login record fail failed: %s — falling back to in-memory", e)
+
+    # Fallback to in-memory
+    now = time.time()
+    key = _login_redis_key(username)
+    _login_failures_local.setdefault(key, []).append(now)
+    _login_failures_local[key] = [t for t in _login_failures_local[key] if now - t < _LOGIN_LOCKOUT_WINDOW_S]
+
+
+def _login_clear_fails_redis(username: str) -> None:
+    """Clear login failures for username (success clears lockout)."""
+    redis = _get_redis()
+    if redis and _redis_available:
+        try:
+            redis.delete(_login_redis_key(username))
+        except Exception as e:
+            log.warning("Redis login clear fails failed: %s", e)
+
+    # Also clear in-memory.
+    _login_failures_local.pop(_login_redis_key(username), None)
+
+
+async def is_login_locked(username: str) -> bool:
+    """Async login lockout check — offloads blocking Redis I/O off the loop."""
+    return await asyncio.to_thread(_login_locked_redis, username)
+
+
+async def record_login_failure(username: str) -> None:
+    """Async login failure recorder — offloads blocking Redis I/O off the loop."""
+    await asyncio.to_thread(_login_record_fail_redis, username)
+
+
+async def clear_login_failures(username: str) -> None:
+    """Async login failure clearer — offloads blocking Redis I/O off the loop."""
+    await asyncio.to_thread(_login_clear_fails_redis, username)
+
+
 def _get_redis():
     """Lazy-initialize Redis client (standard redis-py or Upstash fallback)."""
     global _redis_client, _redis_available, _redis_last_attempt

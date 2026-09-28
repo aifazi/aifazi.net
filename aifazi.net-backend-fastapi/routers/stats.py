@@ -54,7 +54,6 @@ COLL_TABLE = {
     "threads":    "forum_threads",
     "replies":    "forum_replies",
     "contacts":   "contacts",
-    "messages":   "chat_messages",
     "media":      "media",
     "staff":      "users",
     "newsletter": "newsletter_subs",
@@ -65,7 +64,6 @@ COLL_SEARCH_FIELD = {
     "threads":    "title",
     "replies":    "content",
     "contacts":   "email",
-    "messages":   "content",
     "media":      "filename",
     "staff":      "username",
     "newsletter": "email",
@@ -102,6 +100,15 @@ def _count(table, **filters):
     r = q.execute()
     return r.count or 0
 
+
+def _safe_count(table, **filters):
+    """P2-11 — count that returns 0 when the table is absent/unreadable so
+    /stats can't 500 on dropped legacy tables (chat_messages/chat_rooms)."""
+    try:
+        return _count(table, **filters)
+    except Exception:
+        return 0
+
 def _since(days):
     return (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
 
@@ -132,11 +139,16 @@ def _stats_impl():
     replies_count       = supabase.table("forum_replies").select("id", count="exact").execute()
     newsletter_count    = supabase.table("newsletter_subs").select("id", count="exact").execute()
     newsletter_active   = supabase.table("newsletter_subs").select("id", count="exact").eq("status", "active").execute()
-    chat_count          = supabase.table("chat_messages").select("id", count="exact").execute()
+    # P2-11 — chat_messages is a dropped legacy table; count defensively.
+    try:
+        chat_count = supabase.table("chat_messages").select("id", count="exact").execute()
+        chat_messages_total = chat_count.count or 0
+    except Exception:
+        chat_messages_total = 0
     contacts_count      = supabase.table("contacts").select("id", count="exact").execute()
     media_count         = supabase.table("media").select("id", count="exact").execute()
     staff_count         = supabase.table("users").select("id", count="exact").execute()
-    chat_rooms_count    = _count("chat_rooms")
+    chat_rooms_count    = _safe_count("chat_rooms")
 
     # ── Today / This week ─────────────────────────────────────────────────────
     today_str = _since(1)
@@ -197,7 +209,7 @@ def _stats_impl():
                 "active": newsletter_active.count or 0,
             },
             "chat": {
-                "messages": chat_count.count or 0,
+                "messages": chat_messages_total,
                 "rooms":    chat_rooms_count,
             },
             "contacts":  contacts_count.count or 0,

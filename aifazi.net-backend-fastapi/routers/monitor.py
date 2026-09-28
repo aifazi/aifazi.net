@@ -892,8 +892,35 @@ async def _send_error_alert(row: dict):
 _ERROR_SOURCES = {"frontend", "backend", "mobile"}
 
 
+# P1-9 — public ingest guards: reject oversized bodies before parsing, and cap
+# each IP to a daily quota (Redis-backed sliding window via check_rate_limit)
+# so scrapers can't flood error_logs / burn the mail queue. The 10-min global
+# email cooldown in _record_error is unchanged.
+_ERROR_INGEST_MAX_BYTES = 32 * 1024
+_ERROR_INGEST_DAILY_QUOTA = 100
+
+
 @router.post("/api/monitor/errors")
 async def ingest_error(body: dict, request: Request):
+    cl = (request.headers.get("content-length") or "").strip()
+    try:
+        if cl and int(cl) > _ERROR_INGEST_MAX_BYTES:
+            raise HTTPException(413, "Error report too large")
+    except ValueError:
+        pass
+    import json as _json
+    try:
+        if len(_json.dumps(body or {}).encode("utf-8")) > _ERROR_INGEST_MAX_BYTES:
+            raise HTTPException(413, "Error report too large")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(400, "Invalid error report")
+    ip = request.client.host if request.client else ""
+    if ip:
+        from utils.rate_limit import check_rate_limit as _check_rl
+        if not await _check_rl(f"monitor-errors:{ip}", _ERROR_INGEST_DAILY_QUOTA, 86400):
+            raise HTTPException(429, "Daily error-report quota exceeded")
     source = str(body.get("source", "frontend"))[:20]
     if source not in _ERROR_SOURCES:
         raise HTTPException(400, "Unknown error source")
@@ -904,7 +931,6 @@ async def ingest_error(body: dict, request: Request):
     stack = str(body.get("stack", ""))[-8000:]
     endpoint = str(body.get("endpoint", ""))[:200]
     url = str(body.get("url", ""))[:500]
-    ip = request.client.host if request.client else ""
     ua = request.headers.get("user-agent", "")[:300]
     await _record_error(source=source, error_type=error_type, message=message,
                         stack=stack, endpoint=endpoint, ip=ip, user_agent=ua, url=url)

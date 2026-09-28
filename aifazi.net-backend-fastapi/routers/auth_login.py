@@ -16,6 +16,11 @@ from database import supabase
 from permissions import normalize_permissions, role_permissions
 from utils.audit import record as _audit
 from utils.audit import record_auth as _auth_log
+from utils.rate_limit import (
+    clear_login_failures as _login_clear_fails,
+    is_login_locked as _login_locked,
+    record_login_failure as _login_record_fail,
+)
 
 router = APIRouter()
 log = logging.getLogger("auth.login")
@@ -75,11 +80,17 @@ async def login(body: LoginBody, request: Request, response: Response):
 
     # ── 1. Admin login ─────────────────────────────────────────────────────
     if username and username == ADMIN_USERNAME:
+        # P1-7 — per-account password-guessing lockout (no schema change;
+        # Redis-backed with in-memory fallback, same pattern as 2FA lockout).
+        if await _login_locked(username):
+            raise HTTPException(429, "Too many failed login attempts. Try again later.")
         if not _check_admin_password(password):
+            await _login_record_fail(username)
             _audit("unknown", "login_failed", target=username, ip=client_ip)
             _auth_log(username, success=False, ip=client_ip, user_agent=user_agent,
                       role="admin", reason="wrong_password")
             raise HTTPException(400, "Invalid credentials")
+        await _login_clear_fails(username)
         fu = supabase.table("users").select("id").eq("username", ADMIN_USERNAME).limit(1).execute()
         forum_id = fu.data[0]["id"] if fu.data else None
         if not forum_id:
@@ -115,11 +126,15 @@ async def login(body: LoginBody, request: Request, response: Response):
         res = supabase.table("users").select("*").eq("username", username).execute()
         staff = res.data[0] if res.data else None
         if staff and staff.get("role") in _STAFF_ROLES:
+            if await _login_locked(staff["username"]):
+                raise HTTPException(429, "Too many failed login attempts. Try again later.")
             if not _verify(password, staff.get("password_hash") or ""):
+                await _login_record_fail(staff["username"])
                 _audit("unknown", "login_failed", target=username, ip=client_ip)
                 _auth_log(username, success=False, ip=client_ip, user_agent=user_agent,
                           role="", reason="wrong_password")
                 raise HTTPException(400, "Invalid credentials")
+            await _login_clear_fails(staff["username"])
             if staff.get("banned"):
                 _auth_log(username, success=False, ip=client_ip, user_agent=user_agent,
                           role=staff.get("role", ""), reason="account_suspended")
@@ -154,10 +169,14 @@ async def login(body: LoginBody, request: Request, response: Response):
             user = _find_user_by_ci("email", identifier, "*")
     if not user:
         raise HTTPException(400, "Invalid credentials")
+    if await _login_locked(user["username"]):
+        raise HTTPException(429, "Too many failed login attempts. Try again later.")
     if not _verify(password, user.get("password_hash") or ""):
+        await _login_record_fail(user["username"])
         _auth_log(user["username"], success=False, ip=client_ip, user_agent=user_agent,
                   role=user.get("role", ""), reason="wrong_password")
         raise HTTPException(400, "Invalid credentials")
+    await _login_clear_fails(user["username"])
     if user.get("banned"):
         _auth_log(user["username"], success=False, ip=client_ip, user_agent=user_agent,
                   role=user.get("role", ""), reason="account_suspended")
