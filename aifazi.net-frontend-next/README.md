@@ -26,7 +26,7 @@ This repository is the **entire frontend** of aifazi.net. Key features:
 | **Blog** | Post listing and full post view, live-synced via Supabase Realtime |
 | **Forum** | Categories, threads, user profiles, auth (register / login / password reset / email verify) |
 | **Admin Panel** | Dashboard, post editor, site settings, theme/framework library, CDN settings, mail settings, help-desk, changelog |
-| **Live Chat** | Powered by CometChat UI Kit (widget + full admin chat view) |
+| **Live Chat** | Nextcloud Talk links (external chat + calls via `lib/talk.ts`) |
 | **Developer Tools** | File tools (PDF, image, document, text), network tools, SEO tools, database GUI |
 | **Help Desk** | Support ticket system |
 | **Theming** | 20+ themes with dark/light pairs, admin-lockable, OS-preference-aware |
@@ -43,7 +43,7 @@ This repository is the **entire frontend** of aifazi.net. Key features:
 | [TypeScript](https://typescriptlang.org) | Types for `lib/`, `middleware.ts`, `app/` |
 | [Supabase](https://supabase.com) | Postgres Realtime subscriptions (blog, site config, banners, contacts) |
 | [Axios](https://axios-http.com) | HTTP client with automatic JWT refresh |
-| [CometChat](https://cometchat.com) | Live chat UI kit |
+| [Nextcloud Talk](https://nextcloud.com/talk) | External chat + calls (URL via `NEXT_PUBLIC_TALK_URL`, see `lib/talk.ts`) |
 | [Sentry](https://sentry.io) | Error monitoring |
 | [Cloudinary](https://cloudinary.com) | Media storage, proxied through `cdn.aifazi.net` |
 | [Vercel](https://vercel.com) | Hosting & deployment |
@@ -59,7 +59,7 @@ This repository is the **entire frontend** of aifazi.net. Key features:
 - `npm` (or `yarn` / `pnpm`)
 - A running instance of the **aifazi.net FastAPI backend** (or use the default `https://api.aifazi.net`)
 - Supabase project (for Realtime features)
-- CometChat app (for chat features)
+- Nextcloud Talk instance (for chat/call links)
 
 ### Steps
 
@@ -100,9 +100,7 @@ Copy `.env.local.example` to `.env.local` and fill in every value.
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Your Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anonymous (public) key |
 | `NEXT_PUBLIC_SENTRY_DSN` | No | Sentry DSN for error reporting |
-| `NEXT_PUBLIC_COMETCHAT_APP_ID` | No | CometChat App ID |
-| `COMETCHAT_AUTH_KEY` | No | CometChat Auth Key (server-only — never `NEXT_PUBLIC_`; only App ID/region are browser-safe) |
-| `NEXT_PUBLIC_COMETCHAT_REGION` | No | CometChat region (e.g. `us`) |
+| `NEXT_PUBLIC_TALK_URL` | No | Nextcloud Talk base URL for chat/call links (default `https://cloud.aifazi.net/apps/spreed`) |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No | VAPID public key for Web Push notifications |
 | `INTERNAL_API_SECRET` | Yes | Shared secret stamped on every `/api/*` request by Edge middleware. Must match the backend's `INTERNAL_API_SECRET`. Generate with `openssl rand -hex 32` |
 
@@ -131,7 +129,6 @@ Copy `.env.local.example` to `.env.local` and fill in every value.
 │   ├── forum/             # Forum: home, category, thread, auth, profile, admin
 │   ├── admin/[[...slug]]/ # Catch-all admin panel route (protected by middleware)
 │   ├── tools/             # Developer tools: files, db, network, seo
-│   ├── chat/              # CometChat full-screen chat page
 │   ├── helpdesk/          # Help desk
 │   ├── login/             # Login / registration
 │   ├── contact/           # Contact page

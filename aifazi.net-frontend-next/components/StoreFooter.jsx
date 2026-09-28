@@ -115,9 +115,9 @@ export default function StoreFooter() {
             <a href={`${SITE_URL}/privacy`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: MUTED, textDecoration: 'none' }}
               onMouseEnter={e => e.currentTarget.style.color = S}
               onMouseLeave={e => e.currentTarget.style.color = MUTED}>Privacy</a>
-            <a href={`${SITE_URL}/contact`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: MUTED, textDecoration: 'none' }}
+            <a href={`${SITE_URL}/terms`} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: MUTED, textDecoration: 'none' }}
               onMouseEnter={e => e.currentTarget.style.color = S}
-              onMouseLeave={e => e.currentTarget.style.color = MUTED}>Contact</a>
+              onMouseLeave={e => e.currentTarget.style.color = MUTED}>Terms</a>
           </div>
         </div>
       </div>

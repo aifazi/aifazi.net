@@ -634,6 +634,9 @@ export default function Navbar() {
               <button
                 onClick={() => setToolsOpen(o => !o)}
                 onBlur={() => setTimeout(() => setToolsOpen(false), 150)}
+                aria-haspopup="true"
+                aria-expanded={toolsOpen}
+                aria-label="Tools menu"
                 style={{
                   fontFamily: 'var(--font-code)', fontSize: 11, letterSpacing: 3,
                   textTransform: 'uppercase', color: toolsOpen ? 'var(--green)' : 'var(--muted)',
@@ -705,7 +708,7 @@ export default function Navbar() {
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, lineHeight: 1.5 }}>{adminAuth.role.toUpperCase()}</div>
                   </div>
                 </Link>
-                <button onClick={handleAdminLogout} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}
+                <button onClick={handleAdminLogout} aria-label="Sign out (staff)" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--red) 40%, transparent)'; e.currentTarget.style.color = 'var(--red)' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
                 >OUT</button>
@@ -722,7 +725,7 @@ export default function Navbar() {
                     imgStyle={{ border: '1px solid var(--green)' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>{forumUser.username}</span>
                 </Link>
-                <button onClick={async () => { await forumLogout(); window.location.replace(loginRoute) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
+                <button onClick={async () => { await forumLogout(); window.location.replace(loginRoute) }} aria-label="Sign out" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', letterSpacing: 1 }}>OUT</button>
               </div>
             ) : (
               <Link to={loginRoute} style={{

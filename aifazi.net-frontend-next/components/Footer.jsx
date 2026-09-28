@@ -317,8 +317,8 @@ export default function Footer() {
           © {year} <span style={{ color: fs.accent }}>tanvir@aifazi.net</span> · All rights reserved
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {['Privacy', 'Terms', 'Contact'].map(label => (
-            <Link key={label} to="/contact"
+          {[['Privacy', '/privacy'], ['Terms', '/terms'], ['Contact', '/contact']].map(([label, to]) => (
+            <Link key={label} to={to}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: fs.muted, letterSpacing: 1, textDecoration: 'none', transition: 'color 0.2s' }}
               onMouseEnter={e => e.currentTarget.style.color = fs.accent}
               onMouseLeave={e => e.currentTarget.style.color = fs.muted}

@@ -40,15 +40,15 @@ export default function CartDrawer({ open, onClose, cart, user, loginHref, isLoa
             <>
               {cart.items.map(item => (
                 <div key={item.id} className="ec-cart-item">
-                  <img className="ec-cart-item-img" src={item.product?.image_url || ''} alt="" onError={e => e.currentTarget.style.display = 'none'} />
+                  <img className="ec-cart-item-img" src={item.product?.image_url || ''} alt={item.product?.name || 'Product'} onError={e => e.currentTarget.style.display = 'none'} />
                   <div className="ec-cart-item-info">
                     <div className="ec-cart-item-name">{item.product?.name || 'Product'}</div>
                     <div className="ec-cart-item-price">${item.product?.price?.toFixed(2) || '0.00'} each</div>
                     <div className="ec-cart-qty">
-                      <button className="ec-cart-qty-btn" onClick={() => updateCartQty(item, item.quantity - 1)}>−</button>
+                      <button className="ec-cart-qty-btn" aria-label={`Decrease quantity of ${item.product?.name || 'product'}`} onClick={() => updateCartQty(item, item.quantity - 1)}>−</button>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', minWidth: 24, textAlign: 'center' }}>{item.quantity}</span>
-                      <button className="ec-cart-qty-btn" onClick={() => updateCartQty(item, item.quantity + 1)}>+</button>
-                      <button onClick={() => removeCartItem(item)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 11, marginLeft: 6 }}>✕</button>
+                      <button className="ec-cart-qty-btn" aria-label={`Increase quantity of ${item.product?.name || 'product'}`} onClick={() => updateCartQty(item, item.quantity + 1)}>+</button>
+                      <button aria-label={`Remove ${item.product?.name || 'product'} from cart`} onClick={() => removeCartItem(item)} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 11, marginLeft: 6 }}>✕</button>
                     </div>
                   </div>
                   <div className="ec-cart-item-total">${(item.line_total || 0).toFixed(2)}</div>

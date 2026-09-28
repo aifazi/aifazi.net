@@ -32,7 +32,7 @@ const STORE_ENABLED    = STORE_HOSTNAME !== SITE_HOST && isPublicDomain(STORE_HO
 const STATUS_ENABLED   = STATUS_HOSTNAME !== SITE_HOST && isPublicDomain(STATUS_HOSTNAME)
 const FIVEM_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/forms', '/profile', '/login']
 const FIVEM_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/manifest.webmanifest', '/sw.js', '/favicon.ico', '/logo.svg'])
-const STORE_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/login', '/profile', '/forms', '/blog', '/contact', '/privacy', '/tools']
+const STORE_SHARED_PREFIXES = ['/api', '/auth', '/forum', '/login', '/profile', '/forms', '/blog', '/contact', '/privacy', '/terms', '/tools']
 const STORE_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico', '/logo.svg', '/manifest.webmanifest', '/sw.js'])
 const STATUS_SHARED_PREFIXES = ['/api', '/auth', '/login', '/admin']
 const STATUS_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico', '/logo.svg'])

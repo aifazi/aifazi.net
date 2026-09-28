@@ -132,14 +132,14 @@ function DismissBtn({ banner, cfg, onDismiss }) {
     )
   }
   return (
-    <button onClick={onDismiss} title="Dismiss"
+    <button onClick={onDismiss} title="Dismiss" aria-label="Dismiss announcement"
       style={{ flexShrink:0, background:'none', border:'none', cursor:'pointer',
         padding:'10px 16px', color:'rgba(255,255,255,0.3)', fontSize:16, lineHeight:1,
         display:'flex', alignItems:'center', justifyContent:'center', transition:'color 0.15s' }}
       onMouseEnter={e=>e.currentTarget.style.color=cfg.accent}
       onMouseLeave={e=>e.currentTarget.style.color='rgba(255,255,255,0.3)'}
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
       </svg>
     </button>

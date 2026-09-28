@@ -7,9 +7,7 @@ import { API_BASE } from './getApiBase'
  * over-the-air updates flow through EAS Updates (wired in app/_layout.tsx).
  * This module keeps the version-check helpers so the UI can report the latest
  * release state without ever downloading or installing a binary.
- */
-
-/**
+ *
  * The self-updater sideload path (download APK + INSTALL_PACKAGE intent) is
  * disabled. Rationale: it trusted the binary on SHA-256 hash alone, and a
  * signer-digest check before install is not feasible with the installed deps —
@@ -19,25 +17,6 @@ import { API_BASE } from './getApiBase'
  * install under our package identity. Never request REQUEST_INSTALL_PACKAGES;
  * the permission is removed from app.json. Updates ship via EAS Updates.
  */
-export class SideloadDisabledError extends Error {
-  constructor() {
-    super('APK sideload is disabled. Updates are delivered via EAS Updates.')
-    this.name = 'SideloadDisabledError'
-  }
-}
-
-// Kept for import compatibility; the sideload path is disabled.
-export class InstallBlockedError extends Error {
-  constructor() {
-    super('Install was blocked by Android. Allow aifazi to install apps, then press retry.')
-    this.name = 'InstallBlockedError'
-  }
-}
-
-/** Deprecated stub: sideload disabled, never requests install permission. */
-export async function canRequestPackageInstalls(): Promise<boolean> {
-  return false
-}
 
 const RELEASE_API = `${API_BASE}/api/mobile/release/latest`
 
@@ -160,31 +139,3 @@ export async function checkForUpdate(): Promise<UpdateCheck> {
   }
 }
 
-export interface InstallProgress {
-  bytesWritten: number
-  totalBytes: number
-  fraction: number
-}
-
-/**
- * DISABLED. Previously downloaded the release APK (SHA-256 checked) and fired
- * the package-installer intent. Removed: hash-only trust cannot authenticate
- * the publisher, and no installed dep can read the APK/release signing
- * certificate digest to verify it. Always throws SideloadDisabledError.
- */
-export async function downloadAndInstall(
-  _apkUrl: string,
-  _onProgress?: (p: InstallProgress) => void,
-  _expectedSize?: number,
-  _expectedSha256?: string,
-): Promise<void> {
-  throw new SideloadDisabledError()
-}
-
-/**
- * Deprecated no-op (sideload disabled). Kept so existing imports typecheck;
- * does nothing and never launches a settings intent.
- */
-export async function openInstallSettings(): Promise<void> {
-  return
-}
