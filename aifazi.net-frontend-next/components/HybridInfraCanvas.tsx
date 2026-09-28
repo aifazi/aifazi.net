@@ -28,10 +28,17 @@ import {
   CATEGORY_META,
   type InfraCategory,
   type InfraComponent,
+  type InfraFlow,
 } from '@/data/hybrid-infra'
 
 export interface HybridInfraCanvasHandle {
   exportPng: () => void
+}
+
+export interface NodeMove {
+  x?: number
+  y?: number
+  rackU?: number
 }
 
 interface Props {
@@ -44,6 +51,17 @@ interface Props {
   playStep: number
   viewMode: 'technical' | 'management'
   onSelect: (id: string | null) => void
+  /** Document nodes/flows. Defaults to the built-in Plan A diagram. */
+  nodes?: InfraComponent[]
+  flows?: InfraFlow[]
+  /** Edit mode: drag nodes, click-to-connect links. */
+  editable?: boolean
+  /** Source node id for pending link (connect mode). */
+  connectFrom?: string | null
+  /** Drag position updates; done=true on pointer-up (undo checkpoint). */
+  onMoveNode?: (id: string, pos: NodeMove, done: boolean) => void
+  /** Connect mode: user clicked a second, different node. */
+  onAddLink?: (from: string, to: string) => void
 }
 
 interface Box {
@@ -117,6 +135,16 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       const boxes = new Map<string, Box>()
       const hits = new Map<string, Box>()
       const flowPts = new Map<string, { x: number; y: number }[]>()
+      // Edit-mode interaction state (kept out of React state for 60fps drag).
+      let dragId: string | null = null
+      let dragDX = 0
+      let dragDY = 0
+      let dragMoved = false
+      let cursorDesign: { x: number; y: number } | null = null
+
+      const nodeList = () => sRef.current.nodes ?? COMPONENTS
+      const flowList = () => sRef.current.flows ?? FLOWS
+      const byId = (id: string) => nodeList().find((c) => c.id === id)
 
       // ── helpers ──────────────────────────────────────────────
       const center = (b: Box) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 })
@@ -251,19 +279,39 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           endpoints: { x: 28, y: 655, w: 195, h: 100 },
           smbaccess: { x: 28, y: 775, w: 195, h: 80 },
         }
+        let vmExtra = 0
+        let userExtra = 0
+        let legacyExtra = 0
 
-        for (const c of COMPONENTS) {
+        for (const c of nodeList()) {
           let box: Box
           if (c.layer === 'rack' && c.rackU) {
             const y = RACK.y + RACK.topPad + (c.rackU - 1) * RACK.unitH
             const h = (c.rackH ?? 1) * RACK.unitH - 3
             box = { x: RACK.x + 20, y, w: RACK.w - 40, h }
           } else if (c.layer === 'vm') {
-            box = { ...(vmMap[c.id] ?? { x: 760, y: 400, w: 155, h: 34 }) }
+            box = vmMap[c.id]
+            if (!box) {
+              box = { x: 760 + (vmExtra % 2) * 170, y: 400 + Math.floor(vmExtra / 2) * 42, w: 155, h: 34 }
+              vmExtra += 1
+            } else {
+              box = { ...box }
+            }
           } else if (c.layer === 'legacy') {
-            box = { x: 28, y: 520, w: 195, h: 115 }
+            if (c.id === 'legacy') {
+              box = { x: 28, y: 520, w: 195, h: 115 }
+            } else {
+              box = { x: 28, y: 520 + legacyExtra * 125, w: 195, h: 115 }
+              legacyExtra += 1
+            }
           } else if (c.layer === 'users') {
-            box = { ...(userMap[c.id] ?? { x: 28, y: 655, w: 195, h: 100 }) }
+            box = userMap[c.id]
+            if (!box) {
+              box = { x: 28, y: 655 + userExtra * 110, w: 195, h: 100 }
+              userExtra += 1
+            } else {
+              box = { ...box }
+            }
           } else {
             box = { x: c.x ?? 0, y: c.y ?? 0, w: c.w ?? 100, h: c.h ?? 50 }
           }
@@ -277,10 +325,9 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }
 
         flowPts.clear()
-        const byId = new Map(COMPONENTS.map((c) => [c.id, c]))
-        for (const f of FLOWS) {
-          const a = byId.get(f.from)
-          const b = byId.get(f.to)
+        for (const f of flowList()) {
+          const a = byId(f.from)
+          const b = byId(f.to)
           if (!a || !b) continue
           const ba = boxes.get(a.id)
           const bb = boxes.get(b.id)
@@ -391,7 +438,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
       function drawFlows(t: number) {
         const p = sRef.current
-        for (const f of FLOWS) {
+        for (const f of flowList()) {
           const pts = flowPts.get(f.id)
           if (!pts) continue
           const color = CATEGORY_META[f.cat].color
@@ -428,6 +475,33 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           }
           ctx.restore()
         }
+      }
+
+      function drawPendingLink(t: number) {
+        const p = sRef.current
+        if (!p.editable || !p.connectFrom || !cursorDesign) return
+        const src = boxes.get(p.connectFrom)
+        if (!src) return
+        const ax = src.x + src.w / 2
+        const ay = src.y + src.h / 2
+        ctx.save()
+        ctx.globalAlpha = 0.9
+        ctx.strokeStyle = '#36d7e8'
+        ctx.lineWidth = 2
+        ctx.setLineDash([8, 6])
+        ctx.lineDashOffset = frozen ? 0 : -t * 30
+        ctx.shadowColor = '#36d7e8'
+        ctx.shadowBlur = 8
+        ctx.beginPath()
+        ctx.moveTo(ax, ay)
+        ctx.lineTo(cursorDesign.x, cursorDesign.y)
+        ctx.stroke()
+        ctx.setLineDash([])
+        ctx.beginPath()
+        ctx.fillStyle = '#36d7e8'
+        ctx.arc(cursorDesign.x, cursorDesign.y, 4, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
       }
 
       function drawRackFrame() {
@@ -750,7 +824,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }
         ctx.setLineDash([])
 
-        for (const c of COMPONENTS) if (c.layer === 'vm') drawVmChip(c, t)
+        for (const c of nodeList()) if (c.layer === 'vm') drawVmChip(c, t)
 
         const ec = boxes.get('entraconnect')
         if (ec) {
@@ -789,7 +863,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.setLineDash([])
         ctx.restore()
 
-        const legacy = COMPONENTS.find((c) => c.id === 'legacy')
+        const legacy = byId('legacy')
         const lb = legacy ? boxes.get('legacy') : undefined
         if (legacy && lb) {
           const selected = p.selectedId === 'legacy'
@@ -807,7 +881,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           ctx.restore()
         }
 
-        for (const c of COMPONENTS) {
+        for (const c of nodeList()) {
           if (c.layer !== 'users') continue
           const b = boxes.get(c.id)
           if (!b) continue
@@ -904,12 +978,13 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         drawBackground()
         drawZoneLabels()
         drawFlows(t)
+        drawPendingLink(t)
         drawRackFrame()
-        for (const c of COMPONENTS) {
+        for (const c of nodeList()) {
           if (c.layer === 'rack') drawRackDevice(c, t)
         }
         drawClusterPanel(t)
-        for (const c of COMPONENTS) {
+        for (const c of nodeList()) {
           if (c.layer === 'edge' || c.layer === 'cloud') drawChip(c, t)
         }
         drawManagementOverlay()
@@ -942,50 +1017,153 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       }
       kickRef.current = kick
 
+      function toDesign(e: MouseEvent | PointerEvent) {
+        const rect = canvas.getBoundingClientRect()
+        return {
+          mx: e.clientX - rect.left,
+          my: e.clientY - rect.top,
+        }
+      }
+
+      function hitAt(mx: number, my: number): string | null {
+        const nl = nodeList()
+        for (let i = nl.length - 1; i >= 0; i--) {
+          const h = hits.get(nl[i].id)
+          if (h && mx >= h.x && mx <= h.x + h.w && my >= h.y && my <= h.y + h.h) {
+            return nl[i].id
+          }
+        }
+        return null
+      }
+
+      function designFromClient(mx: number, my: number) {
+        return { x: (mx - S.ox) / S.v, y: (my - S.oy) / S.v }
+      }
+
+      const snap = (v: number) => Math.round(v / 10) * 10
+
       function onMove(e: MouseEvent) {
         const rect = canvas.getBoundingClientRect()
         const mx = e.clientX - rect.left
         const my = e.clientY - rect.top
-        let found: string | null = null
-        for (let i = COMPONENTS.length - 1; i >= 0; i--) {
-          const h = hits.get(COMPONENTS[i].id)
-          if (h && mx >= h.x && mx <= h.x + h.w && my >= h.y && my <= h.y + h.h) {
-            found = COMPONENTS[i].id
-            break
+        const found = hitAt(mx, my)
+        hoverId = found
+        canvas.style.cursor = dragId
+          ? 'grabbing'
+          : sRef.current.editable && sRef.current.connectFrom
+            ? 'crosshair'
+            : found
+              ? 'pointer'
+              : 'default'
+        if (dragId) {
+          const d = designFromClient(mx, my)
+          const node = byId(dragId)
+          if (node && sRef.current.onMoveNode) {
+            if (node.layer === 'rack') {
+              const rackU = Math.max(
+                1,
+                Math.min(
+                  42,
+                  Math.round((d.y - (RACK.y + RACK.topPad)) / RACK.unitH) + 1,
+                ),
+              )
+              if (rackU !== node.rackU) sRef.current.onMoveNode(dragId, { rackU }, false)
+            } else {
+              const box = boxes.get(dragId)
+              if (box) {
+                const nx = snap(d.x - dragDX)
+                const ny = snap(d.y - dragDY)
+                if (Math.abs(nx - box.x) > 2 || Math.abs(ny - box.y) > 2) dragMoved = true
+                sRef.current.onMoveNode(dragId, { x: nx, y: ny }, false)
+              }
+            }
+          }
+        } else if (sRef.current.editable) {
+          const d = designFromClient(mx, my)
+          cursorDesign = d
+        }
+      }
+
+      function onPointerDown(e: PointerEvent) {
+        if (!sRef.current.editable || e.button !== 0) return
+        const { mx, my } = toDesign(e)
+        const found = hitAt(mx, my)
+        if (found) {
+          const box = boxes.get(found)
+          const d = designFromClient(mx, my)
+          dragId = found
+          dragMoved = false
+          cursorDesign = null
+          if (box) {
+            dragDX = d.x - box.x
+            dragDY = d.y - box.y
+          } else {
+            dragDX = 0
+            dragDY = 0
+          }
+          try {
+            canvas.setPointerCapture(e.pointerId)
+          } catch {
+            /* noop */
           }
         }
-        hoverId = found
-        canvas.style.cursor = found ? 'pointer' : 'default'
+      }
+
+      function onPointerUp(e: PointerEvent) {
+        if (!dragId) return
+        const doneId = dragId
+        const wasMoved = dragMoved
+        dragId = null
+        dragMoved = false
+        try {
+          canvas.releasePointerCapture(e.pointerId)
+        } catch {
+          /* noop */
+        }
+        // Commit final position so the editor pushes one undo checkpoint.
+        if (wasMoved && sRef.current.onMoveNode) {
+          const node = byId(doneId)
+          const box = boxes.get(doneId)
+          if (node && box) {
+            if (node.layer === 'rack') {
+              sRef.current.onMoveNode(doneId, { rackU: node.rackU }, true)
+            } else {
+              sRef.current.onMoveNode(doneId, { x: Math.round(box.x), y: Math.round(box.y) }, true)
+            }
+          }
+        }
       }
 
       function onClick(e: MouseEvent) {
-        const rect = canvas.getBoundingClientRect()
-        const mx = e.clientX - rect.left
-        const my = e.clientY - rect.top
-        let found: string | null = null
-        for (let i = COMPONENTS.length - 1; i >= 0; i--) {
-          const h = hits.get(COMPONENTS[i].id)
-          if (h && mx >= h.x && mx <= h.x + h.w && my >= h.y && my <= h.y + h.h) {
-            found = COMPONENTS[i].id
-            break
-          }
+        // A drag that moved is not a click (prevents accidental links).
+        if (dragMoved) {
+          dragMoved = false
+          return
         }
-        sRef.current.onSelect(found)
+        const { mx, my } = toDesign(e)
+        const found = hitAt(mx, my)
+        const p = sRef.current
+        if (p.editable && p.connectFrom && found && found !== p.connectFrom && p.onAddLink) {
+          p.onAddLink(p.connectFrom, found)
+          return
+        }
+        p.onSelect(found)
       }
 
       let kbIndex = -1
       function onKey(e: KeyboardEvent) {
+        const nl = nodeList()
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
           e.preventDefault()
-          kbIndex = (kbIndex + 1) % COMPONENTS.length
-          sRef.current.onSelect(COMPONENTS[kbIndex].id)
+          kbIndex = (kbIndex + 1) % nl.length
+          sRef.current.onSelect(nl[kbIndex].id)
         } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
           e.preventDefault()
-          kbIndex = (kbIndex - 1 + COMPONENTS.length) % COMPONENTS.length
-          sRef.current.onSelect(COMPONENTS[kbIndex].id)
+          kbIndex = (kbIndex - 1 + nl.length) % nl.length
+          sRef.current.onSelect(nl[kbIndex].id)
         } else if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          if (kbIndex >= 0) sRef.current.onSelect(COMPONENTS[kbIndex].id)
+          if (kbIndex >= 0) sRef.current.onSelect(nl[kbIndex].id)
         } else if (e.key === 'Escape') {
           sRef.current.onSelect(null)
           kbIndex = -1
@@ -1029,9 +1207,12 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       canvas.addEventListener('mousemove', onMove)
       canvas.addEventListener('mouseleave', () => {
         hoverId = null
+        cursorDesign = null
       })
       canvas.addEventListener('click', onClick)
       canvas.addEventListener('keydown', onKey)
+      canvas.addEventListener('pointerdown', onPointerDown)
+      canvas.addEventListener('pointerup', onPointerUp)
 
       resize()
       // Initial selection handled by parent (defaults to firewall).
@@ -1052,6 +1233,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         canvas.removeEventListener('mousemove', onMove)
         canvas.removeEventListener('click', onClick)
         canvas.removeEventListener('keydown', onKey)
+        canvas.removeEventListener('pointerdown', onPointerDown)
+        canvas.removeEventListener('pointerup', onPointerUp)
       }
       // frozen is mount-constant (matchMedia sampled once).
     }, [frozen])

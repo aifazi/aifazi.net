@@ -1,13 +1,13 @@
 'use client'
 
 /**
- * HybridInfraLoader — client boundary for the canvas island.
+ * HybridInfraLoader — client boundary for the diagram island.
  * next/dynamic ssr:false is only allowed in client components, so the
  * server page renders this tiny loader instead of importing directly.
  */
 import dynamic from 'next/dynamic'
 
-const HybridInfra = dynamic(() => import('./HybridInfra'), {
+const HybridInfraEditor = dynamic(() => import('./HybridInfraEditor'), {
   ssr: false,
   loading: () => (
     <div
@@ -25,5 +25,5 @@ const HybridInfra = dynamic(() => import('./HybridInfra'), {
 })
 
 export default function HybridInfraLoader() {
-  return <HybridInfra />
+  return <HybridInfraEditor />
 }

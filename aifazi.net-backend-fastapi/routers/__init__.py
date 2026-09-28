@@ -27,6 +27,7 @@ from . import (
     forms,
     github_auth,
     helpdesk,
+    infra_diagrams,
     mail_queue,
     mail_templates,
     mobile_admin,

@@ -17,8 +17,9 @@ import {
   MGMT_CARDS,
   EDGE_COPY,
   CATEGORY_META,
-  depName,
-  dependencyChain,
+  depNameIn,
+  dependencyChainIn,
+  type DiagramDoc,
   type InfraCategory,
 } from '@/data/hybrid-infra'
 
@@ -44,7 +45,7 @@ const BTN: React.CSSProperties = {
   letterSpacing: 0.5,
 }
 
-export default function HybridInfra() {
+export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
   const [activeMode, setActiveMode] = useState<InfraCategory | 'all'>('all')
   const [edgeVendor, setEdgeVendor] = useState<'fortigate' | 'unifi'>('fortigate')
   // Deep-link (?node=<id>) honored at init — no effect needed.
@@ -52,7 +53,8 @@ export default function HybridInfra() {
     if (typeof window === 'undefined') return 'firewall'
     try {
       const id = new URLSearchParams(window.location.search).get('node')
-      if (id && COMPONENTS.some((c) => c.id === id)) return id
+      const list = doc?.nodes ?? COMPONENTS
+      if (id && list.some((c) => c.id === id)) return id
     } catch {
       /* noop */
     }
@@ -65,29 +67,32 @@ export default function HybridInfra() {
   const canvasHandle = useRef<HybridInfraCanvasHandle>(null)
   const playTimer = useRef(0)
 
+  const nodes = doc?.nodes ?? COMPONENTS
+  const flows = doc?.flows ?? null
+
   const selected = useMemo(
-    () => COMPONENTS.find((c) => c.id === selectedId) ?? null,
-    [selectedId],
+    () => nodes.find((c) => c.id === selectedId) ?? null,
+    [nodes, selectedId],
   )
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return null
     return new Set(
-      COMPONENTS.filter(
+      nodes.filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
           c.role.toLowerCase().includes(q),
       ).map((c) => c.id),
     )
-  }, [query])
+  }, [query, nodes])
 
   const focusIds = useMemo(() => {
     if (matches) return matches
     if (!selectedId) return null
-    const { up, down } = dependencyChain(selectedId)
+    const { up, down } = dependencyChainIn(nodes, selectedId)
     return new Set([selectedId, ...up, ...down])
-  }, [matches, selectedId])
+  }, [matches, selectedId, nodes])
 
   // Deep-link: selection updates the URL (?node=<id>).
   useEffect(() => {
@@ -323,6 +328,8 @@ export default function HybridInfra() {
             playStep={playStep}
             viewMode={viewMode}
             onSelect={setSelectedId}
+            nodes={nodes}
+            flows={flows ?? undefined}
           />
         </section>
 
@@ -354,6 +361,21 @@ export default function HybridInfra() {
                 <p style={{ color: '#b7c9da', fontSize: 13, lineHeight: 1.55, margin: '0 0 12px' }}>
                   {selected.desc}
                 </p>
+                {selected.notes && (
+                  <div
+                    style={{
+                      borderLeft: '3px solid #f0c75e', paddingLeft: 10,
+                      margin: '0 0 12px',
+                    }}
+                  >
+                    <div style={{ fontSize: 10, letterSpacing: 2, color: '#f0c75e', marginBottom: 4 }}>
+                      OPERATOR NOTE
+                    </div>
+                    <p style={{ color: '#d5e6f7', fontSize: 12, lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>
+                      {selected.notes}
+                    </p>
+                  </div>
+                )}
                 {edgeNote && (
                   <p style={{ color: '#ffd9a0', fontSize: 12, lineHeight: 1.55, margin: '0 0 12px' }}>
                     {edgeNote}
@@ -397,7 +419,7 @@ export default function HybridInfra() {
                               color: '#9fd2ff', cursor: 'pointer', fontFamily: 'var(--font-mono)',
                             }}
                           >
-                            {depName(d)}
+                            {depNameIn(nodes, d)}
                           </button>
                         ))}
                       </div>

@@ -28,6 +28,8 @@ export interface InfraComponent {
   workloads: string[]
   /** Component IDs (resolved to names at render time). */
   deps: string[]
+  /** Free-form operator note (per-item notes feature). */
+  notes?: string
   /** Rack placement (1-based U) — rack-layer only. */
   rackU?: number
   rackH?: number
@@ -400,7 +402,15 @@ export function depName(id: string): string {
 
 /** Transitive upstream (dependencies) + downstream (dependents) of a node. */
 export function dependencyChain(id: string): { up: Set<string>; down: Set<string> } {
-  const byId = new Map(COMPONENTS.map((c) => [c.id, c]))
+  return dependencyChainIn(COMPONENTS, id)
+}
+
+/** Same as dependencyChain but over an explicit component list (editor docs). */
+export function dependencyChainIn(
+  list: InfraComponent[],
+  id: string,
+): { up: Set<string>; down: Set<string> } {
+  const byId = new Map(list.map((c) => [c.id, c]))
   const up = new Set<string>()
   const down = new Set<string>()
   const walkUp = (cid: string) => {
@@ -412,16 +422,106 @@ export function dependencyChain(id: string): { up: Set<string>; down: Set<string
     }
   }
   walkUp(id)
-  for (const c of COMPONENTS) {
+  for (const c of list) {
     if (c.deps.includes(id)) down.add(c.id)
   }
   // One more downstream level so chains read both ways.
   for (const d of [...down]) {
-    for (const c of COMPONENTS) {
+    for (const c of list) {
       if (c.deps.includes(d)) down.add(c.id)
     }
   }
   up.delete(id)
   down.delete(id)
   return { up, down }
+}
+
+export function depNameIn(list: InfraComponent[], id: string): string {
+  return list.find((c) => c.id === id)?.name ?? id
+}
+
+// ── Editable diagram documents ───────────────────────────────────
+
+/** A saved diagram: nodes + links (+ optional timeline override). */
+export interface DiagramDoc {
+  id: string
+  slug: string
+  title: string
+  /** ISO timestamp. */
+  updatedAt: string
+  published: boolean
+  nodes: InfraComponent[]
+  flows: InfraFlow[]
+}
+
+/** The built-in Plan A document (read-only seed). */
+export function planADoc(): DiagramDoc {
+  return {
+    id: 'plan-a',
+    slug: 'plan-a',
+    title: 'Plan A — Hybrid Infrastructure',
+    updatedAt: new Date(0).toISOString(),
+    published: true,
+    nodes: COMPONENTS.map((c) => ({ ...c, deps: [...c.deps], workloads: [...c.workloads] })),
+    flows: FLOWS.map((f) => ({ ...f })),
+  }
+}
+
+/** Validate an imported doc just enough to render safely. */
+export function sanitizeDoc(raw: unknown): DiagramDoc | null {
+  if (!raw || typeof raw !== 'object') return null
+  const d = raw as Record<string, unknown>
+  if (!Array.isArray(d.nodes) || !Array.isArray(d.flows)) return null
+  const cats: InfraCategory[] = ['network', 'compute', 'storage', 'identity', 'security', 'backup', 'endpoint', 'power']
+  const layers = ['edge', 'cloud', 'rack', 'vm', 'users', 'legacy']
+  const nodes: InfraComponent[] = []
+  for (const n of d.nodes as unknown[]) {
+    if (!n || typeof n !== 'object') continue
+    const c = n as Record<string, unknown>
+    if (typeof c.id !== 'string' || !c.id || typeof c.name !== 'string') continue
+    nodes.push({
+      id: c.id.slice(0, 64),
+      name: String(c.name).slice(0, 80),
+      category: cats.includes(c.category as InfraCategory) ? (c.category as InfraCategory) : 'network',
+      layer: (layers as string[]).includes(c.layer as string) ? (c.layer as InfraLayer) : 'cloud',
+      role: String(c.role ?? '').slice(0, 80),
+      desc: String(c.desc ?? '').slice(0, 2000),
+      workloads: Array.isArray(c.workloads) ? c.workloads.filter((w): w is string => typeof w === 'string').slice(0, 12).map((w) => w.slice(0, 60)) : [],
+      deps: Array.isArray(c.deps) ? c.deps.filter((x): x is string => typeof x === 'string').slice(0, 24) : [],
+      notes: typeof c.notes === 'string' ? c.notes.slice(0, 2000) : undefined,
+      rackU: typeof c.rackU === 'number' ? Math.max(1, Math.min(42, Math.floor(c.rackU))) : undefined,
+      rackH: typeof c.rackH === 'number' ? Math.max(1, Math.min(8, Math.floor(c.rackH))) : undefined,
+      x: typeof c.x === 'number' ? c.x : undefined,
+      y: typeof c.y === 'number' ? c.y : undefined,
+      w: typeof c.w === 'number' ? Math.max(40, Math.min(1280, c.w)) : undefined,
+      h: typeof c.h === 'number' ? Math.max(20, Math.min(920, c.h)) : undefined,
+      shape: c.shape === 'chip' || c.shape === 'cloud' || c.shape === 'firewall' ? c.shape : undefined,
+    })
+  }
+  if (nodes.length === 0) return null
+  const ids = new Set(nodes.map((n) => n.id))
+  const flows: InfraFlow[] = []
+  for (const f of d.flows as unknown[]) {
+    if (!f || typeof f !== 'object') continue
+    const r = f as Record<string, unknown>
+    if (typeof r.from !== 'string' || typeof r.to !== 'string') continue
+    if (!ids.has(r.from) || !ids.has(r.to) || r.from === r.to) continue
+    flows.push({
+      id: typeof r.id === 'string' && r.id ? r.id.slice(0, 64) : `f-${r.from}-${r.to}`,
+      from: r.from,
+      to: r.to,
+      cat: cats.includes(r.cat as InfraCategory) ? (r.cat as InfraCategory) : 'network',
+    })
+    if (flows.length >= 200) break
+  }
+  const slugBase = typeof d.slug === 'string' && d.slug ? d.slug : 'diagram'
+  return {
+    id: typeof d.id === 'string' && d.id ? d.id.slice(0, 64) : `doc-${Date.now()}`,
+    slug: slugBase.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64) || 'diagram',
+    title: typeof d.title === 'string' && d.title ? d.title.slice(0, 120) : 'Untitled diagram',
+    updatedAt: typeof d.updatedAt === 'string' ? d.updatedAt : new Date().toISOString(),
+    published: d.published !== false,
+    nodes,
+    flows,
+  }
 }
