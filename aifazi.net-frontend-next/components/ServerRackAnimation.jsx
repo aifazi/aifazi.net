@@ -937,7 +937,9 @@ function GlobeMode({ visibleRef }) {
     const width = Math.max(240, Math.floor(wrapW || rect.width || 480))
     const height = Math.max(240, Math.floor(wrapH || rect.height || 360))
     syncGlobeGeom(width, height)
-    geomRef.current = { w: width, h: height }
+    // Raw CSS px for the HUD pin + zero-size guard (unclamped — a hidden
+    // ancestor measures 0 and cobe draws fail on a 0-area canvas).
+    geomRef.current = { w: wrapW || rect.width || 480, h: wrapH || rect.height || 360 }
 
     // ── Visitor HUD pin — project the visitor marker with COBE's own math
     // (orthographic disc radius 0.8 + markerElevation 0.012, offset [0,0])
@@ -1237,6 +1239,11 @@ function GlobeMode({ visibleRef }) {
         nextMarkers = baseMarkers.concat(scratchPackets.slice(0, packetSeeds.length))
       }
 
+      // Zero-area canvas (hidden ancestor, entrance) — cobe drawArrays with
+      // no drawable area throws INVALID_OPERATION every frame; skip paint +
+      // pin until geometry is real. The loop keeps running (cheap ref read).
+      const _gw = geomRef.current.w | 0, _gh = geomRef.current.h | 0
+      if (_gw >= 2 && _gh >= 2) {
       try {
         globe.update({
           phi: s.phi,
@@ -1250,6 +1257,7 @@ function GlobeMode({ visibleRef }) {
         })
         pinVisitorShell()
       } catch { /* globe destroyed */ }
+      }
     }
     frameRef.current = frame
     rafRef.current = requestAnimationFrame(frame)
@@ -1279,7 +1287,7 @@ function GlobeMode({ visibleRef }) {
         const width = Math.max(240, Math.floor(wrap.clientWidth || r.width || 480))
         const height = Math.max(240, Math.floor(wrap.clientHeight || r.height || 360))
         syncGlobeGeom(width, height)
-        geomRef.current = { w: width, h: height }
+        geomRef.current = { w: wrap.clientWidth || r.width || 480, h: wrap.clientHeight || r.height || 360 }
         const g = globeRef.current
         if (g) {
           try {
@@ -1337,7 +1345,7 @@ function GlobeMode({ visibleRef }) {
         const width = Math.max(240, Math.floor(wrap?.clientWidth || 480))
         const height = Math.max(240, Math.floor(wrap?.clientHeight || 360))
         syncGlobeGeom(width, height)
-        geomRef.current = { w: width, h: height }
+        geomRef.current = { w: wrap?.clientWidth || 480, h: wrap?.clientHeight || 360 }
         if (g) {
           try {
             // COBE multiplies by devicePixelRatio — pass CSS pixels again

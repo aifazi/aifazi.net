@@ -111,17 +111,53 @@ export function ForumProvider({ children }) {
 
     if (hydrateRef.current?.token === (token || '')) return hydrateRef.current.promise
 
+    // had-session (localStorage): this browser has logged in before. Lets a
+    // failed cookie probe attempt one silent refresh (expired access + live
+    // refresh cookie) instead of instantly showing logged-out.
+    const markHadSession = () => { try { window.localStorage?.setItem('aifazi:had-session', '1') } catch {} }
+    const clearHadSession = () => { try { window.localStorage?.removeItem('aifazi:had-session') } catch {} }
+    const hadSession = () => {
+      try { return window.localStorage?.getItem('aifazi:had-session') === '1' } catch { return false }
+    }
+    const markNoSession = () => { try { window.sessionStorage?.setItem('aifazi:no-session', '1') } catch {} }
+    let probeNetFail = false
+    const probeCookie = async () => {
+      try {
+        const r = await fetch('/api/auth/me', { credentials: 'include' })
+        if (r.ok) return await r.json()
+      } catch { probeNetFail = true }
+      return null
+    }
+    // Silent refresh — must send a JSON content type or the backend CSRF gate
+    // (cookies + POST without XHR/JSON/bearer) rejects it with 403.
+    const tryRefresh = async () => {
+      try {
+        const ref = await fetch('/api/auth/refresh', {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }, body: '{}',
+        })
+        return ref.ok
+      } catch { return false }
+    }
+
     const promise = (async () => {
       await Promise.resolve()
       setProfileLoading(true)
       // 1) Cookie session — no Authorization header, HttpOnly auth_token cookie.
-      let cookieUser = null
-      try {
-        const r = await fetch('/api/auth/me', { credentials: 'include' })
-        if (r.ok) cookieUser = await r.json()
-      } catch {}
+      let cookieUser = await probeCookie()
+      // Access may have expired while the refresh cookie lives: one silent
+      // refresh, then re-probe once. If that fails the session is truly dead.
+      // Never flag offline (network failure) as logged-out.
+      if (!cookieUser && !probeNetFail && hadSession()) {
+        if (await tryRefresh()) {
+          cookieUser = await probeCookie()
+        } else {
+          clearHadSession()
+        }
+      }
 
       if (cookieUser) {
+        markHadSession()
         setUser(cookieUser)
         setEffectiveAccess(cookieUser)
         if (token) writeCachedUser(cookieUser)
@@ -130,7 +166,10 @@ export function ForumProvider({ children }) {
         // getUsername()/getRole() keep working after a reload.
         if (!getAuthToken()) {
           try {
-            const ref = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
+            const ref = await fetch('/api/auth/refresh', {
+              method: 'POST', credentials: 'include',
+              headers: { 'Content-Type': 'application/json' }, body: '{}',
+            })
             if (ref.ok) {
               const j = await ref.json()
               if (j.token) setAccessToken(j.token)
@@ -169,14 +208,19 @@ export function ForumProvider({ children }) {
             // Dead token: the server rejected it, so drop it — otherwise every
             // mount re-probes with the same invalid token (401 console spam).
             // With no token left, remember the logged-out state for this tab.
+            // Only flag on definite HTTP rejection, never on network failure.
             clearAuthTokens({ revoke: false })
-            try { window.sessionStorage?.setItem('aifazi:no-session', '1') } catch {}
+            if (status === 401 || status === 403) {
+              clearHadSession()
+              markNoSession()
+            }
           }
         }
       } else {
         clearCachedUser()
         setUser(null)
-        try { window.sessionStorage?.setItem('aifazi:no-session', '1') } catch {}
+        // HTTP failure (not network): no session on this browser.
+        if (!probeNetFail) markNoSession()
       }
 
       setLoading(false)
@@ -210,6 +254,7 @@ export function ForumProvider({ children }) {
     clearLegacyTokens()
     clearCachedUser()
     try { window.sessionStorage?.removeItem('aifazi:no-session') } catch {}
+    try { window.localStorage?.setItem('aifazi:had-session', '1') } catch {}
     setUser(userData || userFromToken(token))
     setLoading(false)
     window.dispatchEvent(new Event('auth-change'))
@@ -227,6 +272,7 @@ export function ForumProvider({ children }) {
     // refresh token; don't fire a second /auth/logout.
     clearAuthTokens({ revoke: false })
     try { window.sessionStorage?.setItem('aifazi:no-session', '1') } catch {}
+    try { window.localStorage?.removeItem('aifazi:had-session') } catch {}
     window.dispatchEvent(new Event('auth-change'))
     setUser(null)
     setLoading(false)
