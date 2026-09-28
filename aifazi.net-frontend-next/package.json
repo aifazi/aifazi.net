@@ -22,7 +22,7 @@
     "@supabase/supabase-js": "^2.116.0",
     "axios": "^1.20.0",
     "cobe": "^2.0.1",
-    "dompurify": "^3.4.15",
+    "dompurify": "^3.4.16",
     "gsap": "^3.15.0",
     "html5-qrcode": "^2.3.8",
     "next": "^16.3.5",
