@@ -413,6 +413,7 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/helpdesk/tickets",     10,   60),
     ("/forms",                10,   60),
     ("/forms/",               10,   60),
+    ("/infra/",               30,   60),
     ("/store/checkout",       5,   60),
     ("/store/checkout/cart",  5,   60),
     ("/discord/connect",      5,   60),
@@ -713,6 +714,7 @@ from routers import (
     forum,
     github_auth,
     helpdesk,
+    infra_diagrams,
     ldap_oauth,
     mail_queue,
     mail_templates,
@@ -776,7 +778,8 @@ app.include_router(cdn_settings.router,   prefix="/api/admin/cdn")
 app.include_router(search.router,         prefix="/api/search")
 app.include_router(newsletter.router,     prefix="/api/newsletter")
 app.include_router(portfolio.router,      prefix="/api/portfolio")
-app.include_router(helpdesk.router,       prefix="/api/helpdesk")
+app.include_router(helpdesk.router,      prefix="/api/helpdesk")
+app.include_router(infra_diagrams.router, prefix="/api/infra")
 app.include_router(seo_proxy.router,      prefix="/api/seo-proxy")
 app.include_router(sitemap.router,        prefix="")
 app.include_router(cron.router,           prefix="")
