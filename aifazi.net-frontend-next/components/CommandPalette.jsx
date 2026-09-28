@@ -14,6 +14,7 @@ const COMMANDS = [
   { id: 'network-tools',  label: 'Network Tools',        icon: '🛠️',  group: 'Navigate',  action: { type: 'route', to: '/tools/network' } },
   { id: 'file-tools',     label: 'File Tools',           icon: '📁',  group: 'Navigate',  action: { type: 'route', to: '/tools/files' } },
   { id: 'seo-tools',      label: 'SEO Tools',            icon: '🔍',  group: 'Navigate',  action: { type: 'route', to: '/tools/seo' } },
+  { id: 'hybrid-infra',   label: 'Hybrid Infra Case Study', icon: '🖧', group: 'Navigate',  action: { type: 'route', to: '/hybrid-infra' } },
   // Scroll
   { id: 'about',          label: 'Jump to About',        icon: '👤', group: 'Section',   action: { type: 'scroll', id: 'about' } },
   { id: 'experience',     label: 'Jump to Experience',   icon: '💼', group: 'Section',   action: { type: 'scroll', id: 'experience' } },
