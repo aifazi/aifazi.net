@@ -414,3 +414,27 @@ Quick wins to do first:
 4. A11y backlog from `DESIGN-UX-A11Y-AUDIT.md`.
 5. Point `docker-compose.yml` at non-prod Supabase.
 6. Bandit HIGH triage in `ci.yml`.
+
+---
+
+## 11. Home-batch audit (2026-09-29, range `064f9ea..e210eee`)
+
+59 files, +4886/−314 across PRs #351–#358 (audit batches A/B, UI tweaks, SW/globe fixes, session-refresh recovery, hybrid-infra builder). Static review + ruff + pytest + vitest + eslint. No CRITICAL/HIGH.
+
+| Area | Verdict |
+|------|---------|
+| Auth refresh flow (#356: `ForumContext.jsx` silent refresh) | SAFE — one-shot server-validated refresh, no fail-closed weakening; satisfies CSRF gate (`main.py:554-565`) |
+| `auth_discord.py` signed-state upgrade | SAFE — HMAC/600s/provider-bound; callback cookie-only, no URL tokens |
+| Dead-chat cleanup (`dependencies.py`, `permissions.py`, `auth.py`) | SAFE — tightening; stale `'chat'` in `proxy.ts:65` / `permissions.py:16` is LOW residue |
+| Username lockout (`rate_limit.py` + `auth_login.py`) | MEDIUM — username-only key leaks enumeration (`429` vs `400`) + lockout-DoS; `_get_redis()` unguarded at `rate_limit.py:151,171` |
+| Legacy-admin refresh (`auth_login.py:275-282`) | MEDIUM — bearer-only, no server-side revocation until 7d expiry |
+| Hybrid-infra backend (`infra_diagrams.py` + migration) | SAFE — admin-gated writes, published-only public reads, typed queries, no SQLi; LOW: migration skips `REVOKE` lockdown convention; LOW: `_optional_admin` skips `_enrich_user` |
+| Hybrid-infra frontend (canvas 1262 + editor 1068 lines) | SAFE — no HTML sinks, parked rAF, reduced-motion, clean persistence errors; god-file advisory; tests lack negative-authz cases (MEDIUM process gap) |
+| SW (`sw.js`) | SAFE — crash fix + network-only APIs, no cache poisoning; LOW: nav handler lacks `res.ok` guard |
+| `ServerRackAnimation.jsx` +33 | SAFE — no conflict with radar/INFO rework; LOW: `glLostRef` declared after use |
+| Admin SSR gate, privacy/terms, mobile (offlineQueue removal clean, manifest plugin least-privilege) | SAFE |
+| Prior remediation (discord fragment, no `exec_sql`, opencode `$COOLIFY_TOKEN`) | Intact — verified |
+
+Verified: ruff clean · pytest 12 passed (`test_oauth_no_query_tokens` + `test_infra_diagrams`) · vitest 21 passed · eslint clean on new HybridInfra files · zero secrets in home diff.
+
+New open items: uniform-400 login errors + user+IP lockout key; revoke legacy refresh server-side; `REVOKE` lockdown for `infra_diagrams`; negative-authz tests; SW nav `res.ok` guard.
