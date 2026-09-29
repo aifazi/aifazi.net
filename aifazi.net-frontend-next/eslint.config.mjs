@@ -18,4 +18,13 @@ export default [
   // plugin install needed. Keep a11y as warn via next preset; do not add
   // noisy click-events rules here (would push 142 → 281 warnings past the
   // 150 guard). Revisit once interactive divs get keyboard handlers.
+  //
+  // no-undef for JSX: the /helpdesk outage was a bare `mono` identifier that
+  // passed both tsc (allowJs without checkJs) and eslint. This gates the class.
+  {
+    files: ['**/*.jsx'],
+    rules: {
+      'no-undef': 'error',
+    },
+  },
 ]

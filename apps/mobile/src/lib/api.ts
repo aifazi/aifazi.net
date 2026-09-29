@@ -140,6 +140,10 @@ export async function clearAuthTokens() {
   emitAuthCleared()
 }
 
+/**
+ * Intentional: exposes the memory-only access token for debugging/diag flows.
+ * Do NOT persist the result to disk — H4 design keeps it in memory only.
+ */
 export async function getAccessToken(): Promise<string | null> {
   return accessToken
 }

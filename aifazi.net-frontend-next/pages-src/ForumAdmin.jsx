@@ -8,6 +8,7 @@ import { Checkbox, Select } from '../core/ui.jsx'
 import {
   S, StatCard, useNotify, ConfirmModal, UserEditModal, ThreadEditModal, ReplyEditModal, BanModal, Pagination,
 } from './forumAdminModals'
+import { timeAgo } from '../components/community'
 
 export default function ForumAdmin({ embedded = false }) {
   const navigate = useNavigate()

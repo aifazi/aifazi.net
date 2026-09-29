@@ -14,6 +14,7 @@ import {
   M, D, CLRS, Badge, SectionCard, Inp, Btn, StatusMsg, ago, Avatar,
   STATUS_CFG, PRIORITY_CFG,
   DISCORD_PURPLE, STEAM_BLUE, STEAM_LIGHT, GITHUB_COLOR,
+  oauthApiBase, safeOAuthRedirect,
 } from './forumProfileParts'
 
 // Dismissal flag for the Day-0 onboarding checklist (per account).

@@ -24,7 +24,7 @@ const ROLE_META = {
   chat:      { color: "var(--yellow,#ffd700)", bg: "rgba(255,215,0,0.08)", label: "CHAT" },
   user:      { color: "var(--muted)", bg: "rgba(71,85,105,0.08)", label: "USER" },
 };
-const roleColor = (r) => ROLE_META[r]?.color || "var(--muted)";
+export const roleColor = (r) => ROLE_META[r]?.color || "var(--muted)";
 const roleBg    = (r) => ROLE_META[r]?.bg    || "rgba(71,85,105,0.08)";
 
 const normalizeUserDoc = (doc = {}) => ({
@@ -55,7 +55,7 @@ function ToastContainer() { return null; }
 // All fetch calls pass through the Next.js /api proxy — API_URL is always "".
 // The axios `api` client is available for structured calls; raw fetch is used
 // here for flexibility with dynamic paths and non-JSON payloads.
-async function adminAction(token, path, body = null) {
+export async function adminAction(token, path, body = null) {
   // Both backend prefixes are live: user/toggle actions are served under
   // /api/admin/stats/actions/* (stats router) while DB maintenance actions
   // are served under /api/admin/actions/* (admin_actions router). Route

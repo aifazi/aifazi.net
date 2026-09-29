@@ -144,14 +144,18 @@ function RootNav() {
     }, 0)
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = (response.notification.request.content.data ?? {}) as Record<string, any>
-      routePushData(data, (href) => router.push(href))
+      if (!routePushData(data, (href) => router.push(href))) {
+        router.push('/notifications' as Href)
+      }
     })
     // Cold start: the tap that launched the app never fires the listener above.
     Notifications.getLastNotificationResponseAsync()
       .then((response) => {
         if (!response) return
         const data = (response.notification.request.content.data ?? {}) as Record<string, any>
-        routePushData(data, (href) => router.push(href))
+        if (!routePushData(data, (href) => router.push(href))) {
+          router.push('/notifications' as Href)
+        }
       })
       .catch(() => {})
     return () => {

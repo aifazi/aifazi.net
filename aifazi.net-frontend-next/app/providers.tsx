@@ -16,6 +16,7 @@ import FloatingNav from '@/components/FloatingNav'
 import ContextMenu from '@/components/ContextMenu'
 import SiteBanner from '@/components/SiteBanner'
 import FunDragLayer from '@/components/FunDragLayer'
+import EnvMisconfigBanner from '@/components/EnvMisconfigBanner'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { getSiteSettings } from '@/lib/siteSettings'
 import { getUserPackage, setUserPackage } from '@/lib/userPackage'
@@ -822,6 +823,7 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
           <div style={{ opacity: !hydrated || (loading && !showMaintenance) ? 0 : 1, transition: 'opacity 0.5s ease', pointerEvents: (!hydrated || (loading && !showMaintenance) || showMaintenance) ? 'none' : 'auto' }}>
             {/* P0 — global: renders on ALL routes (incl. fullscreen /admin) */}
             <ImpersonationBanner />
+            <EnvMisconfigBanner />
             <Cursor />
             <ContextMenu />
             {!isFullScreen && <Navbar />}

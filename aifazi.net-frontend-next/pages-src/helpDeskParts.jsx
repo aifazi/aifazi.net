@@ -1,6 +1,6 @@
 'use client'
 // helpDeskParts.jsx — ticket widgets & forms (extracted).
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react'
 import api from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { Select } from '../core/ui.jsx'
@@ -8,6 +8,11 @@ import Clickable from '@/core/Clickable.jsx'
 import { SkeletonList } from '@/core/Feedback'
 import { useForum } from '../context/ForumContext'
 import { getSupabase } from '@/lib/supabase'
+
+// Shared style primitives (were stranded in HelpDesk.jsx after extraction,
+// crashing this module at import with `ReferenceError: mono is not defined`).
+export const mono = { fontFamily: 'var(--font-mono)' }
+export const card = { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '20px 24px' }
 
 function StatusBadge({ status }) {
   const map = {

@@ -1,5 +1,4 @@
 'use client'
-'use client'
 
 /**
  * app/helpdesk/error.tsx — route-level error boundary for /helpdesk
@@ -23,6 +22,23 @@ export default function HelpDeskError({
 }) {
   useEffect(() => {
     console.error('[helpdesk] render error:', error)
+    // Caught errors never reach window.onerror, so report explicitly —
+    // including digest + route so the monitor payload is debuggable.
+    try {
+      fetch('/api/monitor/errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'frontend',
+          error_type: error?.name || 'Error',
+          message: `[helpdesk boundary] ${error?.message || String(error)}`,
+          stack: error?.stack || '',
+          endpoint: '/helpdesk',
+          url: typeof window !== 'undefined' ? window.location.href : '',
+          digest: error?.digest || '',
+        }),
+      }).catch(() => {})
+    } catch {}
   }, [error])
 
   const isChunkError =
